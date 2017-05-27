@@ -17,13 +17,24 @@ its syntax from Erlang.
 
 Since Akka enforces parental supervision every actor is supervised and
 (potentially) the supervisor of its children, it is advisable that you
-familiarize yourself with @ref:[Actor Systems](general/actor-systems.md) and 
-@ref:[supervision](general/supervision.md) and it
-may also help to read @ref:[Actor References, Paths and Addresses](general/addressing.md).
+familiarize yourself with @ref:[Actor Systems](general/actor-systems.md) and @ref:[supervision](general/supervision.md)
+and it may also help to read @ref:[Actor References, Paths and Addresses](general/addressing.md).
 
 @@@
 
 ### Defining an Actor class
+
+@@@ div { .group-scala }
+
+Actors are implemented by extending the `Actor` base trait and implementing the
+`receive` method. The `receive` method should define a series of case
+statements (which has the type `PartialFunction[Any, Unit]`) that defines
+which messages your Actor can handle, using standard Scala pattern matching,
+along with the implementation of how the messages should be processed.
+
+@@@ 
+
+@@@java { .group-java }
 
 Actor classes are implemented by extending the `AbstractActor` class and setting
 the “initial behavior” in the constructor by calling the `receive` method in
@@ -36,9 +47,15 @@ how the messages should be processed.
 Don't let the type signature scare you. To allow you to easily build up a partial
 function there is a builder named `ReceiveBuilder` that you can use.
 
+@@@
+
 Here is an example:
 
-@@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #imports #my-actor }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #imports1 #my-actor }
+
+Java
+:  @@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #imports #my-actor }
 
 Please note that the Akka Actor `receive` message loop is exhaustive, which
 is different compared to Erlang and the late Scala Actors. This means that you
@@ -52,11 +69,19 @@ Note further that the return type of the behavior defined above is `Unit`; if
 the actor shall reply to the received message then this must be done explicitly
 as explained below.
 
-The argument to the `receive` method is a partial function object, which is
+The @scala[result of] @java[argument to] the `receive` method is a partial function object, which is
 stored within the actor as its “initial behavior”, see [Become/Unbecome](#become-unbecome) for
 further information on changing the behavior of an actor after its
 construction.
 
+@@@ div { .group-scala }
+
+#### Here is another example that you can edit and run in the browser:
+
+@@fiddle [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75 cssStyle=width:100%; }
+
+@@@
+ 
 ### Props
 
 `Props` is a configuration class to specify options for the creation
@@ -65,9 +90,12 @@ creating an actor including associated deployment information (e.g. which
 dispatcher to use, see more below). Here are some examples of how to create a
 `Props` instance.
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-props }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #creating-props }
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #creating-props }
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-props #creating-props }
+
 
 The second variant shows how to pass constructor arguments to the
 `Actor` being created, but it should only be used outside of actors as
@@ -79,20 +107,30 @@ verified during construction of the `Props` object, resulting in an
 `IllegalArgumentException` if no or multiple matching constructors are
 found.
 
-#### Dangerous Variants
+@@@ note { .group-scala }
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #creating-props-deprecated }
+The recommended approach to create the actor `Props` is not supported
+for cases when the actor constructor takes value classes as arguments.
+
+@@@
+
+#### Dangerous Variants
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #creating-props-deprecated }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #creating-props-deprecated }
 
 This method is not recommended to be used within another actor because it
 encourages to close over the enclosing scope, resulting in non-serializable
 `Props` and possibly race conditions (breaking the actor encapsulation).
-On the other hand using this variant in a `Props` factory in the actor’s
-companion object as documented under “Recommended Practices” below is completely
-fine.
+On the other hand using this variant in a `Props` factory in
+the actor’s companion object as documented under “Recommended Practices” below
+is completely fine.
 
 There were two use-cases for these methods: passing constructor arguments to
 the actor—which is solved by the newly introduced
-`Props.create(clazz, args)` method above or the recommended practice
+@scala[`Props.apply(clazz, args)`] @java[`Props.create(clazz, args)`] method above or the recommended practice
 below—and creating actors “on the spot” as anonymous classes. The latter should
 be solved by making these actors named classes instead (if they are not
 declared within a top-level `object` then the enclosing instance’s `this`
@@ -105,23 +143,67 @@ encapsulation. Never pass an actor’s `this` reference into `Props`!
 
 @@@
 
+@@@ div { .group-scala }
+
+#### Edge cases
+
+There are two edge cases in actor creation with `Props`:
+
+ * An actor with `AnyVal` arguments.
+
+@@snip [PropsEdgeCaseSpec.scala]($code$/scala/docs/actor/PropsEdgeCaseSpec.scala) { #props-edge-cases-value-class }
+
+@@snip [PropsEdgeCaseSpec.scala]($code$/scala/docs/actor/PropsEdgeCaseSpec.scala) { #props-edge-cases-value-class-example }
+
+ * An actor with default constructor values.
+
+@@snip [PropsEdgeCaseSpec.scala]($code$/scala/docs/actor/PropsEdgeCaseSpec.scala) { #props-edge-cases-default-values }
+
+In both cases an `IllegalArgumentException` will be thrown stating
+no matching constructor could be found.
+
+The next section explains the recommended ways to create `Actor` props in a way,
+which simultaneously safe-guards against these edge cases.
+
+@@@
+
 #### Recommended Practices
 
 It is a good idea to provide factory methods on the companion object of each
 `Actor` which help keeping the creation of suitable `Props` as
 close to the actor definition as possible. This also avoids the pitfalls
-associated with using the `Props.create(...)` method which takes a by-name
+associated with using the @scala[`Props.apply(...)`] @java[ `Props.create(...)`] method which takes a by-name
 argument, since within a companion object the given code block will not retain
 a reference to its enclosing scope:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #props-factory }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #props-factory }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #props-factory }
+
+@@@ div { .group-scala }
+
+Another good practice is to declare what messages an Actor can receive
+in the companion object of the Actor, which makes easier
+to know what it can receive:
+
+@@@
+
+@@@ div { .group-java }
 
 Another good practice is to declare what messages an Actor can receive
 as close to the actor definition as possible (e.g. as static classes
 inside the Actor or using other suitable class), which makes it easier to know
 what it can receive.
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #messages-in-companion }
+@@@
+
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #messages-in-companion }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #messages-in-companion }
 
 ### Creating Actors with Props
 
@@ -129,15 +211,21 @@ Actors are created by passing a `Props` instance into the
 `actorOf` factory method which is available on `ActorSystem` and
 `ActorContext`.
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-actorRef }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #system-actorOf }
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #system-actorOf }
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-actorRef }
 
 Using the `ActorSystem` will create top-level actors, supervised by the
 actor system’s provided guardian actor, while using an actor’s context will
 create a child actor.
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #context-actorOf }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #context-actorOf }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #context-actorOf }
 
 It is recommended to create a hierarchy of children, grand-children and so on
 such that it fits the logical failure-handling structure of the application,
@@ -155,26 +243,42 @@ The name parameter is optional, but you should preferably name your actors,
 since that is used in log messages and for identifying actors. The name must
 not be empty or start with `$`, but it may contain URL encoded characters
 (eg. `%20` for a blank space).  If the given name is already in use by
-another child to the same parent an *InvalidActorNameException* is thrown.
+another child to the same parent an `InvalidActorNameException` is thrown.
 
 Actors are automatically started asynchronously when created.
 
-<a id="actor-create-factory"></a>
+@@@ div { .group-scala }
+
+#### Value classes as constructor arguments
+
+The recommended way to instantiate actor props uses reflection at runtime
+to determine the correct actor constructor to be invoked and due to technical
+limitations is not supported when said constructor takes arguments that are
+value classes.
+In these cases you should either unpack the arguments or create the props by
+calling the constructor manually:
+
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #actor-with-value-class-argument }
+
+@@@ 
+
 ### Dependency Injection
 
-If your actor has a constructor that takes parameters then those need to
+If your `Actor` has a constructor that takes parameters then those need to
 be part of the `Props` as well, as described [above](Props_). But there
 are cases when a factory method must be used, for example when the actual
 constructor arguments are determined by a dependency injection framework.
 
-@@snip [DependencyInjectionDocTest.java]($code$/java/jdocs/actor/DependencyInjectionDocTest.java) { #import }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #creating-indirectly }
 
-@@snip [DependencyInjectionDocTest.java]($code$/java/jdocs/actor/DependencyInjectionDocTest.java) { #creating-indirectly }
+Java
+:  @@snip [DependencyInjectionDocTest.java]($code$/java/jdocs/actor/DependencyInjectionDocTest.java) { #import #creating-indirectly }
 
 @@@ warning
 
 You might be tempted at times to offer an `IndirectActorProducer`
-which always returns the same instance, e.g. by using a static field. This is
+which always returns the same instance, e.g. by using a @scala[`lazy val`.] @java[static field.] This is
 not supported, as it goes against the meaning of an actor restart, which is
 described here: @ref:[What Restarting Means](general/supervision.md#supervision-restart).
 
@@ -196,7 +300,25 @@ cannot do: receiving multiple replies (e.g. by subscribing an `ActorRef`
 to a notification service) and watching other actors’ lifecycle. For these
 purposes there is the `Inbox` class:
 
-@@snip [InboxDocTest.java]($code$/java/jdocs/actor/InboxDocTest.java) { #inbox }
+Scala
+:  @@snip [ActorDSLSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #inbox }
+
+Java
+:  @@snip [InboxDocTest.java]($code$/java/jdocs/actor/InboxDocTest.java) { #inbox }
+
+
+@@@ div { .group-scala }
+
+There is an implicit conversion from inbox to actor reference which means that
+in this example the sender reference will be that of the actor hidden away
+within the inbox. This allows the reply to be received on the last line.
+Watching an actor is quite simple as well:
+
+@@snip [ActorDSLSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #watch }
+
+@@@
+
+@@@ div { .group-java }
 
 The `send` method wraps a normal `tell` and supplies the internal
 actor’s reference as the sender. This allows the reply to be received on the
@@ -204,10 +326,23 @@ last line.  Watching an actor is quite simple as well:
 
 @@snip [InboxDocTest.java]($code$/java/jdocs/actor/InboxDocTest.java) { #watch }
 
+@@@
+
 ## Actor API
+
+@@@ div { .group-scala }
+
+The `Actor` trait defines only one abstract method, the above mentioned
+`receive`, which implements the behavior of the actor.
+
+@@@
+
+@@@ div { .group-java }
 
 The `AbstractActor` class defines a method called `receive`,
 that is used to set the “initial behavior” of the actor.
+
+@@@
 
 If the current actor behavior does not match a received message,
 `unhandled` is called, which by default publishes an
@@ -218,10 +353,22 @@ actual Debug messages).
 
 In addition, it offers:
 
+@@@ div { .group-scala }
+
+ * `self` reference to the `ActorRef` of the actor
+ * `sender` reference sender Actor of the last received message, typically used as described in [Actor.Reply](#actor-reply)
+ * `supervisorStrategy` user overridable definition the strategy to use for supervising child actors
+
+@@@
+ 
+@@@ div { .group-java }
+  
  * `getSelf()` reference to the `ActorRef` of the actor
  * `getSender()` reference sender Actor of the last received message, typically used as described in [LambdaActor.Reply](#lambdaactor-reply)
- * 
-   `supervisorStrategy()` user overridable definition the strategy to use for supervising child actors
+ * `supervisorStrategy()` user overridable definition the strategy to use for supervising child actors
+   
+@@@
+ 
    This strategy is typically declared inside the actor in order to have access
 to the actor’s internal state within the decider function: since failure is
 communicated as a message sent to the supervisor and processed like other
@@ -230,23 +377,35 @@ within the actor are available, as is the `sender` reference (which will
 be the immediate child reporting the failure; if the original failure
 occurred within a distant descendant it is still reported one level up at a
 time).
- * 
-   `getContext()` exposes contextual information for the actor and the current message, such as:
+ * @scala[`context`] @java[`getContext()`] exposes contextual information for the actor and the current message, such as:
     * factory methods to create child actors (`actorOf`)
     * system that the actor belongs to
     * parent supervisor
     * supervised children
     * lifecycle monitoring
-    * hotswap behavior stack as described in [Become/Unbecome](#actor-hotswap)
+    * hotswap behavior stack as described in @scala[[Actor.HotSwap](#actor-hotswap)] @java[[Become/Unbecome](#actor-hotswap)]
+
+@@@ div { .group-scala }
+
+You can import the members in the `context` to avoid prefixing access with `context.`
+
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #import-context }
+
+@@@
+
+
 
 The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #lifecycle-callbacks }
+Scala
+:  @@snip [Actor.scala]($akka$/akka-actor/src/main/scala/akka/actor/Actor.scala) { #lifecycle-hooks }
 
-The implementations shown above are the defaults provided by the `AbstractActor`
-class.
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #lifecycle-callbacks }  
+The implementations shown above are the defaults provided by the @scala[`Actor` trait.] @java[`AbstractActor` class]
 
+<a id="actor-lifecycle"></a>
 ### Actor Lifecycle
 
 ![actor_lifecycle.png](../images/actor_lifecycle.png)
@@ -264,7 +423,8 @@ that point the appropriate lifecycle events are called and watching actors
 are notified of the termination. After the incarnation is stopped, the path can
 be reused again by creating an actor with `actorOf()`. In this case the
 name of the new incarnation will be the same as the previous one but the
-UIDs will differ.
+UIDs will differ. An actor can be stopped by the actor itself, another actor
+or the `ActorSystem` (see [Stopping actors](#stopping-actors)).
 
 @@@ note
 
@@ -286,7 +446,7 @@ occupying it. `ActorSelection` cannot be watched for this reason. It is
 possible to resolve the current incarnation's `ActorRef` living under the
 path by sending an `Identify` message to the `ActorSelection` which
 will be replied to with an `ActorIdentity` containing the correct reference
-(see [Identifying Actors via Actor Selection](#actorselection)). This can also be done with the `resolveOne`
+(see [ActorSelection](#actorselection)). This can also be done with the `resolveOne`
 method of the `ActorSelection`, which returns a `Future` of the matching
 `ActorRef`.
 
@@ -301,14 +461,18 @@ termination (see [Stopping Actors](#stopping-actors)). This service is provided 
 
 Registering a monitor is easy:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-terminated }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #watch }
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #watch }
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-terminated }
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #watch }
+
 
 It should be noted that the `Terminated` message is generated
 independent of the order in which registration and termination occur.
-In particular, the watching actor will receive a `Terminated` message
-even if the watched actor has already been terminated at the time of registration.
+In particular, the watching actor will receive a `Terminated` message even if the
+watched actor has already been terminated at the time of registration.
 
 Registering multiple times does not necessarily lead to multiple messages being
 generated, but there is no guarantee that only exactly one such message is
@@ -328,7 +492,11 @@ no `Terminated` message for that actor will be processed anymore.
 
 Right after starting the actor, its `preStart` method is invoked.
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #preStart }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #preStart }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #preStart }
 
 This method is called when the actor is first created. During restarts it is
 called by the default implementation of `postRestart`, which means that
@@ -343,10 +511,10 @@ restart.
 
 All actors are supervised, i.e. linked to another actor with a fault
 handling strategy. Actors may be restarted in case an exception is thrown while
-processing a message (see @ref:[supervision](general/supervision.md)). 
-This restart involves the hooks mentioned above:
+processing a message (see @ref:[supervision](general/supervision.md)). This restart involves the hooks
+mentioned above:
 
- 1. 
+ 1.
     The old actor is informed by calling `preRestart` with the exception
 which caused the restart and the message which triggered that exception; the
 latter may be `None` if the restart was not caused by processing a
@@ -401,7 +569,11 @@ actors may look up other actors by specifying absolute or relative
 paths—logical or physical—and receive back an `ActorSelection` with the
 result:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #selection-local }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #selection-local }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #selection-local }
 
 @@@ note
 
@@ -429,14 +601,18 @@ structure, i.e. the supervisor.
 The path elements of an actor selection may contain wildcard patterns allowing for
 broadcasting of messages to that section:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #selection-wildcard }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #selection-wildcard }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #selection-wildcard }
 
 Messages can be sent via the `ActorSelection` and the path of the
 `ActorSelection` is looked up when delivering each message. If the selection
 does not match any actors the message will be dropped.
 
 To acquire an `ActorRef` for an `ActorSelection` you need to send
-a message to the selection and use the `getSender()` reference of the reply from
+a message to the selection and use the @scala[`sender()`] @java[`getSender()`] reference of the reply from
 the actor. There is a built-in `Identify` message that all Actors will
 understand and automatically reply to with a `ActorIdentity` message
 containing the `ActorRef`. This message is handled specially by the
@@ -445,20 +621,26 @@ actors which are traversed in the sense that if a concrete name lookup fails
 negative result is generated. Please note that this does not mean that delivery
 of that reply is guaranteed, it still is a normal message.
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-identify }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #identify }
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #identify }
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-identify #identify }
 
 You can also acquire an `ActorRef` for an `ActorSelection` with
-the `resolveOne` method of the `ActorSelection`. It returns a
-`Future` of the matching `ActorRef` if such an actor exists (see also
-@ref:[Java 8 and Scala Compatibility](scala-compat.md) for Java compatibility). It is completed with failure
-[[akka.actor.ActorNotFound]] if no such actor exists or the identification
+the `resolveOne` method of the `ActorSelection`. It returns a `Future`
+of the matching `ActorRef` if such an actor exists. @java[(see also 
+@ref:[Java 8 and Scala Compatibility](scala-compat.md) for Java compatibility).] It is completed with
+failure [[akka.actor.ActorNotFound]] if no such actor exists or the identification
 didn't complete within the supplied *timeout*.
 
 Remote actor addresses may also be looked up, if @ref:[remoting](remoting.md) is enabled:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #selection-remote }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #selection-remote }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #selection-remote }
 
 An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting.md#remote-sample).
 
@@ -466,23 +648,31 @@ An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoti
 
 @@@ warning { title=IMPORTANT }
 
-Messages can be any kind of object but have to be immutable. Akka can’t enforce
-immutability (yet) so this has to be by convention.
+Messages can be any kind of object but have to be immutable. @scala[Scala] @java[Akka] can’t enforce
+immutability (yet) so this has to be by convention. @scala[Primitives like String, Int,
+Boolean are always immutable. Apart from these the recommended approach is to
+use Scala case classes which are immutable (if you don’t explicitly expose the
+state) and works great with pattern matching at the receiver side.]
 
 @@@
 
-Here is an example of an immutable message:
+Here is an example @java[of an immutable message]:
 
-@@snip [ImmutableMessage.java]($code$/java/jdocs/actor/ImmutableMessage.java) { #immutable-message }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #immutable-message-definition #immutable-message-instantiation }
+
+Java
+:  @@snip [ImmutableMessage.java]($code$/java/jdocs/actor/ImmutableMessage.java) { #immutable-message }
+
 
 ## Send messages
 
 Messages are sent to an Actor through one of the following methods.
 
- * `tell` means “fire-and-forget”, e.g. send a message asynchronously and return
-immediately.
- * `ask` sends a message asynchronously and returns a `Future`
-representing a possible reply.
+ * @scala[`!`] @java[`tell` ] means “fire-and-forget”, e.g. send a message asynchronously and return
+immediately. @scala[Also known as `tell`.]
+ * @scala[`?`] @java[`ask`] sends a message asynchronously and returns a `Future`
+representing a possible reply. @scala[Also known as `ask`].
 
 Message ordering is guaranteed on a per-sender basis.
 
@@ -495,9 +685,13 @@ remoting. So always prefer `tell` for performance, and only `ask` if you must.
 
 @@@
 
+@@@ div { .group-java }
+
 In all these methods you have the option of passing along your own `ActorRef`.
 Make it a practice of doing so because it will allow the receiver actors to be able to respond
 to your message, since the sender reference is sent along with the message.
+
+@@@
 
 <a id="actors-tell-sender"></a>
 ### Tell: Fire-forget
@@ -505,7 +699,25 @@ to your message, since the sender reference is sent along with the message.
 This is the preferred way of sending messages. No blocking waiting for a
 message. This gives the best concurrency and scalability characteristics.
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #tell }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #tell }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #tell }
+
+@@@ div { .group-scala }
+
+If invoked from within an Actor, then the sending actor reference will be
+implicitly passed along with the message and available to the receiving Actor
+in its `sender(): ActorRef` member method. The target actor can use this
+to reply to the original sender, by using `sender() ! replyMsg`.
+
+If invoked from an instance that is **not** an Actor the sender will be
+`deadLetters` actor reference by default.
+
+@@@ 
+
+@@@ div { .group-java }
 
 The sender reference is passed along with the message and available within the
 receiving actor via its `getSender()` method while processing this
@@ -516,17 +728,41 @@ different one. Outside of an actor and if no reply is needed the second
 argument can be `null`; if a reply is needed outside of an actor you can use
 the ask-pattern described next..
 
+@@@
+
 <a id="actors-ask"></a>
 ### Ask: Send-And-Receive-Future
 
 The `ask` pattern involves actors as well as futures, hence it is offered as
 a use pattern rather than a method on `ActorRef`:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-ask }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #ask-pipeTo }
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #ask-pipe }
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-ask #ask-pipe }
 
-This example demonstrates `ask` together with the `pipe` pattern on
+@@@ div { .group-scala }
+
+This example demonstrates `ask` together with the `pipeTo` pattern on
+futures, because this is likely to be a common combination. Please note that
+all of the above is completely non-blocking and asynchronous: `ask` produces
+a `Future`, three of which are composed into a new future using the
+for-comprehension and then `pipeTo` installs an `onComplete`-handler on the
+future to affect the submission of the aggregated `Result` to another
+actor.
+
+Using `ask` will send a message to the receiving Actor as with `tell`, and
+the receiving actor must reply with `sender() ! reply` in order to complete the
+returned `Future` with a value. The `ask` operation involves creating
+an internal actor for handling this reply, which needs to have a timeout after
+which it is destroyed in order not to leak resources; see more below.
+
+@@@
+
+@@@ div { .group-java }
+
+This example demonstrates `ask` together with the `pipeTo` pattern on
 futures, because this is likely to be a common combination. Please note that
 all of the above is completely non-blocking and asynchronous: `ask` produces
 a `Future`, two of which are composed into a new future using the
@@ -541,7 +777,9 @@ involves creating an internal actor for handling this reply, which needs to
 have a timeout after which it is destroyed in order not to leak resources; see
 more below.
 
-@@@ note
+@@@ 
+
+@@@ note { .group-java }
 
 A variant of the `ask` pattern that returns a `CompletionStage` instead of a Scala `Future`
 is available in the `akka.pattern.PatternsCS` object.
@@ -555,28 +793,53 @@ This is *not done automatically* when an actor throws an exception while process
 
 @@@
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #reply-exception }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #reply-exception }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #reply-exception }
+
+@@@ div { .group-java }
 
 If the actor does not complete the future, it will expire after the timeout period,
 specified as parameter to the `ask` method; this will complete the
 `Future` with an `AskTimeoutException`.
 
+@@@
+
+@@@ div { .group-scala }
+
+If the actor does not complete the future, it will expire after the timeout
+period, completing it with an `AskTimeoutException`.  The timeout is
+taken from one of the following locations in order of precedence:
+
+ 1. explicitly given timeout as in:
+
+    @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-explicit-timeout }
+
+ 2. implicit argument of type `akka.util.Timeout`, e.g.
+
+    @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-implicit-timeout }
+
+@@@
+
 See @ref:[Futures](futures.md) for more information on how to await or query a
 future.
 
 The `onComplete`, `onSuccess`, or `onFailure` methods of the `Future` can be
-used to register a callback to get a notification when the Future completes.
-Gives you a way to avoid blocking.
+used to register a callback to get a notification when the Future completes, giving
+you a way to avoid blocking.
 
 @@@ warning
 
-When using future callbacks, inside actors you need to carefully avoid closing over
+When using future callbacks, @scala[such as `onComplete`, `onSuccess`, and `onFailure`,]
+inside actors you need to carefully avoid closing over
 the containing actor’s reference, i.e. do not call methods or access mutable state
 on the enclosing actor from within the callback. This would break the actor
 encapsulation and may introduce synchronization bugs and race conditions because
 the callback will be scheduled concurrently to the enclosing actor. Unfortunately
-there is not yet a way to detect these illegal accesses at compile time. See also:
-@ref:[Actors and shared mutable state](general/jmm.md#jmm-shared-state)
+there is not yet a way to detect these illegal accesses at compile time.
+See also: @ref:[Actors and shared mutable state](general/jmm.md#jmm-shared-state)
 
 @@@
 
@@ -587,10 +850,29 @@ original sender address/reference is maintained even though the message is going
 through a 'mediator'. This can be useful when writing actors that work as
 routers, load-balancers, replicators etc.
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #forward }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #forward }
 
-<a id="actors-receive"></a>
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #forward }
+
 ## Receive messages
+
+@@@ div { .group-scala }
+
+An Actor has to implement the `receive` method to receive messages:
+
+@@snip [Actor.scala]($akka$/akka-actor/src/main/scala/akka/actor/Actor.scala) { #receive }
+
+This method returns a `PartialFunction`, e.g. a ‘match/case’ clause in
+which the message can be matched against the different case clauses using Scala
+pattern matching. Here is an example:
+
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #imports1 #my-actor }
+
+@@@
+
+@@@ div { .group-java } 
 
 An actor has to define its initial receive behavior by implementing
 the `createReceive` method in the `AbstractActor`:
@@ -638,17 +920,23 @@ untyped version. When extending `UntypedAbstractActor` each message is received 
 
 @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #optimized }
 
-<a id="lambdaactor-reply"></a>
+@@@
+
+<a id="actor-reply"></a>
 ## Reply to messages
 
 If you want to have a handle for replying to a message, you can use
-`getSender()`, which gives you an ActorRef. You can reply by sending to
-that ActorRef with `getSender().tell(replyMsg, getSelf())`. You can also store the ActorRef
+@scala[`sender()`] @java[`getSender()`], which gives you an ActorRef. You can reply by sending to
+that ActorRef with @scala[`sender() ! replyMsg`.] @java[`getSender().tell(replyMsg, getSelf())`.] You can also store the ActorRef
 for replying later, or passing on to other actors. If there is no sender (a
 message was sent without an actor or future context) then the sender
 defaults to a 'dead-letter' actor ref.
 
-@@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #reply }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #reply-without-sender }
+
+Java
+:  @@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #reply }
 
 ## Receive timeout
 
@@ -664,7 +952,11 @@ timeout there must have been an idle period beforehand as configured via this me
 Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
 periods). Pass in *Duration.Undefined* to switch off this feature.
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #receive-timeout }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #receive-timeout }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #receive-timeout }
 
 Messages marked with `NotInfluenceReceiveTimeout` will not reset the timer. This can be useful when
 `ReceiveTimeout` should be fired by external inactivity but not influenced by internal activity,
@@ -675,11 +967,16 @@ e.g. scheduled tick messages.
 
 Actors are stopped by invoking the `stop` method of a `ActorRefFactory`,
 i.e. `ActorContext` or `ActorSystem`. Typically the context is used for stopping
-child actors and the system for stopping top level actors. The actual termination of
-the actor is performed asynchronously, i.e. `stop` may return before the actor is
-stopped.
+the actor itself or child actors and the system for stopping top level actors. The actual
+termination of the actor is performed asynchronously, i.e. `stop` may return before
+the actor is stopped.
 
-@@snip [MyStoppingActor.java]($code$/java/jdocs/actor/MyStoppingActor.java) { #my-stopping-actor }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #stoppingActors-actor }
+
+Java
+:  @@snip [MyStoppingActor.java]($code$/java/jdocs/actor/MyStoppingActor.java) { #my-stopping-actor }
+
 
 Processing of the current message, if any, will continue before the actor is stopped,
 but additional messages in the mailbox will not be processed. By default these
@@ -705,7 +1002,11 @@ whole system.
 The `postStop()` hook is invoked after an actor is fully stopped. This
 enables cleaning up of resources:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #postStop }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #postStop }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #postStop }
 
 @@@ note
 
@@ -725,18 +1026,28 @@ stop the actor when the message is processed. `PoisonPill` is enqueued as
 ordinary messages and will be handled after messages that were already queued
 in the mailbox.
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #poison-pill }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #poison-pill }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #poison-pill }
 
 ### Graceful Stop
 
 `gracefulStop` is useful if you need to wait for termination or compose ordered
 termination of several actors:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-gracefulStop }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop }
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop }
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-gracefulStop #gracefulStop }
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop-actor }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop-actor }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop-actor }
 
 When `gracefulStop()` returns successfully, the actor’s `postStop()` hook
 will have been executed: there exists a happens-before edge between the end of
@@ -779,9 +1090,13 @@ The phases are ordered with [topological](https://en.wikipedia.org/wiki/Topologi
 
 Tasks can be added to a phase with:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-addTask }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-addTask }
 
-The returned `CompletionStage<Done>` should be completed when the task is completed. The task name parameter
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-addTask }
+
+The returned `Future[Done]` should be completed when the task is completed. The task name parameter
 is only used for debugging/logging.
 
 Tasks added to the same phase are executed in parallel without any ordering assumptions.
@@ -795,12 +1110,16 @@ Tasks should typically be registered as early as possible after system startup. 
 the coordinated shutdown tasks that have been registered will be performed but tasks that are
 added too late will not be run.
 
-To start the coordinated shutdown process you can invoke `runAll` on the `CoordinatedShutdown`
+To start the coordinated shutdown process you can invoke @scala[`run`] @java[`runAll`] on the `CoordinatedShutdown`
 extension:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-run }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-run }
 
-It's safe to call the `runAll` method multiple times. It will only run once.
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-run }
+
+It's safe to call the @scala[`run`] @java[`runAll`] method multiple times. It will only run once.
 
 That also means that the `ActorSystem` will be terminated in the last phase. By default, the
 JVM is not forcefully stopped (it will be stopped if all non-daemon threads have been terminated).
@@ -827,7 +1146,11 @@ If you have application specific JVM shutdown hooks it's recommended that you re
 `CoordinatedShutdown` so that they are running before Akka internal shutdown hooks, e.g.
 those shutting down Akka Remoting (Artery).
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-jvm-hook }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-jvm-hook }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-jvm-hook }
 
 For some tests it might be undesired to terminate the `ActorSystem` via `CoordinatedShutdown`.
 You can disable that by adding the following to the configuration of the `ActorSystem` that is
@@ -843,9 +1166,11 @@ akka.cluster.run-coordinated-shutdown-when-down = off
 <a id="actor-hotswap"></a>
 ## Become/Unbecome
 
+### Upgrade
+
 Akka supports hotswapping the Actor’s message loop (e.g. its implementation) at
 runtime: invoke the `context.become` method from within the Actor.
-`become` takes a `PartialFunction<Object, BoxedUnit>` that implements the new
+`become` takes a @scala[`PartialFunction[Any, Unit]`] @java[`PartialFunction<Object, BoxedUnit>`] that implements the new
 message handler. The hotswapped code is kept in a Stack which can be pushed and
 popped.
 
@@ -857,11 +1182,16 @@ Please note that the actor will revert to its original behavior when restarted b
 
 To hotswap the Actor behavior using `become`:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #hot-swap-actor }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #hot-swap-actor }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #hot-swap-actor }
 
 This variant of the `become` method is useful for many different things,
-such as to implement a Finite State Machine (FSM, for an example see [Dining
-Hakkers](http://www.lightbend.com/activator/template/akka-sample-fsm-java-lambda)). It will replace the current behavior (i.e. the top of the behavior
+such as to implement a Finite State Machine (FSM, for an example see @scala[[Dining
+Hakkers](http://www.lightbend.com/activator/template/akka-sample-fsm-scala)).] @java[[Dining
+Hakkers](http://www.lightbend.com/activator/template/akka-sample-fsm-java-lambda)).] It will replace the current behavior (i.e. the top of the behavior
 stack), which means that you do not use `unbecome`, instead always the
 next behavior is explicitly installed.
 
@@ -871,21 +1201,40 @@ of “pop” operations (i.e. `unbecome`) matches the number of “push” ones
 in the long run, otherwise this amounts to a memory leak (which is why this
 behavior is not the default).
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #swapper }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #swapper }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #swapper }
+
+### Encoding Scala Actors nested receives without accidentally leaking memory
+
+See this @extref[Unnested receive example](github:akka-docs/src/test/scala/docs/actor/UnnestedReceives.scala).
 
 <a id="stash"></a>
 ## Stash
 
-The `AbstractActorWithStash` class enables an actor to temporarily stash away messages
+The @scala[`Stash` trait] @java[`AbstractActorWithStash` class] enables an actor to temporarily stash away messages
 that can not or should not be handled using the actor's current
 behavior. Upon changing the actor's message handler, i.e., right
-before invoking `getContext().become()` or `getContext().unbecome()`, all
+before invoking @scala[`context.become` or `context.unbecome`] @java[`getContext().become()` or `getContext().unbecome()`], all
 stashed messages can be "unstashed", thereby prepending them to the actor's
 mailbox. This way, the stashed messages can be processed in the same
-order as they have been received originally. An actor that extends
-`AbstractActorWithStash` will automatically get a deque-based mailbox.
+order as they have been received originally. @java[An actor that extends
+`AbstractActorWithStash` will automatically get a deque-based mailbox.]
 
-@@@ note
+@@@ note  { .group-scala }
+
+The trait `Stash` extends the marker trait
+`RequiresMessageQueue[DequeBasedMessageQueueSemantics]` which
+requests the system to automatically choose a deque based
+mailbox implementation for the actor. If you want more 
+control over the
+mailbox, see the documentation on mailboxes: @ref:[Mailboxes](mailboxes.md).
+
+@@@
+
+@@@ note { .group-java }
 
 The abstract class `AbstractActorWithStash` implements the marker
 interface `RequiresMessageQueue<DequeBasedMessageQueueSemantics>`
@@ -895,9 +1244,13 @@ control over the mailbox, see the documentation on mailboxes: @ref:[Mailboxes](m
 
 @@@
 
-Here is an example of the `AbstractActorWithStash` class in action:
+Here is an example of the @scala[`Stash`] @java[`AbstractActorWithStash` class] in action:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #stash }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #stash }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #stash }
 
 Invoking `stash()` adds the current message (the message that the
 actor received last) to the actor's stash. It is typically invoked
@@ -921,16 +1274,25 @@ The stash is backed by a `scala.collection.immutable.Vector`. As a
 result, even a very large number of messages may be stashed without a
 major impact on performance.
 
+@@@ warning { .group-scala }
+
+Note that the `Stash` trait must be mixed into (a subclass of) the
+`Actor` trait before any trait/class that overrides the `preRestart`
+callback. This means it's not possible to write
+`Actor with MyActor with Stash` if `MyActor` overrides `preRestart`.
+
+@@@
+
 Note that the stash is part of the ephemeral actor state, unlike the
 mailbox. Therefore, it should be managed like other parts of the
-actor's state which have the same property. The `AbstractActorWithStash`
+actor's state which have the same property. The @scala[`Stash` trait’s] @java[`AbstractActorWithStash`]
 implementation of `preRestart` will call `unstashAll()`, which is
 usually the desired behavior.
 
 @@@ note
 
 If you want to enforce that your actor can only work with an unbounded stash,
-then you should use the `AbstractActorWithUnboundedStash` class instead.
+then you should use the @scala[`UnboundedStash` trait] @java[`AbstractActorWithUnboundedStash` class] instead.
 
 @@@
 
@@ -945,7 +1307,11 @@ See @ref:[What Supervision Means](general/supervision.md#supervision-directives)
 
 Use `Kill` like this:
 
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #kill }
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #kill } 
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #kill }
 
 ## Actors and exceptions
 
@@ -975,6 +1341,25 @@ supervision process is started (see @ref:[supervision](general/supervision.md)).
 supervisor’s decision the actor is resumed (as if nothing happened), restarted
 (wiping out its internal state and starting from scratch) or terminated.
 
+@@@ div { .group-scala }
+
+## Extending Actors using PartialFunction chaining
+
+Sometimes it can be useful to share common behavior among a few actors, or compose one actor's behavior from multiple smaller functions.
+This is possible because an actor's `receive` method returns an `Actor.Receive`, which is a type alias for `PartialFunction[Any,Unit]`,
+and partial functions can be chained together using the `PartialFunction#orElse` method. You can chain as many functions as you need,
+however you should keep in mind that "first match" wins - which may be important when combining functions that both can handle the same type of message.
+
+For example, imagine you have a set of actors which are either `Producers` or `Consumers`, yet sometimes it makes sense to
+have an actor share both behaviors. This can be easily achieved without having to duplicate code by extracting the behaviors to
+traits and implementing the actor's `receive` as combination of these partial functions.
+
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #receive-orElse }
+
+Instead of inheritance the same pattern can be applied via composition - one would simply compose the receive method using partial functions from delegates.
+
+@@@
+
 ## Initialization patterns
 
 The rich lifecycle hooks of Actors provide a useful toolkit to implement various initialization patterns. During the
@@ -998,14 +1383,19 @@ restarts. The following section provides a pattern for this case.
 
 The method `preStart()` of an actor is only called once directly during the initialization of the first instance, that
 is, at creation of its `ActorRef`. In the case of restarts, `preStart()` is called from `postRestart()`, therefore
-if not overridden, `preStart()` is called on every incarnation. However, overriding `postRestart()` one can disable
+if not overridden, `preStart()` is called on every incarnation. However, by overriding `postRestart()` one can disable
 this behavior, and ensure that there is only one call to `preStart()`.
 
 One useful usage of this pattern is to disable creation of new `ActorRefs` for children during restarts. This can be
 achieved by overriding `preRestart()`:
 
-@@snip [InitializationDocTest.java]($code$/java/jdocs/actor/InitializationDocTest.java) { #preStartInit }
+Scala
+:  @@snip [InitializationDocSpec.scala]($code$/scala/docs/actor/InitializationDocSpec.scala) { #preStartInit }
 
+Java
+:  @@snip [InitializationDocTest.java]($code$/java/jdocs/actor/InitializationDocTest.java) { #preStartInit }
+  
+ 
 Please note, that the child actors are *still restarted*, but no new `ActorRef` is created. One can recursively apply
 the same principles for the children, ensuring that their `preStart()` method is called only at the creation of their
 refs.
@@ -1019,7 +1409,11 @@ for example in the presence of circular dependencies. In this case the actor sho
 and use `become()` or a finite state-machine state transition to encode the initialized and uninitialized states
 of the actor.
 
-@@snip [InitializationDocTest.java]($code$/java/jdocs/actor/InitializationDocTest.java) { #messageInit }
+Scala
+:  @@snip [InitializationDocSpec.scala]($code$/scala/docs/actor/InitializationDocSpec.scala) { #messageInit }
+
+Java
+:  @@snip [InitializationDocTest.java]($code$/java/jdocs/actor/InitializationDocTest.java) { #messageInit }
 
 If the actor may receive messages before it has been initialized, a useful tool can be the `Stash` to save messages
 until the initialization finishes, and replaying them after the actor became initialized.
