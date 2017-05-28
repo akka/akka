@@ -8,20 +8,17 @@ import akka.NotUsed
 import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
 import akka.stream.scaladsl._
-import akka.stream.ActorMaterializer
-import scala.concurrent.Future
+import akka.stream._
+
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import akka.testkit.TestProbe
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef, ActorSystem }
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.Props
 import akka.util.Timeout
-import akka.stream.Attributes
-import akka.stream.ActorAttributes
-import scala.concurrent.ExecutionContext
-import akka.stream.ActorMaterializerSettings
 import java.util.concurrent.atomic.AtomicInteger
-import akka.stream.Supervision
+
 import akka.stream.scaladsl.Flow
 import akka.Done
 
@@ -130,6 +127,74 @@ object IntegrationDocSpec {
     }
   }
   //#ask-actor
+  class ActorRefWithBackPressure {
+    //#actorref-with-ack
+    val initMessage = "start"
+    val onCompleteMessage = "done"
+    val ackMessage = "ack"
+
+    implicit val system = ActorSystem("ActorWithBackPressure")
+    implicit val mat = ActorMaterializer()
+
+    class ActorWithBackPressure(ref: ActorRef) extends Actor {
+      def receive = {
+        case `initMessage` ⇒
+          sender() ! ackMessage
+          ref forward initMessage
+        case `onCompleteMessage` ⇒
+          ref forward onCompleteMessage
+        case msg: Int ⇒
+          sender() ! ackMessage
+          ref forward msg
+      }
+    }
+    class MyActor extends Actor {
+      def receive: Receive = {
+        case `initMessage`       ⇒ println("start")
+        case `onCompleteMessage` ⇒ println("done!")
+        case msg: Int            ⇒ println(s"processing $msg")
+      }
+    }
+
+    val actor = system.actorOf(
+      Props(classOf[ActorWithBackPressure], system.actorOf(Props[MyActor])))
+
+    Source(List(1, 2, 3)).runWith(
+      Sink.actorRefWithAck(actor, initMessage, ackMessage, onCompleteMessage))
+
+    //#actorref-with-ack
+
+  }
+
+  class PublishToSourceQueue {
+    //#source-queue
+    implicit val system = ActorSystem("SourceQueue")
+    implicit val materializer = ActorMaterializer()
+
+    val queue = Source.queue[Int](bufferSize = 2, OverflowStrategy.backpressure)
+      .groupedWithin(2, 2.seconds)
+      .mapAsyncUnordered(2) { elem =>
+        Future {
+          println(s"${Thread.currentThread().getName} adding delay, $elem")
+          Thread.sleep(1000L)
+          elem
+        }(scala.concurrent.ExecutionContext.global)
+      }.to(Sink.ignore)
+      .run
+
+    new Thread {
+      () =>
+        {
+          while (true) {
+            val offerResult: Future[QueueOfferResult] = queue.offer(1)
+            Await.ready(offerResult, 10.seconds)
+            println(s"${Thread.currentThread().getName} Emitted 1 $offerResult")
+          }
+        }
+    }.start()
+
+    //#source-queue
+  }
 
 }
 

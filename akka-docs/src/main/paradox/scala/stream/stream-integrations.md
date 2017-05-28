@@ -52,6 +52,24 @@ First element is always *onInitMessage*, then stream is waiting for the given ac
 from the given actor which means that it is ready to process elements. It also requires the given acknowledgement
 message after each stream element to make back-pressure work.
 
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #actorref-with-ack }
+
+actorRefWithAck Sends the elements of the stream to the given `ActorWithBackPressure` that sends back back-pressure signal.
+
+First element is always `onInitMessage`, then stream is waiting for acknowledgement message, `ackMessage` from the
+given actor which means that it is ready to process elements. It also requires `ackMessage` message after each stream
+element to make backpressure work.
+
+The output may look like this:
+
+```
+start
+processing 1
+processing 2
+processing 3
+done!
+```
+
 If the target actor terminates the stream will be cancelled. When the stream is completed successfully the 
 given `onCompleteMessage` will be sent to the destination actor. When the stream is completed with 
 failure a `akka.actor.Status.Failure` message will be sent to the destination actor.
@@ -76,10 +94,36 @@ be buffered until request for demand is received.
 Use overflow strategy `akka.stream.OverflowStrategy.backpressure` to avoid dropping of elements if the 
 buffer is full.
 
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #source-queue }
+
+Using `Source.queue` you can push elements to the queue and they will be emitted to the stream if there is
+demand from downstream, otherwise they will be buffered until request for demand is received. Elements in the buffer
+will be discarded if downstream is terminated.
+
+`groupedWithin` Chunk up this stream into groups of elements received within a time window, or limited by the given number of elements,
+whatever happens first. Empty groups will not be emitted if no elements are received from upstream. The last group
+before end-of-stream will contain the buffered elements since the previously emitted group.
+
+The output may look like this:
+
+```
+Thread-0 Emitted 1 Future(Success(Enqueued))
+Thread-0 Emitted 1 Future(Success(Enqueued))
+scala-execution-context-global-16 simulating delay, Vector(1, 1)
+Thread-0 Emitted 1 Future(Success(Enqueued))
+Thread-0 Emitted 1 Future(Success(Enqueued))
+Thread-0 Emitted 1 Future(Success(Enqueued))
+scala-execution-context-global-17 simulating delay, Vector(1, 1)
+```
+
 `SourceQueue.offer` returns `Future[QueueOfferResult]` which completes with `QueueOfferResult.Enqueued`
 if element was added to buffer or sent downstream. It completes with `QueueOfferResult.Dropped` if element 
 was dropped. Can also complete  with `QueueOfferResult.Failure` - when stream failed or 
 `QueueOfferResult.QueueClosed` when downstream is completed.
+
+Method `offer` offers next element to a stream and returns future that fails when stream is completed or you cannot call
+offer in this moment because of implementation rules (like for backpressure mode and full buffer you need to wait for
+last offer call Future completion)
 
 When used from an actor you typically `pipe` the result of the `Future` back to the actor to
 continue processing.
