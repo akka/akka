@@ -1140,7 +1140,7 @@ import scala.collection.immutable.Map.Map1
     copy(attributes = attributes)
 
   /**
-   * Convert this builder to a [[CompositeTraversalBuilder]] if there are no more unwired outputs.
+   * Convert this builder to a [[CompletedTraversalBuilder]] if there are no more unwired outputs.
    */
   def completeIfPossible: TraversalBuilder = {
     if (unwiredOuts == 0) {
