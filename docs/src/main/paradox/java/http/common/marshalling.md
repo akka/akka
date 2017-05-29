@@ -46,7 +46,7 @@ This is how `Marshalling` is defined:
 Akka HTTP already predefines a number of marshallers for the most common types.
 Specifically these are:
 
- * @github[PredefinedToEntityMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToEntityMarshallers.scala)
+ * @javadoc[PredefinedToEntityMarshallers](akka.http.scaladsl.marshalling.PredefinedToEntityMarshallers)
     * `Array[Byte]`
     * `ByteString`
     * `Array[Char]`
@@ -54,7 +54,7 @@ Specifically these are:
     * `akka.http.scaladsl.model.FormData`
     * `akka.http.scaladsl.model.MessageEntity`
     * `T <: akka.http.scaladsl.model.Multipart`
- * @github[PredefinedToResponseMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToResponseMarshallers.scala)
+ * @javadoc[PredefinedToResponseMarshallers](akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers)
     * `T`, if a `ToEntityMarshaller[T]` is available
     * `HttpResponse`
     * `StatusCode`
@@ -62,12 +62,12 @@ Specifically these are:
     * `(Int, T)`, if a `ToEntityMarshaller[T]` is available
     * `(StatusCode, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
     * `(Int, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
- * @github[PredefinedToRequestMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToRequestMarshallers.scala)
+ * @javadoc[PredefinedToRequestMarshallers](akka.http.scaladsl.marshalling.PredefinedToRequestMarshallers)
     * `HttpRequest`
     * `Uri`
     * `(HttpMethod, Uri, T)`, if a `ToEntityMarshaller[T]` is available
     * `(HttpMethod, Uri, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
- * @github[GenericMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/GenericMarshallers.scala)
+ * @javadoc[GenericMarshallers](akka.http.scaladsl.marshalling.GenericMarshallers)
     * `Marshaller[Throwable, T]`
     * `Marshaller[Option[A], B]`, if a `Marshaller[A, B]` and an `EmptyValue[B]` is available
     * `Marshaller[Either[A1, A2], B]`, if a `Marshaller[A1, B]` and a `Marshaller[A2, B]` is available

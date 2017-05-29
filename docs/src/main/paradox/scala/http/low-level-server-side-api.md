@@ -55,7 +55,7 @@ the @ref[HTTP Model](common/http-model.md#http-model-scala) for more information
 
 ## Starting and Stopping
 
-On the most basic level an Akka HTTP server is bound by invoking the `bind` method of the @github[akka.http.scaladsl.Http](/akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala)
+On the most basic level an Akka HTTP server is bound by invoking the `bind` method of the @scaladoc[akka.http.scaladsl.Http](akka.http.scaladsl.Http$)
 extension:
 
 @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-example }

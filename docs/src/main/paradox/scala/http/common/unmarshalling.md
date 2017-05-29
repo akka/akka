@@ -24,7 +24,7 @@ content negotiation which saves two additional layers of indirection that are re
 Akka HTTP already predefines a number of marshallers for the most common types.
 Specifically these are:
 
- * @github[PredefinedFromStringUnmarshallers](/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/PredefinedFromStringUnmarshallers.scala)
+ * @scaladoc[PredefinedFromStringUnmarshallers](akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers)
     * `Byte`
     * `Short`
     * `Int`
@@ -32,13 +32,13 @@ Specifically these are:
     * `Float`
     * `Double`
     * `Boolean`
- * @github[PredefinedFromEntityUnmarshallers](/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/PredefinedFromEntityUnmarshallers.scala)
+ * @scaladoc[PredefinedFromEntityUnmarshallers](akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers)
     * `Array[Byte]`
     * `ByteString`
     * `Array[Char]`
     * `String`
     * `akka.http.scaladsl.model.FormData`
- * @github[GenericUnmarshallers](/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/GenericUnmarshallers.scala)
+ * @scaladoc[GenericUnmarshallers](akka.http.scaladsl.unmarshalling.GenericUnmarshallers)
     * `Unmarshaller[T, T]` (identity unmarshaller)
     * `Unmarshaller[Option[A], B]`, if an `Unmarshaller[A, B]` is available
     * `Unmarshaller[A, Option[B]]`, if an `Unmarshaller[A, B]` is available

@@ -11,4 +11,4 @@ Decompresses the incoming request if it is `gzip` or `deflate` compressed. Uncom
 
 ## Example
 
-@@snip [CodingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala) { #"decodeRequest" }
+@@snip [CodingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala) { #decodeRequest }

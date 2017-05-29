@@ -327,7 +327,7 @@ or `Http.get(sys).superPool`, usually need the same settings, however the `serve
 <a id="registeringcustommediatypes-java"></a>
 ## Registering Custom Media Types
 
-Akka HTTP @github[predefines](/akka-http-core/src/main/java/akka/http/javadsl/model/MediaType.scala#L17) most commonly encountered media types and emits them in their well-typed form while parsing http messages.
+Akka HTTP @javadoc[predefines](akka.http.javadsl.model.MediaTypes) most commonly encountered media types and emits them in their well-typed form while parsing http messages.
 Sometimes you may want to define a custom media type and inform the parser infrastructure about how to handle these custom
 media types, e.g. that `application/custom` is to be treated as `NonBinary` with `WithFixedCharset`. To achieve this you
 need to register the custom media type in the server's settings by configuring `ParserSettings` like this:

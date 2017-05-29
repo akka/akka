@@ -9,7 +9,7 @@ the static method `ConnectionContext.https` which is defined like this:
 @@snip [ConnectionContext.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
 
 In addition to the `outgoingConnection`, `newHostConnectionPool` and `cachedHostConnectionPool` methods the
-@github[akka.http.scaladsl.Http](/akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala) extension also defines `outgoingConnectionHttps`, `newHostConnectionPoolHttps` and
+@scaladoc[akka.http.scaladsl.Http](akka.http.scaladsl.Http$) extension also defines `outgoingConnectionHttps`, `newHostConnectionPoolHttps` and
 `cachedHostConnectionPoolHttps`. These methods work identically to their counterparts without the `-Https` suffix,
 with the exception that all connections will always be encrypted.
 

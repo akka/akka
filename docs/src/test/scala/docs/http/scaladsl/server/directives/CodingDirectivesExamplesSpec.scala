@@ -69,6 +69,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
   val helloGzipped = compress("Hello", Gzip)
   val helloDeflated = compress("Hello", Deflate)
   "decodeRequest" in {
+    //#decodeRequest
     val route =
       decodeRequest {
         entity(as[String]) { content: String =>
@@ -86,6 +87,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
     Post("/", "hello uncompressed") ~> `Content-Encoding`(identity) ~> route ~> check {
       responseAs[String] shouldEqual "Request content: 'hello uncompressed'"
     }
+    //#decodeRequest
   }
   "decodeRequestWith-0" in {
     //#decodeRequestWith

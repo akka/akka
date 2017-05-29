@@ -5,7 +5,7 @@ The [HTTP spec](http://tools.ietf.org/html/rfc7231#section-3.1.2.1) defines a `C
 
 Currently Akka HTTP supports the compression and decompression of HTTP requests and responses with the `gzip` or
 `deflate` encodings.
-The core logic for this lives in the @github[akka.http.scaladsl.coding](/akka-http/src/main/scala/akka/http/scaladsl/coding) package.
+The core logic for this lives in the @scaladoc[akka.http.scaladsl.coding](akka.http.scaladsl.coding.index) package.
 
 ## Server side
 
