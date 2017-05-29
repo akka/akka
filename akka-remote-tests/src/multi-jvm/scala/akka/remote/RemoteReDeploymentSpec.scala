@@ -98,7 +98,9 @@ object RemoteReDeploymentMultiJvmSpec {
   class Echo(target: ActorRef) extends Actor with ActorLogging {
     def receive = {
       case msg ⇒
-        log.info(s"received $msg from ${sender()}")
+        // made this log message a 'warning' to track down
+        // https://github.com/akka/akka/issues/20180
+        log.warning(s"received $msg from ${sender()}")
         target ! msg
     }
   }
