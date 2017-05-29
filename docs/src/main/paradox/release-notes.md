@@ -144,7 +144,7 @@ This version of Akka HTTP must be used with Akka in version at-least 2.4.17, how
 
 ## 10.0.4
 
-See the [announcement](http://akka.io/news/2017/01/26/akka-http-10.0.4-released.html) and
+See the [announcement](http://akka.io/news/2017/02/23/akka-http-10.0.4-released.html) and
 closed tickets on the [10.0.4 milestone](https://github.com/akka/akka-http/milestone/21?closed=1).
 
 This release contains mostly bug fixes and smaller improvements. We strongly recommend updating from 10.0.3 which
