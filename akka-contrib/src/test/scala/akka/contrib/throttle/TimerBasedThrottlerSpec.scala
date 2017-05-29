@@ -106,7 +106,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
       }
     }
 
-    "respect the rate (3 msg/s)" in within(1.5 seconds, 2.5 seconds) {
+    "respect the rate (3 msg/s)" in within(2 seconds, 3.5 seconds) {
       val echo = system.actorOf(TestActors.echoActorProps)
       val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 3 msgsPer (1.second.dilated)))
       throttler ! SetTarget(Some(echo))
@@ -114,12 +114,41 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
       1 to 7 foreach { expectMsg(_) }
     }
 
-    "respect the rate (4 msg/s)" in within(1.5 seconds, 2.5 seconds) {
+    "respect the rate (4 msg/s)" in within(2 seconds, 3.5 seconds) {
       val echo = system.actorOf(TestActors.echoActorProps)
       val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 4 msgsPer (1.second.dilated)))
       throttler ! SetTarget(Some(echo))
       1 to 9 foreach { throttler ! _ }
       1 to 9 foreach { expectMsg(_) }
+    }
+
+    "respect the rate (4 msg/s) when messages sent in multiple bursts right at tick edges" in {
+      val echo = system.actorOf(TestActors.echoActorProps)
+      val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 4 msgsPer (1.second.dilated)))
+      throttler ! SetTarget(Some(echo))
+      1 to 4 foreach { throttler ! _ }
+      1 to 4 foreach { expectMsg(_) }
+      expectNoMsg(1.1 second)
+      1 to 4 foreach { throttler ! _ }
+      1 to 4 foreach { expectMsg(_) }
+      5 to 8 foreach { throttler ! _ }
+      expectNoMsg(1 second)
+      5 to 8 foreach { expectMsg(_) }
+    }
+
+    "respect the rate (2 msg/s) when messages sent evenly distributed instead of clumped" in {
+      val echo = system.actorOf(TestActors.echoActorProps)
+      val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 2 msgsPer (1.second.dilated)))
+      throttler ! SetTarget(Some(echo))
+      throttler ! 1
+      expectMsg(1)
+      expectNoMsg(250 millis)
+      throttler ! 2
+      expectMsg(2)
+      throttler ! 3
+      expectNoMsg(250 millis)
+      throttler ! 4
+      3 to 4 foreach { expectMsg(_) }
     }
   }
 }
