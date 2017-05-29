@@ -526,12 +526,6 @@ They will receive `Replicator.Deleted` instead.
 
 ## Persistence
 
-### `Recovery.none` constant now implies also no snapshot recovery
-
-When using the `Recovery.none` constant to override `PersistentActor#recovery` no recovery at all will be performed,
-that is - also no snapshot recovery will be requested. If you want to skip recovery of events but do want to be offered
-a snapshot if present use `Recovery(toSequenceNr = 0)` instead.
-
 ### Binary incompatibility of PersistentActor and AtLeastOneDelivery
 
 To be able to evolve the Java APIs `AbstractPersistentActor` and `AbstractPersistentActorWithAtLeastOnceDelivery`
