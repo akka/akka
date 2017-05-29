@@ -250,3 +250,9 @@ and is use like this:
 `akka.pattern.after` makes it easy to complete a `Future` with a value or exception after a timeout.
 
 @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #after }
+
+## Retry
+
+`akka.pattern.retry` will retry a `Future` some number of times with a delay between each attempt.
+
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #retry }
