@@ -6,12 +6,13 @@ package akka.remote.transport
 import FailureInjectorTransportAdapter._
 import akka.AkkaException
 import akka.actor.{ Address, ExtendedActorSystem }
-import akka.event.Logging
+import akka.event.{ Logging, LoggingAdapter }
 import akka.remote.transport.AssociationHandle.{ HandleEvent, HandleEventListener }
 import akka.remote.transport.Transport._
 import akka.util.ByteString
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 
@@ -161,7 +162,11 @@ private[remote] final case class FailureInjectorHandle(
     if (!gremlinAdapter.shouldDropOutbound(wrappedHandle.remoteAddress, payload, "handler.write")) wrappedHandle.write(payload)
     else true
 
-  override def disassociate(): Unit = wrappedHandle.disassociate()
+  override def disassociate(reason: String, log: LoggingAdapter): Unit =
+    wrappedHandle.disassociate(reason, log)
+
+  override def disassociate(): Unit =
+    wrappedHandle.disassociate()
 
   override def notify(ev: HandleEvent): Unit =
     if (!gremlinAdapter.shouldDropInbound(wrappedHandle.remoteAddress, ev, "handler.notify"))

@@ -842,7 +842,7 @@ private[remote] class EndpointWriter(
       }
     case TakeOver(newHandle, replyTo) ⇒
       // Shutdown old reader
-      handle foreach { _.disassociate() }
+      handle foreach { _.disassociate("the association was replaced by a new one", log) }
       handle = Some(newHandle)
       replyTo ! TookOver(self, newHandle)
       context.become(handoff)

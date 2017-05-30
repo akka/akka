@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka
 
@@ -1228,7 +1228,12 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers_=")
       ),
-      "2.4.18" -> Seq()
+      "2.4.18" -> Seq(),
+      "2.4.19" -> Seq(
+        // #23023 added a new overload with implementation to trait, so old transport implementations compiled against
+        // older versions will be missing the method. We accept that incompatibility for now.
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate")
+      )
       // make sure that
       //  * this list ends with the latest released version number
       //  * is kept in sync with the master branch
