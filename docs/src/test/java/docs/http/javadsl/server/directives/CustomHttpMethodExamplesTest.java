@@ -22,6 +22,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static akka.http.javadsl.model.HttpProtocols.HTTP_1_1;
 import static akka.http.javadsl.model.RequestEntityAcceptances.Expected;
@@ -29,7 +31,7 @@ import static akka.http.javadsl.model.RequestEntityAcceptances.Expected;
 public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
 
   @Test
-  public void testComposition() throws InterruptedException, ExecutionException {
+  public void testComposition() throws InterruptedException, ExecutionException, TimeoutException {
     ActorSystem  system = system();
     Materializer materializer = materializer();
     LoggingAdapter loggingAdapter = NoLogging.getInstance();
@@ -72,7 +74,7 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
     CompletionStage<HttpResponse> response = http.singleRequest(request, materializer);
     //#customHttpMethod
 
-    assertEquals(StatusCodes.OK, response.toCompletableFuture().get().status());
+    assertEquals(StatusCodes.OK, response.toCompletableFuture().get(3, TimeUnit.SECONDS).status());
     assertEquals(
       "This is a BOLT request.",
       response.toCompletableFuture().get().entity().toStrict(3000, materializer).toCompletableFuture().get().getData().utf8String()
