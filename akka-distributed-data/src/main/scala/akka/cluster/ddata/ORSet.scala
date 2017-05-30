@@ -45,9 +45,10 @@ object ORSet {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] sealed abstract class AtomicDeltaOp[A] extends DeltaOp {
+  @InternalApi private[akka] sealed abstract class AtomicDeltaOp[A] extends DeltaOp with ReplicatedDeltaSize {
     def underlying: ORSet[A]
     override def zero: ORSet[A] = ORSet.empty
+    override def deltaSize: Int = 1
   }
 
   /** INTERNAL API */
@@ -94,7 +95,8 @@ object ORSet {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] final case class DeltaGroup[A](ops: immutable.IndexedSeq[DeltaOp]) extends DeltaOp {
+  @InternalApi private[akka] final case class DeltaGroup[A](ops: immutable.IndexedSeq[DeltaOp])
+    extends DeltaOp with ReplicatedDeltaSize {
     override def merge(that: DeltaOp): DeltaOp = that match {
       case thatAdd: AddDeltaOp[A] ⇒
         // merge AddDeltaOp into last AddDeltaOp in the group, if possible
@@ -107,6 +109,8 @@ object ORSet {
     }
 
     override def zero: ORSet[A] = ORSet.empty
+
+    override def deltaSize: Int = ops.size
   }
 
   /**
