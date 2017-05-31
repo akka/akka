@@ -49,7 +49,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
         Unmarshal(HttpEntity(
           `multipart/mixed` withBoundary "XYZABC",
           ByteString("""--XYZABC
-                       |Content-type: text/xml
+                       |Content-type: text/xml; charset=UTF-8
                        |Age: 12
                        |--XYZABC--""".stripMarginWithNewline("\r\n")))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity.empty(ContentTypes.`text/xml(UTF-8)`), List(Age(12))))
@@ -257,12 +257,12 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
         `multipart/byteranges` withBoundary "12345",
         ByteString("""--12345
                      |Content-Range: bytes 0-2/26
-                     |Content-Type: text/plain
+                     |Content-Type: text/plain; charset=UTF-8
                      |
                      |ABC
                      |--12345
                      |Content-Range: bytes 23-25/26
-                     |Content-Type: text/plain
+                     |Content-Type: text/plain; charset=UTF-8
                      |
                      |XYZ
                      |--12345--""".stripMarginWithNewline("\r\n")))).to[Multipart.ByteRanges] should haveParts(

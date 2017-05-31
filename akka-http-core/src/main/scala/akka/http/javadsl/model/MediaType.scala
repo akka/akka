@@ -13,6 +13,9 @@ package akka.http.javadsl.model
 object MediaType {
 
   trait Binary extends MediaType {
+    /**
+     * Turns the media type into a content type.
+     */
     def toContentType: ContentType.Binary
   }
 
@@ -20,11 +23,26 @@ object MediaType {
   }
 
   trait WithFixedCharset extends NonBinary {
+    /**
+     * Turns the media type into a content type with a fixed, known charset.
+     */
     def toContentType: ContentType.WithFixedCharset
   }
 
   trait WithOpenCharset extends NonBinary {
+    /**
+     * Turns the media type into a content type with the given charset.
+     */
     def toContentType(charset: HttpCharset): ContentType.WithCharset
+    /**
+     * Turns the media type into a content type without specifying a charset.
+     *
+     * This is generally NOT what you want, since you're hiding the actual character encoding of your content, making
+     * decoding it possibly ambiguous.
+     *
+     * Consider using toContentType(charset: HttpCharset) instead.
+     */
+    def toContentTypeWithMissingCharset: ContentType.WithMissingCharset
   }
 
   trait Multipart extends Binary {

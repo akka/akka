@@ -219,20 +219,44 @@ object MediaType {
       customWithFixedCharset(mainType, subType, charset, fileExtensions, params)
 
     /**
+     * Turns the media type into a content type with a fixed, known charset.
+     *
      * JAVA API
      */
     def toContentType: ContentType.WithFixedCharset = ContentType(this)
   }
 
   sealed abstract class WithOpenCharset extends NonBinary with jm.MediaType.WithOpenCharset {
+    /**
+     * Turns the media type into a content type without specifying a charset.
+     *
+     * This is generally NOT what you want, since you're hiding the actual character encoding of your content, making
+     * decoding it possibly ambiguous.
+     *
+     * Consider using toContentType(charset: HttpCharset) instead.
+     */
+    def withMissingCharset: ContentType.WithMissingCharset = ContentType.WithMissingCharset(this)
     def withCharset(charset: HttpCharset): ContentType.WithCharset = ContentType(this, charset)
     def withParams(params: Map[String, String]): WithOpenCharset with MediaType =
       customWithOpenCharset(mainType, subType, fileExtensions, params)
 
     /**
+     * Turns the media type into a content type with the given charset.
+     *
      * JAVA API
      */
     def toContentType(charset: jm.HttpCharset): ContentType.WithCharset = withCharset(charset.asScala)
+    /**
+     * Turns the media type into a content type without specifying a charset.
+     *
+     * This is generally NOT what you want, since you're hiding the actual character encoding of your content, making
+     * decoding it possibly ambiguous.
+     *
+     * Consider using toContentType(charset: HttpCharset) instead.
+     *
+     * JAVA API
+     */
+    def toContentTypeWithMissingCharset: ContentType.WithMissingCharset = withMissingCharset
   }
 
   sealed abstract class NonMultipartWithOpenCharset(val value: String, val mainType: String, val subType: String,

@@ -25,12 +25,10 @@ private[parser] trait ContentTypeHeader { this: Parser with CommonRules with Com
       case Nil ⇒
         val parameters = if (builder eq null) Map.empty[String, String] else builder.result()
         getMediaType(main, sub, charset.isDefined, parameters) match {
-          case x: MediaType.Binary           ⇒ ContentType.Binary(x)
-          case x: MediaType.WithFixedCharset ⇒ ContentType.WithFixedCharset(x)
-          case x: MediaType.WithOpenCharset ⇒
-            // if we have an open charset media-type but no charset parameter we default to UTF-8
-            val cs = if (charset.isDefined) charset.get else HttpCharsets.`UTF-8`
-            ContentType.WithCharset(x, cs)
+          case x: MediaType.Binary                               ⇒ ContentType.Binary(x)
+          case x: MediaType.WithFixedCharset                     ⇒ ContentType.WithFixedCharset(x)
+          case x: MediaType.WithOpenCharset if charset.isDefined ⇒ ContentType.WithCharset(x, charset.get)
+          case x: MediaType.WithOpenCharset if charset.isEmpty   ⇒ ContentType.WithMissingCharset(x)
         }
 
       case Seq(("charset", value), tail @ _*) ⇒

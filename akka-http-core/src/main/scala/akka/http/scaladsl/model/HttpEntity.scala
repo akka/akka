@@ -22,7 +22,7 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream._
 import akka.{ Done, NotUsed, stream }
-import akka.http.scaladsl.model.ContentType.{ Binary, NonBinary }
+import akka.http.scaladsl.model.ContentType.{ Binary, NonBinary, WithMissingCharset }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.{ JavaMapping, StreamUtils }
@@ -341,6 +341,8 @@ object HttpEntity {
     override def toString = {
       val dataAsString = contentType match {
         case _: Binary ⇒
+          data.toString()
+        case _: WithMissingCharset ⇒
           data.toString()
         case nb: NonBinary ⇒
           try {
