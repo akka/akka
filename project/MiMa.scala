@@ -1192,13 +1192,15 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.async")
       ),
       "2.5.1" -> Seq(
-          
         // #22794 watchWith
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorContext.watchWith"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.watchWith"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching_="),
         
+        // #22881 Make sure connections are aborted correctly on Windows
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancel"),
+
         // #22868 store shards
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.sendUpdate"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.waitingForUpdate"),
