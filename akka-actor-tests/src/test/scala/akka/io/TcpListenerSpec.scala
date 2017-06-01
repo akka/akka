@@ -28,6 +28,7 @@ class TcpListenerSpec extends AkkaSpec("""
       listener ! new ChannelRegistration {
         def disableInterest(op: Int) = ()
         def enableInterest(op: Int) = ()
+        def cancel() = ()
       }
       bindCommander.expectMsgType[Bound]
     }
@@ -148,6 +149,7 @@ class TcpListenerSpec extends AkkaSpec("""
       listener ! new ChannelRegistration {
         def enableInterest(op: Int): Unit = interestCallReceiver.ref ! op
         def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op
+        def cancel(): Unit = ()
       }
       bindCommander.expectMsgType[Bound]
     }

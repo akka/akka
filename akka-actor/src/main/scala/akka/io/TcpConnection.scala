@@ -41,6 +41,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   private[this] var interestedInResume: Option[ActorRef] = None
   var closedMessage: CloseInformation = _ // for ConnectionClosed message in postStop
   private var watchedActor: ActorRef = context.system.deadLetters
+  private var registration: Option[ChannelRegistration] = None
 
   def signDeathPact(actor: ActorRef): Unit = {
     unsignDeathPact()
@@ -193,6 +194,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   /** used in subclasses to start the common machinery above once a channel is connected */
   def completeConnect(registration: ChannelRegistration, commander: ActorRef,
                       options: immutable.Traversable[SocketOption]): Unit = {
+    this.registration = Some(registration)
+
     // Turn off Nagle's algorithm by default
     try channel.socket.setTcpNoDelay(true) catch {
       case e: SocketException ⇒
@@ -336,6 +339,15 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         if (TraceLogging) log.debug("setSoLinger(true, 0) failed with [{}]", e)
     }
     channel.close()
+
+    // On linux, closing the channel directly triggers a RST as a side effect of `preClose`
+    // called from `sun.nio.ch.SocketChannelImpl#implCloseSelectableChannel`.
+
+    // On windows, however, the connection is merely added to the `cancelledKeys` of the `java.nio.channels.spi.AbstractSelector`,
+    // and `sun.nio.ch.SelectorImpl` will kill those from `processDeregisterQueue` after the select poll has returned.
+
+    // We don't want to have to wait for that, hence explicitly triggering the cancellation:
+    registration.foreach(_.cancel())
   }
 
   def stopWith(closeInfo: CloseInformation): Unit = {
