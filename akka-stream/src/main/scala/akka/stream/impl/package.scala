@@ -186,7 +186,7 @@ package akka.stream
  *
  *  The simpler case is the [[akka.stream.impl.LinearTraversalBuilder]]. This builder only allows building linear
  *  chains of stages, hence, it can only have at most one [[OutPort]] and [[InPort]] unwired. Since there is no
- *  possible disambiguity between these two port types, there is no need for port mapping for these. Conversely,
+ *  possible ambiguity between these two port types, there is no need for port mapping for these. Conversely,
  *  for those internal ports that are already wired, there is no need for port mapping as their relative wiring
  *  is not ambiguous (see previous section). As a result, the [[akka.stream.impl.LinearTraversalBuilder]] does not
  *  use any port mapping.
@@ -306,7 +306,7 @@ package akka.stream
  *  this composite and delay construction of its part of the traversal. For details see [[akka.stream.impl.LinearTraversalBuilder]]
  *  as these cases are heavily commented and explained in the code.
  *
- *  There is another pecularity of the linear builder we need to explain. Namely, it builds the traversal in reverse
+ *  There is another peculiarity of the linear builder we need to explain. Namely, it builds the traversal in reverse
  *  order, i.e. from Sinks towards Sources. THIS CAN BE SUPER CONFUSING AT TIMES SO PAY ATTENTION! There are two
  *  important reasons why this is needed:
  *
