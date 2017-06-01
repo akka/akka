@@ -274,32 +274,24 @@ import scala.collection.immutable.Map.Map1
    * INTERNAL API
    */
   @InternalApi private[impl] def printTraversal(t: Traversal, indent: Int = 0): Unit = {
-    var current: Traversal = t
-    var slot = 0
-
     def prindent(s: String): Unit = println(" | " * indent + s)
-
-    while (current != EmptyTraversal) {
-      var nextStep: Traversal = EmptyTraversal
-
-      current match {
-        case PushNotUsed                        ⇒ prindent("push NotUsed")
-        case Pop                                ⇒ prindent("pop mat")
-        case _: Transform                       ⇒ prindent("transform mat")
-        case Compose(_, false)                  ⇒ prindent("compose mat")
-        case Compose(_, true)                   ⇒ prindent("compose reversed mat")
-        case PushAttributes(attr)               ⇒ prindent("push attr " + attr)
-        case PopAttributes                      ⇒ prindent("pop attr")
-        case EnterIsland(tag)                   ⇒ prindent("enter island " + tag)
-        case ExitIsland                         ⇒ prindent("exit island")
-        case MaterializeAtomic(mod, outToSlots) ⇒ prindent("materialize " + mod + " " + outToSlots.mkString("[", ", ", "]"))
-        case Concat(first, next) ⇒
-          printTraversal(first, indent + 1)
-          nextStep = next
-        case _ ⇒
-      }
-
-      current = nextStep
+    t match {
+      case PushNotUsed                        ⇒ prindent("push NotUsed")
+      case Pop                                ⇒ prindent("pop mat")
+      case _: Transform                       ⇒ prindent("transform mat")
+      case Compose(_, false)                  ⇒ prindent("compose mat")
+      case Compose(_, true)                   ⇒ prindent("compose reversed mat")
+      case PushAttributes(attr)               ⇒ prindent("push attr " + attr)
+      case PopAttributes                      ⇒ prindent("pop attr")
+      case EnterIsland(tag)                   ⇒ prindent("enter island " + tag)
+      case ExitIsland                         ⇒ prindent("exit island")
+      case MaterializeAtomic(mod, outToSlots) ⇒ prindent("materialize " + mod + " " + outToSlots.mkString("[", ", ", "]"))
+      case Concat(first, next) ⇒
+        prindent("concat(")
+        printTraversal(first, indent + 1)
+        printTraversal(next, indent + 1)
+        prindent(")")
+      case _ ⇒
     }
   }
 
