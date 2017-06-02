@@ -34,7 +34,7 @@ along with the implementation of how the messages should be processed.
 
 @@@ 
 
-@@@java { .group-java }
+@@@ div { .group-java }
 
 Actor classes are implemented by extending the `AbstractActor` class and setting
 the “initial behavior” in the constructor by calling the `receive` method in
@@ -182,22 +182,10 @@ Scala
 Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #props-factory }
 
-@@@ div { .group-scala }
-
 Another good practice is to declare what messages an Actor can receive
-in the companion object of the Actor, which makes easier
-to know what it can receive:
-
-@@@
-
-@@@ div { .group-java }
-
-Another good practice is to declare what messages an Actor can receive
-as close to the actor definition as possible (e.g. as static classes
-inside the Actor or using other suitable class), which makes it easier to know
-what it can receive.
-
-@@@
+@scala[in the companion object of the Actor] 
+@java[as close to the actor definition as possible (e.g. as static classes inside the Actor or using other suitable class)], 
+which makes easier to know what it can receive:
 
 Scala
 :  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #messages-in-companion }
@@ -330,19 +318,10 @@ last line.  Watching an actor is quite simple as well:
 
 ## Actor API
 
-@@@ div { .group-scala }
-
-The `Actor` trait defines only one abstract method, the above mentioned
-`receive`, which implements the behavior of the actor.
-
-@@@
-
-@@@ div { .group-java }
-
-The `AbstractActor` class defines a method called `receive`,
-that is used to set the “initial behavior” of the actor.
-
-@@@
+@scala[The `Actor` trait defines only one abstract method, the above mentioned
+`receive`, which implements the behavior of the actor.]
+@java[The `AbstractActor` class defines a method called `receive`,
+that is used to set the “initial behavior” of the actor.]
 
 If the current actor behavior does not match a received message,
 `unhandled` is called, which by default publishes an
@@ -352,23 +331,13 @@ system’s event stream (set configuration item
 actual Debug messages).
 
 In addition, it offers:
-
-@@@ div { .group-scala }
-
- * `self` reference to the `ActorRef` of the actor
- * `sender` reference sender Actor of the last received message, typically used as described in [Actor.Reply](#actor-reply)
- * `supervisorStrategy` user overridable definition the strategy to use for supervising child actors
-
-@@@
  
-@@@ div { .group-java }
-  
- * `getSelf()` reference to the `ActorRef` of the actor
- * `getSender()` reference sender Actor of the last received message, typically used as described in [LambdaActor.Reply](#lambdaactor-reply)
- * `supervisorStrategy()` user overridable definition the strategy to use for supervising child actors
+ * @scala[`self`] @java[`getSelf()`] reference to the `ActorRef` of the actor
+ * @scala[`sender`] @java[`getSender()`] reference sender Actor of the last received message, typically used as described in
+   @scala[[Actor.Reply](#actor-reply)]
+   @java[[LambdaActor.Reply](#lambdaactor-reply)]
+ * @scala[`supervisorStrategy`] @java[`supervisorStrategy()`] user overridable definition the strategy to use for supervising child actors
    
-@@@
- 
    This strategy is typically declared inside the actor in order to have access
 to the actor’s internal state within the decider function: since failure is
 communicated as a message sent to the supervisor and processed like other
@@ -377,6 +346,7 @@ within the actor are available, as is the `sender` reference (which will
 be the immediate child reporting the failure; if the original failure
 occurred within a distant descendant it is still reported one level up at a
 time).
+
  * @scala[`context`] @java[`getContext()`] exposes contextual information for the actor and the current message, such as:
     * factory methods to create child actors (`actorOf`)
     * system that the actor belongs to
@@ -401,7 +371,8 @@ Scala
 
 Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #lifecycle-callbacks }  
-The implementations shown above are the defaults provided by the @scala[`Actor` trait.] @java[`AbstractActor` class]
+
+The implementations shown above are the defaults provided by the @scala[`Actor` trait.] @java[`AbstractActor` class.]
 
 <a id="actor-lifecycle"></a>
 ### Actor Lifecycle
@@ -628,7 +599,7 @@ the `resolveOne` method of the `ActorSelection`. It returns a `Future`
 of the matching `ActorRef` if such an actor exists. @java[(see also 
 @ref:[Java 8 and Scala Compatibility](scala-compat.md) for Java compatibility).] It is completed with
 failure [[akka.actor.ActorNotFound]] if no such actor exists or the identification
-didn't complete within the supplied *timeout*.
+didn't complete within the supplied `timeout`.
 
 Remote actor addresses may also be looked up, if @ref:[remoting](remoting.md) is enabled:
 
@@ -652,7 +623,7 @@ state) and works great with pattern matching at the receiver side.]
 
 @@@
 
-Here is an example @java[of an immutable message]:
+Here is an @scala[example:] @java[example of an immutable message:]
 
 Scala
 :  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #immutable-message-definition #immutable-message-instantiation }
@@ -738,42 +709,20 @@ Scala
 Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-ask #ask-pipe }
 
-@@@ div { .group-scala }
 
 This example demonstrates `ask` together with the `pipeTo` pattern on
 futures, because this is likely to be a common combination. Please note that
 all of the above is completely non-blocking and asynchronous: `ask` produces
-a `Future`, three of which are composed into a new future using the
-for-comprehension and then `pipeTo` installs an `onComplete`-handler on the
-future to affect the submission of the aggregated `Result` to another
-actor.
+a `Future`, @scala[three] @java[two] of which are composed into a new future using the
+@scala[for-comprehension and then `pipeTo` installs an `onComplete`-handler on the future to affect]
+@java[`Futures.sequence` and `map` methods and then `pipe` installs an `onComplete`-handler on the future to effect]
+the submission of the aggregated `Result` to another actor.
 
 Using `ask` will send a message to the receiving Actor as with `tell`, and
-the receiving actor must reply with `sender() ! reply` in order to complete the
-returned `Future` with a value. The `ask` operation involves creating
+the receiving actor must reply with @scala[`sender() ! reply`] @java[`getSender().tell(reply, getSelf())` ] in order to 
+complete the returned `Future` with a value. The `ask` operation involves creating
 an internal actor for handling this reply, which needs to have a timeout after
 which it is destroyed in order not to leak resources; see more below.
-
-@@@
-
-@@@ div { .group-java }
-
-This example demonstrates `ask` together with the `pipeTo` pattern on
-futures, because this is likely to be a common combination. Please note that
-all of the above is completely non-blocking and asynchronous: `ask` produces
-a `Future`, two of which are composed into a new future using the
-`Futures.sequence` and `map` methods and then `pipe` installs
-an `onComplete`-handler on the future to effect the submission of the
-aggregated `Result` to another actor.
-
-Using `ask` will send a message to the receiving Actor as with `tell`, and
-the receiving actor must reply with `getSender().tell(reply, getSelf())` in order to
-complete the returned `Future` with a value. The `ask` operation
-involves creating an internal actor for handling this reply, which needs to
-have a timeout after which it is destroyed in order not to leak resources; see
-more below.
-
-@@@ 
 
 @@@ note { .group-java }
 
@@ -795,19 +744,11 @@ Scala
 Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #reply-exception }
 
-@@@ div { .group-java }
-
 If the actor does not complete the future, it will expire after the timeout period,
-specified as parameter to the `ask` method; this will complete the
-`Future` with an `AskTimeoutException`.
-
-@@@
+@scala[completing it with an `AskTimeoutException`. The timeout is taken from one of the following locations in order of precedence:]
+@java[specified as parameter to the `ask` method; this will complete the `Future` with an `AskTimeoutException`.]
 
 @@@ div { .group-scala }
-
-If the actor does not complete the future, it will expire after the timeout
-period, completing it with an `AskTimeoutException`.  The timeout is
-taken from one of the following locations in order of precedence:
 
  1. explicitly given timeout as in:
 
@@ -854,34 +795,40 @@ Java
 
 ## Receive messages
 
+
+An Actor has to 
+@scala[implement the `receive` method to receive messages:]
+@java[define its initial receive behavior by implementing the `createReceive` method in the `AbstractActor`:]
+
+Scala
+:  @@snip [Actor.scala]($akka$/akka-actor/src/main/scala/akka/actor/Actor.scala) { #receive }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #createReceive }
+
 @@@ div { .group-scala }
-
-An Actor has to implement the `receive` method to receive messages:
-
-@@snip [Actor.scala]($akka$/akka-actor/src/main/scala/akka/actor/Actor.scala) { #receive }
 
 This method returns a `PartialFunction`, e.g. a ‘match/case’ clause in
 which the message can be matched against the different case clauses using Scala
 pattern matching. Here is an example:
 
-@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #imports1 #my-actor }
-
 @@@
 
-@@@ div { .group-java } 
-
-An actor has to define its initial receive behavior by implementing
-the `createReceive` method in the `AbstractActor`:
-
-@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #createReceive }
+@@@ div { .group-java }
 
 The return type is `AbstractActor.Receive` that defines which messages your Actor can handle,
 along with the implementation of how the messages should be processed.
-You can build such behavior with a builder named `ReceiveBuilder`.
+You can build such behavior with a builder named `ReceiveBuilder`. Here is an example:
 
-Here is an example:
+@@@
 
-@@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #imports #my-actor }
+@Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #imports1 #my-actor }
+
+@Java
+:  @@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #imports #my-actor }
+
+@@@ div { .group-java }
 
 In case you want to provide many `match` cases but want to avoid creating a long call
 trail, you can split the creation of the builder into multiple statements as in the example:
@@ -936,17 +883,17 @@ Java
 
 ## Receive timeout
 
-The *ActorContext* `setReceiveTimeout` defines the inactivity timeout after which
-the sending of a *ReceiveTimeout* message is triggered.
-When specified, the receive function should be able to handle an *akka.actor.ReceiveTimeout* message.
+The `ActorContext` `setReceiveTimeout` defines the inactivity timeout after which
+the sending of a `ReceiveTimeout` message is triggered.
+When specified, the receive function should be able to handle an `akka.actor.ReceiveTimeout` message.
 1 millisecond is the minimum supported timeout.
 
-Please note that the receive timeout might fire and enqueue the *ReceiveTimeout* message right after
+Please note that the receive timeout might fire and enqueue the `ReceiveTimeout` message right after
 another message was enqueued; hence it is **not guaranteed** that upon reception of the receive
 timeout there must have been an idle period beforehand as configured via this method.
 
 Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
-periods). Pass in *Duration.Undefined* to switch off this feature.
+periods). Pass in `Duration.Undefined` to switch off this feature.
 
 Scala
 :  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #receive-timeout }
@@ -1092,7 +1039,7 @@ Scala
 Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-addTask }
 
-The returned `Future[Done]` should be completed when the task is completed. The task name parameter
+The returned @scala[`Future[Done]`] @java[`CompletionStage<Done>`] should be completed when the task is completed. The task name parameter
 is only used for debugging/logging.
 
 Tasks added to the same phase are executed in parallel without any ordering assumptions.
