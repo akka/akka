@@ -103,7 +103,7 @@ Java
 :  @@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-function #send-off type=java }
 
 All `send` methods also have a corresponding `alter` method that returns a `Future`.
-See @ref:[Futures](futures.md) for more information on `Futures`.
+See @ref:[`Future`s](futures.md) for more information on `Future`s.
 
 Scala
 :  @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #alter #alter-off }
@@ -120,7 +120,7 @@ currently queued updates have completed:
 
 @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #read-future }
 
-See @ref:[Futures](futures.md) for more information on `Futures`.
+See @ref:[`Future`s](futures.md) for more information on `Future`s.
 
 ## Monadic usage
 
