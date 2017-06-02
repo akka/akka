@@ -1,0 +1,19 @@
+# #22794 watchWith
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorContext.watchWith")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.watchWith")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching_=")
+
+# #22881 Make sure connections are aborted correctly on Windows
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancel")
+
+# #21213 Feature request: Let BackoffSupervisor reply to messages when its child is stopped
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffSupervisor.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.pattern.BackoffOptionsImpl$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnRestartSupervisor.this")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.replyWhileStopped")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withReplyWhileStopped")
+

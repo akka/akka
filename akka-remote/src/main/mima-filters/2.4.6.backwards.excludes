@@ -1,0 +1,2 @@
+# #20531 adding refuseUid to Gated
+ProblemFilters.exclude[Problem]("akka.remote.EndpointManager$Gated")
