@@ -234,8 +234,7 @@ needs to return a different object that provides the necessary interaction capab
 Unlike actors though, each of the processing stages might provide a materialized value, so when we compose multiple
 stages or modules, we need to combine the materialized value as well (there are default rules which make this easier,
 for example *to()* and *via()* takes care of the most common case of taking the materialized value to the left.
-See @scala[@ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat)] 
-@java[@ref:[Combining materialized values](../stream/stream-flows-and-basics.md#flow-combine-mat)] for details). 
+See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat) for details). 
 We demonstrate how this works by a code example and a diagram which graphically demonstrates what is happening.
 
 The propagation of the individual materialized values from the enclosed modules towards the top will look like this:
@@ -290,7 +289,7 @@ Java
 @@@ note
 
 The nested structure in the above example is not necessary for combining the materialized values, it just
-demonstrates how the two features work together. See @scala[@ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat)] @java[@ref:[Operator Fusion](stream-flows-and-basics.md#operator-fusion)]for further examples
+demonstrates how the two features work together. See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat) for further examples
 of combining materialized values without nesting and hierarchy involved.
 
 @@@
