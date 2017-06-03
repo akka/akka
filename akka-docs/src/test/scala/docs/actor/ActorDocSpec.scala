@@ -310,6 +310,13 @@ class Ponger(pinger: ActorRef) extends Actor {
 
 //#fiddle_code
 
+//#immutable-message-definition
+case class User(name: String)
+
+// define the case class
+case class Register(user: User)
+//#immutable-message-definition
+
 class ActorDocSpec extends AkkaSpec("""
   akka.loglevel = INFO
   akka.loggers = []
@@ -379,6 +386,23 @@ class ActorDocSpec extends AkkaSpec("""
     testProbe watch ponger
     testProbe.expectTerminated(ponger)
     system.terminate()
+  }
+
+  "instantiates a case class" in {
+    //#immutable-message-instantiation
+    val user = User("Mike")
+    // create a new case class message
+    val message = Register(user)
+    //#immutable-message-instantiation
+  }
+
+  "use poison pill" in {
+    val victim = system.actorOf(Props[MyActor])
+    //#poison-pill
+    watch(victim)
+    victim ! PoisonPill
+    //#poison-pill
+    expectTerminated(victim)
   }
 
   "creating a Props config" in {
@@ -562,10 +586,12 @@ class ActorDocSpec extends AkkaSpec("""
         }
       }
       //#watch
-      val a = system.actorOf(Props(classOf[WatchActor], this))
+      val victim = system.actorOf(Props(classOf[WatchActor], this))
       implicit val sender = testActor
-      a ! "kill"
+      //#kill
+      victim ! "kill"
       expectMsg("finished")
+      //#kill
     }
   }
 
