@@ -10,7 +10,7 @@ Make sure that you have the following dependency in your project:
 
 @@@vars
 ```
-"com.typesafe.akka" %% "akka-persistence-query" % $akka.version$
+"com.typesafe.akka" %% "akka-persistence-query" % "$akka.version$"
 ```
 @@@
 

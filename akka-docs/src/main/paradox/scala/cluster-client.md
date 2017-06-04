@@ -142,7 +142,7 @@ To use the Cluster Client you must add the following dependency in your project.
 sbt
 :   @@@vars
     ```
-    "com.typesafe.akka" %% "akka-cluster-tools" % $akka.version$
+    "com.typesafe.akka" %% "akka-cluster-tools" % "$akka.version$"
     ```
     @@@
 
