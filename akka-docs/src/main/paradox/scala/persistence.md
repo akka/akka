@@ -19,7 +19,7 @@ Akka persistence is a separate jar file. Make sure that you have the following d
 
 @@@vars
 ```
-"com.typesafe.akka" %% "akka-persistence" % $akka.version$
+"com.typesafe.akka" %% "akka-persistence" % "$akka.version$"
 ```
 @@@
 

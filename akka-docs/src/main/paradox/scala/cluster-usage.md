@@ -8,7 +8,7 @@ The Akka cluster is a separate jar file. Make sure that you have the following d
 
 @@@vars
 ```
-"com.typesafe.akka" %% "akka-cluster" % $akka.version$
+"com.typesafe.akka" %% "akka-cluster" % "$akka.version$"
 ```
 @@@
 

@@ -627,7 +627,7 @@ To use Distributed Data you must add the following dependency in your project.
 sbt
 :   @@@vars
     ```
-    "com.typesafe.akka" %% "akka-distributed-data" % $akka.version$
+    "com.typesafe.akka" %% "akka-distributed-data" % "$akka.version$"
     ```
     @@@
 
