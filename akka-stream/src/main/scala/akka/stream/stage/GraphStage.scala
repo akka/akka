@@ -69,7 +69,7 @@ private object TimerMessages {
 
 object GraphStageLogic {
   final case class StageActorRefNotInitializedException()
-    extends RuntimeException("You must first call getStageActorRef, to initialize the Actors behaviour")
+    extends RuntimeException("You must first call getStageActor, to initialize the Actors behaviour")
 
   /**
    * Input handler that terminates the stage upon receiving completion.
