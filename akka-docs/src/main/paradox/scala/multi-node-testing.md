@@ -154,7 +154,7 @@ The multi node testing kit is a separate jar file. Make sure that you have the f
 
 @@@vars
 ```
-"com.typesafe.akka" %% "akka-multi-node-testkit" % $akka.version$
+"com.typesafe.akka" %% "akka-multi-node-testkit" % "$akka.version$"
 ```
 @@@
 

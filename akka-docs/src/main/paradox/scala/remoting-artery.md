@@ -47,7 +47,7 @@ The Akka remoting is a separate jar file. Make sure that you have the following 
 
 @@@vars
 ```
-"com.typesafe.akka" %% "akka-remote" % $akka.version$
+"com.typesafe.akka" %% "akka-remote" % "$akka.version$"
 ```
 @@@
 

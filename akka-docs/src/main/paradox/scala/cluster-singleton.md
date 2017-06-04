@@ -113,7 +113,7 @@ To use the Cluster Singleton you must add the following dependency in your proje
 sbt
 :   @@@vars
     ```
-    "com.typesafe.akka" %% "akka-cluster-tools" % $akka.version$
+    "com.typesafe.akka" %% "akka-cluster-tools" % "$akka.version$"
     ```
     @@@
 

@@ -380,7 +380,7 @@ To use the Cluster Sharding you must add the following dependency in your projec
 sbt
 :   @@@vars
     ```
-    "com.typesafe.akka" %% "akka-cluster-sharding" % $akka.version$
+    "com.typesafe.akka" %% "akka-cluster-sharding" % "$akka.version$"
     ```
     @@@
 
