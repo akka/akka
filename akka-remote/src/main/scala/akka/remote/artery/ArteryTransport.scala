@@ -729,34 +729,29 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
       } else {
         val hubKillSwitch = KillSwitches.shared("hubKillSwitch")
-        val source: Source[(OptionVal[InternalActorRef], InboundEnvelope), (ResourceLifecycle, InboundCompressionAccess)] =
+        val source: Source[InboundEnvelope, (ResourceLifecycle, InboundCompressionAccess)] =
           aeronSource(ordinaryStreamId, envelopeBufferPool)
             .via(hubKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
-            .map(env ⇒ (env.recipient, env))
-
-        val (resourceLife, compressionAccess, broadcastHub) =
-          source
-            .toMat(BroadcastHub.sink(bufferSize = settings.Advanced.InboundBroadcastHubBufferSize))({ case ((a, b), c) ⇒ (a, b, c) })
-            .run()(materializer)
 
         // select lane based on destination, to preserve message order
-        def shouldUseLane(recipient: OptionVal[ActorRef], targetLane: Int): Boolean =
-          recipient match {
-            case OptionVal.Some(r) ⇒ math.abs(r.path.uid) % inboundLanes == targetLane
-            case OptionVal.None    ⇒ 0 == targetLane
+        val partitioner: InboundEnvelope ⇒ Int = env ⇒ {
+          env.recipient match {
+            case OptionVal.Some(r) ⇒ math.abs(r.path.uid) % inboundLanes
+            case OptionVal.None    ⇒ 0
           }
+        }
+
+        val (resourceLife, compressionAccess, hub) =
+          source
+            .toMat(Sink.fromGraph(new FixedSizePartitionHub[InboundEnvelope](partitioner, inboundLanes,
+              settings.Advanced.InboundHubBufferSize)))({ case ((a, b), c) ⇒ (a, b, c) })
+            .run()(materializer)
 
         val lane = inboundSink(envelopeBufferPool)
         val completedValues: Vector[Future[Done]] =
-          (0 until inboundLanes).map { laneId ⇒
-            broadcastHub
-              // TODO replace filter with "PartitionHub" when that is implemented
-              // must use a tuple here because envelope is pooled and must only be read in the selected lane
-              // otherwise, the lane that actually processes it might have already released it.
-              .collect { case (recipient, env) if shouldUseLane(recipient, laneId) ⇒ env }
-              .toMat(lane)(Keep.right)
-              .run()(materializer)
+          (0 until inboundLanes).map { _ ⇒
+            hub.toMat(lane)(Keep.right).run()(materializer)
           }(collection.breakOut)
 
         import system.dispatcher
