@@ -80,6 +80,7 @@ abstract class FactorialFrontend2 extends Actor {
         totalInstances = 100, routeesPaths = List("/user/factorialBackend"),
         allowLocalRoutees = true, useRole = Some("backend"))).props(),
     name = "factorialBackendRouter2")
+
   //#router-lookup-in-code
 }
 

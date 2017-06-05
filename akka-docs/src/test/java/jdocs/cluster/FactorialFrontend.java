@@ -83,6 +83,7 @@ abstract class FactorialFrontend2 extends AbstractActor {
       HeapMetricsSelector.getInstance(), Collections.<String> emptyList()),
         new ClusterRouterGroupSettings(totalInstances, routeesPaths,
           allowLocalRoutees, useRole)).props(), "factorialBackendRouter2");
+
   //#router-lookup-in-code
 }
 
