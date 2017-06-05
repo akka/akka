@@ -38,7 +38,7 @@ from the `ClusterClientReceptionist`. One use of this list might be for the clie
 contact points. A client that is restarted could then use this information to supersede any previously
 configured contact points.
 
-The `ClusterClientReceptionist` sends out notifications in relation to having received contact
+The `ClusterClientReceptionist` sends out notifications in relation to having received a contact
 from a `ClusterClient`. This notification enables the server containing the receptionist to become aware of
 what clients are connected.
 
@@ -46,7 +46,7 @@ what clients are connected.
 
     The message will be delivered to one recipient with a matching path, if any such
     exists. If several entries match the path the message will be delivered
-    to one random destination. The sender() of the message can specify that local
+    to one random destination. The sender of the message can specify that local
     affinity is preferred, i.e. the message is sent to an actor in the same local actor
     system as the used receptionist actor, if any such exists, otherwise random to any other
     matching entry.
@@ -61,9 +61,13 @@ what clients are connected.
     to the named topic.
 
 Response messages from the destination actor are tunneled via the receptionist
-to avoid inbound connections from other cluster nodes to the client, i.e.
-the `sender()`, as seen by the destination actor, is not the client itself.
-The `sender()` of the response messages, as seen by the client, is `deadLetters`
+to avoid inbound connections from other cluster nodes to the client:
+
+* @scala[`sender()`,] @java[`getSender()`,] as seen by the destination actor, is not the client itself, 
+  but the receptionist
+* @scala[`sender()`] @java[`getSender()`] of the response messages, sent back from the destination and seen by the client, 
+  is `deadLetters`
+  
 since the client should normally send subsequent messages via the `ClusterClient`.
 It is possible to pass the original sender inside the reply messages if
 the client is supposed to communicate directly to the actor in the cluster.
@@ -88,22 +92,36 @@ akka.extensions = ["akka.cluster.client.ClusterClientReceptionist"]
 
 Next, register the actors that should be available for the client.
 
-@@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #server }
+Scala
+:  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #server }
+
+Java
+:  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #server }
 
 On the client you create the `ClusterClient` actor and use it as a gateway for sending
 messages to the actors identified by their path (without address information) somewhere
 in the cluster.
 
-@@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #client }
+Scala
+:  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #client }
 
-The `initialContacts` parameter is a `Set[ActorPath]`, which can be created like this:
+Java
+:  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #client }
 
-@@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #initialContacts }
+The `initialContacts` parameter is a @scala[`Set[ActorPath]`]@java[`Set<ActorPath>`], which can be created like this:
+
+Scala
+:  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #initialContacts }
+
+Java
+:  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #initialContacts }
 
 You will probably define the address information of the initial contact points in configuration or system property.
 See also [Configuration](#cluster-client-config).
 
-A more comprehensive sample is available in the tutorial named [Distributed workers with Akka and Scala!](https://github.com/typesafehub/activator-akka-distributed-workers-scala).
+A more comprehensive sample is available in the tutorial named
+@scala[[Distributed workers with Akka and Scala](https://github.com/typesafehub/activator-akka-distributed-workers).]
+@java[[Distributed workers with Akka and Java](https://github.com/typesafehub/activator-akka-distributed-workers-java).]
 
 ## ClusterClientReceptionist Extension
 
@@ -129,11 +147,19 @@ The following code snippet declares an actor that will receive notifications on 
 receptionists), as they become available. The code illustrates subscribing to the events and receiving the `ClusterClient`
 initial state.
 
-@@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #clientEventsListener }
+Scala
+:  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #clientEventsListener }
+
+Java
+:  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #clientEventsListener }
 
 Similarly we can have an actor that behaves in a similar fashion for learning what cluster clients contact a `ClusterClientReceptionist`:
 
-@@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #receptionistEventsListener }
+Scala
+:  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #receptionistEventsListener }
+
+Java
+:  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #receptionistEventsListener }
 
 ## Dependencies
 
