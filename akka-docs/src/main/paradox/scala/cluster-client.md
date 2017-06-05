@@ -108,7 +108,7 @@ Scala
 Java
 :  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #client }
 
-The `initialContacts` parameter is a @scala[`Set[ActorPath]`,] @java[`Set<ActorPath>`,] which can be created like this:
+The `initialContacts` parameter is a @scala[`Set[ActorPath]`]@java[`Set<ActorPath>`], which can be created like this:
 
 Scala
 :  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #initialContacts }
