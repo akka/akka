@@ -6,11 +6,16 @@ package akka.actor
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
+
+import akka.actor.BenchmarkActors.{ Message, Stop }
+
 import scala.concurrent.Await
 import scala.annotation.tailrec
 
+import BenchmarkActors._
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
 @Fork(1)
@@ -62,59 +67,18 @@ class ForkJoinActorBenchmark {
 
   @Setup(Level.Invocation)
   def setupActors(): Unit = {
-    pingPongActors = startActors(1)
-    pingPongLessActorsThanCoresActors = startActors(lessThanCoresActorPairs)
-    pingPongSameNumberOfActorsAsCoresActors = startActors(cores / 2)
-    pingPongMoreActorsThanCoresActors = startActors(moreThanCoresActorPairs)
+    pingPongActors = startPingPongActorPairs(messages, 1, "default-dispatcher")
+    pingPongLessActorsThanCoresActors = startPingPongActorPairs(messages, lessThanCoresActorPairs, "default-dispatcher")
+    pingPongSameNumberOfActorsAsCoresActors = startPingPongActorPairs(messages, cores / 2, "default-dispatcher")
+    pingPongMoreActorsThanCoresActors = startPingPongActorPairs(messages, moreThanCoresActorPairs, "default-dispatcher")
   }
 
   @TearDown(Level.Invocation)
   def tearDownActors(): Unit = {
-    stopActors(pingPongActors)
-    stopActors(pingPongLessActorsThanCoresActors)
-    stopActors(pingPongSameNumberOfActorsAsCoresActors)
-    stopActors(pingPongMoreActorsThanCoresActors)
-  }
-
-  def startActors(n: Int): Vector[(ActorRef, ActorRef)] = {
-    for {
-      i <- (1 to n).toVector
-    } yield {
-      val ping = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
-      val pong = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
-      (ping, pong)
-    }
-  }
-
-  def stopActors(refs: Vector[(ActorRef, ActorRef)]): Unit = {
-    if (refs ne null) {
-      refs.foreach {
-        case (ping, pong) =>
-          system.stop(ping)
-          system.stop(pong)
-      }
-      awaitTerminated(refs)
-    }
-  }
-
-  def awaitTerminated(refs: Vector[(ActorRef, ActorRef)]): Unit = {
-    if (refs ne null) refs.foreach {
-      case (ping, pong) =>
-        val p = TestProbe()
-        p.watch(ping)
-        p.expectTerminated(ping, timeout)
-        p.watch(pong)
-        p.expectTerminated(pong, timeout)
-    }
-  }
-
-  def sendMessage(refs: Vector[(ActorRef, ActorRef)], inFlight: Int): Unit = {
-    for {
-      (ping, pong) <- refs
-      _ <- 1 to inFlight
-    } {
-      ping.tell(Message, pong)
-    }
+    stopPingPongActorPairs(pingPongActors, timeout)
+    stopPingPongActorPairs(pingPongLessActorsThanCoresActors, timeout)
+    stopPingPongActorPairs(pingPongSameNumberOfActorsAsCoresActors, timeout)
+    stopPingPongActorPairs(pingPongMoreActorsThanCoresActors, timeout)
   }
 
   @Benchmark
@@ -122,32 +86,32 @@ class ForkJoinActorBenchmark {
   @OperationsPerInvocation(messages)
   def pingPong(): Unit = {
     // only one message in flight
-    sendMessage(pingPongActors, inFlight = 1)
-    awaitTerminated(pingPongActors)
+    initiatePingPongForPairs(pingPongActors, inFlight = 1)
+    awaitTerminatedPingPongActorPairs(pingPongActors, timeout)
   }
 
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(totalMessagesLessThanCores)
   def pingPongLessActorsThanCores(): Unit = {
-    sendMessage(pingPongLessActorsThanCoresActors, inFlight = 2 * tpt)
-    awaitTerminated(pingPongLessActorsThanCoresActors)
+    initiatePingPongForPairs(pingPongLessActorsThanCoresActors, inFlight = 2 * tpt)
+    awaitTerminatedPingPongActorPairs(pingPongLessActorsThanCoresActors, timeout)
   }
 
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(totalMessagesSameAsCores)
   def pingPongSameNumberOfActorsAsCores(): Unit = {
-    sendMessage(pingPongSameNumberOfActorsAsCoresActors, inFlight = 2 * tpt)
-    awaitTerminated(pingPongSameNumberOfActorsAsCoresActors)
+    initiatePingPongForPairs(pingPongSameNumberOfActorsAsCoresActors, inFlight = 2 * tpt)
+    awaitTerminatedPingPongActorPairs(pingPongSameNumberOfActorsAsCoresActors, timeout)
   }
 
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(totalMessagesMoreThanCores)
   def pingPongMoreActorsThanCores(): Unit = {
-    sendMessage(pingPongMoreActorsThanCoresActors, inFlight = 2 * tpt)
-    awaitTerminated(pingPongMoreActorsThanCoresActors)
+    initiatePingPongForPairs(pingPongMoreActorsThanCoresActors, inFlight = 2 * tpt)
+    awaitTerminatedPingPongActorPairs(pingPongMoreActorsThanCoresActors, timeout)
   }
 
   //  @Benchmark
@@ -155,10 +119,10 @@ class ForkJoinActorBenchmark {
   //  @OperationsPerInvocation(messages)
   def floodPipe(): Unit = {
 
-    val end = system.actorOf(Props(classOf[ForkJoinActorBenchmark.Pipe], None))
-    val middle = system.actorOf(Props(classOf[ForkJoinActorBenchmark.Pipe], Some(end)))
-    val penultimate = system.actorOf(Props(classOf[ForkJoinActorBenchmark.Pipe], Some(middle)))
-    val beginning = system.actorOf(Props(classOf[ForkJoinActorBenchmark.Pipe], Some(penultimate)))
+    val end = system.actorOf(Props(classOf[BenchmarkActors.Pipe], None))
+    val middle = system.actorOf(Props(classOf[BenchmarkActors.Pipe], Some(end)))
+    val penultimate = system.actorOf(Props(classOf[BenchmarkActors.Pipe], Some(middle)))
+    val beginning = system.actorOf(Props(classOf[BenchmarkActors.Pipe], Some(penultimate)))
 
     val p = TestProbe()
     p.watch(end)
@@ -178,8 +142,6 @@ class ForkJoinActorBenchmark {
 }
 
 object ForkJoinActorBenchmark {
-  case object Stop
-  case object Message
   final val timeout = 15.seconds
   final val messages = 400000
 
@@ -192,25 +154,4 @@ object ForkJoinActorBenchmark {
   final val totalMessagesLessThanCores = lessThanCoresActorPairs * messages
   final val totalMessagesSameAsCores = cores * messages
 
-  class Pipe(next: Option[ActorRef]) extends Actor {
-    def receive = {
-      case Message =>
-        if (next.isDefined) next.get forward Message
-      case Stop =>
-        context stop self
-        if (next.isDefined) next.get forward Stop
-    }
-  }
-  class PingPong extends Actor {
-    var left = messages / 2
-    def receive = {
-      case Message =>
-
-        if (left <= 1)
-          context stop self
-
-        sender() ! Message
-        left -= 1
-    }
-  }
 }

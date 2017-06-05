@@ -8,11 +8,13 @@ import java.util.concurrent._
 import java.{ util ⇒ ju }
 
 import akka.actor._
+import akka.dispatch.affinity.AffinityPoolConfigurator
 import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import akka.event.Logging.{ Debug, Error, LogEventException }
 import akka.util.{ Index, Unsafe }
 import com.typesafe.config.Config
+
 import scala.annotation.tailrec
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -327,6 +329,8 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
     def configurator(executor: String): ExecutorServiceConfigurator = executor match {
       case null | "" | "fork-join-executor" ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
       case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
+      case "affinity-pool-executor"         ⇒ new AffinityPoolConfigurator(config.getConfig("affinity-pool-executor"), prerequisites)
+
       case fqcn ⇒
         val args = List(
           classOf[Config] → config,
