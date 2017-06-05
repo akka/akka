@@ -351,6 +351,7 @@ final case class DisabledJavaSerializer(system: ExtendedActorSystem) extends Ser
   }
 
   override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = {
+    log.warning(LogMarker.Security, "Incoming message is using DisabledJavaSerializer resulting in Message class None! Manifest was: [{}]", manifest)
     this.fromBinary(empty, None)
   }
 
