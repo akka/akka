@@ -21,31 +21,33 @@ object MyRejectionHandler {
   import StatusCodes._
   import Directives._
 
-  implicit def myRejectionHandler =
-    RejectionHandler.newBuilder()
-      .handle { case MissingCookieRejection(cookieName) =>
-        complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
-      }
-      .handle { case AuthorizationFailedRejection =>
-        complete((Forbidden, "You're out of your depth!"))
-      }
-      .handle { case ValidationRejection(msg, _) =>
-        complete((InternalServerError, "That wasn't valid! " + msg))
-      }
-      .handleAll[MethodRejection] { methodRejections =>
-        val names = methodRejections.map(_.supported.name)
-        complete((MethodNotAllowed, s"Can't do that! Supported: ${names mkString " or "}!"))
-      }
-      .handleNotFound { complete((NotFound, "Not here!")) }
-      .result()
-
   object MyApp extends App {
+    implicit def myRejectionHandler =
+      RejectionHandler.newBuilder()
+        .handle { case MissingCookieRejection(cookieName) =>
+          complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
+        }
+        .handle { case AuthorizationFailedRejection =>
+          complete((Forbidden, "You're out of your depth!"))
+        }
+        .handle { case ValidationRejection(msg, _) =>
+          complete((InternalServerError, "That wasn't valid! " + msg))
+        }
+        .handleAll[MethodRejection] { methodRejections =>
+          val names = methodRejections.map(_.supported.name)
+          complete((MethodNotAllowed, s"Can't do that! Supported: ${names mkString " or "}!"))
+        }
+        .handleNotFound { complete((NotFound, "Not here!")) }
+        .result()
+
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
     val route: Route =
       // ... some route structure
+      //#custom-handler-example
       null // hide
+      //#custom-handler-example
 
     Http().bindAndHandle(route, "localhost", 8080)
   }
