@@ -1221,6 +1221,9 @@ object MiMa extends AutoPlugin {
         // #22881 Make sure connections are aborted correctly on Windows
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancel"),
         
+        // #21880 PartitionHub in Artery
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArterySettings#Advanced.InboundBroadcastHubBufferSize"),
+        
         // #23144 recoverWithRetries cleanup
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.RecoverWith.InfiniteRetries"),  
 
@@ -1231,6 +1234,7 @@ object MiMa extends AutoPlugin {
         // older versions will be missing the method. We accept that incompatibility for now.
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate")
       )
+      // make sure that this list ends with the latest released version number
     )
 
     val Latest24Filters = Release24Filters.last
