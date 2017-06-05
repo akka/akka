@@ -24,6 +24,11 @@ class LatchSink(countDownAfter: Int, latch: CountDownLatch) extends GraphStage[S
 
       override def preStart(): Unit = pull(in)
 
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        println(ex.getMessage)
+        ex.printStackTrace()
+      }
+
       override def onPush(): Unit = {
         n += 1
         if (n == countDownAfter)
