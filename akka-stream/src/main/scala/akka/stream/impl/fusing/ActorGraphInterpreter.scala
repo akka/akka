@@ -635,7 +635,7 @@ import scala.util.control.NonFatal
     interpreter.connections.foreach { connection ⇒
       builder
         .append("    ")
-        .append(connection.toString)
+        .append(if (connection == null) "null" else connection.toString)
         .append(",\n")
     }
     builder.setLength(builder.length - 2)
