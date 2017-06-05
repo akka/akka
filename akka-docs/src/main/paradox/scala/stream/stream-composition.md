@@ -35,7 +35,7 @@ hiding them behind a *shape* that looks like a `Source`, `Flow`, etc.
 
 One interesting example above is a `Flow` which is composed of a disconnected `Sink` and `Source`.
 This can be achieved by using the `fromSinkAndSource()` constructor method on `Flow` which takes the two parts as
-parameters. 
+parameters.
 
 Please note that when combining a `Flow` using that method, the termination signals are not carried 
 "through" as the `Sink` and `Source` are assumed to be fully independent. If however you want to construct

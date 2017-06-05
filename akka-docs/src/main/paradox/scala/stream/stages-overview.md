@@ -11,7 +11,7 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 ### fromIterator
 
 Stream the values from an `Iterator`, requesting the next value when there is demand. The iterator will be created anew
-for each materialization, which is the reason the @scala[`method`] @java[`factory`] takes a @scala[`function`] @java[`Creator`] rather than an @scala[`Iterator`] @java[`Iterator`] directly.
+for each materialization, which is the reason the @scala[`method`] @java[`factory`] takes a @scala[`function`] @java[`Creator`] rather than an `Iterator` directly.
 
 If the iterator perform blocking operations, make sure to run it on a separate dispatcher.
 
@@ -101,7 +101,7 @@ If the future fails the stream is failed with that exception.
 
 ### fromCompletionStage
 
-Send the single value of the @scala[`Future`] @java[`CompletionStage`] when it completes and there is demand.
+Send the single value of the `CompletionStage` when it completes and there is demand.
 If the future fails the stream is failed with that exception.
 
 **emits** the future completes
@@ -223,6 +223,16 @@ elements or failing the stream, the strategy is chosen by the user.
 
 ---------------------------------------------------------------
 
+### range
+
+Emit each integer in a range, with an option to take bigger steps than 1.
+
+**emits** when there is demand, the next value
+
+**completes** when the end of the range has been reached
+
+---------------------------------------------------------------
+
 ### combine
 
 Combine several sources, using a given strategy such as merge or concat, into one source.
@@ -320,8 +330,8 @@ after this the stream is canceled. If no element is emitted, the @scala[`Future`
 
 ### headOption
 
-Materializes into a @scala[`Future[Option[T]]`] @java[`CompletionStage<Optional<T>>`] which completes with the first value arriving wrapped in @scala[`Some`] @java[`optional`],
-or @scala[a `None`] @java[an empty optional] if the stream completes without any elements emitted.
+Materializes into a @scala[`Future[Option[T]]`] @java[`CompletionStage<Optional<T>>`] which completes with the first value arriving wrapped in @scala[`Some`] @java[`Optional`],
+or @scala[a `None`] @java[an empty Optional] if the stream completes without any elements emitted.
 
 **cancels** after receiving one element
 
