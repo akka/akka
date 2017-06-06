@@ -82,6 +82,7 @@ class LightArrayRevolverScheduler(
   protected def waitNanos(nanos: Long): Unit = {
     // see http://www.javamex.com/tutorials/threads/sleep_issues.shtml
     val sleepMs = if (Helpers.isWindows) (nanos + 4999999) / 10000000 * 10 else (nanos + 999999) / 1000000
+    println("!!! KILL ME NOW !!!")
     try Thread.sleep(sleepMs) catch {
       case _: InterruptedException ⇒ Thread.currentThread.interrupt() // we got woken up
     }
