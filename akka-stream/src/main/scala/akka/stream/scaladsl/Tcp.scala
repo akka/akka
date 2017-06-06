@@ -18,6 +18,7 @@ import akka.util.ByteString
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.control.NoStackTrace
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -187,4 +188,6 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     outgoingConnection(InetSocketAddress.createUnresolved(host, port))
 }
 
-final class TcpIdleTimeoutException(msg: String, timeout: Duration) extends TimeoutException(msg: String)
+final class TcpIdleTimeoutException(msg: String, timeout: Duration)
+  extends TimeoutException(msg: String)
+  with NoStackTrace // only used from a single stage
