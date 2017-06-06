@@ -15,7 +15,7 @@ import scala.concurrent.Await
 @Measurement(iterations = 20)
 class AffinityPoolComparativeBenchmark {
 
-  @Param(Array("1024"))
+  @Param(Array("1", "2", "8", "16", "128", "1024"))
   var throughPut = 0
 
   @Param(Array("default-fj-dispatcher", "affinity-dispatcher", "fixed-size-dispatcher"))
