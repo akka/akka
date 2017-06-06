@@ -17,6 +17,7 @@ import org.scalacheck.{ Arbitrary, Gen }
 import org.scalatest.{ Matchers, WordSpec }
 import org.scalatest.prop.Checkers
 
+import scala.collection.{ immutable, mutable }
 import scala.collection.mutable.Builder
 
 class ByteStringSpec extends WordSpec with Matchers with Checkers {
@@ -976,6 +977,11 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
           a.nonEmpty
         }
       }
+    }
+    "return the correct class from Builder.result" in {
+      val builder = ByteString().genericBuilder[String]
+      builder += "foo"
+      builder.result.getClass should equal(classOf[ByteString])
     }
   }
 }
