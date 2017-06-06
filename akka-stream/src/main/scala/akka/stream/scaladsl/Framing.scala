@@ -55,7 +55,40 @@ object Framing {
     maximumFrameLength: Int,
     byteOrder:          ByteOrder = ByteOrder.LITTLE_ENDIAN): Flow[ByteString, ByteString, NotUsed] = {
     require(fieldLength >= 1 && fieldLength <= 4, "Length field length must be 1, 2, 3 or 4.")
-    Flow[ByteString].via(new LengthFieldFramingStage(fieldLength, fieldOffset, maximumFrameLength, byteOrder))
+    Flow[ByteString].via(new LengthFieldFramingStage(fieldLength, fieldOffset, identity, maximumFrameLength, byteOrder))
+      .named("lengthFieldFraming")
+  }
+
+  /**
+   * Creates a Flow that decodes an incoming stream of unstructured byte chunks into a stream of frames, assuming that
+   * incoming frames have a field that encodes their length.
+   *
+   * If the input stream finishes before the last frame has been fully decoded this Flow will fail the stream reporting
+   * a truncated frame.
+   *
+   * This should only be used in case the length field does not contain the exact number of remaining bytes in the
+   * [[ByteString]] that should be contained in the current message. For example, this function should be used when the
+   * value in the length field contains also includes the {{{fieldLength}}}. In this case the {{{fieldModifier}}}
+   * function should be something along the lines of {{{_ - fieldLength}}}.
+   *
+   * @param fieldLength The length of the "size" field in bytes
+   * @param fieldOffset The offset of the field from the beginning of the frame in bytes
+   * @param fieldModifier The function to be applied to transform the value given in the length field to the actual
+   *                      number of remaining bytes in the message.
+   * @param maximumFrameLength The maximum length of allowed frames while decoding. If the maximum length is exceeded
+   *                           this Flow will fail the stream. This length *includes* the header (i.e the offset and
+   *                           the length of the size field)
+   * @param byteOrder The ''ByteOrder'' to be used when decoding the field
+   */
+  def modifiedLengthField(
+    fieldLength:        Int,
+    fieldOffset:        Int       = 0,
+    fieldModifier:      Int ⇒ Int,
+    maximumFrameLength: Int,
+    byteOrder:          ByteOrder = ByteOrder.LITTLE_ENDIAN): Flow[ByteString, ByteString, NotUsed] = {
+    require(fieldLength >= 1 && fieldLength <= 4, "Length field length must be 1, 2, 3 or 4.")
+    Flow[ByteString]
+      .via(new LengthFieldFramingStage(fieldLength, fieldOffset, fieldModifier, maximumFrameLength, byteOrder))
       .named("lengthFieldFraming")
   }
 
@@ -221,10 +254,11 @@ object Framing {
   }
 
   private final class LengthFieldFramingStage(
-    val lengthFieldLength:  Int,
-    val lengthFieldOffset:  Int,
-    val maximumFrameLength: Int,
-    val byteOrder:          ByteOrder) extends GraphStage[FlowShape[ByteString, ByteString]] {
+    val lengthFieldLength:   Int,
+    val lengthFieldOffset:   Int,
+    val lengthFieldModifier: Int ⇒ Int,
+    val maximumFrameLength:  Int,
+    val byteOrder:           ByteOrder) extends GraphStage[FlowShape[ByteString, ByteString]] {
     private val minimumChunkSize = lengthFieldOffset + lengthFieldLength
     private val intDecoder = byteOrder match {
       case ByteOrder.BIG_ENDIAN    ⇒ bigEndianDecoder
