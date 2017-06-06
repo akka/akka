@@ -101,6 +101,10 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       val callbackProbe = TestProbe()
       cluster.registerOnMemberRemoved(callbackProbe.ref ! "OnMemberRemoved")
 
+      // Also verify additional supported callbacks
+      cluster.registerOnMemberRemovedAfterDown(callbackProbe.ref ! "OnMemberRemovedAfterDown")
+      cluster.registerOnMemberRemovedAfterLeaving(callbackProbe.ref ! "OnMemberRemovedAfterLeaving")
+
       cluster.subscribe(testActor, classOf[ClusterEvent.MemberRemoved])
       // first, is in response to the subscription
       expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
@@ -109,6 +113,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       expectMsgType[ClusterEvent.MemberRemoved].member.address should ===(selfAddress)
 
       callbackProbe.expectMsg("OnMemberRemoved")
+      callbackProbe.expectMsg("OnMemberRemovedAfterDown")
+      callbackProbe.expectMsg("OnMemberRemovedAfterLeaving")
     }
 
     "allow join and leave with local address" in {
