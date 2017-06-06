@@ -176,6 +176,10 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
 
   /**
    * Common interface for all commands which aim to close down an open connection.
+   *
+   * These messages are suppressed from dead letters as they are
+   * highly likely to be received on actor paths that have recently
+   * been terminated.
    */
   sealed trait CloseCommand extends Command with DeadLetterSuppression {
     /**
