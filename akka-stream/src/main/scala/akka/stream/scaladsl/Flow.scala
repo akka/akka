@@ -1769,6 +1769,25 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def initialDelay(delay: FiniteDuration): Repr[Out] = via(new Timers.DelayInitial[Out](delay))
+  /**
+   *  Filters our consecutive duplicated elements from the stream.
+   *
+   * Examples:
+   *
+   * {{{
+   *   var nums = Source(List(1,1,1,2,2,1,1))
+   *   nums.deduplicate   // 1, 2, 1
+   * }}}
+   *
+   * '''Emits when''' upstream emits element distinct from element emitted previously
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def deduplicate(implicit equiv: Equiv[Out]): Repr[Out] = via(new Deduplicate(equiv))
 
   /**
    * Logs elements flowing through the stream as well as completion and erroring.

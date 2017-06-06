@@ -44,6 +44,7 @@ import akka.stream._
     val foldAsync = name("foldAsync")
     val reduce = name("reduce")
     val intersperse = name("intersperse")
+    val deduplicate = name("deduplicate")
     val buffer = name("buffer")
     val conflate = name("conflate")
     val batch = name("batch")

@@ -703,6 +703,36 @@ private[stream] object Collect {
 }
 
 /**
+  * INTERNAL API
+  */
+private[akka] final case class Deduplicate[T](implicit equiv: Equiv[T]) extends GraphStage[FlowShape[T, T]] {
+  private val in = Inlet[T]("Deduplicate.in")
+  private val out = Outlet[T]("Deduplicate.out")
+
+  override def shape: FlowShape[T, T] = FlowShape(in, out)
+  override def initialAttributes = DefaultAttributes.deduplicate
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    var last: T = null.asInstanceOf[T]
+
+    setHandler(in, new InHandler {
+      override def onPush(): Unit = {
+        val elem = grab(in)
+        if (equiv.equiv(elem, last)) {
+          last = elem
+          push(out, elem)
+        } else pull(in)
+      }
+    })
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = pull(in)
+    })
+  }
+
+  override def toString = "Deduplicate"
+}
+
+/**
  * INTERNAL API
  */
 @InternalApi private[akka] final case class Grouped[T](n: Int) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
