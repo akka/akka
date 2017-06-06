@@ -333,6 +333,13 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
   private[akka] final def stateNames: Iterable[S] = stateFunctions.keys
 
   /**
+   * Return next state name (i.e. object of type S) (available in onTransition handlers) 
+   */
+  final def nextStateName: S = 
+    if (nextState != null) nextState.stateName
+    else throw new IllegalStateException("nextStateName is only available during onTransition")
+  
+  /**
    * Return next state data (available in onTransition handlers)
    */
   final def nextStateData = nextState match {
