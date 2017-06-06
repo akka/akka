@@ -54,6 +54,5 @@ private[akka] class LoggerMailbox(owner: ActorRef, system: ActorSystem)
         envelope = dequeue
       }
     }
-    super.cleanUp(owner, deadLetters)
   }
 }
