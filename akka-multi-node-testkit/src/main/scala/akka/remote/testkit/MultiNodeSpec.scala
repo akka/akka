@@ -226,6 +226,10 @@ object MultiNodeSpec {
             }
           }
         }
+        remote.netty.tcp {
+          server-socket-worker-pool.pool-size-max = 2
+          client-socket-worker-pool.pool-size-max = 2
+        }
       }
       """)
 
