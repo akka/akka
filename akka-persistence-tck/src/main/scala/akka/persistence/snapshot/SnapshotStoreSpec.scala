@@ -32,12 +32,10 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
   with OptionalTests with SnapshotStoreCapabilityFlags {
   implicit lazy val system = ActorSystem("SnapshotStoreSpec", config.withFallback(SnapshotStoreSpec.config))
 
-  private var senderProbe: TestProbe = _
   private var metadata: Seq[SnapshotMetadata] = Nil
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    senderProbe = TestProbe()
     metadata = writeSnapshots()
   }
 

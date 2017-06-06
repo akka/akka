@@ -219,7 +219,7 @@ object AkkaBuild extends Build {
   lazy val persistenceTck = Project(
     id = "akka-persistence-tck",
     base = file("akka-persistence-tck"),
-    dependencies = Seq(persistence % "compile;provided->provided;test->test", testkit % "compile;test->test")
+    dependencies = Seq(persistence % "compile;provided->provided;test->test", persistenceQuery % "compile;provided->provided;test->test", testkit % "compile;test->test")
   )
 
   lazy val persistenceShared = Project(
