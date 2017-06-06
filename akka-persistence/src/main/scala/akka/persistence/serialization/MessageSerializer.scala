@@ -27,6 +27,7 @@ trait Message extends Serializable
  * Protobuf serializer for [[akka.persistence.PersistentRepr]], [[akka.persistence.AtLeastOnceDelivery]] and [[akka.persistence.fsm.PersistentFSM.StateChangeEvent]] messages.
  */
 class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
+
   import PersistentRepr.Undefined
 
   val AtomicWriteClass = classOf[AtomicWrite]
@@ -35,6 +36,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   val AtLeastOnceDeliverySnapshotClass = classOf[AtLeastOnceDeliverySnapshot]
   val PersistentStateChangeEventClass = classOf[StateChangeEvent]
   val PersistentFSMSnapshotClass = classOf[PersistentFSMSnapshot[Any]]
+  val deserializeUsingManifest: Boolean = system.settings.config.getBoolean("akka.persistence.journal.message-serializer.deserialize-using-manifest")
 
   private lazy val serialization = SerializationExtension(system)
 
@@ -185,8 +187,10 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
 
     // serialize actor references with full address information (defaultAddress)
     transportInformation match {
-      case Some(ti) ⇒ Serialization.currentTransportInformation.withValue(ti) { payloadBuilder() }
-      case None     ⇒ payloadBuilder()
+      case Some(ti) ⇒ Serialization.currentTransportInformation.withValue(ti) {
+        payloadBuilder()
+      }
+      case None ⇒ payloadBuilder()
     }
   }
 
@@ -210,14 +214,21 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     AtomicWrite(atomicWrite.getPayloadList.asScala.map(persistent)(collection.breakOut))
   }
 
-  private def payload(persistentPayload: mf.PersistentPayload): Any = {
+  protected def payload(persistentPayload: mf.PersistentPayload): Any = {
     val manifest = if (persistentPayload.hasPayloadManifest)
-      persistentPayload.getPayloadManifest.toStringUtf8 else ""
+      persistentPayload.getPayloadManifest.toStringUtf8
+    else ""
 
-    serialization.deserialize(
-      persistentPayload.getPayload.toByteArray,
-      persistentPayload.getSerializerId,
-      manifest).get
+    if (deserializeUsingManifest) {
+      serialization.deserialize(
+        persistentPayload.getPayload.toByteArray,
+        Class.forName(manifest)).get
+    } else {
+      serialization.deserialize(
+        persistentPayload.getPayload.toByteArray,
+        persistentPayload.getSerializerId,
+        manifest).get
+    }
   }
 
 }
