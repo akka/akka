@@ -497,7 +497,7 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
     "pass through data" in {
       val f = Source(1 to 3)
         .map(b ⇒ SendBytes(ByteString(b.toByte)))
-        .via(TLSPlacebo() join Flow.apply)
+        .via(TLSPlacebo() join Flow())
         .grouped(10)
         .runWith(Sink.head)
       val result = Await.result(f, 3.seconds)
