@@ -45,6 +45,15 @@ final class PersistenceSettings(config: Config) {
     val redeliverInterval: FiniteDuration =
       config.getMillisDuration("at-least-once-delivery.redeliver-interval")
 
+    val redeliverFactor: Int =
+      config.getInt("at-least-once-delivery.redeliver-factor")
+
+    val redeliverRandomPart: Double = {
+      val value = config.getDouble("at-least-once-delivery.redeliver-random-part")
+      require(value >= 0, "akka.persistence.at-least-once-delivery.redeliver-random-part should be greater or equal 0. was = " + value)
+      value
+    }
+
     val redeliveryBurstLimit: Int =
       config.getInt("at-least-once-delivery.redelivery-burst-limit")
 

@@ -181,6 +181,32 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
     Persistence(context.system).settings.atLeastOnceDelivery.redeliverInterval
 
   /**
+   * Constance used for multiplication interval after delivery fail
+   *
+   * The default value can be configure with the
+   * `akka.persistence.at-least-once-delivery.redeliver-factor`
+   * configuration key. This method can be overridden by implementation classes to return
+   * non-default values
+   */
+  def redeliverFactor: Int = defaultRedeliverFactor
+
+  private val defaultRedeliverFactor: Int =
+    Persistence(context.system).settings.atLeastOnceDelivery.redeliverFactor
+
+  /**
+   * Constance used to define random part od redelivery delay.
+   *
+   * The default value can be configure with the
+   * `akka.persistence.at-least-once-delivery.redeliver-random-part`
+   * configuration key. This method can be overridden by implementation classes to return
+   * non-default values.
+   */
+  def redeliverRandomPart: Double = defaultRedeliverRandomPart
+
+  private val defaultRedeliverRandomPart: Double =
+    Persistence(context.system).settings.atLeastOnceDelivery.redeliverRandomPart
+
+  /**
    * Maximum number of unconfirmed messages that will be sent at each redelivery burst
    * (burst frequency is half of the redelivery interval).
    * If there's a lot of unconfirmed messages (e.g. if the destination is not available for a long time),
@@ -252,7 +278,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
         s"Too many unconfirmed messages, maximum allowed is [$maxUnconfirmedMessages]")
 
     val deliveryId = nextDeliverySequenceNr()
-    val now = if (recoveryRunning) { System.nanoTime() - redeliverInterval.toNanos } else System.nanoTime()
+    val now = if (recoveryRunning) { System.nanoTime() - redeliverInterval.toNanos } else System.nanoTime() + redeliverInterval.toNanos
     val d = Delivery(destination, deliveryIdToMessage(deliveryId), now, attempt = 0)
 
     if (recoveryRunning)
@@ -293,8 +319,23 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
 
   private def redeliverOverdue(): Unit = {
     val now = System.nanoTime()
-    val deadline = now - redeliverInterval.toNanos
+    val deadline = now - (redeliverInterval.toNanos / 2) // move to next attemt
     var warnings = Vector.empty[UnconfirmedDelivery]
+
+    // Scala doesn't provide any power using integer  base and exponent
+    // Implementation based on exponentiation by squaring
+    def pow(base: Long, exponent: Int): Long = {
+      if (exponent <= 0) {
+        1
+      } else if (exponent == 1) {
+        base
+      } else if ((exponent & 1L) == 1L) {
+        base * pow(base, exponent - 1)
+      } else {
+        val result = pow(base, exponent / 2)
+        result * result
+      }
+    }
 
     unconfirmed
       .iterator
@@ -302,7 +343,10 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
       .take(redeliveryBurstLimit)
       .foreach {
         case (deliveryId, delivery) ⇒
-          send(deliveryId, delivery, now)
+          val basicDelay: Long = defaultRedeliverInterval.toNanos * pow(redeliverFactor, delivery.attempt - 1)
+          val randomizedPart: Long = (redeliverRandomPart * Math.random() * basicDelay).toLong
+          val nextAttempts = now + basicDelay + randomizedPart
+          send(deliveryId, delivery, nextAttempts)
 
           if (delivery.attempt == warnAfterNumberOfUnconfirmedAttempts)
             warnings :+= UnconfirmedDelivery(deliveryId, delivery.destination, delivery.message)
