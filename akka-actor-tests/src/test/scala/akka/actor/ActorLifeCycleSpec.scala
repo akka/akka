@@ -45,7 +45,7 @@ class ActorLifeCycleSpec extends AkkaSpec("akka.actor.serialize-messages=off") w
         }).withDeploy(Deploy.local)
         val restarter = Await.result((supervisor ? restarterProps).mapTo[ActorRef], timeout.duration)
 
-        expectMsg(("preStart", id, 0))
+        expectMsg(("preStart", id, 42))
         restarter ! Kill
         expectMsg(("preRestart", id, 0))
         expectMsg(("postRestart", id, 1))
