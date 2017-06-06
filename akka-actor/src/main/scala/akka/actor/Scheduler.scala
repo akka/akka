@@ -14,6 +14,34 @@ import scala.util.control.NoStackTrace
  */
 private final case class SchedulerException(msg: String) extends akka.AkkaException(msg) with NoStackTrace
 
+/**
+ * Helper Runnable class used to send a message to an actor for scheduling purposes.
+ * If the target actor has been terminated run will throw SchedulerException 
+ * instead of sending the message
+ */
+case class SendToActor(receiver: ActorRef,
+                       message: Any)(
+                         implicit sender: ActorRef = Actor.noSender) extends Runnable {
+  def run = {
+    if (receiver.isTerminated) {
+      throw new SchedulerException("scheduling target actor is terminated")
+    }
+    receiver ! message
+
+  }
+}
+
+/**
+ * Helper Runnable class used to send a message to a selection of actors for scheduling purposes
+ */
+case class SendToSelection(receiver: ActorSelection,
+                           message: Any)(
+                             implicit sender: ActorRef = Actor.noSender) extends Runnable {
+  def run = {
+    receiver ! message
+  }
+}
+
 // The Scheduler trait is included in the documentation. KEEP THE LINES SHORT!!!
 //#scheduler
 /**

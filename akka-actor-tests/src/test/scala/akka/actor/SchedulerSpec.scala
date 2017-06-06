@@ -38,7 +38,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       case object Tick
       case object Tock
 
-      val tickActor, tickActor2 = system.actorOf(Props(new Actor {
+      val tickActor, tickActor2, tickActor3 = system.actorOf(Props(new Actor {
         var ticks = 0
         def receive = {
           case Tick ⇒
@@ -62,6 +62,84 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       // after max 1 second it should be executed at least the 3 times already
       expectMsg(Tock)
       expectMsg(Tock)
+      expectMsg(Tock)
+      expectNoMsg(500 millis)
+
+      collectCancellable(system.scheduler.schedule(0 milliseconds, 50 milliseconds, SendToActor(tickActor3, Tick)))
+
+      // after max 1 second it should be executed at least the 3 times already
+      expectMsg(Tock)
+      expectMsg(Tock)
+      expectMsg(Tock)
+      expectNoMsg(500 millis)
+    }
+
+    "schedule more than once to mutilple actors using a selection" taggedAs TimingTest in {
+      case object Tick
+      case object Tock
+      case object BadTock
+
+      val tickActorOne = system.actorOf(Props(new Actor {
+        var ticks = 0
+        def receive = {
+          case Tick ⇒
+            if (ticks < 3) {
+              sender() ! Tock
+              ticks += 1
+            }
+        }
+      }), "selectiongroupone")
+
+      val tickActorTwo = system.actorOf(Props(new Actor {
+        var ticks = 0
+        def receive = {
+          case Tick ⇒
+            if (ticks < 2) {
+              sender() ! Tock
+              ticks += 1
+            }
+        }
+      }), "selectiongrouptwo")
+
+      val tickActorThree = system.actorOf(Props(new Actor {
+        var ticks = 0
+        def receive = {
+          case Tick ⇒
+            if (ticks < 1) {
+              sender() ! BadTock
+              ticks += 1
+            }
+        }
+      }), "badselection")
+
+      // run every 50 milliseconds to both actors (use wildcard selection)
+      collectCancellable(system.scheduler.schedule(0 milliseconds, 50 milliseconds, SendToSelection(system.actorSelection("/user/selectiongroup*"), Tick)))
+
+      // we expect the first actor to respond three times and the second twice
+      expectMsg(Tock)
+      expectMsg(Tock)
+      expectMsg(Tock)
+      expectMsg(Tock)
+      expectMsg(Tock)
+      expectNoMsg(500 millis)
+    }
+
+    "schedule once to an actor using a selection" taggedAs TimingTest in {
+      case object Tick
+      case object Tock
+
+      val tickActor = system.actorOf(Props(new Actor {
+        var ticks = 0
+        def receive = {
+          case Tick ⇒
+            sender() ! Tock
+        }
+      }), "selectiononce")
+
+      // run once with a selection matching only this actor
+      collectCancellable(system.scheduler.scheduleOnce(0 milliseconds, SendToSelection(system.actorSelection("/user/selectiononce"), Tick)))
+
+      //expect one message
       expectMsg(Tock)
       expectNoMsg(500 millis)
     }
