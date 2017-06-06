@@ -159,8 +159,13 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
       runOn(second) {
         val p = TestProbe()(sys)
         sys.actorOf(echoProps(p.ref), "echo")
-        p.send(sys.actorOf(Props[Parent], "parent"), (Props[Hello], "hello"))
-        p.expectMsg(15.seconds, "HelloParent")
+        val parent = sys.actorOf(Props[Parent], "parent")
+        within(15.seconds) {
+          awaitAssert {
+            p.send(parent, (Props[Hello], "hello"))
+            p.expectMsg(3.seconds, "HelloParent")
+          }
+        }
       }
 
       enterBarrier("re-deployed")
