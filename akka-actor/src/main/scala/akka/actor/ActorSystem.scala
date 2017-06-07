@@ -697,25 +697,34 @@ private[akka] class ActorSystemImpl(
                   | HTTP etc. have their own version numbers - please make sure you're using a compatible set of libraries.
                  """.stripMargin.replaceAll("[\r\n]", ""))
 
-            if (settings.JvmExitOnFatalError) {
-              try {
-                markerLogging.error(LogMarker.Security, cause, "Uncaught error from thread [{}] shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled", thread.getName)
-                import System.err
-                err.print("Uncaught error from thread [")
-                err.print(thread.getName)
-                err.print("] shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled for ActorSystem[")
-                err.print(name)
-                err.println("]")
-                cause.printStackTrace(System.err)
-                System.err.flush()
-              } finally {
-                System.exit(-1)
-              }
-            } else {
-              markerLogging.error(LogMarker.Security, cause, "Uncaught fatal error from thread [{}] shutting down ActorSystem [{}]", thread.getName, name)
-              terminate()
-            }
+            if (settings.JvmExitOnFatalError)
+              try logFatalError("shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled for", cause, thread)
+              finally System.exit(-1)
+            else
+              try logFatalError("shutting down", cause, thread)
+              finally terminate()
         }
+      }
+
+      @inline
+      private def logFatalError(message: String, cause: Throwable, thread: Thread): Unit = {
+        // First log to stderr as this has the best chance to get through in an 'emergency panic' situation:
+        import System.err
+        err.print("Uncaught error from thread [")
+        err.print(thread.getName)
+        err.print("]: ")
+        err.print(cause.getMessage)
+        err.print(", ")
+        err.print(message)
+        err.print(" for ActorSystem[")
+        err.print(name)
+        err.println("]")
+        System.err.flush()
+        cause.printStackTrace(System.err)
+        System.err.flush()
+
+        // Also log using the normal infrastructure - hope for the best:
+        markerLogging.error(LogMarker.Security, cause, "Uncaught error from thread [{}]: " + cause.getMessage + ", " + message + " ActorSystem[{}]", thread.getName, name)
       }
     }
 
