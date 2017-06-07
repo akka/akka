@@ -45,8 +45,8 @@ class DisabledJavaSerializerWarningSpec extends AkkaSpec(
       }
     }
 
-    "log DisabledJavaSerializer message" in {
-      EventFilter.warning(start = "Incoming message is using DisabledJavaSerializer", occurrences = 1).intercept {
+    "log and throw exception for erroneous incoming messages when Java Serialization is off" in {
+      EventFilter.warning(start = "Incoming message attempted to use Java Serialization", occurrences = 1).intercept {
         intercept[DisabledJavaSerializer.JavaSerializationException] {
           val byteBuffer = ByteBuffer.allocate(128).order(ByteOrder.LITTLE_ENDIAN)
           val esys = system.asInstanceOf[ExtendedActorSystem]

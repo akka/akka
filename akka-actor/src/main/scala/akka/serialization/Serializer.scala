@@ -351,8 +351,9 @@ final case class DisabledJavaSerializer(system: ExtendedActorSystem) extends Ser
   }
 
   override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = {
-    log.warning(LogMarker.Security, "Incoming message is using DisabledJavaSerializer resulting in Message class None! Manifest was: [{}]", manifest)
-    this.fromBinary(empty, None)
+    // we don't capture the manifest or mention it in the log as the default setting for includeManifest is set to false.
+    log.warning(LogMarker.Security, "Incoming message attempted to use Java Serialization even though `akka.actor.allow-java-serialization = off` was set!")
+    throw IllegalDeserialization
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = {
