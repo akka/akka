@@ -137,6 +137,11 @@ project akka-cluster
 multi-jvm:testOnly akka.cluster.SunnyWeather
 ```
 
+### Do not use `-optimize` Scala compiler flag
+
+Akka has not been compiled or tested with `-optimize` Scala compiler flag. (In sbt, you can specify compiler options in the `scalacOptions` key.)
+Strange behavior has been reported by users that have tried it.
+
 ## The `validatePullRequest` task
 
 The Akka build includes a special task called `validatePullRequest` which investigates the changes made as well as dirty
