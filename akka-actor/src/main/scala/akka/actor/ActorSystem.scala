@@ -690,6 +690,7 @@ private[akka] class ActorSystemImpl(
         err.print(" for ActorSystem[")
         err.print(name)
         err.println("]")
+        System.err.flush()
         cause.printStackTrace(System.err)
         System.err.flush()
 
