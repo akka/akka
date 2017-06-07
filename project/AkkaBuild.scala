@@ -10,7 +10,8 @@ import java.util.Properties
 import akka.TestExtras.JUnitFileReporting
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
-import sbt.{TestResult, _}
+import sbt._
+import sbtwhitesource.WhiteSourcePlugin.autoImport._
 
 object AkkaBuild {
 
@@ -105,6 +106,16 @@ object AkkaBuild {
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
     licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+    // do not change the value of whitesourceProduct
+    whitesourceProduct in ThisBuild               := "Lightbend Reactive Platform",
+    whitesourceAggregateProjectName in ThisBuild  := { "akka-" + (if (version.value.endsWith("SNAPSHOT")) "master" else majorMinor(version.value).map(_ + "-current").getOrElse("snapshot")) },
+    whitesourceAggregateProjectToken in ThisBuild := {
+      // These are not secrets but integration identifiers:
+      whitesourceAggregateProjectName.value match {
+        case "akka-master" => "d6ca7d74-d8d8-4682-b32c-6d62ea76d26a"
+        case other => throw new Exception(s"Please add project '$other' to whitesource and record the integration token here")
+      }
+    },
     homepage := Some(url("http://akka.io/")),
 
     apiURL := Some(url(s"http://doc.akka.io/api/akka/${version.value}")),
@@ -179,4 +190,5 @@ object AkkaBuild {
     }
   }
 
+  def majorMinor(version: String): Option[String] ="""\d+\.\d+""".r.findFirstIn(version)
 }
