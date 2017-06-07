@@ -374,10 +374,10 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         testConductor.exit(receptionistRoleName, 0).await
         remainingServerRoleNames -= receptionistRoleName
         awaitAssert({
-          c ! ClusterClient.Send("/user/service2", "hi again", localAffinity = true)
+          client ! ClusterClient.Send("/user/service2", "hi again", localAffinity = true)
           expectMsgType[Reply](1 second).msg should be("hi again-ack")
         }, max = remaining - 3.seconds)
-        system.stop(c)
+        system.stop(client)
       }
       enterBarrier("verifed-3")
       receiveWhile(2 seconds) {
