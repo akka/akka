@@ -34,4 +34,4 @@ resourceGenerators in Test += Def.task {
     }
   }
   Seq(h2spec)
-}.taskValue
+}
