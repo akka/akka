@@ -14,9 +14,21 @@ Cluster Metrics Extension is a separate Akka module delivered in `akka-cluster-m
 To enable usage of the extension you need to add the following dependency to your project:
 :
 
-@@@vars
+Scala
+:  @@@ vars
 ```
 "com.typesafe.akka" % "akka-cluster-metrics_$scala.binary_version$" % "$akka.version$"
+```
+@@@
+
+Java
+:  @@@ vars
+```
+<dependency>
+  <groupId>com.typesafe.akka</groupId>
+  <artifactId>akka-cluster-metrics_$scala.binary_version$</artifactId>
+  <version>$akka.version$</version>
+</dependency>
 ```
 @@@
 
@@ -60,12 +72,21 @@ The payload of the `akka.cluster.metrics.ClusterMetricsChanged` event will conta
 latest metrics of the node as well as other cluster member nodes metrics gossip
 which was received during the collector sample interval.
 
-You can subscribe your metrics listener actors to these events in order to implement custom node lifecycle
-:
+You can subscribe your metrics listener actors to these events in order to implement custom node lifecycle:
 
+Scala
+:  @@@ vars
 ```
 ClusterMetricsExtension(system).subscribe(metricsListenerActor)
 ```
+@@@
+
+Java
+:  @@@ vars
+```
+ClusterMetricsExtension.get(system).subscribe(metricsListenerActor);
+```
+@@@
 
 ## Hyperic Sigar Provisioning
 
@@ -96,9 +117,21 @@ unique per instance directory. You can control the extract directory with the
 To enable usage of Sigar you can add the following dependency to the user project
 :
 
-@@@vars
+Scala
+:  @@@vars
 ```
 "io.kamon" % "sigar-loader" % "$sigar_loader.version$"
+```
+@@@
+
+Java
+:  @@@vars
+```
+<dependency>
+  <groupId>io.kamon</groupId>
+  <artifactId>sigar-loader</artifactId>
+  <version>$sigar_loader.version$</version>
+</dependency>
 ```
 @@@
 
@@ -122,11 +155,19 @@ Let's take a look at this router in action. What can be more demanding than calc
 
 The backend worker that performs the factorial calculation:
 
-@@snip [FactorialBackend.scala]($code$/scala/docs/cluster/FactorialBackend.scala) { #backend }
+Scala
+:  @@snip [FactorialBackend.scala]($code$/scala/docs/cluster/FactorialBackend.scala) { #backend }
+
+Java
+:  @@snip [FactorialBackend.java]($code$/java/jdocs/cluster/FactorialBackend.java) { #backend }
 
 The frontend that receives user jobs and delegates to the backends via the router:
 
-@@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #frontend }
+Scala
+:  @@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #frontend }
+
+Java
+:  @@snip [FactorialFrontend.java]($code$/java/jdocs/cluster/FactorialFrontend.java) { #frontend }
 
 As you can see, the router is defined in the same way as other routers, and in this case it is configured as follows:
 
@@ -156,20 +197,27 @@ other things work in the same way as other routers.
 
 The same type of router could also have been defined in code:
 
-@@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #router-lookup-in-code }
+Scala
+:  @@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #router-lookup-in-code #router-deploy-in-code }
 
-@@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #router-deploy-in-code }
+Java
+:  @@snip [FactorialFrontend.java]($code$/java/jdocs/cluster/FactorialFrontend.java) { #router-lookup-in-code #router-deploy-in-code }
 
 The easiest way to run **Adaptive Load Balancing** example yourself is to download the ready to run
-@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)
+@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)] @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
 together with the tutorial. It contains instructions on how to run the **Adaptive Load Balancing** sample.
-The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-cluster-scala).
+The source code of this sample can be found in the 
+@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
 
 ## Subscribe to Metrics Events
 
 It is possible to subscribe to the metrics events directly to implement other functionality.
 
-@@snip [MetricsListener.scala]($code$/scala/docs/cluster/MetricsListener.scala) { #metrics-listener }
+Scala
+:  @@snip [MetricsListener.scala]($code$/scala/docs/cluster/MetricsListener.scala) { #metrics-listener }
+
+Java
+:  @@snip [MetricsListener.java]($code$/java/jdocs/cluster/MetricsListener.java) { #metrics-listener }
 
 ## Custom Metrics Collector
 
