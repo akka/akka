@@ -4,14 +4,14 @@
 
 ## Source stages
 
-These built-in sources are available from `akka.stream.scaladsl.Source`:
+These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] @java[`akka.stream.javadsl.Source`]:
 
 ---------------------------------------------------------------
 
 ### fromIterator
 
 Stream the values from an `Iterator`, requesting the next value when there is demand. The iterator will be created anew
-for each materialization, which is the reason the method takes a function rather than an iterator directly.
+for each materialization, which is the reason the @scala[`method`] @java[`factory`] takes a @scala[`function`] @java[`Creator`] rather than an `Iterator` directly.
 
 If the iterator perform blocking operations, make sure to run it on a separate dispatcher.
 
@@ -21,6 +21,8 @@ If the iterator perform blocking operations, make sure to run it on a separate d
 
 ---------------------------------------------------------------
 
+@@@ div { .group-scala }
+
 ### apply
 
 Stream the values of an `immutable.Seq`.
@@ -28,6 +30,17 @@ Stream the values of an `immutable.Seq`.
 **emits** the next value of the seq
 
 **completes** when the last element of the seq has been emitted
+
+@@@
+
+@@@ div { .group-java }
+
+### from
+
+Stream the values of an `Iterable`. Make sure the `Iterable` is immutable or at least not modified after being used
+as a source.
+
+@@@
 
 ---------------------------------------------------------------
 
@@ -88,7 +101,7 @@ If the future fails the stream is failed with that exception.
 
 ### fromCompletionStage
 
-Send the single value of the Java `CompletionStage` when it completes and there is demand.
+Send the single value of the `CompletionStage` when it completes and there is demand.
 If the future fails the stream is failed with that exception.
 
 **emits** the future completes
@@ -121,8 +134,8 @@ If the *completion* fails the stream is failed with that exception.
 
 ### unfold
 
-Stream the result of a function as long as it returns a `Some`, the value inside the option
-consists of a tuple where the first value is a state passed back into the next call to the function allowing
+Stream the result of a function as long as it returns a @scala[`Some`] @java[`Optional`], the value inside the option
+consists of a @scala[tuple] @java[pair] where the first value is a state passed back into the next call to the function allowing
 to pass a state. The first invocation of the provided fold function will receive the `zero` state.
 
 Can be used to implement many stateful sources without having to touch the more low level `GraphStage` API.
@@ -135,14 +148,14 @@ Can be used to implement many stateful sources without having to touch the more 
 
 ### unfoldAsync
 
-Just like `unfold` but the fold function returns a `Future` which will cause the source to
+Just like `unfold` but the fold function returns a @scala[`Future`] @java[`CompletionStage`] which will cause the source to
 complete or emit when it completes.
 
 Can be used to implement many stateful sources without having to touch the more low level `GraphStage` API.
 
 **emits** when there is demand and unfold state returned future completes with some value
 
-**completes** when the future returned by the unfold function completes with an empty value
+**completes** when the @scala[future] @java[CompletionStage] returned by the unfold function completes with an empty value
 
 ---------------------------------------------------------------
 
@@ -159,8 +172,8 @@ an API but there are no elements to emit.
 
 ### maybe
 
-Materialize a `Promise[Option[T]]` that if completed with a `Some[T]` will emit that *T* and then complete
-the stream, or if completed with `None` complete the stream right away.
+Materialize a @scala[`Promise[Option[T]]`] @java[`CompletionStage`] that if completed with a @scala[`Some[T]`] @java[`Optional`] 
+will emit that *T* and then complete the stream, or if completed with @scala[`None`] @java[`empty Optional`] complete the stream right away.
 
 **emits** when the returned promise is completed with some value
 
@@ -206,7 +219,17 @@ elements or failing the stream, the strategy is chosen by the user.
 
 **emits** when there is demand and there are messages in the buffer or a message is sent to the actorref
 
-**completes** when the actorref is sent `akka.actor.Status.Success` or `PoisonPill`
+**completes** when the `ActorRef` is sent `akka.actor.Status.Success` or `PoisonPill`
+
+---------------------------------------------------------------
+
+### range
+
+Emit each integer in a range, with an option to take bigger steps than 1.
+
+**emits** when there is demand, the next value
+
+**completes** when the end of the range has been reached
 
 ---------------------------------------------------------------
 
@@ -224,7 +247,7 @@ Combine several sources, using a given strategy such as merge or concat, into on
 
 Wrap any resource that can be opened, queried for next element (in a blocking way) and closed using three distinct functions into a source.
 
-**emits** when there is demand and read function returns value
+**emits** when there is demand and read @scala[function] @java[method] returns value
 
 **completes** when read function returns `None`
 
@@ -233,11 +256,11 @@ Wrap any resource that can be opened, queried for next element (in a blocking wa
 ### unfoldResourceAsync
 
 Wrap any resource that can be opened, queried for next element (in a blocking way) and closed using three distinct functions into a source.
-Functions return `Future` to achieve asynchronous processing
+Functions return @scala[`Future`] @java[`CompletionStage`] to achieve asynchronous processing
 
-**emits** when there is demand and `Future` from read function returns value
+**emits** when there is demand and @scala[`Future`] @java[`CompletionStage`] from read function returns value
 
-**completes** when `Future` from read function returns `None`
+**completes** when @scala[`Future`] @java[`CompletionStage`] from read function returns `None`
 
 ---------------------------------------------------------------
 
@@ -290,14 +313,14 @@ Combine the elements of multiple streams into a stream of sequences using a comb
 
 ## Sink stages
 
-These built-in sinks are available from `akka.stream.scaladsl.Sink`:
+These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @java[`akka.stream.javadsl.Sink`]:
 
 ---------------------------------------------------------------
 
 ### head
 
-Materializes into a `Future` which completes with the first value arriving,
-after this the stream is canceled. If no element is emitted, the future is be failed.
+Materializes into a @scala[`Future`] @java[`CompletionStage`] which completes with the first value arriving,
+after this the stream is canceled. If no element is emitted, the @scala[`Future`] @java[`CompletionStage`] is failed.
 
 **cancels** after receiving one element
 
@@ -307,8 +330,8 @@ after this the stream is canceled. If no element is emitted, the future is be fa
 
 ### headOption
 
-Materializes into a `Future[Option[T]]` which completes with the first value arriving wrapped in a `Some`,
-or a `None` if the stream completes without any elements emitted.
+Materializes into a @scala[`Future[Option[T]]`] @java[`CompletionStage<Optional<T>>`] which completes with the first value arriving wrapped in @scala[`Some`] @java[`Optional`],
+or @scala[a `None`] @java[an empty Optional] if the stream completes without any elements emitted.
 
 **cancels** after receiving one element
 
@@ -318,8 +341,8 @@ or a `None` if the stream completes without any elements emitted.
 
 ### last
 
-Materializes into a `Future` which will complete with the last value emitted when the stream
-completes. If the stream completes with no elements the future is failed.
+Materializes into a @scala[`Future`] @java[`CompletionStage`] which will complete with the last value emitted when the stream
+completes. If the stream completes with no elements the @scala[`Future`] @java[`CompletionStage`] is failed.
 
 **cancels** never
 
@@ -329,9 +352,9 @@ completes. If the stream completes with no elements the future is failed.
 
 ### lastOption
 
-Materialize a `Future[Option[T]]` which completes with the last value
-emitted wrapped in an `Some` when the stream completes. if the stream completes with no elements the future is
-completed with `None`.
+Materialize a @scala[`Future[Option[T]]`] @java[`CompletionStage<Optional<T>>`] which completes with the last value
+emitted wrapped in an @scala[`Some`] @java[`Optional`] when the stream completes. if the stream completes with no elements the `CompletionStage` is
+completed with @scala[`None`] @java[an empty `Optional`].
 
 **cancels** never
 
@@ -360,8 +383,8 @@ Immediately cancel the stream
 
 ### seq
 
-Collect values emitted from the stream into a collection, the collection is available through a `Future` or
-which completes when the stream completes. Note that the collection is bounded to `Int.MaxValue`,
+Collect values emitted from the stream into a collection, the collection is available through a @scala[`Future`] @java[`CompletionStage`] or
+which completes when the stream completes. Note that the collection is bounded to @scala[`Int.MaxValue`] @java[`Integer.MAX_VALUE`],
 if more element are emitted the sink will cancel the stream
 
 **cancels** If too many values are collected
@@ -372,7 +395,7 @@ if more element are emitted the sink will cancel the stream
 
 Invoke a given procedure for each element received. Note that it is not safe to mutate shared state from the procedure.
 
-The sink materializes into a  `Future[Option[Done]]` which completes when the
+The sink materializes into a  @scala[`Future[Option[Done]]`] @java[`CompletionStage<Optional<Done>`] which completes when the
 stream completes, or fails if the stream fails.
 
 Note that it is not safe to mutate state from the procedure.
@@ -430,7 +453,7 @@ a buffer in case stream emitting elements faster than queue pulling them.
 Fold over emitted element with a function, where each invocation will get the new element and the result from the
 previous fold invocation. The first invocation will be provided the `zero` value.
 
-Materializes into a future that will complete with the last state when the stream has completed.
+Materializes into a @scala[`Future`] @java[`CompletionStage`] that will complete with the last state when the stream has completed.
 
 This stage allows combining values into a result without a global mutable state by instead passing the state along
 between invocations.
@@ -446,7 +469,7 @@ between invocations.
 Apply a reduction function on the incoming elements and pass the result to the next invocation. The first invocation
 receives the two first elements of the flow.
 
-Materializes into a future that will be completed by the last result of the reduction function.
+Materializes into a @scala[`Future`] @java[`CompletionStage`] that will be completed by the last result of the reduction function.
 
 **cancels** never
 
@@ -525,7 +548,7 @@ dispatcher configured through the `akka.stream.blocking-io-dispatcher`.
 Create a sink that wraps an `OutputStream`. Takes a function that produces an `OutputStream`, when the sink is
 materialized the function will be called and bytes sent to the sink will be written to the returned `OutputStream`.
 
-Materializes into a `Future` which will complete with a `IOResult` when the stream
+Materializes into a @scala[`Future`] @java[`CompletionStage`] which will complete with a `IOResult` when the stream
 completes.
 
 Note that a flow can be materialized multiple times, so the function producing the `OutputStream` must be able
@@ -551,7 +574,7 @@ The `InputStream` will be ended when the stream flowing into this `Sink` complet
 Create a source that wraps an `InputStream`. Takes a function that produces an `InputStream`, when the source is
 materialized the function will be called and bytes from the `InputStream` will be emitted into the stream.
 
-Materializes into a `Future` which will complete with a `IOResult` when the stream
+Materializes into a @scala[`Future`] @java[`CompletionStage`] which will complete with a `IOResult` when the stream
 completes.
 
 Note that a flow can be materialized multiple times, so the function producing the `InputStream` must be able
@@ -593,7 +616,7 @@ downstream on demand.
 
 ### javaCollector
 
-Create a sink which materializes into a `Future` which will be completed with a result of the Java 8 `Collector`
+Create a sink which materializes into a @scala[`Future`] @java[`CompletionStage`] which will be completed with a result of the Java 8 `Collector`
 transformation and reduction operations. This allows usage of Java 8 streams transformations for reactive streams.
 The `Collector` will trigger demand downstream. Elements emitted through the stream will be accumulated into a mutable
 result container, optionally transformed into a final representation after all input elements have been processed.
@@ -606,7 +629,7 @@ to handle multiple invocations.
 
 ### javaCollectorParallelUnordered
 
-Create a sink which materializes into a `Future` which will be completed with a result of the Java 8 `Collector`
+Create a sink which materializes into a @scala[`Future`] @java[`CompletionStage`] which will be completed with a result of the Java 8 `Collector`
 transformation and reduction operations. This allows usage of Java 8 streams transformations for reactive streams.
 The `Collector` is triggering demand downstream. Elements emitted through the stream will be accumulated into a mutable
 result container, optionally transformed into a final representation after all input elements have been processed.
@@ -627,7 +650,7 @@ Sources and sinks for reading and writing files can be found on `FileIO`.
 
 ### fromPath
 
-Emit the contents of a file, as `ByteString` s, materializes into a `Future` which will be completed with
+Emit the contents of a file, as `ByteString` s, materializes into a @scala[`Future`] @java[`CompletionStage`]` which will be completed with
 a `IOResult` upon reaching the end of the file or if there is a failure.
 
 ---------------------------------------------------------------
@@ -786,13 +809,13 @@ the second element is required from downstream.
 
 ### scanAsync
 
-Just like `scan` but receiving a function that results in a `Future` to the next value.
+Just like `scan` but receiving a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
 
-**emits** when the `Future` resulting from the function scanning the element resolves to the next value
+**emits** when the @scala[`Future`] @java[`CompletionStage`] resulting from the function scanning the element resolves to the next value
 
 **backpressures** when downstream backpressures
 
-**completes** when upstream completes and the last `Future` is resolved
+**completes** when upstream completes and the last @scala[`Future`] @java[`CompletionStage`] is resolved
 
 ---------------------------------------------------------------
 
@@ -811,13 +834,13 @@ complete the current value is emitted downstream.
 
 ### foldAsync
 
-Just like `fold` but receiving a function that results in a `Future` to the next value.
+Just like `fold` but receiving a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
 
-**emits** when upstream completes and the last `Future` is resolved
+**emits** when upstream completes and the last @scala[`Future`] @java[`CompletionStage`] is resolved
 
 **backpressures** when downstream backpressures
 
-**completes** when upstream completes and the last `Future` is resolved
+**completes** when upstream completes and the last @scala[`Future`] @java[`CompletionStage`] is resolved
 
 ---------------------------------------------------------------
 
@@ -1012,7 +1035,7 @@ Evaluated cost of each element defines how many elements will be allowed to trav
 
 Log elements flowing through the stream as well as completion and erroring. By default element and
 completion signals are logged on debug level, and errors are logged on Error level.
-This can be changed by calling `Attributes.logLevels(...)` on the given Flow.
+This can be changed by calling @scala[`Attributes.logLevels(...)`] @java[`Attributes.createLogLevels(...)`] on the given Flow.
 
 **emits** when upstream emits
 
@@ -1078,38 +1101,38 @@ The order in which the *in* and *out* sides receive their respective completion 
 ## Asynchronous processing stages
 
 These stages encapsulate an asynchronous computation, properly handling backpressure while taking care of the asynchronous
-operation at the same time (usually handling the completion of a Future).
+operation at the same time (usually handling the completion of a @scala[`Future`] @java[`CompletionStage`]).
 
 ---------------------------------------------------------------
 
 ### mapAsync
 
-Pass incoming elements to a function that return a `Future` result. When the future arrives the result is passed
+Pass incoming elements to a function that return a @scala[`Future`] @java[`CompletionStage`] result. When the @scala[`Future`] @java[`CompletionStage`] arrives the result is passed
 downstream. Up to `n` elements can be processed concurrently, but regardless of their completion time the incoming
 order will be kept when results complete. For use cases where order does not mather `mapAsyncUnordered` can be used.
 
-If a Future fails, the stream also fails (unless a different supervision strategy is applied)
+If a @scala[`Future`] @java[`CompletionStage`] fails, the stream also fails (unless a different supervision strategy is applied)
 
-**emits** when the Future returned by the provided function finishes for the next element in sequence
+**emits** when the @scala[`Future`] @java[`CompletionStage`] returned by the provided function finishes for the next element in sequence
 
-**backpressures** when the number of futures reaches the configured parallelism and the downstream backpressures
+**backpressures** when the number of @scala[`Future` s] @java[`CompletionStage` s] reaches the configured parallelism and the downstream backpressures
 
-**completes** when upstream completes and all futures has been completed and all elements has been emitted
+**completes** when upstream completes and all @scala[`Future` s] @java[`CompletionStage` s] has been completed and all elements has been emitted
 
 ---------------------------------------------------------------
 
 ### mapAsyncUnordered
 
-Like `mapAsync` but `Future` results are passed downstream as they arrive regardless of the order of the elements
+Like `mapAsync` but @scala[`Future`] @java[`CompletionStage`] results are passed downstream as they arrive regardless of the order of the elements
 that triggered them.
 
-If a Future fails, the stream also fails (unless a different supervision strategy is applied)
+If a @scala[`Future`] @java[`CompletionStage`] fails, the stream also fails (unless a different supervision strategy is applied)
 
-**emits** any of the Futures returned by the provided function complete
+**emits** any of the @scala[`Future` s] @java[`CompletionStage` s] returned by the provided function complete
 
-**backpressures** when the number of futures reaches the configured parallelism and the downstream backpressures
+**backpressures** when the number of @scala[`Future` s] @java[`CompletionStage` s] reaches the configured parallelism and the downstream backpressures
 
-**completes** upstream completes and all futures has been completed  and all elements has been emitted
+**completes** upstream completes and all @scala[`Future` s] @java[`CompletionStage` s] has been completed  and all elements has been emitted
 
 ---------------------------------------------------------------
 
@@ -1560,7 +1583,7 @@ Merge multiple sources. Prefer one source if all sources has elements ready.
 
 ### zip
 
-Combines elements from each of multiple sources into tuples and passes the tuples downstream.
+Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream.
 
 **emits** when all of the inputs have an element available
 
@@ -1744,7 +1767,7 @@ partitioner function applied to the element.
 
 ### watchTermination
 
-Materializes to a `Future` that will be completed with Done or failed depending whether the upstream of the stage has been completed or failed.
+Materializes to a @scala[`Future`] @java[`CompletionStage`] that will be completed with Done or failed depending whether the upstream of the stage has been completed or failed.
 The stage otherwise passes through elements unchanged.
 
 **emits** when input has an element available

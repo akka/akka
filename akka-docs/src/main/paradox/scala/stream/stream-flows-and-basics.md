@@ -77,13 +77,20 @@ starting up Actors). Thanks to Flows being simply a description of the processin
 thread-safe, and freely shareable*, which means that it is for example safe to share and send them between actors, to have
 one actor prepare the work, and then have it be materialized at some completely different place in the code.
 
-@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materialization-in-steps }
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materialization-in-steps }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materialization-in-steps }
+
+@@@ div { .group-scala }
 
 After running (materializing) the `RunnableGraph[T]` we get back the materialized value of type T. Every stream processing
 stage can produce a materialized value, and it is the responsibility of the user to combine them to a new type.
 In the above example we used `toMat` to indicate that we want to transform the materialized value of the source and
 sink, and we used the convenience function `Keep.right` to say that we are only interested in the materialized value
 of the sink.
+
 In our example the `FoldSink` materializes a value of type `Future` which will represent the result
 of the folding process over the stream.  In general, a stream can expose multiple materialized values,
 but it is quite common to be interested in only the value of the Source or the Sink in the stream. For this reason
@@ -91,12 +98,36 @@ there is a convenience method called `runWith()` available for `Sink`, `Source` 
 a supplied `Source` (in order to run a `Sink`), a `Sink` (in order to run a `Source`) or
 both a `Source` and a `Sink` (in order to run a `Flow`, since it has neither attached yet).
 
-@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materialization-runWith }
+@@@
+
+@@@ div { .group-java }
+
+After running (materializing) the `RunnableGraph` we get a special container object, the `MaterializedMap`. Both
+sources and sinks are able to put specific objects into this map. Whether they put something in or not is implementation
+dependent. 
+
+For example a `FoldSink` will make a `CompletionStage` available in this map which will represent the result
+of the folding process over the stream.  In general, a stream can expose multiple materialized values,
+but it is quite common to be interested in only the value of the Source or the Sink in the stream. For this reason
+there is a convenience method called `runWith()` available for `Sink`, `Source` or `Flow` requiring, respectively,
+a supplied `Source` (in order to run a `Sink`), a `Sink` (in order to run a `Source`) or
+both a `Source` and a `Sink` (in order to run a `Flow`, since it has neither attached yet).
+@@@
+
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materialization-runWith }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materialization-runWith }
 
 It is worth pointing out that since processing stages are *immutable*, connecting them returns a new processing stage,
 instead of modifying the existing instance, so while constructing long flows, remember to assign the new value to a variable or run it:
 
-@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #source-immutable }
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #source-immutable }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #source-immutable }
 
 @@@ note
 
@@ -110,32 +141,43 @@ by providing named fan-out elements such as broadcast (signals all down-stream e
 In the above example we used the `runWith` method, which both materializes the stream and returns the materialized value
 of the given sink or source.
 
-Since a stream can be materialized multiple times, the materialized value will also be calculated anew for each such
+Since a stream can be materialized multiple times, the @scala[materialized value will also be calculated anew] @java[`MaterializedMap` returned is different] for each such
 materialization, usually leading to different values being returned each time.
 In the example below we create two running materialized instance of the stream that we described in the `runnable`
-variable, and both materializations give us a different `Future` from the map even though we used the same `sink`
+variable, and both materializations give us a different @scala[`Future`] @java[`CompletionStage`] from the map even though we used the same `sink`
 to refer to the future:
 
-@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #stream-reuse }
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #stream-reuse }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #stream-reuse }
 
 ### Defining sources, sinks and flows
 
 The objects `Source` and `Sink` define various ways to create sources and sinks of elements. The following
 examples show some of the most useful constructs (refer to the API documentation for more details):
 
-@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #source-sink }
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #source-sink }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #source-sink }
 
 There are various ways to wire up different parts of a stream, the following examples show some of the available options:
 
-@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-connecting }
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-connecting }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #flow-connecting }
 
 ### Illegal stream elements
 
 In accordance to the Reactive Streams specification ([Rule 2.13](https://github.com/reactive-streams/reactive-streams-jvm#2.13))
 Akka Streams do not allow `null` to be passed through the stream as an element. In case you want to model the concept
-of absence of a value we recommend using `scala.Option` or `scala.util.Either`.
+of absence of a value we recommend using @scala[`scala.Option` or `scala.util.Either`] @java[`java.util.Optional` which is available since Java 8].
 
-<a id="back-pressure-explained"></a>
 ## Back-pressure explained
 
 Akka Streams implement an asynchronous non-blocking back-pressure protocol standardised by the [Reactive Streams](http://reactive-streams.org/)
@@ -178,7 +220,7 @@ slower than the Publisher. In order to safeguard from these situations, the back
 during such situations, however we do not want to pay a high penalty for this safety net being enabled.
 
 The Reactive Streams protocol solves this by asynchronously signalling from the Subscriber to the Publisher
-`Request(n:Int)` signals. The protocol guarantees that the Publisher will never signal *more* elements than the
+@scala[`Request(n:Int)`] @java[`Request(int n)`] signals. The protocol guarantees that the Publisher will never signal *more* elements than the
 signalled demand. Since the Subscriber however is currently faster, it will be signalling these Request messages at a higher
 rate (and possibly also batching together the demand - requesting multiple elements in one Request signal). This means
 that the Publisher should not ever have to wait (be back-pressured) with publishing its incoming elements.
@@ -212,7 +254,7 @@ but is not restricted to that—it could also mean opening files or socket conne
 
 Materialization is triggered at so called "terminal operations". Most notably this includes the various forms of the `run()`
 and `runWith()` methods defined on `Source` and `Flow` elements as well as a small number of special syntactic sugars for running with
-well-known sinks, such as `runForeach(el => ...)` (being an alias to `runWith(Sink.foreach(el => ...))`.
+well-known sinks, such as @scala[`runForeach(el => ...)`] @java[`runForeach(el -> ...)`] (being an alias to @scala[`runWith(Sink.foreach(el => ...))`] @java[`runWith(Sink.foreach(el -> ...))`].
 
 Materialization is currently performed synchronously on the materializing thread.
 The actual stream processing is handled by actors started up during the streams materialization,
@@ -241,7 +283,11 @@ To allow for parallel processing you will have to insert asynchronous boundaries
 graphs by way of adding `Attributes.asyncBoundary` using the method `async` on `Source`, `Sink` and `Flow`
 to pieces that shall communicate with the rest of the graph in an asynchronous fashion.
 
-@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-async }
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-async }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #flow-async }
 
 In this example we create two regions within the flow which will be executed in one Actor each—assuming that adding
 and multiplying integers is an extremely costly operation this will lead to a performance gain since two CPUs can
@@ -278,7 +324,11 @@ to somehow express how these values should be composed to a final value when we 
 many combinator methods have variants that take an additional argument, a function, that will be used to combine the
 resulting values. Some examples of using these combiners are illustrated in the example below.
 
-@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-mat-combine }
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-mat-combine }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #flow-mat-combine }
 
 @@@ note
 
