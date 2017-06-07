@@ -34,7 +34,7 @@ object TcpHelper {
   def testServerProps(address: InetSocketAddress, probe: ActorRef): Props =
     Props(new TestServer(address, probe)).withDispatcher("akka.test.stream-dispatcher")
 
-  class TestClient(connection: ActorRef) extends Actor {
+  class TestClient(connection: ActorRef) extends Actor with ActorLogging {
     connection ! Tcp.Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
 
     var queuedWrites = Queue.empty[ByteString]
@@ -82,6 +82,7 @@ object TcpHelper {
         readTo ! c
         if (!c.isPeerClosed) context.stop(self)
       case ClientClose(cmd) ⇒
+        log.warning("Write pending: " + writePending)
         if (!writePending) connection ! cmd
         else closeAfterWrite = Some(cmd)
     }
