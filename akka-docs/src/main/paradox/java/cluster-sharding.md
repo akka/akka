@@ -19,7 +19,7 @@ the sender to know the location of the destination actor. This is achieved by se
 the messages via a `ShardRegion` actor provided by this extension, which knows how
 to route the message with the entity id to the final destination.
 
-Cluster sharding will not be active on members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up) 
+Cluster sharding will not be active on members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up)
 if that feature is enabled.
 
 @@@ warning
@@ -35,9 +35,13 @@ See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing).
 
 This is how an entity actor may look like:
 
-@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-actor }
+Scala
+:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-actor }
 
-The above actor uses event sourcing and the support provided in `AbstractPersistentActor` to store its state.
+Java
+:  @@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-actor }
+
+The above actor uses event sourcing and the support provided in @scala[`PersistentActor`] @java[`AbstractPersistentActor`] to store its state.
 It does not have to be a persistent actor, but in case of failure or migration of entities between nodes it must be able to recover
 its state if it is valuable.
 
@@ -48,12 +52,20 @@ When using the sharding extension you are first, typically at system startup on 
 in the cluster, supposed to register the supported entity types with the `ClusterSharding.start`
 method. `ClusterSharding.start` gives you the reference which you can pass along.
 
-@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-start }
+Scala
+:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-start }
 
-The `messageExtractor` defines application specific methods to extract the entity
+Java
+:  @@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-start }
+
+The @scala[`extractEntityId` and `extractShardId` are two] @java[`messageExtractor` defines] application specific @scala[functions] @java[methods] to extract the entity
 identifier and the shard identifier from incoming messages.
 
-@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-extractor }
+Scala
+:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-extractor }
+
+Java
+:  @@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-extractor }
 
 This example illustrates two different ways to define the entity identifier in the messages:
 
@@ -61,24 +73,24 @@ This example illustrates two different ways to define the entity identifier in t
  * The `EntityEnvelope` holds the identifier, and the actual message that is
 sent to the entity actor is wrapped in the envelope.
 
-Note how these two messages types are handled in the `entityId` and `entityMessage` methods shown above.
-The message sent to the entity actor is what `entityMessage` returns and that makes it possible to unwrap envelopes
+Note how these two messages types are handled in the Sscala[`extractEntityId` function] @java[`entityId` and `entityMessage` methods] shown above.
+The message sent to the entity actor is @scala[the second part of the tuple return by the `extractEntityId`] @[what `entityMessage` returns] and that makes it possible to unwrap envelopes
 if needed.
 
 A shard is a group of entities that will be managed together. The grouping is defined by the
-`extractShardId` function shown above. For a specific entity identifier the shard identifier must always 
+`extractShardId` function shown above. For a specific entity identifier the shard identifier must always
 be the same. Otherwise the entity actor might accidentally be started in several places at the same time.
 
-Creating a good sharding algorithm is an interesting challenge in itself. Try to produce a uniform distribution, 
-i.e. same amount of entities in each shard. As a rule of thumb, the number of shards should be a factor ten greater 
-than the planned maximum number of cluster nodes. Less shards than number of nodes will result in that some nodes 
+Creating a good sharding algorithm is an interesting challenge in itself. Try to produce a uniform distribution,
+i.e. same amount of entities in each shard. As a rule of thumb, the number of shards should be a factor ten greater
+than the planned maximum number of cluster nodes. Less shards than number of nodes will result in that some nodes
 will not host any shards. Too many shards will result in less efficient management of the shards, e.g. rebalancing
 overhead, and increased latency because the coordinator is involved in the routing of the first message for each
 shard. The sharding algorithm must be the same on all nodes in a running cluster. It can be changed after stopping
 all nodes in the cluster.
 
 A simple sharding algorithm that works fine in most cases is to take the absolute value of the `hashCode` of
-the entity identifier modulo number of shards. As a convenience this is provided by the 
+the entity identifier modulo number of shards. As a convenience this is provided by the
 `ShardRegion.HashCodeMessageExtractor`.
 
 Messages to the entities are always sent via the local `ShardRegion`. The `ShardRegion` actor reference for a
@@ -87,7 +99,18 @@ The `ShardRegion` will lookup the location of the shard for the entity if it doe
 delegate the message to the right node and it will create the entity actor on demand, i.e. when the
 first message for a specific entity is delivered.
 
-@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-usage }
+Scala
+:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-usage }
+
+Java
+:  @@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-usage }
+
+@@@ div { .group-scala }
+
+A more comprehensive sample is available in the
+tutorial named [Akka Cluster Sharding with Scala!](https://github.com/typesafehub/activator-akka-cluster-sharding-scala).
+
+@@@ 
 
 ## How it works
 
@@ -146,9 +169,9 @@ That means they will start buffering incoming messages for that shard, in the sa
 shard location is unknown. During the rebalance process the coordinator will not answer any
 requests for the location of shards that are being rebalanced, i.e. local buffering will
 continue until the handoff is completed. The `ShardRegion` responsible for the rebalanced shard
-will stop all entities in that shard by sending the specified `handOffStopMessage` 
+will stop all entities in that shard by sending the specified `handOffStopMessage`
 (default `PoisonPill`) to them. When all entities have been terminated the `ShardRegion`
-owning the entities will acknowledge the handoff as completed to the coordinator. 
+owning the entities will acknowledge the handoff as completed to the coordinator.
 Thereafter the coordinator will reply to requests for the location of
 the shard and thereby allocate a new home for the shard and then buffered messages in the
 `ShardRegion` actors are delivered to the new location. This means that the state of the entities
@@ -205,7 +228,7 @@ This mode is enabled with configuration (enabled by default):
 akka.cluster.sharding.state-store-mode = ddata
 ```
 
-The state of the `ShardCoordinator` will be replicated inside a cluster by the 
+The state of the `ShardCoordinator` will be replicated inside a cluster by the
 @ref:[Distributed Data](distributed-data.md) module with `WriteMajority`/`ReadMajority` consistency.
 The state of the coordinator is not durable, it's not stored to disk. When all nodes in
 the cluster have been stopped the state is lost and not needed any more.
@@ -216,10 +239,10 @@ disk. The stored entities are started also after a complete cluster restart.
 Cluster Sharding is using its own Distributed Data `Replicator` per node role. In this way you can use a subset of
 all nodes for some entity types and another subset for other entity types. Each such replicator has a name
 that contains the node role and therefore the role configuration must be the same on all nodes in the
-cluster, i.e. you can't change the roles when performing a rolling upgrade. 
+cluster, i.e. you can't change the roles when performing a rolling upgrade.
 
-The settings for Distributed Data is configured in the the section 
-`akka.cluster.sharding.distributed-data`. It's not possible to have different 
+The settings for Distributed Data is configured in the the section
+`akka.cluster.sharding.distributed-data`. It's not possible to have different
 `distributed-data` settings for different sharding entity types.
 
 ### Persistence Mode
@@ -237,7 +260,7 @@ Since it is running in a cluster @ref:[Persistence](persistence.md) must be conf
 It's good to use Cluster Sharding with the Cluster setting `akka.cluster.min-nr-of-members` or
 `akka.cluster.role.<role-name>.min-nr-of-members`. That will defer the allocation of the shards
 until at least that number of regions have been started and registered to the coordinator. This
-avoids that many shards are allocated to the first region that registers and only later are 
+avoids that many shards are allocated to the first region that registers and only later are
 rebalanced to other nodes.
 
 See @ref:[How To Startup when Cluster Size Reached](cluster-usage.md#min-members) for more information about `min-nr-of-members`.
@@ -266,12 +289,16 @@ are thereafter delivered to a new incarnation of the entity.
 ## Remembering Entities
 
 The list of entities in each `Shard` can be made persistent (durable) by setting
-the `rememberEntities` flag to true in `ClusterShardingSettings` when calling 
+the `rememberEntities` flag to true in `ClusterShardingSettings` when calling
 `ClusterSharding.start` and making sure the `shardIdExtractor` handles
 `Shard.StartEntity(EntityId)` which implies that a `ShardId` must be possible to
 extract from the `EntityId`.
 
-@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #extractShardId-StartEntity }
+Scala
+:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #extractShardId-StartEntity }
+
+Java
+:  @@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #extractShardId-StartEntity }
 
 When configured to remember entities, whenever a `Shard` is rebalanced onto another
 node or recovers after a crash it will recreate all the entities which were previously
@@ -280,11 +307,11 @@ sent to the parent of the entity actor, otherwise the entity will be automatical
 restarted after the entity restart backoff specified in the configuration.
 
 When [Distributed Data mode](#cluster-sharding-mode) is used the identifiers of the entities are
-stored in @ref:[Durable Storage](distributed-data.md#ddata-durable) of Distributed Data. You may want to change the 
+stored in @ref:[Durable Storage](distributed-data.md#ddata-durable) of Distributed Data. You may want to change the
 configuration of the akka.cluster.sharding.distributed-data.durable.lmdb.dir`, since
 the default directory contains the remote port of the actor system. If using a dynamically
 assigned port (0) it will be different each time and the previously stored data will not
-be loaded. 
+be loaded.
 
 When `rememberEntities` is set to false, a `Shard` will not automatically restart any entities
 after a rebalance or recovering from a crash. Entities will only be started once the first message
@@ -294,9 +321,9 @@ using a `Passivate`.
 Note that the state of the entities themselves will not be restored unless they have been made persistent,
 e.g. with @ref:[Persistence](persistence.md).
 
-The performance cost of `rememberEntities` is rather high when starting/stopping entities and when 
+The performance cost of `rememberEntities` is rather high when starting/stopping entities and when
 shards are rebalanced. This cost increases with number of entities per shard and we currently don't
-recommend using it with more than 10000 entities per shard. 
+recommend using it with more than 10000 entities per shard.
 
 ## Supervision
 
@@ -304,23 +331,31 @@ If you need to use another `supervisorStrategy` for the entity actors than the d
 you need to create an intermediate parent actor that defines the `supervisorStrategy` to the
 child entity actor.
 
-@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #supervisor }
+Scala
+:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #supervisor }
+
+Java
+:  @@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #supervisor }
 
 You start such a supervisor in the same way as if it was the entity actor.
 
-@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-supervisor-start }
+Scala
+:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-supervisor-start }
+
+Java
+:  @@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-supervisor-start }
 
 Note that stopped entities will be started again when a new message is targeted to the entity.
 
 ## Graceful Shutdown
 
-You can send the `ShardRegion.gracefulShutdownInstance` message
+You can send the @scala[`ShardRegion.GracefulShutdown`] @java[`ShardRegion.gracefulShutdownInstance`] message 
 to the `ShardRegion` actor to handoff all shards that are hosted by that `ShardRegion` and then the
 `ShardRegion` actor will be stopped. You can `watch` the `ShardRegion` actor to know when it is completed.
 During this period other regions will buffer messages for those shards in the same way as when a rebalance is
 triggered by the coordinator. When the shards have been stopped the coordinator will allocate these shards elsewhere.
 
-This is performed automatically by the @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown) and is therefore part of the 
+This is performed automatically by the @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown) and is therefore part of the
 graceful leaving process of a cluster member.
 
 <a id="removeinternalclustershardingdata"></a>
@@ -407,14 +442,15 @@ if needed.
 @@snip [reference.conf]($akka$/akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
 
 Custom shard allocation strategy can be defined in an optional parameter to
-`ClusterSharding.start`. See the API documentation of `AbstractShardAllocationStrategy` for details
+`ClusterSharding.start`. See the API documentation of @scala[`ShardAllocationStrategy`] @java[`AbstractShardAllocationStrategy`] for details 
 of how to implement a custom shard allocation strategy.
 
 ## Inspecting cluster sharding state
 
 Two requests to inspect the cluster state are available:
 
-`ShardRegion.getShardRegionStateInstance` which will return a `ShardRegion.ShardRegionState` that contains
+@scala[`ShardRegion.GetShardRegionState`] @java[`ShardRegion.getShardRegionStateInstance`] which will return
+a @scala[`ShardRegion.CurrentShardRegionState`] @java[`ShardRegion.ShardRegionState`] that contains
 the identifiers of the shards running in a Region and what entities are alive for each of them.
 
 `ShardRegion.GetClusterShardingStats` which will query all the regions in the cluster and return
