@@ -664,19 +664,12 @@ private[akka] class ActorSystemImpl(
                   | HTTP etc. have their own version numbers - please make sure you're using a compatible set of libraries.
                  """.stripMargin.replaceAll("[\r\n]", ""))
 
-            if (settings.JvmExitOnFatalError) {
-              try {
-                logFatalError("shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled for", cause, thread)
-              } finally {
-                System.exit(-1)
-              }
-            } else {
-              try {
-                logFatalError("shutting down", cause, thread)
-              } finally {
-                terminate()
-              }
-            }
+            if (settings.JvmExitOnFatalError)
+              try logFatalError("shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled for", cause, thread)
+              finally System.exit(-1)
+            else
+              try logFatalError("shutting down", cause, thread)
+              finally terminate()
         }
       }
 
