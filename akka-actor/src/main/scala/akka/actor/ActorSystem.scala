@@ -683,7 +683,9 @@ private[akka] class ActorSystemImpl(
         import System.err
         err.print("Uncaught error from thread [")
         err.print(thread.getName)
-        err.print("] ")
+        err.print("]: ")
+        err.print(cause.getMessage)
+        err.print(", ")
         err.print(message)
         err.print(" for ActorSystem[")
         err.print(name)
@@ -692,7 +694,7 @@ private[akka] class ActorSystemImpl(
         System.err.flush()
 
         // Also log using the normal infrastructure - hope for the best:
-        markerLogging.error(LogMarker.Security, cause, "Uncaught error from thread [{}] " + message + " ActorSystem[{}]", thread.getName, name)
+        markerLogging.error(LogMarker.Security, cause, "Uncaught error from thread [{}]: " + cause.getMessage + ", " + message + " ActorSystem[{}]", thread.getName, name)
       }
     }
 
