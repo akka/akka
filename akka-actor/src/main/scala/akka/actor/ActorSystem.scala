@@ -671,8 +671,11 @@ private[akka] class ActorSystemImpl(
                 System.exit(-1)
               }
             } else {
-              logFatalError("shutting down", cause, thread)
-              terminate()
+              try {
+                logFatalError("shutting down", cause, thread)
+              } finally {
+                terminate()
+              }
             }
         }
       }
