@@ -28,7 +28,7 @@ import akka.stream.*;
 import akka.stream.javadsl.Tcp.*;
 import akka.japi.function.*;
 import akka.testkit.AkkaSpec;
-import akka.stream.testkit.TestUtils;
+import akka.testkit.SocketUtil;
 import akka.util.ByteString;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
@@ -57,7 +57,7 @@ public class TcpTest extends StreamTest {
 
   @Test
   public void mustWorkInHappyCase() throws Exception {
-    final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
+    final InetSocketAddress serverAddress = SocketUtil.temporaryServerAddress("127.0.0.1", false);
     final Source<IncomingConnection, CompletionStage<ServerBinding>> binding = Tcp.get(system)
         .bind(serverAddress.getHostString(), serverAddress.getPort());
 
@@ -83,7 +83,7 @@ public class TcpTest extends StreamTest {
 
   @Test
   public void mustReportServerBindFailure() throws Exception {
-    final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
+    final InetSocketAddress serverAddress = SocketUtil.temporaryServerAddress("127.0.0.1", false);
     final Source<IncomingConnection, CompletionStage<ServerBinding>> binding = Tcp.get(system)
         .bind(serverAddress.getHostString(), serverAddress.getPort());
 
@@ -110,8 +110,7 @@ public class TcpTest extends StreamTest {
 
   @Test
   public void mustReportClientConnectFailure() throws Throwable {
-    final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress(
-        "127.0.0.1", false);
+    final InetSocketAddress serverAddress = SocketUtil.notBoundServerAddress();
     try {
       try {
         Source.from(testInput)
