@@ -103,7 +103,7 @@ class ForkJoinActorBenchmark {
 
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MILLISECONDS)
-  @OperationsPerInvocation(totalMessagesLessThanCores)
+  @OperationsPerInvocation(messagesGuesstimate)
   def pingPongLessActorsThanCores(): Unit = {
     initiatePingPongForPairs(pingPongLessActorsThanCoresActors, inFlight = 2 * tpt)
     awaitTerminatedPingPongActorPairs(pingPongLessActorsThanCoresActors, timeout)
@@ -111,7 +111,7 @@ class ForkJoinActorBenchmark {
 
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MILLISECONDS)
-  @OperationsPerInvocation(totalMessagesSameAsCores)
+  @OperationsPerInvocation(messagesGuesstimate)
   def pingPongSameNumberOfActorsAsCores(): Unit = {
     initiatePingPongForPairs(pingPongSameNumberOfActorsAsCoresActors, inFlight = 2 * tpt)
     awaitTerminatedPingPongActorPairs(pingPongSameNumberOfActorsAsCoresActors, timeout)
@@ -119,7 +119,7 @@ class ForkJoinActorBenchmark {
 
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MILLISECONDS)
-  @OperationsPerInvocation(totalMessagesMoreThanCores)
+  @OperationsPerInvocation(messagesGuesstimate)
   def pingPongMoreActorsThanCores(): Unit = {
     initiatePingPongForPairs(pingPongMoreActorsThanCoresActors, inFlight = 2 * tpt)
     awaitTerminatedPingPongActorPairs(pingPongMoreActorsThanCoresActors, timeout)
@@ -155,6 +155,7 @@ class ForkJoinActorBenchmark {
 object ForkJoinActorBenchmark {
   final val timeout = 15.seconds
   final val messages = 400000
+  final val messagesGuesstimate = messages * 8
 
   // update according to cpu
   final val cores = Runtime.getRuntime.availableProcessors
