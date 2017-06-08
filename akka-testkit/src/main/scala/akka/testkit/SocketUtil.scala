@@ -52,4 +52,6 @@ object SocketUtil {
     port
   }
 
+  def notBoundServerAddress(address: String): InetSocketAddress = new InetSocketAddress(address, 0)
+  def notBoundServerAddress(): InetSocketAddress = notBoundServerAddress("127.0.0.1")
 }
