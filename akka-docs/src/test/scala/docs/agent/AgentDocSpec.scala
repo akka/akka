@@ -32,6 +32,7 @@ class AgentDocSpec extends AkkaSpec {
     }
     {
       //#read-get
+      // Or by using the get method:
       val result = agent.get
       //#read-get
       result should be(0)

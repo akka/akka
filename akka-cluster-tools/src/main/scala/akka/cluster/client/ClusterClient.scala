@@ -337,7 +337,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
   var contacts = initialContactsSel
   sendGetContacts()
 
-  var contactPathsPublished = HashSet.empty[ActorPath]
+  var contactPathsPublished = contactPaths
 
   var subscribers = Vector.empty[ActorRef]
 

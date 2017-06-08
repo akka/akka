@@ -6,18 +6,20 @@ package internal
 
 import akka.actor.InvalidActorNameException
 import akka.util.Helpers
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import akka.dispatch.ExecutionContexts
 import scala.concurrent.ExecutionContextExecutor
 import akka.actor.Cancellable
 import akka.util.Unsafe.{ instance ⇒ unsafe }
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.Queue
-import scala.annotation.{ tailrec, switch }
+import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.util.control.Exception.Catcher
 import akka.event.Logging.Error
 import akka.event.Logging
+import akka.typed.Behavior.StoppedBehavior
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -58,6 +60,7 @@ object ActorCell {
   final val SuspendedState = 1
   final val SuspendedWaitForChildrenState = 2
 
+  /** compile time constant */
   final val Debug = false
 }
 
@@ -70,7 +73,7 @@ private[typed] class ActorCell[T](
   override val executionContext: ExecutionContextExecutor,
   override val mailboxCapacity:  Int,
   val parent:                    ActorRefImpl[Nothing])
-  extends ActorContext[T] with Runnable with SupervisionMechanics[T] with DeathWatch[T] {
+  extends ActorContextImpl[T] with Runnable with SupervisionMechanics[T] with DeathWatch[T] {
   import ActorCell._
 
   /*
@@ -100,11 +103,11 @@ private[typed] class ActorCell[T](
 
   protected def ctx: ActorContext[T] = this
 
-  override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig): ActorRef[U] = {
+  override def spawn[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
     if (childrenMap contains name) throw InvalidActorNameException(s"actor name [$name] is not unique")
     if (terminatingMap contains name) throw InvalidActorNameException(s"actor name [$name] is not yet free")
-    val dispatcher = deployment.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
-    val capacity = deployment.firstOrElse(MailboxCapacity(system.settings.DefaultMailboxCapacity))
+    val dispatcher = props.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
+    val capacity = props.firstOrElse(MailboxCapacity(system.settings.DefaultMailboxCapacity))
     val cell = new ActorCell[U](system, Behavior.validateAsInitial(behavior), system.dispatchers.lookup(dispatcher), capacity.capacity, self)
     // TODO uid is still needed
     val ref = new LocalActorRef[U](self.path / name, cell)
@@ -115,13 +118,13 @@ private[typed] class ActorCell[T](
   }
 
   private var nextName = 0L
-  override def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig): ActorRef[U] = {
+  override def spawnAnonymous[U](behavior: Behavior[U], props: Props): ActorRef[U] = {
     val name = Helpers.base64(nextName)
     nextName += 1
-    spawn(behavior, name, deployment)
+    spawn(behavior, name, props)
   }
 
-  override def stop(child: ActorRef[_]): Boolean = {
+  override def stop[U](child: ActorRef[U]): Boolean = {
     val name = child.path.name
     childrenMap.get(name) match {
       case None                      ⇒ false
@@ -145,7 +148,7 @@ private[typed] class ActorCell[T](
   override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): Cancellable =
     system.scheduler.scheduleOnce(delay)(target ! msg)(ExecutionContexts.sameThreadExecutionContext)
 
-  override def spawnAdapter[U](f: U ⇒ T, _name: String = ""): ActorRef[U] = {
+  override private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U] = {
     val baseName = Helpers.base64(nextName, new java.lang.StringBuilder("$!"))
     nextName += 1
     val name = if (_name != "") s"$baseName-${_name}" else baseName
@@ -273,35 +276,47 @@ private[typed] class ActorCell[T](
     if (Debug) println(s"[$thread] $self entering run(): interrupted=${Thread.currentThread.isInterrupted}")
     val status = _status
     val msgs = messageCount(status)
+
     var processed = 0
+    @tailrec def process(): Unit = {
+      if (processAllSystemMessages() && processed < msgs) {
+        val msg = queue.poll()
+        if (msg != null) {
+          processed += 1
+          processMessage(msg)
+          process()
+        }
+      }
+    }
+
     try {
       unscheduleReceiveTimeout()
       if (!isTerminated(status)) {
-        while (processAllSystemMessages() && !queue.isEmpty() && processed < msgs) {
-          val msg = queue.poll()
-          processed += 1
-          processMessage(msg)
-        }
+        process()
+        scheduleReceiveTimeout()
       }
-      scheduleReceiveTimeout()
     } catch {
-      case NonFatal(ex) ⇒ fail(ex)
+      case NonFatal(ex) ⇒
+        fail(ex)
       case ie: InterruptedException ⇒
         fail(ie)
         if (Debug) println(s"[$thread] $self interrupting due to catching InterruptedException")
         Thread.currentThread.interrupt()
-    } finally {
+    }
+
+    // Returns `true` if it should be rescheduled.
+    // This method shouldn't throw apart from fatal errors.
+    def postProcess(): Boolean = {
       // also remove the general activation token
       processed += 1
       val prev = unsafe.getAndAddInt(this, statusOffset, -processed)
       val now = prev - processed
       if (isTerminated(now)) {
-        // we’re finished
+        false // we’re finished, don't reschedule
       } else if (activations(now) > 0) {
         // normal messages pending: reverse the deactivation
         unsafe.getAndAddInt(this, statusOffset, 1)
-        // ... and reschedule
-        executionContext.execute(this)
+        true // ... and reschedule
       } else if (_systemQueue.head != null) {
         /*
          * System message was enqueued after our last processing, we now need to
@@ -312,10 +327,24 @@ private[typed] class ActorCell[T](
          * activation token again.
          */
         val again = unsafe.getAndAddInt(this, statusOffset, 1)
-        if (activations(again) == 0) executionContext.execute(this)
-        else unsafe.getAndAddInt(this, statusOffset, -1)
+        if (activations(again) == 0) true //reschedule
+        else {
+          unsafe.getAndAddInt(this, statusOffset, -1)
+          false // don't reschedule
+        }
+      } else {
+        false // don't reschedule
       }
     }
+
+    if (postProcess())
+      try executionContext.execute(this) catch {
+        case NonFatal(e) ⇒
+          // we can just hope that the actor will receive another message at some
+          // point to wake it up again—assuming that the failure to enqueue the cell is transient
+          fail(e)
+      }
+
     if (Debug) println(s"[$thread] $self exiting run(): interrupted=${Thread.currentThread.isInterrupted}")
   }
 
@@ -323,8 +352,25 @@ private[typed] class ActorCell[T](
 
   protected def next(b: Behavior[T], msg: Any): Unit = {
     if (Behavior.isUnhandled(b)) unhandled(msg)
-    behavior = Behavior.canonicalize(b, behavior)
-    if (!Behavior.isAlive(behavior)) self.sendSystem(Terminate())
+    else {
+      b match {
+        case s: StoppedBehavior[T] ⇒
+          // use StoppedBehavior with previous behavior or an explicitly given `postStop` behavior
+          // until Terminate is received, i.e until finishTerminate is invoked, and there PostStop
+          // will be signaled to the previous/postStop behavior
+          s.postStop match {
+            case OptionVal.None ⇒
+              // use previous as the postStop behavior
+              behavior = new Behavior.StoppedBehavior(OptionVal.Some(behavior))
+            case OptionVal.Some(postStop) ⇒
+              // use the given postStop behavior, but canonicalize it
+              behavior = new Behavior.StoppedBehavior(OptionVal.Some(Behavior.canonicalize(postStop, behavior, ctx)))
+          }
+          self.sendSystem(Terminate())
+        case _ ⇒
+          behavior = Behavior.canonicalize(b, behavior, ctx)
+      }
+    }
   }
 
   private def unhandled(msg: Any): Unit = msg match {
@@ -351,7 +397,7 @@ private[typed] class ActorCell[T](
    */
   private def processMessage(msg: T): Unit = {
     if (Debug) println(s"[$thread] $self processing message $msg")
-    next(behavior.message(this, msg), msg)
+    next(Behavior.interpretMessage(behavior, this, msg), msg)
     if (Thread.interrupted())
       throw new InterruptedException("Interrupted while processing actor messages")
   }

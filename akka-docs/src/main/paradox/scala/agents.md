@@ -18,7 +18,7 @@ functions that are asynchronously applied to the Agent's state and whose return
 value becomes the Agent's new state. The state of an Agent should be immutable.
 
 While updates to Agents are asynchronous, the state of an Agent is always
-immediately available for reading by any thread (using `get` or `apply`)
+immediately available for reading by any thread (using `get` @scala[or `apply`])
 without any messages.
 
 Agents are reactive. The update actions of all Agents get interleaved amongst
@@ -38,30 +38,45 @@ read or update the Agent.
 
 ## Creating Agents
 
-Agents are created by invoking `Agent(value)` passing in the Agent's initial
-value and providing an implicit `ExecutionContext` to be used for it, for these
-examples we're going to use the default global one, but YMMV:
+Agents are created by invoking @scala[`Agent(value)`] @java[`new Agent<ValueType>(value, executionContext)`] passing in the Agent's initial
+value and providing an @scala[implicit] `ExecutionContext` to be used for it, 
+@scala[for these examples we're going to use the default global one, but YMMV:]
 
-@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #create }
+Scala
+:  @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #create }
+
+Java
+:  @@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-agent #create type=java }
 
 ## Reading an Agent's value
 
 Agents can be dereferenced (you can get an Agent's value) by invoking the Agent
-with parentheses like this:
+with @scala[parentheses] @java[`get()`] like this:
 
-@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #read-apply }
+Scala
+:  @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #read-apply #read-get  }
 
-Or by using the get method:
-
-@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #read-get }
+Java
+:  @@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #read-get type=java }
 
 Reading an Agent's current value does not involve any message passing and
 happens immediately. So while updates to an Agent are asynchronous, reading the
 state of an Agent is synchronous.
 
+@@@ div { .group-java }
+
+You can also get a `Future` to the Agents value, that will be completed after the
+currently queued updates have completed:
+
+@@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-future #read-future type=java }
+
+See @ref:[Futures](futures.md) for more information on `Futures`.
+
+@@@ 
+
 ## Updating Agents (send & alter)
 
-You update an Agent by sending a function that transforms the current value or
+You update an Agent by sending a function @java[(`akka.dispatch.Mapper`)] that transforms the current value or
 by sending just a new value. The Agent will apply the new value or function
 atomically and asynchronously. The update is done in a fire-forget manner and
 you are only guaranteed that it will be applied. There is no guarantee of when
@@ -69,7 +84,11 @@ the update will be applied but dispatches to an Agent from a single thread will
 occur in order. You apply a value or a function by invoking the `send`
 function.
 
-@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #send }
+Scala
+:  @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #send }
+
+Java
+:  @@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-function #send type=java }
 
 You can also dispatch a function to update the internal state but on its own
 thread. This does not use the reactive thread pool and can be used for
@@ -77,14 +96,22 @@ long-running or blocking operations. You do this with the `sendOff`
 method. Dispatches using either `sendOff` or `send` will still be executed
 in order.
 
-@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #send-off }
+Scala
+:  @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #send-off }
+
+Java
+:  @@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-function #send-off type=java }
 
 All `send` methods also have a corresponding `alter` method that returns a `Future`.
-See @ref:[Futures](futures.md) for more information on `Futures`.
+See @ref:[`Future`s](futures.md) for more information on `Future`s.
 
-@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #alter }
+Scala
+:  @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #alter #alter-off }
 
-@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #alter-off }
+Java
+:  @@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-future #import-function #alter #alter-off type=java }
+
+@@@ div { .group-scala }
 
 ## Awaiting an Agent's value
 
@@ -93,7 +120,7 @@ currently queued updates have completed:
 
 @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #read-future }
 
-See @ref:[Futures](futures.md) for more information on `Futures`.
+See @ref:[`Future`s](futures.md) for more information on `Future`s.
 
 ## Monadic usage
 
@@ -106,6 +133,8 @@ Example of monadic usage:
 
 @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #monadic-example }
 
+@@@
+
 ## Configuration
 
 There are several configuration properties for the agents module, please refer
@@ -115,9 +144,13 @@ to the @ref:[reference configuration](general/configuration.md#config-akka-agent
 
 Agents participating in enclosing STM transaction is a deprecated feature in 2.3.
 
-If an Agent is used within an enclosing transaction, then it will participate in
+If an Agent is used within an enclosing @java[`Scala STM`] transaction, then it will participate in
 that transaction. If you send to an Agent within a transaction then the dispatch
 to the Agent will be held until that transaction commits, and discarded if the
-transaction is aborted. Here's an example:
+transaction is aborted. @scala[Here's an example:]
+
+@@@ div { .group-scala }
 
 @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #transfer-example }
+
+@@@

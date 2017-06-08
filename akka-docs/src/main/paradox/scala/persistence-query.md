@@ -16,7 +16,7 @@ Akka persistence query is a separate jar file. Make sure that you have the follo
 
 @@@vars
 ```
-"com.typesafe.akka" %% "akka-persistence-query" % $akka.version$
+"com.typesafe.akka" %% "akka-persistence-query" % "$akka.version$"
 ```
 @@@
 

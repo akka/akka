@@ -19,7 +19,7 @@ Akka persistence is a separate jar file. Make sure that you have the following d
 
 @@@vars
 ```
-"com.typesafe.akka" %% "akka-persistence" % $akka.version$
+"com.typesafe.akka" %% "akka-persistence" % "$akka.version$"
 ```
 @@@
 
@@ -424,6 +424,7 @@ Message deletion doesn't affect the highest sequence number of the journal, even
 Persisting, deleting, and replaying messages can either succeed or fail.
 
 |**Method**                 | **Success**            |
+|---------------------------|------------------------|
 |`persist` / `persistAsync` | persist handler invoked|
 |`onPersistRejected`        | No automatic actions.  |
 |`recovery`                 | `RecoveryCompleted`    |

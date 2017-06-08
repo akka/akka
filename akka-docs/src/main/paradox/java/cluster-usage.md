@@ -741,7 +741,7 @@ or similar instead.
 
 @@@
 
-The cluster can be managed with the script `akka-cluster` provided in the Akka github repository @extref[here](github:akka-cluster/jmx-client). Place the script and the `jmxsh-R5.jar` library in the same directory.
+The cluster can be managed with the script `akka-cluster` provided in the Akka GitHub repository @extref[here](github:akka-cluster/jmx-client). Place the script and the `jmxsh-R5.jar` library in the same directory.
 
 Run it without parameters to see instructions about how to use the script:
 

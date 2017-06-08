@@ -15,13 +15,12 @@ Be sure to add the module `akka-testkit` to your dependencies.
 
 ## Asynchronous Testing: `TestKit`
 
-When you are reasonably sure that your actor's business logic is correct, the
-next step is verifying that it works correctly within its intended
-environment@scala[ (if the individual actors are simple enough, possibly because they use the
-`FSM` module, this might also be the first step)]. The definition of the
-environment depends of course very much on the problem at hand and the level at
-which you intend to test, ranging for functional/integration tests to full
-system tests. The minimal setup consists of the test procedure, which provides
+Testkit allows you to test your actors in a controlled but realistic
+environment. The definition of the environment depends of course very much on
+the problem at hand and the level at which you intend to test, ranging from
+simple checks to full system tests.
+
+The minimal setup consists of the test procedure, which provides
 the desired stimuli, the actor under test, and an actor receiving replies.
 Bigger systems replace the actor under test with a network of actors, apply
 stimuli at varying injection points and arrange results to be sent from

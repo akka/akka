@@ -5,7 +5,7 @@ Useful for integration testing where multiple systems communicate with each othe
 
 ## Setup
 
-The multi-JVM testing is an sbt plugin that you can find at [http://github.com/sbt/sbt-multi-jvm](http://github.com/sbt/sbt-multi-jvm).
+The multi-JVM testing is an sbt plugin that you can find at [https://github.com/sbt/sbt-multi-jvm](https://github.com/sbt/sbt-multi-jvm).
 
 You can add it as a plugin by adding the following to your project/plugins.sbt:
 

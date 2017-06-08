@@ -186,7 +186,7 @@ To use Distributed Publish Subscribe you must add the following dependency in yo
 sbt
 :   @@@vars
     ```
-    "com.typesafe.akka" %% "akka-cluster-tools" % $akka.version$
+    "com.typesafe.akka" %% "akka-cluster-tools" % "$akka.version$"
     ```
     @@@
 

@@ -24,21 +24,23 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.typed.scaladsl.AskPattern
 
 object ActorSystemImpl {
-  import ScalaDSL._
 
   sealed trait SystemCommand
-  case class CreateSystemActor[T](behavior: Behavior[T], name: String, deployment: DeploymentConfig)(val replyTo: ActorRef[ActorRef[T]]) extends SystemCommand
+  case class CreateSystemActor[T](behavior: Behavior[T], name: String, props: Props)(val replyTo: ActorRef[ActorRef[T]]) extends SystemCommand
 
-  val systemGuardianBehavior: Behavior[SystemCommand] =
-    ContextAware { ctx ⇒
+  val systemGuardianBehavior: Behavior[SystemCommand] = {
+    import scaladsl.Actor
+    Actor.deferred { _ ⇒
       var i = 1
-      Static {
-        case create: CreateSystemActor[t] ⇒
+      Actor.immutable {
+        case (ctx, create: CreateSystemActor[t]) ⇒
           val name = s"$i-${create.name}"
           i += 1
-          create.replyTo ! ctx.spawn(create.behavior, name, create.deployment)
+          create.replyTo ! ctx.spawn(create.behavior, name, create.props)
+          Actor.same
       }
     }
+  }
 }
 
 /*
@@ -68,13 +70,13 @@ Distributed Data:
  */
 
 private[typed] class ActorSystemImpl[-T](
-  override val name:       String,
-  _config:                 Config,
-  _cl:                     ClassLoader,
-  _ec:                     Option[ExecutionContext],
-  _userGuardianBehavior:   Behavior[T],
-  _userGuardianDeployment: DeploymentConfig)
-  extends ActorRef[T](a.RootActorPath(a.Address("akka", name)) / "user") with ActorSystem[T] with ActorRefImpl[T] {
+  override val name:     String,
+  _config:               Config,
+  _cl:                   ClassLoader,
+  _ec:                   Option[ExecutionContext],
+  _userGuardianBehavior: Behavior[T],
+  _userGuardianProps:    Props)
+  extends ActorSystem[T] with ActorRef[T] with ActorRefImpl[T] with ExtensionsImpl {
 
   import ActorSystemImpl._
 
@@ -82,6 +84,8 @@ private[typed] class ActorSystemImpl[-T](
     throw new IllegalArgumentException(
       "invalid ActorSystem name [" + name +
         "], must contain only word characters (i.e. [a-zA-Z0-9] plus non-leading '-' or '_')")
+
+  final override val path: a.ActorPath = a.RootActorPath(a.Address("akka", name)) / "user"
 
   override val settings: Settings = new Settings(_cl, _config, name)
 
@@ -160,7 +164,7 @@ private[typed] class ActorSystemImpl[-T](
    */
   private object eventStreamStub extends e.EventStream(null, false) {
     override def subscribe(ref: a.ActorRef, ch: Class[_]): Boolean =
-      throw new UnsupportedOperationException("cannot use this eventstream for subscribing")
+      throw new UnsupportedOperationException("Cannot use this eventstream for subscribing")
     override def publish(event: AnyRef): Unit = eventStream.publish(event)
   }
   /**
@@ -182,13 +186,15 @@ private[typed] class ActorSystemImpl[-T](
 
   private val terminationPromise: Promise[Terminated] = Promise()
 
-  private val rootPath: a.ActorPath = a.RootActorPath(a.Address("typed", name))
+  private val rootPath: a.ActorPath = a.RootActorPath(a.Address("akka", name))
 
   private val topLevelActors = new ConcurrentSkipListSet[ActorRefImpl[Nothing]]
   private val terminateTriggered = new AtomicBoolean
   private val theOneWhoWalksTheBubblesOfSpaceTime: ActorRefImpl[Nothing] =
-    new ActorRef[Nothing](rootPath) with ActorRefImpl[Nothing] {
-      override def tell(msg: Nothing): Unit = throw new UnsupportedOperationException("cannot send to theOneWhoWalksTheBubblesOfSpaceTime")
+    new ActorRef[Nothing] with ActorRefImpl[Nothing] {
+      override def path: a.ActorPath = rootPath
+      override def tell(msg: Nothing): Unit =
+        throw new UnsupportedOperationException("Cannot send to theOneWhoWalksTheBubblesOfSpaceTime")
       override def sendSystem(signal: SystemMessage): Unit = signal match {
         case Terminate() ⇒
           if (terminateTriggered.compareAndSet(false, true))
@@ -208,9 +214,9 @@ private[typed] class ActorSystemImpl[-T](
       override def isLocal: Boolean = true
     }
 
-  private def createTopLevel[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig): ActorRefImpl[U] = {
-    val dispatcher = deployment.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
-    val capacity = deployment.firstOrElse(MailboxCapacity(settings.DefaultMailboxCapacity))
+  private def createTopLevel[U](behavior: Behavior[U], name: String, props: Props): ActorRefImpl[U] = {
+    val dispatcher = props.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
+    val capacity = props.firstOrElse(MailboxCapacity(settings.DefaultMailboxCapacity))
     val cell = new ActorCell(this, behavior, dispatchers.lookup(dispatcher), capacity.capacity, theOneWhoWalksTheBubblesOfSpaceTime)
     val ref = new LocalActorRef(rootPath / name, cell)
     cell.setSelf(ref)
@@ -219,16 +225,18 @@ private[typed] class ActorSystemImpl[-T](
     ref
   }
 
-  private val systemGuardian: ActorRefImpl[SystemCommand] = createTopLevel(systemGuardianBehavior, "system", EmptyDeploymentConfig)
+  private val systemGuardian: ActorRefImpl[SystemCommand] = createTopLevel(systemGuardianBehavior, "system", EmptyProps)
 
   override val receptionist: ActorRef[patterns.Receptionist.Command] =
     ActorRef(systemActorOf(patterns.Receptionist.behavior, "receptionist")(settings.untyped.CreationTimeout))
 
-  private val userGuardian: ActorRefImpl[T] = createTopLevel(_userGuardianBehavior, "user", _userGuardianDeployment)
+  private val userGuardian: ActorRefImpl[T] = createTopLevel(_userGuardianBehavior, "user", _userGuardianProps)
 
   // now we can start up the loggers
   eventStream.startUnsubscriber(this)
   eventStream.startDefaultLoggers(this)
+
+  loadExtensions()
 
   override def terminate(): Future[Terminated] = {
     theOneWhoWalksTheBubblesOfSpaceTime.sendSystem(Terminate())
@@ -237,7 +245,8 @@ private[typed] class ActorSystemImpl[-T](
   override def whenTerminated: Future[Terminated] = terminationPromise.future
 
   override def deadLetters[U]: ActorRefImpl[U] =
-    new ActorRef[U](rootPath) with ActorRefImpl[U] {
+    new ActorRef[U] with ActorRefImpl[U] {
+      override def path: a.ActorPath = rootPath
       override def tell(msg: U): Unit = eventStream.publish(DeadLetter(msg))
       override def sendSystem(signal: SystemMessage): Unit = {
         signal match {
@@ -253,10 +262,10 @@ private[typed] class ActorSystemImpl[-T](
   override def sendSystem(msg: SystemMessage): Unit = userGuardian.sendSystem(msg)
   override def isLocal: Boolean = true
 
-  def systemActorOf[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig)(implicit timeout: Timeout): Future[ActorRef[U]] = {
+  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(implicit timeout: Timeout): Future[ActorRef[U]] = {
     import AskPattern._
     implicit val sched = scheduler
-    systemGuardian ? CreateSystemActor(behavior, name, deployment)
+    systemGuardian ? CreateSystemActor(behavior, name, props)
   }
 
   def printTree: String = {

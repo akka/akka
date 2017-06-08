@@ -35,7 +35,7 @@ hiding them behind a *shape* that looks like a `Source`, `Flow`, etc.
 
 One interesting example above is a `Flow` which is composed of a disconnected `Sink` and `Source`.
 This can be achieved by using the `fromSinkAndSource()` constructor method on `Flow` which takes the two parts as
-parameters. 
+parameters.
 
 Please note that when combining a `Flow` using that method, the termination signals are not carried 
 "through" as the `Sink` and `Source` are assumed to be fully independent. If however you want to construct
@@ -66,7 +66,12 @@ with the rest of the graph), but this demonstrates the uniform underlying model.
 
 If we try to build a code snippet that corresponds to the above diagram, our first try might look like this:
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #non-nested-flow }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #non-nested-flow }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #non-nested-flow }
+
 
 It is clear however that there is no nesting present in our first attempt, since the library cannot figure out
 where we intended to put composite module boundaries, it is our responsibility to do that. If we are using the
@@ -75,7 +80,11 @@ methods `withAttributes()` or `named()` (where the latter is just a shorthand fo
 
 The following code demonstrates how to achieve the desired nesting:
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #nested-flow }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #nested-flow }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #nested-flow }
 
 Once we have hidden the internals of our components, they act like any other built-in component of similar shape. If
 we hide some of the internals of our composites, the result looks just like if any other predefine component has been
@@ -86,7 +95,11 @@ used:
 If we look at usage of built-in components, and our custom components, there is no difference in usage as the code
 snippet below demonstrates.
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #reuse }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #reuse }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #reuse }
 
 ## Composing complex systems
 
@@ -106,13 +119,21 @@ can be materialized) that encapsulates a non-trivial stream processing network. 
 directed and non-directed cycles. The `runnable()` method of the `GraphDSL` object allows the creation of a
 general, closed, and runnable graph. For example the network on the diagram can be realized like this:
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #complex-graph }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #complex-graph }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #complex-graph }
 
 In the code above we used the implicit port numbering feature (to make the graph more readable and similar to the diagram)
 and we imported `Source` s, `Sink` s and `Flow` s explicitly. It is possible to refer to the ports
 explicitly, and it is not necessary to import our linear stages via `add()`, so another version might look like this:
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #complex-graph-alt }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #complex-graph-alt }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #complex-graph-alt }
 
 Similar to the case in the first section, so far we have not considered modularity. We created a complex graph, but
 the layout is flat, not modularized. We will modify our example, and create a reusable component with the graph DSL.
@@ -123,7 +144,11 @@ from the previous example, what remains is a partial graph:
 
 We can recreate a similar graph in code, using the DSL in a similar way than before:
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #partial-graph }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #partial-graph }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #partial-graph }
 
 The only new addition is the return value of the builder block, which is a `Shape`. All graphs (including
 `Source`, `BidiFlow`, etc) have a shape, which encodes the *typed* ports of the module. In our example
@@ -138,7 +163,11 @@ it is a good practice to give names to modules to help debugging.
 
 Since our partial graph has the right shape, it can be already used in the simpler, linear DSL:
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #partial-use }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #partial-use }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #partial-use }
 
 It is not possible to use it as a `Flow` yet, though (i.e. we cannot call `.filter()` on it), but `Flow`
 has a `fromGraph()` method that just adds the DSL to a `FlowShape`. There are similar methods on `Source`,
@@ -150,7 +179,11 @@ To demonstrate this, we will create the following graph:
 
 The code version of the above closed graph might look like this:
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #partial-flow-dsl }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #partial-flow-dsl }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #partial-flow-dsl }
 
 @@@ note
 
@@ -162,7 +195,11 @@ throw an exception if this is violated.
 We are still in debt of demonstrating that `RunnableGraph` is a component just like any other, which can
 be embedded in graphs. In the following snippet we embed one closed graph in another:
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #embed-closed }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #embed-closed }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #embed-closed }
 
 The type of the imported module indicates that the imported module has a `ClosedShape`, and so we are not
 able to wire it to anything else inside the enclosing closed graph. Nevertheless, this "island" is embedded properly,
@@ -197,38 +234,57 @@ needs to return a different object that provides the necessary interaction capab
 Unlike actors though, each of the processing stages might provide a materialized value, so when we compose multiple
 stages or modules, we need to combine the materialized value as well (there are default rules which make this easier,
 for example *to()* and *via()* takes care of the most common case of taking the materialized value to the left.
-See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat) for details). We demonstrate how this works by a code example and a diagram which
-graphically demonstrates what is happening.
+See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat) for details). 
+We demonstrate how this works by a code example and a diagram which graphically demonstrates what is happening.
 
 The propagation of the individual materialized values from the enclosed modules towards the top will look like this:
 
 ![compose_mat.png](../../images/compose_mat.png)
 
 To implement the above, first, we create a composite `Source`, where the enclosed `Source` have a
-materialized type of `Promise[[Option[Int]]`. By using the combiner function `Keep.left`, the resulting materialized
+materialized type of @scala[`Promise[[Option[Int]]`] @java[`CompletableFuture<Optional<Integer>>>`]. By using the combiner function `Keep.left`, the resulting materialized
 type is of the nested module (indicated by the color *red* on the diagram):
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-1 }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-1 }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-1 }
 
 Next, we create a composite `Flow` from two smaller components. Here, the second enclosed `Flow` has a
-materialized type of `Future[OutgoingConnection]`, and we propagate this to the parent by using `Keep.right`
+materialized type of @scala[`Future[OutgoingConnection]`] @java[`CompletionStage<OutgoingConnection>`], and we propagate this to the parent by using `Keep.right`
 as the combiner function (indicated by the color *yellow* on the diagram):
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-2 }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-2 }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-2 }
 
 As a third step, we create a composite `Sink`, using our `nestedFlow` as a building block. In this snippet, both
 the enclosed `Flow` and the folding `Sink` has a materialized value that is interesting for us, so
 we use `Keep.both` to get a `Pair` of them as the materialized type of `nestedSink` (indicated by the color
 *blue* on the diagram)
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-3 }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-3 }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-3 }
 
 As the last example, we wire together `nestedSource` and `nestedSink` and we use a custom combiner function to
 create a yet another materialized type of the resulting `RunnableGraph`. This combiner function just ignores
-the `Future[Sink]` part, and wraps the other two values in a custom case class `MyClass`
+the @scala[`Future[Sink]`] @java[`CompletionStage<Sink>`] part, and wraps the other two values in a custom case class `MyClass`
 (indicated by color *purple* on the diagram):
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-4 }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-4 }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-4a }
+    
+    @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-4b }
+
 
 @@@ note
 
@@ -250,7 +306,11 @@ by nested modules, unless they override them with a custom value.
 The code below, a modification of an earlier example sets the `inputBuffer` attribute on certain modules, but not
 on others:
 
-@@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #attributes-inheritance }
+Scala
+:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #attributes-inheritance }
+
+Java
+:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #attributes-inheritance }
 
 The effect is, that each module inherits the `inputBuffer` attribute from its enclosing parent, unless it has
 the same attribute explicitly set. `nestedSource` gets the default attributes from the materializer itself. `nestedSink`
