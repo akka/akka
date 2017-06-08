@@ -3,22 +3,21 @@
  */
 package akka.actor
 
-import language.postfixOps
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.{ Await, ExecutionContext, Future }
-import scala.concurrent.duration._
 import java.util.concurrent.{ ConcurrentLinkedQueue, RejectedExecutionException }
 
 import akka.actor.setup.ActorSystemSetup
-import akka.util.Timeout
+import akka.dispatch._
 import akka.japi.Util.immutableSeq
 import akka.pattern.ask
-import akka.dispatch._
-import com.typesafe.config.Config
-import akka.util.Switch
+import akka.testkit._
+import akka.testkit.TestKit
 import akka.util.Helpers.ConfigOps
+import akka.util.{ Switch, Timeout }
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.language.postfixOps
 
 object ActorSystemSpec {
 
@@ -158,8 +157,27 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         probe.watch(a)
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
-        EventFilter.info(pattern = "not delivered", occurrences = 1).intercept {
-          a.tell("boom", probe.ref)
+        EventFilter.info(pattern = """from Actor\[akka://LogDeadLetters/system/testProbe.*not delivered""", occurrences = 1).intercept {
+          EventFilter.warning(pattern = """received dead letter from Actor\[akka://LogDeadLetters/system/testProbe""", occurrences = 1).intercept {
+            a.tell("boom", probe.ref)
+          }(sys)
+        }(sys)
+
+      } finally shutdown(sys)
+    }
+
+    "log dead letters sent without sender reference" in {
+      val sys = ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
+      try {
+        val probe = TestProbe()(sys)
+        val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
+        probe.watch(a)
+        a.tell("run", probe.ref)
+        probe.expectTerminated(a)
+        EventFilter.info(pattern = "without sender.*not delivered", occurrences = 1).intercept {
+          EventFilter.warning(pattern = "received dead letter without sender", occurrences = 1).intercept {
+            a.tell("boom", ActorRef.noSender)
+          }(sys)
         }(sys)
 
       } finally shutdown(sys)

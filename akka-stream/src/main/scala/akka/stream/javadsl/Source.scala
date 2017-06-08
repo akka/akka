@@ -5,13 +5,16 @@ package akka.stream.javadsl
 
 import java.util
 import java.util.Optional
+
+import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
-import akka.stream.impl.{ ConstantFun, StreamLayout, SourceQueueAdapter }
+import akka.stream.impl.{ LinearTraversalBuilder, SourceQueueAdapter, StreamLayout }
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -21,6 +24,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.OptionConverters._
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
+
 import scala.compat.java8.FutureConverters._
 
 /** Java API */
@@ -168,13 +172,25 @@ object Source {
     new Source(scaladsl.Source.fromFuture(future))
 
   /**
-   * Start a new `Source` from the given `CompletionStage`. The stream will consist of
+   * Starts a new `Source` from the given `CompletionStage`. The stream will consist of
    * one element when the `CompletionStage` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `CompletionStage` is completed with a failure.
    */
   def fromCompletionStage[O](future: CompletionStage[O]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.fromCompletionStage(future))
+
+  /**
+   * Streams the elements of the given future source once it successfully completes.
+   * If the future fails the stream is failed.
+   */
+  def fromFutureSource[T, M](future: Future[Graph[SourceShape[T], M]]): javadsl.Source[T, Future[M]] = new Source(scaladsl.Source.fromFutureSource(future))
+
+  /**
+   * Streams the elements of an asynchronous source once its given `completion` stage completes.
+   * If the `completion` fails the stream is failed with that exception.
+   */
+  def fromSourceCompletionStage[T, M](completion: CompletionStage[Graph[SourceShape[T], M]]): javadsl.Source[T, CompletionStage[M]] = new Source(scaladsl.Source.fromSourceCompletionStage(completion))
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -380,7 +396,7 @@ object Source {
     read:   function.Function[S, Optional[T]],
     close:  function.Procedure[S]): javadsl.Source[T, NotUsed] =
     new Source(scaladsl.Source.unfoldResource[T, S](
-      create.create,
+      create.create _,
       (s: S) ⇒ read.apply(s).asScala, close.apply))
 
   /**
@@ -423,7 +439,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
 
   override def shape: SourceShape[Out] = delegate.shape
 
-  def module: StreamLayout.Module = delegate.module
+  override def traversalBuilder: LinearTraversalBuilder = delegate.traversalBuilder
 
   override def toString: String = delegate.toString
 
@@ -1428,9 +1444,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * The last group before end-of-stream will contain the buffered elements
    * since the previously emitted group.
    *
-   * '''Emits when''' the configured time elapses since the last group has been emitted
+   * '''Emits when''' the configured time elapses since the last group has been emitted or `n` elements is buffered
    *
-   * '''Backpressures when''' the configured time elapses since the last group has been emitted
+   * '''Backpressures when''' downstream backpressures, and there are `n+1` buffered elements
    *
    * '''Completes when''' upstream completes (emits last group)
    *
@@ -1441,6 +1457,27 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def groupedWithin(n: Int, d: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
     new Source(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
+
+  /**
+   * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the weight of the elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   *
+   * '''Emits when''' the configured time elapses since the last group has been emitted or weight limit reached
+   *
+   * '''Backpressures when''' downstream backpressures, and buffered group (+ pending element) weighs more than `maxWeight`
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
+   *
+   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * IllegalArgumentException is thrown.
+   */
+  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, Long], d: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+    new Source(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
 
   /**
    * Shifts elements emission in time by a specified amount. It allows to store elements

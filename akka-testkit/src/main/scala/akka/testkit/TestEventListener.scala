@@ -12,7 +12,7 @@ import akka.actor.{ DeadLetter, ActorSystem, UnhandledMessage }
 import akka.dispatch.sysmsg.{ SystemMessage, Terminate }
 import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug, LoggerInitialized }
 import akka.event.Logging
-import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.{ ActorRef, NoSerializationVerificationNeeded }
 import akka.japi.Util.immutableSeq
 import java.lang.{ Iterable ⇒ JIterable }
 import akka.util.BoxedType
@@ -508,10 +508,11 @@ class TestEventListener extends Logging.DefaultLogger {
       if (!msg.isInstanceOf[Terminate]) {
         val event = Warning(rcp.path.toString, rcp.getClass, msg)
         if (!filter(event)) {
-          val msgStr =
-            if (msg.isInstanceOf[SystemMessage]) "received dead system message: " + msg
-            else "received dead letter from " + snd + ": " + msg
-          val event2 = Warning(rcp.path.toString, rcp.getClass, msgStr)
+          val msgPrefix =
+            if (msg.isInstanceOf[SystemMessage]) "received dead system message"
+            else if (snd eq context.system.deadLetters) "received dead letter without sender"
+            else "received dead letter from " + snd
+          val event2 = Warning(rcp.path.toString, rcp.getClass, msgPrefix + ": " + msg)
           if (!filter(event2)) print(event2)
         }
       }

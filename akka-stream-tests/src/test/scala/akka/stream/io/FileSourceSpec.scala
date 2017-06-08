@@ -12,8 +12,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.ActorAttributes
 import akka.stream.Attributes
-import akka.stream.impl.ActorMaterializerImpl
-import akka.stream.impl.StreamSupervisor
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.io.FileSourceSpec.Settings
 import akka.stream.scaladsl.{ FileIO, Keep, Sink }
@@ -109,6 +108,34 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       c.expectComplete()
     }
 
+    "read partial contents from a file" in assertAllStagesStopped {
+      val chunkSize = 512
+      val startPosition = 1000
+      val bufferAttributes = Attributes.inputBuffer(1, 2)
+
+      val p = FileIO.fromPath(testFile, chunkSize, startPosition)
+        .withAttributes(bufferAttributes)
+        .runWith(Sink.asPublisher(false))
+      val c = TestSubscriber.manualProbe[ByteString]()
+      p.subscribe(c)
+      val sub = c.expectSubscription()
+
+      var remaining = TestText.drop(1000)
+      def nextChunk() = {
+        val (chunk, rest) = remaining.splitAt(chunkSize)
+        remaining = rest
+        chunk
+      }
+
+      sub.request(5000)
+
+      for (_ ← 1 to 10) {
+        c.expectNext().utf8String should ===(nextChunk().toString)
+      }
+
+      c.expectComplete()
+    }
+
     "complete only when all contents of a file have been signalled" in assertAllStagesStopped {
       val chunkSize = 256
       val bufferAttributes = Attributes.inputBuffer(4, 8)
@@ -177,26 +204,23 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       try {
         val p = FileIO.fromPath(manyLines).runWith(TestSink.probe)(materializer)
 
-        materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
         try assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher") finally p.cancel()
       } finally shutdown(sys)
     }
 
-    //FIXME: overriding dispatcher should be made available with dispatcher alias support in materializer (#17929)
     "allow overriding the dispatcher using Attributes" in {
-      pending
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
-      implicit val timeout = Timeout(500.millis)
 
       try {
         val p = FileIO.fromPath(manyLines)
-          .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
+          .addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
           .runWith(TestSink.probe)(materializer)
 
-        materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
-        val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
+        materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
         try assertDispatcher(ref, "akka.actor.default-dispatcher") finally p.cancel()
       } finally shutdown(sys)
     }

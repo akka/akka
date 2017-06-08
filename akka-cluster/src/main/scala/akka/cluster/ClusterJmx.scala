@@ -133,7 +133,12 @@ trait ClusterNodeMBean {
 private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
 
   private val mBeanServer = ManagementFactory.getPlatformMBeanServer
-  private val clusterMBeanName = new ObjectName("akka:type=Cluster")
+  private val clusterMBeanName =
+    if (cluster.settings.JmxMultiMbeansInSameEnabled)
+      new ObjectName("akka:type=Cluster,port=" + cluster.selfUniqueAddress.address.port.getOrElse(""))
+    else
+      new ObjectName("akka:type=Cluster")
+
   private def clusterView = cluster.readView
   import cluster.InfoLogger._
 
@@ -199,7 +204,15 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
       mBeanServer.registerMBean(mbean, clusterMBeanName)
       logInfo("Registered cluster JMX MBean [{}]", clusterMBeanName)
     } catch {
-      case e: InstanceAlreadyExistsException ⇒ // ignore - we are running multiple cluster nodes in the same JVM (probably for testing)
+      case e: InstanceAlreadyExistsException ⇒ {
+        if (cluster.settings.JmxMultiMbeansInSameEnabled) {
+          log.error(e, s"Failed to register Cluster JMX MBean with name=$clusterMBeanName")
+        } else {
+          log.warning(
+            s"Could not register Cluster JMX MBean with name=$clusterMBeanName as it is already registered. " +
+              "If you are running multiple clusters in the same JVM, set 'akka.cluster.jmx.multi-mbeans-in-same-jvm = on' in config")
+        }
+      }
     }
   }
 
@@ -210,7 +223,15 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
     try {
       mBeanServer.unregisterMBean(clusterMBeanName)
     } catch {
-      case e: InstanceNotFoundException ⇒ // ignore - we are running multiple cluster nodes in the same JVM (probably for testing)
+      case e: InstanceNotFoundException ⇒ {
+        if (cluster.settings.JmxMultiMbeansInSameEnabled) {
+          log.error(e, s"Failed to unregister Cluster JMX MBean with name=$clusterMBeanName")
+        } else {
+          log.warning(
+            s"Could not unregister Cluster JMX MBean with name=$clusterMBeanName as it was not found. " +
+              "If you are running multiple clusters in the same JVM, set 'akka.cluster.jmx.multi-mbeans-in-same-jvm = on' in config")
+        }
+      }
     }
   }
 

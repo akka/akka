@@ -3,6 +3,7 @@
  */
 package akka.stream.impl
 
+import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes._
 import akka.stream.Supervision.Decider
@@ -11,7 +12,7 @@ import akka.stream._
 /**
  * INTERNAL API
  */
-object Stages {
+@InternalApi private[akka] object Stages {
 
   object DefaultAttributes {
     val IODispatcher = ActorAttributes.IODispatcher
@@ -29,6 +30,7 @@ object Stages {
     val mapAsyncUnordered = name("mapAsyncUnordered")
     val grouped = name("grouped")
     val groupedWithin = name("groupedWithin")
+    val groupedWeightedWithin = name("groupedWeightedWithin")
     val limit = name("limit")
     val limitWeighted = name("limitWeighted")
     val sliding = name("sliding")
@@ -90,6 +92,7 @@ object Stages {
     val iterableSource = name("iterableSource")
     val cycledSource = name("cycledSource")
     val futureSource = name("futureSource")
+    val futureFlattenSource = name("futureFlattenSource")
     val tickSource = name("tickSource")
     val singleSource = name("singleSource")
     val emptySource = name("emptySource")

@@ -16,6 +16,9 @@ import scala.concurrent.{ Future, Promise }
 import akka.Done
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.InternalApi
+import akka.util.OptionVal
+
 import scala.compat.java8.FutureConverters._
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -23,7 +26,7 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-private[stream] object QueueSource {
+@InternalApi private[akka] object QueueSource {
   sealed trait Input[+T]
   final case class Offer[+T](elem: T, promise: Promise[QueueOfferResult]) extends Input[T]
   case object Completion extends Input[Nothing]
@@ -33,7 +36,7 @@ private[stream] object QueueSource {
 /**
  * INTERNAL API
  */
-final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
+@InternalApi private[akka] final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
   import QueueSource._
 
   val out = Outlet[T]("queueSource.out")
@@ -187,7 +190,10 @@ final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) e
   }
 }
 
-final class SourceQueueAdapter[T](delegate: SourceQueueWithComplete[T]) extends akka.stream.javadsl.SourceQueueWithComplete[T] {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class SourceQueueAdapter[T](delegate: SourceQueueWithComplete[T]) extends akka.stream.javadsl.SourceQueueWithComplete[T] {
   def offer(elem: T): CompletionStage[QueueOfferResult] = delegate.offer(elem).toJava
   def watchCompletion(): CompletionStage[Done] = delegate.watchCompletion().toJava
   def complete(): Unit = delegate.complete()
@@ -197,7 +203,7 @@ final class SourceQueueAdapter[T](delegate: SourceQueueWithComplete[T]) extends 
 /**
  * INTERNAL API
  */
-final class UnfoldResourceSource[T, S](
+@InternalApi private[akka] final class UnfoldResourceSource[T, S](
   create:   () ⇒ S,
   readData: (S) ⇒ Option[T],
   close:    (S) ⇒ Unit) extends GraphStage[SourceShape[T]] {
@@ -207,10 +213,14 @@ final class UnfoldResourceSource[T, S](
 
   def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
     lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    var open = false
     var blockingStream: S = _
     setHandler(out, this)
 
-    override def preStart(): Unit = blockingStream = create()
+    override def preStart(): Unit = {
+      blockingStream = create()
+      open = true
+    }
 
     @tailrec
     final override def onPull(): Unit = {
@@ -240,21 +250,30 @@ final class UnfoldResourceSource[T, S](
     private def restartState(): Unit = {
       close(blockingStream)
       blockingStream = create()
+      open = true
     }
 
     private def closeStage(): Unit =
       try {
         close(blockingStream)
+        open = false
         completeStage()
       } catch {
         case NonFatal(ex) ⇒ failStage(ex)
       }
 
+    override def postStop(): Unit = {
+      if (open) close(blockingStream)
+    }
+
   }
   override def toString = "UnfoldResourceSource"
 }
 
-final class UnfoldResourceSourceAsync[T, S](
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class UnfoldResourceSourceAsync[T, S](
   create:   () ⇒ Future[S],
   readData: (S) ⇒ Future[Option[T]],
   close:    (S) ⇒ Future[Done]) extends GraphStage[SourceShape[T]] {
@@ -265,6 +284,7 @@ final class UnfoldResourceSourceAsync[T, S](
   def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
     lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
     var resource = Promise[S]()
+    var open = false
     implicit val context = ExecutionContexts.sameThreadExecutionContext
 
     setHandler(out, this)
@@ -272,22 +292,21 @@ final class UnfoldResourceSourceAsync[T, S](
     override def preStart(): Unit = createStream(false)
 
     private def createStream(withPull: Boolean): Unit = {
-      val cb = getAsyncCallback[Try[S]] {
+      val createdCallback = getAsyncCallback[Try[S]] {
         case scala.util.Success(res) ⇒
+          open = true
           resource.success(res)
           if (withPull) onPull()
         case scala.util.Failure(t) ⇒ failStage(t)
       }
       try {
-        create().onComplete(cb.invoke)
+        create().onComplete(createdCallback.invoke)
       } catch {
         case NonFatal(ex) ⇒ failStage(ex)
       }
     }
 
-    private def onResourceReady(f: (S) ⇒ Unit): Unit = resource.future.onSuccess {
-      case resource ⇒ f(resource)
-    }
+    private def onResourceReady(f: (S) ⇒ Unit): Unit = resource.future.foreach(f)
 
     val errorHandler: PartialFunction[Throwable, Unit] = {
       case NonFatal(ex) ⇒ decider(ex) match {
@@ -298,7 +317,8 @@ final class UnfoldResourceSourceAsync[T, S](
         case Supervision.Resume  ⇒ onPull()
       }
     }
-    val callback = getAsyncCallback[Try[Option[T]]] {
+
+    val readCallback = getAsyncCallback[Try[Option[T]]] {
       case scala.util.Success(data) ⇒ data match {
         case Some(d) ⇒ push(out, d)
         case None    ⇒ closeStage()
@@ -306,22 +326,26 @@ final class UnfoldResourceSourceAsync[T, S](
       case scala.util.Failure(t) ⇒ errorHandler(t)
     }.invoke _
 
-    final override def onPull(): Unit = onResourceReady {
-      case resource ⇒
-        try { readData(resource).onComplete(callback) } catch errorHandler
-    }
+    final override def onPull(): Unit =
+      onResourceReady { resource ⇒
+        try { readData(resource).onComplete(readCallback) } catch errorHandler
+      }
 
     override def onDownstreamFinish(): Unit = closeStage()
 
     private def closeAndThen(f: () ⇒ Unit): Unit = {
       setKeepGoing(true)
-      val cb = getAsyncCallback[Try[Done]] {
-        case scala.util.Success(_) ⇒ f()
-        case scala.util.Failure(t) ⇒ failStage(t)
+      val closedCallback = getAsyncCallback[Try[Done]] {
+        case scala.util.Success(_) ⇒
+          open = false
+          f()
+        case scala.util.Failure(t) ⇒
+          open = false
+          failStage(t)
       }
 
       onResourceReady(res ⇒
-        try { close(res).onComplete(cb.invoke) } catch {
+        try { close(res).onComplete(closedCallback.invoke) } catch {
           case NonFatal(ex) ⇒ failStage(ex)
         })
     }
@@ -331,16 +355,26 @@ final class UnfoldResourceSourceAsync[T, S](
     })
     private def closeStage(): Unit = closeAndThen(completeStage)
 
+    override def postStop(): Unit = {
+      if (open) closeStage()
+    }
+
   }
   override def toString = "UnfoldResourceSourceAsync"
 
 }
 
-object LazySource {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object LazySource {
   def apply[T, M](sourceFactory: () ⇒ Source[T, M]) = new LazySource[T, M](sourceFactory)
 }
 
-final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
   val out = Outlet[T]("LazySource.out")
   override val shape = SourceShape(out)
 
@@ -377,10 +411,15 @@ final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphSt
           }
         })
 
-        matPromise.tryComplete(
-          Try {
-            subFusingMaterializer.materialize(source.toMat(subSink.sink)(Keep.left), inheritedAttributes)
-          })
+        try {
+          val matVal = subFusingMaterializer.materialize(source.toMat(subSink.sink)(Keep.left), inheritedAttributes)
+          matPromise.trySuccess(matVal)
+        } catch {
+          case NonFatal(ex) ⇒
+            subSink.cancel()
+            failStage(ex)
+            matPromise.tryFailure(ex)
+        }
       }
 
       setHandler(out, this)
@@ -394,5 +433,25 @@ final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphSt
   }
 
   override def toString = "LazySource"
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final object EmptySource extends GraphStage[SourceShape[Nothing]] {
+  val out = Outlet[Nothing]("EmptySource.out")
+  override val shape = SourceShape(out)
+
+  override protected def initialAttributes = DefaultAttributes.lazySource
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with OutHandler {
+      override def preStart(): Unit = completeStage()
+      override def onPull(): Unit = completeStage()
+
+      setHandler(out, this)
+    }
+
+  override def toString = "EmptySource"
 }
 

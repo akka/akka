@@ -8,9 +8,12 @@ import java.util.concurrent.TimeUnit
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
+import akka.util.ConstantFun
 import org.openjdk.jmh.annotations._
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.Future
+import akka.Done
 
 object MaterializationBenchmark {
 
@@ -40,21 +43,6 @@ object MaterializationBenchmark {
       ClosedShape
     })
 
-  val graphWithNestedImportsBuilder = (numOfNestedGraphs: Int) => {
-    var flow: Graph[FlowShape[Unit, Unit], NotUsed] = Flow[Unit].map(identity)
-    for (_ <- 1 to numOfNestedGraphs) {
-      flow = GraphDSL.create(flow) { b ⇒ flow ⇒
-        FlowShape(flow.in, flow.out)
-      }
-    }
-
-    RunnableGraph.fromGraph(GraphDSL.create(flow) { implicit b ⇒ flow ⇒
-      import GraphDSL.Implicits._
-      Source.single(()) ~> flow ~> Sink.ignore
-      ClosedShape
-    })
-  }
-
   val graphWithImportedFlowBuilder = (numOfFlows: Int) =>
     RunnableGraph.fromGraph(GraphDSL.create(Source.single(())) { implicit b ⇒ source ⇒
       import GraphDSL.Implicits._
@@ -68,6 +56,24 @@ object MaterializationBenchmark {
       out ~> Sink.ignore
       ClosedShape
     })
+
+  final val subStreamCount = 10000
+
+  val subStreamBuilder: Int => RunnableGraph[Future[Unit]] = numOfCombinators => {
+
+    val subFlow = {
+      var flow = Flow[Unit]
+      for (_ <- 1 to numOfCombinators) {
+        flow = flow.map(identity)
+      }
+      flow
+    }
+
+    Source.repeat(Source.single(()))
+      .take(subStreamCount)
+      .flatMapConcat(_.via(subFlow))
+      .toMat(Sink.last)(Keep.right)
+  }
 }
 
 @State(Scope.Benchmark)
@@ -81,18 +87,18 @@ class MaterializationBenchmark {
 
   var flowWithMap: RunnableGraph[NotUsed] = _
   var graphWithJunctions: RunnableGraph[NotUsed] = _
-  var graphWithNestedImports: RunnableGraph[NotUsed] = _
   var graphWithImportedFlow: RunnableGraph[NotUsed] = _
+  var subStream: RunnableGraph[Future[Unit]] = _
 
-  @Param(Array("1", "10", "100", "1000"))
+  @Param(Array("1", "10", "100"))
   var complexity = 0
 
   @Setup
   def setup(): Unit = {
     flowWithMap = flowWithMapBuilder(complexity)
     graphWithJunctions = graphWithJunctionsBuilder(complexity)
-    graphWithNestedImports = graphWithNestedImportsBuilder(complexity)
     graphWithImportedFlow = graphWithImportedFlowBuilder(complexity)
+    subStream = subStreamBuilder(complexity)
   }
 
   @TearDown
@@ -101,14 +107,18 @@ class MaterializationBenchmark {
   }
 
   @Benchmark
-  def flow_with_map(): Unit = flowWithMap.run()
+  def flow_with_map(): NotUsed = flowWithMap.run()
 
   @Benchmark
-  def graph_with_junctions(): Unit = graphWithJunctions.run()
+  def graph_with_junctions(): NotUsed = graphWithJunctions.run()
 
   @Benchmark
-  def graph_with_nested_imports(): Unit = graphWithNestedImports.run()
+  def graph_with_imported_flow(): NotUsed = graphWithImportedFlow.run()
 
   @Benchmark
-  def graph_with_imported_flow(): Unit = graphWithImportedFlow.run()
+  @OperationsPerInvocation(subStreamCount)
+  def sub_stream(): Done = {
+    Await.result(subStream.run(), 5.seconds)
+    Done
+  }
 }

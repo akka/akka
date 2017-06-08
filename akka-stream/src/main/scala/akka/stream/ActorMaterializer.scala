@@ -17,6 +17,7 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import akka.japi.function
 import akka.stream.impl.fusing.GraphInterpreterShell
+import akka.stream.stage.GraphStageLogic
 
 import scala.util.control.NoStackTrace
 
@@ -57,7 +58,7 @@ object ActorMaterializer {
     val haveShutDown = new AtomicBoolean(false)
     val system = actorSystemOf(context)
 
-    new ActorMaterializerImpl(
+    new PhasedFusingActorMaterializer(
       system,
       materializerSettings,
       system.dispatchers,
@@ -86,7 +87,7 @@ object ActorMaterializer {
   private[akka] def systemMaterializer(materializerSettings: ActorMaterializerSettings, namePrefix: String,
                                        system: ExtendedActorSystem): ActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
-    new ActorMaterializerImpl(
+    new PhasedFusingActorMaterializer(
       system,
       materializerSettings,
       system.dispatchers,
@@ -220,6 +221,15 @@ class MaterializationException(msg: String, cause: Throwable = null) extends Run
  */
 final case class AbruptTerminationException(actor: ActorRef)
   extends RuntimeException(s"Processor actor [$actor] terminated abruptly") with NoStackTrace
+
+/**
+ * Signal that the stage was abruptly terminated, usually seen as a call to `postStop` of the `GraphStageLogic` without
+ * any of the handler callbacks seeing completion or failure from upstream or cancellation from downstream. This can happen when
+ * the actor running the graph is killed, which happens when the materializer or actor system is terminated.
+ */
+final class AbruptStageTerminationException(logic: GraphStageLogic)
+  extends RuntimeException(s"GraphStage [$logic] terminated abruptly, caused by for example materializer or actor system termination.")
+  with NoStackTrace
 
 object ActorMaterializerSettings {
 
@@ -433,6 +443,7 @@ final class ActorMaterializerSettings private (
    * this may cause an initial runtime overhead, but most of the time fusing is
    * desirable since it reduces the number of Actors that are created.
    */
+  @deprecated("Turning off fusing is no longer possible with the traversal based materializer", since = "2.5.0")
   def withAutoFusing(enable: Boolean): ActorMaterializerSettings =
     if (enable == this.autoFusing) this
     else copy(autoFusing = enable)

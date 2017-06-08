@@ -43,12 +43,17 @@ object ByteString {
   /**
    * Creates a new ByteString by encoding a String as UTF-8.
    */
-  def apply(string: String): ByteString = apply(string, UTF_8)
+  def apply(string: String): ByteString = apply(string, StandardCharsets.UTF_8)
 
   /**
    * Creates a new ByteString by encoding a String with a charset.
    */
   def apply(string: String, charset: String): ByteString = CompactByteString(string, charset)
+
+  /**
+   * Creates a new ByteString by encoding a String with a charset.
+   */
+  def apply(string: String, charset: Charset): ByteString = CompactByteString(string, charset)
 
   /**
    * Creates a new ByteString by copying a byte array.
@@ -79,6 +84,11 @@ object ByteString {
    * Creates a new ByteString which will contain the representation of the given String in the given charset
    */
   def fromString(string: String, charset: String): ByteString = apply(string, charset)
+
+  /**
+   * Creates a new ByteString which will contain the representation of the given String in the given charset
+   */
+  def fromString(string: String, charset: Charset): ByteString = apply(string, charset)
 
   /**
    * Standard "UTF-8" charset
@@ -459,8 +469,7 @@ object ByteString {
 
     def decodeString(charset: String): String = compact.decodeString(charset)
 
-    def decodeString(charset: Charset): String =
-      compact.decodeString(charset)
+    def decodeString(charset: Charset): String = compact.decodeString(charset)
 
     private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit = {
       os.writeInt(bytestrings.length)
@@ -746,7 +755,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   /**
    * Decodes this ByteString as a UTF-8 encoded String.
    */
-  final def utf8String: String = decodeString(ByteString.UTF_8)
+  final def utf8String: String = decodeString(StandardCharsets.UTF_8)
 
   /**
    * Decodes this ByteString using a charset to produce a String.
@@ -808,12 +817,18 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by encoding a String as UTF-8.
    */
-  def apply(string: String): CompactByteString = apply(string, ByteString.UTF_8)
+  def apply(string: String): CompactByteString = apply(string, StandardCharsets.UTF_8)
 
   /**
    * Creates a new CompactByteString by encoding a String with a charset.
    */
   def apply(string: String, charset: String): CompactByteString =
+    if (string.isEmpty) empty else ByteString.ByteString1C(string.getBytes(charset))
+
+  /**
+   * Creates a new CompactByteString by encoding a String with a charset.
+   */
+  def apply(string: String, charset: Charset): CompactByteString =
     if (string.isEmpty) empty else ByteString.ByteString1C(string.getBytes(charset))
 
   /**

@@ -4,7 +4,10 @@
 package akka.cluster.protobuf
 
 import akka.cluster._
-import akka.actor.{ ExtendedActorSystem, Address }
+import akka.actor.{ Address, ExtendedActorSystem }
+import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
+import akka.routing.{ DefaultOptimalSizeExploringResizer, RoundRobinPool }
+
 import collection.immutable.SortedSet
 import akka.testkit.AkkaSpec
 
@@ -73,4 +76,20 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       checkSerialization(InternalClusterAction.Welcome(uniqueAddress, g2))
     }
   }
+  "Cluster router pool" must {
+    "be serializable" in {
+      checkSerialization(ClusterRouterPool(
+        RoundRobinPool(
+          nrOfInstances = 4
+        ),
+        ClusterRouterPoolSettings(
+          totalInstances = 2,
+          maxInstancesPerNode = 5,
+          allowLocalRoutees = true,
+          useRole = Some("Richard, Duke of Gloucester")
+        )
+      ))
+    }
+  }
+
 }

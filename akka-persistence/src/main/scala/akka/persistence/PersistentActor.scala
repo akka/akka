@@ -100,7 +100,7 @@ object Recovery {
    * Convenience method for skipping recovery in [[PersistentActor]].
    * @see [[Recovery]]
    */
-  val none: Recovery = Recovery(toSequenceNr = 0L)
+  val none: Recovery = Recovery(toSequenceNr = 0L, fromSnapshot = SnapshotSelectionCriteria.None)
 }
 
 final class RecoveryTimedOut(message: String) extends RuntimeException(message) with NoStackTrace
@@ -246,7 +246,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
   /**
    * Defer the handler execution until all pending handlers have been executed.
    * Allows to define logic within the actor, which will respect the invocation-order-guarantee
-   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before `deferAsync`,
+   * in respect to `persistAsync` or `persist` calls. That is, if `persistAsync` or `persist` was invoked before `deferAsync`,
    * the corresponding handlers will be invoked in the same order as they were registered in.
    *
    * This call will NOT result in `event` being persisted, use `persist` or `persistAsync` instead
@@ -360,7 +360,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
   /**
    * Defer the handler execution until all pending handlers have been executed.
    * Allows to define logic within the actor, which will respect the invocation-order-guarantee
-   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
+   * in respect to `persistAsync` or `persist` calls. That is, if `persistAsync` or `persist` was invoked before `deferAsync`,
    * the corresponding handlers will be invoked in the same order as they were registered in.
    *
    * This call will NOT result in `event` being persisted, please use `persist` or `persistAsync`,

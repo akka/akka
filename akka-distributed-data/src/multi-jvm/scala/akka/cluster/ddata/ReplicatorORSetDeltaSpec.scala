@@ -19,9 +19,13 @@ object ReplicatorORSetDeltaSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.log-dead-letters-during-shutdown = off
+    akka.actor {
+      serialize-messages = off
+      allow-java-serialization = off
+    }
     """))
 
   testTransport(on = true)

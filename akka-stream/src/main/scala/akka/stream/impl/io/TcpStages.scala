@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 
 import akka.NotUsed
 import akka.actor.{ ActorRef, Terminated }
+import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.io.Inet.SocketOption
 import akka.io.Tcp
@@ -24,12 +25,11 @@ import akka.util.ByteString
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ Future, Promise }
-import scala.util.Try
 
 /**
  * INTERNAL API
  */
-private[stream] class ConnectionSourceStage(
+@InternalApi private[stream] class ConnectionSourceStage(
   val tcpManager:          ActorRef,
   val endpoint:            InetSocketAddress,
   val backlog:             Int,
@@ -53,7 +53,7 @@ private[stream] class ConnectionSourceStage(
 
       val connectionFlowsAwaitingInitialization = new AtomicLong()
       var listener: ActorRef = _
-      var unbindPromise = Promise[Unit]()
+      val unbindPromise = Promise[Unit]()
       var unbindStarted = false
 
       override def preStart(): Unit = {
@@ -77,7 +77,11 @@ private[stream] class ConnectionSourceStage(
               unbindPromise.future
             }))
           case f: CommandFailed ⇒
-            val ex = BindFailedException
+            val ex = new BindFailedException {
+              // cannot modify the actual exception class for compatibility reasons
+              override def getMessage: String = s"Bind failed${f.causedByString}"
+            }
+            f.cause.foreach(ex.initCause)
             bindingPromise.failure(ex)
             unbindPromise.success(() ⇒ Future.successful(()))
             failStage(ex)
@@ -167,7 +171,7 @@ private[stream] object ConnectionSourceStage {
 /**
  * INTERNAL API
  */
-private[stream] object TcpConnectionStage {
+@InternalApi private[stream] object TcpConnectionStage {
   case object WriteAck extends Tcp.Event
 
   trait TcpRole {
@@ -218,8 +222,8 @@ private[stream] object TcpConnectionStage {
       val sender = evt._1
       val msg = evt._2
       msg match {
-        case Terminated(_)      ⇒ failStage(new StreamTcpException("The IO manager actor (TCP) has terminated. Stopping now."))
-        case CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed"))
+        case Terminated(_)          ⇒ failStage(new StreamTcpException("The IO manager actor (TCP) has terminated. Stopping now."))
+        case f @ CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}"))
         case c: Connected ⇒
           role.asInstanceOf[Outbound].localAddressPromise.success(c.localAddress)
           connection = sender
@@ -237,13 +241,13 @@ private[stream] object TcpConnectionStage {
       val sender = evt._1
       val msg = evt._2
       msg match {
-        case Terminated(_)      ⇒ failStage(new StreamTcpException("The connection actor has terminated. Stopping now."))
-        case CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed"))
-        case ErrorClosed(cause) ⇒ failStage(new StreamTcpException(s"The connection closed with error: $cause"))
-        case Aborted            ⇒ failStage(new StreamTcpException("The connection has been aborted"))
-        case Closed             ⇒ completeStage()
-        case ConfirmedClosed    ⇒ completeStage()
-        case PeerClosed         ⇒ complete(bytesOut)
+        case Terminated(_)          ⇒ failStage(new StreamTcpException("The connection actor has terminated. Stopping now."))
+        case f @ CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}"))
+        case ErrorClosed(cause)     ⇒ failStage(new StreamTcpException(s"The connection closed with error: $cause"))
+        case Aborted                ⇒ failStage(new StreamTcpException("The connection has been aborted"))
+        case Closed                 ⇒ completeStage()
+        case ConfirmedClosed        ⇒ completeStage()
+        case PeerClosed             ⇒ complete(bytesOut)
 
         case Received(data) ⇒
           // Keep on reading even when closed. There is no "close-read-side" in TCP
@@ -309,7 +313,7 @@ private[stream] object TcpConnectionStage {
 /**
  * INTERNAL API
  */
-class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean)
+@InternalApi private[akka] class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean)
   extends GraphStage[FlowShape[ByteString, ByteString]] {
   import TcpConnectionStage._
 
@@ -333,7 +337,7 @@ class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAdd
 /**
  * INTERNAL API
  */
-private[stream] class OutgoingConnectionStage(
+@InternalApi private[stream] class OutgoingConnectionStage(
   manager:        ActorRef,
   remoteAddress:  InetSocketAddress,
   localAddress:   Option[InetSocketAddress]           = None,
@@ -371,7 +375,7 @@ private[stream] class OutgoingConnectionStage(
 }
 
 /** INTERNAL API */
-private[akka] object TcpIdleTimeout {
+@InternalApi private[akka] object TcpIdleTimeout {
   def apply(idleTimeout: FiniteDuration, remoteAddress: Option[InetSocketAddress]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
     val connectionToString = remoteAddress match {
       case Some(addr) ⇒ s" on connection to [$addr]"

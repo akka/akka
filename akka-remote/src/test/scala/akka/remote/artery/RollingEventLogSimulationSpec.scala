@@ -119,7 +119,7 @@ class RollingEventLogSimulationSpec extends AkkaSpec {
 
   class Simulator(writerCount: Int, entryCount: Int, totalWrites: Int) {
     var headPointer = 0
-    val simulatedBuffer = Array.ofDim[Byte](4 * entryCount)
+    val simulatedBuffer = new Array[Byte](4 * entryCount)
     val writers = Array.tabulate(writerCount)(new Writer(_, entryCount, totalWrites))
     var activeWriters = writerCount
     var log: List[String] = Nil

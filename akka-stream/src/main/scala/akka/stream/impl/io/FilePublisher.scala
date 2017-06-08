@@ -8,7 +8,8 @@ import java.nio.channels.FileChannel
 import java.nio.file.Path
 
 import akka.Done
-import akka.actor.{ Deploy, ActorLogging, DeadLetterSuppression, Props }
+import akka.actor.{ ActorLogging, DeadLetterSuppression, Deploy, Props }
+import akka.annotation.InternalApi
 import akka.stream.actor.ActorPublisherMessage
 import akka.stream.IOResult
 import akka.util.ByteString
@@ -19,13 +20,14 @@ import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 
 /** INTERNAL API */
-private[akka] object FilePublisher {
-  def props(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int) = {
+@InternalApi private[akka] object FilePublisher {
+  def props(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, startPosition: Long, initialBuffer: Int, maxBuffer: Int) = {
     require(chunkSize > 0, s"chunkSize must be > 0 (was $chunkSize)")
+    require(startPosition >= 0, s"startPosition must be >= 0 (was $startPosition)")
     require(initialBuffer > 0, s"initialBuffer must be > 0 (was $initialBuffer)")
     require(maxBuffer >= initialBuffer, s"maxBuffer must be >= initialBuffer (was $maxBuffer)")
 
-    Props(classOf[FilePublisher], f, completionPromise, chunkSize, initialBuffer, maxBuffer)
+    Props(classOf[FilePublisher], f, completionPromise, chunkSize, startPosition, initialBuffer, maxBuffer)
       .withDeploy(Deploy.local)
   }
 
@@ -35,7 +37,7 @@ private[akka] object FilePublisher {
 }
 
 /** INTERNAL API */
-private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
+@InternalApi private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, startPosition: Long, initialBuffer: Int, maxBuffer: Int)
   extends akka.stream.actor.ActorPublisher[ByteString] with ActorLogging {
   import FilePublisher._
 
@@ -50,6 +52,9 @@ private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IORe
   override def preStart() = {
     try {
       chan = FileChannel.open(f, FilePublisher.Read)
+      if (startPosition > 0) {
+        chan.position(startPosition)
+      }
     } catch {
       case NonFatal(ex) ⇒
         completionPromise.trySuccess(IOResult(0L, Failure(ex)))

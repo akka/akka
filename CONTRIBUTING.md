@@ -8,9 +8,8 @@ In case of questions about the contribution process or for discussion of specifi
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `master` – active development branch of Akka 2.4.x
-* `release-2.3` – maintenance branch of Akka 2.3.x
-* `artery-dev` – work on the upcoming remoting implementation, codenamed "artery"
+* `master` – active development branch of Akka 2.5.x
+* `release-2.4` – maintenance branch of Akka 2.4.x
 * similarly `release-2.#` branches contain legacy versions of Akka
 
 ## Tags
@@ -87,7 +86,56 @@ The TL;DR; of the above very precise workflow version is:
 6. Keep polishing it until received enough LGTM
 7. Profit!
 
+## sbt
+
+Akka is using the [sbt](https://github.com/sbt/sbt) build system. So the first thing you have to do is to download and install sbt. You can read more about how to do that in the [sbt setup](http://www.scala-sbt.org/0.13/tutorial/index.html) documentation.
+
 Note that the Akka sbt project is large, so `sbt` needs to be run with lots of heap (1-2 GB). This can be specified using a command line argument `sbt -mem 2048` or in the environment variable `SBT_OPTS` but then as a regular JVM memory flag, for example `SBT_OPTS=-Xmx2G`, on some platforms you can also edit the global defaults for sbt in `/usr/local/etc/sbtopts`.
+
+To compile all the Akka core modules use the `compile` command:
+
+```
+sbt compile
+```
+
+You can run all tests with the `test` command:
+
+```
+sbt test
+```
+
+If you want to deploy the artifacts to your local Ivy repository (for example,
+to use from an sbt project) use the `publishLocal` command:
+
+```
+sbt publishLocal
+```
+
+Note that in the examples above we are calling `sbt compile` and `sbt test`
+and so on, but sbt also has an interactive mode. If you just run `sbt` you
+enter the interactive sbt prompt and can enter the commands directly. This saves
+starting up a new JVM instance for each command and can be much faster and more
+convenient.
+
+For example, building Akka as above is more commonly done like this:
+
+```
+% sbt
+[info] Set current project to default (in build file:/.../akka/project/plugins/)
+[info] Set current project to akka (in build file:/.../akka/)
+> compile
+...
+> test
+...
+```
+
+To run a single multi-jvm test:
+
+```
+sbt
+project akka-cluster
+multi-jvm:testOnly akka.cluster.SunnyWeather
+```
 
 ## The `validatePullRequest` task
 
@@ -95,8 +143,8 @@ The Akka build includes a special task called `validatePullRequest` which invest
 (uncommitted changes) in your local working directory and figures out which projects are impacted by those changes,
 then running tests only on those projects.
 
-For example changing something in `akka-http-core` would cause tests to be run in all projects which depend on it
-(e.g. `akka-http-tests`, `akka-http-marshallers-*`, `akka-docs` etc.).
+For example changing something in `akka-actor` would cause tests to be run in all projects which depend on it
+(e.g. `akka-actor-tests`, `akka-stream`, `akka-docs` etc.).
 
 To use the task simply type `validatePullRequest`, and the output should include entries like shown below:
 
@@ -104,7 +152,7 @@ To use the task simply type `validatePullRequest`, and the output should include
 > validatePullRequest
 [info] Diffing [HEAD] to determine changed modules in PR...
 [info] Detected uncomitted changes in directories (including in dependency analysis): [akka-protobuf,project]
-[info] Detected changes in directories: [akka-docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
+[info] Detected changes in directories: [akka-actor-tests, project, akka-stream, akka-docs, akka-persistence]
 ```
 
 By default changes are diffed with the `master` branch when working locally, if you want to validate against a different
@@ -144,6 +192,7 @@ For a pull request to be considered at all it has to meet these requirements:
 1. Regardless if the code introduces new features or fixes bugs or regressions, it must have comprehensive tests.
 1. The code must be well documented in the Lightbend's standard documentation format (see the ‘Documentation’ section below).
 1. The commit messages must properly describe the changes, see further below.
+1. A pull request must indicate (link to) the issue it is aimed to resolve in the description (or comments) of the PR, in order to establish a link between PR and Issue. This can be achieved by writing "Fixes #1234" or similar in PR description.
 1. All Lightbend projects must include Lightbend copyright notices.  Each project can choose between one of two approaches:
 
     1. All source files in the project must have a Lightbend copyright notice in the file header.
@@ -168,20 +217,53 @@ Whether or not a pull request (or parts of it) shall be back- or forward-ported 
 
 ## Documentation
 
-All documentation must abide by the following maxims:
+All documentation is preferred to be in Lightbend's standard documentation format [Paradox](https://github.com/lightbend/paradox), which among other things allows all code in the documentation to be externalized into compiled files and imported into the documentation.
 
-- Example code should be run as part of an automated test suite.
-- Version should be **programmatically** specifiable to the build.
-- Generation should be **completely automated** and available for scripting.
-- Artifacts that must be included in the Lightbend stack should be published to a maven “documentation” repository as documentation artifacts.
+To build the documentation locally:
 
-All documentation is preferred to be in Lightbend's standard documentation format [reStructuredText](http://doc.akka.io/docs/akka/snapshot/dev/documentation.html) compiled using Lightbend's customized [Sphinx](http://sphinx.pocoo.org/) based documentation generation system, which among other things allows all code in the documentation to be externalized into compiled files and imported into the documentation.
+```
+sbt
+akka-docs/paradox
+```
 
-To learn about how to build the documentation locally see the Reference Docs section about this topic: [Build the documentation]( http://doc.akka.io/docs/akka/2.4/dev/documentation.html#Build_the_documentation).
+The generated html documentation is in `akka-docs/target/paradox/site/main/index.html`.
 
-For more info, or for a starting point for new projects, look at the [Lightbend Documentation Template project](https://github.com/typesafehub/doc-template).
+### Note for paradox on Windows
 
-For larger projects that have invested a lot of time and resources into their current documentation and samples scheme (like for example Play), it is understandable that it will take some time to migrate to this new model. In these cases someone from the project needs to take the responsibility of manual QA and verifier for the documentation and samples.
+On Windows, you need special care to generate html documentation with paradox.
+
+Currently `akka-docs/src/main/paradox/java` has symbolic links which point to directories under `akka-docs/src/main/paradox/scala`.
+ 
+- java/additional -> scala/additional
+- java/common -> scala/common
+- java/general -> scala/general
+- java/guide -> scala/project
+- java/security -> scala/security
+
+So, if you just do `git clone <URL>`, then run `sbt akka-docs/paradox`, you will run into an an error like below,
+because symlinks are checked out in a Linux style which doesn't work on Windows.
+
+```
+sbt akka-docs/paradox
+[trace] Stack trace suppressed: run last akka-docs/compile:paradoxMarkdownToHtml for the full output.
+[error] (akka-docs/compile:paradoxMarkdownToHtml) com.lightbend.paradox.markdown.Index$LinkException: Unknown page [common/cluster.md] linked from [java/index-network.md]
+```
+
+As described in http://stackoverflow.com/a/42137273, recent versions of git scm can convert Linux-style symlinks to the Windows style,
+with `git clone`:
+
+- Launch git scm whose version is on or later than 2.11.1
+- **with administrator rights**
+- `git clone -c core.symlinks=true <URL>`
+
+Then the symlinks are checked out in the Windows style, and the paradox command works fine.
+
+In a future version of akka, this trick for Windows should not be needed -  we will use [paradox groups](http://developer.lightbend.com/docs/paradox/latest/features/groups.html) 
+to get rid of duplicate documentation in Java and Scala. At that point we don't need the symlinks anymore. 
+
+### Scaladoc
+
+Akka generates class diagrams for the API documentation using ScalaDoc. This needs the `dot` command from the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by adding the flag `-Dakka.scaladoc.diagrams=false`. After installing Graphviz, make sure you add the toolset to the PATH (definitely on Windows).
 
 ### JavaDoc
 
@@ -265,6 +347,8 @@ sbt -Dakka.test.tags.exclude=performance,timing,long-running -Dakka.test.multi-i
 In order to force the `validatePullRequest` task to build the entire project, regardless of dependency analysis of a PRs
 changes one can use the special `PLS BUILD ALL` command (typed in a comment on GitHub, on the pull request), which will cause
 the validator to test all projects.
+
+Note, that `OK TO TEST` will only be picked up when the user asking for it is considered an admin. Public (!) members of the [akka organization](https://github.com/orgs/akka/people) are automatically considered admins and users manually declared admin in the Jenkins job (currently no one is explicitly listed). `PLS BUILD` and `PLS BUILD ALL` can be issued by everyone that is an admin or everyone who was whitelisted in the Jenkins Job (whitelisting != declaring someone an admin).
 
 ## Source style
 

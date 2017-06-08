@@ -11,10 +11,11 @@ import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.{ ActorMaterializer, _ }
 import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.TestLatch
 import akka.util.ByteString
 
 import scala.concurrent.{ Await, Future, Promise }
@@ -176,7 +177,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "work with ByteString as well" in assertAllStagesStopped {
       val chunkSize = 50
-      val buffer = Array.ofDim[Char](chunkSize)
+      val buffer = new Array[Char](chunkSize)
       val p = Source.unfoldResourceAsync[ByteString, Reader](
         open,
         reader ⇒ {
@@ -217,7 +218,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           open,
           read, close).runWith(TestSink.probe)(materializer)
 
-        materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "unfoldResourceSourceAsync").get
         try assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher") finally p.cancel()
       } finally shutdown(sys)
@@ -246,6 +247,25 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       sub.request(61)
       c.expectNextN(60)
       c.expectError()
+    }
+
+    "close resource when stream is abruptly terminated" in {
+      val closeLatch = TestLatch(1)
+      val mat = ActorMaterializer()
+      val p = Source.unfoldResourceAsync[String, BufferedReader](
+        open,
+        read,
+        reader ⇒ Future.successful {
+          closeLatch.countDown()
+          Done
+        })
+        .runWith(Sink.asPublisher(false))(mat)
+      val c = TestSubscriber.manualProbe[String]()
+      p.subscribe(c)
+
+      mat.shutdown()
+
+      Await.ready(closeLatch, remainingOrDefault)
     }
   }
   override def afterTermination(): Unit = {

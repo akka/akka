@@ -37,6 +37,32 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
   import FSM._
 
   /**
+   * Returns this AbstractActor's ActorContext
+   * The ActorContext is not thread safe so do not expose it outside of the
+   * AbstractActor.
+   */
+  def getContext(): AbstractActor.ActorContext = context.asInstanceOf[AbstractActor.ActorContext]
+
+  /**
+   * Returns the ActorRef for this actor.
+   *
+   * Same as `self()`.
+   */
+  def getSelf(): ActorRef = self
+
+  /**
+   * The reference sender Actor of the currently processed message. This is
+   * always a legal destination to send to, even if there is no logical recipient
+   * for the reply, in which case it will be sent to the dead letter mailbox.
+   *
+   * Same as `sender()`.
+   *
+   * WARNING: Only valid within the Actor itself, so do not close over it and
+   * publish it to other threads!
+   */
+  def getSender(): ActorRef = sender()
+
+  /**
    * Insert a new StateFunction at the end of the processing chain for the
    * given state.
    *
@@ -70,7 +96,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
     stateName:            S,
     stateTimeout:         FiniteDuration,
     stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
-    when(stateName, stateTimeout)(stateFunctionBuilder.build())
+    super.when(stateName, stateTimeout)(stateFunctionBuilder.build())
 
   /**
    * Set initial state. Call this method from the constructor before the [[#initialize]] method.
@@ -93,7 +119,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param timeout state timeout for the initial state, overriding the default timeout for that state
    */
   final def startWith(stateName: S, stateData: D, timeout: FiniteDuration): Unit =
-    startWith(stateName, stateData, Option(timeout))
+    super.startWith(stateName, stateData, Option(timeout))
 
   /**
    * Add a handler which is called upon each state transition, i.e. not when
@@ -103,7 +129,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * called, not only the first one matching.</b>
    */
   final def onTransition(transitionHandlerBuilder: FSMTransitionHandlerBuilder[S]): Unit =
-    onTransition(transitionHandlerBuilder.build().asInstanceOf[TransitionHandler])
+    super.onTransition(transitionHandlerBuilder.build().asInstanceOf[TransitionHandler])
 
   /**
    * Add a handler which is called upon each state transition, i.e. not when
@@ -113,7 +139,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * called, not only the first one matching.</b>
    */
   final def onTransition(transitionHandler: UnitApply2[S, S]): Unit =
-    onTransition(transitionHandler(_: S, _: S))
+    super.onTransition(transitionHandler(_: S, _: S))
 
   /**
    * Set handler which is called upon reception of unhandled messages. Calling
@@ -122,14 +148,14 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * The current state may be queried using ``stateName``.
    */
   final def whenUnhandled(stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
-    whenUnhandled(stateFunctionBuilder.build())
+    super.whenUnhandled(stateFunctionBuilder.build())
 
   /**
    * Set handler which is called upon termination of this FSM actor. Calling
    * this method again will overwrite the previous contents.
    */
   final def onTermination(stopBuilder: FSMStopBuilder[S, D]): Unit =
-    onTermination(stopBuilder.build().asInstanceOf[PartialFunction[StopEvent, Unit]])
+    super.onTermination(stopBuilder.build().asInstanceOf[PartialFunction[StopEvent, Unit]])
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.

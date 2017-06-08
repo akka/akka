@@ -6,30 +6,32 @@ package akka.stream.impl.io
 import java.io.InputStream
 import java.nio.file.Path
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.IOResult
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.impl.{ ErrorPublisher, SourceModule }
 import akka.util.ByteString
 import org.reactivestreams._
+
 import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API
  * Creates simple synchronous Source backed by the given file.
  */
-private[akka] final class FileSource(f: Path, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
+@InternalApi private[akka] final class FileSource(f: Path, chunkSize: Int, startPosition: Long, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[IOResult]](shape) {
   require(chunkSize > 0, "chunkSize must be greater than 0")
+  require(startPosition >= 0, "startPosition must be equal or greater than 0")
   override def create(context: MaterializationContext) = {
     // FIXME rewrite to be based on GraphStage rather than dangerous downcasts
     val materializer = ActorMaterializerHelper.downcast(context.materializer)
     val settings = materializer.effectiveSettings(context.effectiveAttributes)
 
     val ioResultPromise = Promise[IOResult]()
-    val props = FilePublisher.props(f, ioResultPromise, chunkSize, settings.initialInputBufferSize, settings.maxInputBufferSize)
+    val props = FilePublisher.props(f, ioResultPromise, chunkSize, startPosition, settings.initialInputBufferSize, settings.maxInputBufferSize)
     val dispatcher = context.effectiveAttributes.get[Dispatcher](IODispatcher).dispatcher
 
     val ref = materializer.actorOf(context, props.withDispatcher(dispatcher))
@@ -38,10 +40,10 @@ private[akka] final class FileSource(f: Path, chunkSize: Int, val attributes: At
   }
 
   override protected def newInstance(shape: SourceShape[ByteString]): SourceModule[ByteString, Future[IOResult]] =
-    new FileSource(f, chunkSize, attributes, shape)
+    new FileSource(f, chunkSize, startPosition, attributes, shape)
 
-  override def withAttributes(attr: Attributes): Module =
-    new FileSource(f, chunkSize, attr, amendShape(attr))
+  override def withAttributes(attr: Attributes): SourceModule[ByteString, Future[IOResult]] =
+    new FileSource(f, chunkSize, startPosition, attr, amendShape(attr))
 
   override protected def label: String = s"FileSource($f, $chunkSize)"
 }
@@ -50,7 +52,7 @@ private[akka] final class FileSource(f: Path, chunkSize: Int, val attributes: At
  * INTERNAL API
  * Source backed by the given input stream.
  */
-private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStream, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
+@InternalApi private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStream, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[IOResult]](shape) {
   override def create(context: MaterializationContext) = {
     val materializer = ActorMaterializerHelper.downcast(context.materializer)
@@ -75,6 +77,6 @@ private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStrea
   override protected def newInstance(shape: SourceShape[ByteString]): SourceModule[ByteString, Future[IOResult]] =
     new InputStreamSource(createInputStream, chunkSize, attributes, shape)
 
-  override def withAttributes(attr: Attributes): Module =
+  override def withAttributes(attr: Attributes): SourceModule[ByteString, Future[IOResult]] =
     new InputStreamSource(createInputStream, chunkSize, attr, amendShape(attr))
 }

@@ -283,9 +283,8 @@ trait TestKitBase {
   }
 
   /**
-   * Await until the given assert does not throw an exception or the timeout
-   * expires, whichever comes first. If the timeout expires the last exception
-   * is thrown.
+   * Evaluate the given assert every `interval` until it does not throw an exception.
+   * If the `max` timeout expires the last exception is thrown.
    *
    * If no timeout is given, take it from the innermost enclosing `within`
    * block.
@@ -946,6 +945,7 @@ trait DefaultTimeout { this: TestKitBase ⇒
  * This class is used internal to JavaTestKit and should not be extended
  * by client code directly.
  */
+@deprecated(message = "The only usage is in JavaTestKit which is deprecated.", since = "2.5.0")
 private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef] extends scala.runtime.AbstractPartialFunction[A, B] {
   import akka.japi.JavaPartialFunction._
 

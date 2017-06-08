@@ -8,6 +8,7 @@ import java.util.ArrayList
 import java.util.Collections
 import java.util.Comparator
 import java.util.TreeSet
+
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
@@ -24,6 +25,7 @@ import akka.util.ByteString.UTF_8
 import scala.collection.immutable.TreeMap
 import akka.cluster.UniqueAddress
 import java.io.NotSerializableException
+
 import akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage
 import akka.cluster.ddata.ORSet.DeltaOp
 
@@ -149,6 +151,22 @@ private object ReplicatedDataSerializer {
     override def getValue(entry: rd.ORMultiMap.Entry): rd.ORSet = entry.getValue
   }
 
+  implicit object ORMapDeltaGroupEntry extends ProtoMapEntryWriter[rd.ORMapDeltaGroup.MapEntry, rd.ORMapDeltaGroup.MapEntry.Builder, dm.OtherMessage] with ProtoMapEntryReader[rd.ORMapDeltaGroup.MapEntry, dm.OtherMessage] {
+    override def setStringKey(builder: rd.ORMapDeltaGroup.MapEntry.Builder, key: String, value: dm.OtherMessage): rd.ORMapDeltaGroup.MapEntry = builder.setStringKey(key).setValue(value).build()
+    override def setLongKey(builder: rd.ORMapDeltaGroup.MapEntry.Builder, key: Long, value: dm.OtherMessage): rd.ORMapDeltaGroup.MapEntry = builder.setLongKey(key).setValue(value).build()
+    override def setIntKey(builder: rd.ORMapDeltaGroup.MapEntry.Builder, key: Int, value: dm.OtherMessage): rd.ORMapDeltaGroup.MapEntry = builder.setIntKey(key).setValue(value).build()
+    override def setOtherKey(builder: rd.ORMapDeltaGroup.MapEntry.Builder, key: dm.OtherMessage, value: dm.OtherMessage): rd.ORMapDeltaGroup.MapEntry = builder.setOtherKey(key).setValue(value).build()
+    override def hasStringKey(entry: rd.ORMapDeltaGroup.MapEntry): Boolean = entry.hasStringKey
+    override def getStringKey(entry: rd.ORMapDeltaGroup.MapEntry): String = entry.getStringKey
+    override def hasIntKey(entry: rd.ORMapDeltaGroup.MapEntry): Boolean = entry.hasIntKey
+    override def getIntKey(entry: rd.ORMapDeltaGroup.MapEntry): Int = entry.getIntKey
+    override def hasLongKey(entry: rd.ORMapDeltaGroup.MapEntry): Boolean = entry.hasLongKey
+    override def getLongKey(entry: rd.ORMapDeltaGroup.MapEntry): Long = entry.getLongKey
+    override def hasOtherKey(entry: rd.ORMapDeltaGroup.MapEntry): Boolean = entry.hasOtherKey
+    override def getOtherKey(entry: rd.ORMapDeltaGroup.MapEntry): OtherMessage = entry.getOtherKey
+    override def getValue(entry: rd.ORMapDeltaGroup.MapEntry): dm.OtherMessage = entry.getValue
+  }
+
 }
 
 /**
@@ -178,6 +196,11 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
   private val PNCounterKeyManifest = "g"
   private val ORMapManifest = "H"
   private val ORMapKeyManifest = "h"
+  private val ORMapPutManifest = "Ha"
+  private val ORMapRemoveManifest = "Hr"
+  private val ORMapRemoveKeyManifest = "Hk"
+  private val ORMapUpdateManifest = "Hu"
+  private val ORMapDeltaGroupManifest = "Hg"
   private val LWWMapManifest = "I"
   private val LWWMapKeyManifest = "i"
   private val PNCounterMapManifest = "J"
@@ -198,6 +221,11 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     GCounterManifest → gcounterFromBinary,
     PNCounterManifest → pncounterFromBinary,
     ORMapManifest → ormapFromBinary,
+    ORMapPutManifest → ormapPutFromBinary,
+    ORMapRemoveManifest → ormapRemoveFromBinary,
+    ORMapRemoveKeyManifest → ormapRemoveKeyFromBinary,
+    ORMapUpdateManifest → ormapUpdateFromBinary,
+    ORMapDeltaGroupManifest → ormapDeltaGroupFromBinary,
     LWWMapManifest → lwwmapFromBinary,
     PNCounterMapManifest → pncountermapFromBinary,
     ORMultiMapManifest → multimapFromBinary,
@@ -216,57 +244,67 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     ORMultiMapKeyManifest → (bytes ⇒ ORMultiMapKey(keyIdFromBinary(bytes))))
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: ORSet[_]                  ⇒ ORSetManifest
-    case _: ORSet.AddDeltaOp[_]       ⇒ ORSetAddManifest
-    case _: ORSet.RemoveDeltaOp[_]    ⇒ ORSetRemoveManifest
-    case _: GSet[_]                   ⇒ GSetManifest
-    case _: GCounter                  ⇒ GCounterManifest
-    case _: PNCounter                 ⇒ PNCounterManifest
-    case _: Flag                      ⇒ FlagManifest
-    case _: LWWRegister[_]            ⇒ LWWRegisterManifest
-    case _: ORMap[_, _]               ⇒ ORMapManifest
-    case _: LWWMap[_, _]              ⇒ LWWMapManifest
-    case _: PNCounterMap[_]           ⇒ PNCounterMapManifest
-    case _: ORMultiMap[_, _]          ⇒ ORMultiMapManifest
-    case DeletedData                  ⇒ DeletedDataManifest
-    case _: VersionVector             ⇒ VersionVectorManifest
+    case _: ORSet[_]                     ⇒ ORSetManifest
+    case _: ORSet.AddDeltaOp[_]          ⇒ ORSetAddManifest
+    case _: ORSet.RemoveDeltaOp[_]       ⇒ ORSetRemoveManifest
+    case _: GSet[_]                      ⇒ GSetManifest
+    case _: GCounter                     ⇒ GCounterManifest
+    case _: PNCounter                    ⇒ PNCounterManifest
+    case _: Flag                         ⇒ FlagManifest
+    case _: LWWRegister[_]               ⇒ LWWRegisterManifest
+    case _: ORMap[_, _]                  ⇒ ORMapManifest
+    case _: ORMap.PutDeltaOp[_, _]       ⇒ ORMapPutManifest
+    case _: ORMap.RemoveDeltaOp[_, _]    ⇒ ORMapRemoveManifest
+    case _: ORMap.RemoveKeyDeltaOp[_, _] ⇒ ORMapRemoveKeyManifest
+    case _: ORMap.UpdateDeltaOp[_, _]    ⇒ ORMapUpdateManifest
+    case _: LWWMap[_, _]                 ⇒ LWWMapManifest
+    case _: PNCounterMap[_]              ⇒ PNCounterMapManifest
+    case _: ORMultiMap[_, _]             ⇒ ORMultiMapManifest
+    case DeletedData                     ⇒ DeletedDataManifest
+    case _: VersionVector                ⇒ VersionVectorManifest
 
-    case _: ORSetKey[_]               ⇒ ORSetKeyManifest
-    case _: GSetKey[_]                ⇒ GSetKeyManifest
-    case _: GCounterKey               ⇒ GCounterKeyManifest
-    case _: PNCounterKey              ⇒ PNCounterKeyManifest
-    case _: FlagKey                   ⇒ FlagKeyManifest
-    case _: LWWRegisterKey[_]         ⇒ LWWRegisterKeyManifest
-    case _: ORMapKey[_, _]            ⇒ ORMapKeyManifest
-    case _: LWWMapKey[_, _]           ⇒ LWWMapKeyManifest
-    case _: PNCounterMapKey[_]        ⇒ PNCounterMapKeyManifest
-    case _: ORMultiMapKey[_, _]       ⇒ ORMultiMapKeyManifest
+    case _: ORSetKey[_]                  ⇒ ORSetKeyManifest
+    case _: GSetKey[_]                   ⇒ GSetKeyManifest
+    case _: GCounterKey                  ⇒ GCounterKeyManifest
+    case _: PNCounterKey                 ⇒ PNCounterKeyManifest
+    case _: FlagKey                      ⇒ FlagKeyManifest
+    case _: LWWRegisterKey[_]            ⇒ LWWRegisterKeyManifest
+    case _: ORMapKey[_, _]               ⇒ ORMapKeyManifest
+    case _: LWWMapKey[_, _]              ⇒ LWWMapKeyManifest
+    case _: PNCounterMapKey[_]           ⇒ PNCounterMapKeyManifest
+    case _: ORMultiMapKey[_, _]          ⇒ ORMultiMapKeyManifest
 
-    case _: ORSet.DeltaGroup[_]       ⇒ ORSetDeltaGroupManifest
-    case _: ORSet.FullStateDeltaOp[_] ⇒ ORSetFullManifest
+    case _: ORSet.DeltaGroup[_]          ⇒ ORSetDeltaGroupManifest
+    case _: ORMap.DeltaGroup[_, _]       ⇒ ORMapDeltaGroupManifest
+    case _: ORSet.FullStateDeltaOp[_]    ⇒ ORSetFullManifest
 
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: ORSet[_]                  ⇒ compress(orsetToProto(m))
-    case m: ORSet.AddDeltaOp[_]       ⇒ orsetToProto(m.underlying).toByteArray
-    case m: ORSet.RemoveDeltaOp[_]    ⇒ orsetToProto(m.underlying).toByteArray
-    case m: GSet[_]                   ⇒ gsetToProto(m).toByteArray
-    case m: GCounter                  ⇒ gcounterToProto(m).toByteArray
-    case m: PNCounter                 ⇒ pncounterToProto(m).toByteArray
-    case m: Flag                      ⇒ flagToProto(m).toByteArray
-    case m: LWWRegister[_]            ⇒ lwwRegisterToProto(m).toByteArray
-    case m: ORMap[_, _]               ⇒ compress(ormapToProto(m))
-    case m: LWWMap[_, _]              ⇒ compress(lwwmapToProto(m))
-    case m: PNCounterMap[_]           ⇒ compress(pncountermapToProto(m))
-    case m: ORMultiMap[_, _]          ⇒ compress(multimapToProto(m))
-    case DeletedData                  ⇒ dm.Empty.getDefaultInstance.toByteArray
-    case m: VersionVector             ⇒ versionVectorToProto(m).toByteArray
-    case Key(id)                      ⇒ keyIdToBinary(id)
-    case m: ORSet.DeltaGroup[_]       ⇒ orsetDeltaGroupToProto(m).toByteArray
-    case m: ORSet.FullStateDeltaOp[_] ⇒ orsetToProto(m.underlying).toByteArray
+    case m: ORSet[_]                     ⇒ compress(orsetToProto(m))
+    case m: ORSet.AddDeltaOp[_]          ⇒ orsetToProto(m.underlying).toByteArray
+    case m: ORSet.RemoveDeltaOp[_]       ⇒ orsetToProto(m.underlying).toByteArray
+    case m: GSet[_]                      ⇒ gsetToProto(m).toByteArray
+    case m: GCounter                     ⇒ gcounterToProto(m).toByteArray
+    case m: PNCounter                    ⇒ pncounterToProto(m).toByteArray
+    case m: Flag                         ⇒ flagToProto(m).toByteArray
+    case m: LWWRegister[_]               ⇒ lwwRegisterToProto(m).toByteArray
+    case m: ORMap[_, _]                  ⇒ compress(ormapToProto(m))
+    case m: ORMap.PutDeltaOp[_, _]       ⇒ ormapPutToProto(m).toByteArray
+    case m: ORMap.RemoveDeltaOp[_, _]    ⇒ ormapRemoveToProto(m).toByteArray
+    case m: ORMap.RemoveKeyDeltaOp[_, _] ⇒ ormapRemoveKeyToProto(m).toByteArray
+    case m: ORMap.UpdateDeltaOp[_, _]    ⇒ ormapUpdateToProto(m).toByteArray
+    case m: LWWMap[_, _]                 ⇒ compress(lwwmapToProto(m))
+    case m: PNCounterMap[_]              ⇒ compress(pncountermapToProto(m))
+    case m: ORMultiMap[_, _]             ⇒ compress(multimapToProto(m))
+    case DeletedData                     ⇒ dm.Empty.getDefaultInstance.toByteArray
+    case m: VersionVector                ⇒ versionVectorToProto(m).toByteArray
+    case Key(id)                         ⇒ keyIdToBinary(id)
+    case m: ORSet.DeltaGroup[_]          ⇒ orsetDeltaGroupToProto(m).toByteArray
+    case m: ORMap.DeltaGroup[_, _]       ⇒ ormapDeltaGroupToProto(m).toByteArray
+    case m: ORSet.FullStateDeltaOp[_]    ⇒ orsetToProto(m.underlying).toByteArray
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -512,8 +550,9 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
   }
 
   def ormapToProto(ormap: ORMap[_, _]): rd.ORMap = {
-    val entries: jl.Iterable[rd.ORMap.Entry] = getEntries(ormap.values, rd.ORMap.Entry.newBuilder, otherMessageToProto)
-    rd.ORMap.newBuilder().setKeys(orsetToProto(ormap.keys)).addAllEntries(entries).build()
+    val ormapBuilder = rd.ORMap.newBuilder()
+    val entries: jl.Iterable[rd.ORMap.Entry] = getEntries(ormap.values, rd.ORMap.Entry.newBuilder _, otherMessageToProto)
+    ormapBuilder.setKeys(orsetToProto(ormap.keys)).addAllEntries(entries).build()
   }
 
   def ormapFromBinary(bytes: Array[Byte]): ORMap[Any, ReplicatedData] =
@@ -533,12 +572,174 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     val entries = mapTypeFromProto(ormap.getEntriesList, (v: dm.OtherMessage) ⇒ otherMessageFromProto(v).asInstanceOf[ReplicatedData])
     new ORMap(
       keys = orsetFromProto(ormap.getKeys),
-      entries)
+      entries,
+      ORMap.VanillaORMapTag)
+  }
+
+  def singleMapEntryFromProto[PEntry <: GeneratedMessage, A <: GeneratedMessage, B <: ReplicatedData](input: util.List[PEntry], valueCreator: A ⇒ B)(implicit eh: ProtoMapEntryReader[PEntry, A]): Map[Any, B] = {
+    val map = mapTypeFromProto(input, valueCreator)
+    if (map.size > 1)
+      throw new IllegalArgumentException(s"Can't deserialize the key/value pair in the ORMap delta - too many pairs on the wire")
+    else
+      map
+  }
+
+  def singleKeyEntryFromProto[PEntry <: GeneratedMessage, A <: GeneratedMessage](entryOption: Option[PEntry])(implicit eh: ProtoMapEntryReader[PEntry, A]): Any =
+    entryOption match {
+      case Some(entry) ⇒ if (eh.hasStringKey(entry)) eh.getStringKey(entry)
+      else if (eh.hasIntKey(entry)) eh.getIntKey(entry)
+      else if (eh.hasLongKey(entry)) eh.getLongKey(entry)
+      else if (eh.hasOtherKey(entry)) otherMessageFromProto(eh.getOtherKey(entry))
+      else throw new IllegalArgumentException(s"Can't deserialize the key in the ORMap delta")
+      case _ ⇒ throw new IllegalArgumentException(s"Can't deserialize the key in the ORMap delta")
+    }
+
+  // wire protocol is always DeltaGroup
+  private def ormapPutFromBinary(bytes: Array[Byte]): ORMap.PutDeltaOp[Any, ReplicatedData] = {
+    val ops = ormapDeltaGroupOpsFromBinary(bytes)
+    if (ops.size == 1 && ops.head.isInstanceOf[ORMap.PutDeltaOp[_, _]])
+      ops.head.asInstanceOf[ORMap.PutDeltaOp[Any, ReplicatedData]]
+    else
+      throw new NotSerializableException("Improper ORMap delta put operation size or kind")
+  }
+
+  // wire protocol is always delta group
+  private def ormapRemoveFromBinary(bytes: Array[Byte]): ORMap.RemoveDeltaOp[Any, ReplicatedData] = {
+    val ops = ormapDeltaGroupOpsFromBinary(bytes)
+    if (ops.size == 1 && ops.head.isInstanceOf[ORMap.RemoveDeltaOp[_, _]])
+      ops.head.asInstanceOf[ORMap.RemoveDeltaOp[Any, ReplicatedData]]
+    else
+      throw new NotSerializableException("Improper ORMap delta remove operation size or kind")
+  }
+
+  // wire protocol is always delta group
+  private def ormapRemoveKeyFromBinary(bytes: Array[Byte]): ORMap.RemoveKeyDeltaOp[Any, ReplicatedData] = {
+    val ops = ormapDeltaGroupOpsFromBinary(bytes)
+    if (ops.size == 1 && ops.head.isInstanceOf[ORMap.RemoveKeyDeltaOp[_, _]])
+      ops.head.asInstanceOf[ORMap.RemoveKeyDeltaOp[Any, ReplicatedData]]
+    else
+      throw new NotSerializableException("Improper ORMap delta remove key operation size or kind")
+  }
+
+  // wire protocol is always delta group
+  private def ormapUpdateFromBinary(bytes: Array[Byte]): ORMap.UpdateDeltaOp[Any, ReplicatedDelta] = {
+    val ops = ormapDeltaGroupOpsFromBinary(bytes)
+    if (ops.size == 1 && ops.head.isInstanceOf[ORMap.UpdateDeltaOp[_, _]])
+      ops.head.asInstanceOf[ORMap.UpdateDeltaOp[Any, ReplicatedDelta]]
+    else
+      throw new NotSerializableException("Improper ORMap delta update operation size or kind")
+  }
+
+  // this can be made client-extendable in the same way as Http codes in Spray are
+  private def zeroTagFromCode(code: Int) = code match {
+    case ORMap.VanillaORMapTag.value ⇒ ORMap.VanillaORMapTag
+    case PNCounterMap.PNCounterMapTag.value ⇒ PNCounterMap.PNCounterMapTag
+    case ORMultiMap.ORMultiMapTag.value ⇒ ORMultiMap.ORMultiMapTag
+    case ORMultiMap.ORMultiMapWithValueDeltasTag.value ⇒ ORMultiMap.ORMultiMapWithValueDeltasTag
+    case LWWMap.LWWMapTag.value ⇒ LWWMap.LWWMapTag
+    case _ ⇒ throw new IllegalArgumentException("Invalid ZeroTag code")
+  }
+
+  private def ormapDeltaGroupFromBinary(bytes: Array[Byte]): ORMap.DeltaGroup[Any, ReplicatedData] = {
+    ORMap.DeltaGroup(ormapDeltaGroupOpsFromBinary(bytes))
+  }
+
+  private def ormapDeltaGroupOpsFromBinary(bytes: Array[Byte]): scala.collection.immutable.IndexedSeq[ORMap.DeltaOp] = {
+    val deltaGroup = rd.ORMapDeltaGroup.parseFrom(bytes)
+    val ops: Vector[ORMap.DeltaOp] =
+      deltaGroup.getEntriesList.asScala.map { entry ⇒
+        if (entry.getOperation == rd.ORMapDeltaOp.ORMapPut) {
+          val map = singleMapEntryFromProto(entry.getEntryDataList, (v: dm.OtherMessage) ⇒ otherMessageFromProto(v).asInstanceOf[ReplicatedData])
+          ORMap.PutDeltaOp(ORSet.AddDeltaOp(orsetFromProto(entry.getUnderlying)), map.head, zeroTagFromCode(entry.getZeroTag))
+        } else if (entry.getOperation == rd.ORMapDeltaOp.ORMapRemove) {
+          ORMap.RemoveDeltaOp(ORSet.RemoveDeltaOp(orsetFromProto(entry.getUnderlying)), zeroTagFromCode(entry.getZeroTag))
+        } else if (entry.getOperation == rd.ORMapDeltaOp.ORMapRemoveKey) {
+          val elem = singleKeyEntryFromProto(entry.getEntryDataList.asScala.headOption)
+          ORMap.RemoveKeyDeltaOp(ORSet.RemoveDeltaOp(orsetFromProto(entry.getUnderlying)), elem, zeroTagFromCode(entry.getZeroTag))
+        } else if (entry.getOperation == rd.ORMapDeltaOp.ORMapUpdate) {
+          val map = mapTypeFromProto(entry.getEntryDataList, (v: dm.OtherMessage) ⇒ otherMessageFromProto(v).asInstanceOf[ReplicatedDelta])
+          ORMap.UpdateDeltaOp(ORSet.AddDeltaOp(orsetFromProto(entry.getUnderlying)), map, zeroTagFromCode(entry.getZeroTag))
+        } else
+          throw new NotSerializableException(s"Unknown ORMap delta operation ${entry.getOperation}")
+      }(collection.breakOut)
+    ops
+  }
+
+  private def ormapPutToProto(deltaOp: ORMap.PutDeltaOp[_, _]): rd.ORMapDeltaGroup = {
+    ormapDeltaGroupOpsToProto(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
+  }
+
+  private def ormapRemoveToProto(deltaOp: ORMap.RemoveDeltaOp[_, _]): rd.ORMapDeltaGroup = {
+    ormapDeltaGroupOpsToProto(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
+  }
+
+  private def ormapRemoveKeyToProto(deltaOp: ORMap.RemoveKeyDeltaOp[_, _]): rd.ORMapDeltaGroup = {
+    ormapDeltaGroupOpsToProto(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
+  }
+
+  private def ormapUpdateToProto(deltaOp: ORMap.UpdateDeltaOp[_, _]): rd.ORMapDeltaGroup = {
+    ormapDeltaGroupOpsToProto(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
+  }
+
+  private def ormapDeltaGroupToProto(deltaGroup: ORMap.DeltaGroup[_, _]): rd.ORMapDeltaGroup = {
+    ormapDeltaGroupOpsToProto(deltaGroup.ops)
+  }
+
+  private def ormapDeltaGroupOpsToProto(deltaGroupOps: scala.collection.immutable.IndexedSeq[ORMap.DeltaOp]): rd.ORMapDeltaGroup = {
+    def createEntry(opType: rd.ORMapDeltaOp, u: ORSet[_], m: Map[_, _], zt: Int) = {
+      if (m.size > 1 && opType != rd.ORMapDeltaOp.ORMapUpdate)
+        throw new IllegalArgumentException("Invalid size of ORMap delta map")
+      else {
+        val builder = rd.ORMapDeltaGroup.Entry.newBuilder()
+          .setOperation(opType)
+          .setUnderlying(orsetToProto(u))
+          .setZeroTag(zt)
+        m.foreach {
+          case (key: String, value) ⇒ builder.addEntryData(rd.ORMapDeltaGroup.MapEntry.newBuilder().setStringKey(key).setValue(otherMessageToProto(value)).build())
+          case (key: Int, value)    ⇒ builder.addEntryData(rd.ORMapDeltaGroup.MapEntry.newBuilder().setIntKey(key).setValue(otherMessageToProto(value)).build())
+          case (key: Long, value)   ⇒ builder.addEntryData(rd.ORMapDeltaGroup.MapEntry.newBuilder().setLongKey(key).setValue(otherMessageToProto(value)).build())
+          case (key, value)         ⇒ builder.addEntryData(rd.ORMapDeltaGroup.MapEntry.newBuilder().setOtherKey(otherMessageToProto(key)).setValue(otherMessageToProto(value)).build())
+        }
+        builder
+      }
+    }
+
+    def createEntryWithKey(opType: rd.ORMapDeltaOp, u: ORSet[_], k: Any, zt: Int) = {
+      val entryDataBuilder = rd.ORMapDeltaGroup.MapEntry.newBuilder()
+      k match {
+        case key: String ⇒ entryDataBuilder.setStringKey(key)
+        case key: Int    ⇒ entryDataBuilder.setIntKey(key)
+        case key: Long   ⇒ entryDataBuilder.setLongKey(key)
+        case key         ⇒ entryDataBuilder.setOtherKey(otherMessageToProto(key))
+      }
+      val builder = rd.ORMapDeltaGroup.Entry.newBuilder()
+        .setOperation(opType)
+        .setUnderlying(orsetToProto(u))
+        .setZeroTag(zt)
+      builder.addEntryData(entryDataBuilder.build())
+      builder
+    }
+
+    val b = rd.ORMapDeltaGroup.newBuilder()
+    deltaGroupOps.foreach {
+      case ORMap.PutDeltaOp(op, pair, zt) ⇒
+        b.addEntries(createEntry(rd.ORMapDeltaOp.ORMapPut, op.asInstanceOf[ORSet.AddDeltaOp[_]].underlying, Map(pair), zt.value))
+      case ORMap.RemoveDeltaOp(op, zt) ⇒
+        b.addEntries(createEntry(rd.ORMapDeltaOp.ORMapRemove, op.asInstanceOf[ORSet.RemoveDeltaOp[_]].underlying, Map.empty, zt.value))
+      case ORMap.RemoveKeyDeltaOp(op, k, zt) ⇒
+        b.addEntries(createEntryWithKey(rd.ORMapDeltaOp.ORMapRemoveKey, op.asInstanceOf[ORSet.RemoveDeltaOp[_]].underlying, k, zt.value))
+      case ORMap.UpdateDeltaOp(op, m, zt) ⇒
+        b.addEntries(createEntry(rd.ORMapDeltaOp.ORMapUpdate, op.asInstanceOf[ORSet.AddDeltaOp[_]].underlying, m, zt.value))
+      case ORMap.DeltaGroup(u) ⇒
+        throw new IllegalArgumentException("ORMap.DeltaGroup should not be nested")
+    }
+    b.build()
   }
 
   def lwwmapToProto(lwwmap: LWWMap[_, _]): rd.LWWMap = {
-    val entries: jl.Iterable[rd.LWWMap.Entry] = getEntries(lwwmap.underlying.entries, rd.LWWMap.Entry.newBuilder, lwwRegisterToProto)
-    rd.LWWMap.newBuilder().setKeys(orsetToProto(lwwmap.underlying.keys)).addAllEntries(entries).build()
+    val lwwmapBuilder = rd.LWWMap.newBuilder()
+    val entries: jl.Iterable[rd.LWWMap.Entry] = getEntries(lwwmap.underlying.entries, rd.LWWMap.Entry.newBuilder _, lwwRegisterToProto)
+    lwwmapBuilder.setKeys(orsetToProto(lwwmap.underlying.keys)).addAllEntries(entries).build()
   }
 
   def lwwmapFromBinary(bytes: Array[Byte]): LWWMap[Any, Any] =
@@ -548,12 +749,13 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     val entries = mapTypeFromProto(lwwmap.getEntriesList, lwwRegisterFromProto)
     new LWWMap(new ORMap(
       keys = orsetFromProto(lwwmap.getKeys),
-      entries))
+      entries, LWWMap.LWWMapTag))
   }
 
   def pncountermapToProto(pncountermap: PNCounterMap[_]): rd.PNCounterMap = {
-    val entries: jl.Iterable[rd.PNCounterMap.Entry] = getEntries(pncountermap.underlying.entries, rd.PNCounterMap.Entry.newBuilder, pncounterToProto)
-    rd.PNCounterMap.newBuilder().setKeys(orsetToProto(pncountermap.underlying.keys)).addAllEntries(entries).build()
+    val pncountermapBuilder = rd.PNCounterMap.newBuilder()
+    val entries: jl.Iterable[rd.PNCounterMap.Entry] = getEntries(pncountermap.underlying.entries, rd.PNCounterMap.Entry.newBuilder _, pncounterToProto)
+    pncountermapBuilder.setKeys(orsetToProto(pncountermap.underlying.keys)).addAllEntries(entries).build()
   }
 
   def pncountermapFromBinary(bytes: Array[Byte]): PNCounterMap[_] =
@@ -563,12 +765,16 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     val entries = mapTypeFromProto(pncountermap.getEntriesList, pncounterFromProto)
     new PNCounterMap(new ORMap(
       keys = orsetFromProto(pncountermap.getKeys),
-      entries))
+      entries, PNCounterMap.PNCounterMapTag))
   }
 
   def multimapToProto(multimap: ORMultiMap[_, _]): rd.ORMultiMap = {
-    val entries: jl.Iterable[rd.ORMultiMap.Entry] = getEntries(multimap.underlying.entries, rd.ORMultiMap.Entry.newBuilder, orsetToProto)
-    rd.ORMultiMap.newBuilder().setKeys(orsetToProto(multimap.underlying.keys)).addAllEntries(entries).build()
+    val ormultimapBuilder = rd.ORMultiMap.newBuilder()
+    val entries: jl.Iterable[rd.ORMultiMap.Entry] = getEntries(multimap.underlying.entries, rd.ORMultiMap.Entry.newBuilder _, orsetToProto)
+    ormultimapBuilder.setKeys(orsetToProto(multimap.underlying.keys)).addAllEntries(entries)
+    if (multimap.withValueDeltas)
+      ormultimapBuilder.setWithValueDeltas(true)
+    ormultimapBuilder.build()
   }
 
   def multimapFromBinary(bytes: Array[Byte]): ORMultiMap[Any, Any] =
@@ -576,9 +782,18 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
 
   def multimapFromProto(multimap: rd.ORMultiMap): ORMultiMap[Any, Any] = {
     val entries = mapTypeFromProto(multimap.getEntriesList, orsetFromProto)
-    new ORMultiMap(new ORMap(
-      keys = orsetFromProto(multimap.getKeys),
-      entries))
+    val withValueDeltas = if (multimap.hasWithValueDeltas)
+      multimap.getWithValueDeltas
+    else false
+    new ORMultiMap(
+      new ORMap(
+        keys = orsetFromProto(multimap.getKeys),
+        entries,
+        if (withValueDeltas)
+          ORMultiMap.ORMultiMapWithValueDeltasTag
+        else
+          ORMultiMap.ORMultiMapTag),
+      withValueDeltas)
   }
 
   def keyIdToBinary(id: String): Array[Byte] =

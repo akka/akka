@@ -6,10 +6,16 @@ package akka.actor
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
 
+import akka.actor.BenchmarkActors.{ Message, Stop }
+
+import scala.concurrent.Await
+import scala.annotation.tailrec
+
+import BenchmarkActors._
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
 @Fork(1)
@@ -19,26 +25,36 @@ import scala.concurrent.Await
 class ForkJoinActorBenchmark {
   import ForkJoinActorBenchmark._
 
-  @Param(Array("5", "100"))
+  @Param(Array("fork-join-executor:any", "affinity-pool-executor:any", "affinity-pool-executor:same-core", "affinity-pool-executor:same-socket", "affinity-pool-executor:different-core", "affinity-pool-executor:different-socket"))
+  var executorAndStrategy = ""
+
+  //@Param(Array("1", "100"))
+  @Param(Array("1"))
   var tpt = 0
 
-  @Param(Array("1", "2", "4", "8", "16", "20", "32", "64"))
+  @Param(Array("1"))//, "2", "4", "20", "64"))
   var threads = ""
 
   implicit var system: ActorSystem = _
 
   @Setup(Level.Trial)
   def setup(): Unit = {
+    val Array(executor, cpuAffinityStrategy) = executorAndStrategy.split(':')
     system = ActorSystem("ForkJoinActorBenchmark", ConfigFactory.parseString(
       s"""| akka {
         |   log-dead-letters = off
         |   actor {
         |     default-dispatcher {
-        |       executor = "fork-join-executor"
+        |       executor = $executor
         |       fork-join-executor {
         |         parallelism-min = $threads
         |         parallelism-factor = 1
         |         parallelism-max = $threads
+        |       }
+        |       affinity-pool-executor {
+        |         num-threads = $threads
+        |         affinity-group-size = 10000
+        |         cpu-affinity-strategies = [$cpuAffinityStrategy]
         |       }
         |       throughput = $tpt
         |     }
@@ -54,73 +70,98 @@ class ForkJoinActorBenchmark {
     Await.ready(system.whenTerminated, 15.seconds)
   }
 
-  @Benchmark
-  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
-  @OperationsPerInvocation(messages)
-  def pingPong(): Unit = {
-    val ping = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
-    val pong = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+  var pingPongActors: Vector[(ActorRef, ActorRef)] = null
+  var pingPongLessActorsThanCoresActors: Vector[(ActorRef, ActorRef)] = null
+  var pingPongSameNumberOfActorsAsCoresActors: Vector[(ActorRef, ActorRef)] = null
+  var pingPongMoreActorsThanCoresActors: Vector[(ActorRef, ActorRef)] = null
 
-    ping.tell(message, pong)
+  @Setup(Level.Invocation)
+  def setupActors(): Unit = {
+    pingPongActors = startPingPongActorPairs(messages, 1, "default-dispatcher")
+    pingPongLessActorsThanCoresActors = startPingPongActorPairs(messages, lessThanCoresActorPairs, "default-dispatcher")
+    pingPongSameNumberOfActorsAsCoresActors = startPingPongActorPairs(messages, cores / 2, "default-dispatcher")
+    pingPongMoreActorsThanCoresActors = startPingPongActorPairs(messages, moreThanCoresActorPairs, "default-dispatcher")
+  }
 
-    val p = TestProbe()
-    p.watch(ping)
-    p.expectTerminated(ping, timeout)
-    p.watch(pong)
-    p.expectTerminated(pong, timeout)
+  @TearDown(Level.Invocation)
+  def tearDownActors(): Unit = {
+    stopPingPongActorPairs(pingPongActors, timeout)
+    stopPingPongActorPairs(pingPongLessActorsThanCoresActors, timeout)
+    stopPingPongActorPairs(pingPongSameNumberOfActorsAsCoresActors, timeout)
+    stopPingPongActorPairs(pingPongMoreActorsThanCoresActors, timeout)
   }
 
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(messages)
+  def pingPong(): Unit = {
+    // only one message in flight
+    initiatePingPongForPairs(pingPongActors, inFlight = 1)
+    awaitTerminatedPingPongActorPairs(pingPongActors, timeout)
+  }
+
+  @Benchmark
+  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
+  @OperationsPerInvocation(totalMessagesLessThanCores)
+  def pingPongLessActorsThanCores(): Unit = {
+    initiatePingPongForPairs(pingPongLessActorsThanCoresActors, inFlight = 2 * tpt)
+    awaitTerminatedPingPongActorPairs(pingPongLessActorsThanCoresActors, timeout)
+  }
+
+  @Benchmark
+  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
+  @OperationsPerInvocation(totalMessagesSameAsCores)
+  def pingPongSameNumberOfActorsAsCores(): Unit = {
+    initiatePingPongForPairs(pingPongSameNumberOfActorsAsCoresActors, inFlight = 2 * tpt)
+    awaitTerminatedPingPongActorPairs(pingPongSameNumberOfActorsAsCoresActors, timeout)
+  }
+
+  @Benchmark
+  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
+  @OperationsPerInvocation(totalMessagesMoreThanCores)
+  def pingPongMoreActorsThanCores(): Unit = {
+    initiatePingPongForPairs(pingPongMoreActorsThanCoresActors, inFlight = 2 * tpt)
+    awaitTerminatedPingPongActorPairs(pingPongMoreActorsThanCoresActors, timeout)
+  }
+
+  //  @Benchmark
+  //  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
+  //  @OperationsPerInvocation(messages)
   def floodPipe(): Unit = {
 
-    val end = system.actorOf(Props(classOf[ForkJoinActorBenchmark.Pipe], None))
-    val middle = system.actorOf(Props(classOf[ForkJoinActorBenchmark.Pipe], Some(end)))
-    val penultimate = system.actorOf(Props(classOf[ForkJoinActorBenchmark.Pipe], Some(middle)))
-    val beginning = system.actorOf(Props(classOf[ForkJoinActorBenchmark.Pipe], Some(penultimate)))
+    val end = system.actorOf(Props(classOf[BenchmarkActors.Pipe], None))
+    val middle = system.actorOf(Props(classOf[BenchmarkActors.Pipe], Some(end)))
+    val penultimate = system.actorOf(Props(classOf[BenchmarkActors.Pipe], Some(middle)))
+    val beginning = system.actorOf(Props(classOf[BenchmarkActors.Pipe], Some(penultimate)))
 
     val p = TestProbe()
     p.watch(end)
 
-    def send(left: Int): Unit =
+    @tailrec def send(left: Int): Unit =
       if (left > 0) {
-        beginning ! message
+        beginning ! Message
         send(left - 1)
       }
 
     send(messages / 4) // we have 4 actors in the pipeline
 
-    beginning ! stop
+    beginning ! Stop
 
     p.expectTerminated(end, timeout)
   }
 }
 
 object ForkJoinActorBenchmark {
-  final val stop = "stop"
-  final val message = "message"
   final val timeout = 15.seconds
   final val messages = 400000
-  class Pipe(next: Option[ActorRef]) extends Actor {
-    def receive = {
-      case m @ `message` =>
-        if (next.isDefined) next.get forward m
-      case s @ `stop` =>
-        context stop self
-        if (next.isDefined) next.get forward s
-    }
-  }
-  class PingPong extends Actor {
-    var left = messages / 2
-    def receive = {
-      case `message` =>
 
-        if (left <= 1)
-          context stop self
+  // update according to cpu
+  final val cores = 8
+  // 2 actors per
+  final val moreThanCoresActorPairs = cores * 2
+  final val lessThanCoresActorPairs = (cores / 2) - 1
+  final val totalMessagesMoreThanCores = moreThanCoresActorPairs * messages
+  final val totalMessagesLessThanCores = lessThanCoresActorPairs * messages
+  final val totalMessagesSameAsCores = cores * messages
 
-        sender() ! message
-        left -= 1
-    }
-  }
 }

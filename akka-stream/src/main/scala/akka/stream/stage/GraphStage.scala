@@ -12,14 +12,17 @@ import akka.actor._
 import akka.annotation.ApiMayChange
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
-import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
-import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.impl.{ EmptyTraversal, LinearTraversalBuilder, ReactiveStreamsCompliance, TraversalBuilder }
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.actor.ActorSubscriberMessage
+import akka.stream.scaladsl.{ GenericGraph, GenericGraphWithChangedAttributes }
+import akka.util.OptionVal
+import akka.annotation.InternalApi
 
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
@@ -28,14 +31,22 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
 
   protected def initialAttributes: Attributes = Attributes.none
 
-  final override lazy val module: Module = GraphStageModule(shape, initialAttributes, this)
+  private var _traversalBuilder: TraversalBuilder = null
 
-  final override def withAttributes(attr: Attributes): Graph[S, M] = new Graph[S, M] {
-    override def shape = GraphStageWithMaterializedValue.this.shape
-    override def module = GraphStageWithMaterializedValue.this.module.withAttributes(attr)
-
-    override def withAttributes(attr: Attributes) = GraphStageWithMaterializedValue.this.withAttributes(attr)
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] final override def traversalBuilder: TraversalBuilder = {
+    // _traversalBuilder instance is cached to avoid allocations, no need for volatile or synchronization
+    if (_traversalBuilder eq null) {
+      val attr = initialAttributes
+      _traversalBuilder = TraversalBuilder.atomic(GraphStageModule(shape, attr, this), attr)
+    }
+    _traversalBuilder
   }
+
+  final override def withAttributes(attr: Attributes): Graph[S, M] =
+    new GenericGraphWithChangedAttributes(shape, GraphStageWithMaterializedValue.this.traversalBuilder, attr)
 }
 
 /**
@@ -66,6 +77,7 @@ object GraphStageLogic {
    */
   object EagerTerminateInput extends InHandler {
     override def onPush(): Unit = ()
+    override def toString = "EagerTerminateInput"
   }
 
   /**
@@ -75,6 +87,7 @@ object GraphStageLogic {
   object IgnoreTerminateInput extends InHandler {
     override def onPush(): Unit = ()
     override def onUpstreamFinish(): Unit = ()
+    override def toString = "IgnoreTerminateInput"
   }
 
   /**
@@ -102,6 +115,7 @@ object GraphStageLogic {
    */
   object EagerTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
+    override def toString = "EagerTerminateOutput"
   }
 
   /**
@@ -110,6 +124,7 @@ object GraphStageLogic {
   object IgnoreTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
     override def onDownstreamFinish(): Unit = ()
+    override def toString = "IgnoreTerminateOutput"
   }
 
   /**
@@ -202,9 +217,13 @@ object GraphStageLogic {
  *  * The lifecycle hooks [[preStart()]] and [[postStop()]]
  *  * Methods for performing stream processing actions, like pulling or pushing elements
  *
- *  The stage logic is always once all its input and output ports have been closed, i.e. it is not possible to
- *  keep the stage alive for further processing once it does not have any open ports. This can be changed by
- *  overriding `keepGoingAfterAllPortsClosed` to return true.
+ * The stage logic is completed once all its input and output ports have been closed. This can be changed by
+ * setting `setKeepGoing` to true.
+ *
+ * The `postStop` lifecycle hook on the logic itself is called once all ports are closed. This is the only tear down
+ * callback that is guaranteed to happen, if the actor system or the materializer is terminated the handlers may never
+ * see any callbacks to `onUpstreamFailure`, `onUpstreamFinish` or `onDownstreamFinish`. Therefore stage resource
+ * cleanup should always be done in `postStop`.
  */
 abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: Int) {
   import GraphInterpreter._
@@ -218,15 +237,45 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * INTERNAL API
+   *
+   * Input handlers followed by output handlers, use `inHandler(id)` and `outHandler(id)` to access the respective
+   * handlers.
    */
-  // Using common array to reduce overhead for small port counts
-  private[stream] val handlers = Array.ofDim[Any](inCount + outCount)
+  private[stream] var attributes: Attributes = Attributes.none
+
+  /**
+   * INTERNAL API
+   *
+   * If possible a link back to the stage that the logic was created with, used for debugging.
+   */
+  private[stream] var originalStage: OptionVal[GraphStageWithMaterializedValue[_ <: Shape, _]] = OptionVal.None
 
   /**
    * INTERNAL API
    */
   // Using common array to reduce overhead for small port counts
-  private[stream] val portToConn = Array.ofDim[Connection](handlers.length)
+  private[stream] val handlers = new Array[Any](inCount + outCount)
+
+  /**
+   * INTERNAL API
+   */
+  private[stream] def inHandler(id: Int): InHandler = {
+    if (id > inCount) throw new IllegalArgumentException(s"$id not in inHandler range $inCount in $this")
+    if (inCount < 1) throw new IllegalArgumentException(s"Tried to access inHandler $id but there are no in ports in $this")
+    handlers(id).asInstanceOf[InHandler]
+  }
+
+  private[stream] def outHandler(id: Int): OutHandler = {
+    if (id > outCount) throw new IllegalArgumentException(s"$id not in outHandler range $outCount in $this")
+    if (outCount < 1) throw new IllegalArgumentException(s"Tried to access outHandler $id but there are no out ports $this")
+    handlers(inCount + id).asInstanceOf[OutHandler]
+  }
+
+  /**
+   * INTERNAL API
+   */
+  // Using common array to reduce overhead for small port counts
+  private[stream] val portToConn = new Array[Connection](handlers.length)
 
   /**
    * INTERNAL API
@@ -493,7 +542,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
-   * then stops the stage, then [[postStop()]] is called.
+   * then marks the stage as stopped.
    */
   final def completeStage(): Unit = {
     var i = 0
@@ -511,7 +560,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Automatically invokes [[cancel()]] or [[fail()]] on all the input or output ports that have been called,
-   * then stops the stage, then [[postStop()]] is called.
+   * then marks the stage as stopped.
    */
   final def failStage(ex: Throwable): Unit = {
     var i = 0
@@ -609,7 +658,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * handler upon receiving the `onPush()` signal (before invoking the `andThen` function).
    */
   final protected def read[T](in: Inlet[T], andThen: Procedure[T], onClose: Effect): Unit = {
-    read(in)(andThen.apply, onClose.apply)
+    read(in)(andThen.apply, onClose.apply _)
   }
 
   /**
@@ -780,12 +829,27 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       setHandler(out, previous)
       andThen()
       if (followUps != null) {
-        getHandler(out) match {
-          case e: Emitting[_] ⇒ e.as[T].addFollowUps(this)
-          case _ ⇒
-            val next = dequeue()
-            if (next.isInstanceOf[EmittingCompletion[_]]) complete(out)
-            else setHandler(out, next)
+        /**
+         * If (while executing andThen() callback) handler was changed to new emitting,
+         * we should add it to the end of emission queue
+         */
+        val currentHandler = getHandler(out)
+        if (currentHandler.isInstanceOf[Emitting[_]])
+          addFollowUp(currentHandler.asInstanceOf[Emitting[T]])
+
+        val next = dequeue()
+        if (next.isInstanceOf[EmittingCompletion[_]]) {
+          /**
+           * If next element is emitting completion and there are some elements after it,
+           * we to need pass them before completion
+           */
+          if (next.followUps != null) {
+            setHandler(out, dequeueHeadAndAddToTail(next))
+          } else {
+            complete(out)
+          }
+        } else {
+          setHandler(out, next)
         }
       }
     }
@@ -798,6 +862,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         followUpsTail.followUps = e
         followUpsTail = e
       }
+
+    private def dequeueHeadAndAddToTail(head: Emitting[T]): Emitting[T] = {
+      val next = head.dequeue()
+      next.addFollowUp(head)
+      head.followUps = null
+      head.followUpsTail = null
+      next
+    }
 
     private def addFollowUps(e: Emitting[T]): Unit =
       if (followUps == null) {

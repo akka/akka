@@ -7,7 +7,7 @@ import akka.NotUsed
 import akka.event.LoggingAdapter
 import akka.japi.function
 import akka.stream._
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 
 import scala.collection.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
@@ -536,9 +536,9 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    * The last group before end-of-stream will contain the buffered elements
    * since the previously emitted group.
    *
-   * '''Emits when''' the configured time elapses since the last group has been emitted
+   * '''Emits when''' the configured time elapses since the last group has been emitted or `n` elements is buffered
    *
-   * '''Backpressures when''' the configured time elapses since the last group has been emitted
+   * '''Backpressures when''' downstream backpressures, and there are `n+1` buffered elements
    *
    * '''Completes when''' upstream completes (emits last group)
    *
@@ -549,6 +549,27 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    */
   def groupedWithin(n: Int, d: FiniteDuration): SubSource[java.util.List[Out @uncheckedVariance], Mat] =
     new SubSource(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
+
+  /**
+   * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the weight of the elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   *
+   * '''Emits when''' the configured time elapses since the last group has been emitted or weight limit reached
+   *
+   * '''Backpressures when''' downstream backpressures, and buffered group (+ pending element) weighs more than `maxWeight`
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
+   *
+   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * IllegalArgumentException is thrown.
+   */
+  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, Long], d: FiniteDuration): javadsl.SubSource[java.util.List[Out @uncheckedVariance], Mat] =
+    new SubSource(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
 
   /**
    * Discard the given number of elements at the beginning of the stream.
@@ -1154,8 +1175,8 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    *
    * '''Cancels when''' downstream cancels
    */
-  def zip[T](source: Graph[SourceShape[T], _]): SubSource[Out @uncheckedVariance Pair T, Mat] =
-    new SubSource(delegate.zip(source))
+  def zip[T](source: Graph[SourceShape[T], _]): SubSource[akka.japi.Pair[Out @uncheckedVariance, T], Mat] =
+    new SubSource(delegate.zip(source).map { case (o, t) ⇒ akka.japi.Pair.create(o, t) })
 
   /**
    * Put together the elements of current [[Flow]] and the given [[Source]]

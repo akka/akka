@@ -11,7 +11,7 @@ import akka.actor._
 import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
 import akka.util.ReentrantGuard
-import akka.util.Helpers.toRootLowerCase
+import akka.util.Helpers
 import akka.{ AkkaException, ConfigurationException }
 
 import scala.annotation.implicitNotFound
@@ -455,7 +455,7 @@ object Logging {
    * valid inputs are upper or lowercase (not mixed) versions of:
    * "error", "warning", "info" and "debug"
    */
-  def levelFor(s: String): Option[LogLevel] = toRootLowerCase(s) match {
+  def levelFor(s: String): Option[LogLevel] = Helpers.toRootLowerCase(s) match {
     case "off"     ⇒ Some(OffLevel)
     case "error"   ⇒ Some(ErrorLevel)
     case "warning" ⇒ Some(WarningLevel)
@@ -864,11 +864,6 @@ object Logging {
   trait StdOutLogger {
 
     import StdOutLogger._
-    import java.text.SimpleDateFormat
-    import java.util.Date
-
-    private val date = new Date()
-    private val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
 
     // format: OFF
     // FIXME: remove those when we have the chance to break binary compatibility
@@ -879,10 +874,7 @@ object Logging {
     private val debugFormat             = DebugFormat
     // format: ON
 
-    def timestamp(event: LogEvent): String = synchronized {
-      date.setTime(event.timestamp)
-      dateFormat.format(date)
-    } // SDF isn't threadsafe
+    def timestamp(event: LogEvent): String = Helpers.timestamp(event.timestamp)
 
     def print(event: Any): Unit = event match {
       case e: Error   ⇒ error(e)
@@ -1028,7 +1020,7 @@ object Logging {
    */
   def stackTraceFor(e: Throwable): String = e match {
     case null | Error.NoCause ⇒ ""
-    case _: NoStackTrace      ⇒ " (" + e.getClass.getName + ")"
+    case _: NoStackTrace      ⇒ s" (${e.getClass.getName}: ${e.getMessage})"
     case other ⇒
       val sw = new java.io.StringWriter
       val pw = new java.io.PrintWriter(sw)

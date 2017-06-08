@@ -6,7 +6,6 @@ import akka.actor.ActorRef;
 import akka.japi.Pair;
 import akka.japi.function.Function;
 import akka.stream.*;
-import akka.testkit.JavaTestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;

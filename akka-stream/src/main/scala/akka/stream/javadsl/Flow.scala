@@ -3,10 +3,11 @@
  */
 package akka.stream.javadsl
 
+import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, function }
-import akka.stream.impl.{ ConstantFun, StreamLayout }
+import akka.stream.impl.StreamLayout
 import akka.stream._
 import org.reactivestreams.Processor
 
@@ -49,24 +50,103 @@ object Flow {
    */
   def fromGraph[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
-      case f: Flow[I, O, M]                          ⇒ f
-      case f: scaladsl.Flow[I, O, M] if f.isIdentity ⇒ _identity.asInstanceOf[Flow[I, O, M]]
-      case other                                     ⇒ new Flow(scaladsl.Flow.fromGraph(other))
+      case f: Flow[I, O, M] ⇒ f
+      case other            ⇒ new Flow(scaladsl.Flow.fromGraph(other))
     }
 
   /**
-   * Helper to create `Flow` from a `Sink`and a `Source`.
+   * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
+   * will be sent to the Sink and the Flow's output will come from the Source.
+   *
+   * The completion of the Sink and Source sides of a Flow constructed using
+   * this method are independent. So if the Sink receives a completion signal,
+   * the Source side will remain unaware of that. If you are looking to couple
+   * the termination signals of the two sides use `Flow.fromSinkAndSourceCoupled` instead.
    */
   def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(scaladsl.Keep.none))
 
   /**
-   * Helper to create `Flow` from a `Sink`and a `Source`.
+   * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
+   * will be sent to the Sink and the Flow's output will come from the Source.
+   *
+   * The completion of the Sink and Source sides of a Flow constructed using
+   * this method are independent. So if the Sink receives a completion signal,
+   * the Source side will remain unaware of that. If you are looking to couple
+   * the termination signals of the two sides use `Flow.fromSinkAndSourceCoupledMat` instead.
+   *
+   * The `combine` function is used to compose the materialized values of the `sink` and `source`
+   * into the materialized value of the resulting [[Flow]].
    */
   def fromSinkAndSourceMat[I, O, M1, M2, M](
     sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2],
     combine: function.Function2[M1, M2, M]): Flow[I, O, M] =
     new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(combinerToScala(combine)))
+
+  /**
+   * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
+   * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
+   * however the Sink will also be completed. The table below illustrates the effects in detail:
+   *
+   * <table>
+   *   <tr>
+   *     <th>Returned Flow</th>
+   *     <th>Sink (<code>in</code>)</th>
+   *     <th>Source (<code>out</code>)</th>
+   *   </tr>
+   *   <tr>
+   *     <td><i>cause:</i> upstream (sink-side) receives completion</td>
+   *     <td><i>effect:</i> receives completion</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>cause:</i> upstream (sink-side) receives error</td>
+   *     <td><i>effect:</i> receives error</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>cause:</i> downstream (source-side) receives cancel</td>
+   *     <td><i>effect:</i> completes</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>effect:</i> cancels upstream, completes downstream</td>
+   *     <td><i>effect:</i> completes</td>
+   *     <td><i>cause:</i> signals complete</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>effect:</i> cancels upstream, errors downstream</td>
+   *     <td><i>effect:</i> receives error</td>
+   *     <td><i>cause:</i> signals error or throws</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>effect:</i> cancels upstream, completes downstream</td>
+   *     <td><i>cause:</i> cancels</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   * </table>
+   *
+   */
+  def fromSinkAndSourceCoupled[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
+    new Flow(scaladsl.Flow.fromSinkAndSourceCoupled(sink, source))
+
+  /**
+   * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
+   * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
+   * however the Sink will also be completed. The table on [[Flow.fromSinkAndSourceCoupled]]
+   * illustrates the effects in detail.
+   *
+   * The `combine` function is used to compose the materialized values of the `sink` and `source`
+   * into the materialized value of the resulting [[Flow]].
+   */
+  def fromSinkAndSourceCoupledMat[I, O, M1, M2, M](
+    sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2],
+    combine: function.Function2[M1, M2, M]): Flow[I, O, M] =
+    new Flow(scaladsl.Flow.fromSinkAndSourceCoupledMat(sink, source)(combinerToScala(combine)))
 }
 
 /** Create a `Flow` which can process elements of type `T`. */
@@ -74,7 +154,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   import scala.collection.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
-  def module: StreamLayout.Module = delegate.module
+  override def traversalBuilder = delegate.traversalBuilder
 
   override def toString: String = delegate.toString
 
@@ -703,9 +783,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * The last group before end-of-stream will contain the buffered elements
    * since the previously emitted group.
    *
-   * '''Emits when''' the configured time elapses since the last group has been emitted
+   * '''Emits when''' the configured time elapses since the last group has been emitted or `n` elements is buffered
    *
-   * '''Backpressures when''' the configured time elapses since the last group has been emitted
+   * '''Backpressures when''' downstream backpressures, and there are `n+1` buffered elements
    *
    * '''Completes when''' upstream completes (emits last group)
    *
@@ -718,6 +798,27 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
 
   /**
+   * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the weight of the elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   *
+   * '''Emits when''' the configured time elapses since the last group has been emitted or weight limit reached
+   *
+   * '''Backpressures when''' downstream backpressures, and buffered group (+ pending element) weighs more than `maxWeight`
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
+   *
+   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * IllegalArgumentException is thrown.
+   */
+  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, Long], d: FiniteDuration): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] =
+    new Flow(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
+
+  /**
    * Shifts elements emission in time by a specified amount. It allows to store elements
    * in internal buffer while waiting for next element to be emitted. Depending on the defined
    * [[akka.stream.DelayOverflowStrategy]] it might drop elements or backpressure the upstream if
@@ -725,7 +826,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * Delay precision is 10ms to avoid unnecessary timer scheduling cycles
    *
-   * Internal buffer has default capacity 16. You can set buffer size by calling `withAttributes(inputBuffer)`
+   * Internal buffer has default capacity 16. You can set buffer size by calling `addAttributes(inputBuffer)`
    *
    * '''Emits when''' there is a pending element in the buffer and configured time for this element elapsed
    *  * EmitEarly - strategy do not wait to emit element if buffer is full
@@ -2047,8 +2148,8 @@ object RunnableGraph {
 
   /** INTERNAL API */
   private final class RunnableGraphAdapter[Mat](runnable: scaladsl.RunnableGraph[Mat]) extends RunnableGraph[Mat] {
-    def shape = ClosedShape
-    def module = runnable.module
+    override def shape = ClosedShape
+    override def traversalBuilder = runnable.traversalBuilder
 
     override def toString: String = runnable.toString
 
@@ -2083,7 +2184,7 @@ abstract class RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
   override def withAttributes(attr: Attributes): RunnableGraph[Mat]
 
   override def addAttributes(attr: Attributes): RunnableGraph[Mat] =
-    withAttributes(module.attributes and attr)
+    withAttributes(traversalBuilder.attributes and attr)
 
   override def named(name: String): RunnableGraph[Mat] =
     withAttributes(Attributes.name(name))

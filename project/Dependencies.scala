@@ -17,21 +17,23 @@ object Dependencies {
   val sslConfigVersion = "0.2.1"
   val slf4jVersion = "1.7.23"
   val scalaXmlVersion = "1.0.6"
-  val aeronVersion = "1.2.0"
+  val aeronVersion = "1.2.5"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.8", "2.12.1"),
+    crossScalaVersions := Seq("2.11.11", "2.12.2"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
-      if (scalaVersion.value.startsWith("2.12")) "1.13.4" // does not work for 2.11
-      else "1.13.2"
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 12 => "1.13.4" // does not work for 2.11
+        case _                       => "1.13.2"
+      }
     ),
     scalaTestVersion := "3.0.0",
     java8CompatVersion := {
-      scalaVersion.value match {
-        case x if x.startsWith("2.12") => "0.8.0"
-        case _ => "0.7.0"
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 12 => "0.8.0"
+        case _                       => "0.7.0"
       }
     }
   )
@@ -74,6 +76,8 @@ object Dependencies {
     val aeronDriver = "io.aeron"                      % "aeron-driver"                 % aeronVersion       // ApacheV2
     val aeronClient = "io.aeron"                      % "aeron-client"                 % aeronVersion       // ApacheV2
 
+    val javaAffinity = "net.openhft"                  % "affinity"                     % "3.0.6"
+
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.3"             % "test"
       val gson        = "com.google.code.gson"        % "gson"                         % "2.8.0"             % "test"
@@ -84,7 +88,7 @@ object Dependencies {
       val commonsIo    = "commons-io"                  % "commons-io"                   % "2.5"              % "test" // ApacheV2
       val commonsCodec = "commons-codec"               % "commons-codec"                % "1.10"             % "test" // ApacheV2
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
-      val logback      = "ch.qos.logback"              % "logback-classic"              % "1.2.1"            % "test" // EPL 1.0 / LGPL 2.1
+      val logback      = "ch.qos.logback"              % "logback-classic"              % "1.2.3"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"  % scalaTestVersion.value   % "test" } // ApacheV2
@@ -115,6 +119,7 @@ object Dependencies {
 
     object Provided {
       // TODO remove from "test" config
+      // If changed, update akka-docs/build.sbt as well
       val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.6-rev002"     %     "optional;provided;test" // ApacheV2
 
       val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.7"    %  "optional;provided"     // ApacheV2
@@ -127,7 +132,7 @@ object Dependencies {
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
-  val actor = l ++= Seq(config, java8Compat.value)
+  val actor = l ++= Seq(config, java8Compat.value, javaAffinity)
 
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
@@ -203,7 +208,7 @@ object DependencyHelpers {
    * dependent entries.
    */
   def versionDependentDeps(modules: ScalaVersionDependentModuleID*): Def.Setting[Seq[ModuleID]] =
-    libraryDependencies <++= scalaVersion(version => modules.flatMap(m => m.modules(version)))
+    libraryDependencies ++= modules.flatMap(m => m.modules(scalaVersion.value))
 
   val ScalaVersion = """\d\.\d+\.\d+(?:-(?:M|RC)\d+)?""".r
   val nominalScalaVersion: String => String = {

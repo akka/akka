@@ -5,18 +5,20 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import akka.dispatch.{ Mailbox, Envelope }
+import akka.dispatch.{ Envelope, Mailbox }
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe
 import akka.actor._
 import akka.serialization.SerializationExtension
-import scala.util.control.NonFatal
+
+import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.control.Exception.Catcher
 import akka.dispatch.MailboxType
 import akka.dispatch.ProducesMessageQueue
 import akka.serialization.SerializerWithStringManifest
 import akka.dispatch.UnboundedMailbox
+import akka.serialization.DisabledJavaSerializer
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -106,7 +108,11 @@ private[akka] trait Dispatch { this: ActorCell ⇒
       system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "interrupted during message send"))
       Thread.currentThread.interrupt()
     case NonFatal(e) ⇒
-      system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
+      val message = e match {
+        case n: NoStackTrace ⇒ "swallowing exception during message send: " + n.getMessage
+        case _               ⇒ "swallowing exception during message send" // stack trace includes message
+      }
+      system.eventStream.publish(Error(e, self.path.toString, clazz(actor), message))
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
@@ -152,13 +158,17 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   private def serializeAndDeserializePayload(obj: AnyRef): AnyRef = {
     val s = SerializationExtension(system)
     val serializer = s.findSerializerFor(obj)
-    val bytes = serializer.toBinary(obj)
-    serializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(obj)
-        s.deserialize(bytes, serializer.identifier, manifest).get
-      case _ ⇒
-        s.deserialize(bytes, obj.getClass).get
+    if (serializer.isInstanceOf[DisabledJavaSerializer] && !s.shouldWarnAboutJavaSerializer(obj.getClass, serializer))
+      obj // skip check for known "local" messages
+    else {
+      val bytes = serializer.toBinary(obj)
+      serializer match {
+        case ser2: SerializerWithStringManifest ⇒
+          val manifest = ser2.manifest(obj)
+          s.deserialize(bytes, serializer.identifier, manifest).get
+        case _ ⇒
+          s.deserialize(bytes, obj.getClass).get
+      }
     }
   }
 

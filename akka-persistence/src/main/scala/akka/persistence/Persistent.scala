@@ -36,20 +36,24 @@ object AtomicWrite {
 
 final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends PersistentEnvelope with Message {
   require(payload.nonEmpty, "payload of AtomicWrite must not be empty!")
+  private var _highestSequenceNr: Long = payload.head.sequenceNr
 
   // only check that all persistenceIds are equal when there's more than one in the Seq
   if (payload match {
     case l: List[PersistentRepr]   ⇒ l.tail.nonEmpty // avoids calling .size
     case v: Vector[PersistentRepr] ⇒ v.size > 1
     case _                         ⇒ true // some other collection type, let's just check
-  }) require(
-    payload.forall(_.persistenceId == payload.head.persistenceId),
-    "AtomicWrite must contain messages for the same persistenceId, " +
-      s"yet different persistenceIds found: ${payload.map(_.persistenceId).toSet}")
+  }) payload.foreach { pr ⇒
+    if (pr.persistenceId != payload.head.persistenceId)
+      throw new IllegalArgumentException(
+        "AtomicWrite must contain messages for the same persistenceId, " +
+          s"yet different persistenceIds found: ${payload.map(_.persistenceId).toSet}")
+    _highestSequenceNr = pr.sequenceNr
+  }
 
   def persistenceId = payload.head.persistenceId
   def lowestSequenceNr = payload.head.sequenceNr // this assumes they're gapless; they should be (it is only our code creating AWs)
-  def highestSequenceNr = payload.last.sequenceNr // TODO: could be optimised, since above require traverses already
+  def highestSequenceNr = _highestSequenceNr
 
   override def sender: ActorRef = ActorRef.noSender
   override def size: Int = payload.size

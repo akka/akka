@@ -911,6 +911,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       new ChannelRegistration {
         def enableInterest(op: Int): Unit = interestCallReceiver.ref ! op
         def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op
+        def cancel(): Unit = ()
       }
 
     def createConnectionActorWithoutRegistration(

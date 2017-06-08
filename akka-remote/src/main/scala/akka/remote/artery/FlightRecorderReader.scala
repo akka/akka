@@ -147,7 +147,7 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
           val recordStartOffset = recordOffset + RollingEventLogSection.CommitEntrySize
 
           // FIXME: extract magic numbers
-          val metadata = Array.ofDim[Byte](fileBuffer.getByte(recordStartOffset + 20))
+          val metadata = new Array[Byte](fileBuffer.getByte(recordStartOffset + 20))
           fileBuffer.getBytes(recordStartOffset + 21, metadata)
 
           val entry = RichEntry(

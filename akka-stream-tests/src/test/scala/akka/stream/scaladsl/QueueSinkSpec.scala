@@ -109,7 +109,7 @@ class QueueSinkSpec extends StreamSpec {
       sub.sendComplete()
       Await.result(queue.pull(), noMsgTimeout) should be(None)
 
-      queue.pull().onFailure { case e ⇒ e.isInstanceOf[IllegalStateException] should ===(true) }
+      queue.pull().failed.foreach { e ⇒ e.isInstanceOf[IllegalStateException] should ===(true) }
     }
 
     "keep on sending even after the buffer has been full" in assertAllStagesStopped {

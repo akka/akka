@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 import java.util.NoSuchElementException
+import akka.annotation.InternalApi
 
 object Serialization {
 
@@ -188,7 +189,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
       case ser: ByteBufferSerializer ⇒
         ser.fromBinary(buf, manifest)
       case _ ⇒
-        val bytes = Array.ofDim[Byte](buf.remaining())
+        val bytes = new Array[Byte](buf.remaining())
         buf.get(bytes)
         deserializeByteArray(bytes, serializer, manifest)
     }
@@ -362,7 +363,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   private val quickSerializerByIdentity: Array[Serializer] = {
     val size = 1024
-    val table = Array.ofDim[Serializer](size)
+    val table = new Array[Serializer](size)
     serializerByIdentity.foreach {
       case (id, ser) ⇒ if (0 <= id && id < size) table(id) = ser
     }
@@ -389,7 +390,10 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     serializer.isInstanceOf[JavaSerializer] && !system.settings.AllowJavaSerialization
   }
 
-  private def shouldWarnAboutJavaSerializer(serializedClass: Class[_], serializer: Serializer) = {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def shouldWarnAboutJavaSerializer(serializedClass: Class[_], serializer: Serializer) = {
 
     def suppressWarningOnNonSerializationVerification(serializedClass: Class[_]) = {
       //suppressed, only when warn-on-no-serialization-verification = off, and extending NoSerializationVerificationNeeded

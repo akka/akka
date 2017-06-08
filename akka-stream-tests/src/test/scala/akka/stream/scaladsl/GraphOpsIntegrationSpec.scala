@@ -19,13 +19,6 @@ object GraphOpsIntegrationSpec {
       override def deepCopy() = ShufflePorts(
         in1.carbonCopy(), in2.carbonCopy(),
         out1.carbonCopy(), out2.carbonCopy())
-      override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): ShufflePorts[In, Out] = {
-        assert(inlets.size == this.inlets.size)
-        assert(outlets.size == this.outlets.size)
-        val i = inlets.asInstanceOf[Seq[Inlet[In]]]
-        val o = outlets.asInstanceOf[Seq[Outlet[Out]]]
-        ShufflePorts(i(0), i(1), o(0), o(1))
-      }
     }
 
     def apply[In, Out](pipeline: Flow[In, Out, _]): Graph[ShufflePorts[In, Out], NotUsed] = {

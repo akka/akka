@@ -507,6 +507,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
+   * Note that ActorSystem will not terminate until all the registered callbacks are finished.
    *
    * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
    *
@@ -520,6 +521,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
+   * Note that ActorSystem will not terminate until all the registered callbacks are finished.
    *
    * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
    */
@@ -527,8 +529,8 @@ abstract class ActorSystem extends ActorRefFactory {
 
   /**
    * Terminates this actor system. This will stop the guardian actor, which in turn
-   * will recursively stop all its child actors, then the system guardian
-   * (below which the logging actors reside) and the execute all registered
+   * will recursively stop all its child actors, the system guardian
+   * (below which the logging actors reside) and then execute all registered
    * termination handlers (see [[ActorSystem#registerOnTermination]]).
    * Be careful to not schedule any operations on completion of the returned future
    * using the `dispatcher` of this actor system as it will have been shut down before the
@@ -538,7 +540,9 @@ abstract class ActorSystem extends ActorRefFactory {
 
   /**
    * Returns a Future which will be completed after the ActorSystem has been terminated
-   * and termination hooks have been executed. Be careful to not schedule any operations
+   * and termination hooks have been executed. If you registered any callback with
+   * [[ActorSystem#registerOnTermination]], the returned Future from this method will not complete
+   * until all the registered callbacks are finished. Be careful to not schedule any operations
    * on the `dispatcher` of this actor system as it will have been shut down before this
    * future completes.
    */
@@ -651,6 +655,15 @@ private[akka] class ActorSystemImpl(
         cause match {
           case NonFatal(_) | _: InterruptedException | _: NotImplementedError | _: ControlThrowable ⇒ log.error(cause, "Uncaught error from thread [{}]", thread.getName)
           case _ ⇒
+            if (cause.isInstanceOf[IncompatibleClassChangeError] && cause.getMessage.startsWith("akka"))
+              System.err.println(
+                s"""Detected ${cause.getClass.getName} error, which MAY be caused by incompatible Akka versions on the classpath.
+                  | Please note that a given Akka version MUST be the same across all modules of Akka that you are using,
+                  | e.g. if you use akka-actor [${akka.Version.current} (resolved from current classpath)] all other core
+                  | Akka modules MUST be of the same version. External projects like Alpakka, Persistence plugins or Akka
+                  | HTTP etc. have their own version numbers - please make sure you're using a compatible set of libraries.
+                 """.stripMargin.replaceAll("[\r\n]", ""))
+
             if (settings.JvmExitOnFatalError) {
               try {
                 markerLogging.error(LogMarker.Security, cause, "Uncaught error from thread [{}] shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled", thread.getName)
@@ -693,7 +706,8 @@ private[akka] class ActorSystemImpl(
 
   def actorOf(props: Props, name: String): ActorRef =
     if (guardianProps.isEmpty) guardian.underlying.attachChild(props, name, systemService = false)
-    else throw new UnsupportedOperationException("cannot create top-level actor from the outside on ActorSystem with custom user guardian")
+    else throw new UnsupportedOperationException(
+      s"cannot create top-level actor [$name] from the outside on ActorSystem with custom user guardian")
 
   def actorOf(props: Props): ActorRef =
     if (guardianProps.isEmpty) guardian.underlying.attachChild(props, systemService = false)

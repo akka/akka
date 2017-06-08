@@ -1,0 +1,120 @@
+/**
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ */
+package akka.typed.internal
+
+import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch }
+
+import akka.annotation.InternalApi
+import akka.typed.{ ActorSystem, Extension, ExtensionId, Extensions }
+
+import scala.annotation.tailrec
+import scala.util.{ Failure, Success, Try }
+import scala.collection.JavaConverters._
+
+/**
+ * Actor system extensions registry
+ *
+ * INTERNAL API
+ */
+@InternalApi
+trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
+
+  private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
+
+  /**
+   * Hook for ActorSystem to load extensions on startup
+   */
+  protected final def loadExtensions() {
+    /**
+     * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
+     */
+    def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {
+
+      settings.config.getStringList(key).asScala.foreach { extensionIdFQCN ⇒
+        // it is either a Scala object or it is a Java class with a static singleton accessor
+        val idTry = dynamicAccess.getObjectFor[AnyRef](extensionIdFQCN)
+          .recoverWith { case _ ⇒ idFromJavaSingletonAccessor(extensionIdFQCN) }
+
+        idTry match {
+          case Success(id: ExtensionId[_]) ⇒ registerExtension(id)
+          case Success(_) ⇒
+            if (!throwOnLoadFail) log.error("[{}] is not an 'ExtensionId', skipping...", extensionIdFQCN)
+            else throw new RuntimeException(s"[$extensionIdFQCN] is not an 'ExtensionId'")
+          case Failure(problem) ⇒
+            if (!throwOnLoadFail) log.error(problem, "While trying to load extension [{}], skipping...", extensionIdFQCN)
+            else throw new RuntimeException(s"While trying to load extension [$extensionIdFQCN]", problem)
+        }
+      }
+    }
+
+    def idFromJavaSingletonAccessor(extensionIdFQCN: String): Try[ExtensionId[Extension]] =
+      dynamicAccess.getClassFor[ExtensionId[Extension]](extensionIdFQCN).flatMap[ExtensionId[Extension]] { clazz: Class[_] ⇒
+        Try {
+
+          val singletonAccessor = clazz.getDeclaredMethod("getInstance")
+          singletonAccessor.invoke(null).asInstanceOf[ExtensionId[Extension]]
+        }
+      }
+
+    // eager initialization of CoordinatedShutdown
+    // TODO coordinated shutdown for akka typed
+    // CoordinatedShutdown(self)
+
+    loadExtensions("akka.typed.library-extensions", throwOnLoadFail = true)
+    loadExtensions("akka.typed.extensions", throwOnLoadFail = false)
+  }
+
+  final override def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = findExtension(ext) != null
+
+  final override def extension[T <: Extension](ext: ExtensionId[T]): T = findExtension(ext) match {
+    case null ⇒ throw new IllegalArgumentException("Trying to get non-registered extension [" + ext + "]")
+    case some ⇒ some.asInstanceOf[T]
+  }
+
+  final override def registerExtension[T <: Extension](ext: ExtensionId[T]): T =
+    findExtension(ext) match {
+      case null     ⇒ createExtensionInstance(ext)
+      case existing ⇒ existing.asInstanceOf[T]
+    }
+
+  private def createExtensionInstance[T <: Extension](ext: ExtensionId[T]): T = {
+    val inProcessOfRegistration = new CountDownLatch(1)
+    extensions.putIfAbsent(ext, inProcessOfRegistration) match { // Signal that registration is in process
+      case null ⇒ try { // Signal was successfully sent
+        // Create and initialize the extension
+        ext.createExtension(self) match {
+          case null ⇒ throw new IllegalStateException("Extension instance created as 'null' for extension [" + ext + "]")
+          case instance ⇒
+            // Replace our in process signal with the initialized extension
+            extensions.replace(ext, inProcessOfRegistration, instance)
+            instance
+        }
+      } catch {
+        case t: Throwable ⇒
+          //In case shit hits the fan, remove the inProcess signal and escalate to caller
+          extensions.replace(ext, inProcessOfRegistration, t)
+          throw t
+      } finally {
+        //Always notify listeners of the inProcess signal
+        inProcessOfRegistration.countDown()
+      }
+      case other ⇒
+        //Someone else is in process of registering an extension for this Extension, retry
+        registerExtension(ext)
+    }
+  }
+
+  /**
+   * Returns any extension registered to the specified Extension or returns null if not registered
+   */
+  @tailrec
+  private def findExtension[T <: Extension](ext: ExtensionId[T]): T = extensions.get(ext) match {
+    case c: CountDownLatch ⇒
+      //Registration in process, await completion and retry
+      c.await()
+      findExtension(ext)
+    case t: Throwable ⇒ throw t //Initialization failed, throw same again
+    case other        ⇒ other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
+  }
+}

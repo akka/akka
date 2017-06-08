@@ -72,7 +72,32 @@ message ORMap {
   }
   
   required ORSet keys = 1;
-  repeated Entry entries = 2;  
+  repeated Entry entries = 2;
+}
+
+message ORMapDeltaGroup {
+  message MapEntry {
+    optional string stringKey = 1;
+    optional OtherMessage value = 2;
+    optional sint32 intKey = 3;
+    optional sint64 longKey = 4;
+    optional OtherMessage otherKey = 5;
+  }
+  message Entry {
+    required ORMapDeltaOp operation = 1;
+    required ORSet underlying = 2;
+    required sint32 zeroTag = 3;
+    repeated MapEntry entryData = 4;
+  }
+
+  repeated Entry entries = 1;
+}
+
+enum ORMapDeltaOp {
+  ORMapPut = 0;
+  ORMapRemove = 1;
+  ORMapRemoveKey = 2;
+  ORMapUpdate = 3;
 }
 
 message LWWMap {
@@ -85,7 +110,7 @@ message LWWMap {
   }
   
   required ORSet keys = 1;
-  repeated Entry entries = 2;  
+  repeated Entry entries = 2;
 }
 
 message PNCounterMap {
@@ -98,21 +123,22 @@ message PNCounterMap {
   }
   
   required ORSet keys = 1;
-  repeated Entry entries = 2;  
+  repeated Entry entries = 2;
 }
 
 message ORMultiMap {
-  message Entry {
-    optional string stringKey = 1;
-    required ORSet value = 2;
-    optional sint32 intKey = 3;
-    optional sint64 longKey = 4;
-    optional OtherMessage otherKey = 5;
-  }
-  
-  required ORSet keys = 1;
-  repeated Entry entries = 2;  
-}
+   message Entry {
+     optional string stringKey = 1;
+     required ORSet value = 2;
+     optional sint32 intKey = 3;
+     optional sint64 longKey = 4;
+     optional OtherMessage otherKey = 5;
+   }
+
+   required ORSet keys = 1;
+   repeated Entry entries = 2;
+   optional bool withValueDeltas = 3;
+ }
 
 
 

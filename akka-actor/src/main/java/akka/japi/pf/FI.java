@@ -5,9 +5,10 @@
 package akka.japi.pf;
 
 /**
- * Class that encapsulates all the Functional Interfaces
+ * Class that encapsulates Functional Interfaces
  * used for creating partial functions.
  *
+ * These classes are kept for compatibility, but for future API's please prefer the ones in {@link akka.japi.function}.
  */
 public final class FI {
   private FI() {
@@ -15,6 +16,8 @@ public final class FI {
 
   /**
    * Functional interface for an application.
+   *
+   * This class is kept for compatibility, but for future API's please prefer {@link akka.japi.function.Function}.
    *
    * @param <I> the input type, that this Apply will be applied to
    * @param <R> the return type, that the results of the application will have
@@ -31,6 +34,8 @@ public final class FI {
 
   /**
    * Functional interface for an application.
+   *
+   * This class is kept for compatibility, but for future API's please prefer {@link akka.japi.function.Function2}.
    *
    * @param <I1> the first input type, that this Apply will be applied to
    * @param <I2> the second input type, that this Apply will be applied to
@@ -49,6 +54,8 @@ public final class FI {
 
   /**
    * Functional interface for a predicate.
+   *
+   * This class is kept for compatibility, but for future API's please prefer {@link akka.japi.function.Predicate}.
    *
    * @param <T> the type that the predicate will operate on.
    */
@@ -81,6 +88,8 @@ public final class FI {
 
   /**
    * Functional interface for an application.
+   *
+   * This class is kept for compatibility, but for future API's please prefer {@link akka.japi.function.Procedure}.
    *
    * @param <I> the input type, that this Apply will be applied to
    */
@@ -149,6 +158,8 @@ public final class FI {
 
   /**
    * Functional interface for an application.
+   *
+   * This class is kept for compatibility, but for future API's please prefer {@link akka.japi.function.Effect}.
    */
   public static interface UnitApplyVoid {
     /**
@@ -159,6 +170,8 @@ public final class FI {
 
   /**
    * Package scoped functional interface for a predicate. Used internally to match against arbitrary types.
+   *
+   * This class is kept for compatibility, but for future API's please prefer {@link akka.japi.function.Predicate}.
    */
   static interface Predicate {
     /**

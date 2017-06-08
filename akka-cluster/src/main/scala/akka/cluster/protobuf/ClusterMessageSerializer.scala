@@ -3,15 +3,13 @@
  */
 package akka.cluster.protobuf
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
-import java.{ lang ⇒ jl }
 
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster._
 import akka.cluster.protobuf.msg.{ ClusterMessages ⇒ cm }
-import akka.serialization.BaseSerializer
-import akka.util.ClassLoaderObjectInputStream
+import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.protobuf.{ ByteString, MessageLite }
 
 import scala.annotation.tailrec
@@ -19,18 +17,23 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
 import java.io.NotSerializableException
+
 import akka.cluster.InternalClusterAction.ExitingConfirmed
+import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
+import akka.routing.Pool
 
 /**
  * Protobuf serializer of cluster messages.
  */
 class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
+  private lazy val serialization = SerializationExtension(system)
+
   private final val BufferSize = 1024 * 4
   // must be lazy because serializer is initialized from Cluster extension constructor
   private lazy val GossipTimeToLive = Cluster(system).settings.GossipTimeToLive
 
-  private val fromBinaryMap = collection.immutable.HashMap[Class[_ <: ClusterMessage], Array[Byte] ⇒ AnyRef](
+  private val fromBinaryMap = collection.immutable.HashMap[Class[_], Array[Byte] ⇒ AnyRef](
     classOf[InternalClusterAction.Join] → {
       case bytes ⇒
         val m = cm.Join.parseFrom(bytes)
@@ -52,7 +55,9 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     classOf[ClusterHeartbeatSender.HeartbeatRsp] → (bytes ⇒ ClusterHeartbeatSender.HeartbeatRsp(uniqueAddressFromBinary(bytes))),
     classOf[ExitingConfirmed] → (bytes ⇒ InternalClusterAction.ExitingConfirmed(uniqueAddressFromBinary(bytes))),
     classOf[GossipStatus] → gossipStatusFromBinary,
-    classOf[GossipEnvelope] → gossipEnvelopeFromBinary)
+    classOf[GossipEnvelope] → gossipEnvelopeFromBinary,
+    classOf[ClusterRouterPool] → clusterRouterPoolFromBinary
+  )
 
   def includeManifest: Boolean = true
 
@@ -69,6 +74,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     case InternalClusterAction.InitJoinAck(address)   ⇒ addressToProtoByteArray(address)
     case InternalClusterAction.InitJoinNack(address)  ⇒ addressToProtoByteArray(address)
     case InternalClusterAction.ExitingConfirmed(node) ⇒ uniqueAddressToProtoByteArray(node)
+    case rp: ClusterRouterPool                        ⇒ clusterRouterPoolToProtoByteArray(rp)
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass}")
   }
@@ -99,10 +105,11 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
   }
 
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = clazz match {
-    case Some(c) ⇒ fromBinaryMap.get(c.asInstanceOf[Class[ClusterMessage]]) match {
-      case Some(f) ⇒ f(bytes)
-      case None    ⇒ throw new NotSerializableException(s"Unimplemented deserialization of message class $c in ClusterSerializer")
-    }
+    case Some(c) ⇒
+      fromBinaryMap.get(c.asInstanceOf[Class[ClusterMessage]]) match {
+        case Some(f) ⇒ f(bytes)
+        case None    ⇒ throw new NotSerializableException(s"Unimplemented deserialization of message class $c in ClusterSerializer")
+      }
     case _ ⇒ throw new IllegalArgumentException("Need a cluster message class to be able to deserialize bytes in ClusterSerializer")
   }
 
@@ -129,6 +136,40 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
 
   private def uniqueAddressToProtoByteArray(uniqueAddress: UniqueAddress): Array[Byte] =
     uniqueAddressToProto(uniqueAddress).build.toByteArray
+
+  private def clusterRouterPoolToProtoByteArray(rp: ClusterRouterPool): Array[Byte] = {
+    val builder = cm.ClusterRouterPool.newBuilder()
+    builder.setPool(poolToProto(rp.local))
+    builder.setSettings(clusterRouterPoolSettingsToProto(rp.settings))
+    builder.build().toByteArray
+  }
+
+  private def poolToProto(pool: Pool): cm.Pool = {
+    val builder = cm.Pool.newBuilder()
+    val serializer = serialization.findSerializerFor(pool)
+    builder.setSerializerId(serializer.identifier)
+      .setData(ByteString.copyFrom(serializer.toBinary(pool)))
+    serializer match {
+      case ser: SerializerWithStringManifest ⇒
+        builder.setManifest(ser.manifest(pool))
+      case _ ⇒
+        builder.setManifest(
+          if (serializer.includeManifest) pool.getClass.getName
+          else ""
+        )
+    }
+    builder.build()
+  }
+
+  private def clusterRouterPoolSettingsToProto(settings: ClusterRouterPoolSettings): cm.ClusterRouterPoolSettings = {
+    val builder = cm.ClusterRouterPoolSettings.newBuilder()
+    builder.setAllowLocalRoutees(settings.allowLocalRoutees)
+      .setMaxInstancesPerNode(settings.maxInstancesPerNode)
+      .setTotalInstances(settings.totalInstances)
+
+    settings.useRole.foreach(builder.setUseRole)
+    builder.build()
+  }
 
   // we don't care about races here since it's just a cache
   @volatile
@@ -322,5 +363,27 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     GossipStatus(uniqueAddressFromProto(status.getFrom), vectorClockFromProto(
       status.getVersion,
       status.getAllHashesList.asScala.toVector))
+
+  def clusterRouterPoolFromBinary(bytes: Array[Byte]): ClusterRouterPool = {
+    val crp = cm.ClusterRouterPool.parseFrom(bytes)
+
+    ClusterRouterPool(
+      poolFromProto(crp.getPool),
+      clusterRouterPoolSettingsFromProto(crp.getSettings)
+    )
+  }
+
+  private def poolFromProto(pool: cm.Pool): Pool = {
+    serialization.deserialize(pool.getData.toByteArray, pool.getSerializerId, pool.getManifest).get.asInstanceOf[Pool]
+  }
+
+  private def clusterRouterPoolSettingsFromProto(crps: cm.ClusterRouterPoolSettings): ClusterRouterPoolSettings = {
+    ClusterRouterPoolSettings(
+      totalInstances = crps.getTotalInstances,
+      maxInstancesPerNode = crps.getMaxInstancesPerNode,
+      allowLocalRoutees = crps.getAllowLocalRoutees,
+      useRole = if (crps.hasUseRole) Some(crps.getUseRole) else None
+    )
+  }
 
 }

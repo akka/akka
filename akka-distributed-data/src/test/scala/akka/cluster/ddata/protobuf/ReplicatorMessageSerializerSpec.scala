@@ -26,6 +26,8 @@ import com.typesafe.config.ConfigFactory
 import akka.cluster.ddata.DurableStore.DurableDataEnvelope
 import akka.cluster.ddata.GCounter
 import akka.cluster.ddata.VersionVector
+import akka.cluster.ddata.ORSet
+import akka.cluster.ddata.ORMultiMap
 
 class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
   "ReplicatorMessageSerializerSpec",
@@ -33,6 +35,10 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
+    akka.actor {
+      serialize-messages = off
+      allow-java-serialization = off
+    }
     """))) with WordSpecLike with Matchers with BeforeAndAfterAll {
 
   val serializer = new ReplicatorMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
@@ -61,8 +67,10 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
     "serialize Replicator messages" in {
       val ref1 = system.actorOf(Props.empty, "ref1")
       val data1 = GSet.empty[String] + "a"
-      val delta1 = GCounter.empty.increment(address1, 17).increment(address2, 2)
-      val delta2 = delta1.increment(address2, 1)
+      val delta1 = GCounter.empty.increment(address1, 17).increment(address2, 2).delta.get
+      val delta2 = delta1.increment(address2, 1).delta.get
+      val delta3 = ORSet.empty[String].add(address1, "a").delta.get
+      val delta4 = ORMultiMap.empty[String, String].addBinding(address1, "a", "b").delta.get
 
       checkSerialization(Get(keyA, ReadLocal))
       checkSerialization(Get(keyA, ReadMajority(2.seconds), Some("x")))
@@ -80,6 +88,7 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(Write("A", DataEnvelope(data1)))
       checkSerialization(WriteAck)
       checkSerialization(WriteNack)
+      checkSerialization(DeltaNack)
       checkSerialization(Read("A"))
       checkSerialization(ReadResult(Some(DataEnvelope(data1))))
       checkSerialization(ReadResult(None))
@@ -89,9 +98,11 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(Gossip(Map(
         "A" → DataEnvelope(data1),
         "B" → DataEnvelope(GSet() + "b" + "c")), sendBack = true))
-      checkSerialization(DeltaPropagation(address1, Map(
+      checkSerialization(DeltaPropagation(address1, reply = true, Map(
         "A" → Delta(DataEnvelope(delta1), 1L, 1L),
-        "B" → Delta(DataEnvelope(delta2), 3L, 5L))))
+        "B" → Delta(DataEnvelope(delta2), 3L, 5L),
+        "C" → Delta(DataEnvelope(delta3), 1L, 1L),
+        "DC" → Delta(DataEnvelope(delta4), 1L, 1L))))
 
       checkSerialization(new DurableDataEnvelope(data1))
       val pruning = Map(

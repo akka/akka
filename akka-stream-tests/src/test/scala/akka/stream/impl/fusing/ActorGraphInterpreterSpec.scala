@@ -1,17 +1,20 @@
 /**
  * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance.SpecViolation
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.testkit.EventFilter
+import akka.testkit.{ EventFilter, TestLatch }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -256,7 +259,6 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       EventFilter[IllegalArgumentException](pattern = "Error in stage.*", occurrences = 1).intercept {
         Await.result(Source.fromGraph(failyStage).runWith(Sink.ignore), 3.seconds)
       }
-
     }
 
     "be able to properly handle case where a stage fails before subscription happens" in assertAllStagesStopped {
@@ -390,5 +392,41 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       upstream.expectCancellation()
     }
 
+    "trigger postStop in all stages when abruptly terminated (and no upstream boundaries)" in {
+      val mat = ActorMaterializer()
+      val gotStop = TestLatch(1)
+
+      object PostStopSnitchFlow extends SimpleLinearGraphStage[String] {
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+          setHandler(in, new InHandler {
+            override def onPush(): Unit = push(out, grab(in))
+          })
+          setHandler(out, new OutHandler {
+            override def onPull(): Unit = pull(in)
+          })
+
+          override def postStop(): Unit = {
+            gotStop.countDown()
+          }
+        }
+      }
+
+      val downstream = TestSubscriber.probe[String]()
+
+      Source.repeat("whatever")
+        .via(PostStopSnitchFlow)
+        .to(Sink.fromSubscriber(downstream))
+        .run()(mat)
+
+      downstream.requestNext()
+
+      mat.shutdown()
+      Await.ready(gotStop, remainingOrDefault)
+
+      val propagatedError = downstream.expectError()
+      propagatedError shouldBe an[AbruptTerminationException]
+    }
+
   }
 }
+
