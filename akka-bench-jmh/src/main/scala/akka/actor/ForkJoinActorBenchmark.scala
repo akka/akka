@@ -39,6 +39,7 @@ class ForkJoinActorBenchmark {
 
   @Setup(Level.Trial)
   def setup(): Unit = {
+    println(s"Number of cores: ${ForkJoinActorBenchmark.cores}")
     val Array(executor, cpuAffinityStrategy) = executorAndStrategy.split(':')
     system = ActorSystem("ForkJoinActorBenchmark", ConfigFactory.parseString(
       s"""| akka {
@@ -156,7 +157,7 @@ object ForkJoinActorBenchmark {
   final val messages = 400000
 
   // update according to cpu
-  final val cores = 8
+  final val cores = Runtime.getRuntime.availableProcessors
   // 2 actors per
   final val moreThanCoresActorPairs = cores * 2
   final val lessThanCoresActorPairs = (cores / 2) - 1
