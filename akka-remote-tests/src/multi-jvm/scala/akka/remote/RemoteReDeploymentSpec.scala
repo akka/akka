@@ -87,11 +87,18 @@ object RemoteReDeploymentMultiJvmSpec {
     }
   }
 
-  class Hello extends Actor {
+  class Hello extends Actor with ActorLogging {
     val monitor = context.actorSelection("/user/echo")
     context.parent ! "HelloParent"
-    override def preStart(): Unit = monitor ! "PreStart"
-    override def postStop(): Unit = monitor ! "PostStop"
+
+    override def preStart(): Unit = {
+      log.warning(s"Starting Hello at ${self.path}")
+      monitor ! "PreStart"
+    }
+    override def postStop(): Unit = {
+      log.warning(s"Stopped at ${self.path}")
+      monitor ! "PostStop"
+    }
     def receive = Actor.emptyBehavior
   }
 
@@ -120,7 +127,7 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
 
     "terminate the child when its parent system is replaced by a new one" in {
 
-      val echo = system.actorOf(echoProps(testActor), "echo")
+      system.actorOf(echoProps(testActor), "echo")
       enterBarrier("echo-started")
 
       runOn(second) {
