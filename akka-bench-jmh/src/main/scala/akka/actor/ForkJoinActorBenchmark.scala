@@ -19,10 +19,10 @@ import scala.concurrent.Await
 class ForkJoinActorBenchmark {
   import ForkJoinActorBenchmark._
 
-  @Param(Array("1", "5"))
+  @Param(Array("5", "100"))
   var tpt = 0
 
-  @Param(Array("1", "4"))
+  @Param(Array("1", "2", "4", "8", "16", "20", "32", "64"))
   var threads = ""
 
   implicit var system: ActorSystem = _
@@ -36,9 +36,9 @@ class ForkJoinActorBenchmark {
         |     default-dispatcher {
         |       executor = "fork-join-executor"
         |       fork-join-executor {
-        |         parallelism-min = 1
-        |         parallelism-factor = $threads
-        |         parallelism-max = 64
+        |         parallelism-min = $threads
+        |         parallelism-factor = 1
+        |         parallelism-max = $threads
         |       }
         |       throughput = $tpt
         |     }
