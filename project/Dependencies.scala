@@ -19,7 +19,7 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.11", "2.12.1"),
+    crossScalaVersions := Seq("2.11.11", "2.12.2"),
     scalaVersion := crossScalaVersions.value.head,
     akkaVersion := System.getProperty("akka.build.version", "2.4.18"),
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.4"),
@@ -40,7 +40,7 @@ object Dependencies {
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.3"       // ApacheV2
 
     // For akka-http-jackson support
-    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.7.6"       // ApacheV2
+    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.8.8"       // ApacheV2
 
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
