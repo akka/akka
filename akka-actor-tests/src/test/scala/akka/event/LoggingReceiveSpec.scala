@@ -229,29 +229,28 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           val sname = supervisor.path.toString
           val sclass = classOf[TestLogActor]
 
-          fishForMessage(hint = "started") {
-            case Logging.Debug(`sname`, `sclass`, msg: String) if msg startsWith "started" ⇒ true
-            case _ ⇒ false
+          expectMsgAllPF(messages = 3) {
+            case Logging.Debug(`sname`, `sclass`, msg: String) if msg startsWith "started" ⇒ 0
+            case Logging.Debug(_, _, msg: String) if msg startsWith "now supervising"      ⇒ 1
+            case Logging.Debug(_, _, msg: String) if msg startsWith "now watched by"       ⇒ 2
           }
 
           val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
           val aname = actor.path.toString
           val aclass = classOf[TestLogActor]
 
-          fishForMessage(hint = "started") {
-            case Logging.Debug(`aname`, `aclass`, msg: String) if msg startsWith "started" ⇒ true
-            case _ ⇒ false
+          expectMsgAllPF(messages = 2) {
+            case Logging.Debug(`aname`, `aclass`, msg: String) if msg.startsWith("started (" + classOf[TestLogActor].getName) ⇒ 0
+            case Logging.Debug(`sname`, `sclass`, msg: String) if msg == s"now supervising TestActor[$aname]"                 ⇒ 1
           }
 
           EventFilter[ActorKilledException](occurrences = 1) intercept {
             actor ! Kill
-            val set = receiveWhile(messages = 3) {
-              case Logging.Error(_: ActorKilledException, `aname`, _, "Kill") ⇒ 1
-              case Logging.Debug(`aname`, `aclass`, "restarting")             ⇒ 2
-              case Logging.Debug(`aname`, `aclass`, "restarted")              ⇒ 3
-            }.toSet
-            expectNoMsg(Duration.Zero)
-            assert(set == Set(1, 2, 3), set + " was not Set(1, 2, 3)")
+            expectMsgAllPF(messages = 3) {
+              case Logging.Error(_: ActorKilledException, `aname`, _, "Kill") ⇒ 0
+              case Logging.Debug(`aname`, `aclass`, "restarting")             ⇒ 1
+              case Logging.Debug(`aname`, `aclass`, "restarted")              ⇒ 2
+            }
           }
 
           system.stop(supervisor)
@@ -259,6 +258,13 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
             Logging.Debug(aname, aclass, "stopped"),
             Logging.Debug(sname, sclass, "stopping"),
             Logging.Debug(sname, sclass, "stopped"))
+        }
+
+        // To get nice error messages I suppose we want to accept a set of PF's, but for now this'll do.
+        def expectMsgAllPF(messages: Int)(matchers: PartialFunction[AnyRef, _]) = {
+          val set = receiveWhile(messages = messages)(matchers).toSet
+          expectNoMsg(Duration.Zero)
+          assert(set == (0 until messages).toSet)
         }
       }
     }
