@@ -176,6 +176,8 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
 
       expectNoMsg(1.second)
 
+      enterBarrier("stopping")
+
       runOn(second) {
         Await.result(sys.terminate(), 10.seconds)
       }
