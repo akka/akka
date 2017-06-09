@@ -39,3 +39,7 @@ addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.10")
 
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.3")
+
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.1")
+
+addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
