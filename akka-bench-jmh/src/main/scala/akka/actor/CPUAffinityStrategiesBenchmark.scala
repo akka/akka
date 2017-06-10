@@ -40,7 +40,9 @@ class CPUAffinityStrategiesBenchmark {
          |     affinity-dispatcher {
          |       executor = "affinity-pool-executor"
          |       affinity-pool-executor {
-         |         num-threads = $numThreads
+         |         parallelism-min = $numThreads
+         |         parallelism-factor = 1.0
+         |         parallelism-max = $numThreads
          |         affinity-group-size = 10000
          |         cpu-affinity-strategies = [$cpuAffinityStrategy]
          |     }

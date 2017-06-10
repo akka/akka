@@ -6,24 +6,28 @@ package akka.dispatch.affinity
 
 import java.util
 import java.util.concurrent._
-import java.util.concurrent.locks.{ Lock, ReentrantLock }
-import akka.dispatch.{ AbstractBoundedNodeQueue, DispatcherPrerequisites, ExecutorServiceConfigurator, ExecutorServiceFactory }
+import java.util.concurrent.locks.{Lock, ReentrantLock}
+
+import akka.dispatch._
 import akka.dispatch.affinity.AffinityPool._
 import com.typesafe.config.Config
-import net.openhft.affinity.{ AffinityStrategies, AffinityThreadFactory }
+import net.openhft.affinity.{AffinityStrategies, AffinityThreadFactory}
 
 import scala.collection.mutable
 import scala.collection.JavaConversions._
-import scala.util.{ Failure, Try }
+import scala.util.{Failure, Try}
 
-class AffinityPool(numThreads: Int, affinityGroupSize: Int, tf: ThreadFactory) extends AbstractExecutorService {
+class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory) extends AbstractExecutorService {
+
+  if (parallelism <= 0)
+    throw new IllegalArgumentException("Size of pool cannot be less or equal to 0")
 
   // controls access to mutable such as list of workers, etc
   private val mainLock = new ReentrantLock
   @volatile private var poolState: PoolState = Running
 
   // there is one queue for each thread
-  private val workQueues = Array.fill(numThreads)(new BoundedTaskQueue(affinityGroupSize))
+  private val workQueues = Array.fill(parallelism)(new BoundedTaskQueue(affinityGroupSize))
 
   //mutable set of all workers that are currently running
   private val workers: mutable.Set[ThreadPoolWorker] = mutable.Set()
@@ -41,7 +45,7 @@ class AffinityPool(numThreads: Int, affinityGroupSize: Int, tf: ThreadFactory) e
 
   private def tryEnqueue(command: Runnable) = {
     // does a mod on the hash code to determine which queue to put task in
-    val queueIndex = Math.abs(command.hashCode()) & (numThreads - 1)
+    val queueIndex = Math.abs(command.hashCode()) & (parallelism - 1)
     workQueues(queueIndex).add(command)
   }
 
@@ -205,13 +209,20 @@ class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequi
 
   }
 
-  val numThreads = config.getInt("num-threads")
+  def getNonNegative[T: Numeric](getter: String => T, key: String): Unit = {
+
+  }
+
+  val poolSize =  ThreadPoolConfig.scaledPoolSize(
+    config.getInt("parallelism-min"),
+    config.getDouble("parallelism-factor"),
+    config.getInt("parallelism-max"))
   val affinityGroupSize = config.getInt("affinity-group-size")
   val strategies = config.getStringList("cpu-affinity-strategies").map(toStrategy)
   val threadFactory = new AffinityThreadFactory("affinity-thread-fact", strategies.map(_.javaStrat): _*)
 
   override def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = new ExecutorServiceFactory {
-    override def createExecutorService: ExecutorService = new AffinityPool(numThreads, affinityGroupSize, threadFactory)
+    override def createExecutorService: ExecutorService = new AffinityPool(poolSize, affinityGroupSize, threadFactory)
   }
 }
 

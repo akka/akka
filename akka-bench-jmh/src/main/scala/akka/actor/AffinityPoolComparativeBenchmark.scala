@@ -38,6 +38,11 @@ class AffinityPoolComparativeBenchmark {
           |   actor {
           |     default-fj-dispatcher {
           |       executor = "fork-join-executor"
+          |       fork-join-executor {
+          |         parallelism-min = $numThreads
+          |         parallelism-factor = 1.0
+          |         parallelism-max = $numThreads
+          |       }
           |       throughput = $throughPut
           |     }
           |
@@ -52,7 +57,9 @@ class AffinityPoolComparativeBenchmark {
           |     affinity-dispatcher {
           |       executor = "affinity-pool-executor"
           |       affinity-pool-executor {
-          |         num-threads = $numThreads
+          |         parallelism-min = $numThreads
+          |         parallelism-factor = 1.0
+          |         parallelism-max = $numThreads
           |         affinity-group-size = 10000
           |         cpu-affinity-strategies = [any]
           |     }
