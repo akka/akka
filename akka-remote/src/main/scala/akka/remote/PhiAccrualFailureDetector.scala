@@ -3,6 +3,7 @@
  */
 package akka.remote
 
+import akka.event.jul.Logger
 import akka.remote.FailureDetector.Clock
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
@@ -33,23 +34,18 @@ import akka.util.Helpers.ConfigOps
  * @param threshold A low threshold is prone to generate many wrong suspicions but ensures a quick detection in the event
  *   of a real crash. Conversely, a high threshold generates fewer mistakes but needs more time to detect
  *   actual crashes
- *
  * @param maxSampleSize Number of samples to use for calculation of mean and standard deviation of
  *   inter-arrival times.
- *
  * @param minStdDeviation Minimum standard deviation to use for the normal distribution used when calculating phi.
  *   Too low standard deviation might result in too much sensitivity for sudden, but normal, deviations
  *   in heartbeat inter arrival times.
- *
  * @param acceptableHeartbeatPause Duration corresponding to number of potentially lost/delayed
  *   heartbeats that will be accepted before considering it to be an anomaly.
  *   This margin is important to be able to survive sudden, occasional, pauses in heartbeat
  *   arrivals, due to for example garbage collect or network drop.
- *
  * @param firstHeartbeatEstimate Bootstrap the stats with heartbeats that corresponds to
  *   to this duration, with a with rather high standard deviation (since environment is unknown
  *   in the beginning)
- *
  * @param clock The clock, returning current time in milliseconds, but can be faked for testing
  *   purposes. It is only used for measuring intervals (duration).
  */
@@ -107,6 +103,8 @@ class PhiAccrualFailureDetector(
 
   override def isMonitoring: Boolean = state.get.timestamp.nonEmpty
 
+  private val logger = Logger(this.getClass.toString)
+
   @tailrec
   final override def heartbeat(): Unit = {
 
@@ -122,7 +120,11 @@ class PhiAccrualFailureDetector(
         // this is a known connection
         val interval = timestamp - latestTimestamp
         // don't use the first heartbeat after failure for the history, since a long pause will skew the stats
-        if (isAvailable(timestamp)) oldState.history :+ interval
+        if (isAvailable(timestamp)) {
+          if (interval >= (acceptableHeartbeatPauseMillis / 2))
+            logger.warning(s"heartbeat interval is growing too large: $interval millis")
+          oldState.history :+ interval
+        }
         else oldState.history
     }
 
