@@ -215,8 +215,6 @@ private[remote] class ReliableDeliverySupervisor(
   val autoResendTimer = context.system.scheduler.schedule(
     settings.SysResendTimeout, settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
 
-  private var bufferWasInUse = false
-
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
@@ -225,14 +223,12 @@ private[remote] class ReliableDeliverySupervisor(
         "Association with remote system [{}] has failed, address is now gated for [{}] ms. Reason: [{}] {}",
         remoteAddress, settings.RetryGateClosedFor.toMillis, e.getMessage, causedBy)
       uidConfirmed = false // Need confirmation of UID again
-      if (bufferWasInUse) {
-        if ((resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) && bailoutAt.isEmpty)
-          bailoutAt = Some(Deadline.now + settings.InitialSysMsgDeliveryTimeout)
-        context.become(gated(writerTerminated = false, earlyUngateRequested = false))
-        currentHandle = None
-        context.parent ! StoppedReading(self)
-        Stop
-      } else Escalate
+      if ((resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) && bailoutAt.isEmpty)
+        bailoutAt = Some(Deadline.now + settings.InitialSysMsgDeliveryTimeout)
+      context.become(gated(writerTerminated = false, earlyUngateRequested = false))
+      currentHandle = None
+      context.parent ! StoppedReading(self)
+      Stop
   }
 
   var currentHandle: Option[AkkaProtocolHandle] = handleOrActive
@@ -242,7 +238,6 @@ private[remote] class ReliableDeliverySupervisor(
 
   def reset(): Unit = {
     resendBuffer = new AckedSendBuffer[Send](settings.SysMsgBufferSize)
-    bufferWasInUse = false
     seqCounter = 0L
     bailoutAt = None
   }
@@ -385,7 +380,7 @@ private[remote] class ReliableDeliverySupervisor(
   }
 
   private def goToIdle(): Unit = {
-    if (bufferWasInUse && maxSilenceTimer.isEmpty)
+    if (maxSilenceTimer.isEmpty)
       maxSilenceTimer = Some(context.system.scheduler.scheduleOnce(settings.QuarantineSilentSystemTimeout, self, TooLongIdle))
     context.become(idle)
   }
@@ -427,7 +422,6 @@ private[remote] class ReliableDeliverySupervisor(
   private def tryBuffer(s: Send): Unit =
     try {
       resendBuffer = resendBuffer buffer s
-      bufferWasInUse = true
     } catch {
       case NonFatal(e) ⇒ throw new HopelessAssociation(localAddress, remoteAddress, uid, e)
     }
