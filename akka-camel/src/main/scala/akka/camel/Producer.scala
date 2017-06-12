@@ -59,7 +59,11 @@ trait ProducerSupport extends Actor with CamelSupport {
   protected def produce: Receive = {
     case CamelProducerObjects(endpoint, processor) ⇒
       if (producerChild.isEmpty) {
-        producerChild = Some(context.actorOf(Props(new ProducerChild(endpoint, processor))))
+        val disp = camel.settings.ProducerChildDispatcher match {
+          case "" ⇒ context.props.dispatcher
+          case d  ⇒ d
+        }
+        producerChild = Some(context.actorOf(Props(new ProducerChild(endpoint, processor)).withDispatcher(disp)))
         messages = {
           for (
             child ← producerChild;
