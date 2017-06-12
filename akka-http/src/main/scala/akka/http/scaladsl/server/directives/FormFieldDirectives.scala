@@ -155,6 +155,7 @@ object FormFieldDirectives extends FormFieldDirectives {
         Unmarshaller.defaultUrlEncodedFormDataUnmarshaller,
         MultipartUnmarshallers.multipartFormDataUnmarshaller(ctx.log, ctx.parserSettings)
       )
+    private val stringFromStrictForm: FSFFU[String] = StrictForm.Field.unmarshaller(StrictForm.Field.FieldUnmarshaller.stringFieldUnmarshaller)
 
     private def fieldOfForm[T](fieldName: String, fu: Unmarshaller[Option[StrictForm.Field], T]): RequestContext ⇒ Future[T] = { ctx ⇒
       import ctx.{ executionContext, materializer }
@@ -163,10 +164,10 @@ object FormFieldDirectives extends FormFieldDirectives {
     private def filter[T](fieldName: String, fu: FSFFOU[T]): Directive1[T] =
       extract(fieldOfForm(fieldName, fu)).flatMap(r ⇒ handleFieldResult(fieldName, r))
 
-    implicit def forString(implicit fu: FSFFU[String]): FieldDefAux[String, Directive1[String]] =
-      extractField[String, String] { fieldName ⇒ filter(fieldName, fu) }
-    implicit def forSymbol(implicit fu: FSFFU[String]): FieldDefAux[Symbol, Directive1[String]] =
-      extractField[Symbol, String] { symbol ⇒ filter(symbol.name, fu) }
+    implicit def forString: FieldDefAux[String, Directive1[String]] =
+      extractField[String, String] { fieldName ⇒ filter(fieldName, stringFromStrictForm) }
+    implicit def forSymbol: FieldDefAux[Symbol, Directive1[String]] =
+      extractField[Symbol, String] { symbol ⇒ filter(symbol.name, stringFromStrictForm) }
     implicit def forNR[T](implicit fu: FSFFU[T]): FieldDefAux[NameReceptacle[T], Directive1[T]] =
       extractField[NameReceptacle[T], T] { nr ⇒ filter(nr.name, fu) }
     implicit def forNUR[T]: FieldDefAux[NameUnmarshallerReceptacle[T], Directive1[T]] =
@@ -241,28 +242,28 @@ object FormFieldDirectives extends FormFieldDirectives {
     private def filter[T](fieldName: String, fu: FSFFOU[T])(implicit sfu: SFU): Directive1[T] =
       extract(fieldOfForm(fieldName, fu)).flatMap(r ⇒ handleFieldResult(fieldName, r))
 
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forString(implicit sfu: SFU, fu: FSFFU[String]): FieldDefAux[String, Directive1[String]] =
       extractField[String, String] { fieldName ⇒ filter(fieldName, fu) }
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forSymbol(implicit sfu: SFU, fu: FSFFU[String]): FieldDefAux[Symbol, Directive1[String]] =
       extractField[Symbol, String] { symbol ⇒ filter(symbol.name, fu) }
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forNR[T](implicit sfu: SFU, fu: FSFFU[T]): FieldDefAux[NameReceptacle[T], Directive1[T]] =
       extractField[NameReceptacle[T], T] { nr ⇒ filter(nr.name, fu) }
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forNUR[T](implicit sfu: SFU): FieldDefAux[NameUnmarshallerReceptacle[T], Directive1[T]] =
       extractField[NameUnmarshallerReceptacle[T], T] { nr ⇒ filter(nr.name, StrictForm.Field.unmarshallerFromFSU(nr.um)) }
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forNOR[T](implicit sfu: SFU, fu: FSFFOU[T]): FieldDefAux[NameOptionReceptacle[T], Directive1[Option[T]]] =
       extractField[NameOptionReceptacle[T], Option[T]] { nr ⇒ filter[Option[T]](nr.name, fu) }
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forNDR[T](implicit sfu: SFU, fu: FSFFOU[T]): FieldDefAux[NameDefaultReceptacle[T], Directive1[T]] =
       extractField[NameDefaultReceptacle[T], T] { nr ⇒ filter(nr.name, fu withDefaultValue nr.default) }
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forNOUR[T](implicit sfu: SFU): FieldDefAux[NameOptionUnmarshallerReceptacle[T], Directive1[Option[T]]] =
       extractField[NameOptionUnmarshallerReceptacle[T], Option[T]] { nr ⇒ filter[Option[T]](nr.name, StrictForm.Field.unmarshallerFromFSU(nr.um): FSFFOU[T]) }
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forNDUR[T](implicit sfu: SFU): FieldDefAux[NameDefaultUnmarshallerReceptacle[T], Directive1[T]] =
       extractField[NameDefaultUnmarshallerReceptacle[T], T] { nr ⇒ filter(nr.name, (StrictForm.Field.unmarshallerFromFSU(nr.um): FSFFOU[T]) withDefaultValue nr.default) }
 
@@ -276,10 +277,10 @@ object FormFieldDirectives extends FormFieldDirectives {
           case _                                        ⇒ reject
         }
       }
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forRVR[T](implicit sfu: SFU, fu: FSFFU[T]): FieldDefAux[RequiredValueReceptacle[T], Directive0] =
       fieldDef[RequiredValueReceptacle[T], Directive0] { rvr ⇒ requiredFilter(rvr.name, fu, rvr.requiredValue) }
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forRVDR[T](implicit sfu: SFU): FieldDefAux[RequiredValueUnmarshallerReceptacle[T], Directive0] =
       fieldDef[RequiredValueUnmarshallerReceptacle[T], Directive0] { rvr ⇒ requiredFilter(rvr.name, StrictForm.Field.unmarshallerFromFSU(rvr.um), rvr.requiredValue) }
 
@@ -292,10 +293,10 @@ object FormFieldDirectives extends FormFieldDirectives {
       }.flatMap { result ⇒
         handleFieldResult(fieldName, result)
       }
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forRepVR[T](implicit sfu: SFU, fu: FSFFU[T]): FieldDefAux[RepeatedValueReceptacle[T], Directive1[Iterable[T]]] =
       extractField[RepeatedValueReceptacle[T], Iterable[T]] { rvr ⇒ repeatedFilter(rvr.name, fu) }
-    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.8")
+    @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
     implicit def forRepVDR[T](implicit sfu: SFU): FieldDefAux[RepeatedValueUnmarshallerReceptacle[T], Directive1[Iterable[T]]] =
       extractField[RepeatedValueUnmarshallerReceptacle[T], Iterable[T]] { rvr ⇒ repeatedFilter(rvr.name, StrictForm.Field.unmarshallerFromFSU(rvr.um)) }
   }
