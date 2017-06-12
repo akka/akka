@@ -25,6 +25,9 @@ cache:
 script:
   # need to override as the default is to test
   - sbt -J-XX:ReservedCodeCacheSize=256m +update
+  # make 'git branch' work again
+  - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
+  # check policies, if on master also upload
   - if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi 
 
 deploy:
