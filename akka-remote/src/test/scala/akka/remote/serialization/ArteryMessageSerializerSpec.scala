@@ -4,6 +4,8 @@
 
 package akka.remote.serialization
 
+import java.io.NotSerializableException
+
 import akka.actor._
 import akka.remote.{ RemoteWatcher, UniqueAddress }
 import akka.remote.artery.OutboundHandshake.{ HandshakeReq, HandshakeRsp }
@@ -55,7 +57,7 @@ class ArteryMessageSerializerSpec extends AkkaSpec {
     }
 
     "reject deserialization with invalid manifest" in {
-      intercept[IllegalArgumentException] {
+      intercept[NotSerializableException] {
         val serializer = new ArteryMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
         serializer.fromBinary(Array.empty[Byte], "INVALID")
       }

@@ -57,16 +57,19 @@ trait Serializer {
    * Produces an object from an array of bytes, with an optional type-hint;
    * the class should be loaded using ActorSystem.dynamicAccess.
    */
+  @throws(classOf[NotSerializableException])
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef
 
   /**
    * Java API: deserialize without type hint
    */
+  @throws(classOf[NotSerializableException])
   final def fromBinary(bytes: Array[Byte]): AnyRef = fromBinary(bytes, None)
 
   /**
    * Java API: deserialize with type hint
    */
+  @throws(classOf[NotSerializableException])
   final def fromBinary(bytes: Array[Byte], clazz: Class[_]): AnyRef = fromBinary(bytes, Option(clazz))
 }
 
@@ -195,6 +198,7 @@ trait ByteBufferSerializer {
    * Produces an object from a `ByteBuffer`, with an optional type-hint;
    * the class should be loaded using ActorSystem.dynamicAccess.
    */
+  @throws(classOf[NotSerializableException])
   def fromBinary(buf: ByteBuffer, manifest: String): AnyRef
 
 }
@@ -258,6 +262,8 @@ object BaseSerializer {
  * the JSerializer (also possible with empty constructor).
  */
 abstract class JSerializer extends Serializer {
+
+  @throws(classOf[NotSerializableException])
   final def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef =
     fromBinaryJava(bytes, manifest.orNull)
 
@@ -316,6 +322,7 @@ class JavaSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
     bos.toByteArray
   }
 
+  @throws(classOf[NotSerializableException])
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
     val in = new ClassLoaderObjectInputStream(system.dynamicAccess.classLoader, new ByteArrayInputStream(bytes))
     val obj = JavaSerializer.currentSystem.withValue(system) { in.readObject }
@@ -345,12 +352,14 @@ final case class DisabledJavaSerializer(system: ExtendedActorSystem) extends Ser
     throw IllegalSerialization
   }
 
+  @throws(classOf[NotSerializableException])
   override def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
     log.warning(LogMarker.Security, "Incoming message attempted to use Java Serialization even though `akka.actor.allow-java-serialization = off` was set! " +
       "Message class was: [{}]", clazz)
     throw IllegalDeserialization
   }
 
+  @throws(classOf[NotSerializableException])
   override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = {
     this.fromBinary(empty, None)
   }
@@ -376,6 +385,7 @@ class NullSerializer extends Serializer {
   def includeManifest: Boolean = false
   def identifier = 0
   def toBinary(o: AnyRef): Array[Byte] = nullAsBytes
+  @throws(classOf[NotSerializableException])
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null
 }
 
@@ -392,6 +402,8 @@ class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerialize
     case other ⇒ throw new IllegalArgumentException(
       s"${getClass.getName} only serializes byte arrays, not [${other.getClass.getName}]")
   }
+
+  @throws(classOf[NotSerializableException])
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = bytes
 
   override def toBinary(o: AnyRef, buf: ByteBuffer): Unit =
@@ -402,6 +414,7 @@ class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerialize
         s"${getClass.getName} only serializes byte arrays, not [${other.getClass.getName}]")
     }
 
+  @throws(classOf[NotSerializableException])
   override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = {
     val bytes = new Array[Byte](buf.remaining())
     buf.get(bytes)
