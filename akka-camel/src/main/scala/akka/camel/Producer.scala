@@ -128,7 +128,7 @@ trait ProducerSupport extends Actor with CamelSupport {
     protected def produce(endpoint: Endpoint, processor: SendProcessor, msg: Any, pattern: ExchangePattern): Unit = {
       // Need copies of sender reference here since the callback could be done
       // later by another thread.
-      val producer = self
+      val producer = context.parent
       val originalSender = sender()
       val xchg = new CamelExchangeAdapter(endpoint.createExchange(pattern))
       val cmsg = CamelMessage.canonicalize(msg)
