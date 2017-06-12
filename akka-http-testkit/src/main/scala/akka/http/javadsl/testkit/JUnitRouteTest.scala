@@ -12,7 +12,6 @@ import akka.stream.{ Materializer, ActorMaterializer }
 import com.typesafe.config.{ ConfigFactory, Config }
 import org.junit.rules.ExternalResource
 import org.junit.{ Assert, Rule }
-import org.scalatest.junit.JUnitSuiteLike
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
@@ -20,7 +19,7 @@ import scala.concurrent.Await
  * A RouteTest that uses JUnit assertions. ActorSystem and Materializer are provided as an [[org.junit.rules.ExternalResource]]
  * and their lifetime is automatically managed.
  */
-abstract class JUnitRouteTestBase extends RouteTest with JUnitSuiteLike {
+abstract class JUnitRouteTestBase extends RouteTest {
   protected def systemResource: ActorSystemResource
   implicit def system: ActorSystem = systemResource.system
   implicit def materializer: Materializer = systemResource.materializer
