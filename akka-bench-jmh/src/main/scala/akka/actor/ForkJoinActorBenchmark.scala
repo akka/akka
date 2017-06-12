@@ -28,11 +28,10 @@ class ForkJoinActorBenchmark {
   @Param(Array("fork-join-executor:any", "affinity-pool-executor:any", "affinity-pool-executor:same-core", "affinity-pool-executor:same-socket", "affinity-pool-executor:different-core", "affinity-pool-executor:different-socket"))
   var executorAndStrategy = ""
 
-  //@Param(Array("1", "100"))
-  @Param(Array("1"))
+  @Param(Array("1", "10", "100"))
   var tpt = 0
 
-  @Param(Array("1"))//, "2", "4", "20", "64"))
+  @Param(Array("1", "2", "4", "8", "16", "24", "32", "64"))
   var threads = ""
 
   implicit var system: ActorSystem = _
