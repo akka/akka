@@ -5,14 +5,13 @@
 package akka.http.scaladsl.model
 
 import akka.util.ByteString
-import headers.Host
-import headers.`Content-Type`
+import headers.{ Host, Upgrade, UpgradeProtocol, `Content-Type` }
 import org.scalatest.{ Matchers, WordSpec }
 
 class HttpMessageSpec extends WordSpec with Matchers {
 
-  def test(uri: String, hostHeader: Host, effectiveUri: String) =
-    HttpRequest.effectiveUri(Uri(uri), List(hostHeader), securedConnection = false, null) shouldEqual Uri(effectiveUri)
+  def test(uri: String, effectiveUri: String, headers: HttpHeader*) =
+    HttpRequest.effectiveUri(Uri(uri), List(headers: _*), securedConnection = false, null) shouldEqual Uri(effectiveUri)
 
   def fail(uri: String, hostHeader: Host) =
     an[IllegalUriException] should be thrownBy
@@ -29,9 +28,10 @@ class HttpMessageSpec extends WordSpec with Matchers {
 
   "HttpRequest" should {
     "provide an effective URI for relative URIs or matching Host-headers" in {
-      test("/segment", Host("example.com"), "http://example.com/segment")
-      test("http://example.com/", Host("example.com"), "http://example.com/")
-      test("http://example.com:8080/", Host("example.com", 8080), "http://example.com:8080/")
+      test("/segment", "http://example.com/segment", Host("example.com"))
+      test("http://example.com/", "http://example.com/", Host("example.com"))
+      test("http://example.com:8080/", "http://example.com:8080/", Host("example.com", 8080))
+      test("/websocket", "ws://example.com/websocket", Host("example.com"), Upgrade(List(UpgradeProtocol("websocket"))))
     }
 
     "throw IllegalUriException for non-matching Host-headers" in {

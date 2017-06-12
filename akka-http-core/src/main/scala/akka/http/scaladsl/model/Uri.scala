@@ -135,7 +135,15 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
    */
   def toEffectiveHttpRequestUri(hostHeaderHost: Host, hostHeaderPort: Int, securedConnection: Boolean = false,
                                 defaultAuthority: Authority = Authority.Empty): Uri =
-    effectiveHttpRequestUri(scheme, authority.host, authority.port, path, rawQueryString, fragment, securedConnection,
+    toEffectiveRequestUri(hostHeaderHost, hostHeaderPort, httpScheme(securedConnection), defaultAuthority)
+
+  /**
+   * Converts this URI to an "effective request URI" as defined by
+   * http://tools.ietf.org/html/rfc7230#section-5.5
+   */
+  def toEffectiveRequestUri(hostHeaderHost: Host, hostHeaderPort: Int, defaultScheme: String,
+                            defaultAuthority: Authority = Authority.Empty): Uri =
+    effectiveRequestUri(scheme, authority.host, authority.port, path, rawQueryString, fragment, defaultScheme,
       hostHeaderHost, hostHeaderPort, defaultAuthority)
 
   /**
@@ -288,12 +296,22 @@ object Uri {
    */
   def effectiveHttpRequestUri(scheme: String, host: Host, port: Int, path: Path, query: Option[String], fragment: Option[String],
                               securedConnection: Boolean, hostHeaderHost: Host, hostHeaderPort: Int,
-                              defaultAuthority: Authority = Authority.Empty): Uri = {
+                              defaultAuthority: Authority = Authority.Empty): Uri =
+    effectiveRequestUri(scheme, host, port, path, query, fragment, httpScheme(securedConnection), hostHeaderHost,
+      hostHeaderPort, defaultAuthority)
+
+  /**
+   * Converts a set of URI components to an "effective request URI" as defined by
+   * http://tools.ietf.org/html/rfc7230#section-5.5.
+   */
+  def effectiveRequestUri(scheme: String, host: Host, port: Int, path: Path, query: Option[String], fragment: Option[String],
+                          defaultScheme: String, hostHeaderHost: Host, hostHeaderPort: Int,
+                          defaultAuthority: Authority = Authority.Empty): Uri = {
     var _scheme = scheme
     var _host = host
     var _port = port
     if (_scheme.isEmpty) {
-      _scheme = httpScheme(securedConnection)
+      _scheme = defaultScheme
       if (_host.isEmpty) {
         if (hostHeaderHost.isEmpty) {
           _host = defaultAuthority.host
@@ -308,6 +326,8 @@ object Uri {
   }
 
   def httpScheme(securedConnection: Boolean = false) = if (securedConnection) "https" else "http"
+
+  def websocketScheme(securedConnection: Boolean = false) = (if (securedConnection) "wss" else "ws")
 
   /**
    * @param port A port number that may be `0` to signal the default port of for scheme.
@@ -435,10 +455,10 @@ object Uri {
     def endsWithSlash: Boolean = {
       import Path.{ Empty ⇒ PEmpty, _ }
       @tailrec def check(path: Path): Boolean = path match {
-        case PEmpty              ⇒ false
-        case Slash(PEmpty)       ⇒ true
-        case Slash(tail)         ⇒ check(tail)
-        case Segment(head, tail) ⇒ check(tail)
+        case PEmpty           ⇒ false
+        case Slash(PEmpty)    ⇒ true
+        case Slash(tail)      ⇒ check(tail)
+        case Segment(_, tail) ⇒ check(tail)
       }
       check(this)
     }
