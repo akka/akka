@@ -3,6 +3,7 @@
  */
 package akka.remote
 
+import akka.event.Logging.Warning
 import akka.event.jul.Logger
 import akka.remote.FailureDetector.Clock
 import java.util.concurrent.atomic.AtomicReference
@@ -54,7 +55,8 @@ class PhiAccrualFailureDetector(
   val maxSampleSize:            Int,
   val minStdDeviation:          FiniteDuration,
   val acceptableHeartbeatPause: FiniteDuration,
-  val firstHeartbeatEstimate:   FiniteDuration)(
+  val firstHeartbeatEstimate:   FiniteDuration,
+  eventStream:                  EventStream)(
   implicit
   clock: Clock) extends FailureDetector {
 
@@ -70,7 +72,8 @@ class PhiAccrualFailureDetector(
       maxSampleSize = config.getInt("max-sample-size"),
       minStdDeviation = config.getMillisDuration("min-std-deviation"),
       acceptableHeartbeatPause = config.getMillisDuration("acceptable-heartbeat-pause"),
-      firstHeartbeatEstimate = config.getMillisDuration("heartbeat-interval"))
+      firstHeartbeatEstimate = config.getMillisDuration("heartbeat-interval"),
+      ev)
 
   require(threshold > 0.0, "failure-detector.threshold must be > 0")
   require(maxSampleSize > 0, "failure-detector.max-sample-size must be > 0")
@@ -103,8 +106,6 @@ class PhiAccrualFailureDetector(
 
   override def isMonitoring: Boolean = state.get.timestamp.nonEmpty
 
-  private val logger = Logger(this.getClass.toString)
-
   @tailrec
   final override def heartbeat(): Unit = {
 
@@ -121,11 +122,10 @@ class PhiAccrualFailureDetector(
         val interval = timestamp - latestTimestamp
         // don't use the first heartbeat after failure for the history, since a long pause will skew the stats
         if (isAvailable(timestamp)) {
-          if (interval >= (acceptableHeartbeatPauseMillis / 2))
-            logger.warning(s"heartbeat interval is growing too large: $interval millis")
+          if (interval >= (acceptableHeartbeatPauseMillis / 2) && eventStream != null)
+            eventStream.publish(Warning(getClass.getName, getClass, s"heartbeat interval is growing too large: $interval millis"))
           oldState.history :+ interval
-        }
-        else oldState.history
+        } else oldState.history
     }
 
     val newState = oldState.copy(history = newHistory, timestamp = Some(timestamp)) // record new timestamp

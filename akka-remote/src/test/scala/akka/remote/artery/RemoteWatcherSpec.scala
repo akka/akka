@@ -31,7 +31,8 @@ object RemoteWatcherSpec {
         maxSampleSize = 200,
         minStdDeviation = 100.millis,
         acceptableHeartbeatPause = 3.seconds,
-        firstHeartbeatEstimate = 1.second)
+        firstHeartbeatEstimate = 1.second,
+        null)
 
     new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
   }
