@@ -436,7 +436,7 @@ TailChoppingGroup defined in code:
 
 The ConsistentHashingPool uses [consistent hashing](http://en.wikipedia.org/wiki/Consistent_hashing)
 to select a routee based on the sent message. This 
-[article](http://weblogs.java.net/blog/tomwhite/archive/2007/11/consistent_hash.html) gives good 
+[article](http://www.tom-e-white.com/2007/11/consistent-hashing.html) gives good 
 insight into how consistent hashing is implemented.
 
 There is 3 ways to define what data to use for the consistent hash key.
