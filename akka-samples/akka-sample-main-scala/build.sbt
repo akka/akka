@@ -2,12 +2,12 @@ import NativePackagerHelper._
 
 name := "akka-sample-main-scala"
 
-version := "2.4-SNAPSHOT"
+version := "2.4.19"
 
 scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor" % "2.4-SNAPSHOT"
+  "com.typesafe.akka" %% "akka-actor" % "2.4.19"
 )
 
 enablePlugins(JavaServerAppPackaging)
