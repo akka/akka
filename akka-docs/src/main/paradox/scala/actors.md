@@ -32,7 +32,7 @@ statements (which has the type `PartialFunction[Any, Unit]`) that defines
 which messages your Actor can handle, using standard Scala pattern matching,
 along with the implementation of how the messages should be processed.
 
-@@@ 
+@@@
 
 @@@ div { .group-java }
 
@@ -78,10 +78,10 @@ construction.
 
 #### Here is another example that you can edit and run in the browser:
 
-@@fiddle [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75 cssStyle=width:100%; }
+@@fiddle [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75&passive cssStyle=width:100%; }
 
 @@@
- 
+
 ### Props
 
 `Props` is a configuration class to specify options for the creation
@@ -183,8 +183,8 @@ Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #props-factory }
 
 Another good practice is to declare what messages an Actor can receive
-@scala[in the companion object of the Actor] 
-@java[as close to the actor definition as possible (e.g. as static classes inside the Actor or using other suitable class)], 
+@scala[in the companion object of the Actor]
+@java[as close to the actor definition as possible (e.g. as static classes inside the Actor or using other suitable class)],
 which makes easier to know what it can receive:
 
 Scala
@@ -248,7 +248,7 @@ calling the constructor manually:
 
 @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #actor-with-value-class-argument }
 
-@@@ 
+@@@
 
 ### Dependency Injection
 
@@ -331,13 +331,13 @@ system’s event stream (set configuration item
 actual Debug messages).
 
 In addition, it offers:
- 
+
  * @scala[`self`] @java[`getSelf()`] reference to the `ActorRef` of the actor
  * @scala[`sender`] @java[`getSender()`] reference sender Actor of the last received message, typically used as described in
    @scala[[Actor.Reply](#actor-reply)]
    @java[[LambdaActor.Reply](#lambdaactor-reply)]
  * @scala[`supervisorStrategy`] @java[`supervisorStrategy()`] user overridable definition the strategy to use for supervising child actors
-   
+
    This strategy is typically declared inside the actor in order to have access
 to the actor’s internal state within the decider function: since failure is
 communicated as a message sent to the supervisor and processed like other
@@ -596,7 +596,7 @@ Java
 
 You can also acquire an `ActorRef` for an `ActorSelection` with
 the `resolveOne` method of the `ActorSelection`. It returns a `Future`
-of the matching `ActorRef` if such an actor exists. @java[(see also 
+of the matching `ActorRef` if such an actor exists. @java[(see also
 @ref:[Java 8 and Scala Compatibility](scala-compat.md) for Java compatibility).] It is completed with
 failure [[akka.actor.ActorNotFound]] if no such actor exists or the identification
 didn't complete within the supplied `timeout`.
@@ -682,7 +682,7 @@ to reply to the original sender, by using `sender() ! replyMsg`.
 If invoked from an instance that is **not** an Actor the sender will be
 `deadLetters` actor reference by default.
 
-@@@ 
+@@@
 
 @@@ div { .group-java }
 
@@ -719,7 +719,7 @@ a `Future`, @scala[three] @java[two] of which are composed into a new future usi
 the submission of the aggregated `Result` to another actor.
 
 Using `ask` will send a message to the receiving Actor as with `tell`, and
-the receiving actor must reply with @scala[`sender() ! reply`] @java[`getSender().tell(reply, getSelf())` ] in order to 
+the receiving actor must reply with @scala[`sender() ! reply`] @java[`getSender().tell(reply, getSelf())` ] in order to
 complete the returned `Future` with a value. The `ask` operation involves creating
 an internal actor for handling this reply, which needs to have a timeout after
 which it is destroyed in order not to leak resources; see more below.
@@ -796,7 +796,7 @@ Java
 ## Receive messages
 
 
-An Actor has to 
+An Actor has to
 @scala[implement the `receive` method to receive messages:]
 @java[define its initial receive behavior by implementing the `createReceive` method in the `AbstractActor`:]
 
@@ -1171,7 +1171,7 @@ order as they have been received originally. @java[An actor that extends
 The trait `Stash` extends the marker trait
 `RequiresMessageQueue[DequeBasedMessageQueueSemantics]` which
 requests the system to automatically choose a deque based
-mailbox implementation for the actor. If you want more 
+mailbox implementation for the actor. If you want more
 control over the
 mailbox, see the documentation on mailboxes: @ref:[Mailboxes](mailboxes.md).
 
@@ -1251,7 +1251,7 @@ See @ref:[What Supervision Means](general/supervision.md#supervision-directives)
 Use `Kill` like this:
 
 Scala
-:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #kill } 
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #kill }
 
 Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #kill }
@@ -1337,8 +1337,8 @@ Scala
 
 Java
 :  @@snip [InitializationDocTest.java]($code$/java/jdocs/actor/InitializationDocTest.java) { #preStartInit }
-  
- 
+
+
 Please note, that the child actors are *still restarted*, but no new `ActorRef` is created. One can recursively apply
 the same principles for the children, ensuring that their `preStart()` method is called only at the creation of their
 refs.
