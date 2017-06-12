@@ -10,6 +10,7 @@ import java.util.Properties
 import akka.TestExtras.JUnitFileReporting
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
+import sbt.TestLogger.wrap
 import sbt._
 
 object AkkaBuild {
@@ -136,20 +137,19 @@ object AkkaBuild {
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
 
-    // don't save test output to a file
+    // don't save test output to a file, workaround for https://github.com/sbt/sbt/issues/937
     testListeners in (Test, test) := {
-      val log = streams.value.log
-      Seq(new TestsListener {
-        def doInit(): Unit = ()
-        def doComplete(finalResult: TestResult.Value): Unit = ()
-        def startGroup(name: String): Unit = ()
-        def testEvent(event: TestEvent): Unit = ()
-        def endGroup(name: String, t: Throwable): Unit = {
-          log.trace(t)
-          log.error("Could not run test " + name + ": " + t.toString)
-        }
-        def endGroup(name: String, result: TestResult.Value): Unit = ()
-      })
+      val logger = streams.value.log
+
+      def contentLogger(log: sbt.Logger, buffered: Boolean): ContentLogger = {
+        val blog = new BufferedLogger(FullLogger(log))
+        if (buffered) blog.record()
+        new ContentLogger(wrap(blog), () => blog.stopQuietly())
+      }
+
+      val logTest = {_: TestDefinition => streams.value.log }
+      val buffered = logBuffered.value
+      Seq(new TestLogger(new TestLogging(wrap(logger), tdef => contentLogger(logTest(tdef), buffered))))
     },
 
     // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
