@@ -61,6 +61,19 @@ class PhiAccrualFailureDetector(
   clock: Clock) extends FailureDetector {
 
   /**
+   * Constructor without eventStream to support backwards compatibility
+   */
+  def this(
+    threshold:                Double,
+    maxSampleSize:            Int,
+    minStdDeviation:          FiniteDuration,
+    acceptableHeartbeatPause: FiniteDuration,
+    firstHeartbeatEstimate:   FiniteDuration)(implicit clock: Clock) =
+    this(
+      threshold, maxSampleSize, minStdDeviation, acceptableHeartbeatPause, firstHeartbeatEstimate, null
+    )(clock)
+
+  /**
    * Constructor that reads parameters from config.
    * Expecting config properties named `threshold`, `max-sample-size`,
    * `min-std-deviation`, `acceptable-heartbeat-pause` and

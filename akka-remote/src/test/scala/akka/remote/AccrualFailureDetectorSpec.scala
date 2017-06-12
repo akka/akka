@@ -34,8 +34,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
         maxSampleSize,
         minStdDeviation,
         acceptableLostDuration,
-        firstHeartbeatEstimate = firstHeartbeatEstimate,
-        null)(clock = clock)
+        firstHeartbeatEstimate = firstHeartbeatEstimate)(clock = clock)
 
     def cdf(phi: Double) = 1.0 - math.pow(10, -phi)
 

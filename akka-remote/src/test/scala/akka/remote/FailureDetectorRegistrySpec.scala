@@ -27,8 +27,7 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
       maxSampleSize,
       minStdDeviation,
       acceptableLostDuration,
-      firstHeartbeatEstimate = firstHeartbeatEstimate,
-      null)(clock = clock)
+      firstHeartbeatEstimate = firstHeartbeatEstimate)(clock = clock)
 
   def createFailureDetectorRegistry(
     threshold:              Double         = 8.0,
