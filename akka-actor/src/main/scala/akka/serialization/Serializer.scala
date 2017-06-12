@@ -345,8 +345,7 @@ final case class DisabledJavaSerializer(system: ExtendedActorSystem) extends Ser
   }
 
   override def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
-    log.warning(LogMarker.Security, "Incoming message attempted to use Java Serialization even though `akka.actor.allow-java-serialization = off` was set! " +
-      "Message class was: [{}]", clazz)
+    log.warning(LogMarker.Security, "Incoming message attempted to use Java Serialization even though `akka.actor.allow-java-serialization = off` was set!")
     throw IllegalDeserialization
   }
 
