@@ -25,6 +25,7 @@ cache:
 script:
   # need to override as the default is to test
   - sbt -J-XX:ReservedCodeCacheSize=256m +update
+  - if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi 
 
 deploy:
   provider: script
@@ -37,6 +38,8 @@ deploy:
 
 env:
   global:
+    # encrypt with: travis encrypt WHITESOURCE_KEY=...
+    - secure: "E/3196XY+pkliegzUSqjRsM/nfwWp+xTysKdhTDkt6gt3CarwjAIiDQ/iXltlfQ5CMFsZJ5nmafDCxtOvyXWxgDVGR7qOXjRx7wCJOMp7KFham5OE5rS1Vfzxhd/zMnVrG64Oidm3zmqpSbTIJUCp+unsMY3tCZVuiQJPtW4/gF/l2yr5CJSBuQXhSrbYExffDgVNyYl/VAq/N08SCzQ9bn99kiowVrRXUt2xtrPOdT3CugOSFyzWw4P/quZWd79dJDdBCc8XbrwCTsNKs4L9AOt1SrvCtP7j1qUWFPnFV4FAY8Eq2l1Xlklg20OxiubJ6ZN+th6zDSQVuerCr/PZ6rGNGl4u1+oG/zlfVgLP7TSBPgOJiq6RHPtcjdlf7WJj6yZmmXVTka3XubCYswjco9gUjaAzcnBXv9p1GED3OvB0yM8Z9jf9MxEfTJiWiidHPSNqri9t+tPHj7eql2LMduJXx62aLPIVGQozSfHE085NEOrVyfhMaCBKT1Zo8bvt29bIe2gw+5EqN6WDLNCqgzgrdrUPu3AD8LO5Cq7EDhiHT+ZAWoPgo7soTEKXGB4YB24c3tbmVegH5PIThdot6+Hmk48a92OwTn8gFZWPZ/T2CqnK0oa2Is3Lch71HcyTiFTdJ1i4OVYVQ7bvkUhwiI7qNdYXEaGIBHEEIO5t7E="
     # encrypt with: travis encrypt BINTRAY_USER=...
     - secure: "sfWa3rhVepJtmCtbe/ABdP2XPth5vKlrFbcsdsS2D2Rstruc8naoWDq+Qhsn6DLtAVw6SqqqTXoLGgRUAsroP1cxuRAddOulCqwYvjQZfsMg/ULo6aeYPENHvmlUrTZx7BerRAI6mmmyZ9kiyLCmG0KCvt1UOTcKwTHJVoi3kAa3+4JYuyq5dEeglCUg5xfvjR17RAG1QwV24EP7aBkFqu/LhNaZt/uyR3GaV0eDIzSvYZ2mnxWbYejlJ1cWsYFu/Sx3PtS4kgm/kCwFBCzQ2vK4+npXFKFwrZLAQnAL1uvmGAtlWo1RGg04LLmRisQnqGGSESAXyKT26u+iDY2E12MLpNUB+QpfX6DvCAAiwx0WXAPf4TCu1MZ+TFOiOVA31k/p1eG+lBGxctB+Ru+CUZCW2Jk0V85fjLXGLyHq8DY/kv7akIpASQvDjFNSe80nF1aKv7d7OKPdGmsntMC8IrB9jjuyCbYFbtGraYY3dmbfn/0CFyaZeW4jMfURzD5XV2kbLX0DLARWKB7XNcvjsc4WnJBHSSRFvhVMGZmuRuhZ6A7ysUtY+N+3UDstVXkb2hb/DVIVVF/u2+6VRe4ixnyP8FmLSTMR/gGn+WQB9wYhHCUvhwOpsqLJ0pBburG0ReiqK4NbrxRUG6vLJYiYOW9WcNBhGTR54bB/GB/HlP8="
     # encrypt with: travis encrypt BINTRAY_PASS=...
