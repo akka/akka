@@ -71,7 +71,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
          }
 
          advanced {
-           inbound-lanes = 1
+           # inbound-lanes = 1
            # buffer-pool-size = 512
          }
        }

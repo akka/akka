@@ -348,16 +348,11 @@ private[remote] class Association(
           case _: DaemonMsgCreate ⇒
             // DaemonMsgCreate is not a SystemMessage, but must be sent over the control stream because
             // remote deployment process depends on message ordering for DaemonMsgCreate and Watch messages.
-            // It must also be sent over the ordinary message stream so that it arrives (and creates the
-            // destination) before the first ordinary message arrives.
-            val outboundEnvelope1 = createOutboundEnvelope()
-            if (!controlQueue.offer(outboundEnvelope1))
-              dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope1)
-            (0 until outboundLanes).foreach { i ⇒
-              val outboundEnvelope2 = createOutboundEnvelope()
-              if (!queues(OrdinaryQueueIndex + i).offer(outboundEnvelope2))
-                dropped(OrdinaryQueueIndex + i, queueSize, outboundEnvelope2)
-            }
+            // First ordinary message may arrive earlier but then the resolve in the Decoder is retried
+            // so that the first message can be delivered after the remote actor has been created.
+            val outboundEnvelope = createOutboundEnvelope()
+            if (!controlQueue.offer(outboundEnvelope))
+              dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
           case _ ⇒
             val outboundEnvelope = createOutboundEnvelope()
             val queueIndex = selectQueue(recipient)
