@@ -19,7 +19,7 @@ class CPUAffinityStrategiesBenchmark {
   @Param(Array("1", "128", "1024"))
   var throughPut = 0
 
-  @Param(Array("any", "same-core", "same-socket", "different-core", "different-socket"))
+  @Param(Array("any", "same-core, any", "same-socket, any", "different-core, any", "different-socket, any"))
   var cpuAffinityStrategy = ""
 
   final val numActors = 256

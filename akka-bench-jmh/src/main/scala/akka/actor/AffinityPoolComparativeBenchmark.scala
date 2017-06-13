@@ -15,7 +15,7 @@ import scala.concurrent.Await
 @Measurement(iterations = 20)
 class AffinityPoolComparativeBenchmark {
 
-  @Param(Array("1", "2", "8", "16", "128", "1024"))
+  @Param(Array("1"))
   var throughPut = 0
 
   @Param(Array("default-fj-dispatcher", "affinity-dispatcher", "fixed-size-dispatcher"))
@@ -33,7 +33,7 @@ class AffinityPoolComparativeBenchmark {
   @Setup(Level.Trial)
   def setup(): Unit = {
     system = ActorSystem("AffinityPoolComparativeBenchmark", ConfigFactory.parseString(
-      s""" | akka {
+      s"""| akka {
           |   log-dead-letters = off
           |   actor {
           |     default-fj-dispatcher {
