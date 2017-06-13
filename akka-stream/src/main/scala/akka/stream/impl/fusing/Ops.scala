@@ -1768,12 +1768,9 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[stream] object RecoverWith {
-  val InfiniteRetries = -1
-}
+@InternalApi private[stream] object RecoverWith
 
 @InternalApi private[akka] final class RecoverWith[T, M](val maximumRetries: Int, val pf: PartialFunction[Throwable, Graph[SourceShape[T], M]]) extends SimpleLinearGraphStage[T] {
-  require(maximumRetries >= -1, "number of retries must be non-negative or equal to -1")
 
   override def initialAttributes = DefaultAttributes.recoverWith
 
@@ -1791,7 +1788,7 @@ private[stream] object Collect {
     })
 
     def onFailure(ex: Throwable) =
-      if ((maximumRetries == RecoverWith.InfiniteRetries || attempt < maximumRetries) && pf.isDefinedAt(ex)) {
+      if ((maximumRetries < 0 || attempt < maximumRetries) && pf.isDefinedAt(ex)) {
         switchTo(pf(ex))
         attempt += 1
       } else
