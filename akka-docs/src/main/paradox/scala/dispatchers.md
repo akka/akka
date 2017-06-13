@@ -36,7 +36,7 @@ is to configure the dispatcher:
 Note that the `parallelism-max` does not set the upper bound on the total number of threads
 allocated by the ForkJoinPool. It is a setting specifically talking about the number of *hot*
 threads the pool keep running in order to reduce the latency of handling a new incoming task.
-You can read more about parallelism in the JDK's [ForkJoinPool documentation](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ForkJoinPool.html)]
+You can read more about parallelism in the JDK's [ForkJoinPool documentation](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ForkJoinPool.html).
 
 @@@
 
