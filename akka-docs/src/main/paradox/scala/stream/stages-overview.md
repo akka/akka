@@ -939,7 +939,7 @@ Throwing an exception inside `recoverWith` _will_ be logged on ERROR level autom
 RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
 a failure has been recovered up to *attempts* number of times so that each time there is a failure
 it is fed into the *pf* and a new Source may be materialized. Note that if you pass in 0, this won't
-attempt to recover at all. Passing -1 will behave exactly the same as  *recoverWith*.
+attempt to recover at all. A negative `attempts` number is interpreted as "infinite", which results in the exact same behavior as `recoverWith`.
 
 Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
 This stage can recover the failure signal, but not the skipped elements, which will be dropped.
