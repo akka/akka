@@ -260,10 +260,15 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
             Logging.Debug(sname, sclass, "stopped"))
         }
 
-        // To get nice error messages I suppose we want to accept a set of PF's, but for now this'll do.
-        def expectMsgAllPF(messages: Int)(matchers: PartialFunction[AnyRef, _]) = {
-          val set = receiveWhile(messages = messages)(matchers).toSet
-          expectNoMsg(Duration.Zero)
+        def expectMsgAllPF(messages: Int)(matchers: PartialFunction[AnyRef, Int]) = {
+          def receiveNMatching(remaining: Int): Set[Int] =
+            if (remaining == 0) Set.empty
+            else {
+              val msg = receiveOne(remainingOrDefault)
+              if (matchers.isDefinedAt(msg)) receiveNMatching(remaining - 1) + matchers(msg)
+              else receiveNMatching(remaining) // unknown message, just ignore
+            }
+          val set = receiveNMatching(messages)
           assert(set == (0 until messages).toSet)
         }
       }
