@@ -304,6 +304,8 @@ if [ ! $no_mima ] && [ $dry_run ]; then
   echodry "Finished migration manager report"
 fi
 
+try sbt whitesourceCheckPolicies
+
 # commit and tag this release
 echolog "Committing and tagging..."
 try git add .
@@ -345,6 +347,14 @@ if [ $dry_run ]; then
   echodry "  git push origin --tags"
 else
   important git push origin --tags
+fi
+
+echolog "Uploading whitesource report"
+if [ $dry_run ]; then
+  echodry "Not actually uploading whitesource report. Commands:"
+  echodry "  sbt whitesourceUpdate"
+else
+  important sbt whitesourceUpdate
 fi
 
 # push the release to the server
