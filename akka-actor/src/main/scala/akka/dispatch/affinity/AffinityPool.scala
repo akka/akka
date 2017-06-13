@@ -305,29 +305,3 @@ class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequi
   }
 }
 
-object AffinityPoolConfigurator {
-
-  def main(args: Array[String]): Unit = {
-    val pool = new AffinityPool(1, 10000, MonitorableThreadFactory("tf", daemonic = false, None, MonitorableThreadFactory.doNothing), sleepWaitingStrategy)
-    //val pool = new ThreadPoolExecutor(8,8,8,TimeUnit.MINUTES,new LinkedBlockingQueue[Runnable]())
-    //(8,10000, MonitorableThreadFactory("tf", daemonic = false, None, MonitorableThreadFactory.doNothing))
-
-    for {
-      x ← 1 to 100
-    } yield pool.submit(new Runnable {
-      override def run(): Unit = {
-        println("Started with " + x)
-        Thread.sleep(3000)
-        println("Done with " + x)
-      }
-    })
-
-    println("awaiting termination")
-    Thread.sleep(50)
-    pool.shutdown
-    pool.awaitTermination(100, TimeUnit.HOURS)
-    println("awaiting termination done")
-
-  }
-}
-
