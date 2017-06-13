@@ -53,9 +53,13 @@ import scala.util.control.NonFatal
         if (maxBuffer > 0) buffer = Buffer(maxBuffer, materializer)
         initCallback(callback.invoke)
       }
-      override def postStop(): Unit = stopCallback {
-        case Offer(elem, promise) ⇒ promise.failure(new IllegalStateException("Stream is terminated. SourceQueue is detached"))
-        case _                    ⇒ // ignore
+      override def postStop(): Unit = {
+        val illegalStateException = new IllegalStateException("Stream is terminated. SourceQueue is detached")
+        completion.tryFailure(illegalStateException)
+        stopCallback {
+          case Offer(elem, promise) ⇒ promise.failure(illegalStateException)
+          case _                    ⇒ // ignore
+        }
       }
 
       private def enqueueAndSuccess(offer: Offer[T]): Unit = {
