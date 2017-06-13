@@ -63,7 +63,6 @@ trait Serializer {
   /**
    * Java API: deserialize without type hint
    */
-  @throws(classOf[NotSerializableException])
   final def fromBinary(bytes: Array[Byte]): AnyRef = fromBinary(bytes, None)
 
   /**
