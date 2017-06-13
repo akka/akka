@@ -181,8 +181,4 @@ lazy val docs = project("docs")
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
 
-def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = {
-  val result = description.get.commitSuffix.distance > 0
-  println(s"returning $result")
-  result
-}
+def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
