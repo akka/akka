@@ -269,7 +269,6 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
               else receiveNMatching(remaining) // unknown message, just ignore
             }
           val set = receiveNMatching(messages)
-          expectNoMsg(Duration.Zero)
           assert(set == (0 until messages).toSet)
         }
       }
