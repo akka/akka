@@ -18,7 +18,7 @@ import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
-class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory) extends AbstractExecutorService {
+class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, waitingStrategy: WaitingStrategy) extends AbstractExecutorService {
 
   if (parallelism <= 0)
     throw new IllegalArgumentException("Size of pool cannot be less or equal to 0")
@@ -188,7 +188,7 @@ class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory) 
           if (c != null)
             runCommand(c)
           else // if not wait for a bit
-            LockSupport.parkNanos(1)
+            waitingStrategy()
         }
         abruptTermination = false // if we have reached here, our termination is not due to an exception
       } finally {
@@ -208,6 +208,12 @@ class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory) 
 }
 
 object AffinityPool {
+
+  type WaitingStrategy = () ⇒ Unit
+  val busySpinWaitingStrategy = () ⇒ ()
+  val sleepWaitingStrategy = () ⇒ LockSupport.parkNanos(1l)
+  val yieldWaitingStrategy = () ⇒ Thread.`yield`()
+
   def locked[T](l: Lock)(body: ⇒ T) = {
     l.lock()
     try {
@@ -267,7 +273,7 @@ class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequi
     override val javaStrat: AffinityStrategies = AffinityStrategies.DIFFERENT_SOCKET
   }
 
-  def toStrategy(s: String): CPUAffinityStrategy = s match {
+  private def toAffinityStrategy(s: String): CPUAffinityStrategy = s match {
     case "any"              ⇒ AnyStrat
     case "same-core"        ⇒ SameCore
     case "same-socket"      ⇒ SameSocket
@@ -277,23 +283,32 @@ class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequi
 
   }
 
+  private def toWaitingStrategy(s: String): WaitingStrategy = s match {
+    case "sleep"     ⇒ sleepWaitingStrategy
+    case "yield"     ⇒ yieldWaitingStrategy
+    case "busy-spin" ⇒ busySpinWaitingStrategy
+    case x           ⇒ throw new IllegalArgumentException("[%s] is not a valid waiting strategy[sleep, yield, same-socket, busy-spin]!" format x)
+
+  }
+
   private val poolSize = ThreadPoolConfig.scaledPoolSize(
     config.getInt("parallelism-min"),
     config.getDouble("parallelism-factor"),
     config.getInt("parallelism-max"))
   private val affinityGroupSize = config.getInt("affinity-group-size")
-  private val strategies = config.getStringList("cpu-affinity-strategies").map(toStrategy)
+  private val strategies = config.getStringList("cpu-affinity-strategies").map(toAffinityStrategy)
+  private val waitingStrat = toWaitingStrategy(config.getString("worker-waiting-strategy"))
   private val tf = new AffinityThreadFactory("affinity-thread-fact", strategies.map(_.javaStrat): _*)
 
   override def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = new ExecutorServiceFactory {
-    override def createExecutorService: ExecutorService = new AffinityPool(poolSize, affinityGroupSize, tf)
+    override def createExecutorService: ExecutorService = new AffinityPool(poolSize, affinityGroupSize, tf, waitingStrat)
   }
 }
 
 object AffinityPoolConfigurator {
 
   def main(args: Array[String]): Unit = {
-    val pool = new AffinityPool(1, 10000, MonitorableThreadFactory("tf", daemonic = false, None, MonitorableThreadFactory.doNothing))
+    val pool = new AffinityPool(1, 10000, MonitorableThreadFactory("tf", daemonic = false, None, MonitorableThreadFactory.doNothing), sleepWaitingStrategy)
     //val pool = new ThreadPoolExecutor(8,8,8,TimeUnit.MINUTES,new LinkedBlockingQueue[Runnable]())
     //(8,10000, MonitorableThreadFactory("tf", daemonic = false, None, MonitorableThreadFactory.doNothing))
 

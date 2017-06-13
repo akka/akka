@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.actor
 
 import akka.testkit.TestProbe
