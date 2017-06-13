@@ -6,6 +6,7 @@ package akka.http.impl.engine.ws
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.TestSubscriber
 import akka.util.ByteString
@@ -13,7 +14,9 @@ import akka.util.ByteString
 import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 
-trait ByteStringSinkProbe {
+/** INTERNAL API */
+@InternalApi
+private[http] trait ByteStringSinkProbe {
   def sink: Sink[ByteString, NotUsed]
 
   def expectBytes(length: Int): ByteString
@@ -34,7 +37,9 @@ trait ByteStringSinkProbe {
   def cancel(): Unit
 }
 
-object ByteStringSinkProbe {
+/** INTERNAL API */
+@InternalApi
+private[http] object ByteStringSinkProbe {
   def apply()(implicit system: ActorSystem): ByteStringSinkProbe =
     new ByteStringSinkProbe {
       val probe = TestSubscriber.probe[ByteString]()
@@ -69,8 +74,10 @@ object ByteStringSinkProbe {
         assert(got == expected, s"expected ${expected.length} bytes '$expected' but got ${got.length} bytes '$got'")
       }
 
-      def expectUtf8EncodedString(string: String): Unit =
-        expectBytes(ByteString(string, "utf8"))
+      def expectUtf8EncodedString(expectedString: String): Unit = {
+        val data = expectBytes(expectedString.getBytes("utf8").length).utf8String
+        assert(data == expectedString, s"expected '$expectedString' but got '$data'")
+      }
 
       def expectSubscriptionAndComplete(): Unit = probe.expectSubscriptionAndComplete()
       def expectComplete(): Unit = probe.expectComplete()
