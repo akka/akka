@@ -59,8 +59,8 @@ This pattern may seem to be very tempting to use at first, but it has several dr
  * the cluster singleton may quickly become a *performance bottleneck*,
  * you can not rely on the cluster singleton to be *non-stop* available — e.g. when the node on which the singleton has
 been running dies, it will take a few seconds for this to be noticed and the singleton be migrated to another node,
- * in the case of a *network partition* appearing in a Cluster that is using Automatic Downing  (see Auto Downing docs for
-@ref:[Downing](cluster-usage.md#automatic-vs-manual-downing)),
+ * in the case of a *network partition* appearing in a Cluster that is using Automatic Downing  (see docs for
+@ref:[Auto Downing](cluster-usage.md#automatic-vs-manual-downing)),
 it may happen that the isolated clusters each decide to spin up their own singleton, meaning that there might be multiple
 singletons running in the system, yet the Clusters have no way of finding out about them (because of the partition).
 
@@ -79,32 +79,54 @@ in *multiple Singletons* being started, one in each separate cluster!
 
 Assume that we need one single entry point to an external system. An actor that
 receives messages from a JMS queue with the strict requirement that only one
-JMS consumer must exist to be make sure that the messages are processed in order.
+JMS consumer must exist to make sure that the messages are processed in order.
 That is perhaps not how one would like to design things, but a typical real-world
 scenario when integrating with external systems.
+
+Before explaining how to create a cluster singleton actor, let's define message classes @java[and their corresponding factory methods]
+which will be used by the singleton.
+
+Scala
+:  @@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #singleton-message-classes }
+
+Java
+:  @@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/TestSingletonMessages.java) { #singleton-message-classes }
 
 On each node in the cluster you need to start the `ClusterSingletonManager` and
 supply the `Props` of the singleton actor, in this case the JMS queue consumer.
 
-@@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-manager }
+Scala
+:  @@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-manager }
+
+Java
+:  @@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-manager }
 
 Here we limit the singleton to nodes tagged with the `"worker"` role, but all nodes, independent of
 role, can be used by not specifying `withRole`.
 
-Here we use an application specific `terminationMessage` to be able to close the
+We use an application specific `terminationMessage` @java[(i.e. `TestSingletonMessages.end()` message)] to be able to close the
 resources before actually stopping the singleton actor. Note that `PoisonPill` is a
 perfectly fine `terminationMessage` if you only need to stop the actor.
 
 Here is how the singleton actor handles the `terminationMessage` in this example.
 
-@@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #consumer-end }
+Scala
+:  @@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #consumer-end }
+
+Java
+:  @@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/Consumer.java) { #consumer-end }
 
 With the names given above, access to the singleton can be obtained from any cluster node using a properly
 configured proxy.
 
-@@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-proxy }
+Scala
+:  @@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-proxy }
 
-A more comprehensive sample is available in the tutorial named [Distributed workers with Akka and Scala!](https://github.com/typesafehub/activator-akka-distributed-workers).
+Java
+:  @@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-proxy }
+
+A more comprehensive sample is available in the tutorial named 
+@scala[[Distributed workers with Akka and Scala!](https://github.com/typesafehub/activator-akka-distributed-workers)]@java[[Distributed workers with Akka and Java!](https://github.com/typesafehub/activator-akka-distributed-workers-java)].
 
 ## Dependencies
 
