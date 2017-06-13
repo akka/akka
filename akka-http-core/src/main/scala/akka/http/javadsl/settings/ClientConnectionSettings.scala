@@ -3,6 +3,7 @@
  */
 package akka.http.javadsl.settings
 
+import java.util.function.Supplier
 import java.util.{ Optional, Random }
 
 import akka.actor.ActorSystem
@@ -23,14 +24,18 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
  */
 @DoNotInherit
 abstract class ClientConnectionSettings private[akka] () { self: ClientConnectionSettingsImpl ⇒
-  def getUserAgentHeader: Optional[UserAgent]
-  def getConnectingTimeout: FiniteDuration
-  def getIdleTimeout: Duration
-  def getRequestHeaderSizeHint: Int
-  def getWebsocketRandomFactory: java.util.function.Supplier[Random]
-  def getSocketOptions: java.lang.Iterable[SocketOption]
-  def getParserSettings: ParserSettings
-  def getLogUnencryptedNetworkBytes: Optional[Int]
+  /* JAVA APIs */
+
+  final def getConnectingTimeout: FiniteDuration = connectingTimeout
+  final def getParserSettings: ParserSettings = parserSettings
+  final def getIdleTimeout: Duration = idleTimeout
+  final def getSocketOptions: java.lang.Iterable[SocketOption] = socketOptions.asJava
+  final def getUserAgentHeader: Optional[UserAgent] = OptionConverters.toJava(userAgentHeader)
+  final def getLogUnencryptedNetworkBytes: Optional[Int] = OptionConverters.toJava(logUnencryptedNetworkBytes)
+  final def getRequestHeaderSizeHint: Int = requestHeaderSizeHint
+  final val getWebsocketRandomFactory: Supplier[Random] = new Supplier[Random] {
+    override def get(): Random = websocketRandomFactory()
+  }
 
   // ---
 

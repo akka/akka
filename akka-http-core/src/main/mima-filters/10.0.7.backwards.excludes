@@ -2,3 +2,15 @@
 
 # Added a new method to this sealed trait
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.MediaType#WithOpenCharset.toContentTypeWithMissingCharset")
+
+# Move settings implementations to Java superclass, ClientConnectionSettings are marked @DoNotInherit
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getConnectingTimeout")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getParserSettings")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getIdleTimeout")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getSocketOptions")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getLogUnencryptedNetworkBytes")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getUserAgentHeader")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getWebsocketRandomFactory")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getRequestHeaderSizeHint")
+
+# Incompatible SPI / API changes for ClientTransport which is marked @ApiMayChange
