@@ -3,6 +3,7 @@
  */
 package akka.http.scaladsl.settings
 
+import java.net.InetSocketAddress
 import java.util.Random
 
 import akka.annotation.DoNotInherit
@@ -28,6 +29,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def socketOptions: immutable.Seq[SocketOption]
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
+  def localAddress: Option[InetSocketAddress]
 
   // ---
 
@@ -42,6 +44,15 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def withLogUnencryptedNetworkBytes(newValue: Option[Int]): ClientConnectionSettings = self.copy(logUnencryptedNetworkBytes = newValue)
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue)
+  def withLocalAddress(newValue: Option[InetSocketAddress]): ClientConnectionSettings = self.copy(localAddress = newValue)
+
+  /**
+   * Returns a new instance with the given local address set if the given override is `Some(address)`, otherwise
+   * return this instance unchanged.
+   */
+  def withLocalAddressOverride(overrideLocalAddressOption: Option[InetSocketAddress]): ClientConnectionSettings =
+    if (overrideLocalAddressOption.isDefined) withLocalAddress(overrideLocalAddressOption)
+    else this
 }
 
 object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettings] {

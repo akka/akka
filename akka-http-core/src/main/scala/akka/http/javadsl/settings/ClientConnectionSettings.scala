@@ -3,6 +3,7 @@
  */
 package akka.http.javadsl.settings
 
+import java.net.InetSocketAddress
 import java.util.function.Supplier
 import java.util.{ Optional, Random }
 
@@ -36,6 +37,7 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   final val getWebsocketRandomFactory: Supplier[Random] = new Supplier[Random] {
     override def get(): Random = websocketRandomFactory()
   }
+  final def getLocalAddress: Optional[InetSocketAddress] = OptionConverters.toJava(localAddress)
 
   // ---
 
@@ -47,7 +49,7 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ClientConnectionSettings = self.copy(websocketRandomFactory = () ⇒ newValue.get())
   def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue.asScala.toList)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue.asScala)
-
+  def withLocalAddress(newValue: Optional[InetSocketAddress]): ClientConnectionSettings = self.copy(localAddress = OptionConverters.toScala(newValue))
 }
 
 object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettings] {

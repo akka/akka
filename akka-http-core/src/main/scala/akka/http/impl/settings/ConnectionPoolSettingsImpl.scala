@@ -34,7 +34,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
     idleTimeout:        Duration,
     connectionSettings: ClientConnectionSettings) =
     this(maxConnections, minConnections, maxRetries, maxOpenRequests, pipeliningLimit, idleTimeout, connectionSettings,
-      ClientTransport.TCP(None, connectionSettings))
+      ClientTransport.TCP)
 
   require(maxConnections > 0, "max-connections must be > 0")
   require(minConnections >= 0, "min-connections must be >= 0")
