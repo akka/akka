@@ -108,6 +108,7 @@ class HeaderSpec extends FreeSpec with Matchers {
         `If-None-Match`(EntityTagRange(EntityTag("hashhash"))),
         `If-Range`(DateTime(2016, 2, 4, 9, 9, 0)),
         `If-Unmodified-Since`(DateTime(2016, 2, 4, 9, 9, 0)),
+        `Last-Event-ID`("123"),
         Link(Uri("http://example.com"), LinkParams.`title*`("example")),
         Origin(HttpOrigin("http", Host("example.com"))),
         `Proxy-Authorization`(BasicHttpCredentials("johan", "correcthorsebatterystaple")),

@@ -134,6 +134,7 @@ public final class MediaTypes {
     public static final MediaType.WithOpenCharset TEXT_CALENDAR = akka.http.scaladsl.model.MediaTypes.text$divcalendar();
     public static final MediaType.WithOpenCharset TEXT_CSS = akka.http.scaladsl.model.MediaTypes.text$divcss();
     public static final MediaType.WithOpenCharset TEXT_CSV = akka.http.scaladsl.model.MediaTypes.text$divcsv();
+    public static final MediaType.WithFixedCharset TEXT_EVENT_STREAM = akka.http.scaladsl.model.MediaTypes.text$divevent$minusstream();
     public static final MediaType.WithOpenCharset TEXT_HTML = akka.http.scaladsl.model.MediaTypes.text$divhtml();
     public static final MediaType.WithOpenCharset TEXT_MARKDOWN = akka.http.scaladsl.model.MediaTypes.text$divmarkdown();
     public static final MediaType.WithOpenCharset TEXT_MCF = akka.http.scaladsl.model.MediaTypes.text$divmcf();

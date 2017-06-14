@@ -575,6 +575,13 @@ final case class `If-Unmodified-Since`(date: DateTime) extends jm.headers.IfUnmo
   protected def companion = `If-Unmodified-Since`
 }
 
+// https://www.w3.org/TR/eventsource/#last-event-id
+object `Last-Event-ID` extends ModeledCompanion[`Last-Event-ID`]
+final case class `Last-Event-ID`(id: String) extends jm.headers.LastEventId with RequestHeader {
+  override protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ id
+  override protected def companion = `Last-Event-ID`
+}
+
 // http://tools.ietf.org/html/rfc7232#section-2.2
 object `Last-Modified` extends ModeledCompanion[`Last-Modified`]
 final case class `Last-Modified`(date: DateTime) extends jm.headers.LastModified with ResponseHeader {

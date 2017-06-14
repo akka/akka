@@ -104,6 +104,11 @@ object MediaType {
       override def isText = true
     }
 
+  def textWithFixedCharset(subType: String, charset: HttpCharset, fileExtensions: String*): WithFixedCharset =
+    new WithFixedCharset("text/" + subType, "text", subType, charset, fileExtensions.toList) {
+      override def isText = true
+    }
+
   def video(subType: String, comp: Compressibility, fileExtensions: String*): Binary =
     new Binary("video/" + subType, "video", subType, comp, fileExtensions.toList) {
       override def isVideo = true
@@ -314,6 +319,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   private def img(st: String, c: Compressibility, fe: String*)  = register(image(st, c, fe: _*))
   private def msg(st: String, fe: String*)                      = register(message(st, Compressible, fe: _*))
   private def txt(st: String, fe: String*)                      = register(text(st, fe: _*))
+  private def txtfc(st: String, cs: HttpCharset, fe: String*)   = register(textWithFixedCharset(st, cs, fe: _*))
   private def vid(st: String, fe: String*)                      = register(video(st, NotCompressible, fe: _*))
 
   // dummy value currently only used by ContentType.NoContentType
@@ -449,6 +455,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `text/calendar`             = txt("calendar", "ics")
   val `text/css`                  = txt("css", "css")
   val `text/csv`                  = txt("csv", "csv")
+  val `text/event-stream`         = txtfc("event-stream", HttpCharsets.`UTF-8`)
   val `text/html`                 = txt("html", "htm", "html", "htmls", "htx")
   val `text/markdown`             = txt("markdown", "markdown", "md")
   val `text/mcf`                  = txt("mcf", "mcf")
