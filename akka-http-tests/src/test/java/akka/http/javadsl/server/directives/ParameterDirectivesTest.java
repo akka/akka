@@ -33,9 +33,14 @@ public class ParameterDirectivesTest extends JUnitRouteTest {
       .assertEntity("john");
 
     route
+        .run(HttpRequest.create().withUri("/abc?stringParam=a%b"))
+        .assertStatusCode(400)
+        .assertEntity("The request content was malformed:\nThe request's query string is invalid: stringParam=a%b");
+
+    route
       .run(HttpRequest.create().withUri("/abc?stringParam=a=b"))
-      .assertStatusCode(400)
-      .assertEntity("The request content was malformed:\nThe request's query string is invalid: stringParam=a=b");
+      .assertStatusCode(200)
+      .assertEntity("a=b");
   }
 
   @Test

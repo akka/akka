@@ -34,3 +34,7 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.Clie
 
 # Added new setting to @DoNotInherit class
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.localAddress")
+
+# akka.http.impl.model.parser.CharacterClasses is private[http].
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.model.parser.CharacterClasses.relaxed-query-char")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.model.parser.CharacterClasses.strict-query-char")

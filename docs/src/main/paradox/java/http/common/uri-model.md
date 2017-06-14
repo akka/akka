@@ -132,8 +132,6 @@ However, even with the `Relaxed` mode, there are still invalid special character
 
 @@snip [UriTest.java](../../../../../../../akka-http-core/src/test/java/akka/http/javadsl/model/UriTest.java) { #query-relaxed-mode-exception-1 }
 
-@@snip [UriTest.java](../../../../../../../akka-http-core/src/test/java/akka/http/javadsl/model/UriTest.java) { #query-relaxed-mode-exception-2 }
-
 Other than specifying the `mode` in the parameters, like when using directives, you can specify the `mode` in your configuration as follows.
 
 ```

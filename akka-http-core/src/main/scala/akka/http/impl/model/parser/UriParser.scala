@@ -84,9 +84,13 @@ private[http] final class UriParser(val input: ParserInput,
     case Uri.ParsingMode.Strict ⇒ `pchar-base`
     case _                      ⇒ `relaxed-path-segment-char`
   }
-  private[this] val `query-char` = uriParsingMode match {
-    case Uri.ParsingMode.Strict              ⇒ `strict-query-char`
-    case Uri.ParsingMode.Relaxed             ⇒ `relaxed-query-char`
+  private[this] val `query-key-char` = uriParsingMode match {
+    case Uri.ParsingMode.Strict              ⇒ `strict-query-key-char`
+    case Uri.ParsingMode.Relaxed             ⇒ `relaxed-query-key-char`
+  }
+  private[this] val `query-value-char` = uriParsingMode match {
+    case Uri.ParsingMode.Strict              ⇒ `strict-query-value-char`
+    case Uri.ParsingMode.Relaxed             ⇒ `relaxed-query-value-char`
   }
   private[this] val `fragment-char` = uriParsingMode match {
     case Uri.ParsingMode.Strict ⇒ `query-fragment-char`
@@ -184,12 +188,13 @@ private[http] final class UriParser(val input: ParserInput,
 
   // http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1
   def query: Rule1[Query] = {
-    def part = rule(
-      clearSBForDecoding() ~ oneOrMore('+' ~ appendSB(' ') | `query-char` ~ appendSB() | `pct-encoded`) ~ push(getDecodedString())
+    def part(`query-char`: CharPredicate) =
+      rule(clearSBForDecoding() ~
+        oneOrMore('+' ~ appendSB(' ') | `query-char` ~ appendSB() | `pct-encoded`) ~ push(getDecodedString())
         | push(""))
 
     def keyValuePair: Rule2[String, String] = rule {
-      part ~ ('=' ~ part | push(Query.EmptyValue))
+      part(`query-key-char`) ~ ('=' ~ part(`query-value-char`) | push(Query.EmptyValue))
     }
 
     // has a max value-stack depth of 3

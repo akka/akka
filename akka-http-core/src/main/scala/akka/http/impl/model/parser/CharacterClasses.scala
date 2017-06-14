@@ -43,12 +43,14 @@ private[http] object CharacterClasses {
   val `pchar-base-nc` = unreserved ++ `sub-delims` ++ '@'
   val `pchar-base` = `pchar-base-nc` ++ ':' // pchar without percent
   val `query-fragment-char` = `pchar-base` ++ "/?"
-  val `strict-query-char` = `query-fragment-char` -- "&=;"
-  val `strict-query-char-np` = `strict-query-char` -- '+'
+  val `strict-query-key-char` = `query-fragment-char` -- "&=;"
+  val `strict-query-value-char` = `query-fragment-char` -- "&=;"
+  val `strict-query-char-np` = `strict-query-value-char` -- '+'
 
   val `relaxed-fragment-char` = VCHAR -- '%'
   val `relaxed-path-segment-char` = VCHAR -- "%/?#"
-  val `relaxed-query-char` = VCHAR -- "%&=#"
+  val `relaxed-query-key-char` = VCHAR -- "%&=#"
+  val `relaxed-query-value-char` = VCHAR -- "%&#"
   val `raw-query-char` = VCHAR -- '#'
   val `scheme-char` = ALPHA ++ DIGIT ++ '+' ++ '-' ++ '.'
 

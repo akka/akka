@@ -382,16 +382,10 @@ class UriSpec extends WordSpec with Matchers {
       //#query-relaxed-mode-success
       relaxed("a^=b") shouldEqual ("a^", "b") +: Query.Empty
       relaxed("a;=b") shouldEqual ("a;", "b") +: Query.Empty
+      relaxed("a=b=c") shouldEqual ("a", "b=c") +: Query.Empty
       //#query-relaxed-mode-success
 
       //#query-relaxed-mode-exception
-      //double '=' in query string is invalid, even in relaxed mode
-      the[IllegalUriException] thrownBy relaxed("a=b=c") shouldBe {
-        IllegalUriException(
-          "Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
-          "a=b=c\n" +
-            "   ^")
-      }
       //following '%', it should be percent encoding (HEXDIG), but "%b=" is not a valid percent encoding
       //still invalid even in relaxed mode
       the[IllegalUriException] thrownBy relaxed("a%b=c") shouldBe {
@@ -615,14 +609,6 @@ class UriSpec extends WordSpec with Matchers {
             "            ^")
       }
       //#illegal-cases-immediate-exception
-
-      // illegal query
-      the[IllegalUriException] thrownBy Uri("?a=b=c").query() shouldBe {
-        IllegalUriException(
-          "Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
-          "a=b=c\n" +
-            "   ^")
-      }
     }
 
     // http://tools.ietf.org/html/rfc3986#section-5.4
