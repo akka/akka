@@ -2,3 +2,35 @@
 
 # Added a new method to this sealed trait
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.MediaType#WithOpenCharset.toContentTypeWithMissingCharset")
+
+# Move settings implementations to Java superclass, ClientConnectionSettings are marked @DoNotInherit
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getConnectingTimeout")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getParserSettings")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getIdleTimeout")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getSocketOptions")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getLogUnencryptedNetworkBytes")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getUserAgentHeader")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getWebsocketRandomFactory")
+ProblemFilters.exclude[FinalMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.getRequestHeaderSizeHint")
+
+# Incompatible SPI / API changes for ClientTransport which is marked @ApiMayChange
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ClientTransport#ScalaWrapper.connectTo")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ClientTransport#JavaWrapper.connectTo")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ClientTransport.TCP")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ClientTransport.connectTo")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ClientTransport.connectTo")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ClientTransport.connectTo")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.ClientTransport.connectTo")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.ClientTransport$TCPTransport$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ClientTransport#TCPTransport.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ClientTransport#TCPTransport.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ClientTransport.TCP")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.ClientTransport$TCPTransport")
+
+# Internal classes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ClientConnectionSettingsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ClientConnectionSettingsImpl.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ClientConnectionSettingsImpl.apply")
+
+# Added new setting to @DoNotInherit class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.localAddress")
