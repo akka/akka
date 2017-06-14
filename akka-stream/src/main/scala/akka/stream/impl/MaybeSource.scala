@@ -5,9 +5,9 @@ package akka.stream.impl
 
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.stream.{AbruptStageTerminationException, Attributes, Outlet, SourceShape}
+import akka.stream.{ AbruptStageTerminationException, Attributes, Outlet, SourceShape }
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, OutHandler}
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, OutHandler }
 import akka.util.OptionVal
 
 import scala.concurrent.Promise

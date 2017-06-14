@@ -4,9 +4,9 @@
 package akka.stream.impl
 
 import akka.annotation.InternalApi
-import akka.stream.{Attributes, Outlet, SourceShape}
+import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 
 /**
  * INTERNAL API
