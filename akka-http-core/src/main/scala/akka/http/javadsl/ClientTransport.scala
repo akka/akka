@@ -22,10 +22,12 @@ import scala.concurrent.Future
 /**
  * (Still unstable) SPI for implementors of custom client transports.
  */
+// #client-transport-definition
 @ApiMayChange
-abstract class ClientTransport { outer ⇒
+abstract class ClientTransport {
   def connectTo(host: String, port: Int, settings: ClientConnectionSettings, system: ActorSystem): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]]
 }
+// #client-transport-definition
 
 /**
  * (Still unstable) entry point to create or access predefined client transports.

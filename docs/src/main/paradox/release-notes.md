@@ -2,6 +2,11 @@
 
 ## 10.0.8
 
+### Https Proxy Support
+
+Long awaited support for configuring an @ref[HTTPS CONNECT Proxy](scala/http/client-side/client-transport.md#use-https-proxy-with-http-singlerequest)
+for the client has arrived. Thanks a lot, [Michal Sitko (@note)](https://github.com/note), who implemented the feature.
+
 ### Ability to express textual content types with missing character set
 
 Akka-http has a strongly typed media type / content type system, and knows at compile time about which media types

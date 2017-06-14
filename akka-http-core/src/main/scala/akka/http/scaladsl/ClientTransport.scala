@@ -21,10 +21,12 @@ import scala.concurrent.Future
  *
  * (Still unstable) SPI for implementors of custom client transports.
  */
+// #client-transport-definition
 @ApiMayChange
-trait ClientTransport { outer ⇒
+trait ClientTransport {
   def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]]
 }
+// #client-transport-definition
 
 /**
  * (Still unstable) entry point to create or access predefined client transports.

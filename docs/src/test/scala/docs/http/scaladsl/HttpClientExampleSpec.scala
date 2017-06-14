@@ -319,14 +319,13 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     //#single-request-in-actor-example
   }
 
-  "https-proxy-example" in compileOnlySpec {
-    //#https-proxy-example
+  "https-proxy-example-single-request" in compileOnlySpec {
+    //#https-proxy-example-single-request
     import java.net.InetSocketAddress
 
     import akka.actor.ActorSystem
     import akka.stream.ActorMaterializer
     import akka.http.scaladsl.{ ClientTransport, Http }
-    import akka.http.scaladsl.settings.ClientConnectionSettings
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
@@ -338,7 +337,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
     val settings = ConnectionPoolSettings(system).withTransport(httpsProxyTransport)
     Http().singleRequest(HttpRequest(uri = "https://google.com"), settings = settings)
-    //#https-proxy-example
+    //#https-proxy-example-single-request
   }
 
 }

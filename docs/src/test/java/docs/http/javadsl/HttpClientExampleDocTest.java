@@ -10,11 +10,14 @@ import akka.stream.Materializer;
 import akka.util.ByteString;
 import scala.concurrent.ExecutionContextExecutor;
 import akka.stream.javadsl.*;
-import akka.http.javadsl.OutgoingConnection;
+import akka.http.javadsl.ClientTransport;
+import akka.http.javadsl.settings.ConnectionPoolSettings;
 import akka.http.javadsl.Http;
+import akka.http.javadsl.OutgoingConnection;
 
 import static akka.http.javadsl.ConnectHttp.toHost;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.CompletionStage;
 
 //#manual-entity-consume-example-1
@@ -158,5 +161,27 @@ public class HttpClientExampleDocTest {
       Http.get(system)
           .singleRequest(HttpRequest.create("http://akka.io"), materializer);
     //#single-request-example
+  }
+
+  // compile only test
+  public void testSingleRequestWithHttpsProxyExample() {
+    //#https-proxy-example-single-request
+
+    final ActorSystem system = ActorSystem.create();
+    final Materializer materializer = ActorMaterializer.create(system);
+
+    ClientTransport proxy = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved("192.168.2.5", 8080));
+    ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system).withTransport(proxy);
+
+    final CompletionStage<HttpResponse> responseFuture =
+        Http.get(system)
+            .singleRequest(
+                  HttpRequest.create("https://github.com"),
+                  Http.get(system).defaultClientHttpsContext(),
+                  poolSettingsWithHttpsProxy, // <- pass in the custom settings here
+                  system.log(),
+                  materializer);
+
+    //#https-proxy-example-single-request
   }
 }

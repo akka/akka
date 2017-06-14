@@ -30,6 +30,7 @@ Akka HTTP will happily handle many thousand concurrent connections to a single o
 * [connection-level](connection-level.md)
 * [pool-overflow](pool-overflow.md)
 * [client-https-support](client-https-support.md)
+* [client-transport](client-transport.md)
 * [websocket-support](websocket-support.md)
 
 @@@
