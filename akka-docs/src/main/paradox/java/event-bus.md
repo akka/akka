@@ -2,9 +2,14 @@
 
 Originally conceived as a way to send messages to groups of actors, the
 `EventBus` has been generalized into a set of abstract base classes
+`EventBus` has been generalized into a set of @scala[composable traits] @java[abstract base classes]
 implementing a simple interface:
 
-@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #event-bus-api }
+Scala
+:  @@snip [EventBus.scala]($akka$/akka-actor/src/main/scala/akka/event/EventBus.scala) { #event-bus-api }
+
+Java
+:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #event-bus-api }
 
 @@@ note
 
@@ -18,11 +23,15 @@ This mechanism is used in different places within Akka, e.g. the [Event Stream](
 Implementations can make use of the specific building blocks presented below.
 
 An event bus must define the following three type parameters:
+An event bus must define the following three @scala[abstract types]@java[type parameters]:
 
  * `Event` (E) is the type of all events published on that bus
  * `Subscriber` (S) is the type of subscribers allowed to register on that
+ * `Event` is the type of all events published on that bus
+ * `Subscriber` is the type of subscribers allowed to register on that
 event bus
  * `Classifier` (C) defines the classifier to be used in selecting
+ * `Classifier` defines the classifier to be used in selecting
 subscribers for dispatching events
 
 The traits below are still generic in these types, but they need to be defined
@@ -44,11 +53,19 @@ compare subscribers and how exactly to classify.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #lookup-bus }
+Scala
+:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #lookup-bus }
+
+Java
+:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #lookup-bus }
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #lookup-bus-test }
+Scala
+:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #lookup-bus-test }
+
+Java
+:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #lookup-bus-test }
 
 This classifier is efficient in case no subscribers exist for a particular event.
 
@@ -64,11 +81,20 @@ classifier hierarchy.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus }
+Scala
+:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #subchannel-bus }
+
+Java
+:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus }
 
 A test for this implementation may look like this:
 
 @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus-test }
+Scala
+:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #subchannel-bus-test }
+
+Java
+:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus-test }
 
 This classifier is also efficient in case no subscribers are found for an
 event, but it uses conventional locking to synchronize an internal classifier
@@ -86,11 +112,19 @@ stations by geographical reachability (for old-school radio-wave transmission).
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #scanning-bus }
+Scala
+:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #scanning-bus }
+
+Java
+:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #scanning-bus }
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #scanning-bus-test }
+Scala
+:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #scanning-bus-test }
+
+Java
+:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #scanning-bus-test }
 
 This classifier takes always a time which is proportional to the number of
 subscriptions, independent of how many actually match.
@@ -109,11 +143,19 @@ takes care of unsubscribing terminated actors automatically.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #actor-bus }
+Scala
+:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #actor-bus }
+
+Java
+:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #actor-bus }
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #actor-bus-test }
+Scala
+:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #actor-bus-test }
+
+Java
+:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #actor-bus-test }
 
 This classifier is still is generic in the event type, and it is efficient for
 all use cases.
@@ -127,20 +169,37 @@ used by the user code for other purposes as well. It uses [Subchannel
 Classification](#subchannel-classification) which enables registering to related sets of channels (as is
 used for `RemotingLifecycleEvent`). The following example demonstrates
 how a simple subscription works. Given a simple actor:
+how a simple subscription works:
+
+@@@ div { .group-scala }
+
+@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #deadletters }
+
+@@@
+
+@@@ div { .group-java }
 
 @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #imports-deadletter }
 
 @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #deadletter-actor }
 
 it can be subscribed like this:
+It can be subscribed like this:
 
 @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #deadletters }
+
+@@@
+
 
 It is also worth pointing out that thanks to the way the subchannel classification
 is implemented in the event stream, it is possible to subscribe to a group of events, by
 subscribing to their common superclass as demonstrated in the following example:
 
-@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #superclass-subscription-eventstream }
+Scala
+:  @@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
+
+Java
+:  @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #superclass-subscription-eventstream }
 
 Similarly to [Actor Classification](#actor-classification), `EventStream` will automatically remove subscribers when they terminate.
 
@@ -168,10 +227,20 @@ all log event classes with priority higher than or equal to the configured
 log-level and their subscriptions are kept in sync when changing the log-level
 at runtime:
 
-```
-system.eventStream.setLogLevel(Logging.DebugLevel());
-```
+Scala
+:   @@@vars
+    ```
+    system.eventStream.setLogLevel(Logging.DebugLevel)
+    ```
+    @@@
 
+Java
+:   @@@vars
+    ```
+    system.eventStream.setLogLevel(Logging.DebugLevel());
+    ```
+    @@@
+    
 This means that log events for a level which will not be logged are
 typically not dispatched at all (unless manual subscriptions to the respective
 event class have been done)
@@ -191,14 +260,23 @@ and since they are nothing to worry about, they are suppressed from the default 
 However, in case you find yourself in need of debugging these kinds of low level suppressed dead letters,
 it's still possible to subscribe to them explicitly:
 
-@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #suppressed-deadletters }
+Scala
+:  @@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #suppressed-deadletters }
+
+Java
+:  @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #suppressed-deadletters }
 
 or all dead letters (including the suppressed ones):
 
-@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #all-deadletters }
+Scala
+:  @@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #all-deadletters }
+
+Java
+:  @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #all-deadletters }
 
 ### Other Uses
 
 The event stream is always there and ready to be used, just publish your own
 events (it accepts `Object`) and subscribe listeners to the corresponding JVM
+events (it accepts @scala[`AnyRef`]@java[`Object`]) and subscribe listeners to the corresponding JVM
 classes.
