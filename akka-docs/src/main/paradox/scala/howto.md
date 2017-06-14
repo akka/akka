@@ -11,7 +11,7 @@ sense to add to the `akka.pattern` package for creating an [OTP-like library](ht
 @@@ div { .group-java }
 
 You might find some of the patterns described in the Scala chapter of 
-@ref:[HowTo: Common Patterns](../scala/howto.md) useful even though the example code is written in Scala.
+this page useful even though the example code is written in Scala.
 
 @@@ 
 
