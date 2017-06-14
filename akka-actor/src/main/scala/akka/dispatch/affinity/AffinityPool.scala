@@ -34,10 +34,10 @@ class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, 
   private val terminationCondition = bookKeepingLock.newCondition()
 
   // indicates the current state of the pool
-  @volatile private var poolState: PoolState = Running
+  @volatile final private var poolState: PoolState = Running
 
-  private val workQueues = Array.fill(parallelism)(new BoundedTaskQueue(affinityGroupSize))
-  private val workers = mutable.Set[ThreadPoolWorker]()
+  private final val workQueues = Array.fill(parallelism)(new BoundedTaskQueue(affinityGroupSize))
+  private final val workers = mutable.Set[ThreadPoolWorker]()
 
   //fires up initial workers
   locked(bookKeepingLock) {
@@ -90,18 +90,16 @@ class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, 
       reject(command)
   }
 
-  private def reject(command: Runnable) = throw new RejectedExecutionException("Task " + command.toString + " rejected from " + this.toString)
+  private def reject(command: Runnable) = throw new RejectedExecutionException(s"Task ${command.toString} rejected from ${this.toString}")
 
   override def awaitTermination(timeout: Long, unit: TimeUnit): Boolean = {
 
     // recurse until pool is terminated or time out reached
     @tailrec
-    def awaitTermination(nanos: Long): Boolean = poolState match {
-      case Terminated ⇒ true
-      case _ ⇒
-        if (nanos <= 0) false
-        else
-          awaitTermination(terminationCondition.awaitNanos(nanos))
+    def awaitTermination(nanos: Long): Boolean = {
+      if (poolState == Terminated) true
+      else if (nanos <= 0) false
+      else awaitTermination(terminationCondition.awaitNanos(nanos))
     }
 
     locked(bookKeepingLock) {
@@ -249,7 +247,7 @@ object AffinityPool {
   }
 }
 
-class BoundedTaskQueue(capacity: Int) extends AbstractBoundedNodeQueue[Runnable](capacity)
+final class BoundedTaskQueue(capacity: Int) extends AbstractBoundedNodeQueue[Runnable](capacity)
 
 class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
 
@@ -257,28 +255,28 @@ class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequi
     def javaStrat: AffinityStrategies
   }
 
-  case object AnyStrat extends CPUAffinityStrategy {
+  case object NoAffinityStrategy extends CPUAffinityStrategy {
     override val javaStrat: AffinityStrategies = AffinityStrategies.ANY
   }
-  case object SameCore extends CPUAffinityStrategy {
+  case object SameCoreStrategy extends CPUAffinityStrategy {
     override val javaStrat: AffinityStrategies = AffinityStrategies.SAME_CORE
   }
-  case object SameSocket extends CPUAffinityStrategy {
+  case object SameSocketStrategy extends CPUAffinityStrategy {
     override val javaStrat: AffinityStrategies = AffinityStrategies.SAME_SOCKET
   }
-  case object DifferentCore extends CPUAffinityStrategy {
+  case object DifferentCoreStrategy extends CPUAffinityStrategy {
     override val javaStrat: AffinityStrategies = AffinityStrategies.DIFFERENT_CORE
   }
-  case object DifferentSocket extends CPUAffinityStrategy {
+  case object DifferentSocketStrategy extends CPUAffinityStrategy {
     override val javaStrat: AffinityStrategies = AffinityStrategies.DIFFERENT_SOCKET
   }
 
   private def toAffinityStrategy(s: String): CPUAffinityStrategy = s match {
-    case "any"              ⇒ AnyStrat
-    case "same-core"        ⇒ SameCore
-    case "same-socket"      ⇒ SameSocket
-    case "different-core"   ⇒ DifferentCore
-    case "different-socket" ⇒ DifferentSocket
+    case "any"              ⇒ NoAffinityStrategy
+    case "same-core"        ⇒ SameCoreStrategy
+    case "same-socket"      ⇒ SameSocketStrategy
+    case "different-core"   ⇒ DifferentCoreStrategy
+    case "different-socket" ⇒ DifferentSocketStrategy
     case x                  ⇒ throw new IllegalArgumentException("[%s] is not a valid cpu affinity strategy [any, same-core, same-socket, different-core, different-socket]!" format x)
 
   }
