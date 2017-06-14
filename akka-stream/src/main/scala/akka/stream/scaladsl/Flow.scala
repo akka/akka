@@ -1784,18 +1784,9 @@ trait FlowOps[+Out, +Mat] {
    * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that`
    * source, then repeat process.
    *
-   * Example:
-   * {{{
-   * Source(List(1, 2, 3)).interleave(List(4, 5, 6, 7), 2) // 1, 2, 4, 5, 3, 6, 7
-   * }}}
-   *
-   * After one of upstreams is complete then all the rest elements will be emitted from the second one, unless
-   * `eagerClose` is `true`. If `eagerClose` is `true`, then rest elements from second upstream won't be emitted.
-   *
-   * `eagerClose` example:
-   * {{{
-   * Source(List(1, 2, 3)).interleave(List(4, 5, 6, 7), 2, eagerClose = true) // 1, 2, 4, 5, 3
-   * }}}
+   * If eagerClose is false and one of the upstreams complete the elements from the other upstream will continue passing
+   * through the interleave stage. If eagerClose is true and one of the upstream complete interleave will cancel the
+   * other upstream and complete itself.
    *
    * If it gets error from one of upstreams - stream completes with failure.
    *
@@ -2147,8 +2138,9 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
    * then repeat process.
    *
-   * After one of upstreams is complete then all the rest elements will be emitted from the second one, unless
-   * `eagerClose` is `true`. If `eagerClose` is `true`, then rest elements from second upstream won't be emitted.
+   * If eagerClose is false and one of the upstreams complete the elements from the other upstream will continue passing
+   * through the interleave stage. If eagerClose is true and one of the upstream complete interleave will cancel the
+   * other upstream and complete itself.
    *
    * If it gets error from one of upstreams - stream completes with failure.
    *

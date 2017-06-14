@@ -1529,22 +1529,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
    * then repeat process.
    *
-   * Example:
-   * {{{
-   * Source<Integer, ?> src = Source.from(Arrays.asList(1, 2, 3))
-   * Flow<Integer, Integer, ?> flow = flow.interleave(Source.from(Arrays.asList(4, 5, 6, 7)), 2)
-   * src.via(flow) // 1, 2, 4, 5, 3, 6, 7
-   * }}}
-   *
-   * After one of upstreams is complete then all the rest elements will be emitted from the second one, unless
-   * `eagerClose` is `true`. If `eagerClose` is `true`, then rest elements from second upstream won't be emitted.
-   *
-   * `eagerClose` example:
-   * {{{
-   * Source<Integer, ?> src = Source.from(Arrays.asList(1, 2, 3))
-   * Flow<Integer, Integer, ?> flow = flow.interleave(Source.from(Arrays.asList(4, 5, 6, 7)), 2, true)
-   * src.via(flow) // 1, 2, 4, 5, 3
-   * }}}
+   * If eagerClose is false and one of the upstreams complete the elements from the other upstream will continue passing
+   * through the interleave stage. If eagerClose is true and one of the upstream complete interleave will cancel the
+   * other upstream and complete itself.
    *
    * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
    *
@@ -1583,8 +1570,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
    * then repeat process.
    *
-   * After one of upstreams is complete then all the rest elements will be emitted from the second one, unless
-   * `eagerClose` is `true`. If `eagerClose` is `true`, then rest elements from second upstream won't be emitted.
+   * If eagerClose is false and one of the upstreams complete the elements from the other upstream will continue passing
+   * through the interleave stage. If eagerClose is true and one of the upstream complete interleave will cancel the
+   * other upstream and complete itself.
    *
    * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
    *
