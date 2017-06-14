@@ -2,6 +2,7 @@
 
 ## Books
 
+ * [Akka Cookbook](https://www.packtpub.com/application-development/akka-cookbook), by Héctor Veiga Ortiz & Piyush Mishra, PACKT Publishing, ISBN: 9781785288180, May 2017
  * [Reactive Design Patterns](https://www.reactivedesignpatterns.com/), by Roland Kuhn with Jamie Allen and Brian Hanafee, Manning Publications Co., ISBN 9781617291807, Feb 2017
  * [Mastering Akka](https://www.packtpub.com/application-development/mastering-akka), by Christian Baxter, PACKT Publishing, ISBN: 9781786465023, October 2016
  * [Learning Akka](https://www.packtpub.com/application-development/learning-akka), by Jason Goodwin, PACKT Publishing, ISBN: 9781784393007, December 2015
