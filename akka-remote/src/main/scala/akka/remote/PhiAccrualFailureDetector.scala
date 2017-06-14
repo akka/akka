@@ -56,7 +56,7 @@ class PhiAccrualFailureDetector(
   val minStdDeviation:          FiniteDuration,
   val acceptableHeartbeatPause: FiniteDuration,
   val firstHeartbeatEstimate:   FiniteDuration,
-  eventStream:                  EventStream)(
+  eventStream:                  Option[EventStream])(
   implicit
   clock: Clock) extends FailureDetector {
 
@@ -70,7 +70,7 @@ class PhiAccrualFailureDetector(
     acceptableHeartbeatPause: FiniteDuration,
     firstHeartbeatEstimate:   FiniteDuration)(implicit clock: Clock) =
     this(
-      threshold, maxSampleSize, minStdDeviation, acceptableHeartbeatPause, firstHeartbeatEstimate, null
+      threshold, maxSampleSize, minStdDeviation, acceptableHeartbeatPause, firstHeartbeatEstimate, None
     )(clock)
 
   /**
@@ -79,7 +79,7 @@ class PhiAccrualFailureDetector(
    * `min-std-deviation`, `acceptable-heartbeat-pause` and
    * `heartbeat-interval`.
    */
-  def this(config: Config, ev: EventStream) =
+  def this(config: Config, ev: Option[EventStream]) =
     this(
       threshold = config.getDouble("threshold"),
       maxSampleSize = config.getInt("max-sample-size"),
@@ -135,8 +135,8 @@ class PhiAccrualFailureDetector(
         val interval = timestamp - latestTimestamp
         // don't use the first heartbeat after failure for the history, since a long pause will skew the stats
         if (isAvailable(timestamp)) {
-          if (interval >= (acceptableHeartbeatPauseMillis / 2) && eventStream != null)
-            eventStream.publish(Warning(getClass.getName, getClass, s"heartbeat interval is growing too large: $interval millis"))
+          if (interval >= (acceptableHeartbeatPauseMillis / 2) && eventStream.isDefined)
+            eventStream.get.publish(Warning(this.toString, getClass, s"heartbeat interval is growing too large: $interval millis"))
           oldState.history :+ interval
         } else oldState.history
     }
