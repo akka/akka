@@ -25,12 +25,8 @@ Implementations can make use of the specific building blocks presented below.
 An event bus must define the following three type parameters:
 An event bus must define the following three @scala[abstract types]@java[type parameters]:
 
- * `Event` (E) is the type of all events published on that bus
- * `Subscriber` (S) is the type of subscribers allowed to register on that
  * `Event` is the type of all events published on that bus
- * `Subscriber` is the type of subscribers allowed to register on that
-event bus
- * `Classifier` (C) defines the classifier to be used in selecting
+ * `Subscriber` is the type of subscribers allowed to register on that event bus
  * `Classifier` defines the classifier to be used in selecting
 subscribers for dispatching events
 
@@ -89,7 +85,6 @@ Java
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus-test }
 Scala
 :  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #subchannel-bus-test }
 
@@ -169,7 +164,6 @@ used by the user code for other purposes as well. It uses [Subchannel
 Classification](#subchannel-classification) which enables registering to related sets of channels (as is
 used for `RemotingLifecycleEvent`). The following example demonstrates
 how a simple subscription works. Given a simple actor:
-how a simple subscription works:
 
 @@@ div { .group-scala }
 
@@ -277,6 +271,5 @@ Java
 ### Other Uses
 
 The event stream is always there and ready to be used, just publish your own
-events (it accepts `Object`) and subscribe listeners to the corresponding JVM
 events (it accepts @scala[`AnyRef`]@java[`Object`]) and subscribe listeners to the corresponding JVM
 classes.
