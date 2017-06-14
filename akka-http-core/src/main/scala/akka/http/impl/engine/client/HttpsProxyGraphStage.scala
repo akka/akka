@@ -4,17 +4,21 @@
 
 package akka.http.impl.engine.client
 
-import akka.event.LoggingAdapter
+import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.impl.engine.parsing.HttpMessageParser.StateResult
-import akka.http.impl.engine.parsing.ParserOutput.{ MessageEnd, NeedMoreData, RemainingBytes, ResponseStart }
+import akka.http.impl.engine.parsing.ParserOutput.{ NeedMoreData, RemainingBytes, ResponseStart }
 import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpResponseParser, ParserOutput }
 import akka.http.scaladsl.model.{ HttpMethods, StatusCodes }
 import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.stream.scaladsl.BidiFlow
+import akka.stream.stage._
 import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
 import akka.util.ByteString
 
-object ProxyGraphStage {
+/** INTERNAL API */
+@InternalApi
+private[http] object HttpsProxyGraphStage {
   sealed trait State
   // Entry state
   case object Starting extends State
@@ -24,12 +28,17 @@ object ProxyGraphStage {
 
   // State after Proxy responded  back
   case object Connected extends State
+
+  def apply(targetHostName: String, targetPort: Int, settings: ClientConnectionSettings): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
+    BidiFlow.fromGraph(new HttpsProxyGraphStage(targetHostName, targetPort, settings))
 }
 
-final class ProxyGraphStage(targetHostName: String, targetPort: Int, settings: ClientConnectionSettings, log: LoggingAdapter)
+/** INTERNAL API */
+@InternalApi
+private final class HttpsProxyGraphStage(targetHostName: String, targetPort: Int, settings: ClientConnectionSettings)
   extends GraphStage[BidiShape[ByteString, ByteString, ByteString, ByteString]] {
 
-  import ProxyGraphStage._
+  import HttpsProxyGraphStage._
 
   val bytesIn: Inlet[ByteString] = Inlet("OutgoingTCP.in")
   val bytesOut: Outlet[ByteString] = Outlet("OutgoingTCP.out")
@@ -39,28 +48,32 @@ final class ProxyGraphStage(targetHostName: String, targetPort: Int, settings: C
 
   override def shape: BidiShape[ByteString, ByteString, ByteString, ByteString] = BidiShape.apply(sslIn, bytesOut, bytesIn, sslOut)
 
-  private val connectMsg = ByteString(s"CONNECT ${targetHostName}:${targetPort} HTTP/1.1\r\nHost: ${targetHostName}\r\n\r\n")
+  private val connectMsg = ByteString(s"CONNECT $targetHostName:$targetPort HTTP/1.1\r\nHost: $targetHostName\r\n\r\n")
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with StageLogging {
     private var state: State = Starting
 
-    val parser = new HttpResponseParser(settings.parserSettings, HttpHeaderParser(settings.parserSettings, log)()) {
-      override def handleInformationalResponses = false
-      override protected def parseMessage(input: ByteString, offset: Int): StateResult = {
-        // hacky, we want in the first branch *all fragments* of the first response
-        if (offset == 0) {
-          super.parseMessage(input, offset)
-        } else {
-          if (input.size > offset) {
-            emit(RemainingBytes(input.drop(offset)))
+    lazy val parser = {
+      val p = new HttpResponseParser(settings.parserSettings, HttpHeaderParser(settings.parserSettings, log)()) {
+        override def handleInformationalResponses = false
+
+        override protected def parseMessage(input: ByteString, offset: Int): StateResult = {
+          // hacky, we want in the first branch *all fragments* of the first response
+          if (offset == 0) {
+            super.parseMessage(input, offset)
           } else {
-            emit(NeedMoreData)
+            if (input.size > offset) {
+              emit(RemainingBytes(input.drop(offset)))
+            } else {
+              emit(NeedMoreData)
+            }
+            terminate()
           }
-          terminate()
         }
       }
+      p.setContextForNextResponse(HttpResponseParser.ResponseContext(HttpMethods.CONNECT, None))
+      p
     }
-    parser.setContextForNextResponse(HttpResponseParser.ResponseContext(HttpMethods.CONNECT, None))
 
     setHandler(sslIn, new InHandler {
       override def onPush() = {
@@ -105,13 +118,11 @@ final class ProxyGraphStage(targetHostName: String, targetPort: Int, settings: C
                 }
                 parser.onUpstreamFinish()
 
+                log.debug(s"HTTPS proxy connection to {}:{} established. Now forwarding data.", targetHostName, targetPort)
+
                 state = Connected
-                if (isAvailable(bytesOut)) {
-                  pull(sslIn)
-                }
-                if (!pushed) {
-                  pull(bytesIn)
-                }
+                if (isAvailable(bytesOut)) pull(sslIn)
+                if (isAvailable(sslOut)) pull(bytesIn)
               case ResponseStart(statusCode, _, _, _, _) ⇒
                 failStage(new ProxyConnectionFailedException(s"The HTTPS proxy rejected to open a connection to $targetHostName:$targetPort with status code: $statusCode"))
               case other ⇒
@@ -131,6 +142,7 @@ final class ProxyGraphStage(targetHostName: String, targetPort: Int, settings: C
       override def onPull() = {
         state match {
           case Starting ⇒
+            log.debug(s"TCP connection to HTTPS proxy connection established. Sending CONNECT {}:{} to HTTPS proxy", targetHostName, targetPort)
             push(bytesOut, connectMsg)
             state = Connecting
           case Connecting ⇒

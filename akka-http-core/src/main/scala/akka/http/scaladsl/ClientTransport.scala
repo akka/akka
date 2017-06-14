@@ -8,10 +8,10 @@ import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
-import akka.http.impl.engine.client.ProxyGraphStage
+import akka.http.impl.engine.client.HttpsProxyGraphStage
 import akka.http.scaladsl.Http.OutgoingConnection
-import akka.http.scaladsl.settings.{ ClientConnectionSettings }
-import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Tcp }
+import akka.http.scaladsl.settings.ClientConnectionSettings
+import akka.stream.scaladsl.{ Flow, Keep, Tcp }
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -45,25 +45,21 @@ object ClientTransport {
   }
 
   /**
-   * Returns [[ClientTransport]] that performs HTTP CONNECT tunnelling which is useful when you want to use HTTPS proxy.
+   * Returns a [[ClientTransport]] that runs all connection through the given HTTPS proxy using the
+   * HTTP CONNECT method.
    *
-   * Using this kind of [[ClientTransport]] means that after the tunnel between client and target host has been
-   * established the subsequent communication is done on TCP level.
+   * An HTTPS proxy is a proxy that will create one TCP connection to the HTTPS proxy for each target connection. The
+   * proxy transparently forwards the TCP connection to the target host.
    *
-   * To get know more about CONNECT tunnelling read https://tools.ietf.org/html/rfc7231#section-4.3.6
+   * For more information about HTTP CONNECT tunnelling see https://tools.ietf.org/html/rfc7231#section-4.3.6.
    */
-  def proxy(proxyAddress: InetSocketAddress): ClientTransport =
-    new ProxyTransport(proxyAddress)
+  def httpsProxy(proxyAddress: InetSocketAddress): ClientTransport = new HttpsProxyTransport(proxyAddress)
 
-  private case class ProxyTransport(proxyAddress: InetSocketAddress) extends ClientTransport {
-    def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
-      val networkFlow = Tcp().outgoingConnection(proxyAddress, settings.localAddress,
-        settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
-        .mapMaterializedValue(_.map(tcpConn ⇒ OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
-
-      val proxyBidiFlow = BidiFlow.fromGraph(new ProxyGraphStage(host, port, settings, system.log))
-
-      proxyBidiFlow.joinMat(networkFlow)(Keep.right)
-    }
+  private case class HttpsProxyTransport(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport = TCP) extends ClientTransport {
+    def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+      HttpsProxyGraphStage(host, port, settings)
+        .joinMat(underlyingTransport.connectTo(proxyAddress.getHostString, proxyAddress.getPort, settings))(Keep.right)
+        // on the HTTP level we want to see the final remote address in the `OutgoingConnection`
+        .mapMaterializedValue(_.map(_.copy(remoteAddress = InetSocketAddress.createUnresolved(host, port)))(system.dispatcher))
   }
 }

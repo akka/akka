@@ -34,8 +34,17 @@ abstract class ClientTransport { outer ⇒
 object ClientTransport {
   def TCP: ClientTransport = scaladsl.ClientTransport.TCP.asJava
 
-  def proxy(proxyAddress: InetSocketAddress): ClientTransport =
-    scaladsl.ClientTransport.proxy(proxyAddress).asJava
+  /**
+   * Returns a [[ClientTransport]] that runs all connection through the given HTTPS proxy using the
+   * HTTP CONNECT method.
+   *
+   * An HTTPS proxy is a proxy that will create one TCP connection to the HTTPS proxy for each target connection. The
+   * proxy transparently forwards the TCP connection to the target host.
+   *
+   * For more information about HTTP CONNECT tunnelling see https://tools.ietf.org/html/rfc7231#section-4.3.6.
+   */
+  def httpsProxy(proxyAddress: InetSocketAddress): ClientTransport =
+    scaladsl.ClientTransport.httpsProxy(proxyAddress).asJava
 
   def fromScala(scalaTransport: scaladsl.ClientTransport): ClientTransport =
     scalaTransport match {

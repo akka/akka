@@ -14,7 +14,7 @@ import akka.util.ByteString
 
 import scala.concurrent.duration._
 
-class ProxyGraphStageSpec extends AkkaSpec {
+class HttpsProxyGraphStageSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withFuzzing(true))
 
   "A ProxyGraphStage" should {
@@ -152,7 +152,7 @@ class ProxyGraphStageSpec extends AkkaSpec {
 
     def testCase(fn: (PublisherProbe, SubscriberProbe, PublisherProbe, SubscriberProbe) ⇒ Unit): Unit = {
       Utils.assertAllStagesStopped {
-        val proxyGraphStage = BidiFlow.fromGraph(new ProxyGraphStage(targetHostName, targetPort, clientSettings, system.log))
+        val proxyGraphStage = HttpsProxyGraphStage(targetHostName, targetPort, clientSettings)
 
         val flowInProbe = TestSubscriber.probe[ByteString]()
         val flowOutProbe = TestPublisher.probe[ByteString]()
