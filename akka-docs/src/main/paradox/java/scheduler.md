@@ -36,32 +36,46 @@ by the `akka.scheduler.tick-duration` configuration property.
 
 ## Some examples
 
+Scala
+:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #imports1 }
+
+Java
+:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #imports1 }
+
 Schedule to send the "foo"-message to the testActor after 50ms:
 
-@@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #imports1 }
+Scala
+:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-message } 
 
-@@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-message }
+Java
+:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-message }
 
-Schedule a Runnable, that sends the current time to the testActor, to be executed after 50ms:
+Schedule a @scala[function]@java[`Runnable`], that sends the current time to the testActor, to be executed after 50ms:
 
-@@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-thunk }
+Scala
+:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-thunk }
 
-@@@ warning
-
-If you schedule Runnable instances you should be extra careful
-to not pass or close over unstable references. In practice this means that you should
-not call methods on the enclosing Actor from within the Runnable.
-If you need to schedule an invocation it is better to use the `schedule()`
-variant accepting a message and an `ActorRef` to schedule a message to self
-(containing the necessary parameters) and then call the method when the message is received.
-
-@@@
+Java
+:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-thunk }
 
 Schedule to send the "Tick"-message to the `tickActor` after 0ms repeating every 50ms:
 
-@@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #imports1 #imports2 }
+Scala
+:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-recurring }
 
-@@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-recurring }
+Java
+:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-recurring }
+
+@@@ warning
+
+If you schedule functions or Runnable instances you should be extra careful
+to not close over unstable references. In practice this means not using `this`
+inside the closure in the scope of an Actor instance, not accessing `sender()` directly
+and not calling the methods of the Actor instance directly. If you need to
+schedule an invocation schedule a message to `self` instead (containing the
+necessary parameters) and then call the method when the message is received.
+
+@@@
 
 ## From `akka.actor.ActorSystem`
 
@@ -74,14 +88,18 @@ the task may execute before its timeout.
 
 @@@
 
-## The Scheduler Interface for Implementors
+## The Scheduler interface
 
 The actual scheduler implementation is loaded reflectively upon
 `ActorSystem` start-up, which means that it is possible to provide a
 different one using the `akka.scheduler.implementation` configuration
 property. The referenced class must implement the following interface:
 
-@@snip [AbstractScheduler.java]($akka$/akka-actor/src/main/java/akka/actor/AbstractScheduler.java) { #scheduler }
+Scala
+:  @@snip [Scheduler.scala]($akka$/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #scheduler }
+
+Java
+:  @@snip [AbstractScheduler.java]($akka$/akka-actor/src/main/java/akka/actor/AbstractScheduler.java) { #scheduler }
 
 ## The Cancellable interface
 
