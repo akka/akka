@@ -1,6 +1,6 @@
 # Serialization
 
-The messages that Akka actors send to each other are JVM objects (e.g.  instances of Scala case classes). Message passing between actors that live on the same JVM is straightforward. It is simply done via reference passing. However, messages that have to escape the JVM to reach an actor running on a different host have to undergo some form of serialization (i.e. the objects have to be converted to and from byte arrays).
+The messages that Akka actors send to each other are JVM objects (e.g. instances of Scala case classes). Message passing between actors that live on the same JVM is straightforward. It is simply done via reference passing. However, messages that have to escape the JVM to reach an actor running on a different host have to undergo some form of serialization (i.e. the objects have to be converted to and from byte arrays).
 
 Akka itself uses Protocol Buffers to serialize internal messages (i.e. cluster gossip messages). However, the serialization mechanism in Akka allows you to write custom serializers and to define which serializer to use for what. 
 
@@ -28,11 +28,10 @@ and neither is a subtype of the other, a warning will be issued.
 
 @@@ note
 
-If you are using Scala for your message protocol and your messages are contained
-inside of a Scala object, then in order to reference those messages, you will need
-use the fully qualified Java class name. For a message named `Message` contained inside
-the Scala object named `Wrapper` you would need to reference it as
-`Wrapper$Message` instead of `Wrapper.Message`.
+If @java[you are using Scala for your message protocol and] your messages are contained inside of a Scala object, then in order to
+reference those messages, you will need to use the fully qualified Java class name. For a message
+named `Message` contained inside the @java[Scala] object named `Wrapper`
+you would need to reference it as `Wrapper$Message` instead of `Wrapper.Message`.
 
 @@@
 
@@ -71,9 +70,18 @@ We recommend having these config options turned on **only** when you're running 
 If you want to programmatically serialize/deserialize using Akka Serialization,
 here's some examples:
 
-@@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #imports }
+Scala
+:  @@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #imports }
 
-@@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #programmatic }
+Java
+:  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #imports }
+
+
+Scala
+:  @@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #programmatic } 
+
+Java
+:  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #programmatic }
 
 For more information, have a look at the `ScalaDoc` for `akka.serialization._`
 
@@ -83,14 +91,23 @@ The first code snippet on this page contains a configuration file that reference
 
 ### Creating new Serializers
 
-A custom `Serializer` has to inherit from `akka.serialization.JSerializer` and can be defined like the following:
+A custom `Serializer` has to inherit from @scala[`akka.serialization.Serializer`]@java[`akka.serialization.JSerializer`] and can be defined like the following:
 
-@@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #imports }
+Scala
+:  @@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #imports }
 
-@@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #my-own-serializer }
+Java
+:  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #imports }
+
+
+Scala
+:  @@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #my-own-serializer }
+
+Java
+:  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #my-own-serializer }
 
 The manifest is a type hint so that the same serializer can be used for different
-classes. The manifest parameter in `fromBinaryJava` is the class of the object that
+classes. The manifest parameter in @scala[`fromBinary`]@java[`fromBinaryJava`] is the class of the object that
 was serialized. In `fromBinary` you can match on the class and deserialize the
 bytes to different objects.
 
@@ -116,7 +133,11 @@ class name if you used `includeManifest=true`, otherwise it will be the empty st
 
 This is how a `SerializerWithStringManifest` looks like:
 
-@@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #my-own-serializer2 }
+Scala
+:  @@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #my-own-serializer2 }
+
+Java
+:  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #my-own-serializer2 }
 
 You must also bind it to a name in your [Configuration]() and then list which classes
 that should be serialized using it.
@@ -138,9 +159,18 @@ In the general case, the local address to be used depends on the type of remote
 address which shall be the recipient of the serialized information. Use
 `Serialization.serializedActorPath(actorRef)` like this:
 
-@@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #imports }
+Scala
+:  @@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #imports }
 
-@@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #actorref-serializer }
+Java
+:  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #imports }
+
+
+Scala
+:  @@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #actorref-serializer }
+
+Java
+:  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #actorref-serializer }
 
 This assumes that serialization happens in the context of sending a message
 through the remote transport. There are other uses of serialization, though,
@@ -155,7 +185,11 @@ transport per se, which makes this question a bit more interesting. To find out
 the appropriate address to use when sending to `remoteAddr` you can use
 `ActorRefProvider.getExternalAddressFor(remoteAddr)` like this:
 
-@@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #external-address }
+Scala
+:  @@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #external-address }
+
+Java
+:  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #external-address }
 
 @@@ note
 
@@ -166,8 +200,8 @@ inserts address information for local addresses.
 `toSerializationFormatWithAddress` also adds the unique id of the actor, which will
 change when the actor is stopped and then created again with the same name.
 Sending messages to a reference pointing the old actor will not be delivered
-to the new actor. If you do not want this behavior, e.g. in case of long term
-storage of the reference, you can use `toStringWithAddress`, which does not
+to the new actor. If you don't want this behavior, e.g. in case of long term
+storage of the reference, you can use `toStringWithAddress`, which doesn't
 include the unique id.
 
 @@@
@@ -175,13 +209,17 @@ include the unique id.
 This requires that you know at least which type of address will be supported by
 the system which will deserialize the resulting actor reference; if you have no
 concrete address handy you can create a dummy one for the right protocol using
-`new Address(protocol, "", "", 0)` (assuming that the actual transport used is as
+@scala[`Address(protocol, "", "", 0)`]@java[`new Address(protocol, "", "", 0)`] (assuming that the actual transport used is as
 lenient as Akka’s RemoteActorRefProvider).
 
 There is also a default remote address which is the one used by cluster support
 (and typical systems have just this one); you can get it like this:
 
-@@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #external-address-default }
+Scala
+:  @@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #external-address-default }
+
+Java
+:  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #external-address-default }
 
 ### Deep serialization of Actors
 
