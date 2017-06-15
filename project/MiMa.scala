@@ -1217,9 +1217,13 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnRestartSupervisor.this"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.replyWhileStopped"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withReplyWhileStopped"),
-        
+
         // #23144 recoverWithRetries cleanup
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.RecoverWith.InfiniteRetries")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.RecoverWith.InfiniteRetries"),
+
+        // #23076 TraversalBuilder.printTraversal() has inconsistent indentation for Concat?
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.TraversalBuilder.printTraversal"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.TraversalBuilder.printTraversal$default$2")
       )
     )
 

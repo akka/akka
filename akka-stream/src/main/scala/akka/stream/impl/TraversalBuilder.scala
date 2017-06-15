@@ -273,14 +273,12 @@ import scala.collection.immutable.Map.Map1
   /**
    * INTERNAL API
    */
-  @InternalApi private[impl] def printTraversal(t: Traversal, indent: Int = 0): Unit = {
-    var current: Traversal = t
-    var slot = 0
+  @InternalApi private[impl] def printTraversal(t: Traversal, useIndent: Boolean = false): Unit = {
 
-    def prindent(s: String): Unit = println(" | " * indent + s)
-
-    while (current != EmptyTraversal) {
-      var nextStep: Traversal = EmptyTraversal
+    def printTraversalAtLevel(current: Traversal, indentLevel: Int): Unit = {
+      val prindent =
+        if (useIndent) (s: String) ⇒ println("|" * indentLevel + s)
+        else (s: String) ⇒ println(s)
 
       current match {
         case PushNotUsed                        ⇒ prindent("push NotUsed")
@@ -294,13 +292,14 @@ import scala.collection.immutable.Map.Map1
         case ExitIsland                         ⇒ prindent("exit island")
         case MaterializeAtomic(mod, outToSlots) ⇒ prindent("materialize " + mod + " " + outToSlots.mkString("[", ", ", "]"))
         case Concat(first, next) ⇒
-          printTraversal(first, indent + 1)
-          nextStep = next
+          printTraversalAtLevel(first, indentLevel + 1)
+          printTraversalAtLevel(next, indentLevel + 1)
         case _ ⇒
       }
-
-      current = nextStep
     }
+
+    // Start from indent level = 0
+    printTraversalAtLevel(t, 0)
   }
 
   /**
