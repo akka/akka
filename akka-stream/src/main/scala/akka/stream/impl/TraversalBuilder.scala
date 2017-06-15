@@ -273,26 +273,33 @@ import scala.collection.immutable.Map.Map1
   /**
    * INTERNAL API
    */
-  @InternalApi private[impl] def printTraversal(t: Traversal, indent: Int = 0): Unit = {
-    def prindent(s: String): Unit = println(" | " * indent + s)
-    t match {
-      case PushNotUsed                        ⇒ prindent("push NotUsed")
-      case Pop                                ⇒ prindent("pop mat")
-      case _: Transform                       ⇒ prindent("transform mat")
-      case Compose(_, false)                  ⇒ prindent("compose mat")
-      case Compose(_, true)                   ⇒ prindent("compose reversed mat")
-      case PushAttributes(attr)               ⇒ prindent("push attr " + attr)
-      case PopAttributes                      ⇒ prindent("pop attr")
-      case EnterIsland(tag)                   ⇒ prindent("enter island " + tag)
-      case ExitIsland                         ⇒ prindent("exit island")
-      case MaterializeAtomic(mod, outToSlots) ⇒ prindent("materialize " + mod + " " + outToSlots.mkString("[", ", ", "]"))
-      case Concat(first, next) ⇒
-        prindent("concat(")
-        printTraversal(first, indent + 1)
-        printTraversal(next, indent + 1)
-        prindent(")")
-      case _ ⇒
+  @InternalApi private[impl] def printTraversal(t: Traversal, useIndent: Boolean = false): Unit = {
+
+    def printTraversalAtLevel(current: Traversal, indentLevel: Int): Unit = {
+      val prindent =
+        if (useIndent) (s: String) ⇒ println("|" * indentLevel + s)
+        else (s: String) ⇒ println(s)
+
+      current match {
+        case PushNotUsed                        ⇒ prindent("push NotUsed")
+        case Pop                                ⇒ prindent("pop mat")
+        case _: Transform                       ⇒ prindent("transform mat")
+        case Compose(_, false)                  ⇒ prindent("compose mat")
+        case Compose(_, true)                   ⇒ prindent("compose reversed mat")
+        case PushAttributes(attr)               ⇒ prindent("push attr " + attr)
+        case PopAttributes                      ⇒ prindent("pop attr")
+        case EnterIsland(tag)                   ⇒ prindent("enter island " + tag)
+        case ExitIsland                         ⇒ prindent("exit island")
+        case MaterializeAtomic(mod, outToSlots) ⇒ prindent("materialize " + mod + " " + outToSlots.mkString("[", ", ", "]"))
+        case Concat(first, next) ⇒
+          printTraversalAtLevel(first, indentLevel + 1)
+          printTraversalAtLevel(next, indentLevel + 1)
+        case _ ⇒
+      }
     }
+
+    // Start from indent level = 0
+    printTraversalAtLevel(t, 0)
   }
 
   /**
