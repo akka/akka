@@ -10,42 +10,61 @@ import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
 import scala.annotation.tailrec
+import java.util.concurrent.CountDownLatch
+import akka.actor.SupervisorSpec.PingPongActor
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
 @Fork(1)
 @Threads(1)
 @Warmup(iterations = 10, time = 5, timeUnit = TimeUnit.SECONDS, batchSize = 1)
-@Measurement(iterations = 20)
+@Measurement(iterations = 10, time = 15, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 class ForkJoinActorBenchmark {
   import ForkJoinActorBenchmark._
 
-  @Param(Array("5"))
+  @Param(Array("5", "25", "50"))
   var tpt = 0
 
-  @Param(Array("1"))
+  @Param(Array(coresStr)) // coresStr, cores2xStr, cores4xStr
   var threads = ""
+
+  @Param(Array("SingleConsumerOnlyUnboundedMailbox")) //"default"
+  var mailbox = ""
 
   implicit var system: ActorSystem = _
 
   @Setup(Level.Trial)
   def setup(): Unit = {
+
+    require(
+      Runtime.getRuntime.availableProcessors == cores,
+      s"Update the cores constant to ${Runtime.getRuntime.availableProcessors}"
+    )
+
+    val mailboxConf = mailbox match {
+      case "default" => ""
+      case "SingleConsumerOnlyUnboundedMailbox" =>
+        s"""default-mailbox.mailbox-type = "${classOf[akka.dispatch.SingleConsumerOnlyUnboundedMailbox].getName}""""
+    }
+
     system = ActorSystem("ForkJoinActorBenchmark", ConfigFactory.parseString(
-      s"""| akka {
-        |   log-dead-letters = off
-        |   actor {
-        |     default-dispatcher {
-        |       executor = "fork-join-executor"
-        |       fork-join-executor {
-        |         parallelism-min = 1
-        |         parallelism-factor = $threads
-        |         parallelism-max = 64
-        |       }
-        |       throughput = $tpt
-        |     }
-        |   }
-        | }
-      """.stripMargin
+      s"""
+        akka {
+          log-dead-letters = off
+           actor {
+             default-dispatcher {
+               executor = "fork-join-executor"
+               fork-join-executor {
+                 parallelism-min = $threads
+                 parallelism-factor = 1
+                 parallelism-max = $threads
+               }
+               throughput = $tpt
+             }
+             $mailboxConf
+           }
+         }
+      """
     ))
   }
 
@@ -55,33 +74,12 @@ class ForkJoinActorBenchmark {
     Await.ready(system.whenTerminated, 15.seconds)
   }
 
-  var pingPongActors: Vector[(ActorRef, ActorRef)] = null
-  var pingPongLessActorsThanCoresActors: Vector[(ActorRef, ActorRef)] = null
-  var pingPongSameNumberOfActorsAsCoresActors: Vector[(ActorRef, ActorRef)] = null
-  var pingPongMoreActorsThanCoresActors: Vector[(ActorRef, ActorRef)] = null
-
-  @Setup(Level.Invocation)
-  def setupActors(): Unit = {
-    pingPongActors = startActors(1)
-    pingPongLessActorsThanCoresActors = startActors(lessThanCoresActorPairs)
-    pingPongSameNumberOfActorsAsCoresActors = startActors(cores / 2)
-    pingPongMoreActorsThanCoresActors = startActors(moreThanCoresActorPairs)
-  }
-
-  @TearDown(Level.Invocation)
-  def tearDownActors(): Unit = {
-    stopActors(pingPongActors)
-    stopActors(pingPongLessActorsThanCoresActors)
-    stopActors(pingPongSameNumberOfActorsAsCoresActors)
-    stopActors(pingPongMoreActorsThanCoresActors)
-  }
-
-  def startActors(n: Int): Vector[(ActorRef, ActorRef)] = {
+  def startActors(n: Int, props: Props): Vector[(ActorRef, ActorRef)] = {
     for {
       i <- (1 to n).toVector
     } yield {
-      val ping = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
-      val pong = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+      val ping = system.actorOf(props)
+      val pong = system.actorOf(props)
       (ping, pong)
     }
   }
@@ -117,37 +115,54 @@ class ForkJoinActorBenchmark {
     }
   }
 
+  private def printProgress(totalMessages: Long, numActors: Int, startNanoTime: Long): Unit = {
+    val durationMicros = (System.nanoTime() - startNanoTime) / 1000
+    println(f"  $totalMessages messages by $numActors actors took ${durationMicros / 1000} ms, " +
+      f"${totalMessages.toDouble / durationMicros}%,.2f M msg/s")
+  }
+
   @Benchmark
-  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(messages)
   def pingPong(): Unit = {
-    // only one message in flight
-    sendMessage(pingPongActors, inFlight = 1)
-    awaitTerminated(pingPongActors)
+    val latch = new CountDownLatch(2)
+    val actors = startActors(1, pingPongProps(latch))
+    val startNanoTime = System.nanoTime()
+    sendMessage(actors, inFlight = 2 * tpt)
+    latch.await(timeout.toSeconds, TimeUnit.SECONDS)
+    printProgress(messages, 2, startNanoTime)
   }
 
   @Benchmark
-  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(totalMessagesLessThanCores)
   def pingPongLessActorsThanCores(): Unit = {
-    sendMessage(pingPongLessActorsThanCoresActors, inFlight = 2 * tpt)
-    awaitTerminated(pingPongLessActorsThanCoresActors)
+    val latch = new CountDownLatch(lessThanCoresActorPairs * 2)
+    val actors = startActors(lessThanCoresActorPairs, pingPongProps(latch))
+    val startNanoTime = System.nanoTime()
+    sendMessage(actors, inFlight = 2 * tpt)
+    latch.await(timeout.toSeconds, TimeUnit.SECONDS)
+    printProgress(totalMessagesLessThanCores, actors.size * 2, startNanoTime)
   }
 
   @Benchmark
-  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(totalMessagesSameAsCores)
   def pingPongSameNumberOfActorsAsCores(): Unit = {
-    sendMessage(pingPongSameNumberOfActorsAsCoresActors, inFlight = 2 * tpt)
-    awaitTerminated(pingPongSameNumberOfActorsAsCoresActors)
+    val latch = new CountDownLatch(cores)
+    val actors = startActors(cores / 2, pingPongProps(latch))
+    val startNanoTime = System.nanoTime()
+    sendMessage(actors, inFlight = 2 * tpt)
+    latch.await(timeout.toSeconds, TimeUnit.SECONDS)
+    printProgress(totalMessagesSameAsCores, actors.size * 2, startNanoTime)
   }
 
   @Benchmark
-  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(totalMessagesMoreThanCores)
   def pingPongMoreActorsThanCores(): Unit = {
-    sendMessage(pingPongMoreActorsThanCoresActors, inFlight = 2 * tpt)
-    awaitTerminated(pingPongMoreActorsThanCoresActors)
+    val latch = new CountDownLatch(moreThanCoresActorPairs * 2)
+    val actors = startActors(moreThanCoresActorPairs, pingPongProps(latch))
+    val startNanoTime = System.nanoTime()
+    sendMessage(actors, inFlight = 2 * tpt)
+    latch.await(timeout.toSeconds, TimeUnit.SECONDS)
+    printProgress(totalMessagesMoreThanCores, actors.size * 2, startNanoTime)
   }
 
   //  @Benchmark
@@ -180,14 +195,18 @@ class ForkJoinActorBenchmark {
 object ForkJoinActorBenchmark {
   case object Stop
   case object Message
-  final val timeout = 15.seconds
-  final val messages = 400000
+  final val timeout = 30.seconds
+  final val messages = 2000000 // messages per actor pair
 
+  // Constants because they are used in annotations
   // update according to cpu
-  final val cores = 8
-  // 2 actors per
-  final val moreThanCoresActorPairs = cores * 2
-  final val lessThanCoresActorPairs = (cores / 2) - 1
+  final val cores = 24
+  final val coresStr = "24"
+  final val cores2xStr = "48"
+  final val cores4xStr = "96"
+  // 2 actors per pair
+  final val moreThanCoresActorPairs = cores
+  final val lessThanCoresActorPairs = cores / 4
   final val totalMessagesMoreThanCores = moreThanCoresActorPairs * messages
   final val totalMessagesLessThanCores = lessThanCoresActorPairs * messages
   final val totalMessagesSameAsCores = cores * messages
@@ -201,13 +220,19 @@ object ForkJoinActorBenchmark {
         if (next.isDefined) next.get forward Stop
     }
   }
-  class PingPong extends Actor {
+
+  def pingPongProps(latch: CountDownLatch): Props =
+    Props(new PingPong(latch))
+
+  class PingPong(latch: CountDownLatch) extends Actor {
     var left = messages / 2
     def receive = {
       case Message =>
 
-        if (left <= 1)
+        if (left == 0) {
+          latch.countDown()
           context stop self
+        }
 
         sender() ! Message
         left -= 1
