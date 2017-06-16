@@ -308,11 +308,11 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
       PersistenceQuery(system).readJournalFor[MyScaladslReadJournal](
         "akka.persistence.query.my-read-journal")
 
-    //#projection-into-different-store-simple
+    //#projection-into-different-store-simple-classes
     trait ExampleStore {
       def save(event: Any): Future[Unit]
     }
-    //#projection-into-different-store-simple
+    //#projection-into-different-store-simple-classes
 
     //#projection-into-different-store-simple
     val store: ExampleStore = ???
