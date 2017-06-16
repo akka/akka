@@ -798,6 +798,26 @@ A snapshot of state data can be persisted by calling the `saveStateSnapshot()` m
 On recovery state data is initialized according to the latest available snapshot, then the remaining domain events are replayed, triggering the
 `applyEvent` method.
 
+<a id="periodical-snapshot"></a>
+## Periodical snapshot by snapshot-after
+
+You can enable periodical `saveStateSnapshot()` calls in `PersistentFSM` if you turn the following flag on in `reference.conf`
+
+`akka.persistence.fsm.snapshot-after = 1000`
+
+this means `saveStateSnapshot()` is called after the sequence number reaches multiple of 1000.
+
+@@@ note
+
+`saveStateSnapshot()` might not be called exactly at sequence numbers being multiple of the `snapshot-after` configuration value.
+This is because `PersistentFSM` works in a sort of "batch" mode when processing and persisting events, and `saveStateSnapshot()`
+is called only at the end of the "batch". For example, if you set `akka.persistence.fsm.snapshot-after = 1000`,
+it is possible that `saveStateSnapshot()` is called at `lastSequenceNr = 1005, 2003, ... `
+A single batch might persist state transition, also there could be multiple domain events to be persisted
+if you pass them to `applying`  method in the `PersistFSM` DSL.
+
+@@@
+
 <a id="storage-plugins"></a>
 ## Storage plugins
 
