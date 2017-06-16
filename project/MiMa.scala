@@ -1163,6 +1163,8 @@ object MiMa extends AutoPlugin {
       "2.4.18" -> Seq(
       ),
       "2.4.19" -> Seq(
+          // #17389 added constructor in PhiAccrualFailureDetector (this filter should not be needed)
+          ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.PhiAccrualFailureDetector.this")
       )
       // make sure that
       //  * this list ends with the latest released version number
@@ -1218,6 +1220,9 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withReplyWhileStopped")
       ),
       "2.5.2" -> Seq(
+        // #17389 added constructor in PhiAccrualFailureDetector (this filter should not be needed)
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.PhiAccrualFailureDetector.this"),
+          
         // #22881 Make sure connections are aborted correctly on Windows
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancel"),
         
