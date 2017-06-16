@@ -51,7 +51,7 @@ object ORMap {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] sealed abstract class AtomicDeltaOp[A, B <: ReplicatedData] extends DeltaOp {
+  @InternalApi private[akka] sealed abstract class AtomicDeltaOp[A, B <: ReplicatedData] extends DeltaOp with ReplicatedDeltaSize {
     def underlying: ORSet.DeltaOp
     def zeroTag: ZeroTag
     override def zero: DeltaReplicatedData = zeroTag.zero
@@ -59,6 +59,7 @@ object ORMap {
       case other: AtomicDeltaOp[A, B] ⇒ DeltaGroup(Vector(this, other))
       case DeltaGroup(ops)            ⇒ DeltaGroup(this +: ops)
     }
+    override def deltaSize: Int = 1
   }
 
   // PutDeltaOp contains ORSet delta and full value
@@ -117,7 +118,8 @@ object ORMap {
 
   // DeltaGroup is effectively a causally ordered list of individual deltas
   /** INTERNAL API */
-  @InternalApi private[akka] final case class DeltaGroup[A, B <: ReplicatedData](ops: immutable.IndexedSeq[DeltaOp]) extends DeltaOp {
+  @InternalApi private[akka] final case class DeltaGroup[A, B <: ReplicatedData](ops: immutable.IndexedSeq[DeltaOp])
+    extends DeltaOp with ReplicatedDeltaSize {
     override def merge(that: DeltaOp): DeltaOp = that match {
       case that: AtomicDeltaOp[A, B] ⇒
         ops.last match {
@@ -139,6 +141,8 @@ object ORMap {
     }
 
     override def zero: DeltaReplicatedData = ops.headOption.fold(ORMap.empty[A, B].asInstanceOf[DeltaReplicatedData])(_.zero)
+
+    override def deltaSize: Int = ops.size
   }
 }
 

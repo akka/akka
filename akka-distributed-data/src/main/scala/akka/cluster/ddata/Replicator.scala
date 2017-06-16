@@ -86,7 +86,8 @@ object ReplicatorSettings {
       durableKeys = config.getStringList("durable.keys").asScala.toSet,
       pruningMarkerTimeToLive = config.getDuration("pruning-marker-time-to-live", MILLISECONDS).millis,
       durablePruningMarkerTimeToLive = config.getDuration("durable.pruning-marker-time-to-live", MILLISECONDS).millis,
-      deltaCrdtEnabled = config.getBoolean("delta-crdt.enabled"))
+      deltaCrdtEnabled = config.getBoolean("delta-crdt.enabled"),
+      maxDeltaSize = config.getInt("delta-crdt.max-delta-size"))
   }
 
   /**
@@ -134,20 +135,31 @@ final class ReplicatorSettings(
   val durableKeys:                    Set[KeyId],
   val pruningMarkerTimeToLive:        FiniteDuration,
   val durablePruningMarkerTimeToLive: FiniteDuration,
-  val deltaCrdtEnabled:               Boolean) {
+  val deltaCrdtEnabled:               Boolean,
+  val maxDeltaSize:                   Int) {
 
   // For backwards compatibility
   def this(role: Option[String], gossipInterval: FiniteDuration, notifySubscribersInterval: FiniteDuration,
            maxDeltaElements: Int, dispatcher: String, pruningInterval: FiniteDuration, maxPruningDissemination: FiniteDuration) =
     this(role, gossipInterval, notifySubscribersInterval, maxDeltaElements, dispatcher, pruningInterval,
-      maxPruningDissemination, Right(Props.empty), Set.empty, 6.hours, 10.days, true)
+      maxPruningDissemination, Right(Props.empty), Set.empty, 6.hours, 10.days, true, 200)
 
   // For backwards compatibility
   def this(role: Option[String], gossipInterval: FiniteDuration, notifySubscribersInterval: FiniteDuration,
            maxDeltaElements: Int, dispatcher: String, pruningInterval: FiniteDuration, maxPruningDissemination: FiniteDuration,
            durableStoreProps: Either[(String, Config), Props], durableKeys: Set[String]) =
     this(role, gossipInterval, notifySubscribersInterval, maxDeltaElements, dispatcher, pruningInterval,
-      maxPruningDissemination, durableStoreProps, durableKeys, 6.hours, 10.days, true)
+      maxPruningDissemination, durableStoreProps, durableKeys, 6.hours, 10.days, true, 200)
+
+  // For backwards compatibility
+  def this(role: Option[String], gossipInterval: FiniteDuration, notifySubscribersInterval: FiniteDuration,
+           maxDeltaElements: Int, dispatcher: String, pruningInterval: FiniteDuration, maxPruningDissemination: FiniteDuration,
+           durableStoreProps: Either[(String, Config), Props], durableKeys: Set[String],
+           pruningMarkerTimeToLive: FiniteDuration, durablePruningMarkerTimeToLive: FiniteDuration,
+           deltaCrdtEnabled: Boolean) =
+    this(role, gossipInterval, notifySubscribersInterval, maxDeltaElements, dispatcher, pruningInterval,
+      maxPruningDissemination, durableStoreProps, durableKeys, pruningMarkerTimeToLive, durablePruningMarkerTimeToLive,
+      deltaCrdtEnabled, 200)
 
   def withRole(role: String): ReplicatorSettings = copy(role = ReplicatorSettings.roleOption(role))
 
@@ -200,6 +212,9 @@ final class ReplicatorSettings(
   def withDeltaCrdtEnabled(deltaCrdtEnabled: Boolean): ReplicatorSettings =
     copy(deltaCrdtEnabled = deltaCrdtEnabled)
 
+  def withMaxDeltaSize(maxDeltaSize: Int): ReplicatorSettings =
+    copy(maxDeltaSize = maxDeltaSize)
+
   private def copy(
     role:                           Option[String]                  = role,
     gossipInterval:                 FiniteDuration                  = gossipInterval,
@@ -212,10 +227,11 @@ final class ReplicatorSettings(
     durableKeys:                    Set[KeyId]                      = durableKeys,
     pruningMarkerTimeToLive:        FiniteDuration                  = pruningMarkerTimeToLive,
     durablePruningMarkerTimeToLive: FiniteDuration                  = durablePruningMarkerTimeToLive,
-    deltaCrdtEnabled:               Boolean                         = deltaCrdtEnabled): ReplicatorSettings =
+    deltaCrdtEnabled:               Boolean                         = deltaCrdtEnabled,
+    maxDeltaSize:                   Int                             = maxDeltaSize): ReplicatorSettings =
     new ReplicatorSettings(role, gossipInterval, notifySubscribersInterval, maxDeltaElements, dispatcher,
       pruningInterval, maxPruningDissemination, durableStoreProps, durableKeys,
-      pruningMarkerTimeToLive, durablePruningMarkerTimeToLive, deltaCrdtEnabled)
+      pruningMarkerTimeToLive, durablePruningMarkerTimeToLive, deltaCrdtEnabled, maxDeltaSize)
 }
 
 object Replicator {
@@ -1009,6 +1025,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       // TODO optimize, by maintaining a sorted instance variable instead
       nodes.union(weaklyUpNodes).diff(unreachable).toVector.sorted
     }
+
+    override def maxDeltaSize: Int = settings.maxDeltaSize
 
     override def createDeltaPropagation(deltas: Map[KeyId, (ReplicatedData, Long, Long)]): DeltaPropagation = {
       // Important to include the pruning state in the deltas. For example if the delta is based
