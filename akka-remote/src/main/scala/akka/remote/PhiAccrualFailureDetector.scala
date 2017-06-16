@@ -70,8 +70,7 @@ class PhiAccrualFailureDetector(
     acceptableHeartbeatPause: FiniteDuration,
     firstHeartbeatEstimate:   FiniteDuration)(implicit clock: Clock) =
     this(
-      threshold, maxSampleSize, minStdDeviation, acceptableHeartbeatPause, firstHeartbeatEstimate, None
-    )(clock)
+      threshold, maxSampleSize, minStdDeviation, acceptableHeartbeatPause, firstHeartbeatEstimate, None)(clock)
 
   /**
    * Constructor that reads parameters from config.
@@ -79,14 +78,14 @@ class PhiAccrualFailureDetector(
    * `min-std-deviation`, `acceptable-heartbeat-pause` and
    * `heartbeat-interval`.
    */
-  def this(config: Config, ev: Option[EventStream]) =
+  def this(config: Config, ev: EventStream) =
     this(
       threshold = config.getDouble("threshold"),
       maxSampleSize = config.getInt("max-sample-size"),
       minStdDeviation = config.getMillisDuration("min-std-deviation"),
       acceptableHeartbeatPause = config.getMillisDuration("acceptable-heartbeat-pause"),
       firstHeartbeatEstimate = config.getMillisDuration("heartbeat-interval"),
-      ev)
+      Some(ev))
 
   require(threshold > 0.0, "failure-detector.threshold must be > 0")
   require(maxSampleSize > 0, "failure-detector.max-sample-size must be > 0")
