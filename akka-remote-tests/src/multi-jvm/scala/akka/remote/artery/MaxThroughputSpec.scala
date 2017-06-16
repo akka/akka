@@ -29,63 +29,65 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
   val barrierTimeout = 5.minutes
 
+  val cfg = ConfigFactory.parseString(s"""
+     # for serious measurements you should increase the totalMessagesFactor (20)
+     akka.test.MaxThroughputSpec.totalMessagesFactor = 10.0
+     akka.test.MaxThroughputSpec.real-message = off
+     akka {
+       loglevel = INFO
+       log-dead-letters = 1000000
+       # avoid TestEventListener
+       loggers = ["akka.event.Logging$$DefaultLogger"]
+       testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
+       actor {
+         provider = remote
+         serialize-creators = false
+         serialize-messages = false
+
+         serializers {
+           test = "akka.remote.artery.MaxThroughputSpec$$TestSerializer"
+           test-message = "akka.remote.artery.TestMessageSerializer"
+         }
+         serialization-bindings {
+           "akka.remote.artery.MaxThroughputSpec$$FlowControl" = test
+           "akka.remote.artery.TestMessage" = test-message
+         }
+       }
+       remote.artery {
+         enabled = on
+
+         # for serious measurements when running this test on only one machine
+         # it is recommended to use external media driver
+         # See akka-remote/src/test/resources/aeron.properties
+         # advanced.embedded-media-driver = off
+         # advanced.aeron-dir = "target/aeron"
+         # on linux, use directory on ram disk, instead
+         # advanced.aeron-dir = "/dev/shm/aeron"
+
+         advanced.compression {
+           actor-refs.advertisement-interval = 2 second
+           manifests.advertisement-interval = 2 second
+         }
+
+         advanced {
+           inbound-lanes = 1
+           # buffer-pool-size = 512
+         }
+       }
+     }
+     akka.remote.default-remote-dispatcher {
+       fork-join-executor {
+         # parallelism-factor = 0.5
+         parallelism-min = 2
+         parallelism-max = 2
+       }
+       # Set to 10 by default. Might be worthwhile to experiment with.
+       # throughput = 100
+     }
+     """)
+
   commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
-       # for serious measurements you should increase the totalMessagesFactor (20)
-       akka.test.MaxThroughputSpec.totalMessagesFactor = 10.0
-       akka.test.MaxThroughputSpec.real-message = off
-       akka {
-         loglevel = INFO
-         log-dead-letters = 1000000
-         # avoid TestEventListener
-         loggers = ["akka.event.Logging$$DefaultLogger"]
-         testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
-         actor {
-           provider = remote
-           serialize-creators = false
-           serialize-messages = false
-
-           serializers {
-             test = "akka.remote.artery.MaxThroughputSpec$$TestSerializer"
-             test-message = "akka.remote.artery.TestMessageSerializer"
-           }
-           serialization-bindings {
-             "akka.remote.artery.MaxThroughputSpec$$FlowControl" = test
-             "akka.remote.artery.TestMessage" = test-message
-           }
-         }
-         remote.artery {
-           enabled = on
-
-           # for serious measurements when running this test on only one machine
-           # it is recommended to use external media driver
-           # See akka-remote/src/test/resources/aeron.properties
-           # advanced.embedded-media-driver = off
-           # advanced.aeron-dir = "target/aeron"
-           # on linux, use directory on ram disk, instead
-           # advanced.aeron-dir = "/dev/shm/aeron"
-
-           advanced.compression {
-             actor-refs.advertisement-interval = 2 second
-             manifests.advertisement-interval = 2 second
-           }
-
-           advanced {
-             inbound-lanes = 2
-             # buffer-pool-size = 512
-           }
-         }
-       }
-       akka.remote.default-remote-dispatcher {
-         fork-join-executor {
-           # parallelism-factor = 0.5
-           parallelism-min = 2
-           parallelism-max = 2
-         }
-         # Set to 10 by default. Might be worthwhile to experiment with.
-         # throughput = 100
-       }
-       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+    cfg).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   case object Run
   sealed trait Echo extends DeadLetterSuppression with JavaSerializable
@@ -222,7 +224,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
             f"${throughput * payloadSize * testSettings.senderReceiverPairs}%,.0f bytes/s (payload), " +
             f"${throughput * totalSize(context.system) * testSettings.senderReceiverPairs}%,.0f bytes/s (total" +
             (if (RARP(context.system).provider.remoteSettings.Artery.Advanced.Compression.Enabled) ",compression" else "") + "), " +
-            s"dropped ${totalMessages - totalReceived}, " +
+            (if (testSettings.senderReceiverPairs == 1) s"dropped ${totalMessages - totalReceived}, " else "") +
             s"max round-trip $maxRoundTripMillis ms, " +
             s"burst size $burstSize, " +
             s"payload size $payloadSize, " +
@@ -403,13 +405,14 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
 
     runOn(second) {
       val rep = reporter(testName)
-      for (n ← 1 to senderReceiverPairs) {
-        val receiver = system.actorOf(
+      val receivers = (1 to senderReceiverPairs).map { n ⇒
+        system.actorOf(
           receiverProps(rep, payloadSize, printTaskRunnerMetrics = n == 1, senderReceiverPairs),
           receiverName + n)
       }
       enterBarrier(receiverName + "-started")
       enterBarrier(testName + "-done")
+      receivers.foreach(_ ! PoisonPill)
       rep.halt()
     }
 
@@ -430,12 +433,11 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
       }
       senders.foreach {
         case (snd, terminationProbe, plotProbe) ⇒
+          terminationProbe.expectTerminated(snd, barrierTimeout)
           if (snd == senders.head._1) {
-            terminationProbe.expectTerminated(snd, barrierTimeout)
             val plotResult = plotProbe.expectMsgType[PlotResult]
             plot = plot.addAll(plotResult)
-          } else
-            terminationProbe.expectTerminated(snd, 10.seconds)
+          }
       }
       enterBarrier(testName + "-done")
     }
