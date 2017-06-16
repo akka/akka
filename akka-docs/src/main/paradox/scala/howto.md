@@ -122,47 +122,7 @@ The pattern is described [Discovering Message Flows in Actor System with the Spi
 
 ## Scheduling Periodic Messages
 
-This pattern describes how to schedule periodic messages to yourself in two different
-ways.
-
-The first way is to set up periodic message scheduling in the constructor of the actor,
-and cancel that scheduled sending in `postStop` or else we might have multiple registered
-message sends to the same actor.
-
-@@@ note
-
-With this approach the scheduled periodic message send will be restarted with the actor on restarts.
-This also means that the time period that elapses between two tick messages during a restart may drift
-off based on when you restart the scheduled message sends relative to the time that the last message was
-sent, and how long the initial delay is. Worst case scenario is `interval` plus `initialDelay`.
-
-@@@
-
-Scala
-:  @@snip [SchedulerPatternSpec.scala]($code$/scala/docs/pattern/SchedulerPatternSpec.scala) { #schedule-constructor }
-
-Java
-:  @@snip [SchedulerPatternTest.java]($code$/java/jdocs/pattern/SchedulerPatternTest.java) { #schedule-constructor }
-
-The second variant sets up an initial one shot message send in the `preStart` method
-of the actor, and the then the actor when it receives this message sets up a new one shot
-message send. You also have to override `postRestart` so we don't call `preStart`
-and schedule the initial message send again.
-
-@@@ note
-
-With this approach we won't fill up the mailbox with tick messages if the actor is
-under pressure, but only schedule a new tick message when we have seen the previous one.
-
-@@@
-
-Scala
-:  @@snip [SchedulerPatternSpec.scala]($code$/scala/docs/pattern/SchedulerPatternSpec.scala) { #schedule-receive }
-
-Java
-:  @@snip [SchedulerPatternTest.java]($code$/java/jdocs/pattern/SchedulerPatternTest.java) { #schedule-receive }
-
-@@@ div { .group-java }
+See @ref:[Actor Timers](actors.md#actors-timers)
 
 ## Single-Use Actor Trees with High-Level Error Reporting
 
