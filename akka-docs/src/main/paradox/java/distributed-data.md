@@ -380,6 +380,22 @@ such as the following specialized maps.
 `LWWMap` (last writer wins map) is a specialized `ORMap` with `LWWRegister` (last writer wins register)
 values.
 
+`ORMap`, `ORMultiMap`, `PNCounterMap` and `LWWMap` have support for [delta-CRDT](#delta-crdt) and they require causal
+delivery of deltas. Support for deltas here means that the `ORSet` being underlying key type for all those maps
+uses delta propagation to deliver updates. Effectively, the update for map is then a pair, consisting of delta for the `ORSet`
+being the key and full update for the respective value (`ORSet`, `PNCounter` or `LWWRegister`) kept in the map.
+
+There is a special version of `ORMultiMap`, created by using separate constructor
+`ORMultiMap.emptyWithValueDeltas[A, B]`, that also propagates the updates to its values (of `ORSet` type) as deltas.
+This means that the `ORMultiMap` initiated with `ORMultiMap.emptyWithValueDeltas` propagates its updates as pairs
+consisting of delta of the key and delta of the value. It is much more efficient in terms of network bandwith consumed.
+However, this behaviour has not been made default for `ORMultiMap` because currently the merge process for
+updates for `ORMultiMap.emptyWithValueDeltas` results in a tombstone (being a form of [CRDT Garbage](#crdt-garbage) )
+in form of additional `ORSet` entry being created in a situation when a key has been added and then removed.
+There is ongoing work aimed at removing necessity of creation of the aforementioned tombstone. Please also note
+that despite having the same Scala type, `ORMultiMap.emptyWithValueDeltas` is not compatible with 'vanilla' `ORMultiMap`,
+because of different replication mechanism.
+
 @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #ormultimap }
 
 When a data entry is changed the full state of that entry is replicated to other nodes, i.e.
