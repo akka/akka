@@ -12,9 +12,11 @@ import akka.stream.testkit.{ GraphStageMessages, StreamSpec, TestSourceStage, Te
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.Utils._
 import akka.testkit.TestProbe
-
 import scala.concurrent.duration._
 import scala.concurrent._
+import akka.Done
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSink
 import org.scalatest.time.Span
 
 class QueueSourceSpec extends StreamSpec {
@@ -184,7 +186,7 @@ class QueueSourceSpec extends StreamSpec {
       expectMsgClass(classOf[Status.Failure])
     }
 
-    "return false when elemen was not added to buffer" in assertAllStagesStopped {
+    "return false when element was not added to buffer" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(1, OverflowStrategy.dropNew).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
@@ -299,6 +301,15 @@ class QueueSourceSpec extends StreamSpec {
           .requestNext(1)
           .expectComplete()
         source.watchCompletion().futureValue should ===(Done)
+      }
+
+      "some elements not yet delivered to stage" in {
+        val (queue, probe) =
+          Source.queue[Unit](10, OverflowStrategy.fail).toMat(TestSink.probe)(Keep.both).run()
+        intercept[StreamDetachedException] {
+          Await.result(
+            (1 to 15).map(_ ⇒ queue.offer(())).last, 3.seconds)
+        }
       }
     }
 
