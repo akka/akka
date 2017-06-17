@@ -5,9 +5,14 @@
 
 A `KillSwitch` allows the completion of graphs of `FlowShape` from the outside. It consists of a flow element that
 can be linked to a graph of `FlowShape` needing completion control.
-The `KillSwitch` trait allows to complete or fail the graph(s).
+The `KillSwitch` @scala[trait] @java[interface] allows to:
+ 
+ * complete the graph(s) via `shutdown()`
+ * fail the graph(s) via `abort(Throwable error)`
 
-@@snip [KillSwitch.scala]($akka$/akka-stream/src/main/scala/akka/stream/KillSwitch.scala) { #kill-switch }
+
+Scala
+:   @@snip [KillSwitch.scala]($akka$/akka-stream/src/main/scala/akka/stream/KillSwitch.scala) { #kill-switch }
 
 After the first call to either `shutdown` or `abort`, all subsequent calls to any of these methods will be ignored.
 Graph completion is performed by both
@@ -25,11 +30,19 @@ below for usage examples.
 
  * **Shutdown**
 
-@@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #unique-shutdown }
+Scala
+:   @@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #unique-shutdown }
+
+Java
+:   @@snip [KillSwitchDocTest.java]($code$/java/jdocs/stream/KillSwitchDocTest.java) { #unique-shutdown }
 
  * **Abort**
 
-@@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #unique-abort }
+Scala
+:   @@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #unique-abort }
+
+Java
+:   @@snip [KillSwitchDocTest.java]($code$/java/jdocs/stream/KillSwitchDocTest.java) { #unique-abort }
 
 <a id="shared-kill-switch"></a>
 ### SharedKillSwitch
@@ -40,11 +53,19 @@ Refer to the below for usage examples.
 
  * **Shutdown**
 
-@@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #shared-shutdown }
+Scala
+:   @@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #shared-shutdown }
+
+Java
+:   @@snip [KillSwitchDocTest.java]($code$/java/jdocs/stream/KillSwitchDocTest.java) { #shared-shutdown }
 
  * **Abort**
 
-@@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #shared-abort }
+Scala
+:   @@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #shared-abort }
+
+Java
+:   @@snip [KillSwitchDocTest.java]($code$/java/jdocs/stream/KillSwitchDocTest.java) { #shared-abort }
 
 @@@ note
 
@@ -69,7 +90,11 @@ producers are backpressured. The hub itself comes as a `Source` to which the sin
 It is not possible to attach any producers until this `Source` has been materialized (started). This is ensured
 by the fact that we only get the corresponding `Sink` as a materialized value. Usage might look like this:
 
-@@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #merge-hub }
+Scala
+:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #merge-hub }
+
+Java
+:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #merge-hub }
 
 This sequence, while might look odd at first, ensures proper startup order. Once we get the `Sink`,
 we can use it as many times as wanted. Everything that is fed to it will be delivered to the consumer we attached
@@ -82,7 +107,11 @@ rate of the producer will be automatically adapted to the slowest consumer. In t
 to which the single producer must be attached first. Consumers can only be attached once the `Sink` has
 been materialized (i.e. the producer has been started). One example of using the `BroadcastHub`:
 
-@@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #broadcast-hub }
+Scala
+:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #broadcast-hub }
+
+Java
+:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #broadcast-hub }
 
 The resulting `Source` can be materialized any number of times, each materialization effectively attaching
 a new subscriber. If there are no subscribers attached to this hub then it will not drop any elements but instead
@@ -102,13 +131,21 @@ First, we connect a `MergeHub` and a `BroadcastHub` together to form a publish-s
 we materialize this small stream, we get back a pair of `Source` and `Sink` that together define
 the publish and subscribe sides of our channel.
 
-@@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-1 }
+Scala
+:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-1 }
+
+Java
+:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #pub-sub-1 }
 
 We now use a few tricks to add more features. First of all, we attach a `Sink.ignore`
 at the broadcast side of the channel to keep it drained when there are no subscribers. If this behavior is not the
 desired one this line can be simply dropped.
 
-@@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-2 }
+Scala
+:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-2 }
+
+Java
+:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #pub-sub-2 }
 
 We now wrap the `Sink` and `Source` in a `Flow` using `Flow.fromSinkAndSource`. This bundles
 up the two sides of the channel into one and forces users of it to always define a publisher and subscriber side
@@ -118,10 +155,18 @@ same time.
 Finally, we add `backpressureTimeout` on the consumer side to ensure that subscribers that block the channel for more
 than 3 seconds are forcefully removed (and their stream failed).
 
-@@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-3 }
+Scala
+:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-3 }
+
+Java
+:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #pub-sub-3 }
 
 The resulting Flow now has a type of `Flow[String, String, UniqueKillSwitch]` representing a publish-subscribe
 channel which can be used any number of times to attach new producers or consumers. In addition, it materializes
 to a `UniqueKillSwitch` (see [UniqueKillSwitch](#unique-kill-switch)) that can be used to deregister a single user externally:
 
-@@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-4 }
+Scala
+:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-4 }
+
+Java
+:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #pub-sub-4 }
