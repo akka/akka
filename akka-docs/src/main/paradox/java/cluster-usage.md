@@ -84,7 +84,7 @@ The actor registers itself as subscriber of certain cluster events. It receives 
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
 The easiest way to run this example yourself is to download the ready to run
-@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-java)
+@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)
 together with the tutorial. It contains instructions on how to run the `SimpleClusterApp`.
 The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-cluster-java).
 
@@ -337,7 +337,7 @@ actor. Death watch generates the `Terminated` message to the watching actor when
 unreachable cluster node has been downed and removed.
 
 The Akka sample named
-[Akka Cluster Sample with Java](https://github.com/akka/akka-samples/tree/master/akka-sample-cluster-java).
+@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java).
 contains the full source code and instructions of how to run the **Worker Dial-in Example**.
 
 ## Node Roles
@@ -628,7 +628,7 @@ This means that user requests can be sent to `StatsService` on any node and it w
 `StatsWorker` on all nodes.
 
 The Akka sample named
-[Akka Cluster Sample with Java](https://github.com/akka/akka-samples/tree/master/akka-sample-cluster-java).
+@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java).
 contains the full source code and instructions of how to run the **Router Example with Group of Routees**.
 
 ### Router with Pool of Remote Deployed Routees
@@ -697,7 +697,7 @@ akka.actor.deployment {
 ```
 
 The Akka sample named
-[Akka Cluster Sample with Java](https://github.com/akka/akka-samples/tree/master/akka-sample-cluster-java).
+@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java).
 contains the full source code and instructions of how to run the **Router Example with Pool of Remote Deployed Routees**.
 
 ## Cluster Metrics
