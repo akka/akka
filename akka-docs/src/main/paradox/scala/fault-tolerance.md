@@ -43,7 +43,7 @@ First off, it is a one-for-one strategy, meaning that each child is treated
 separately (an all-for-one strategy works very similarly, the only difference
 is that any decision is applied to all children of the supervisor, not only the
 failing one). 
-In the above example, `10` and @scala[`1 minute`]@java[`Duration.create("1 minute")`] are passed to the `maxNrOfRetries`
+In the above example, `10` and @scala[`1 minute`]@java[`Duration.create(1, TimeUnit.MILLISECONDS)`] are passed to the `maxNrOfRetries`
 and `withinTimeRange` parameters respectively, which means that the strategy restarts a child up to 10 restarts per minute.
 The child actor is stopped if the restart count exceeds `maxNrOfRetries` during the `withinTimeRange` duration.
 
@@ -56,20 +56,17 @@ Also, there are special values for these parameters. If you specify:
 * a non-negative number to `maxNrOfRetries` and @scala[`Duration.inf`]@java[`Duration.Inf()`] to `withinTimeRange`
     * `withinTimeRange` is treated as infinite duration (i.e.) no matter how long it takes, once the restart count exceeds `maxNrOfRetries`, the child actor is stopped  
    
-@@@ div { .group-scala }
-
-The match statement which forms the bulk of the body is of type `Decider`,
-which is a `PartialFunction[Throwable, Directive]`. This
-is the piece which maps child failure types to their corresponding directives.
-
-@@@
+The match statement which forms the bulk of the body   
+@scala[is of type `Decider` which is a `PartialFunction[Throwable, Directive]`.]
+@java[consists of `PFBuilder` returned by `DeciderBuilder`'s `match` method, where the builder is finished by the `build` method.]
+This is the piece which maps child failure types to their corresponding directives.
 
 @@@ note
 
 If the strategy is declared inside the supervising actor (as opposed to
 @scala[within a companion object]@java[a separate class]) its decider has access to all internal state of
 the actor in a thread-safe fashion, including obtaining a reference to the
-currently failed child (available as the `sender` of the failure message).
+currently failed child (available as the @scala[`sender`]@java[`getSender()`] of the failure message).
 
 @@@
 
