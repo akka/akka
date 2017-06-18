@@ -179,6 +179,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * using the optional type hint to the Serializer.
    * Returns either the resulting object or throws an exception if deserialization fails.
    */
+  @throws(classOf[NotSerializableException])
   def deserializeByteBuffer(buf: ByteBuffer, serializerId: Int, manifest: String): AnyRef = {
     val serializer = try getSerializerById(serializerId) catch {
       case _: NoSuchElementException ⇒ throw new NotSerializableException(
@@ -220,6 +221,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    *
    * Throws java.io.NotSerializableException if no `serialization-bindings` is configured for the class.
    */
+  @throws(classOf[NotSerializableException])
   def serializerFor(clazz: Class[_]): Serializer =
     serializerMap.get(clazz) match {
       case null ⇒ // bindings are ordered from most specific to least specific
