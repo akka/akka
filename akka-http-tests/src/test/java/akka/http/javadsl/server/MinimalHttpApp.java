@@ -17,18 +17,16 @@ public class MinimalHttpApp extends HttpApp {
   CompletableFuture<Done> shutdownTrigger = new CompletableFuture<>();
   CompletableFuture<Done> bindingPromise = new CompletableFuture<>();
 
+
+  public void shutdown() {
+    shutdownTrigger.complete(Done.getInstance());
+  }
+    
   @Override
   protected Route routes() {
-    return route(path("foo", () ->
+    return path("foo", () ->
         complete("bar")
-      ),
-      path("shutdown", () -> {
-        if (shutdownTrigger.complete(Done.getInstance())) {
-          return complete("Shutdown request accepted");
-        } else {
-          return complete("Shutdown is already in progress");
-        }
-      }));
+      );
   }
 
   @Override
