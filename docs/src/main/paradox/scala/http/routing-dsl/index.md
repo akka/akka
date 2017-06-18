@@ -100,7 +100,7 @@ some form fields and saves an entry to a fictive database:
 
 @@snip [FileUploadExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/FileUploadExamplesSpec.scala) { #simple-upload }
 
-You can transform the uploaded files as they arrive rather than storing then in a temporary file as
+You can transform the uploaded files as they arrive rather than storing them in a temporary file as
 in the previous example. In this example we accept any number of `.csv` files, parse those into lines
 and split each line before we send it to an actor for further processing:
 
