@@ -54,7 +54,7 @@ private final class HttpsProxyGraphStage(targetHostName: String, targetPort: Int
     private var state: State = Starting
 
     lazy val parser = {
-      val p = new HttpResponseParser(settings.parserSettings, HttpHeaderParser(settings.parserSettings, log)()) {
+      val p = new HttpResponseParser(settings.parserSettings, HttpHeaderParser(settings.parserSettings, log)) {
         override def handleInformationalResponses = false
 
         override protected def parseMessage(input: ByteString, offset: Int): StateResult = {

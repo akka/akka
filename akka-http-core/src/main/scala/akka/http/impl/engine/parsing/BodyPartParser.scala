@@ -59,9 +59,7 @@ private[http] final class BodyPartParser(
   private[this] val boyerMoore = new BoyerMoore(needle)
 
   // TODO: prevent re-priming header parser from scratch
-  private[this] val headerParser = HttpHeaderParser(settings, log) { errorInfo ⇒
-    if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)
-  }
+  private[this] val headerParser = HttpHeaderParser(settings, log)
 
   val in = Inlet[ByteString]("BodyPartParser.in")
   val out = Outlet[BodyPartParser.Output]("BodyPartParser.out")

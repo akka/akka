@@ -79,10 +79,7 @@ object Http2Blueprint {
     // This is master header parser, every other usage should do .createShallowCopy()
     // HttpHeaderParser is not thread safe and should not be called concurrently,
     // the internal trie, however, has built-in protection and will do copy-on-write
-    val masterHttpHeaderParser = HttpHeaderParser(parserSettings, log) { info ⇒
-      if (parserSettings.illegalHeaderWarnings)
-        logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
-    }
+    val masterHttpHeaderParser = HttpHeaderParser(parserSettings, log)
     BidiFlow.fromFlows(
       Flow[HttpResponse].map(ResponseRendering.renderResponse(settings, log)),
       Flow[Http2SubStream].via(StreamUtils.statefulAttrsMap { attrs ⇒

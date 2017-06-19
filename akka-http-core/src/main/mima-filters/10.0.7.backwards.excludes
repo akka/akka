@@ -1,5 +1,11 @@
 # Mima filters needed to check newer versions against 10.0.7
 
+# Changed HttpHeaderParser signature and added extra settings
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.parsing.HttpHeaderParser#Settings.errorLoggingVerbosity")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpHeaderParser.apply$default$3")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpHeaderParser.apply")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.parsing.HttpHeaderParser#Settings.illegalHeaderWarnings")
+
 # Added a new method to this sealed trait
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.MediaType#WithOpenCharset.toContentTypeWithMissingCharset")
 

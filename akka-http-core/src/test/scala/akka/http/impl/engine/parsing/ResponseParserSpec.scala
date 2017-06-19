@@ -323,7 +323,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
     protected def parserSettings: ParserSettings = ParserSettings(system)
 
     def newParserStage(requestMethod: HttpMethod = GET) = {
-      val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings, system.log)())
+      val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings, system.log))
       parser.setContextForNextResponse(HttpResponseParser.ResponseContext(requestMethod, None))
 
       // Note that this GraphStage mutates the HttpMessageParser instance, use with caution.

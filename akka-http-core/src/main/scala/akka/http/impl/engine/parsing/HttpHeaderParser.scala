@@ -11,6 +11,7 @@ import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
+import akka.http.scaladsl.settings.ParserSettings.ErrorLoggingVerbosity
 import akka.http.scaladsl.settings.ParserSettings
 
 import scala.annotation.tailrec
@@ -424,7 +425,9 @@ private[http] object HttpHeaderParser {
     def maxHeaderValueLength: Int
     def headerValueCacheLimit(headerName: String): Int
     def customMediaTypes: MediaTypes.FindCustom
+    def illegalHeaderWarnings: Boolean
     def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
+    def errorLoggingVerbosity: ErrorLoggingVerbosity
   }
 
   private def predefinedHeaders = Seq(
@@ -438,8 +441,14 @@ private[http] object HttpHeaderParser {
     "Cache-Control: no-cache",
     "Expect: 100-continue")
 
-  def apply(settings: HttpHeaderParser.Settings, log: LoggingAdapter)(onIllegalHeader: ErrorInfo ⇒ Unit = info ⇒ throw IllegalHeaderException(info)) =
-    prime(unprimed(settings, log, onIllegalHeader))
+  def apply(settings: HttpHeaderParser.Settings, log: LoggingAdapter) =
+    prime(unprimed(settings, log, defaultIllegalHeaderHandler(settings, log)))
+
+  def defaultIllegalHeaderHandler(settings: HttpHeaderParser.Settings, log: LoggingAdapter): ErrorInfo ⇒ Unit =
+    if (settings.illegalHeaderWarnings)
+      info ⇒ logParsingError(info withSummaryPrepended "Illegal header", log, settings.errorLoggingVerbosity)
+    else
+      (_: ErrorInfo) ⇒ _ // Does exactly what the label says - nothing
 
   def unprimed(settings: HttpHeaderParser.Settings, log: LoggingAdapter, warnOnIllegalHeader: ErrorInfo ⇒ Unit) =
     new HttpHeaderParser(settings, log, warnOnIllegalHeader)

@@ -302,7 +302,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
     "support `rawRequestUriHeader` setting" in new Test {
       override protected def newParser: HttpRequestParser =
-        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log)())
+        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log))
 
       """GET /f%6f%6fbar?q=b%61z HTTP/1.1
         |Host: ping
@@ -477,36 +477,6 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
           |
           |""" should parseToError(422: StatusCode, ErrorInfo("TRACE requests must not have an entity"))
       }
-
-      "with additional fields in headers" in new Test {
-        """GET / HTTP/1.1
-          |Host: x; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal 'host' header: Invalid input ' ', expected 'EOI', ':', UPPER_ALPHA, lower-reg-name-char or pct-encoded (line 1, column 3)", "x; dummy\n  ^"))
-
-        """GET / HTTP/1.1
-          |Content-length: 3; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal `Content-Length` header value"))
-
-        """GET / HTTP/1.1
-          |Connection:keep-alive; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal 'connection' header: Invalid input ';', expected tchar, OWS, listSep or 'EOI' (line 1, column 11)", "keep-alive; dummy\n          ^"))
-
-        """GET / HTTP/1.1
-          |Transfer-Encoding: chunked; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal 'transfer-encoding' header: Invalid input ';', expected OWS, listSep or 'EOI' (line 1, column 8)", "chunked; dummy\n       ^"))
-      }
     }
   }
 
@@ -584,7 +554,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
         .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
-    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, system.log)())
+    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, system.log))
 
     private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {
