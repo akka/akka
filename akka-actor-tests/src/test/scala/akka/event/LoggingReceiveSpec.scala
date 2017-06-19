@@ -12,6 +12,7 @@ import org.scalatest.WordSpec
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import akka.actor._
+import scala.annotation.tailrec
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {
@@ -229,10 +230,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           val sname = supervisor.path.toString
           val sclass = classOf[TestLogActor]
 
-          expectMsgAllPF(messages = 3) {
+          expectMsgAllPF(messages = 2) {
             case Logging.Debug(`sname`, `sclass`, msg: String) if msg startsWith "started" ⇒ 0
             case Logging.Debug(_, _, msg: String) if msg startsWith "now supervising"      ⇒ 1
-            case Logging.Debug(_, _, msg: String) if msg startsWith "now watched by"       ⇒ 2
           }
 
           val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
@@ -260,16 +260,23 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
             Logging.Debug(sname, sclass, "stopped"))
         }
 
-        def expectMsgAllPF(messages: Int)(matchers: PartialFunction[AnyRef, Int]) = {
-          def receiveNMatching(remaining: Int): Set[Int] =
-            if (remaining == 0) Set.empty
+        def expectMsgAllPF(messages: Int)(matchers: PartialFunction[AnyRef, Int]): Set[Int] = {
+          val max = remainingOrDefault
+          @tailrec def receiveNMatching(gotMatching: Set[Int], unknown: Vector[Any]): Set[Int] = {
+            if (unknown.size >= 20)
+              throw new IllegalStateException(s"Got too many unknown messages: [${unknown.mkString(", ")}]")
+            else if (gotMatching.size == messages) gotMatching
             else {
               val msg = receiveOne(remainingOrDefault)
-              if (matchers.isDefinedAt(msg)) receiveNMatching(remaining - 1) + matchers(msg)
-              else receiveNMatching(remaining) // unknown message, just ignore
+              assert(msg ne null, s"timeout ($max) during expectMsgAllPF, got matching " +
+                s"[${gotMatching.mkString(", ")}], got unknown: [${unknown.mkString(", ")}]")
+              if (matchers.isDefinedAt(msg)) receiveNMatching(gotMatching + matchers(msg), Vector.empty)
+              else receiveNMatching(gotMatching, unknown :+ msg) // unknown message, just ignore
             }
-          val set = receiveNMatching(messages)
+          }
+          val set = receiveNMatching(Set.empty, Vector.empty)
           assert(set == (0 until messages).toSet)
+          set
         }
       }
     }
