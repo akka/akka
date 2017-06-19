@@ -15,9 +15,6 @@ import com.typesafe.config.Config
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.Option
 
-// Marker trait used for mailbox requirements mapping
-trait MyUnboundedMessageQueueSemantics
-
 object MyUnboundedMailbox {
   // This is the MessageQueue implementation
   class MyMessageQueue extends MessageQueue
@@ -58,3 +55,8 @@ class MyUnboundedMailbox extends MailboxType
     new MyMessageQueue()
 }
 //#mailbox-implementation-example
+
+//#mailbox-marker-interface
+// Marker trait used for mailbox requirements mapping
+trait MyUnboundedMessageQueueSemantics
+//#mailbox-marker-interface
