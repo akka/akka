@@ -1,1 +1,1 @@
-[](../../scala/stream/stream-integrations.md)
+../../scala/stream/stream-integrations.md
