@@ -26,7 +26,7 @@ public class Consumer extends AbstractActor {
 
   @Override
   public void preStart() {
-    //queue.tell(TestSingletonMessages.registerConsumer(), getSelf());
+    queue.tell(TestSingletonMessages.registerConsumer(), getSelf());
   }
 
   @Override
@@ -46,25 +46,25 @@ public class Consumer extends AbstractActor {
           delegateTo.tell(n, getSelf());
         }
       })
-      .match(RegistrationOk.class, x ->
-        delegateTo.tell(x, getSelf())
+      .match(RegistrationOk.class, message ->
+        delegateTo.tell(message, getSelf())
       )
-      .match(UnexpectedRegistration.class, x ->
-        delegateTo.tell(x, getSelf())
+      .match(UnexpectedRegistration.class, message ->
+        delegateTo.tell(message, getSelf())
       )
-      .match(GetCurrent.class, x ->
+      .match(GetCurrent.class, message ->
         getSender().tell(current, getSelf())
       )
       //#consumer-end
-      .match(End.class, x ->
+      .match(End.class, message ->
         queue.tell(UnregisterConsumer.class, getSelf())
       )
-      .match(UnregistrationOk.class, x -> {
+      .match(UnregistrationOk.class, message -> {
           stoppedBeforeUnregistration = false;
           getContext().stop(getSelf());
         }
       )
-      .match(Ping.class, x ->
+      .match(Ping.class, message ->
           getSender().tell(TestSingletonMessages.pong(), getSelf())
       )
       //#consumer-end

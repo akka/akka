@@ -142,8 +142,8 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
       case n: Int ⇒
         current = n
         delegateTo ! n
-      case x @ (RegistrationOk | UnexpectedRegistration) ⇒
-        delegateTo ! x
+      case message @ (RegistrationOk | UnexpectedRegistration) ⇒
+        delegateTo ! message
       case GetCurrent ⇒
         sender() ! current
       //#consumer-end
