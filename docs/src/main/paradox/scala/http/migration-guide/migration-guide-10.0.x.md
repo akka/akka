@@ -9,6 +9,15 @@ See @extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binar
 This migration guide aims to help developers who use these bleeding-edge APIs to migrate between their evolving versions
 within patch releases.
 
+## Akka HTTP 10.0.7 -> 10.0.8
+
+### ClientTransport SPI / API Changes
+
+`ClientTransport` SPI and API have changed in @github[#1195](akka/akka-http#1195). `ClientTransport.TCP` is now constant
+and doesn't take any parameters any more. `ClientTransport.connectTo` now has a new `settings: ClientConnectionSettings` parameter.
+This is a binary and source incompatible change to an `@ApiMayChange` API. So far, this API was not documented or
+exposed so we hope that only few users are affected.
+
 ## Akka HTTP 10.0.6 -> 10.0.7
 
 ### `HttpApp#route` has been renamed to `HttpApp#routes`
