@@ -35,7 +35,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
      akka.test.MaxThroughputSpec.real-message = off
      akka {
        loglevel = INFO
-       log-dead-letters = 1000000
+       log-dead-letters = 10000
        # avoid TestEventListener
        loggers = ["akka.event.Logging$$DefaultLogger"]
        testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
@@ -384,7 +384,7 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
       realMessage),
     TestSettings(
       testName = "1-to-1-size-10k",
-      totalMessages = adjustedTotalMessages(10000),
+      totalMessages = adjustedTotalMessages(5000),
       burstSize = 1000,
       payloadSize = 10000,
       senderReceiverPairs = 1,

@@ -108,14 +108,14 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
       realMessage),
     TestSettings(
       testName = "size-1k",
-      totalMessages = adjustedTotalMessages(20000),
+      totalMessages = adjustedTotalMessages(10000),
       burstSize = burstSize,
       payloadSize = 1000,
       senderReceiverPairs = senderReceiverPairs,
       realMessage),
     TestSettings(
       testName = "size-10k",
-      totalMessages = adjustedTotalMessages(10000),
+      totalMessages = adjustedTotalMessages(2000),
       burstSize = burstSize,
       payloadSize = 10000,
       senderReceiverPairs = senderReceiverPairs,
@@ -170,6 +170,7 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
   }
 
   "Max throughput of fan-out" must {
+    pending
     val reporter = BenchmarkFileReporter("FanOutThroughputSpec", system)
     for (s ← scenarios) {
       s"be great for ${s.testName}, burstSize = ${s.burstSize}, payloadSize = ${s.payloadSize}" in test(s, reporter)
