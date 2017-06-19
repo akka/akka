@@ -107,14 +107,14 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
       realMessage),
     TestSettings(
       testName = "size-1k",
-      totalMessages = adjustedTotalMessages(20000),
+      totalMessages = adjustedTotalMessages(10000),
       burstSize = 1000,
       payloadSize = 1000,
       senderReceiverPairs = senderReceiverPairs,
       realMessage),
     TestSettings(
       testName = "size-10k",
-      totalMessages = adjustedTotalMessages(10000),
+      totalMessages = adjustedTotalMessages(2000),
       burstSize = 1000,
       payloadSize = 10000,
       senderReceiverPairs = senderReceiverPairs,
