@@ -19,10 +19,14 @@ full-service high-level NIO wrapper for end users.
 The I/O API is completely actor based, meaning that all operations are implemented with message passing instead of
 direct method calls. Every I/O driver (TCP, UDP) has a special actor, called a *manager* that serves
 as an entry point for the API. I/O is broken into several drivers. The manager for a particular driver
-is accessible through the `IO` entry point. For example the following code
+is accessible @scala[through the `IO` entry point]@java[by querying an `ActorSystem`]. For example the following code
 looks up the TCP manager and returns its `ActorRef`:
 
-@@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #manager }
+Scala
+:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #manager }
+
+Java
+:  @@snip [EchoManager.java]($code$/java/jdocs/io/japi/EchoManager.java) { #manager }
 
 The manager receives I/O command messages and instantiates worker actors in response. The worker actors present
 themselves to the API user in the reply to the command that was sent. For example after a `Connect` command sent to
@@ -78,14 +82,14 @@ not error handling. In other words, data may still be lost, even if every write 
 
 To maintain isolation, actors should communicate with immutable objects only. `ByteString` is an
 immutable container for bytes. It is used by Akka's I/O system as an efficient, immutable alternative
-the traditional byte containers used for I/O on the JVM, such as `Array[Byte]` and `ByteBuffer`.
+the traditional byte containers used for I/O on the JVM, such as @scala[`Array[Byte]`]@java[`byte[]`] and `ByteBuffer`.
 
 `ByteString` is a [rope-like](http://en.wikipedia.org/wiki/Rope_\(computer_science\)) data structure that is immutable
 and provides fast concatenation and slicing operations (perfect for I/O). When two `ByteString`s are concatenated
-together they are both stored within the resulting `ByteString` instead of copying both to a new `Array`. Operations
-such as `drop` and `take` return `ByteString`s that still reference the original `Array`, but just change the
-offset and length that is visible. Great care has also been taken to make sure that the internal `Array` cannot be
-modified. Whenever a potentially unsafe `Array` is used to create a new `ByteString` a defensive copy is created. If
+together they are both stored within the resulting `ByteString` instead of copying both to a new @scala[`Array`]@java[array]. Operations
+such as `drop` and `take` return `ByteString`s that still reference the original @scala[`Array`]@java[array], but just change the
+offset and length that is visible. Great care has also been taken to make sure that the internal @scala[`Array`]@java[array] cannot be
+modified. Whenever a potentially unsafe @scala[`Array`]@java[array] is used to create a new `ByteString` a defensive copy is created. If
 you require a `ByteString` that only blocks as much memory as necessary for it's content, use the `compact` method to
 get a `CompactByteString` instance. If the `ByteString` represented only a slice of the original array, this will
 result in copying all bytes in that slice.
