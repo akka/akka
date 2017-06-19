@@ -50,9 +50,11 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
       minimal.bindingPromise.get(5, TimeUnit.SECONDS)
 
-      // Requesting the server to shutdown
-      callAndVerify(host, port, "shutdown")
+      // Checking server is up and running
+      callAndVerify(host, port, "foo")
 
+      // Requesting the server to shutdown
+      minimal.shutdown()
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
 
@@ -66,8 +68,11 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
       minimal.bindingPromise.get(5, TimeUnit.SECONDS)
 
+      // Checking server is up and running
+      callAndVerify(host, port, "foo")
+
       // Requesting the server to shutdown
-      callAndVerify(host, port, "shutdown")
+      minimal.shutdown()
 
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
@@ -82,8 +87,11 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
       minimal.bindingPromise.get(5, TimeUnit.SECONDS)
 
+      // Checking server is up and running
+      callAndVerify(host, port, "foo")
+
       // Requesting the server to shutdown
-      callAndVerify(host, port, "shutdown")
+      minimal.shutdown()
 
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
@@ -106,14 +114,17 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
       minimal.binding().localAddress.getPort should ===(port)
       minimal.binding().localAddress.getAddress.getHostAddress should ===(host)
 
+      // Checking server is up and running
+      callAndVerify(host, port, "foo")
+
       // Requesting the server to shutdown
-      callAndVerify(host, port, "shutdown")
+      minimal.shutdown()
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
 
     }
 
-    "let get notified" when {
+    "notify" when {
 
       "shutting down" in withSneaky { (sneaky, host, port) ⇒
 
@@ -125,8 +136,11 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
         sneaky.bindingPromise.get(5, TimeUnit.SECONDS)
 
+        // Checking server is up and running
+        callAndVerify(host, port, "foo")
+
         // Requesting the server to shutdown
-        callAndVerify(host, port, "shutdown")
+        sneaky.shutdown()
         Await.ready(server, Duration(1, TimeUnit.SECONDS))
         server.isCompleted should ===(true)
         eventually {
@@ -145,8 +159,11 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
         sneaky.postBindingCalled.get() should ===(true)
 
+        // Checking server is up and running
+        callAndVerify(host, port, "foo")
+
         // Requesting the server to shutdown
-        callAndVerify(host, port, "shutdown")
+        sneaky.shutdown()
         Await.ready(server, Duration(1, TimeUnit.SECONDS))
         server.isCompleted should ===(true)
 
