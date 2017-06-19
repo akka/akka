@@ -7,8 +7,8 @@ package akka.dispatch.affinity
 import java.util
 import java.util.Collections
 import java.util.concurrent._
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.{ Lock, LockSupport, ReentrantLock }
-
 import akka.dispatch._
 import akka.dispatch.affinity.AffinityPool._
 import com.typesafe.config.Config
@@ -39,6 +39,46 @@ class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, 
   private final val workQueues = Array.fill(parallelism)(new BoundedTaskQueue(affinityGroupSize))
   private final val workers = mutable.Set[ThreadPoolWorker]()
 
+  // a counter that gets incremented every time a task is queued
+  private val executionCounter: AtomicInteger = new AtomicInteger(0)
+  // maps a runnable to an index of a worker queue
+  private val runnableToWorkerQueueIndex: java.util.Map[Int, Int] = new ConcurrentHashMap[Int, Int]()
+
+  /**
+   *
+   * Given a Runnable, it returns the queue that should
+   * be used for scheduling it. This way we ensure that
+   * the each Runnable is associated with the the same
+   * queue and thereby the same [[ThreadPoolWorker]].
+   * For the purpose of evenly distributing [[Runnable]]
+   * instances across the workers we use executionCounter
+   * to produce a round robbin - like scheme that cycles
+   * from 0 to n-1 where n is the number of queues that
+   * this executor maintains. When we compute the index
+   * of the queue for a particular [[Runnable]] instance,
+   * the hashCode of the [[Runnable]] is mapped to the
+   * queue index. From then on each time this Runnable
+   * is scheduled, it shall go to the same queue.
+   *
+   * A race condition might occur due to the absence of
+   * atomicity when invoking incrementAndGet
+   * on the [[executionCounter]] and inserting the result
+   * into the [[runnableToWorkerQueueIndex]]. This is ok.
+   * Worst case scenario is that there will be AT MOST 2
+   * distinct executions of the same Runnable instance that
+   * will map to different queues. This wil be negligible
+   * for performance and is a compromise that can be allowed.
+   * The alternative is holding a lock, which is not
+   * an attractive proposition.
+   *
+   * @param command the [[Runnable]] that needs to be scheduled
+   * @return the [[BoundedTaskQueue]] to which this runnable should go
+   */
+  private def getQueueForRunnable(command: Runnable) = {
+    def getNext = executionCounter.incrementAndGet() & (parallelism - 1)
+    workQueues(runnableToWorkerQueueIndex.getOrElseUpdate(command.hashCode, getNext))
+  }
+
   //fires up initial workers
   locked(bookKeepingLock) {
     workQueues.foreach(q ⇒ addWorker(workers, q))
@@ -52,11 +92,7 @@ class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, 
     }
   }
 
-  private def tryEnqueue(command: Runnable) = {
-    // does a mod on the hash code to determine which queue to put task in
-    val queueIndex = Math.abs(command.hashCode()) & (parallelism - 1)
-    workQueues(queueIndex).add(command)
-  }
+  private def tryEnqueue(command: Runnable) = getQueueForRunnable(command).add(command)
 
   /**
    * Each worker should go through that method while terminating.
