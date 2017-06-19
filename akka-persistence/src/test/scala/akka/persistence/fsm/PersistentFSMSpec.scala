@@ -278,6 +278,13 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       expectTerminated(persistentEventsStreamer)
     }
 
+    "can extract state name" in {
+      StateChangeEvent("xxx", None) match {
+        case StateChangeEvent(name, _) ⇒ name should equal("xxx")
+        case _                         ⇒ fail("unable to extract state name")
+      }
+    }
+
     "persist snapshot" in {
       val persistenceId = name
 

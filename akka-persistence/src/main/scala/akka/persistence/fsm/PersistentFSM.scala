@@ -194,8 +194,7 @@ object PersistentFSM {
    * @param stateIdentifier FSM state identifier
    * @param timeout FSM state timeout
    */
-  @InternalApi
-  private[persistence] case class StateChangeEvent(stateIdentifier: String, timeout: Option[FiniteDuration]) extends PersistentFsmEvent
+  case class StateChangeEvent(stateIdentifier: String, timeout: Option[FiniteDuration]) extends PersistentFsmEvent
 
   /**
    * FSM state and data snapshot
