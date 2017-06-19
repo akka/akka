@@ -8,18 +8,34 @@ Note that implementations for other journals may have different semantics.
 Akka persistence LevelDB query implementation is bundled in the `akka-persistence-query` artifact.
 Make sure that you have the following dependency in your project:
 
-@@@vars
-```
-"com.typesafe.akka" %% "akka-persistence-query" % "$akka.version$"
-```
-@@@
+Scala
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-persistence-query" % "$akka.version$"
+    ```
+    @@@
+
+Java
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-persistence-query_$scala.binary_version$</artifactId>
+      <version>$akka.version$</version>
+    </dependency>
+    ```
+    @@@
 
 ## How to get the ReadJournal
 
 The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery`
 extension:
 
-@@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #get-read-journal }
+Scala
+:  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #get-read-journal }
+
+Java
+:  @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #get-read-journal }
 
 ## Supported Queries
 
@@ -28,10 +44,14 @@ extension:
 `eventsByPersistenceId` is used for retrieving events for a specific `PersistentActor` 
 identified by `persistenceId`.
 
-@@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #EventsByPersistenceId }
+Scala
+:  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #EventsByPersistenceId }
+
+Java
+:  @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #EventsByPersistenceId }
 
 You can retrieve a subset of all events by specifying `fromSequenceNr` and `toSequenceNr`
-or use `0L` and `Long.MaxValue` respectively to retrieve all events. Note that
+or use `0L` and @scala[`Long.MaxValue`]@java[`Long.MAX_VALUE`] respectively to retrieve all events. Note that
 the corresponding sequence number of each event is provided in the `EventEnvelope`, 
 which makes it possible to resume the stream at a later point from a given sequence number.
 
@@ -56,7 +76,11 @@ backend journal.
 
 `allPersistenceIds` is used for retrieving all `persistenceIds` of all persistent actors.
 
-@@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #AllPersistenceIds }
+Scala
+:  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #AllPersistenceIds }
+
+Java
+:  @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #AllPersistenceIds }
 
 The returned event stream is unordered and you can expect different order for multiple
 executions of the query.
@@ -77,12 +101,20 @@ backend journal.
 `eventsByTag` is used for retrieving events that were marked with a given tag, e.g. 
 all domain events of an Aggregate Root type.
 
-@@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #EventsByTag }
+Scala
+:  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #EventsByTag }
+
+Java
+:  @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #EventsByTag }
 
 To tag events you create an @ref:[Event Adapters](persistence.md#event-adapters) that wraps the events in a `akka.persistence.journal.Tagged`
 with the given `tags`.
 
-@@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #tagger }
+Scala
+:  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #tagger }
+
+Java
+:  @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #tagger }
 
 You can use `NoOffset` to retrieve all events with a given tag or retrieve a subset of all
 events by specifying a `Sequence` `offset`. The `offset` corresponds to an ordered sequence number for
