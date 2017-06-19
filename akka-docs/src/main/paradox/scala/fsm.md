@@ -500,7 +500,7 @@ invocation of `onTermination` replaces the previously installed handler.
 
 When an `ActorRef` associated to a FSM is stopped using the
 `stop()` method, its `postStop` hook will be executed. The default
-implementation by the @scala[`FSM` trait]@java[`AbstractFSM` class]is to execute the
+implementation by the @scala[`FSM` trait]@java[`AbstractFSM` class] is to execute the
 `onTermination` handler if that is prepared to handle a
 `StopEvent(Shutdown, ...)`.
 
