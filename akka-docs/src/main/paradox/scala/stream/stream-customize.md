@@ -267,7 +267,7 @@ in circulation in a potential chain of stages, just like our conceptual "railroa
 Completion handling usually (but not exclusively) comes into the picture when processing stages need to emit
 a few more elements after their upstream source has been completed. We have seen an example of this in our
 first `Duplicator` implementation where the last element needs to be doubled even after the upstream neighbor
-stage has been completed. This can be done by overriding the `onUpstreamFinish` method in @scala[`InHandler`] @java[`AbstractInHandler`].
+stage has been completed. This can be done by overriding the `onUpstreamFinish` method in @scala[`InHandler`]@java[`AbstractInHandler`].
 
 Stages by default automatically stop once all of their ports (input and output) have been closed externally or internally.
 It is possible to opt out from this behavior by invoking `setKeepGoing(true)` (which is not supported from the stage’s
