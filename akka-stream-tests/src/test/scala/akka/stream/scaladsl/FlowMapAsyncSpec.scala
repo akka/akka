@@ -97,6 +97,27 @@ class FlowMapAsyncSpec extends StreamSpec {
       latch.countDown()
     }
 
+    "signal future failure asap" in assertAllStagesStopped {
+      val latch = TestLatch(1)
+      val done = Source(1 to 5)
+        .map { n ⇒
+          if (n == 1) n
+          else {
+            // slow upstream should not block the error
+            Await.ready(latch, 10.seconds)
+            n
+          }
+        }
+        .mapAsync(4) { n ⇒
+          if (n == 1) Future.failed(new RuntimeException("err1") with NoStackTrace)
+          else Future.successful(n)
+        }.runWith(Sink.ignore)
+      intercept[RuntimeException] {
+        Await.result(done, remainingOrDefault)
+      }.getMessage should be("err1")
+      latch.countDown()
+    }
+
     "a failure mid-stream MUST cause a failure ASAP (stopping strategy)" in assertAllStagesStopped {
       import system.dispatcher
       val pa = Promise[String]()
@@ -122,19 +143,31 @@ class FlowMapAsyncSpec extends StreamSpec {
       }
       probe.request(100)
 
+      val boom = new Exception("Boom at C")
+
       // placing the future completion signals here is important
       // the ordering is meant to expose a race between the failure at C and subsequent elements
       pa.success("a")
       pb.success("b")
-      pc.failure(new Exception("Boom at C"))
+      pc.failure(boom)
       pd.success("d")
       pe.success("e")
       pf.success("f")
 
-      probe.expectEventPF(elementOrErrorOk)
-      if (!gotErrorAlready) probe.expectEventPF(elementOrErrorOk)
-      if (!gotErrorAlready) probe.expectError().getMessage should ===("Boom at C")
+      probe.expectNextOrError() match {
+        case Left(ex) ⇒ ex.getMessage should ===("Boom at C") // fine, error can over-take elements
+        case Right("A") ⇒
+          probe.expectNextOrError() match {
+            case Left(ex) ⇒ ex.getMessage should ===("Boom at C") // fine, error can over-take elements
+            case Right("B") ⇒
+              probe.expectNextOrError() match {
+                case Left(ex)       ⇒ ex.getMessage should ===("Boom at C") // fine, error can over-take elements
+                case Right(element) ⇒ fail(s"Got [$element] yet it caused an exception, should not have happened!")
+              }
+          }
+      }
     }
+
     "a failure mid-stream must skip element with resume strategy" in assertAllStagesStopped {
       val pa = Promise[String]()
       val pb = Promise[String]()

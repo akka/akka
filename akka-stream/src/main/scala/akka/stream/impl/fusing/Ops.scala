@@ -11,7 +11,7 @@ import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.{ ReactiveStreamsCompliance, Stages, Buffer ⇒ BufferImpl }
+import akka.stream.impl.{ ConstantFun, ReactiveStreamsCompliance, Stages, Buffer ⇒ BufferImpl }
 import akka.stream.scaladsl.{ Source, SourceQueue }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
@@ -1142,12 +1142,16 @@ private[stream] object Collect {
       lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
       var buffer: BufferImpl[Holder[Out]] = _
 
-      def holderCompleted(h: Holder[Out]): Unit = {
-        h.elem match {
-          case Failure(e) if decider(e) == Supervision.Stop ⇒ failStage(e)
-          case _ ⇒ if (isAvailable(out)) pushOne()
-        }
+      private val handleSuccessElem: PartialFunction[Try[Out], Unit] = {
+        case Success(elem) ⇒
+          push(out, elem)
+          if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
       }
+      private val handleFailureOrPushElem: PartialFunction[Try[Out], Unit] = {
+        case Failure(e) if decider(e) == Supervision.Stop ⇒ failStage(e)
+        case _ ⇒ if (isAvailable(out)) pushOne() // skip this element
+      }
+      private def holderCompleted(holder: Holder[Out]) = handleFailureOrPushElem.apply(holder.elem)
 
       val futureCB = getAsyncCallback[Holder[Out]](holderCompleted)
 
@@ -1155,23 +1159,13 @@ private[stream] object Collect {
 
       override def preStart(): Unit = buffer = BufferImpl(parallelism, materializer)
 
-      @tailrec private def pushOne(): Unit =
+      private def pushOne(): Unit =
         if (buffer.isEmpty) {
-          if (isClosed(in)) {
-            if (todo == 0) completeStage()
-          } else if (!hasBeenPulled(in)) pull(in)
+          if (isClosed(in)) completeStage()
+          else if (!hasBeenPulled(in)) pull(in)
         } else if (buffer.peek().elem == NotYetThere) {
           if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
-        } else buffer.dequeue().elem match {
-          case Success(elem) ⇒
-            push(out, elem)
-            if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
-          case Failure(e) ⇒
-            decider(e) match {
-              case Supervision.Stop ⇒ failStage(e)
-              case _                ⇒ pushOne() // skip this element
-            }
-        }
+        } else handleSuccessElem.applyOrElse(buffer.dequeue().elem, handleFailureOrPushElem)
 
       override def onPush(): Unit = {
         try {
@@ -1185,7 +1179,7 @@ private[stream] object Collect {
             case None ⇒ future.onComplete(holder)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
             case Some(v) ⇒
               holder.setElem(v)
-              holderCompleted(holder)
+              handleFailureOrPushElem(v)
           }
 
         } catch {
