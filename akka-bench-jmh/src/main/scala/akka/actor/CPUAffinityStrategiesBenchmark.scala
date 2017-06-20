@@ -6,26 +6,23 @@ import akka.actor.BenchmarkActors._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
-import scala.concurrent.Await
-
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
 @Fork(1)
 @Threads(1)
 @Warmup(iterations = 10, time = 5, timeUnit = TimeUnit.SECONDS, batchSize = 1)
-@Measurement(iterations = 20)
+@Measurement(iterations = 10, time = 15, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 class CPUAffinityStrategiesBenchmark {
 
-  @Param(Array("1", "128", "1024"))
+  @Param(Array("5", "25", "50"))
   var throughPut = 0
 
   @Param(Array("any", "same-core, any", "same-socket, any", "different-core, any", "different-socket, any"))
   var cpuAffinityStrategy = ""
 
-  final val numActors = 256
-  final val numMessagesPerActorPair = 40000
+  final val numThreads, numActors = 8
+  final val numMessagesPerActorPair = 2000000
   final val totalNumberOfMessages = numMessagesPerActorPair * (numActors / 2)
-  final val numThreads = 8
 
   implicit var system: ActorSystem = _
 
@@ -56,27 +53,11 @@ class CPUAffinityStrategiesBenchmark {
   }
 
   @TearDown(Level.Trial)
-  def shutdown(): Unit = {
-    system.terminate()
-    Await.ready(system.whenTerminated, timeout)
-  }
-
-  @Setup(Level.Invocation)
-  def setupActors(): Unit = {
-    actorPairs = startPingPongActorPairs(numMessagesPerActorPair, numActors / 2, "affinity-dispatcher")
-  }
-
-  @TearDown(Level.Invocation)
-  def tearDownActors(): Unit = {
-    stopPingPongActorPairs(actorPairs)
-  }
+  def shutdown(): Unit = tearDownSystem()
 
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(totalNumberOfMessages)
-  def pingPongAmongActors(): Unit = {
-    initiatePingPongForPairs(actorPairs, inFlight = throughPut * 2)
-    awaitTerminatedPingPongActorPairs(actorPairs)
-  }
+  def pingPong(): Unit = benchmarkPingPongActors(numMessagesPerActorPair, numActors, "affinity-dispatcher", throughPut, timeout)
 
 }
