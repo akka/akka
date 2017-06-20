@@ -101,4 +101,4 @@ Java
 :   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #email-addresses-mapAsync-supervision }
 
 If we would not use `Resume` the default stopping strategy would complete the stream
-with failure on the first @scala[`Future`] @java[`CompletionStage`] that was completed @scala[with `Failure`] @java[exceptionally].
+with failure on the first @scala[`Future`] @java[`CompletionStage`] that was completed @scala[with `Failure`]@java[exceptionally].
