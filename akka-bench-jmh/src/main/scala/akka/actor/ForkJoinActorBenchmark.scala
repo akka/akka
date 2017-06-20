@@ -112,6 +112,7 @@ class ForkJoinActorBenchmark {
       _ <- 1 to inFlight
     } {
       ping.tell(Message, pong)
+      pong.tell(Message, ping)
     }
   }
 
