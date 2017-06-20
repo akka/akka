@@ -7,6 +7,8 @@
 Long awaited support for configuring an @scala[@ref[HTTPS CONNECT Proxy](client-side/client-transport.md#use-https-proxy-with-http-singlerequest)]@java[@ref[HTTPS CONNECT Proxy](client-side/client-transport.md#use-https-proxy-with-http-get-singlerequest)]
 for the client has arrived. Thanks a lot, [Michal Sitko (@note)](https://github.com/note), who implemented the feature.
 
+Support for proxies that require authentication is yet to be implemented and is tracked by the ticket [#1213](https://github.com/akka/akka-http/issues/1213)
+
 ### Ability to express textual content types with missing character set
 
 Akka-http has a strongly typed media type / content type system, and knows at compile time about which media types
@@ -24,7 +26,43 @@ From now on, content types missing a charset can be both parsed and expressed di
 
 *Note to scala users*: If you have `match` statements across `ContentType`, keep an eye out for new compiler hints. You need
 to decide what what to do in case you get a content type with a missing character set, by adding a 
-`ContentType.WithMissingCharset` case. 
+`ContentType.WithMissingCharset` case.
+
+### Server-Sent Events Support
+
+Support for Server-Sent events was added by merging akka-sse project by [@hseeberger](https://github.com/hseeberger). Thank you very much, Heiko!
+
+### List of Changes
+
+#### Improvements
+
+##### akka-http-core
+
+* HTTPS proxy support ([#192](https://github.com/akka/akka-http/issues/192))
+* Allow '=' in query param values in relaxed mode ([#1120](https://github.com/akka/akka-http/issues/1120))
+
+##### akka-http
+
+* Add support for Server-Sent Events ([#669](https://github.com/akka/akka-http/issues/669))
+* Add support for textual content types with missing character set ([#1134](https://github.com/akka/akka-http/issues/1134))
+
+##### akka-http-testkit
+
+* Remove unnecessary dependency to ScalaTest from JUnitSuiteLike ([#1147](https://github.com/akka/akka-http/issues/1147))
+
+##### Documentation
+
+* Document pluggable client transport infrastructure and HTTPS proxy support ([#192](https://github.com/akka/akka-http/issues/192))
+* Reference security announcements and release notes in ToC ([#1199](https://github.com/akka/akka-http/issues/1199))
+
+#### Bug Fixes
+
+##### akka-http-core
+
+* Parse Websocket headers according to the set header processing mode ([#1166](https://github.com/akka/akka-http/issues/1166))
+* Fix a regression which caused the idle-timeout on server side not to function properly ([#1012](https://github.com/akka/akka-http/issues/1012))
+* Add a special handling of the charset parameter in Accept header when comparing media types ([#1139](https://github.com/akka/akka-http/issues/1139))
+* Use ws(s) scheme instead of http(s) when calculating effective websocket request URIs ([#909](https://github.com/akka/akka-http/issues/909))
 
 ## 10.0.7
 
