@@ -25,7 +25,11 @@ As a first motivating example, we will build a new `Source` that will simply emi
 cancelled. To start, we need to define the "interface" of our stage, which is called *shape* in Akka Streams terminology
 (this is explained in more detail in the section @ref:[Modularity, Composition and Hierarchy](stream-composition.md)). This is how this looks like:
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #boilerplate-example }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #boilerplate-example }
+
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #simple-source }
 
 As you see, in itself the `GraphStage` only defines the ports of this stage and a shape that contains the ports.
 It also has, a currently unimplemented method called `createLogic`. If you recall, stages are reusable in multiple
@@ -42,22 +46,27 @@ confined to the GraphStageLogic that is created for every materialization.
 @@@
 
 In order to emit from a `Source` in a backpressured stream one needs first to have demand from downstream.
-To receive the necessary events one needs to register a subclass of `OutHandler` with the output port
+To receive the necessary events one needs to register a subclass of @scala[`OutHandler`] @java[`AbstractOutHandler`] with the output port
 (`Outlet`). This handler will receive events related to the lifecycle of the port. In our case we need to
 override `onPull()` which indicates that we are free to emit a single element. There is another callback,
 `onDownstreamFinish()` which is called if the downstream cancelled. Since the default behavior of that callback is
 to stop the stage, we don't need to override it. In the `onPull` callback we will simply emit the next number. This
 is how it looks like in the end:
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #custom-source-example }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #custom-source-example }
 
-Instances of the above `GraphStage` are subclasses of `Graph[SourceShape[Int],NotUsed]` which means
+Instances of the above `GraphStage` are subclasses of @scala[`Graph[SourceShape[Int],NotUsed]`] @java[`Graph<SourceShape<Integer>,NotUsed>`] which means
 that they are already usable in many situations, but do not provide the DSL methods we usually have for other
 `Source` s. In order to convert this `Graph` to a proper `Source` we need to wrap it using
 `Source.fromGraph` (see @ref:[Modularity, Composition and Hierarchy](stream-composition.md) for more details about graphs and DSLs). Now we can use the
 source as any other built-in one:
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #simple-source-usage }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #simple-source-usage }
+
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #simple-source-usage }
 
 Similarly, to create a custom `Sink` one can register a subclass `InHandler` with the stage `Inlet`.
 The `onPush()` callback is used to signal the handler a new element has been pushed to the stage,
@@ -65,9 +74,14 @@ and can hence be grabbed and used. `onPush()` can be overridden to provide custo
 Please note, most Sinks would need to request upstream elements as soon as they are created: this can be
 done by calling `pull(inlet)` in the `preStart()` callback.
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #custom-sink-example }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #custom-sink-example }
 
-### Port states, InHandler and OutHandler
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #simple-sink }
+
+
+### Port states, @scala[InHandler] @java[AbstractInHandler] and @scala[OutHandler] @java[AbstractOutHandler]
 
 In order to interact with a port (`Inlet` or `Outlet`) of the stage we need to be able to receive events
 and generate new events belonging to the port. From the `GraphStageLogic` the following operations are available
@@ -77,7 +91,7 @@ on an output port:
  * `complete(out)` closes the output port normally.
  * `fail(out,exception)` closes the port with a failure signal.
 
-The events corresponding to an *output* port can be received in an `OutHandler` instance registered to the
+The events corresponding to an *output* port can be received in an @scala[`OutHandler`] @java[`AbstractOutHandler`] instance registered to the
 output port using `setHandler(out,handler)`. This handler has two callbacks:
 
  * `onPull()` is called when the output port is ready to emit the next element, `push(out, elem)` is now allowed
@@ -104,7 +118,7 @@ The following operations are available for *input* ports:
 port is pushed again by the upstream.
  * `cancel(in)` closes the input port.
 
-The events corresponding to an *input* port can be received in an `InHandler` instance registered to the
+The events corresponding to an *input* port can be received in an @scala[`InHandler`] @java[`AbstractInHandler`] instance registered to the
 input port using `setHandler(in, handler)`. This handler has three callbacks:
 
  * `onPush()` is called when the input port has now a new element. Now it is possible to acquire this element using
@@ -173,7 +187,11 @@ To illustrate these concepts we create a small `GraphStage` that implements the 
 Map calls `push(out)` from the `onPush()` handler and it also calls `pull()` from the `onPull` handler resulting in the
 conceptual wiring above, and fully expressed in code below:
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #one-to-one }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #one-to-one }
+
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #one-to-one }
 
 Map is a typical example of a one-to-one transformation of a stream where
 demand is passed along upstream elements passed on downstream.
@@ -188,7 +206,11 @@ we return the “ball” to our upstream so that we get the new element. This is
 example by adding a conditional in the `onPush` handler and decide between a `pull(in)` or `push(out)` call
 (and of course not having a mapping `f` function).
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #many-to-one }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #many-to-one }
+
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #many-to-one }
 
 To complete the picture we define a one-to-many transformation as the next step. We chose a straightforward example stage
 that emits every upstream element twice downstream. The conceptual wiring of this stage looks like this:
@@ -199,20 +221,28 @@ This is a stage that has state: an option with the last element it has seen indi
 has duplicated this last element already or not. We must also make sure to emit the extra element
 if the upstream completes.
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #one-to-many }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #one-to-many }
+
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #one-to-many }
 
 In this case a pull from downstream might be consumed by the stage itself rather
 than passed along upstream as the stage might contain an element it wants to
 push. Note that we also need to handle the case where the upstream closes while
 the stage still has elements it wants to push downstream. This is done by
-overriding *onUpstreamFinish* in the *InHandler* and provide custom logic
+overriding *onUpstreamFinish* in the @scala[*InHandler*] @java[*AbstractInHandler*] and provide custom logic
 that should happen when the upstream has been finished.
 
 This example can be simplified by replacing the usage of a mutable state with calls to
 `emitMultiple` which will replace the handlers, emit each of multiple elements and then
 reinstate the original handlers:
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #simpler-one-to-many }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #simpler-one-to-many }
+
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #simpler-one-to-many }
 
 Finally, to demonstrate all of the stages above, we put them together into a processing chain,
 which conceptually would correspond to the following structure:
@@ -221,7 +251,11 @@ which conceptually would correspond to the following structure:
 
 In code this is only a few lines, using the `via` use our custom stages in a stream:
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #graph-stage-chain }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #graph-stage-chain }
+
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #graph-stage-chain }
 
 If we attempt to draw the sequence of events, it shows that there is one "event token"
 in circulation in a potential chain of stages, just like our conceptual "railroad tracks" representation predicts.
@@ -233,7 +267,7 @@ in circulation in a potential chain of stages, just like our conceptual "railroa
 Completion handling usually (but not exclusively) comes into the picture when processing stages need to emit
 a few more elements after their upstream source has been completed. We have seen an example of this in our
 first `Duplicator` implementation where the last element needs to be doubled even after the upstream neighbor
-stage has been completed. This can be done by overriding the `onUpstreamFinish` method in `InHandler`.
+stage has been completed. This can be done by overriding the `onUpstreamFinish` method in @scala[`InHandler`]@java[`AbstractInHandler`].
 
 Stages by default automatically stop once all of their ports (input and output) have been closed externally or internally.
 It is possible to opt out from this behavior by invoking `setKeepGoing(true)` (which is not supported from the stage’s
@@ -246,9 +280,21 @@ with care.
 Logging debug or other important information in your stages is often a very good idea, especially when developing
 more advances stages which may need to be debugged at some point.
 
+@@@ div { .group-scala }
+
 The helper trait `akka.stream.stage.StageLogging` is provided to enable you to easily obtain a `LoggingAdapter`
 inside of a `GraphStage` as long as the `Materializer` you're using is able to provide you with a logger.
 In that sense, it serves a very similar purpose as `ActorLogging` does for Actors. 
+
+@@@
+
+@@@ div { .group-java }
+
+You can extend the `akka.stream.stage.GraphStageWithLogging` or `akka.strea.stage.TimerGraphStageWithLogging` classes
+instead of the usual `GraphStage` to enable you to easily obtain a `LoggingAdapter` inside your stage as long as 
+the `Materializer` you're using is able to provide you with a logger.
+
+@@@
 
 @@@ note
 
@@ -260,7 +306,11 @@ See @ref:[Using the SLF4J API directly](../logging.md#slf4j-directly) for more d
 
 The stage then gets access to the `log` field which it can safely use from any `GraphStage` callbacks:
 
-@@snip [GraphStageLoggingDocSpec.scala]($code$/scala/docs/stream/GraphStageLoggingDocSpec.scala) { #stage-with-logging }
+Scala
+:   @@snip [GraphStageLoggingDocSpec.scala]($code$/scala/docs/stream/GraphStageLoggingDocSpec.scala) { #stage-with-logging }
+
+Java
+:   @@snip [GraphStageLoggingDocTest.java]($code$/java/jdocs/stream/GraphStageLoggingDocTest.java) { #stage-with-logging }
 
 @@@ note
 
@@ -285,7 +335,11 @@ In this sample the stage toggles between open and closed, where open means no el
 stage starts out as closed but as soon as an element is pushed downstream the gate becomes open for a duration
 of time during which it will consume and drop upstream messages:
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #timed }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #timed }
+
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #timed }
 
 ### Using asynchronous side-channels
 
@@ -303,7 +357,11 @@ Sharing the AsyncCallback from the constructor risks race conditions, therefore 
 This example shows an asynchronous side channel graph stage that starts dropping elements
 when a future completes:
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #async-side-channel }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #async-side-channel }
+
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #async-side-channel }
 
 ### Integration with actors
 
@@ -339,7 +397,11 @@ necessary (non-blocking) synchronization and visibility guarantees to this share
 
 In this sample the materialized value is a future containing the first element to go through the stream:
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #materialized }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #materialized }
+
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #materialized }
 
 ### Using attributes to affect the behavior of a stage
 
@@ -382,7 +444,11 @@ initialization. The buffer has demand for up to two elements without any downstr
 
 The following code example demonstrates a buffer class corresponding to the message sequence chart above.
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #detached }
+Scala
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #detached }
+
+Java
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #detached }
 
 ## Thread safety of custom processing stages
 
@@ -416,6 +482,8 @@ or the downstreams. Even for stages that do not complete or fail in this manner,
 `Materializer` is shutdown or the `ActorSystem` is terminated while a stream is still running, what is called an
 "abrupt termination".
 
+@@@ div { .group-scala }
+
 ## Extending Flow Combinators with Custom Operators
 
 The most general way of extending any `Source`, `Flow` or `SubFlow` (e.g. from `groupBy`) is
@@ -447,3 +515,5 @@ that he gave up).
 
 It is interesting to note that a simplified form of this problem has found its way into the [dotty test suite](https://github.com/lampepfl/dotty/pull/1186/files).
 Dotty is the development version of Scala on its way to Scala 3.
+
+@@@
