@@ -22,7 +22,7 @@ import akka.actor.SupervisorSpec.PingPongActor
 class ForkJoinActorBenchmark {
   import ForkJoinActorBenchmark._
 
-  @Param(Array("5", "25", "50"))
+  @Param(Array("25")) // "5", "25", "50"
   var tpt = 0
 
   @Param(Array(coresStr)) // coresStr, cores2xStr, cores4xStr
@@ -146,8 +146,8 @@ class ForkJoinActorBenchmark {
   @Benchmark
   @OperationsPerInvocation(totalMessagesSameAsCores)
   def pingPongSameNumberOfActorsAsCores(): Unit = {
-    val latch = new CountDownLatch(cores)
-    val actors = startActors(cores / 2, pingPongProps(latch))
+    val latch = new CountDownLatch(sameAsCoresActorPairs * 2)
+    val actors = startActors(sameAsCoresActorPairs, pingPongProps(latch))
     val startNanoTime = System.nanoTime()
     sendMessage(actors, inFlight = 2 * tpt)
     latch.await(timeout.toSeconds, TimeUnit.SECONDS)
@@ -200,16 +200,17 @@ object ForkJoinActorBenchmark {
 
   // Constants because they are used in annotations
   // update according to cpu
-  final val cores = 24
-  final val coresStr = "24"
-  final val cores2xStr = "48"
-  final val cores4xStr = "96"
+  final val cores = 8
+  final val coresStr = "8"
+  final val cores2xStr = "16"
+  final val cores4xStr = "32"
   // 2 actors per pair
   final val moreThanCoresActorPairs = cores
   final val lessThanCoresActorPairs = cores / 4
+  final val sameAsCoresActorPairs = cores / 2
   final val totalMessagesMoreThanCores = moreThanCoresActorPairs * messages
   final val totalMessagesLessThanCores = lessThanCoresActorPairs * messages
-  final val totalMessagesSameAsCores = cores * messages
+  final val totalMessagesSameAsCores = sameAsCoresActorPairs * messages
 
   class Pipe(next: Option[ActorRef]) extends Actor {
     def receive = {
