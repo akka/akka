@@ -43,7 +43,7 @@ First off, it is a one-for-one strategy, meaning that each child is treated
 separately (an all-for-one strategy works very similarly, the only difference
 is that any decision is applied to all children of the supervisor, not only the
 failing one). 
-In the above example, `10` and @scala[`1 minute`]@java[`Duration.create(1, TimeUnit.MILLISECONDS)`] are passed to the `maxNrOfRetries`
+In the above example, `10` and @scala[`1 minute`]@java[`Duration.create(1, TimeUnit.MINUTES)`] are passed to the `maxNrOfRetries`
 and `withinTimeRange` parameters respectively, which means that the strategy restarts a child up to 10 restarts per minute.
 The child actor is stopped if the restart count exceeds `maxNrOfRetries` during the `withinTimeRange` duration.
 
