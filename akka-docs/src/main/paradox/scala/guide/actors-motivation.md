@@ -86,7 +86,7 @@ As a result, threads are what really drive execution:
 
 Programming models of the 80'-90's conceptualize that writing to a variable means writing to a memory location directly
 (which somewhat muddies the water that local variables might exist only in registers). On modern architectures -
-if we simplify things a bit - CPUs are writing to [cache lines](https://en.wikipedia.org/wiki/CPU_cache)
+if we simplify things a bit - CPUs are writing to @extref[cache lines](wikipedia:CPU_cache)
 instead of writing to memory directly. Most of these caches are local to the CPU core, that is, writes by one core
 are not visible by another. In order to make local changes visible to another core, and hence to another thread,
 the cache line needs to be shipped to the other core's cache.

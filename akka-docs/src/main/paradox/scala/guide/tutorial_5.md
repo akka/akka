@@ -243,6 +243,9 @@ In the context of the IoT system, this guide introduced the following concepts, 
 * @ref[The importance of designing messages for flexibility](tutorial_3.md)
 * @ref[How to watch and stop actors, if necessary](tutorial_4.md#keeping-track-of-the-device-actors-in-the-group)
 
+## What's Next?
+
 To continue your journey with Akka, we recommend:
 
-Reviewers: I wasn't sure where to send them next, you could provide a list of links to sections of the doc, or ebooks, or whatever. But since there are so many places they could go, it would be nice to provide at least a few of the logical "next" steps. :-)
+* Start building your own applications with Akka, make sure you [get involved in our amazing community](http://akka.io/get-involved) for help if you get stuck.
+* If you’d like some additional background, read the rest of the reference documentation and check out some of the @ref[books and video’s](../additional/books.md) on Akka.
