@@ -1,12 +1,29 @@
-# Akka Libraries and Modules
+# Overview of Akka libraries and modules
 
-Before we delve further into writing our first actors, we should stop for a moment and look at the set of libraries
-that come out-of-the-box. This will help you identify which modules and libraries provide the functionality you
-want to use in your system.
+Before delving into some best practices for writing actors, it will be helpful to preview the most commonly used Akka libraries. This will help you start thinking about the functionality you want to use in your system. All core Akka functionality is available as Open Source Software (OSS). Lightbend sponsors Akka development but can also help you with [commercial offerings ](https://www.lightbend.com/platform/subscription) such as training, consulting, support, and [Enterprise Suite](https://www.lightbend.com/platform/production) &#8212; a comprehensive set of tools for managing Akka systems.
 
-### Actors (`akka-actor` Library, the Core)
+The following capabilities are included with Akka OSS and are introduced later on this page:
+* [Actor library](#actor-library)
+* [Remoting](#remoting)
+* [Clustering](#clustering)
+* [Cluster sharding](#cluster-sharding)
+* [Cluster singleton](#cluster-singleton)
+* [Cluster publish-subscribe](#cluster-publish-subscribe)
+* [Persistence](#persistence)
+* [Distributed data](#distributed-data)
+* [HTTP](#http)
 
-The use of actors across Akka libraries provides a consistent, integrated model that relieves you from individually
+With a Lightbend subscription, you can use [Enterprise Suite](https://www.lightbend.com/platform/production) in production. Enterprise Suite includes the following extensions to Akka core functionality:
+* [Split Brain Resolver](https://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html) &#8212; Detects and recovers from network partitions, eliminating data inconsistencies and possible downtime.
+* [Configuration Checker](https://developer.lightbend.com/docs/akka-commercial-addons/current/config-checker.html) &#8212; Checks for potential configuration issues and logs suggestions.
+* [Diagnostics Recorder](https://developer.lightbend.com/docs/akka-commercial-addons/current/diagnostics-recorder.html) &#8212; Captures configuration and system information in a format that makes it easy to troubleshoot issues during development and production.
+* [Thread Starvation Detector](https://developer.lightbend.com/docs/akka-commercial-addons/current/starvation-detector.html) &#8212; Monitors an Akka system dispatcher and logs warnings if it becomes unresponsive.
+
+This page does not list all available modules, but overviews the main functionality and gives you an idea of the level of sophistication you can reach when you start building systems on top of Akka.
+
+### Actor library
+
+The core Akka library is `akka-actor`. But, actors are used across Akka libraries, providing a consistent, integrated model that relieves you from individually
 solving the challenges that arise in concurrent or distributed system design. From a birds-eye view,
 actors are a programming paradigm that takes encapsulation, one of the pillars of OOP, to its extreme.
 Unlike objects, actors encapsulate not only their
@@ -17,7 +34,7 @@ yet, in the next chapter we will explain actors in detail. For now, the importan
 handles concurrency and distribution at the fundamental level instead of ad hoc patched attempts to bring these
 features to OOP.
 
-Challenges that actors solve include:
+Challenges that actors solve include the following:
 
 * How to build and design high-performance, concurrent applications.
 * How to handle errors in a multi-threaded environment.
@@ -25,13 +42,13 @@ Challenges that actors solve include:
 
 ### Remoting
 
-Remoting enables actors that are remote, living on different computers, to seamlessly exchange messages.
+Remoting enables actors that live on different computers, to seamlessly exchange messages.
 While distributed as a JAR artifact, Remoting resembles a module more than it does a library. You enable it mostly
-with configuration, it has only a few APIs. Thanks to the actor model, a remote and local message send looks exactly the
+with configuration and it has only a few APIs. Thanks to the actor model, a remote and local message send looks exactly the
 same. The patterns that you use on local systems translate directly to remote systems.
 You will rarely need to use Remoting directly, but it provides the foundation on which the Cluster subsystem is built.
 
-Some of the challenges Remoting solves are:
+Challenges Remoting solves include the following:
 
 * How to address actor systems living on remote hosts.
 * How to address individual actors on remote actor systems.
@@ -40,7 +57,7 @@ Some of the challenges Remoting solves are:
   all transparently.
 * How to multiplex communications from an unrelated set of actors on the same network connection, all transparently.
 
-### Cluster
+### Clustering
 
 If you have a set of actor systems that cooperate to solve some business problem, then you likely want to manage these set of
 systems in a disciplined way. While Remoting solves the problem of addressing and communicating with components of
@@ -48,7 +65,7 @@ remote systems, Clustering gives you the ability to organize these into a "meta-
 protocol. **In most cases, you want to use the Cluster module instead of using Remoting directly.**
 Clustering provides an additional set of services on top of Remoting that most real world applications need.
 
-The challenges the Cluster module solves, among others, are:
+Challenges the Cluster module solves include the following:
 
 * How to maintain a set of actor systems (a cluster) that can communicate with each other and consider each other as part of the cluster.
 * How to introduce a new system safely to the set of already existing members.
@@ -57,20 +74,20 @@ The challenges the Cluster module solves, among others, are:
 * How to distribute computations among the current set of members.
 * How do I designate members of the cluster to a certain role, in other words, to provide certain services and not others.
 
-### Cluster Sharding
+### Cluster sharding
 
 Sharding helps to solve the problem of distributing a set of actors among members of an Akka cluster.
 Sharding is a pattern that mostly used together with Persistence to balance a large set of persistent entities
 (backed by actors) to members of a cluster and also migrate them to other nodes when members crash or leave.
 
-The challenge space that Sharding targets:
+Challenges that Sharding solves include the following:
 
 * How to model and scale out a large set of stateful entities on a set of systems.
 * How to ensure that entities in the cluster are distributed properly so that load is properly balanced across the machines.
 * How to ensure migrating entities from a crashed system without losing the state.
 * How to ensure that an entity does not exist on multiple systems at the same time and hence kept consistent.
 
-### Cluster Singleton
+### Cluster singleton
 
 A common (in fact, a bit too common) use case in distributed systems is to have a single entity responsible
 for a given task which is shared among other members of the cluster and migrated if the host system fails.
@@ -85,7 +102,7 @@ The Singleton module can be used to solve these challenges:
 * How to ensure that the service is up even if the system hosting it currently crashes or shut down during the process of scaling down.
 * How to reach this instance from any member of the cluster assuming that it can migrate to other systems over time.
 
-### Cluster Publish-Subscribe
+### Cluster publish-subscribe
 
 For coordination among systems, it is often necessary to distribute messages to all, or one system of a set of
 interested systems in a cluster. This pattern is usually called publish-subscribe and this module solves this exact
@@ -113,7 +130,7 @@ Persistence tackles the following challenges:
 * How to introspect domain events that have lead an entity to its current state.
 * How to leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in my application to support long-running processes while the project continues to evolve.
 
-### Distributed Data
+### Distributed data
 
 In situations where eventual consistency is acceptable, it is possible to share data between nodes in
 an Akka Cluster and accept both reads and writes even in the face of cluster partitions. This can be
@@ -155,17 +172,10 @@ Some of the challenges that HTTP tackles:
 * How to stream large datasets in and out of a system using HTTP.
 * How to stream live events in and out of a system using HTTP.
 
-***
+### Example of module use
 
-The above is an incomplete list of all the available modules, but it gives a nice overview of the landscape of modules
-and the level of sophistication you can reach when you start building systems on top of Akka. All these modules
-integrate together seamlessly. For example, take a large set of stateful business objects
-(a document, a shopping cart, etc) that is accessed by on-line users from your website. Model these as sharded
-entities using Sharding and Persistence to keep them balanced across a cluster that you can scale out on-demand
-(for example during an advertising campaign before holidays) and keep them available even if some systems crash.
-Take the real-time stream of domain events of your business objects with Persistence Query and use Streams to pipe
-it into a streaming BigData engine. Take the output of that engine as a Stream, manipulate it using Akka Streams
+Akka modules integrate together seamlessly. For example, think of a large set of stateful business objects, such as documents or shopping carts, that website users access. If you model these as sharded entities, using Sharding and Persistence, they will be balanced across a cluster that you can scale out on-demand. They will be available during pikes that come from advertising campaigns or before holidays will be handled, even if some systems crash. You can also easily take the real-time stream of domain events with Persistence Query and use Streams to pipe them into a streaming BigData engine. Then, take the output of that engine as a Stream, manipulate it using Akka Streams
 operators and expose it as web socket connections served by a load balanced set of HTTP servers hosted by your cluster
 to power your real-time business analytics tool.
 
-Has this gotten you interested? Keep on reading to learn more.
+We hope this preview caught your interest! The next topic introduces the example application we will build in the tutorial portion of this guide. 

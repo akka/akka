@@ -1,18 +1,37 @@
-# Quickstart
+# Introduction to the Example
 
-After all this introduction, we are ready to build our first actor system. We will do so in five chapters.
-This first chapter will help you to set up your project, tools and have a simple "Hello World" demo running.
-We will keep this section to a bare minimum and then extend the sample application in the next chapter.
+When writing prose, the hardest part is often composing the first few sentences. There is a similar "blank canvas" feeling
+when starting to build an Akka system. You might wonder: Which should be the first actor? Where should it live? What should it do?
+Fortunately &#8212; unlike with prose &#8212; established best practices can guide us through these initial steps. In the remainder of this guide, we examine the core logic of a simple Akka application to introduce you to actors and show you how to formulate solutions with them. The example demonstrates common patterns that will help you kickstart your Akka projects.
 
-> Our goal in this chapter is to set up a working environment for you, create an application that starts up and stops
-an ActorSystem and create an actor which we will run and test.
+## Prerequisites
+You should have already followed the instructions in the @scala[[Akka Quickstart with Scala guide](http://developer.lightbend.com/guides/akka-quickstart-scala/)] @java[[Akka Quickstart with Java guide](http://developer.lightbend.com/guides/akka-quickstart-java/)] to download and run the Hello World example. You will use this as a seed project and add the functionality described in this tutorial.
 
-Akka requires that you have [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or
-later installed on your machine.
+## IoT example use case
 
-As the very first thing, we need to make sure that we can compile our project and have a working IDE setup to be
-able to edit code comfortably.
+In this tutorial, we'll use Akka to build out part of an Internet of Things (IoT) system that reports data from sensor devices installed in customers' homes. The example focuses on temperature readings. The target use case simply allows customers to log in and view the last reported temperature from different areas of their homes. You can imagine that such sensors could also collect relative humidity or other interesting data and an application would likely support reading and changing device configuration, maybe even alerting home owners when sensor state falls outside of a particular range.
 
-The easiest way is to use the @scala[[Akka Quickstart with Scala guide](http://developer.lightbend.com/guides/akka-quickstart-scala/)] @java[[Akka Quickstart with Java guide](http://developer.lightbend.com/guides/akka-quickstart-java/)]. It contains a Hello World example that illustrates Akka basics. Within 30 minutes, you should be able to download and run the example and use that guide to understand how the example is constructed.
+In a real system, the application would be exposed to customers through a mobile app or browser. This guide concentrates only on the core logic for storing temperaturs that would be called over a network protocol, such as HTTP. It also includes writing tests to help you get comfortable and proficient with testing actors.
 
-After that you can go back here and you are ready to dive deeper.
+The tutorial application consists of two main components:
+
+ * **Device data collection:** &#8212; maintains a local representation of the
+    remote devices. Multiple sensor devices for a home are organized into one device group.
+ * **User dashboard:** &#8212; periodically collects data from the devices for a
+   logged in user's home and presents the results as a report.
+
+The following diagram illustrates the example application architecture. Since we are interested in the state of each sensor device, we will model devices as actors. The running application will create as many instances of device actors and device groups as necessary.
+
+![box diagram of the architecture](diagrams/arch_boxes_diagram.png)
+
+## What you will learn in this tutorial
+This tutorial introduces and illustrates:
+* The actor hierarchy and how it influences actor behavior
+* How to choose the right granularity for actors
+* How to define protocols as messages
+* Typical conversational styles
+
+
+Let's get started by learning more about actors.
+
+

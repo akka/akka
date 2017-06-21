@@ -1,253 +1,217 @@
-# Part 4: Querying a Group of Devices
+# Part 4: Working with Device Groups
 
-The conversational patterns we have seen so far were simple in the sense that they required no or little state to be kept in the
-actor that is only relevant to the conversation. Our device actors either simply returned a reading, which required no
-state change, recorded a temperature, which was required an update of a single field, or in the most complex case,
-managing groups and devices, we had to add or remove simple entries from a map.
+Let's take a closer look at the main functionality required by our use case. In a complete IoT system for monitoring home temperatures, the steps for connecting a device sensor to our system might look like this:
 
-In this chapter, we will see a more complex example. Our goal is to add a new service to the group device actor, one which
-allows querying the temperature from all running devices. Let us start by investigating how we want our query API to
-behave.
+1. A sensor device in the home connects through some protocol.
+1. The component managing network connections accepts the connection.
+1. The sensor provides its group and device ID to register with the device manager component of our system.
+1. The device manager component handles registration by looking up or creating the actor responsible for keeping sensor state.
+1. The actor responds with an acknowledgement, exposing its `ActorRef`.
+1. The networking component now uses the `ActorRef` for communication between the sensor and device actor without going through the device manager.
 
-The very first issue we face is that the set of devices is dynamic, and each device is represented by an actor that
-can stop at any time. At the beginning of the query, we need to ask all of the device actors for the current temperature
-that we know about. However, during the lifecycle of the query:
+Steps 1 and 2 take place outside the boundaries of our tutorial system. In this chapter, we will start addressing steps 3-6 and create a way for sensors to register with our system and to communicate with actors. But first, we have another architectural decision &#8212; how many levels of actors should we use to represent device groups and device sensors?
 
- * A device actor may stop and not respond back with a temperature reading.
- * A new device actor might start up, but we missed asking it for the current temperature.
+One of the main design challenges for Akka programmers is choosing the best granularity for actors. In practice, depending on the characteristics of the interactions between actors, there are usually several valid ways to organize a system. In our use case, for example, it would be possible to have a single actor maintain all the groups and devices  &#8212; perhaps using hash maps. It would also be reasonable to have an actor for each group that tracks the state of all devices in the same home.
 
-There are many approaches that can be taken to address these issues, but the important point is to settle on what is
-the desired behavior. We will pick the following two guarantees:
+The following guidelines help us choose the most appropriate actor hierarchy:
 
- * When a query arrives at the group, the group actor takes a _snapshot_ of the existing device actors and will only
-   ask those for the temperature. Actors that are started _after_ the arrival of the query are simply ignored.
- * When an actor stops during the query without answering (i.e. before all the actors we asked for the temperature
-   responded) we simply report back that fact to the sender of the query message.
+  * In general, prefer larger granularity. Introducing more fine-grained actors than needed causes more problems than it solves.
+  * Add finer granularity when the system requires:
+      * Higher concurrency.
+      * Complex conversations between actors that have many
+    states. We will see a very good example for this in the next chapter.
+      * Sufficient state that it makes sense to divide into smaller
+    actors.
+      * Multiple unrelated responsibilities. Using separate actors allows individuals to fail and be restored with little impact on others.
 
-Apart from device actors coming and going dynamically, some actors might take a long time to answer, for example, because
-they are stuck in an accidental infinite loop, or because they failed due to a bug and dropped our request. Ideally,
-we would like to give a deadline to our query:
+## Device manager hierarchy
 
- * The query is considered completed if either all actors have responded (or confirmed being stopped), or we reach
-   the deadline.
+Considering the principles outlined in the previous section, We will model the device manager component as an actor tree with three levels:
+* The top level supervisor actor represents the system component for devices. It is also the entry point to look up and create device group and device actors.
+* At the next level, group actors each supervise the device actors for one home. They also provide services, such as querying temperature readings from all of the available devices in their group.
+* Device actors manage all the interactions with the actual device sensors, such as storing temperature readings.
 
-Given these decisions, and the fact that a device might not have a temperature to record, we can define four states
-that each device can be in, according to the query:
+Reviewers: please make sure I got the above correct. I thought it useful to map the software components to the real world sensors and homes, which are outside of our example system, but drive the design.
 
- * It has a temperature available: @scala[`Temperature(value)`] @java[`Temperature`].
- * It has responded, but has no temperature available yet: `TemperatureNotAvailable`.
- * It has stopped before answering: `DeviceNotAvailable`.
- * It did not respond before the deadline: `DeviceTimedOut`.
+![device manager tree](diagrams/device_manager_tree.png)
 
-Summarizing these in message types we can add the following to `DeviceGroup`:
 
-Scala
-:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_4/DeviceGroup.scala) { #query-protocol }
+We chose this three-layered architecture for these reasons:
+* Having groups of individual actors:
+  * Isolates failures that occur in a group. If a single actor managed all device groups, an error in one group that causes a restart would wipe out the state of groups that are otherwise non-faulty.
+  * Simplifies the problem of querying all the devices belonging to a group. Each group actor only contains state related to its group.
+  * Increases parallelism in the system. Since each group has a dedicated actor, they run concurrently and we can query multiple groups concurrently.
 
-Java
-:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_4/DeviceGroup.java) { #query-protocol }
 
-## Implementing the Query
+* Having sensors modeled as individual device actors:
+  * Isolates failures of one device actor from the rest of the devices in the group.
+  * Increases the parallelism of collecting temperature readings. Network connections from different sensors communicate with their individual device actors directly, reducing contention points.
 
-One of the approaches for implementing the query could be to add more code to the group device actor. While this is
-possible, in practice this can be very cumbersome and error prone. When we start a query, we need to take a snapshot
-of the devices present at the start of the query and start a timer so that we can enforce the deadline. Unfortunately,
-during the time we execute a query _another query_ might just arrive. For this other query, of course, we need to keep
-track of the exact same information but isolated from the previous query. This complicates the code and also poses
-some problems. For example, we would need a data structure that maps the `ActorRef`s of the devices to the queries
-that use that device, so that they can be notified when such a device terminates, i.e. a `Terminated` message is
-received.
+With the architecture defined, we can start working on the protocol for registering sensors.
 
-There is a much simpler approach that is superior in every way, and it is the one we will implement. We will create
-an actor that represents a _single query_ and which performs the tasks needed to complete the query on behalf of the
-group actor. So far we have created actors that belonged to classical domain objects, but now, we will create an
-actor that represents a process or task rather than an entity. This move keeps our group device actor simple and gives
-us better ways to test the query capability in isolation.
+## The Registration Protocol
 
-First, we need to design the lifecycle of our query actor. This consists of identifying its initial state, then
-the first action to be taken by the actor, then, the cleanup if necessary. There are a few things the query should
-need to be able to work:
+As the first step, we need to design the protocol both for registering a device and for creating the group and device actors that will be responsible for it. This protocol will be provided by the `DeviceManager` component itself because that is the only actor that is known and available up front: device groups and device actors are created on-demand.
 
- * The snapshot of active device actors to query, and their IDs.
- * The requestID of the request that started the query (so we can include it in the reply).
- * The `ActorRef` of the actor who sent the group actor the query. We will send the reply to this actor directly.
- * A timeout parameter, how long the query should wait for replies. Keeping this as a parameter will simplify testing.
+Looking at registration in more detail, we can outline the necessary functionality:
 
-Since we need to have a timeout for how long we are willing to wait for responses, it is time to introduce a new feature that we have
-not used yet: timers. Akka has a built-in scheduler facility for this exact purpose. Using it is simple, the
-@scala[`scheduler.scheduleOnce(time, actorRef, message)`] @java[`scheduler.scheduleOnce(time, actorRef, message, executor, sender)`] method will schedule the message `message` into the future by the
-specified `time` and send it to the actor `actorRef`. To implement our query timeout we need to create a message
-that represents the query timeout. We create a simple message `CollectionTimeout` without any parameters for
-this purpose. The return value from `scheduleOnce` is a `Cancellable` which can be used to cancel the timer
-if the query finishes successfully in time. Getting the scheduler is possible from the `ActorSystem`, which, in turn,
-is accessible from the actor's context: @scala[`context.system.scheduler`] @java[`getContext().getSystem().scheduler()`]. This needs an @scala[implicit] `ExecutionContext` which
-is basically the thread-pool that will execute the timer task itself. In our case, we use the same dispatcher
-as the actor by @scala[importing `import context.dispatcher`] @java[passing in `getContext().dispatcher()`].
+1. When a `DeviceManager` receives a request with a group and device id:
+    * If the manager already has an actor for the device group, it forwards the request to it.
+    * Otherwise, it creates a new device group actor and then forwards the request.
+1. The `DeviceGroup` actor receives the request to register an actor for the given device:
+  * If the group already has an actor for the device, the group actor forwards the request to the device actor.
+  * Otherwise, the `DeviceGroup` actor first creates a device actor and then forwards the request.
+1. The device actor receives the request and sends an acknowledgement to the original sender. Since the device actor acknowledges receipt (instead of the group actor), the sensor will now have the `ActorRef` to send messages directly to its actor.
 
-At the start of the query, we need to ask each of the device actors for the current temperature. To be able to quickly
-detect devices that stopped before they got the `ReadTemperature` message we will also watch each of the actors. This
-way, we get `Terminated` messages for those that stop during the lifetime of the query, so we don't need to wait
-until the timeout to mark these as not available.
+The messages that we will use to communicate registration requests and
+their acknowledgement have a simple definition:
 
-Putting together all these, the outline of our actor looks like this:
+@@snip [DeviceManager.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-msgs }
+
+In this case we have not included a request ID field in the messages. Since registration happens once, when the component connects the system to some network protocol, the ID is not important. However, it is usually a best practice to include a request ID.
+
+Now, we'll start implementing the protocol from the bottom up. In practice, both a top-down and bottom-up approach can work, but in our case, we benefit from the bottom-up approach as it allows us to immediately write tests for the new features without mocking out parts that we will need to build later.
+
+## Adding registration support to device actors
+
+At the bottom of our hierarchy are the `Device` actors. Their job in the registration process is simple: reply to the registration request with an acknowledgment to the sender. It is also prudent to add a safeguard against requests that come with a mismatched group or device ID.
+
+*We will assume that the ID of the sender of the registration
+message is preserved in the upper layers.* We will show you in the next section how this can be achieved.
+
+The device actor registration code looks like the following. Modify your example to match.
+
+Reviewers: At this point, when I modified my device object and class to match the code below, I started getting compiler errors that said the value for RequestTrackDevice, DeviceRegistered, etc weren't found. I thought it was because I hadn't added `final case class RequestTrackDevice(groupId: String, deviceId: String)
+case object DeviceRegistered` to the object definition, but doing so didn't fix it. Is there a need to initiate these with some value?
 
 Scala
-:   @@snip [DeviceGroupQuery.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-outline }
+:   @@snip [Device.scala]($code$/scala/tutorial_3/Device.scala) { #device-with-register }
 
 Java
-:   @@snip [DeviceGroupQuery.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-outline }
+:   @@snip [Device.java]($code$/java/jdocs/tutorial_3/Device.java) { #device-with-register }
+@@@ note { .group-scala }
 
-The query actor, apart from the pending timer, has one stateful aspect about it: the actors that did not answer so far or,
-from the other way around, the set of actors that have replied or stopped. One way to track this state is
-to create a mutable field in the actor @scala[(a `var`)]. There is another approach. It is also possible to change how
-the actor responds to messages. By default, the `receive` block defines the behavior of the actor, but it is possible
-to change it, several times, during the life of the actor. This is possible by calling `context.become(newBehavior)`
-where `newBehavior` is anything with type `Receive` @scala[(which is just a shorthand for `PartialFunction[Any, Unit]`)]. A
-`Receive` is just a function (or an object, if you like) that can be returned from another function. We will leverage this
-feature to track the state of our actor.
+We used a feature of scala pattern matching where we can check to see if a certain field equals an expected value. By bracketing variables with backticks, like `` `variable` ``, the pattern will only match if it contains the value of `variable` in that position.
 
-As the first step, instead of defining `receive` directly, we delegate to another function to create the `Receive`, which
-we will call `waitingForReplies`. This will keep track of two changing values, a `Map` of already received replies
-and a `Set` of actors that we still wait on. We have three events that we should act on. We can receive a
-`RespondTemperature` message from one of the devices. Second, we can receive a `Terminated` message for a device actor
-that has been stopped in the meantime. Finally, we can reach the deadline and receive a `CollectionTimeout`. In the
-first two cases, we need to keep track of the replies, which we now simply delegate to a method `receivedResponse` which
-we will discuss later. In the case of timeout, we need to simply take all the actors that have not yet replied yet
-(the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply. Then we
-reply to the submitter of the query with the collected results and stop the query actor:
+@@@
+
+We can now write two new test cases, `DeviceSpec` exercising successful registration, `DeviceTest` testing the case when IDs don't match:
 
 Scala
-:   @@snip [DeviceGroupQuery.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-state }
+:   @@snip [DeviceSpec.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-registration-tests }
 
 Java
-:   @@snip [DeviceGroupQuery.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-state }
+:   @@snip [DeviceTest.java]($code$/java/jdocs/tutorial_3/DeviceTest.java) { #device-registration-tests }
 
-What is not yet clear, how we will "mutate" the `answersSoFar` and `stillWaiting` data structures. One important
-thing to note is that the function `waitingForReplies` **does not handle the messages directly. It returns a `Receive`
-function that will handle the messages**. This means that if we call `waitingForReplies` again, with different parameters,
-then it returns a brand new `Receive` that will use those new parameters. We have seen how we
-can install the initial `Receive` by simply returning it from `receive`. In order to install a new one, to record a
-new reply, for example, we need some mechanism. This mechanism is the method `context.become(newReceive)` which will
-_change_ the actor's message handling function to the provided `newReceive` function. You can imagine that before
-starting, your actor automatically calls `context.become(receive)`, i.e. installing the `Receive` function that
-is returned from `receive`. This is another important observation: **it is not `receive` that handles the messages,
-it just returns a `Receive` function that will actually handle the messages**.
+@@@ note
 
-We now have to figure out what to do in `receivedResponse`. First, we need to record the new result in the map
-`repliesSoFar` and remove the actor from `stillWaiting`. The next step is to check if there are any remaining actors
-we are waiting for. If there is none, we send the result of the query to the original requester and stop
-the query actor. Otherwise, we need to update the `repliesSoFar` and `stillWaiting` structures and wait for more
-messages.
+We used the `expectNoMsg()` helper method from @scala[`TestProbe`] @java[`TestKit`]. This assertion waits until the defined time-limit and fails if it receives any messages during this period. If no messages are received during the waiting period, the assertion passes. It is usually a good idea to keep these timeouts low (but not too low) because they add significant test execution time.
 
-In the code before, we treated `Terminated` as the implicit response `DeviceNotAvailable`, so `receivedResponse` does
-not need to do anything special. However, there is one small task we still need to do. It is possible that we receive a proper
-response from a device actor, but then it stops during the lifetime of the query. We don't want this second event
-to overwrite the already received reply. In other words, we don't want to receive `Terminated` after we recorded the
-response. This is simple to achieve by calling `context.unwatch(ref)`. This method also ensures that we don't
-receive `Terminated` events that are already in the mailbox of the actor. It is also safe to call this multiple times,
-only the first call will have any effect, the rest is simply ignored.
+@@@
 
-With all this knowledge, we can create the `receivedResponse` method:
+
+## Adding registration support to device group actors
+
+We are done with registration support at the device level, now we have to implement it at the group level. A group actor has more work to do when it comes to registrations, including:
+
+* Handling the registration request by either forwarding it to an existing device actor or by creating a new actor and forwarding the message.
+* Tracking which device actors exist in the group and removing them from the group when they are stopped.
+
+### Handling the registration request
+
+A device group actor must either forward the request to an existing child, or it should create one. To look up child actors by their device IDs we will use a @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`].
+
+We also want to keep the the ID of the original sender of the request so that our device actor can reply directly. This is possible by using `forward` instead of the @scala[`!`] @java[`tell`] operator. The only difference between the two is that `forward` keeps the original
+sender while @scala[`!`] @java[`tell`] sets the sender to be the current actor. Just like with our device actor, we ensure that we don't respond to wrong group IDs. Add the following to your source file:
 
 Scala
-:   @@snip [DeviceGroupQuery.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-collect-reply }
+:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-register }
 
 Java
-:   @@snip [DeviceGroupQuery.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-collect-reply }
+:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-register }
 
-It is quite natural to ask at this point, what have we gained by using the `context.become()` trick instead of
-just making the `repliesSoFar` and `stillWaiting` structures mutable fields of the actor (i.e. `var`s)? In this
-simple example, not that much. The value of this style of state keeping becomes more evident when you suddenly have
-_more kinds_ of states. Since each state
-might have temporary data that is relevant itself, keeping these as fields would pollute the global state
-of the actor, i.e. it is unclear what fields are used in what state. Using parameterized `Receive` "factory"
-methods we can keep data private that is only relevant to the state. It is still a good exercise to
-rewrite the query using @scala[`var`s] @java[mutable fields] instead of `context.become()`. However, it is recommended to get comfortable
-with the solution we have used here as it helps structuring more complex actor code in a cleaner and more maintainable way.
-
-Our query actor is now done:
+Just as we did with the device, we test this new functionality. We also test that the actors returned for the two different IDs are actually different, and we also attempt to record a temperature reading for each of the devices to see if the actors are responding.
 
 Scala
-:   @@snip [DeviceGroupQuery.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-full }
+:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test-registration }
 
 Java
-:   @@snip [DeviceGroupQuery.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-full }
+:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-test-registration }
 
-## Testing
-
-Now let's verify the correctness of the query actor implementation. There are various scenarios we need to test individually to make
-sure everything works as expected. To be able to do this, we need to simulate the device actors somehow to exercise
-various normal or failure scenarios. Thankfully we took the list of collaborators (actually a `Map`) as a parameter
-to the query actor, so we can easily pass in @scala[`TestProbe`] @java[`TestKit`] references. In our first test, we try out the case when
-there are two devices and both report a temperature:
+If a device actor already exists for the registration request, we would like to use
+the existing actor instead of a new one. We have not tested this yet, so we need to fix this:
 
 Scala
-:   @@snip [DeviceGroupQuerySpec.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-normal }
+:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test3 }
 
 Java
-:   @@snip [DeviceGroupQueryTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-normal }
+:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-test3 }
 
-That was the happy case, but we know that sometimes devices cannot provide a temperature measurement. This
-scenario is just slightly different from the previous:
+
+### Keeping track of the device actors in the group
+
+So far, we have implemented logic for registering device actors in the group. Devices come and go, however, so we will need a way to remove device actors from the @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`]. We will assume that when a device is removed, its corresponding device actor is simply stopped. Supervision, as we discussed earlier, only handles error scenarios &#8212; not graceful stopping. So we need to notify the parent when one of the device actors is stopped.
+
+Akka provides a _Death Watch_ feature that allows an actor to _watch_ another actor and be notified if the other actor is stopped. Unlike supervision, watching is not limited to parent-child relationships, any actor can watch any other actor as long as it knows the `ActorRef`. After a watched actor stops, the watcher receives a `Terminated(ref)` message which also contains the reference to the watched actor. The watcher can either handle this message explicitly or will fail with a `DeathPactException`. This latter is useful if the actor can no longer perform its own duties after the watched actor has been stopped. In our case, the group should still function after one device have been stopped, so we need to handle the `Terminated` message.
+
+Our device group actor needs to include functionality that:
+
+ 1. Starts watching new device actors when they are created.
+ 2. Removes a device actor from the @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`] &#8212; which maps devices to device actors &#8212; when the notification indicates it has stopped.
+
+Unfortunately, the `Terminated` message contains only contains the `ActorRef` of the child actor. We need the actor's ID to remove it from the map of existing device to device actor mappings. To be able to do this removal, we need to introduce another placeholder, @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`], that allow us to find out the device ID corresponding to a given `ActorRef`.
+
+Adding the functionality to identify the actor results in this:
 
 Scala
-:   @@snip [DeviceGroupQuerySpec.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-no-reading }
+:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-remove }
 
 Java
-:   @@snip [DeviceGroupQueryTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-no-reading }
+:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-remove }
 
-We also know, that sometimes device actors stop before answering:
+So far we have no means to get which devices the group device actor keeps track of and, therefore, we cannot test our new functionality yet. To make it testable, we add a new query capability (message @scala[`RequestDeviceList(requestId: Long)`] @java[`RequestDeviceList`]) that simply lists the currently active
+device IDs:
 
 Scala
-:   @@snip [DeviceGroupQuerySpec.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-stopped }
+:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-full }
 
 Java
-:   @@snip [DeviceGroupQueryTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-stopped }
+:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-full }
 
-If you remember, there is another case related to device actors stopping. It is possible that we get a normal reply
-from a device actor, but then receive a `Terminated` for the same actor later. In this case, we would like to keep
-the first reply and not mark the device as `DeviceNotAvailable`. We should test this, too:
+We are almost ready to test the removal of devices. But, we still need the following capabilities:
+
+ * To stop a device actor from our test case. From the outside, any actor can be stopped by simply sending a special
+   the built-in message, `PoisonPill`, which instructs the actor to stop.
+ * To be notified once the device actor is stopped. We can use the _Death Watch_ facility for this purpose, too. The @scala[`TestProbe`] @java[`TestKit`] has two messages that we can easily use, `watch()` to watch a specific actor, and `expectTerminated`
+   to assert that the watched actor has been terminated.
+
+We add two more test cases now. In the first, we just test that we get back the list of proper IDs once we have added a few devices. The second test case makes sure that the device ID is properly removed after the device actor has been stopped:
 
 Scala
-:   @@snip [DeviceGroupQuerySpec.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-stopped-later }
+:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
 
 Java
-:   @@snip [DeviceGroupQueryTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-stopped-later }
+:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-list-terminate-test }
 
-The final case is when not all devices respond in time. To keep our test relatively fast, we will construct the
-`DeviceGroupQuery` actor with a smaller timeout:
+## Creating device manager actors
+
+Going up to the next level in our hierarchy, we need to create the entry point for our device manager component in the `DeviceManager` source file. This actor is very similar to the device group actor, but creates device group actors instead of device actors:
 
 Scala
-:   @@snip [DeviceGroupQuerySpec.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-timeout }
+:   @@snip [DeviceManager.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-full }
 
 Java
-:   @@snip [DeviceGroupQueryTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-timeout }
+:   @@snip [DeviceManager.java]($code$/java/jdocs/tutorial_3/DeviceManager.java) { #device-manager-full }
 
-Our query works as expected now, it is time to include this new functionality in the `DeviceGroup` actor now.
+We leave tests of the device manager as an exercise for you since it is very similar to the tests we have already written for the group
+actor.
 
-## Adding the Query Capability to the Group
+## What's next?
 
-Including the query feature in the group actor is fairly simple now. We did all the heavy lifting in the query actor
-itself, the group actor only needs to create it with the right initial parameters and nothing else.
+We have now a hierarchical component for registering and tracking devices and recording measurements. We have seen how to implement different types of conversation patterns, such as:
 
-Scala
-:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_4/DeviceGroup.scala) { #query-added }
+ * Request-respond (for temperature recordings)
+ * Delegate-respond (for registration of devices)
+ * Create-watch-terminate (for creating the group and device actor as children)
 
-Java
-:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_4/DeviceGroup.java) { #query-added }
-
-It is probably worth to reiterate what we said at the beginning of the chapter. By keeping the temporary state
-that is only relevant to the query itself in a separate actor we keep the group actor implementation very simple. It delegates
-everything to child actors and therefore does not have to keep state that is not relevant to its core business. Also, multiple queries can
-now run parallel to each other, in fact, as many as needed. In our case querying an individual device actor is a fast operation, but
-if this were not the case, for example, because the remote sensors need to be contacted over the network, this design
-would significantly improve throughput.  
-
-We close this chapter by testing that everything works together. This test is just a variant of the previous ones,
-now exercising the group query feature:
-
-Scala
-:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_4/DeviceGroupSpec.scala) { #group-query-integration-test }
-
-Java
-:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupTest.java) { #group-query-integration-test }
+In the next chapter, we will introduce group query capabilities, which will establish a new conversation pattern of scatter-gather. In particular, we will implement the functionality that allows users to query the status of all the devices belonging to a group.
