@@ -38,7 +38,8 @@ Java](http://developer.lightbend.com/guides/akka-quickstart-java)* for
 instructions on downloading and running the Hello World example. The *QuickStart* guide walks you through example code that introduces how to define actor systems, actors, and messages as well as how to use the test module and logging. Within 30 minutes, you should be able to run the Hello World example and learn how it is constructed.
 
 This *Getting Started* guide provides the next level of information. It covers why the actor model fits the needs of modern distributed systems and includes a tutorial that will help further your knowledge of Akka. Topics include:
-* [[Why modern systems need a new programming model|actors-motivation]]
-* [[How the actor model meets the needs of concurrent, distributed systems|actors-intro]]
-* [[Overview of Akka libraries and modules|modules]].
-* A [[more complex example|quickstart]] that builds on the Hello World example to illustrate common Akka patterns. 
+
+* @ref[Why modern systems need a new programming model](actors-motivation.md)
+* @ref[How the actor model meets the needs of concurrent, distributed systems](actors-intro.md)
+* @ref[Overview of Akka libraries and modules](modules.md)
+* A @ref[more complex example](quickstart.md) that builds on the Hello World example to illustrate common Akka patterns.

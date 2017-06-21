@@ -238,9 +238,10 @@ Java
 
 ## Summary
 In the context of the IoT system, this guide introduced the following concepts, among others. You can follow the links to review them if necessary:
-* [[The hierarchy of actors and their lifecycle|tutorial_1]]
-* [[The importance of designing messages for flexibility|tutorial_3.md]]
-* [[How to watch and stop actors, if necessary|tutorial_4.md#Keeping-track-of-the device-actors-in-the-group]]
+
+* @ref[The hierarchy of actors and their lifecycle](tutorial_1.md)
+* @ref[The importance of designing messages for flexibility](tutorial_3.md)
+* @ref[How to watch and stop actors, if necessary](tutorial_4.md#keeping-track-of-the-device-actors-in-the-group)
 
 To continue your journey with Akka, we recommend:
 
