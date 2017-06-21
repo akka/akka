@@ -2,7 +2,10 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package jdocs.tutorial_4;
+package jdocs.tutorial_3;
+
+import java.util.Map;
+import java.util.HashMap;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -11,9 +14,7 @@ import akka.actor.Terminated;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-import java.util.HashMap;
-import java.util.Map;
-
+//#device-manager-full
 public class DeviceManager extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
@@ -21,6 +22,7 @@ public class DeviceManager extends AbstractActor {
     return Props.create(DeviceManager.class);
   }
 
+  //#device-manager-msgs
   public static final class RequestTrackDevice {
     public final String groupId;
     public final String deviceId;
@@ -34,6 +36,7 @@ public class DeviceManager extends AbstractActor {
   public static final class DeviceRegistered {
   }
 
+  //#device-manager-msgs
   final Map<String, ActorRef> groupIdToActor = new HashMap<>();
   final Map<ActorRef, String> actorToGroupId = new HashMap<>();
 
@@ -78,3 +81,4 @@ public class DeviceManager extends AbstractActor {
   }
 
 }
+//#device-manager-full

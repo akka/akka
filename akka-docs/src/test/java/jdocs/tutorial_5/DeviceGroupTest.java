@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_5;
+package jdocs.tutorial_4;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,11 +16,12 @@ import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import static jdocs.tutorial_5.DeviceGroupQueryTest.assertEqualTemperatures;
+import org.scalatest.junit.JUnitSuite;
+
+import static jdocs.tutorial_4.DeviceGroupQueryTest.assertEqualTemperatures;
 
 public class DeviceGroupTest extends JUnitSuite {
 
@@ -132,6 +133,7 @@ public class DeviceGroupTest extends JUnitSuite {
     });
   }
 
+  //#group-query-integration-test
   @Test
   public void testCollectTemperaturesFromAllActiveDevices() {
     TestKit probe = new TestKit(system);
@@ -167,4 +169,5 @@ public class DeviceGroupTest extends JUnitSuite {
 
     assertEqualTemperatures(expectedTemperatures, response.temperatures);
   }
+  //#group-query-integration-test
 }

@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package tutorial_5
+package tutorial_4
 
 import akka.actor.PoisonPill
 import akka.testkit.{ AkkaSpec, TestProbe }
@@ -96,6 +96,7 @@ class DeviceGroupSpec extends AkkaSpec {
       }
     }
 
+    //#group-query-integration-test
     "be able to collect temperatures from all active devices" in {
       val probe = TestProbe()
       val groupActor = system.actorOf(DeviceGroup.props("group"))
@@ -128,6 +129,7 @@ class DeviceGroupSpec extends AkkaSpec {
             "device2" -> DeviceGroup.Temperature(2.0),
             "device3" -> DeviceGroup.TemperatureNotAvailable)))
     }
+    //#group-query-integration-test
 
   }
 

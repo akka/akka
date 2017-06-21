@@ -15,10 +15,10 @@ We can define the first actor, the IotSupervisor, with a few simple lines of cod
 
 
 Scala
-:   @@snip [IotSupervisor.scala]($code$/scala/tutorial_1/IotSupervisor.scala) { #iot-supervisor }
+:   @@snip [IotSupervisor.scala]($code$/scala/tutorial_2/IotSupervisor.scala) { #iot-supervisor }
 
 Java
-:   @@snip [IotSupervisor.java]($code$/java/jdocs/tutorial_1/IotSupervisor.java) { #iot-supervisor }
+:   @@snip [IotSupervisor.java]($code$/java/jdocs/tutorial_2/IotSupervisor.java) { #iot-supervisor }
 
 The code is similar to the actor examples we used in the previous experiments, but notice:
 * Instead of `println()` we use @scala[the `ActorLogging` helper trait] @java[`akka.event.Logging`], which directly invokes Akka's built in logging facility.
@@ -27,10 +27,10 @@ The code is similar to the actor examples we used in the previous experiments, b
 To provide the `main` entry point that creates the actor system, add the following code to the new `IotApp` source file.
 
 Scala
-:   @@snip [IotApp.scala]($code$/scala/tutorial_1/IotApp.scala) { #iot-app }
+:   @@snip [IotApp.scala]($code$/scala/tutorial_2/IotApp.scala) { #iot-app }
 
 Java
-:   @@snip [IotMain.java]($code$/java/jdocs/tutorial_1/IotMain.java) { #iot-app }
+:   @@snip [IotMain.java]($code$/java/jdocs/tutorial_2/IotMain.java) { #iot-app }
 
 The application does little, other than print out that it is started. But, we have the first actor in place and we are ready to add other actors.
 

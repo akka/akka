@@ -1,9 +1,13 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_2;
+package jdocs.tutorial_5;
 
 import java.util.Optional;
+
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.testkit.javadsl.TestKit;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -12,9 +16,6 @@ import static org.junit.Assert.assertEquals;
 
 import org.scalatest.junit.JUnitSuite;
 
-import akka.actor.ActorSystem;
-import akka.actor.ActorRef;
-import akka.testkit.javadsl.TestKit;
 
 public class DeviceTest extends JUnitSuite {
 
@@ -31,7 +32,28 @@ public class DeviceTest extends JUnitSuite {
     system = null;
   }
 
-  //#device-read-test
+  @Test
+  public void testReplyToRegistrationRequests() {
+    TestKit probe = new TestKit(system);
+    ActorRef deviceActor = system.actorOf(Device.props("group", "device"));
+
+    deviceActor.tell(new DeviceManager.RequestTrackDevice("group", "device"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    assertEquals(deviceActor, probe.getLastSender());
+  }
+
+  @Test
+  public void testIgnoreWrongRegistrationRequests() {
+    TestKit probe = new TestKit(system);
+    ActorRef deviceActor = system.actorOf(Device.props("group", "device"));
+
+    deviceActor.tell(new DeviceManager.RequestTrackDevice("wrongGroup", "device"), probe.getRef());
+    probe.expectNoMsg();
+
+    deviceActor.tell(new DeviceManager.RequestTrackDevice("group", "wrongDevice"), probe.getRef());
+    probe.expectNoMsg();
+  }
+
   @Test
   public void testReplyWithEmptyReadingIfNoTemperatureIsKnown() {
     TestKit probe = new TestKit(system);
@@ -41,9 +63,7 @@ public class DeviceTest extends JUnitSuite {
     assertEquals(42L, response.requestId);
     assertEquals(Optional.empty(), response.value);
   }
-  //#device-read-test
 
-  //#device-write-read-test
   @Test
   public void testReplyWithLatestTemperatureReading() {
     TestKit probe = new TestKit(system);
@@ -65,6 +85,5 @@ public class DeviceTest extends JUnitSuite {
     assertEquals(4L, response2.requestId);
     assertEquals(Optional.of(55.0), response2.value);
   }
-  //#device-write-read-test
 
 }

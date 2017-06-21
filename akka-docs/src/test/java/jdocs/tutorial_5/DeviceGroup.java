@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_5;
+package jdocs.tutorial_4;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+//#query-added
 public class DeviceGroup extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
@@ -47,6 +48,7 @@ public class DeviceGroup extends AbstractActor {
     }
   }
 
+  //#query-protocol
   public static final class RequestAllTemperatures {
     final long requestId;
 
@@ -84,6 +86,8 @@ public class DeviceGroup extends AbstractActor {
 
   public static final class DeviceTimedOut implements TemperatureReading {
   }
+  //#query-protocol
+
 
   final Map<String, ActorRef> deviceIdToActor = new HashMap<>();
   final Map<ActorRef, String> actorToDeviceId = new HashMap<>();
@@ -99,6 +103,7 @@ public class DeviceGroup extends AbstractActor {
     log.info("DeviceGroup {} stopped", groupId);
   }
 
+  //#query-added
   private void onTrackDevice(DeviceManager.RequestTrackDevice trackMsg) {
     if (this.groupId.equals(trackMsg.groupId)) {
       ActorRef ref = deviceIdToActor.get(trackMsg.deviceId);
@@ -131,6 +136,7 @@ public class DeviceGroup extends AbstractActor {
     actorToDeviceId.remove(deviceActor);
     deviceIdToActor.remove(deviceId);
   }
+  //#query-added
 
   private void onAllTemperatures(RequestAllTemperatures r) {
     getContext().actorOf(DeviceGroupQuery.props(
@@ -139,11 +145,15 @@ public class DeviceGroup extends AbstractActor {
 
   @Override
   public Receive createReceive() {
+    //#query-added
     return receiveBuilder()
             .match(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
             .match(RequestDeviceList.class, this::onDeviceList)
             .match(Terminated.class, this::onTerminated)
+            //#query-added
+            // ... other cases omitted
             .match(RequestAllTemperatures.class, this::onAllTemperatures)
             .build();
   }
 }
+//#query-added

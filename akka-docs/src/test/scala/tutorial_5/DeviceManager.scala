@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package tutorial_5
+package tutorial_4
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
-import tutorial_5.DeviceManager.RequestTrackDevice
+import tutorial_4.DeviceManager.RequestTrackDevice
 
 object DeviceManager {
   def props(): Props = Props(new DeviceManager)

@@ -1,17 +1,16 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_2;
-
-//#full-device
-
-import java.util.Optional;
+package jdocs.tutorial_5;
 
 import akka.actor.AbstractActor;
-import akka.actor.AbstractActor.Receive;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import jdocs.tutorial_5.DeviceManager.DeviceRegistered;
+import jdocs.tutorial_5.DeviceManager.RequestTrackDevice;
+
+import java.util.Optional;
 
 public class Device extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
@@ -80,6 +79,16 @@ public class Device extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
+            .match(RequestTrackDevice.class, r -> {
+              if (this.groupId.equals(r.groupId) && this.deviceId.equals(r.deviceId)) {
+                getSender().tell(new DeviceRegistered(), getSelf());
+              } else {
+                log.warning(
+                        "Ignoring TrackDevice request for {}-{}.This actor is responsible for {}-{}.",
+                        r.groupId, r.deviceId, this.groupId, this.deviceId
+                );
+              }
+            })
             .match(RecordTemperature.class, r -> {
               log.info("Recorded temperature reading {} with {}", r.value, r.requestId);
               lastTemperatureReading = Optional.of(r.value);
@@ -91,4 +100,3 @@ public class Device extends AbstractActor {
             .build();
   }
 }
-//#full-device

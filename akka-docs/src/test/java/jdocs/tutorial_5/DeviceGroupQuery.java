@@ -1,18 +1,26 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_5;
-
-import akka.actor.*;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
-import scala.concurrent.duration.FiniteDuration;
+package jdocs.tutorial_4;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import scala.concurrent.duration.FiniteDuration;
+
+import akka.actor.AbstractActor;
+import akka.actor.ActorRef;
+import akka.actor.Cancellable;
+import akka.actor.Props;
+import akka.actor.Terminated;
+
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
+
+//#query-full
+//#query-outline
 public class DeviceGroupQuery extends AbstractActor {
   public static final class CollectionTimeout {
   }
@@ -52,6 +60,8 @@ public class DeviceGroupQuery extends AbstractActor {
     queryTimeoutTimer.cancel();
   }
 
+  //#query-outline
+  //#query-state
   @Override
   public Receive createReceive() {
     return waitingForReplies(new HashMap<>(), actorToDeviceId.keySet());
@@ -69,10 +79,7 @@ public class DeviceGroupQuery extends AbstractActor {
               receivedResponse(deviceActor, reading, stillWaiting, repliesSoFar);
             })
             .match(Terminated.class, t -> {
-              if (stillWaiting.contains(t.getActor())) {
-                receivedResponse(t.getActor(), new DeviceGroup.DeviceNotAvailable(), stillWaiting, repliesSoFar);
-              }
-              // else ignore
+              receivedResponse(t.getActor(), new DeviceGroup.DeviceNotAvailable(), stillWaiting, repliesSoFar);
             })
             .match(CollectionTimeout.class, t -> {
               Map<String, DeviceGroup.TemperatureReading> replies = new HashMap<>(repliesSoFar);
@@ -85,7 +92,9 @@ public class DeviceGroupQuery extends AbstractActor {
             })
             .build();
   }
+  //#query-state
 
+  //#query-collect-reply
   public void receivedResponse(ActorRef deviceActor,
                                DeviceGroup.TemperatureReading reading,
                                Set<ActorRef> stillWaiting,
@@ -105,4 +114,8 @@ public class DeviceGroupQuery extends AbstractActor {
       getContext().become(waitingForReplies(newRepliesSoFar, newStillWaiting));
     }
   }
+  //#query-collect-reply
+  //#query-outline
 }
+//#query-outline
+//#query-full

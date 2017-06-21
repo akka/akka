@@ -1,15 +1,17 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_4;
+package jdocs.tutorial_3;
+
+//#device-with-register
 
 import akka.actor.AbstractActor;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-import jdocs.tutorial_4.DeviceManager.DeviceRegistered;
-import jdocs.tutorial_4.DeviceManager.RequestTrackDevice;
+import jdocs.tutorial_3.DeviceManager.DeviceRegistered;
+import jdocs.tutorial_3.DeviceManager.RequestTrackDevice;
 
 import java.util.Optional;
 
@@ -101,3 +103,4 @@ public class Device extends AbstractActor {
             .build();
   }
 }
+//#device-with-register

@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package tutorial_4
+package tutorial_3
 
 import akka.actor.{ Actor, ActorLogging, Props }
-import tutorial_4.Device.{ ReadTemperature, RecordTemperature, RespondTemperature, TemperatureRecorded }
-import tutorial_4.DeviceManager.{ DeviceRegistered, RequestTrackDevice }
+import tutorial_3.Device.{ ReadTemperature, RecordTemperature, RespondTemperature, TemperatureRecorded }
+import tutorial_3.DeviceManager.{ DeviceRegistered, RequestTrackDevice }
 
+//#device-with-register
 object Device {
-
   def props(groupId: String, deviceId: String): Props = Props(new Device(groupId, deviceId))
 
   final case class RecordTemperature(requestId: Long, value: Double)
@@ -44,3 +44,4 @@ class Device(groupId: String, deviceId: String) extends Actor with ActorLogging 
       sender() ! RespondTemperature(id, lastTemperatureReading)
   }
 }
+//#device-with-register

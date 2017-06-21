@@ -1,12 +1,10 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_4;
+package jdocs.tutorial_3;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -20,8 +18,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import org.scalatest.junit.JUnitSuite;
-
-import static jdocs.tutorial_4.DeviceGroupQueryTest.assertEqualTemperatures;
 
 public class DeviceGroupTest extends JUnitSuite {
 
@@ -38,6 +34,7 @@ public class DeviceGroupTest extends JUnitSuite {
     system = null;
   }
 
+  //#device-group-test-registration
   @Test
   public void testRegisterDeviceActor() {
     TestKit probe = new TestKit(system);
@@ -52,7 +49,7 @@ public class DeviceGroupTest extends JUnitSuite {
     ActorRef deviceActor2 = probe.getLastSender();
     assertNotEquals(deviceActor1, deviceActor2);
 
-    // Check that the device actors are working
+    // Check that the device actors are workingl
     deviceActor1.tell(new Device.RecordTemperature(0L, 1.0), probe.getRef());
     assertEquals(0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
     deviceActor2.tell(new Device.RecordTemperature(1L, 2.0), probe.getRef());
@@ -67,7 +64,9 @@ public class DeviceGroupTest extends JUnitSuite {
     groupActor.tell(new DeviceManager.RequestTrackDevice("wrongGroup", "device1"), probe.getRef());
     probe.expectNoMsg();
   }
+  //#device-group-test-registration
 
+  //#device-group-test3
   @Test
   public void testReturnSameActorForSameDeviceId() {
     TestKit probe = new TestKit(system);
@@ -82,7 +81,9 @@ public class DeviceGroupTest extends JUnitSuite {
     ActorRef deviceActor2 = probe.getLastSender();
     assertEquals(deviceActor1, deviceActor2);
   }
+  //#device-group-test3
 
+  //#device-group-list-terminate-test
   @Test
   public void testListActiveDevices() {
     TestKit probe = new TestKit(system);
@@ -132,42 +133,5 @@ public class DeviceGroupTest extends JUnitSuite {
       return null;
     });
   }
-
-  //#group-query-integration-test
-  @Test
-  public void testCollectTemperaturesFromAllActiveDevices() {
-    TestKit probe = new TestKit(system);
-    ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
-
-    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
-    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
-    ActorRef deviceActor1 = probe.getLastSender();
-
-    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device2"), probe.getRef());
-    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
-    ActorRef deviceActor2 = probe.getLastSender();
-
-    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device3"), probe.getRef());
-    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
-    ActorRef deviceActor3 = probe.getLastSender();
-
-    // Check that the device actors are working
-    deviceActor1.tell(new Device.RecordTemperature(0L, 1.0), probe.getRef());
-    assertEquals(0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
-    deviceActor2.tell(new Device.RecordTemperature(1L, 2.0), probe.getRef());
-    assertEquals(1L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
-    // No temperature for device 3
-
-    groupActor.tell(new DeviceGroup.RequestAllTemperatures(0L), probe.getRef());
-    DeviceGroup.RespondAllTemperatures response = probe.expectMsgClass(DeviceGroup.RespondAllTemperatures.class);
-    assertEquals(0L, response.requestId);
-
-    Map<String, DeviceGroup.TemperatureReading> expectedTemperatures = new HashMap<>();
-    expectedTemperatures.put("device1", new DeviceGroup.Temperature(1.0));
-    expectedTemperatures.put("device2", new DeviceGroup.Temperature(2.0));
-    expectedTemperatures.put("device3", new DeviceGroup.TemperatureNotAvailable());
-
-    assertEqualTemperatures(expectedTemperatures, response.temperatures);
-  }
-  //#group-query-integration-test
+  //#device-group-list-terminate-test
 }

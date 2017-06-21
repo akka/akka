@@ -1,20 +1,21 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package tutorial_5
+package tutorial_4
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
-import tutorial_5.DeviceGroup._
-import tutorial_5.DeviceManager.RequestTrackDevice
+import tutorial_4.DeviceGroup._
+import tutorial_4.DeviceManager.RequestTrackDevice
+
 import scala.concurrent.duration._
 
 object DeviceGroup {
-
   def props(groupId: String): Props = Props(new DeviceGroup(groupId))
 
   final case class RequestDeviceList(requestId: Long)
   final case class ReplyDeviceList(requestId: Long, ids: Set[String])
 
+  //#query-protocol
   final case class RequestAllTemperatures(requestId: Long)
   final case class RespondAllTemperatures(requestId: Long, temperatures: Map[String, TemperatureReading])
 
@@ -23,8 +24,10 @@ object DeviceGroup {
   case object TemperatureNotAvailable extends TemperatureReading
   case object DeviceNotAvailable extends TemperatureReading
   case object DeviceTimedOut extends TemperatureReading
+  //#query-protocol
 }
 
+//#query-added
 class DeviceGroup(groupId: String) extends Actor with ActorLogging {
   var deviceIdToActor = Map.empty[String, ActorRef]
   var actorToDeviceId = Map.empty[ActorRef, String]
@@ -35,7 +38,7 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
   override def postStop(): Unit = log.info("DeviceGroup {} stopped", groupId)
 
   override def receive: Receive = {
-    // Note the backticks
+    //#query-added
     case trackMsg @ RequestTrackDevice(`groupId`, _) =>
       deviceIdToActor.get(trackMsg.deviceId) match {
         case Some(ref) =>
@@ -64,6 +67,9 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
       actorToDeviceId -= deviceActor
       deviceIdToActor -= deviceId
 
+    //#query-added
+    // ... other cases omitted
+
     case RequestAllTemperatures(requestId) =>
       context.actorOf(DeviceGroupQuery.props(
         actorToDeviceId = actorToDeviceId,
@@ -74,3 +80,4 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
   }
 
 }
+//#query-added

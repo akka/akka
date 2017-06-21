@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_5;
+package jdocs.tutorial_4;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -11,10 +11,10 @@ import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.HashMap;
@@ -37,6 +37,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     system = null;
   }
 
+  //#query-test-normal
   @Test
   public void testReturnTemperatureValueForWorkingDevices() {
     TestKit requester = new TestKit(system);
@@ -69,7 +70,9 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     assertEqualTemperatures(expectedTemperatures, response.temperatures);
   }
+  //#query-test-normal
 
+  //#query-test-no-reading
   @Test
   public void testReturnTemperatureNotAvailableForDevicesWithNoReadings() {
     TestKit requester = new TestKit(system);
@@ -102,7 +105,9 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     assertEqualTemperatures(expectedTemperatures, response.temperatures);
   }
+  //#query-test-no-reading
 
+  //#query-test-stopped
   @Test
   public void testReturnDeviceNotAvailableIfDeviceStopsBeforeAnswering() {
     TestKit requester = new TestKit(system);
@@ -135,7 +140,9 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     assertEqualTemperatures(expectedTemperatures, response.temperatures);
   }
+  //#query-test-stopped
 
+  //#query-test-stopped-later
   @Test
   public void testReturnTemperatureReadingEvenIfDeviceStopsAfterAnswering() {
     TestKit requester = new TestKit(system);
@@ -169,7 +176,9 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     assertEqualTemperatures(expectedTemperatures, response.temperatures);
   }
+  //#query-test-stopped-later
 
+  //#query-test-timeout
   @Test
   public void testReturnDeviceTimedOutIfDeviceDoesNotAnswerInTime() {
     TestKit requester = new TestKit(system);
@@ -203,6 +212,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     assertEqualTemperatures(expectedTemperatures, response.temperatures);
   }
+  //#query-test-timeout
 
   public static void assertEqualTemperatures(Map<String, DeviceGroup.TemperatureReading> expected, Map<String, DeviceGroup.TemperatureReading> actual) {
     for (Map.Entry<String, DeviceGroup.TemperatureReading> entry : expected.entrySet()) {

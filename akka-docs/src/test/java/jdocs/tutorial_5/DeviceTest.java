@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_5;
+package jdocs.tutorial_4;
 
 import java.util.Optional;
 
@@ -15,7 +15,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 import org.scalatest.junit.JUnitSuite;
-
 
 public class DeviceTest extends JUnitSuite {
 

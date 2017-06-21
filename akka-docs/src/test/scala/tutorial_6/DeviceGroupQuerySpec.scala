@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package tutorial_4
+package tutorial_5
 
 import akka.actor.PoisonPill
 import akka.testkit.{ AkkaSpec, TestProbe }
@@ -12,7 +12,6 @@ class DeviceGroupQuerySpec extends AkkaSpec {
 
   "DeviceGroupQuery" must {
 
-    //#query-test-normal
     "return temperature value for working devices" in {
       val requester = TestProbe()
 
@@ -40,9 +39,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         )
       ))
     }
-    //#query-test-normal
 
-    //#query-test-no-reading
     "return TemperatureNotAvailable for devices with no readings" in {
       val requester = TestProbe()
 
@@ -70,9 +67,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         )
       ))
     }
-    //#query-test-no-reading
 
-    //#query-test-stopped
     "return DeviceNotAvailable if device stops before answering" in {
       val requester = TestProbe()
 
@@ -100,9 +95,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         )
       ))
     }
-    //#query-test-stopped
 
-    //#query-test-stopped-later
     "return temperature reading even if device stops after answering" in {
       val requester = TestProbe()
 
@@ -131,9 +124,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         )
       ))
     }
-    //#query-test-stopped-later
 
-    //#query-test-timeout
     "return DeviceTimedOut if device does not answer in time" in {
       val requester = TestProbe()
 
@@ -160,7 +151,6 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         )
       ))
     }
-    //#query-test-timeout
 
   }
 

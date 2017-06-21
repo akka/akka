@@ -1,52 +1,52 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package tutorial_3
+package tutorial_5
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
-import tutorial_3.DeviceGroup._
-import tutorial_3.DeviceManager.RequestTrackDevice
-
+import tutorial_5.DeviceGroup._
+import tutorial_5.DeviceManager.RequestTrackDevice
 import scala.concurrent.duration._
 
-//#device-group-full
-//#device-group-register
 object DeviceGroup {
+
   def props(groupId: String): Props = Props(new DeviceGroup(groupId))
-  //#device-group-register
 
   final case class RequestDeviceList(requestId: Long)
   final case class ReplyDeviceList(requestId: Long, ids: Set[String])
-  //#device-group-register
+
+  final case class RequestAllTemperatures(requestId: Long)
+  final case class RespondAllTemperatures(requestId: Long, temperatures: Map[String, TemperatureReading])
+
+  sealed trait TemperatureReading
+  final case class Temperature(value: Double) extends TemperatureReading
+  case object TemperatureNotAvailable extends TemperatureReading
+  case object DeviceNotAvailable extends TemperatureReading
+  case object DeviceTimedOut extends TemperatureReading
 }
-//#device-group-register
-//#device-group-register
-//#device-group-remove
 
 class DeviceGroup(groupId: String) extends Actor with ActorLogging {
   var deviceIdToActor = Map.empty[String, ActorRef]
-  //#device-group-register
   var actorToDeviceId = Map.empty[ActorRef, String]
-  //#device-group-register
+  var nextCollectionId = 0L
 
   override def preStart(): Unit = log.info("DeviceGroup {} started", groupId)
 
   override def postStop(): Unit = log.info("DeviceGroup {} stopped", groupId)
 
   override def receive: Receive = {
+    // Note the backticks
     case trackMsg @ RequestTrackDevice(`groupId`, _) =>
       deviceIdToActor.get(trackMsg.deviceId) match {
-        case Some(deviceActor) =>
-          deviceActor forward trackMsg
+        case Some(ref) =>
+          ref forward trackMsg
         case None =>
           log.info("Creating device actor for {}", trackMsg.deviceId)
-          val deviceActor = context.actorOf(Device.props(groupId, trackMsg.deviceId), s"device-${trackMsg.deviceId}")
-          //#device-group-register
+          val deviceActor = context.actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId)
           context.watch(deviceActor)
-          actorToDeviceId += deviceActor -> trackMsg.deviceId
-          //#device-group-register
-          deviceIdToActor += trackMsg.deviceId -> deviceActor
           deviceActor forward trackMsg
+          deviceIdToActor += trackMsg.deviceId -> deviceActor
+          actorToDeviceId += deviceActor -> trackMsg.deviceId
       }
 
     case RequestTrackDevice(groupId, deviceId) =>
@@ -54,12 +54,9 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
         "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
         groupId, this.groupId
       )
-    //#device-group-register
-    //#device-group-remove
 
     case RequestDeviceList(requestId) =>
       sender() ! ReplyDeviceList(requestId, deviceIdToActor.keySet)
-    //#device-group-remove
 
     case Terminated(deviceActor) =>
       val deviceId = actorToDeviceId(deviceActor)
@@ -67,9 +64,13 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
       actorToDeviceId -= deviceActor
       deviceIdToActor -= deviceId
 
-    //#device-group-register
+    case RequestAllTemperatures(requestId) =>
+      context.actorOf(DeviceGroupQuery.props(
+        actorToDeviceId = actorToDeviceId,
+        requestId = requestId,
+        requester = sender(),
+        3.seconds
+      ))
   }
+
 }
-//#device-group-remove
-//#device-group-register
-//#device-group-full
