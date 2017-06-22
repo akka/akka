@@ -5,12 +5,12 @@ Before delving into some best practices for writing actors, it will be helpful t
 The following capabilities are included with Akka OSS and are introduced later on this page:
 * [Actor library](#actor-library)
 * [Remoting](#remoting)
-* [Clustering](#clustering)
-* [Cluster sharding](#cluster-sharding)
-* [Cluster singleton](#cluster-singleton)
-* [Cluster publish-subscribe](#cluster-publish-subscribe)
+* [Cluster](#cluster)
+* [Cluster Sharding](#cluster-sharding)
+* [Cluster Singleton](#cluster-singleton)
+* [Cluster Publish-Subscribe](#cluster-publish-subscribe)
 * [Persistence](#persistence)
-* [Distributed data](#distributed-data)
+* [Distributed Data](#distributed-data)
 * [HTTP](#http)
 
 With a Lightbend subscription, you can use [Enterprise Suite](https://www.lightbend.com/platform/production) in production. Enterprise Suite includes the following extensions to Akka core functionality:
@@ -57,7 +57,7 @@ Challenges Remoting solves include the following:
   all transparently.
 * How to multiplex communications from an unrelated set of actors on the same network connection, all transparently.
 
-### Clustering
+### Cluster
 
 If you have a set of actor systems that cooperate to solve some business problem, then you likely want to manage these set of
 systems in a disciplined way. While Remoting solves the problem of addressing and communicating with components of
@@ -74,7 +74,7 @@ Challenges the Cluster module solves include the following:
 * How to distribute computations among the current set of members.
 * How do I designate members of the cluster to a certain role, in other words, to provide certain services and not others.
 
-### Cluster sharding
+### Cluster Sharding
 
 Sharding helps to solve the problem of distributing a set of actors among members of an Akka cluster.
 Sharding is a pattern that mostly used together with Persistence to balance a large set of persistent entities
@@ -87,7 +87,7 @@ Challenges that Sharding solves include the following:
 * How to ensure migrating entities from a crashed system without losing the state.
 * How to ensure that an entity does not exist on multiple systems at the same time and hence kept consistent.
 
-### Cluster singleton
+### Cluster Singleton
 
 A common (in fact, a bit too common) use case in distributed systems is to have a single entity responsible
 for a given task which is shared among other members of the cluster and migrated if the host system fails.
@@ -102,7 +102,7 @@ The Singleton module can be used to solve these challenges:
 * How to ensure that the service is up even if the system hosting it currently crashes or shut down during the process of scaling down.
 * How to reach this instance from any member of the cluster assuming that it can migrate to other systems over time.
 
-### Cluster publish-subscribe
+### Cluster Publish-Subscribe
 
 For coordination among systems, it is often necessary to distribute messages to all, or one system of a set of
 interested systems in a cluster. This pattern is usually called publish-subscribe and this module solves this exact
@@ -130,7 +130,7 @@ Persistence tackles the following challenges:
 * How to introspect domain events that have lead an entity to its current state.
 * How to leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in my application to support long-running processes while the project continues to evolve.
 
-### Distributed data
+### Distributed Data
 
 In situations where eventual consistency is acceptable, it is possible to share data between nodes in
 an Akka Cluster and accept both reads and writes even in the face of cluster partitions. This can be
@@ -174,7 +174,7 @@ Some of the challenges that HTTP tackles:
 
 ### Example of module use
 
-Akka modules integrate together seamlessly. For example, think of a large set of stateful business objects, such as documents or shopping carts, that website users access. If you model these as sharded entities, using Sharding and Persistence, they will be balanced across a cluster that you can scale out on-demand. They will be available during pikes that come from advertising campaigns or before holidays will be handled, even if some systems crash. You can also easily take the real-time stream of domain events with Persistence Query and use Streams to pipe them into a streaming BigData engine. Then, take the output of that engine as a Stream, manipulate it using Akka Streams
+Akka modules integrate together seamlessly. For example, think of a large set of stateful business objects, such as documents or shopping carts, that website users access. If you model these as sharded entities, using Sharding and Persistence, they will be balanced across a cluster that you can scale out on-demand. They will be available during pikes that come from advertising campaigns or before holidays will be handled, even if some systems crash. You can also easily take the real-time stream of domain events with Persistence Query and use Streams to pipe them into a streaming Fast Data engine. Then, take the output of that engine as a Stream, manipulate it using Akka Streams
 operators and expose it as web socket connections served by a load balanced set of HTTP servers hosted by your cluster
 to power your real-time business analytics tool.
 
