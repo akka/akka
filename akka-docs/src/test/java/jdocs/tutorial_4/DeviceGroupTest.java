@@ -49,7 +49,7 @@ public class DeviceGroupTest extends JUnitSuite {
     ActorRef deviceActor2 = probe.getLastSender();
     assertNotEquals(deviceActor1, deviceActor2);
 
-    // Check that the device actors are workingl
+    // Check that the device actors are working
     deviceActor1.tell(new Device.RecordTemperature(0L, 1.0), probe.getRef());
     assertEquals(0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
     deviceActor2.tell(new Device.RecordTemperature(1L, 2.0), probe.getRef());
@@ -126,7 +126,7 @@ public class DeviceGroupTest extends JUnitSuite {
     // to see the Terminated, that order is undefined
     probe.awaitAssert(() -> {
       groupActor.tell(new DeviceGroup.RequestDeviceList(1L), probe.getRef());
-      DeviceGroup.ReplyDeviceList r = 
+      DeviceGroup.ReplyDeviceList r =
         probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
       assertEquals(1L, r.requestId);
       assertEquals(Stream.of("device2").collect(Collectors.toSet()), r.ids);
