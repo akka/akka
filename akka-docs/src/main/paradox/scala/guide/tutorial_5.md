@@ -1,6 +1,7 @@
 # Part 5: Querying Device Groups
 
 The conversational patterns that we have seen so far are simple in the sense that they require the actor to keep little or no state. Specifically:
+
 * Device actors return a reading, which requires no state change
 * Record a temperature, which updates a single field
 * Device Group actors maintain group membership by simply adding or removing entries from a map
@@ -20,6 +21,7 @@ These issues can be addressed in many different ways, but the important point is
  * If an actor in the snapshot stops during the query without answering, we will simply report the fact that it stopped to the sender of the query message.
 
 Apart from device actors coming and going dynamically, some actors might take a long time to answer. For example, they could be stuck in an accidental infinite loop, or fail due to a bug and drop our request. We don't want the query to continue indefinitely, so we will consider it complete in either of the following cases:
+
 * All actors in the snapshot have either responded or have confirmed being stopped.
 * We reach a pre-defined deadline.
 
@@ -60,7 +62,7 @@ Since we need a way to indicate how long we are willing to wait for responses, i
 not used yet, the built-in scheduler facility. Using the scheduler is simple:
 
 * We get the scheduler from the `ActorSystem`, which, in turn,
-is accessible from the actor's context: @scala[`context.system.scheduler`] @java[`getContext().getSystem().scheduler()`]. This needs an @scala[implicit] `ExecutionContext` which
+is accessible from the actor's context: @scala[`context.system.scheduler`]@java[`getContext().getSystem().scheduler()`]. This needs an @scala[implicit] `ExecutionContext` which
 is basically the thread-pool that will execute the timer task itself. In our case, we use the same dispatcher
 as the actor by @scala[importing `import context.dispatcher`] @java[passing in `getContext().dispatcher()`].
 * The

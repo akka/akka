@@ -21,6 +21,7 @@ Java
 :   @@snip [IotSupervisor.java]($code$/java/jdocs/tutorial_2/IotSupervisor.java) { #iot-supervisor }
 
 The code is similar to the actor examples we used in the previous experiments, but notice:
+
 * Instead of `println()` we use @scala[the `ActorLogging` helper trait] @java[`akka.event.Logging`], which directly invokes Akka's built in logging facility.
 * We use the recommended pattern for creating actors by defining a `props()` @scala[method in the [companion object](http://docs.scala-lang.org/tutorials/tour/singleton-objects.html#companions) of] @java[static method on] the actor.
 

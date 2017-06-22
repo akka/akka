@@ -26,6 +26,7 @@ The following diagram illustrates the example application architecture. Since we
 
 ## What you will learn in this tutorial
 This tutorial introduces and illustrates:
+
 * The actor hierarchy and how it influences actor behavior
 * How to choose the right granularity for actors
 * How to define protocols as messages

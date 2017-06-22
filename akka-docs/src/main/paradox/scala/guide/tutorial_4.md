@@ -27,6 +27,7 @@ The following guidelines help us choose the most appropriate actor hierarchy:
 ## Device manager hierarchy
 
 Considering the principles outlined in the previous section, We will model the device manager component as an actor tree with three levels:
+
 * The top level supervisor actor represents the system component for devices. It is also the entry point to look up and create device group and device actors.
 * At the next level, group actors each supervise the device actors for one home. They also provide services, such as querying temperature readings from all of the available devices in their group.
 * Device actors manage all the interactions with the actual device sensors, such as storing temperature readings.
@@ -37,15 +38,16 @@ Reviewers: please make sure I got the above correct. I thought it useful to map 
 
 
 We chose this three-layered architecture for these reasons:
+
 * Having groups of individual actors:
-  * Isolates failures that occur in a group. If a single actor managed all device groups, an error in one group that causes a restart would wipe out the state of groups that are otherwise non-faulty.
-  * Simplifies the problem of querying all the devices belonging to a group. Each group actor only contains state related to its group.
-  * Increases parallelism in the system. Since each group has a dedicated actor, they run concurrently and we can query multiple groups concurrently.
+    * Isolates failures that occur in a group. If a single actor managed all device groups, an error in one group that causes a restart would wipe out the state of groups that are otherwise non-faulty.
+    * Simplifies the problem of querying all the devices belonging to a group. Each group actor only contains state related to its group.
+    * Increases parallelism in the system. Since each group has a dedicated actor, they run concurrently and we can query multiple groups concurrently.
 
 
 * Having sensors modeled as individual device actors:
-  * Isolates failures of one device actor from the rest of the devices in the group.
-  * Increases the parallelism of collecting temperature readings. Network connections from different sensors communicate with their individual device actors directly, reducing contention points.
+    * Isolates failures of one device actor from the rest of the devices in the group.
+    * Increases the parallelism of collecting temperature readings. Network connections from different sensors communicate with their individual device actors directly, reducing contention points.
 
 With the architecture defined, we can start working on the protocol for registering sensors.
 
@@ -59,8 +61,8 @@ Looking at registration in more detail, we can outline the necessary functionali
     * If the manager already has an actor for the device group, it forwards the request to it.
     * Otherwise, it creates a new device group actor and then forwards the request.
 1. The `DeviceGroup` actor receives the request to register an actor for the given device:
-  * If the group already has an actor for the device, the group actor forwards the request to the device actor.
-  * Otherwise, the `DeviceGroup` actor first creates a device actor and then forwards the request.
+    * If the group already has an actor for the device, the group actor forwards the request to the device actor.
+    * Otherwise, the `DeviceGroup` actor first creates a device actor and then forwards the request.
 1. The device actor receives the request and sends an acknowledgement to the original sender. Since the device actor acknowledges receipt (instead of the group actor), the sensor will now have the `ActorRef` to send messages directly to its actor.
 
 The messages that we will use to communicate registration requests and

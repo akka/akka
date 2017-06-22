@@ -45,6 +45,7 @@ But to further understand the need for flexibility in the protocol, it will help
  * Message ordering is maintained per sender, receiver pair.
 
 The following sections discuss this behavior in more detail:
+
 * [Message delivery](#message-delivery)
 * [Message ordering](#message-ordering)
 
@@ -127,9 +128,10 @@ Java
 :   @@snip [DeviceInProgress2.java]($code$/java/jdocs/tutorial_3/inprogress2/DeviceInProgress2.java) { #device-with-read }
 
 Note in the code that:
+
 * The helper object defines how to construct a `Device` actor. The `props` parameters include an ID for the device and the group to which it belongs, which we will use later.
 * The helper object includes the definitions of the messages we reasoned about previously.
-* In the `Device` class, the value of `lastTemperatureReading` is initially set to @scala[`None`] @java[`Optional.empty()`], and the actor will simply report it back if queried.
+* In the `Device` class, the value of `lastTemperatureReading` is initially set to @scala[`None`]@java[`Optional.empty()`], and the actor will simply report it back if queried.
 
 ## Testing the actor
 
