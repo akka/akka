@@ -95,6 +95,7 @@ Scala
 
 Java
 :   @@snip [Device.java]($code$/java/jdocs/tutorial_4/Device.java) { #device-with-register }
+
 @@@ note { .group-scala }
 
 We used a feature of scala pattern matching where we can check to see if a certain field equals an expected value. By bracketing variables with backticks, like `` `variable` ``, the pattern will only match if it contains the value of `variable` in that position.
