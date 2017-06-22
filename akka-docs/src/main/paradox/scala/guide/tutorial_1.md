@@ -4,10 +4,10 @@ Use of Akka relieves you from creating the infrastructure for an actor system an
 
 ## The Akka actor hierarchy
 
-An actor in Akka always belongs to a parent. Typically, you create an actor by calling  `system.actorOf()`. Rather than creating a "freestanding" actor, this injects the new actor as a child into an already existing tree. When you create actors thereafter, the creator actor becomes the
+An actor in Akka always belongs to a parent. Typically, you create an actor by calling  @java[`getContext().actorOf()`]@scala[`context.actorOf()`]. Rather than creating a "freestanding" actor, this injects the new actor as a child into an already existing tree: the creator actor becomes the
 _parent_ of the newly created _child_ actor. You might ask then, who is the parent of the _first_ actor you create?
 
-As illustrated below, all actors have a common parent, the user guardian. And, as we covered in the *[QuickStart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala/)*, creation of an actor returns a reference that is a valid URL. So, for example, if we create an actor named `someActor`, its reference will include the path `/user/someActor`.
+As illustrated below, all actors have a common parent, the user guardian. New actor instances can be created under this actor using `system.actorOf()`. As we covered in the *[QuickStart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala/)*, creation of an actor returns a reference that is a valid URL. So, for example, if we create an actor named `someActor` with `system.actorOf`, its reference will include the path `/user/someActor`.
 
 ![box diagram of the architecture](diagrams/actor_top_tree.png)
 
