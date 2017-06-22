@@ -102,7 +102,7 @@ We used a feature of scala pattern matching where we can check to see if a certa
 
 @@@
 
-We can now write two new test cases, `DeviceSpec` exercising successful registration, `DeviceTest` testing the case when IDs don't match:
+We can now write two new test cases, one exercising successful registration, the other testing the case when IDs don't match:
 
 Scala
 :   @@snip [DeviceSpec.scala]($code$/scala/tutorial_4/DeviceSpec.scala) { #device-registration-tests }
