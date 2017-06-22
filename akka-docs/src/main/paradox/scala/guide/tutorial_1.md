@@ -63,10 +63,8 @@ An important role of the hierarchy is to safely manage actor lifecycles. Let's c
 Actors pop into existence when created, then later, at user requests, they are stopped. Whenever an actor is stopped, all of its children are _recursively stopped_ too.
 This behavior greatly simplifies resource cleanup and helps avoid resource leaks such as those caused by open sockets and files. In fact, a commonly overlooked difficulty when dealing with low-level multi-threaded code is the lifecycle management of various concurrent resources.
 
-To stop an actor, the recommended pattern is to call `context.stop(self)` inside the actor to stop itself, usually as a response to some user defined stop message or when the actor is done with its job. Stopping an actor is also possible by calling `context.stop(actorRef)`. **It is considered a bad practice to stop arbitrary
-actors this way**.
-
-Reviewers: should we even mention context.stop if it is a bad practice?
+To stop an actor, the recommended pattern is to call `context.stop(self)` inside the actor to stop itself, usually as a response to some user defined stop message or when the actor is done with its job. Stopping another actor is also possible by calling `context.stop(actorRef)`. **It is considered a bad practice to stop arbitrary actors this way**, try sending them a `PoisonPill` or custom stop message
+instead.
 
 The Akka actor API exposes many lifecycle hooks that you can override in an actor implementation. The most commonly used are
 `preStart()` and `postStop()`.
