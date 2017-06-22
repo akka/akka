@@ -34,8 +34,6 @@ In your Hello World project, navigate to the `src\main\scala\com\lightbend\akka\
 1. Replace the messages in the `main-send-messages` section of the `try` block with the last two lines of the code snippet.
 1. Save your file and run sbt to observe the output.
 
-Reviewers: Is it OK to just have them keep adding these experiments to the same source file? It was quick and easy to do this way.
-
 Scala
 :   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #print-refs }
 
