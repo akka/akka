@@ -11,11 +11,13 @@ import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 final case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpCharsetRange) extends jm.ContentTypeRange with ValueRenderable {
-  def matches(contentType: jm.ContentType) =
-    contentType match {
-      case ContentType.Binary(mt)   ⇒ mediaRange.matches(mt)
-      case x: ContentType.NonBinary ⇒ mediaRange.matches(x.mediaType) && charsetRange.matches(x.charset)
+  def matches(contentType: jm.ContentType) = {
+    convertToScala(contentType) match {
+      case ContentType.Binary(mt)             ⇒ mediaRange.matches(mt)
+      case ContentType.WithMissingCharset(mt) ⇒ mediaRange.matches(mt)
+      case x: ContentType.NonBinary           ⇒ mediaRange.matches(x.mediaType) && charsetRange.matches(x.charset)
     }
+  }
 
   def render[R <: Rendering](r: R): r.type = charsetRange match {
     case HttpCharsetRange.`*` ⇒ r ~~ mediaRange

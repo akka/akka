@@ -73,7 +73,13 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
       ex.getMessage should include("Right failure: For input string")
       ex.getMessage should include("Left failure: For input string")
     }
+  }
 
+  "Unmarshaller.forContentTypes" - {
+    "forContentTypes should handle media ranges of types with missing charset" in {
+      val um = Unmarshaller.byteArrayUnmarshaller.forContentTypes(MediaTypes.`text/plain`)
+      Await.result(um(HttpEntity("Hello")), 1.second.dilated) should ===("Hello".getBytes)
+    }
   }
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
