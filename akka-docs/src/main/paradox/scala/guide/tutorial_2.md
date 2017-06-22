@@ -8,11 +8,8 @@ represent devices and dashboards at the top level. Instead, we recommend creatin
 
 We can define the first actor, the IotSupervisor, with a few simple lines of code. To start your tutorial application:
 
-1. Remove the `AkkaQuickstart` source file from your Hello World project (or add an extension such as `save` to the name so that it won't be compliled).
-1. Create a new `IotApp` source file in the `src\main\scala\com\lightbend\akka\sample\` directory.
+1. Create a new `IotApp` source file in the @scala[`src\main\scala\com\lightbend\akka\sample\`]@java[`src\main\java\com\lightbend\akka\sample\`] directory.
 1. Paste the following code into the new file to define the IotSupervisor.
-
-
 
 Scala
 :   @@snip [IotSupervisor.scala]($code$/scala/tutorial_2/IotSupervisor.scala) { #iot-supervisor }

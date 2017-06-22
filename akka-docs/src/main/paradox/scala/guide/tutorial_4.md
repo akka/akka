@@ -68,7 +68,11 @@ Looking at registration in more detail, we can outline the necessary functionali
 The messages that we will use to communicate registration requests and
 their acknowledgement have a simple definition:
 
-@@snip [DeviceManager.scala]($code$/scala/tutorial_4/DeviceManager.scala) { #device-manager-msgs }
+Scala
+:   @@snip [DeviceManager.scala]($code$/scala/tutorial_4/DeviceManager.scala) { #device-manager-msgs }
+
+Java
+:   @@snip [DeviceManager.java]($code$/java/jdocs/tutorial_4/DeviceManager.java) { #device-manager-msgs }
 
 In this case we have not included a request ID field in the messages. Since registration happens once, when the component connects the system to some network protocol, the ID is not important. However, it is usually a best practice to include a request ID.
 
