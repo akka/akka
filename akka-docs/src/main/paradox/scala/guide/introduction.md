@@ -42,4 +42,4 @@ This *Getting Started* guide provides the next level of information. It covers w
 * @ref[Why modern systems need a new programming model](actors-motivation.md)
 * @ref[How the actor model meets the needs of concurrent, distributed systems](actors-intro.md)
 * @ref[Overview of Akka libraries and modules](modules.md)
-* A @ref[more complex example](quickstart.md) that builds on the Hello World example to illustrate common Akka patterns.
+* A @ref[more complex example](tutorial.md) that builds on the Hello World example to illustrate common Akka patterns.
