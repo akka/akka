@@ -131,10 +131,12 @@ Note in the code that:
 * The helper object includes the definitions of the messages we reasoned about previously.
 * In the `Device` class, the value of `lastTemperatureReading` is initially set to @scala[`None`] @java[`Optional.empty()`], and the actor will simply report it back if queried.
 
-Based on the simple actor above, we could write a simple test. In the `\test\scala\com\lightbend\akka\sample` directory of your project, add the following code to a `DeviceSpec.scala` file. @scala[(we use ScalaTest but any other test framework can be
-used with the Akka Testkit)].
+## Testing the actor
 
-Reviewers: Could you provide directions explaining how to run the test?
+Based on the simple actor above, we could write a simple test. In the `\test\scala\com\lightbend\akka\sample` directory of your project, add the following code to a `DeviceSpec.scala` file.
+@scala[(We use ScalaTest but any other test framework can be used with the Akka Testkit)].
+
+You can run this test @java[by running `mvn test` or] by running `test` at the sbt prompt.
 
 Scala
 :   @@snip [DeviceSpec.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-read-test }
