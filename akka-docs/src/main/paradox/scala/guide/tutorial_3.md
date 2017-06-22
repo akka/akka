@@ -101,7 +101,7 @@ This means that, for Akka messages:
  * `A2` can see messages from `A1` interleaved with messages from `A3`.
  * Since there is no guaranteed delivery, any of the messages may be dropped, i.e. not arrive at `A2`.
 
-For the full details on delivery guarantees please refer to the [reference page](http://doc.akka.io/docs/akka/current/general/message-delivery-reliability.html).
+For the full details on delivery guarantees please refer to the @ref[reference page](../general/message-delivery-reliability.md).
 
 Reviewers: I wasn't sure if the "This means that" list of bullets *is* the ordering that Akka provides? I've edited to make it read that way. And, I think a diagram here would be really helpful, as well as a summary of the benefits (again).
 
