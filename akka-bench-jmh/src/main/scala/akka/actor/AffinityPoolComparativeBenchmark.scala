@@ -18,7 +18,7 @@ import org.openjdk.jmh.annotations._
 @Measurement(iterations = 10, time = 15, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 class AffinityPoolComparativeBenchmark {
 
-  @Param(Array("5", "25", "50"))
+  @Param(Array("1", "5", "25", "50"))
   var throughPut = 0
 
   @Param(Array("default-fj-dispatcher", "affinity-dispatcher", "fixed-size-dispatcher"))
@@ -72,8 +72,9 @@ class AffinityPoolComparativeBenchmark {
           |         parallelism-min = $numThreads
           |         parallelism-factor = 1.0
           |         parallelism-max = $numThreads
-          |         affinity-group-size = 10000
-          |         cpu-affinity-strategies = [any]
+          |         task-queue-size = 512
+          |         idle-cpu-level = 5
+          |         fair-work-distribution-threshold = ${Int.MaxValue}
           |     }
           |       throughput = $throughPut
           |     }

@@ -15,7 +15,7 @@ import org.openjdk.jmh.annotations._
 @Threads(1)
 @Warmup(iterations = 10, time = 5, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 @Measurement(iterations = 10, time = 15, timeUnit = TimeUnit.SECONDS, batchSize = 1)
-class AffinityPoolWaitingStrategyBenchmark {
+class AffinityPoolIdleCPULevelBenchmark {
 
   final val numThreads, numActors = 8
   final val numMessagesPerActorPair = 2000000
@@ -23,10 +23,10 @@ class AffinityPoolWaitingStrategyBenchmark {
 
   implicit var system: ActorSystem = _
 
-  @Param(Array("sleep", "yield", "busy-spin"))
-  var waitingStrat = ""
+  @Param(Array("1", "3", "5", "7", "10"))
+  var idleCPULevel = ""
 
-  @Param(Array("5", "25", "50"))
+  @Param(Array("25"))
   var throughPut = 0
 
   @Setup(Level.Trial)
@@ -44,8 +44,9 @@ class AffinityPoolWaitingStrategyBenchmark {
          |         parallelism-min = $numThreads
          |         parallelism-factor = 1.0
          |         parallelism-max = $numThreads
-         |         affinity-group-size = 10000
-         |         worker-waiting-strategy = $waitingStrat
+         |         task-queue-size = 512
+         |         idle-cpu-level = $idleCPULevel
+         |         fair-work-distribution-threshold = ${Int.MaxValue}
          |     }
          |     throughput = $throughPut
          |    }

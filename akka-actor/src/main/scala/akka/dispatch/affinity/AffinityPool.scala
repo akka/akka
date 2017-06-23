@@ -4,21 +4,26 @@
 
 package akka.dispatch.affinity
 
+import java.lang.invoke.MethodHandles
+import java.lang.invoke.MethodType.methodType
 import java.util
 import java.util.Collections
+import java.util.concurrent.TimeUnit.MICROSECONDS
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.{ Lock, LockSupport, ReentrantLock }
+
 import akka.dispatch._
 import akka.dispatch.affinity.AffinityPool._
+import akka.util.Helpers.Requiring
 import com.typesafe.config.Config
-import net.openhft.affinity.{ AffinityStrategies, AffinityThreadFactory }
 
 import scala.annotation.tailrec
 import scala.collection.JavaConversions._
-import scala.collection.mutable
+import scala.util.Try
+import java.lang.Integer.reverseBytes
 
-class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, waitingStrategy: WaitingStrategy) extends AbstractExecutorService {
+private[akka] class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, idleCpuLevel: Int, fairDistributionThreshold: Int) extends AbstractExecutorService {
 
   if (parallelism <= 0)
     throw new IllegalArgumentException("Size of pool cannot be less or equal to 0")
@@ -37,46 +42,26 @@ class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, 
   @volatile final private var poolState: PoolState = Running
 
   private final val workQueues = Array.fill(parallelism)(new BoundedTaskQueue(affinityGroupSize))
-  private final val workers = mutable.Set[ThreadPoolWorker]()
+  private final val workers = new java.util.HashSet[ThreadPoolWorker]()
 
   // a counter that gets incremented every time a task is queued
   private val executionCounter: AtomicInteger = new AtomicInteger(0)
   // maps a runnable to an index of a worker queue
-  private val runnableToWorkerQueueIndex: java.util.Map[Int, Int] = new ConcurrentHashMap[Int, Int]()
+  private val runnableToWorkerQueueIndex: java.util.Map[Int, Int] = new ConcurrentHashMap[Int, Int](fairDistributionThreshold)
 
-  /**
-   *
-   * Given a Runnable, it returns the queue that should
-   * be used for scheduling it. This way we ensure that
-   * the each Runnable is associated with the the same
-   * queue and thereby the same [[ThreadPoolWorker]].
-   * For the purpose of evenly distributing [[Runnable]]
-   * instances across the workers we use executionCounter
-   * to produce a round robbin - like scheme that cycles
-   * from 0 to n-1 where n is the number of queues that
-   * this executor maintains. When we compute the index
-   * of the queue for a particular [[Runnable]] instance,
-   * the hashCode of the [[Runnable]] is mapped to the
-   * queue index. From then on each time this Runnable
-   * is scheduled, it shall go to the same queue.
-   *
-   * A race condition might occur due to the absence of
-   * atomicity when invoking incrementAndGet
-   * on the [[executionCounter]] and inserting the result
-   * into the [[runnableToWorkerQueueIndex]]. This is ok.
-   * Worst case scenario is that there will be AT MOST 2
-   * distinct executions of the same Runnable instance that
-   * will map to different queues. This wil be negligible
-   * for performance and is a compromise that can be allowed.
-   * The alternative is holding a lock, which is not
-   * an attractive proposition.
-   *
-   * @param command the [[Runnable]] that needs to be scheduled
-   * @return the [[BoundedTaskQueue]] to which this runnable should go
-   */
   private def getQueueForRunnable(command: Runnable) = {
-    def getNext = executionCounter.incrementAndGet() & (parallelism - 1)
-    workQueues(runnableToWorkerQueueIndex.getOrElseUpdate(command.hashCode, getNext))
+
+    def sbhash(i: Int) = reverseBytes(i * 0x9e3775cd) * 0x9e3775cd
+    def getNext = executionCounter.incrementAndGet() % parallelism
+    val runnableHash = command.hashCode()
+
+    val workQueueIndex =
+      if (runnableToWorkerQueueIndex.size() > fairDistributionThreshold)
+        Math.abs(sbhash(runnableHash)) % parallelism
+      else
+        runnableToWorkerQueueIndex.getOrElseUpdate(command.hashCode, getNext)
+
+    workQueues(workQueueIndex)
   }
 
   //fires up initial workers
@@ -86,7 +71,7 @@ class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, 
 
   private def addWorker(workers: java.util.Set[ThreadPoolWorker], q: BoundedTaskQueue): Unit = {
     locked(bookKeepingLock) {
-      val worker = new ThreadPoolWorker(q)
+      val worker = new ThreadPoolWorker(q, new IdleStrategy(idleCpuLevel))
       workers.add(worker)
       worker.startWorker()
     }
@@ -173,22 +158,74 @@ class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, 
 
   override def isTerminated: Boolean = poolState == Terminated
 
-  private class ThreadPoolWorker(val q: BoundedTaskQueue) extends Runnable {
+  private class IdleStrategy(val idleCpuLevel: Int) {
 
-    sealed trait WorkerState
-    case object NotStarted extends WorkerState
-    case object InExecution extends WorkerState
-    case object Idle extends WorkerState
+    private val maxSpins = 1100 * idleCpuLevel - 1000
+    private val maxYields = 5 * idleCpuLevel
+    private val minParkPeriodNs = 1
+    private val maxParkPeriodNs = MICROSECONDS.toNanos(280 - 30 * idleCpuLevel)
+
+    private sealed trait State
+    private case object NotIdle extends State
+    private case object Spinning extends State
+    private case object Yielding extends State
+    private case object Parking extends State
+
+    private var state: State = NotIdle
+    private var spins = 0L
+    private var yields = 0L
+    private var parkPeriodNs = 0L
+
+    private val onSpinWaitMethodHandle = Try(MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Unit]))).toOption
+
+    def idle(): Unit = {
+      state match {
+        case NotIdle ⇒
+          state = Spinning
+          spins += 1
+        case Spinning ⇒
+          onSpinWaitMethodHandle.foreach(_.invokeExact())
+          spins += 1
+          if (spins > maxSpins) {
+            state = Yielding
+            yields = 0
+          }
+        case Yielding ⇒
+          yields += 1
+          if (yields > maxYields) {
+            state = Parking
+            parkPeriodNs = minParkPeriodNs
+          } else Thread.`yield`()
+        case Parking ⇒
+          LockSupport.parkNanos(parkPeriodNs)
+          parkPeriodNs = Math.min(parkPeriodNs << 1, maxParkPeriodNs)
+      }
+    }
+
+    def reset(): Unit = {
+      spins = 0
+      yields = 0
+      state = NotIdle
+    }
+
+  }
+
+  private class ThreadPoolWorker(val q: BoundedTaskQueue, val idleStrategy: IdleStrategy) extends Runnable {
+
+    private sealed trait WorkerState
+    private case object NotStarted extends WorkerState
+    private case object InExecution extends WorkerState
+    private case object Idle extends WorkerState
 
     val thread: Thread = tf.newThread(this)
-    @volatile var workerState: WorkerState = NotStarted
+    @volatile private var workerState: WorkerState = NotStarted
 
-    def startWorker() = {
+    def startWorker(): Unit = {
       workerState = Idle
       thread.start()
     }
 
-    def runCommand(command: Runnable) = {
+    private def runCommand(command: Runnable) = {
       workerState = InExecution
       try
         command.run()
@@ -219,10 +256,11 @@ class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, 
       try {
         while (shouldKeepRunning) {
           val c = q.poll()
-          if (c != null)
+          if (c ne null) {
             runCommand(c)
-          else // if not wait for a bit
-            waitingStrategy()
+            idleStrategy.reset()
+          } else // if not wait for a bit
+            idleStrategy.idle()
         }
         abruptTermination = false // if we have reached here, our termination is not due to an exception
       } finally {
@@ -243,12 +281,7 @@ class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, 
 
 object AffinityPool {
 
-  type WaitingStrategy = () ⇒ Unit
-  val busySpinWaitingStrategy = () ⇒ ()
-  val sleepWaitingStrategy = () ⇒ LockSupport.parkNanos(1l)
-  val yieldWaitingStrategy = () ⇒ Thread.`yield`()
-
-  def locked[T](l: Lock)(body: ⇒ T) = {
+  private def locked[T](l: Lock)(body: ⇒ T) = {
     l.lock()
     try {
       body
@@ -257,85 +290,50 @@ object AffinityPool {
     }
   }
 
-  sealed trait PoolState extends Ordered[PoolState] {
+  private sealed trait PoolState extends Ordered[PoolState] {
     def order: Int
     override def compare(that: PoolState): Int = this.order compareTo that.order
   }
 
   // accepts new tasks and processes tasks that are enqueued
-  case object Running extends PoolState {
+  private case object Running extends PoolState {
     override val order: Int = 0
   }
 
   // does not accept new tasks, processes tasks that are in the queue
-  case object ShuttingDown extends PoolState {
+  private case object ShuttingDown extends PoolState {
     override def order: Int = 1
   }
 
   // does not accept new tasks, does not process tasks in queue
-  case object ShutDown extends PoolState {
+  private case object ShutDown extends PoolState {
     override def order: Int = 2
   }
 
   // all threads have been stopped, does not process tasks and does not accept new ones
-  case object Terminated extends PoolState {
+  private case object Terminated extends PoolState {
     override def order: Int = 3
   }
 }
 
 final class BoundedTaskQueue(capacity: Int) extends AbstractBoundedNodeQueue[Runnable](capacity)
 
-class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
-
-  sealed trait CPUAffinityStrategy {
-    def javaStrat: AffinityStrategies
-  }
-
-  case object NoAffinityStrategy extends CPUAffinityStrategy {
-    override val javaStrat: AffinityStrategies = AffinityStrategies.ANY
-  }
-  case object SameCoreStrategy extends CPUAffinityStrategy {
-    override val javaStrat: AffinityStrategies = AffinityStrategies.SAME_CORE
-  }
-  case object SameSocketStrategy extends CPUAffinityStrategy {
-    override val javaStrat: AffinityStrategies = AffinityStrategies.SAME_SOCKET
-  }
-  case object DifferentCoreStrategy extends CPUAffinityStrategy {
-    override val javaStrat: AffinityStrategies = AffinityStrategies.DIFFERENT_CORE
-  }
-  case object DifferentSocketStrategy extends CPUAffinityStrategy {
-    override val javaStrat: AffinityStrategies = AffinityStrategies.DIFFERENT_SOCKET
-  }
-
-  private def toAffinityStrategy(s: String): CPUAffinityStrategy = s match {
-    case "any"              ⇒ NoAffinityStrategy
-    case "same-core"        ⇒ SameCoreStrategy
-    case "same-socket"      ⇒ SameSocketStrategy
-    case "different-core"   ⇒ DifferentCoreStrategy
-    case "different-socket" ⇒ DifferentSocketStrategy
-    case x                  ⇒ throw new IllegalArgumentException("[%s] is not a valid cpu affinity strategy [any, same-core, same-socket, different-core, different-socket]!" format x)
-
-  }
-
-  private def toWaitingStrategy(s: String): WaitingStrategy = s match {
-    case "sleep"     ⇒ sleepWaitingStrategy
-    case "yield"     ⇒ yieldWaitingStrategy
-    case "busy-spin" ⇒ busySpinWaitingStrategy
-    case x           ⇒ throw new IllegalArgumentException("[%s] is not a valid waiting strategy[sleep, yield, same-socket, busy-spin]!" format x)
-
-  }
+final class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
 
   private val poolSize = ThreadPoolConfig.scaledPoolSize(
     config.getInt("parallelism-min"),
     config.getDouble("parallelism-factor"),
     config.getInt("parallelism-max"))
-  private val affinityGroupSize = config.getInt("affinity-group-size")
-  private val strategies = config.getStringList("cpu-affinity-strategies").map(toAffinityStrategy)
-  private val waitingStrat = toWaitingStrategy(config.getString("worker-waiting-strategy"))
-  private val tf = new AffinityThreadFactory("affinity-thread-fact", strategies.map(_.javaStrat): _*)
+  private val taskQueueSize = config.getInt("task-queue-size")
+
+  private val idleCpuLevel = config.getInt("idle-cpu-level").requiring(level ⇒
+    1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
+
+  //TODO Maybe put some kind an upper bound here... to ensure map does not get too large
+  private val fairDistributionThreshold = config.getInt("fair-work-distribution-threshold")
 
   override def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = new ExecutorServiceFactory {
-    override def createExecutorService: ExecutorService = new AffinityPool(poolSize, affinityGroupSize, tf, waitingStrat)
+    override def createExecutorService: ExecutorService = new AffinityPool(poolSize, taskQueueSize, threadFactory, idleCpuLevel, fairDistributionThreshold)
   }
 }
 

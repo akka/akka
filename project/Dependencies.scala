@@ -75,9 +75,6 @@ object Dependencies {
 
     val aeronDriver = "io.aeron"                      % "aeron-driver"                 % aeronVersion       // ApacheV2
     val aeronClient = "io.aeron"                      % "aeron-client"                 % aeronVersion       // ApacheV2
-
-    val javaAffinity = "net.openhft"                  % "affinity"                     % "3.0.6"
-
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.3"             % "test"
       val gson        = "com.google.code.gson"        % "gson"                         % "2.8.0"             % "test"
@@ -132,7 +129,7 @@ object Dependencies {
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
-  val actor = l ++= Seq(config, java8Compat.value, javaAffinity)
+  val actor = l ++= Seq(config, java8Compat.value)
 
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
