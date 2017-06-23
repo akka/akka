@@ -1096,7 +1096,7 @@ operation at the same time (usually handling the completion of a @scala[`Future`
 
 Pass incoming elements to a function that return a @scala[`Future`] @java[`CompletionStage`] result. When the @scala[`Future`] @java[`CompletionStage`] arrives the result is passed
 downstream. Up to `n` elements can be processed concurrently, but regardless of their completion time the incoming
-order will be kept when results complete. For use cases where order does not mather `mapAsyncUnordered` can be used.
+order will be kept when results complete. For use cases where order does not matter `mapAsyncUnordered` can be used.
 
 If a @scala[`Future`] @java[`CompletionStage`] fails, the stream also fails (unless a different supervision strategy is applied)
 
