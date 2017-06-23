@@ -84,9 +84,6 @@ message is preserved in the upper layers.* We will show you in the next section 
 
 The device actor registration code looks like the following. Modify your example to match.
 
-Reviewers: At this point, when I modified my device object and class to match the code below, I started getting compiler errors that said the value for RequestTrackDevice, DeviceRegistered, etc weren't found. I thought it was because I hadn't added `final case class RequestTrackDevice(groupId: String, deviceId: String)
-case object DeviceRegistered` to the object definition, but doing so didn't fix it. Is there a need to initiate these with some value?
-
 Scala
 :   @@snip [Device.scala]($code$/scala/tutorial_4/Device.scala) { #device-with-register }
 
