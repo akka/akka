@@ -14,14 +14,23 @@ This module is currently marked as @ref:[may change](common/may-change.md) in th
 Akka Typed APIs are bundled in the `akka-typed` artifact.
 Make sure that you have the following dependency in your project:
 
-Scala
+sbt
 :   @@@vars
     ```
     "com.typesafe.akka" %% "akka-typed" % "$akka.version$"
     ```
     @@@
 
-Java
+gradle
+:   @@@vars
+    ```
+    dependencies {
+      compile group: 'com.typesafe.akka', name: 'akka-typed_2.11', version: '$akka.version$'
+    }
+    ```
+    @@@
+
+maven
 :   @@@vars
     ```
     <dependency>
