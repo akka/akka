@@ -29,13 +29,10 @@ The following guidelines help us choose the most appropriate actor hierarchy:
 Considering the principles outlined in the previous section, We will model the device manager component as an actor tree with three levels:
 
 * The top level supervisor actor represents the system component for devices. It is also the entry point to look up and create device group and device actors.
-* At the next level, group actors each supervise the device actors for one home. They also provide services, such as querying temperature readings from all of the available devices in their group.
+* At the next level, group actors each supervise the device actors for one group id (e.g. one home). They also provide services, such as querying temperature readings from all of the available devices in their group.
 * Device actors manage all the interactions with the actual device sensors, such as storing temperature readings.
 
-Reviewers: please make sure I got the above correct. I thought it useful to map the software components to the real world sensors and homes, which are outside of our example system, but drive the design.
-
 ![device manager tree](diagrams/device_manager_tree.png)
-
 
 We chose this three-layered architecture for these reasons:
 
