@@ -1045,19 +1045,6 @@ This can be changed by calling @scala[`Attributes.logLevels(...)`] @java[`Attrib
 
 ---------------------------------------------------------------
 
-### recoverWithRetries
-
-Switch to alternative Source on flow failure. It stays in effect after a failure has been recovered up to `attempts`
-number of times. Each time a failure is fed into the partial function and a new Source may be materialized.
-
-**emits** when element is available from the upstream or upstream is failed and element is available from alternative Source
-
-**backpressures** when downstream backpressures
-
-**completes** when upstream completes or upstream failed with exception provided partial function can handle
-
----------------------------------------------------------------
-
 <br/>
 
 ## Flow stages composed of Sinks and Sources
