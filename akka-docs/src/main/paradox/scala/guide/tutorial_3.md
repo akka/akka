@@ -101,9 +101,9 @@ This means that, for Akka messages:
  * `A2` can see messages from `A1` interleaved with messages from `A3`.
  * Since there is no guaranteed delivery, any of the messages may be dropped, i.e. not arrive at `A2`.
 
-For the full details on delivery guarantees please refer to the @ref[reference page](../general/message-delivery-reliability.md).
+These guarantees strike a good balance: having messages from one actor arrive in-order is convenient for building systems that can be easily reasoned about, while on the other hand allowing messages from different actors to arrive interleaved provides sufficient freedom for an efficient implementation of the actor system.
 
-Reviewers: I wasn't sure if the "This means that" list of bullets *is* the ordering that Akka provides? I've edited to make it read that way. And, I think a diagram here would be really helpful, as well as a summary of the benefits (again).
+For the full details on delivery guarantees please refer to the @ref[reference page](../general/message-delivery-reliability.md).
 
 ## Adding flexibility to device messages
 
