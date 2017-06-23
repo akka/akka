@@ -250,7 +250,7 @@ private[akka] class AffinityPool(
        * 1) pool state is less than Shutting down or queue
        * is not empty (e.g pool state is ShuttingDown but there are still messages to process)
        *
-       * 2) the thread backing up  this worker has not been interrupted
+       * 2) the thread backing up this worker has not been interrupted
        *
        * 3) We are not in ShutDown state (in which we should not be processing any enqueued tasks)
        */
@@ -367,7 +367,7 @@ trait RejectionHandlerFactory {
 private[akka] final class DefaultRejectionHandlerFactory extends RejectionHandlerFactory {
   private class DefaultRejectionHandler extends RejectionHandler {
     override def reject(command: Runnable, service: ExecutorService): Unit =
-      throw new RejectedExecutionException(s"Task ${command.toString} rejected from ${this.toString}")
+      throw new RejectedExecutionException(s"Task ${command.toString} rejected from ${service.toString}")
   }
   override def create(): RejectionHandler = new DefaultRejectionHandler()
 }
