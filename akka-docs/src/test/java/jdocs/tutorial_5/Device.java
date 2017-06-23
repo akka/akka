@@ -1,15 +1,15 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_4;
+package jdocs.tutorial_5;
 
 import akka.actor.AbstractActor;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-import jdocs.tutorial_4.DeviceManager.DeviceRegistered;
-import jdocs.tutorial_4.DeviceManager.RequestTrackDevice;
+import jdocs.tutorial_5.DeviceManager.DeviceRegistered;
+import jdocs.tutorial_5.DeviceManager.RequestTrackDevice;
 
 import java.util.Optional;
 

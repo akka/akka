@@ -1,10 +1,10 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package tutorial_5
+package tutorial_6
 
 import akka.actor.ActorSystem
-import tutorial_5.DeviceManager.RequestTrackDevice
+import DeviceManager.RequestTrackDevice
 
 import scala.io.StdIn
 

@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package jdocs.tutorial_5;
+package jdocs.tutorial_6;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;

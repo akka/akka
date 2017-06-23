@@ -1,11 +1,11 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package tutorial_5
+package tutorial_6
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
-import tutorial_5.DeviceGroup._
-import tutorial_5.DeviceManager.RequestTrackDevice
+import DeviceGroup._
+import DeviceManager.RequestTrackDevice
 import scala.concurrent.duration._
 
 object DeviceGroup {

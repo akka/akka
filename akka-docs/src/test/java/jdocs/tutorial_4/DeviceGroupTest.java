@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_3;
+package jdocs.tutorial_4;
 
 import java.util.stream.Stream;
 import java.util.stream.Collectors;

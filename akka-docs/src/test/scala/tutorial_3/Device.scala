@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package tutorial_2
+package tutorial_3
 
 //#full-device
 import akka.actor.{ Actor, ActorLogging, Props }

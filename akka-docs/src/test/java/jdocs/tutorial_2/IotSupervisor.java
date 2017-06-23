@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_1;
+package jdocs.tutorial_2;
 
 //#iot-supervisor
 

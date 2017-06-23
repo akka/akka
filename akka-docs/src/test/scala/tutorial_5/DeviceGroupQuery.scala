@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package tutorial_4
+package tutorial_5
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
 

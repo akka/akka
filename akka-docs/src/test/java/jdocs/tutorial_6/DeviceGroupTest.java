@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_5;
+package jdocs.tutorial_6;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +20,7 @@ import org.scalatest.junit.JUnitSuite;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import static jdocs.tutorial_5.DeviceGroupQueryTest.assertEqualTemperatures;
+import static jdocs.tutorial_6.DeviceGroupQueryTest.assertEqualTemperatures;
 
 public class DeviceGroupTest extends JUnitSuite {
 

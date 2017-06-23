@@ -1,4 +1,4 @@
-package tutorial_2
+package tutorial_3
 
 import tutorial_5.Device.{ ReadTemperature, RecordTemperature, RespondTemperature, TemperatureRecorded }
 

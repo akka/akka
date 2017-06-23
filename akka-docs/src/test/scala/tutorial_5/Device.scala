@@ -1,11 +1,11 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package tutorial_4
+package tutorial_5
 
 import akka.actor.{ Actor, ActorLogging, Props }
-import tutorial_4.Device.{ ReadTemperature, RecordTemperature, RespondTemperature, TemperatureRecorded }
-import tutorial_4.DeviceManager.{ DeviceRegistered, RequestTrackDevice }
+import Device.{ ReadTemperature, RecordTemperature, RespondTemperature, TemperatureRecorded }
+import DeviceManager.{ DeviceRegistered, RequestTrackDevice }
 
 object Device {
 

@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_4;
+package jdocs.tutorial_5;
 
 import java.util.HashMap;
 import java.util.HashSet;

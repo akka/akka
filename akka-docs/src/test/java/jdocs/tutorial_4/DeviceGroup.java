@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_3;
+package jdocs.tutorial_4;
 
 import java.util.Set;
 import java.util.Map;
@@ -14,8 +14,8 @@ import akka.actor.Terminated;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-import jdocs.tutorial_3.Device;
-import jdocs.tutorial_3.DeviceManager;
+import jdocs.tutorial_4.Device;
+import jdocs.tutorial_4.DeviceManager;
 
 //#device-group-full
 public class DeviceGroup extends AbstractActor {
