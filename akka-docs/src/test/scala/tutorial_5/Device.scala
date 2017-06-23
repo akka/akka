@@ -4,8 +4,6 @@
 package tutorial_5
 
 import akka.actor.{ Actor, ActorLogging, Props }
-import Device.{ ReadTemperature, RecordTemperature, RespondTemperature, TemperatureRecorded }
-import DeviceManager.{ DeviceRegistered, RequestTrackDevice }
 
 object Device {
 
@@ -19,6 +17,8 @@ object Device {
 }
 
 class Device(groupId: String, deviceId: String) extends Actor with ActorLogging {
+  import Device._
+
   var lastTemperatureReading: Option[Double] = None
 
   override def preStart(): Unit = log.info("Device actor {}-{} started", groupId, deviceId)
@@ -26,10 +26,10 @@ class Device(groupId: String, deviceId: String) extends Actor with ActorLogging 
   override def postStop(): Unit = log.info("Device actor {}-{} stopped", groupId, deviceId)
 
   override def receive: Receive = {
-    case RequestTrackDevice(`groupId`, `deviceId`) =>
-      sender() ! DeviceRegistered
+    case DeviceManager.RequestTrackDevice(`groupId`, `deviceId`) =>
+      sender() ! DeviceManager.DeviceRegistered
 
-    case RequestTrackDevice(groupId, deviceId) =>
+    case DeviceManager.RequestTrackDevice(groupId, deviceId) =>
       log.warning(
         "Ignoring TrackDevice request for {}-{}.This actor is responsible for {}-{}.",
         groupId, deviceId, this.groupId, this.deviceId
