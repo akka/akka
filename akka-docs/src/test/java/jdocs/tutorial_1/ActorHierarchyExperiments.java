@@ -1,10 +1,5 @@
 package jdocs.tutorial_1;
 
-import akka.actor.AbstractActor;
-import akka.actor.AbstractActor.Receive;
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -12,6 +7,12 @@ import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
 //#print-refs
+import akka.actor.AbstractActor;
+import akka.actor.AbstractActor.Receive;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+
 class PrintMyActorRefActor extends AbstractActor {
   @Override
   public Receive createReceive() {
@@ -106,6 +107,26 @@ class SupervisedActor extends AbstractActor {
 }
 //#supervise
 
+//#print-refs
+public class ActorHierarchyExperiments {
+  public static void main() throws java.io.IOException {
+    ActorSystem system = ActorSystem.create("test");
+
+    ActorRef firstRef = system.actorOf(Props.create(PrintMyActorRefActor.class), "first-actor");
+    System.out.println("First : " + firstRef);
+    firstRef.tell("printit", ActorRef.noSender());
+
+    System.out.println(">>> Press ENTER to exit <<<");
+    try {
+      System.in.read();
+    } finally {
+      system.terminate();
+    }
+  }
+}
+//#print-refs
+
+
 class ActorHierarchyExperimentsTest extends JUnitSuite {
   static ActorSystem system;
 
@@ -118,15 +139,6 @@ class ActorHierarchyExperimentsTest extends JUnitSuite {
   public static void teardown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-  }
-
-  @Test
-  public void testCreateTopAndChildActor() {
-    //#print-refs
-    ActorRef firstRef = system.actorOf(Props.create(PrintMyActorRefActor.class), "first-actor");
-    System.out.println("First : " + firstRef);
-    firstRef.tell("printit", ActorRef.noSender());
-    //#print-refs
   }
 
   @Test

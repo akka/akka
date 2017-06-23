@@ -1,9 +1,10 @@
 package tutorial_1
 
-import akka.actor.{ Actor, Props }
 import akka.testkit.AkkaSpec
-
 //#print-refs
+import akka.actor.{ Actor, Props, ActorSystem }
+import scala.io.StdIn
+
 class PrintMyActorRefActor extends Actor {
   override def receive: Receive = {
     case "printit" =>
@@ -62,9 +63,17 @@ class ActorHierarchyExperiments extends AkkaSpec {
     // format: OFF
     //#print-refs
 
-val firstRef = system.actorOf(Props[PrintMyActorRefActor], "first-actor")
-println(s"First : $firstRef")
-firstRef ! "printit"
+object ActorHierarchyExperiments extends App {
+  val system = ActorSystem()
+
+  val firstRef = system.actorOf(Props[PrintMyActorRefActor], "first-actor")
+  println(s"First : $firstRef")
+  firstRef ! "printit"
+
+  println(">>> Press ENTER to exit <<<")
+  try StdIn.readLine()
+  finally system.terminate()
+}
     //#print-refs
     // format: ON
   }
