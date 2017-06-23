@@ -10,8 +10,8 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-import jdocs.tutorial_3.DeviceManager.DeviceRegistered;
-import jdocs.tutorial_3.DeviceManager.RequestTrackDevice;
+import jdocs.tutorial_4.DeviceManager.DeviceRegistered;
+import jdocs.tutorial_4.DeviceManager.RequestTrackDevice;
 
 import java.util.Optional;
 
