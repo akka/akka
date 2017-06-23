@@ -23,7 +23,14 @@ import scala.collection.JavaConversions._
 import scala.util.Try
 import java.lang.Integer.reverseBytes
 
-private[akka] class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: ThreadFactory, idleCpuLevel: Int, fairDistributionThreshold: Int) extends AbstractExecutorService {
+private[akka] class AffinityPool(
+  parallelism:               Int,
+  affinityGroupSize:         Int,
+  tf:                        ThreadFactory,
+  idleCpuLevel:              Int,
+  fairDistributionThreshold: Int,
+  rejectionHandler:          RejectionHandler)
+  extends AbstractExecutorService {
 
   if (parallelism <= 0)
     throw new IllegalArgumentException("Size of pool cannot be less or equal to 0")
@@ -47,7 +54,7 @@ private[akka] class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: T
   // a counter that gets incremented every time a task is queued
   private val executionCounter: AtomicInteger = new AtomicInteger(0)
   // maps a runnable to an index of a worker queue
-  private val runnableToWorkerQueueIndex: java.util.Map[Int, Int] = new ConcurrentHashMap[Int, Int](fairDistributionThreshold)
+  private val runnableToWorkerQueueIndex: java.util.Map[Int, Int] = new ConcurrentHashMap[Int, Int]()
 
   private def getQueueForRunnable(command: Runnable) = {
 
@@ -108,10 +115,8 @@ private[akka] class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: T
     if (command == null)
       throw new NullPointerException
     if (!(poolState == Running && tryEnqueue(command)))
-      reject(command)
+      rejectionHandler.reject(command, this)
   }
-
-  private def reject(command: Runnable) = throw new RejectedExecutionException(s"Task ${command.toString} rejected from ${this.toString}")
 
   override def awaitTermination(timeout: Long, unit: TimeUnit): Boolean = {
 
@@ -143,7 +148,8 @@ private[akka] class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: T
       poolState = ShutDown
       workers.foreach(_.stop())
       attemptPoolTermination()
-      Collections.emptyList[Runnable]() // like in the FJ executor, we do not provide facility to obtain tasks that were in queue
+      // like in the FJ executor, we do not provide facility to obtain tasks that were in queue
+      Collections.emptyList[Runnable]()
     }
 
   override def shutdown(): Unit =
@@ -176,7 +182,8 @@ private[akka] class AffinityPool(parallelism: Int, affinityGroupSize: Int, tf: T
     private var yields = 0L
     private var parkPeriodNs = 0L
 
-    private val onSpinWaitMethodHandle = Try(MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Unit]))).toOption
+    private val onSpinWaitMethodHandle =
+      Try(MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Unit]))).toOption
 
     def idle(): Unit = {
       state match {
@@ -318,7 +325,8 @@ object AffinityPool {
 
 final class BoundedTaskQueue(capacity: Int) extends AbstractBoundedNodeQueue[Runnable](capacity)
 
-final class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
+final class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
+  extends ExecutorServiceConfigurator(config, prerequisites) {
 
   private val poolSize = ThreadPoolConfig.scaledPoolSize(
     config.getInt("parallelism-min"),
@@ -332,8 +340,35 @@ final class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPr
   //TODO Maybe put some kind an upper bound here... to ensure map does not get too large
   private val fairDistributionThreshold = config.getInt("fair-work-distribution-threshold")
 
-  override def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = new ExecutorServiceFactory {
-    override def createExecutorService: ExecutorService = new AffinityPool(poolSize, taskQueueSize, threadFactory, idleCpuLevel, fairDistributionThreshold)
+  private val rejectionHandlerFCQN = config.getString("rejection-handler-factory")
+
+  private val rejectionHandlerFactory = prerequisites.dynamicAccess
+    .createInstanceFor[RejectionHandlerFactory](rejectionHandlerFCQN, Nil).recover({
+      case exception ⇒ throw new IllegalArgumentException(
+        s"Cannot instantiate RejectionHandlerFactory (rejection-handler-factory = $rejectionHandlerFCQN),make sure it has an accessible empty constructor",
+        exception)
+    }).get
+
+  override def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+    new ExecutorServiceFactory {
+      override def createExecutorService: ExecutorService =
+        new AffinityPool(poolSize, taskQueueSize, threadFactory, idleCpuLevel, fairDistributionThreshold, rejectionHandlerFactory.create())
+    }
+}
+
+trait RejectionHandler {
+  def reject(command: Runnable, service: ExecutorService)
+}
+
+trait RejectionHandlerFactory {
+  def create(): RejectionHandler
+}
+
+private[akka] final class DefaultRejectionHandlerFactory extends RejectionHandlerFactory {
+  private class DefaultRejectionHandler extends RejectionHandler {
+    override def reject(command: Runnable, service: ExecutorService): Unit =
+      throw new RejectedExecutionException(s"Task ${command.toString} rejected from ${this.toString}")
   }
+  override def create(): RejectionHandler = new DefaultRejectionHandler()
 }
 

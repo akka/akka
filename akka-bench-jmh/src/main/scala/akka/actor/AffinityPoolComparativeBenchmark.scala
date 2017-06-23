@@ -18,10 +18,10 @@ import org.openjdk.jmh.annotations._
 @Measurement(iterations = 10, time = 15, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 class AffinityPoolComparativeBenchmark {
 
-  @Param(Array("1", "5", "25", "50"))
+  @Param(Array("1"))
   var throughPut = 0
 
-  @Param(Array("default-fj-dispatcher", "affinity-dispatcher", "fixed-size-dispatcher"))
+  @Param(Array("affinity-dispatcher", "default-fj-dispatcher", "fixed-size-dispatcher"))
   var dispatcher = ""
 
   @Param(Array("SingleConsumerOnlyUnboundedMailbox")) //"default"
