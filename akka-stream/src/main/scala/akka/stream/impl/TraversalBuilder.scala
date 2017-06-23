@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -33,7 +33,7 @@ import scala.collection.immutable.Map.Map1
  * The Traversal is designed to be position independent so that multiple traversals can be composed relatively
  * simply. This particular feature also avoids issues with multiply imported modules where the identity must
  * be encoded somehow. The two imports don't need any special treatment as they are at different positions in
- * the traversal. See [[MaterializeAtomic]] for more details.
+ * the traversal. See [[MaterializeAtomic]] and comments in akka.stream.impl.package for more details.
  */
 @InternalApi private[akka] sealed trait Traversal {
 
@@ -52,6 +52,12 @@ import scala.collection.immutable.Map.Map1
  */
 @InternalApi private[akka] object Concat {
 
+  /**
+   * An optimizatzion to remove cheaply recognizable patterns of redundancy, for example PushNotUsed immediately
+   * followed by a Pop. It also rotates the tree to make it more left-leaning, which makes the tree more readable
+   * and require less stack-space when traversing. This is only a single rotation, otherwise this implementation
+   * would be O(N^2).
+   */
   def normalizeConcat(first: Traversal, second: Traversal): Traversal = {
     if (second eq EmptyTraversal) first
     else if (first eq PushNotUsed) {
@@ -339,7 +345,7 @@ import scala.collection.immutable.Map.Map1
  *
  * The resulting Traversal can be accessed via the `traversal` method once the graph is completed (all ports are
  * wired). The Traversal may be accessed earlier, depending on the type of the builder and certain conditions.
- * See [[CompositeTraversalBuilder]] and [[LinearTraversalBuilder]].
+ * See [[CompositeTraversalBuilder]] and [[LinearTraversalBuilder]], also comments in akka.stream.impl.package for more details.
  */
 @DoNotInherit private[akka] sealed trait TraversalBuilder {
 
@@ -391,7 +397,7 @@ import scala.collection.immutable.Map.Map1
   def isUnwired(out: OutPort): Boolean
 
   /**
-   * Returns whether the given output port has been wired in the graph or not.
+   * Returns whether the given input port has been wired in the graph or not.
    */
   def isUnwired(in: InPort): Boolean
 
@@ -442,6 +448,7 @@ import scala.collection.immutable.Map.Map1
  * INTERNAL API
  *
  * Returned by [[CompositeTraversalBuilder]] once all output ports of a subgraph has been wired.
+ * See comments in akka.stream.impl.package for more details.
  */
 @InternalApi private[akka] final case class CompletedTraversalBuilder(
   traversalSoFar: Traversal,
@@ -506,6 +513,7 @@ import scala.collection.immutable.Map.Map1
  *
  * Represents a builder that contains a single atomic module. Its primary purpose is to track and build the
  * outToSlot array which will be then embedded in a [[MaterializeAtomic]] Traversal step.
+ * See comments in akka.stream.impl.package for more details.
  */
 @InternalApi private[akka] final case class AtomicTraversalBuilder(
   module:      AtomicModule[Shape, Any],
@@ -671,6 +679,7 @@ import scala.collection.immutable.Map.Map1
  * [[CompositeTraversalBuilder]] are embedded. These are not guaranteed to have their unwired input/output ports
  * in a fixed location, therefore the last step of the Traversal might need to be changed in those cases from the
  * -1 relative offset to something else (see rewireLastOutTo).
+ * See comments in akka.stream.impl.package for more details.
  */
 @InternalApi private[akka] final case class LinearTraversalBuilder(
   inPort:               OptionVal[InPort],
@@ -827,7 +836,7 @@ import scala.collection.immutable.Map.Map1
           throw new IllegalArgumentException("Appended linear module must have an unwired input port because there is a dangling output.")
 
         /*
-         * To understand how append work, first the general structure of the LinearTraversalBuilder must be
+         * To understand how append works, first the general structure of the LinearTraversalBuilder must be
          * understood. The most general structure of LinearTraversalBuilder looks like this (in Flow DSL order):
          *
          *   traversalSoFar ~ pendingBuilder ~ beforeBuilder
@@ -910,7 +919,7 @@ import scala.collection.immutable.Map.Map1
              * This is the case where our last module is a composite, and since it does not have its output port
              * wired yet, the traversal is split into the parts, traversalSoFar, pendingBuilder and beforeBuilder.
              *
-             * Since will wire now the output port, we can assemble everything together:
+             * Since we will wire now the output port, we can assemble everything together:
              */
             val out = outPort.get
             /*
@@ -992,8 +1001,7 @@ import scala.collection.immutable.Map.Map1
 
             // First prepare island enter and exit if tags are present
             toAppend.islandTag match {
-              case OptionVal.None ⇒
-              // Nothing changes
+              case OptionVal.None ⇒ // Nothing changes
               case OptionVal.Some(tag) ⇒
                 // Enter the island just before the appended builder (keeping the toAppend.beforeBuilder steps)
                 newBeforeTraversal = EnterIsland(tag).concat(newBeforeTraversal)
@@ -1008,6 +1016,11 @@ import scala.collection.immutable.Map.Map1
               // Pop the attributes immediately after the appended builder (they should not applied to _this_ builder)
               newTraversalSoFar = PopAttributes.concat(newTraversalSoFar)
             }
+
+            // This is roughly how things will look like in the end:
+            //
+            // newBeforeTraversal                           newTraversalSoFar
+            // [PushAttributes ~ EnterIsland] ~ composite ~ [toAppend.traversalSoFar ~ ExitIsland ~ PopAttributes ~ finalTraversalForThis]
 
             // Finally add the already completed part of toAppend to newTraversalSoFar
             newTraversalSoFar = toAppend.traversalSoFar.concat(newTraversalSoFar)
@@ -1061,6 +1074,7 @@ import scala.collection.immutable.Map.Map1
  * reason why this is needed is because the builder is referenced at various places, while it needs to be mutated.
  * In an immutable data structure this is best done with an indirection, i.e. places refer to this immutable key and
  * look up the current state in an extra Map.
+ * See comments in akka.stream.impl.package for more details.
  */
 @InternalApi private[akka] final class BuilderKey extends TraversalBuildStep {
   override def toString = s"K:$hashCode"
@@ -1082,6 +1096,7 @@ import scala.collection.immutable.Map.Map1
  * in a non-deterministic order (depending on wiring order) would mess up all relative addressing. This is the
  * primary technical reason why a reverseTraversal list is maintained and the Traversal can only be completed once
  * all output ports have been wired.
+ * See comments in akka.stream.impl.package for more details.
  *
  * @param reverseBuildSteps Keeps track of traversal steps that needs to be concatenated. This is basically
  *                         a "queue" of BuilderKeys that point to builders of submodules/subgraphs. Since it is
@@ -1130,7 +1145,7 @@ import scala.collection.immutable.Map.Map1
     copy(attributes = attributes)
 
   /**
-   * Convert this builder to a [[CompositeTraversalBuilder]] if there are no more unwired outputs.
+   * Convert this builder to a [[CompletedTraversalBuilder]] if there are no more unwired outputs.
    */
   def completeIfPossible: TraversalBuilder = {
     if (unwiredOuts == 0) {

@@ -4,153 +4,17 @@
 package akka.typed
 package scaladsl
 
-import akka.util.LineNumbers
+import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl }
+
 import scala.reflect.ClassTag
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContextExecutor
-import scala.deprecatedInheritance
-import akka.typed.{ ActorContext ⇒ AC }
-import akka.annotation.ApiMayChange
-import akka.annotation.DoNotInherit
-
-/**
- * An Actor is given by the combination of a [[Behavior]] and a context in
- * which this behavior is executed. As per the Actor Model an Actor can perform
- * the following actions when processing a message:
- *
- *  - send a finite number of messages to other Actors it knows
- *  - create a finite number of Actors
- *  - designate the behavior for the next message
- *
- * In Akka the first capability is accessed by using the `!` or `tell` method
- * on an [[ActorRef]], the second is provided by [[ActorContext#spawn]]
- * and the third is implicit in the signature of [[Behavior]] in that the next
- * behavior is always returned from the message processing logic.
- *
- * An `ActorContext` in addition provides access to the Actor’s own identity (“`self`”),
- * the [[ActorSystem]] it is part of, methods for querying the list of child Actors it
- * created, access to [[Terminated DeathWatch]] and timed message scheduling.
- */
-@DoNotInherit
-@ApiMayChange
-trait ActorContext[T] { this: akka.typed.javadsl.ActorContext[T] ⇒
-
-  /**
-   * The identity of this Actor, bound to the lifecycle of this Actor instance.
-   * An Actor with the same name that lives before or after this instance will
-   * have a different [[ActorRef]].
-   */
-  def self: ActorRef[T]
-
-  /**
-   * Return the mailbox capacity that was configured by the parent for this actor.
-   */
-  def mailboxCapacity: Int
-
-  /**
-   * The [[ActorSystem]] to which this Actor belongs.
-   */
-  def system: ActorSystem[Nothing]
-
-  /**
-   * The list of child Actors created by this Actor during its lifetime that
-   * are still alive, in no particular order.
-   */
-  def children: Iterable[ActorRef[Nothing]]
-
-  /**
-   * The named child Actor if it is alive.
-   */
-  def child(name: String): Option[ActorRef[Nothing]]
-
-  /**
-   * Create a child Actor from the given [[akka.typed.Behavior]] under a randomly chosen name.
-   * It is good practice to name Actors wherever practical.
-   */
-  def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U]
-
-  /**
-   * Create a child Actor from the given [[akka.typed.Behavior]] and with the given name.
-   */
-  def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U]
-
-  /**
-   * Force the child Actor under the given name to terminate after it finishes
-   * processing its current message. Nothing happens if the ActorRef does not
-   * refer to a current child actor.
-   *
-   * @return whether the passed-in [[ActorRef]] points to a current child Actor
-   */
-  def stop(child: ActorRef[_]): Boolean
-
-  /**
-   * Register for [[Terminated]] notification once the Actor identified by the
-   * given [[ActorRef]] terminates. This notification is also generated when the
-   * [[ActorSystem]] to which the referenced Actor belongs is declared as
-   * failed (e.g. in reaction to being unreachable).
-   */
-  def watch[U](other: ActorRef[U]): ActorRef[U]
-
-  /**
-   * Revoke the registration established by `watch`. A [[Terminated]]
-   * notification will not subsequently be received for the referenced Actor.
-   */
-  def unwatch[U](other: ActorRef[U]): ActorRef[U]
-
-  /**
-   * Schedule the sending of a notification in case no other
-   * message is received during the given period of time. The timeout starts anew
-   * with each received message. Provide `Duration.Undefined` to switch off this
-   * mechanism.
-   */
-  def setReceiveTimeout(d: FiniteDuration, msg: T): Unit
-
-  /**
-   * Cancel the sending of receive timeout notifications.
-   */
-  def cancelReceiveTimeout(): Unit
-
-  /**
-   * Schedule the sending of the given message to the given target Actor after
-   * the given time period has elapsed. The scheduled action can be cancelled
-   * by invoking [[akka.actor.Cancellable#cancel]] on the returned
-   * handle.
-   */
-  def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): akka.actor.Cancellable
-
-  /**
-   * This Actor’s execution context. It can be used to run asynchronous tasks
-   * like [[scala.concurrent.Future]] combinators.
-   */
-  implicit def executionContext: ExecutionContextExecutor
-
-  /**
-   * Create a child actor that will wrap messages such that other Actor’s
-   * protocols can be ingested by this Actor. You are strongly advised to cache
-   * these ActorRefs or to stop them when no longer needed.
-   *
-   * The name of the child actor will be composed of a unique identifier
-   * starting with a dollar sign to which the given `name` argument is
-   * appended, with an inserted hyphen between these two parts. Therefore
-   * the given `name` argument does not need to be unique within the scope
-   * of the parent actor.
-   */
-  def spawnAdapter[U](f: U ⇒ T, name: String): ActorRef[U]
-
-  /**
-   * Create an anonymous child actor that will wrap messages such that other Actor’s
-   * protocols can be ingested by this Actor. You are strongly advised to cache
-   * these ActorRefs or to stop them when no longer needed.
-   */
-  def spawnAdapter[U](f: U ⇒ T): ActorRef[U] = spawnAdapter(f, "")
-
-}
+import scala.util.control.Exception.Catcher
 
 @ApiMayChange
 object Actor {
-  import Behavior._
 
-  // FIXME check that all behaviors can cope with not getting PreStart as first message
+  private val _unitFunction = (_: ActorContext[Any], _: Any) ⇒ ()
+  private def unitFunction[T] = _unitFunction.asInstanceOf[((ActorContext[T], Signal) ⇒ Unit)]
 
   final implicit class BehaviorDecorators[T](val behavior: Behavior[T]) extends AnyVal {
     /**
@@ -159,66 +23,97 @@ object Actor {
      * at) and may transform the incoming message to place them into the wrapped
      * Behavior’s type hierarchy. Signals are not transformed.
      *
-     * see also [[Actor.Widened]]
+     * Example:
+     * {{{
+     * immutable[String] { (ctx, msg) => println(msg); same }.widen[Number] {
+     *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
+     *   case i: BigInteger => s"BigInteger(&dollar;i)"
+     *   // drop all other kinds of Number
+     * }
+     * }}}
      */
-    def widen[U](matcher: PartialFunction[U, T]): Behavior[U] = Widened(behavior, matcher)
-  }
-
-  private val _nullFun = (_: Any) ⇒ null
-  private def nullFun[T] = _nullFun.asInstanceOf[Any ⇒ T]
-  private implicit class ContextAs[T](val ctx: AC[T]) extends AnyVal {
-    def as[U] = ctx.asInstanceOf[AC[U]]
+    def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
+      BehaviorImpl.widened(behavior, matcher)
   }
 
   /**
-   * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
-   * PartialFunction decides which message to pull in (those that it is defined
-   * at) and may transform the incoming message to place them into the wrapped
-   * Behavior’s type hierarchy. Signals are not transformed.
+   * `deferred` is a factory for a behavior. Creation of the behavior instance is deferred until
+   * the actor is started, as opposed to `Actor.immutable` that creates the behavior instance
+   * immediately before the actor is running. The `factory` function pass the `ActorContext`
+   * as parameter and that can for example be used for spawning child actors.
    *
-   * Example:
-   * {{{
-   * Stateless[String]((ctx, msg) => println(msg)).widen[Number] {
-   *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
-   *   case i: BigInteger => s"BigInteger(&dollar;i)"
-   *   // drop all other kinds of Number
-   * }
-   * }}}
+   * `deferred` is typically used as the outer most behavior when spawning an actor, but it
+   * can also be returned as the next behavior when processing a message or signal. In that
+   * case it will be "undeferred" immediately after it is returned, i.e. next message will be
+   * processed by the undeferred behavior.
    */
-  final case class Widened[T, U](behavior: Behavior[T], matcher: PartialFunction[U, T]) extends Behavior[U] {
-    private def postProcess(behv: Behavior[T]): Behavior[U] =
-      if (isUnhandled(behv)) Unhandled
-      else if (isAlive(behv)) {
-        val next = canonicalize(behv, behavior)
-        if (next eq behavior) Same else Widened(next, matcher)
-      } else Stopped
-
-    override def management(ctx: AC[U], msg: Signal): Behavior[U] =
-      postProcess(behavior.management(ctx.as[T], msg))
-
-    override def message(ctx: AC[U], msg: U): Behavior[U] =
-      matcher.applyOrElse(msg, nullFun) match {
-        case null        ⇒ Unhandled
-        case transformed ⇒ postProcess(behavior.message(ctx.as[T], transformed))
-      }
-
-    override def toString: String = s"${behavior.toString}.widen(${LineNumbers(matcher)})"
-  }
+  def deferred[T](factory: ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
+    Behavior.DeferredBehavior(factory)
 
   /**
-   * Wrap a behavior factory so that it runs upon PreStart, i.e. behavior creation
-   * is deferred to the child actor instead of running within the parent.
+   * Factory for creating a [[MutableBehavior]] that typically holds mutable state as
+   * instance variables in the concrete [[MutableBehavior]] implementation class.
+   *
+   * Creation of the behavior instance is deferred, i.e. it is created via the `factory`
+   * function. The reason for the deferred creation is to avoid sharing the same instance in
+   * multiple actors, and to create a new instance when the actor is restarted.
+   *
+   * @param producer
+   *          behavior factory that takes the child actor’s context as argument
+   * @return the deferred behavior
    */
-  final case class Deferred[T](factory: ActorContext[T] ⇒ Behavior[T]) extends Behavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = {
-      if (msg != PreStart) throw new IllegalStateException(s"Deferred must receive PreStart as first message (got $msg)")
-      Behavior.preStart(factory(ctx), ctx)
-    }
+  def mutable[T](factory: ActorContext[T] ⇒ MutableBehavior[T]): Behavior[T] =
+    deferred(factory)
 
-    override def message(ctx: AC[T], msg: T): Behavior[T] =
-      throw new IllegalStateException(s"Deferred must receive PreStart as first message (got $msg)")
+  /**
+   * Mutable behavior can be implemented by extending this class and implement the
+   * abstract method [[MutableBehavior#onMessage]] and optionally override
+   * [[MutableBehavior#onSignal]].
+   *
+   * Instances of this behavior should be created via [[Actor#Mutable]] and if
+   * the [[ActorContext]] is needed it can be passed as a constructor parameter
+   * from the factory function.
+   *
+   * @see [[Actor#Mutable]]
+   */
+  abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
+    @throws(classOf[Exception])
+    override final def receiveMessage(ctx: akka.typed.ActorContext[T], msg: T): Behavior[T] =
+      onMessage(msg)
 
-    override def toString: String = s"Deferred(${LineNumbers(factory)})"
+    /**
+     * Implement this method to process an incoming message and return the next behavior.
+     *
+     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
+     * <ul>
+     * <li>returning `stopped` will terminate this Behavior</li>
+     * <li>returning `this` or `same` designates to reuse the current Behavior</li>
+     * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
+     * </ul>
+     *
+     */
+    @throws(classOf[Exception])
+    def onMessage(msg: T): Behavior[T]
+
+    @throws(classOf[Exception])
+    override final def receiveSignal(ctx: akka.typed.ActorContext[T], msg: Signal): Behavior[T] =
+      onSignal.applyOrElse(msg, { case _ ⇒ Behavior.unhandled }: PartialFunction[Signal, Behavior[T]])
+
+    /**
+     * Override this method to process an incoming [[akka.typed.Signal]] and return the next behavior.
+     * This means that all lifecycle hooks, ReceiveTimeout, Terminated and Failed messages
+     * can initiate a behavior change.
+     *
+     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
+     *
+     *  * returning `stopped` will terminate this Behavior
+     *  * returning `this` or `same` designates to reuse the current Behavior
+     *  * returning `unhandled` keeps the same Behavior and signals that the message was not yet handled
+     *
+     * By default, partial function is empty and does not handle any signals.
+     */
+    @throws(classOf[Exception])
+    def onSignal: PartialFunction[Signal, Behavior[T]] = PartialFunction.empty
   }
 
   /**
@@ -227,7 +122,7 @@ object Actor {
    * avoid the allocation overhead of recreating the current behavior where
    * that is not necessary.
    */
-  def Same[T]: Behavior[T] = sameBehavior.asInstanceOf[Behavior[T]]
+  def same[T]: Behavior[T] = Behavior.same
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -235,32 +130,39 @@ object Actor {
    * message has not been handled. This hint may be used by composite
    * behaviors that delegate (partial) handling to other behaviors.
    */
-  def Unhandled[T]: Behavior[T] = unhandledBehavior.asInstanceOf[Behavior[T]]
-
-  /*
-   * TODO write a Behavior that waits for all child actors to stop and then
-   * runs some cleanup before stopping. The factory for this behavior should
-   * stop and watch all children to get the process started.
-   */
+  def unhandled[T]: Behavior[T] = Behavior.unhandled
 
   /**
    * Return this behavior from message processing to signal that this actor
    * shall terminate voluntarily. If this actor has created child actors then
-   * these will be stopped as part of the shutdown procedure. The PostStop
-   * signal that results from stopping this actor will NOT be passed to the
-   * current behavior, it will be effectively ignored.
+   * these will be stopped as part of the shutdown procedure.
+   *
+   * The PostStop signal that results from stopping this actor will be passed to the
+   * current behavior. All other messages and signals will effectively be
+   * ignored.
    */
-  def Stopped[T]: Behavior[T] = stoppedBehavior.asInstanceOf[Behavior[T]]
+  def stopped[T]: Behavior[T] = Behavior.stopped
+
+  /**
+   * Return this behavior from message processing to signal that this actor
+   * shall terminate voluntarily. If this actor has created child actors then
+   * these will be stopped as part of the shutdown procedure.
+   *
+   * The PostStop signal that results from stopping this actor will be passed to the
+   * given `postStop` behavior. All other messages and signals will effectively be
+   * ignored.
+   */
+  def stopped[T](postStop: Behavior[T]): Behavior[T] = Behavior.stopped(postStop)
 
   /**
    * A behavior that treats every incoming message as unhandled.
    */
-  def Empty[T]: Behavior[T] = emptyBehavior.asInstanceOf[Behavior[T]]
+  def empty[T]: Behavior[T] = Behavior.empty
 
   /**
    * A behavior that ignores every incoming message and returns “same”.
    */
-  def Ignore[T]: Behavior[T] = ignoreBehavior.asInstanceOf[Behavior[T]]
+  def ignore[T]: Behavior[T] = Behavior.ignore
 
   /**
    * Construct an actor behavior that can react to both incoming messages and
@@ -269,36 +171,20 @@ object Actor {
    * [[ActorContext]] that allows access to the system, spawning and watching
    * other actors, etc.
    *
-   * This constructor is called stateful because processing the next message
+   * This constructor is called immutable because the behavior instance doesn't
+   * have or close over any mutable state. Processing the next message
    * results in a new behavior that can potentially be different from this one.
+   * State is updated by returning a new behavior that holds the new immutable
+   * state.
    */
-  final case class Stateful[T](
-    behavior: (ActorContext[T], T) ⇒ Behavior[T],
-    signal:   (ActorContext[T], Signal) ⇒ Behavior[T] = Behavior.unhandledSignal.asInstanceOf[(ActorContext[T], Signal) ⇒ Behavior[T]])
-    extends Behavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = signal(ctx, msg)
-    override def message(ctx: AC[T], msg: T) = behavior(ctx, msg)
-    override def toString = s"Stateful(${LineNumbers(behavior)})"
-  }
+  def immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Immutable[T] =
+    new Immutable(onMessage)
 
-  /**
-   * Construct an actor behavior that can react to incoming messages but not to
-   * lifecycle signals. After spawning this actor from another actor (or as the
-   * guardian of an [[akka.typed.ActorSystem]]) it will be executed within an
-   * [[ActorContext]] that allows access to the system, spawning and watching
-   * other actors, etc.
-   *
-   * This constructor is called stateless because it cannot be replaced by
-   * another one after it has been installed. It is most useful for leaf actors
-   * that do not create child actors themselves.
-   */
-  final case class Stateless[T](behavior: (ActorContext[T], T) ⇒ Any) extends Behavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = Unhandled
-    override def message(ctx: AC[T], msg: T): Behavior[T] = {
-      behavior(ctx, msg)
-      this
-    }
-    override def toString = s"Static(${LineNumbers(behavior)})"
+  final class Immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T])
+    extends BehaviorImpl.ImmutableBehavior[T](onMessage) {
+
+    def onSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
+      new BehaviorImpl.ImmutableBehavior(onMessage, onSignal)
   }
 
   /**
@@ -306,35 +192,20 @@ object Actor {
    * some action upon each received message or signal. It is most commonly used
    * for logging or tracing what a certain Actor does.
    */
-  final case class Tap[T](
-    signal:   (ActorContext[T], Signal) ⇒ _,
-    mesg:     (ActorContext[T], T) ⇒ _,
-    behavior: Behavior[T]) extends Behavior[T] {
-    private def canonical(behv: Behavior[T]): Behavior[T] =
-      if (isUnhandled(behv)) Unhandled
-      else if (behv eq sameBehavior) Same
-      else if (isAlive(behv)) Tap(signal, mesg, behv)
-      else Stopped
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = {
-      signal(ctx, msg)
-      canonical(behavior.management(ctx, msg))
-    }
-    override def message(ctx: AC[T], msg: T): Behavior[T] = {
-      mesg(ctx, msg)
-      canonical(behavior.message(ctx, msg))
-    }
-    override def toString = s"Tap(${LineNumbers(signal)},${LineNumbers(mesg)},$behavior)"
-  }
+  def tap[T](
+    onMessage: Function2[ActorContext[T], T, _],
+    onSignal:  Function2[ActorContext[T], Signal, _], // FIXME use partial function here also?
+    behavior:  Behavior[T]): Behavior[T] =
+    BehaviorImpl.tap(onMessage, onSignal, behavior)
 
   /**
    * Behavior decorator that copies all received message to the designated
    * monitor [[akka.typed.ActorRef]] before invoking the wrapped behavior. The
-   * wrapped behavior can evolve (i.e. be stateful) without needing to be
+   * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
-  object Monitor {
-    def apply[T](monitor: ActorRef[T], behavior: Behavior[T]): Tap[T] = Tap(unitFunction, (_, msg) ⇒ monitor ! msg, behavior)
-  }
+  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
+    tap((_, msg) ⇒ monitor ! msg, unitFunction, behavior)
 
   /**
    * Wrap the given behavior such that it is restarted (i.e. reset to its
@@ -342,48 +213,48 @@ object Actor {
    * subclass thereof. Exceptions that are not subtypes of `Thr` will not be
    * caught and thus lead to the termination of the actor.
    *
-   * It is possible to specify that the actor shall not be restarted but
-   * resumed. This entails keeping the same state as before the exception was
-   * thrown and is thus less safe. If you use `OnFailure.RESUME` you should at
-   * least not hold mutable data fields or collections within the actor as those
-   * might be in an inconsistent state (the exception might have interrupted
-   * normal processing); avoiding mutable state is possible by returning a fresh
-   * behavior with the new state after every message.
+   * It is possible to specify different supervisor strategies, such as restart,
+   * resume, backoff.
+   *
+   * Note that only [[scala.util.control.NonFatal]] throwables will trigger the supervision strategy.
    *
    * Example:
    * {{{
    * val dbConnector: Behavior[DbCommand] = ...
-   * val dbRestarts = Restarter[DbException].wrap(dbConnector)
+   *
+   * val dbRestarts =
+   *    Actor.supervise(dbConnector)
+   *      .onFailure(SupervisorStrategy.restart) // handle all NonFatal exceptions
+   *
+   * val dbSpecificResumes =
+   *    Actor.supervise(dbConnector)
+   *      .onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // resume for IndexOutOfBoundsException exceptions
    * }}}
    */
-  object Restarter {
-    class Apply[Thr <: Throwable](c: ClassTag[Thr], resume: Boolean) {
-      def wrap[T](b: Behavior[T]): Behavior[T] = patterns.Restarter(Behavior.validateAsInitial(b), resume)()(c)
-      def mutableWrap[T](b: Behavior[T]): Behavior[T] = patterns.MutableRestarter(Behavior.validateAsInitial(b), resume)(c)
-    }
+  def supervise[T](wrapped: Behavior[T]): Supervise[T] =
+    new Supervise[T](wrapped)
 
-    def apply[Thr <: Throwable: ClassTag](resume: Boolean = false): Apply[Thr] = new Apply(implicitly, resume)
+  private final val NothingClassTag = ClassTag(classOf[Nothing])
+  private final val ThrowableClassTag = ClassTag(classOf[Throwable])
+  final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
+    /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws. */
+    def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
+      val tag = implicitly[ClassTag[Thr]]
+      val effectiveTag = if (tag == NothingClassTag) ThrowableClassTag else tag
+      akka.typed.internal.Restarter(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
+    }
   }
+
+  /**
+   * Support for scheduled `self` messages in an actor.
+   * It takes care of the lifecycle of the timers such as cancelling them when the actor
+   * is restarted or stopped.
+   * @see [[TimerScheduler]]
+   */
+  def withTimers[T](factory: TimerScheduler[T] ⇒ Behavior[T]): Behavior[T] =
+    TimerSchedulerImpl.withTimers(factory)
 
   // TODO
   // final case class Selective[T](timeout: FiniteDuration, selector: PartialFunction[T, Behavior[T]], onTimeout: () ⇒ Behavior[T])
-
-  /**
-   * INTERNAL API.
-   */
-  private[akka] val _unhandledFunction = (_: Any) ⇒ Unhandled[Nothing]
-  /**
-   * INTERNAL API.
-   */
-  private[akka] def unhandledFunction[T, U] = _unhandledFunction.asInstanceOf[(T ⇒ Behavior[U])]
-
-  /**
-   * INTERNAL API.
-   */
-  private[akka] val _unitFunction = (_: ActorContext[Any], _: Any) ⇒ ()
-  /**
-   * INTERNAL API.
-   */
-  private[akka] def unitFunction[T] = _unitFunction.asInstanceOf[((ActorContext[T], Signal) ⇒ Unit)]
 
 }

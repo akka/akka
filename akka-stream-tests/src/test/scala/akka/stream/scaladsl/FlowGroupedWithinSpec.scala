@@ -97,7 +97,6 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       c.expectNoMsg(600.millis)
       pSub.sendComplete()
       c.expectComplete
-      c.expectNoMsg(100.millis)
     }
 
     "not emit empty group when finished while not being pushed" taggedAs TimingTest in {
@@ -113,7 +112,6 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
     }
 
     "reset time window when max elements reached" taggedAs TimingTest in {
-      val inputs = Iterator.from(1)
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
       Source.fromPublisher(upstream).groupedWithin(3, 2.second).to(Sink.fromSubscriber(downstream)).run()
@@ -121,7 +119,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       downstream.request(2)
       downstream.expectNoMsg(1000.millis)
 
-      (1 to 4) foreach { _ ⇒ upstream.sendNext(inputs.next()) }
+      (1 to 4).foreach(upstream.sendNext)
       downstream.within(1000.millis) {
         downstream.expectNext((1 to 3).toVector)
       }
@@ -133,8 +131,24 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       }
 
       upstream.sendComplete()
-      downstream.expectComplete
+      downstream.expectComplete()
       downstream.expectNoMsg(100.millis)
+    }
+
+    "reset time window when exact max elements reached" taggedAs TimingTest in {
+      val upstream = TestPublisher.probe[Int]()
+      val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
+      Source.fromPublisher(upstream).groupedWithin(3, 1.second).to(Sink.fromSubscriber(downstream)).run()
+
+      downstream.request(2)
+
+      (1 to 3).foreach(upstream.sendNext)
+      downstream.within(1000.millis) {
+        downstream.expectNext((1 to 3).toVector)
+      }
+
+      upstream.sendComplete()
+      downstream.expectComplete()
     }
 
     "group evenly" taggedAs TimingTest in {
@@ -157,4 +171,86 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
 
   }
 
+  "A GroupedWeightedWithin" must {
+    "handle elements larger than the limit" taggedAs TimingTest in {
+      val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
+      Source(List(1, 2, 3, 101, 4, 5, 6))
+        .groupedWeightedWithin(100, 100.millis)(_.toLong)
+        .to(Sink.fromSubscriber(downstream))
+        .run()
+
+      downstream.request(1)
+      downstream.expectNext((1 to 3).toVector)
+      downstream.request(1)
+      downstream.expectNext(Vector(101))
+      downstream.request(1)
+      downstream.expectNext((4 to 6).toVector)
+      downstream.expectComplete()
+    }
+
+    "not drop a pending last element on upstream finish" taggedAs TimingTest in {
+      val upstream = TestPublisher.probe[Long]()
+      val downstream = TestSubscriber.probe[immutable.Seq[Long]]()
+      Source
+        .fromPublisher(upstream)
+        .groupedWeightedWithin(5, 50.millis)(identity)
+        .to(Sink.fromSubscriber(downstream))
+        .run()
+
+      downstream.ensureSubscription()
+      downstream.expectNoMsg(100.millis)
+      upstream.sendNext(1)
+      upstream.sendNext(2)
+      upstream.sendNext(3)
+      upstream.sendComplete()
+      downstream.request(1)
+      downstream.expectNext(Vector(1, 2): immutable.Seq[Long])
+      downstream.expectNoMsg(100.millis)
+      downstream.request(1)
+      downstream.expectNext(Vector(3): immutable.Seq[Long])
+      downstream.expectComplete()
+    }
+
+    "append zero weighted elements to a full group before timeout received, if downstream hasn't pulled yet" taggedAs TimingTest in {
+      val upstream = TestPublisher.probe[String]()
+      val downstream = TestSubscriber.probe[immutable.Seq[String]]()
+      Source
+        .fromPublisher(upstream)
+        .groupedWeightedWithin(5, 50.millis)(_.length.toLong)
+        .to(Sink.fromSubscriber(downstream))
+        .run()
+
+      downstream.ensureSubscription()
+      upstream.sendNext("333")
+      upstream.sendNext("22")
+      upstream.sendNext("")
+      upstream.sendNext("")
+      upstream.sendNext("")
+      downstream.request(1)
+      downstream.expectNext(Vector("333", "22", "", "", ""): immutable.Seq[String])
+      upstream.sendNext("")
+      upstream.sendNext("")
+      upstream.sendComplete()
+      downstream.request(1)
+      downstream.expectNext(Vector("", ""): immutable.Seq[String])
+      downstream.expectComplete()
+    }
+
+    "not emit an empty group if first element is heavier than maxWeight" taggedAs TimingTest in {
+      val וupstream = TestPublisher.probe[Long]()
+      val downstream = TestSubscriber.probe[immutable.Seq[Long]]()
+      Source
+        .fromPublisher(וupstream)
+        .groupedWeightedWithin(10, 50.millis)(identity)
+        .to(Sink.fromSubscriber(downstream))
+        .run()
+
+      downstream.ensureSubscription()
+      downstream.request(1)
+      וupstream.sendNext(11)
+      downstream.expectNext(Vector(11): immutable.Seq[Long])
+      וupstream.sendComplete()
+      downstream.expectComplete()
+    }
+  }
 }

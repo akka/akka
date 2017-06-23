@@ -1,0 +1,1 @@
+../../scala/stream/stream-error.md

@@ -8,7 +8,7 @@ import java.util
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.{ Attributes, Inlet, SinkShape }
+import akka.stream._
 import akka.stream.Attributes.InputBuffer
 import akka.stream.stage._
 
@@ -34,6 +34,7 @@ import akka.stream.stage._
       val buffer: util.Deque[In] = new util.ArrayDeque[In]()
       var acknowledgementReceived = false
       var completeReceived = false
+      var completionSignalled = false
 
       private def receive(evt: (ActorRef, Any)): Unit = {
         evt._2 match {
@@ -65,6 +66,7 @@ import akka.stream.stage._
 
       private def finish(): Unit = {
         ref ! onCompleteMessage
+        completionSignalled = true
         completeStage()
       }
 
@@ -84,7 +86,14 @@ import akka.stream.stage._
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
         ref ! onFailureMessage(ex)
+        completionSignalled = true
         failStage(ex)
+      }
+
+      override def postStop(): Unit = {
+        if (!completionSignalled) {
+          ref ! onFailureMessage(new AbruptStageTerminationException(this))
+        }
       }
 
       setHandler(in, this)

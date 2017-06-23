@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.impl.Stages.DefaultAttributes
+import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
@@ -491,8 +492,6 @@ object Source {
    * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
    * for downstream demand unless there is another message waiting for downstream demand, in that case
    * offer result will be completed according to the overflow strategy.
-   *
-   * SourceQueue that current source is materialized to is for single thread usage only.
    *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer

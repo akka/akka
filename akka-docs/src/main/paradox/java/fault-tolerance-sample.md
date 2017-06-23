@@ -1,0 +1,1 @@
+../scala/fault-tolerance-sample.md

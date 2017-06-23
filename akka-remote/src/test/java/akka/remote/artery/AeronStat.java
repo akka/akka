@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2016 Real Logic Ltd.
+ * Copyright 2014-2017 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,15 +25,19 @@ import java.util.regex.Pattern;
 
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
+import io.aeron.driver.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.SigInt;
 
 import static io.aeron.CncFileDescriptor.*;
-import static io.aeron.driver.status.StreamPositionCounter.*;
+import static io.aeron.driver.status.PerImageIndicator.PER_IMAGE_TYPE_ID;
 import static io.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
-import static io.aeron.driver.status.SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID;
+import static io.aeron.driver.status.ReceiveChannelStatus.RECEIVE_CHANNEL_STATUS_TYPE_ID;
+import static io.aeron.driver.status.ReceiverPos.RECEIVER_POS_TYPE_ID;
+import static io.aeron.driver.status.SendChannelStatus.SEND_CHANNEL_STATUS_TYPE_ID;
+import static io.aeron.driver.status.StreamPositionCounter.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 
 /**
@@ -113,9 +117,9 @@ public class AeronStat
         this.channelFilter = null;
     }
 
-    public static CountersReader mapCounters() 
+    public static CountersReader mapCounters()
     {
-      return mapCounters(CommonContext.newDefaultCncFile()); 
+      return mapCounters(CommonContext.newDefaultCncFile());
     }
 
     public static CountersReader mapCounters(final MappedByteBuffer cncByteBuffer)
@@ -125,7 +129,8 @@ public class AeronStat
 
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
-            throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
+          throw new IllegalStateException(
+              "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
         }
 
         return new CountersReader(
@@ -143,7 +148,8 @@ public class AeronStat
 
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
-            throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
+          throw new IllegalStateException(
+              "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
         }
 
         return new CountersReader(
@@ -242,7 +248,7 @@ public class AeronStat
         {
             if ("-?".equals(arg) || "-h".equals(arg) || "-help".equals(arg))
             {
-                System.out.println(
+                System.out.format(
                     "Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat%n" +
                         "\tfilter by optional regex patterns:%n" +
                         "\t[type=<pattern>]%n" +
@@ -267,12 +273,19 @@ public class AeronStat
         {
             return false;
         }
-        else if (typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= SUBSCRIBER_POSITION_TYPE_ID)
+        else if ((typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= RECEIVER_POS_TYPE_ID) || typeId == PER_IMAGE_TYPE_ID)
         {
             if (!match(identityFilter, () -> Long.toString(keyBuffer.getLong(REGISTRATION_ID_OFFSET))) ||
                 !match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) ||
                 !match(streamFilter, () -> Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET))) ||
                 !match(channelFilter, () -> keyBuffer.getStringUtf8(CHANNEL_OFFSET)))
+            {
+                return false;
+            }
+        }
+        else if (typeId >= SEND_CHANNEL_STATUS_TYPE_ID && typeId <= RECEIVE_CHANNEL_STATUS_TYPE_ID)
+        {
+            if (!match(channelFilter, () -> keyBuffer.getStringUtf8(ChannelEndpointStatus.CHANNEL_OFFSET)))
             {
                 return false;
             }

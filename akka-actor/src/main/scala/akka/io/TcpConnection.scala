@@ -4,21 +4,23 @@
 
 package akka.io
 
-import java.net.{ SocketException, InetSocketAddress }
+import java.net.{ InetSocketAddress, SocketException }
 import java.nio.channels.SelectionKey._
 import java.io.{ FileInputStream, IOException }
 import java.nio.channels.{ FileChannel, SocketChannel }
 import java.nio.ByteBuffer
+
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.util.control.NonFatal
+import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.concurrent.duration._
 import akka.actor._
 import akka.util.ByteString
 import akka.io.Inet.SocketOption
 import akka.io.Tcp._
 import akka.io.SelectionHandler._
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import java.nio.file.Paths
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
@@ -39,6 +41,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   private[this] var interestedInResume: Option[ActorRef] = None
   var closedMessage: CloseInformation = _ // for ConnectionClosed message in postStop
   private var watchedActor: ActorRef = context.system.deadLetters
+  private var registration: Option[ChannelRegistration] = None
 
   def signDeathPact(actor: ActorRef): Unit = {
     unsignDeathPact()
@@ -149,11 +152,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     case write: WriteCommand ⇒
       if (writingSuspended) {
         if (TraceLogging) log.debug("Dropping write because writing is suspended")
-        sender() ! write.failureMessage
+        sender() ! write.failureMessage.withCause(DroppingWriteBecauseWritingIsSuspendedException)
 
       } else if (writePending) {
         if (TraceLogging) log.debug("Dropping write because queue is full")
-        sender() ! write.failureMessage
+        sender() ! write.failureMessage.withCause(DroppingWriteBecauseQueueIsFullException)
         if (info.useResumeWriting) writingSuspended = true
 
       } else {
@@ -191,6 +194,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   /** used in subclasses to start the common machinery above once a channel is connected */
   def completeConnect(registration: ChannelRegistration, commander: ActorRef,
                       options: immutable.Traversable[SocketOption]): Unit = {
+    this.registration = Some(registration)
+
     // Turn off Nagle's algorithm by default
     try channel.socket.setTcpNoDelay(true) catch {
       case e: SocketException ⇒
@@ -334,6 +339,15 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         if (TraceLogging) log.debug("setSoLinger(true, 0) failed with [{}]", e)
     }
     channel.close()
+
+    // On linux, closing the channel directly triggers a RST as a side effect of `preClose`
+    // called from `sun.nio.ch.SocketChannelImpl#implCloseSelectableChannel`.
+
+    // On windows, however, the connection is merely added to the `cancelledKeys` of the `java.nio.channels.spi.AbstractSelector`,
+    // and `sun.nio.ch.SelectorImpl` will kill those from `processDeregisterQueue` after the select poll has returned.
+
+    // We don't want to have to wait for that, hence explicitly triggering the cancellation:
+    registration.foreach(_.cancel())
   }
 
   def stopWith(closeInfo: CloseInformation): Unit = {
@@ -426,7 +440,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   def PendingWriteFile(commander: ActorRef, filePath: String, offset: Long, count: Long, ack: Event,
                        tail: WriteCommand): PendingWriteFile =
-    new PendingWriteFile(commander, new FileInputStream(filePath).getChannel, offset, count, ack, tail)
+    new PendingWriteFile(commander, FileChannel.open(Paths.get(filePath)), offset, count, ack, tail)
 
   class PendingWriteFile(
     val commander: ActorRef,
@@ -504,4 +518,10 @@ private[io] object TcpConnection {
   }
 
   val doNothing: () ⇒ Unit = () ⇒ ()
+
+  val DroppingWriteBecauseWritingIsSuspendedException =
+    new IOException("Dropping write because writing is suspended") with NoStackTrace
+
+  val DroppingWriteBecauseQueueIsFullException =
+    new IOException("Dropping write because queue is full") with NoStackTrace
 }

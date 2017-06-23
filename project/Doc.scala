@@ -97,6 +97,11 @@ object UnidocRoot extends AutoPlugin {
     val genjavadocEnabled = CliOption("akka.genjavadoc.enabled", false)
   }
 
+  object autoImport {
+    val unidocRootIgnoreProjects = settingKey[Seq[Project]]("Projects to ignore when generating unidoc")
+  }
+  import autoImport._
+
   override def trigger = noTrigger
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
@@ -107,20 +112,19 @@ object UnidocRoot extends AutoPlugin {
     sources in(JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
   )).getOrElse(Nil)
 
-  def settings(ignoreAggregates: Seq[Project], ignoreProjects: Seq[Project]) = {
-    val withoutAggregates = ignoreAggregates.foldLeft(inAnyProject) { _ -- inAggregates(_, transitive = true, includeRoot = true) }
-    val docProjectFilter = ignoreProjects.foldLeft(withoutAggregates) { _ -- inProjects(_) }
+  val settings = {
+    def unidocRootProjectFilter(ignoreProjects: Seq[Project]) =
+      ignoreProjects.foldLeft(inAnyProject) { _ -- inProjects(_) }
 
     inTask(unidoc)(Seq(
-      unidocProjectFilter in ScalaUnidoc := docProjectFilter,
-      unidocProjectFilter in JavaUnidoc := docProjectFilter,
+      unidocProjectFilter in ScalaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
+      unidocProjectFilter in JavaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
       apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value
     ))
   }
 
   override lazy val projectSettings =
-    CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++
-    settings(Seq(), Seq(AkkaBuild.remoteTests, AkkaBuild.benchJmh, AkkaBuild.protobuf, AkkaBuild.akkaScalaNightly, AkkaBuild.docs))
+    CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++ settings
 }
 
 /**

@@ -3,10 +3,11 @@
  */
 package akka.stream.javadsl
 
+import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, function }
-import akka.stream.impl.{ ConstantFun, StreamLayout }
+import akka.stream.impl.StreamLayout
 import akka.stream._
 import org.reactivestreams.Processor
 
@@ -54,18 +55,98 @@ object Flow {
     }
 
   /**
-   * Helper to create `Flow` from a `Sink`and a `Source`.
+   * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
+   * will be sent to the Sink and the Flow's output will come from the Source.
+   *
+   * The completion of the Sink and Source sides of a Flow constructed using
+   * this method are independent. So if the Sink receives a completion signal,
+   * the Source side will remain unaware of that. If you are looking to couple
+   * the termination signals of the two sides use `Flow.fromSinkAndSourceCoupled` instead.
    */
   def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(scaladsl.Keep.none))
 
   /**
-   * Helper to create `Flow` from a `Sink`and a `Source`.
+   * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
+   * will be sent to the Sink and the Flow's output will come from the Source.
+   *
+   * The completion of the Sink and Source sides of a Flow constructed using
+   * this method are independent. So if the Sink receives a completion signal,
+   * the Source side will remain unaware of that. If you are looking to couple
+   * the termination signals of the two sides use `Flow.fromSinkAndSourceCoupledMat` instead.
+   *
+   * The `combine` function is used to compose the materialized values of the `sink` and `source`
+   * into the materialized value of the resulting [[Flow]].
    */
   def fromSinkAndSourceMat[I, O, M1, M2, M](
     sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2],
     combine: function.Function2[M1, M2, M]): Flow[I, O, M] =
     new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(combinerToScala(combine)))
+
+  /**
+   * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
+   * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
+   * however the Sink will also be completed. The table below illustrates the effects in detail:
+   *
+   * <table>
+   *   <tr>
+   *     <th>Returned Flow</th>
+   *     <th>Sink (<code>in</code>)</th>
+   *     <th>Source (<code>out</code>)</th>
+   *   </tr>
+   *   <tr>
+   *     <td><i>cause:</i> upstream (sink-side) receives completion</td>
+   *     <td><i>effect:</i> receives completion</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>cause:</i> upstream (sink-side) receives error</td>
+   *     <td><i>effect:</i> receives error</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>cause:</i> downstream (source-side) receives cancel</td>
+   *     <td><i>effect:</i> completes</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>effect:</i> cancels upstream, completes downstream</td>
+   *     <td><i>effect:</i> completes</td>
+   *     <td><i>cause:</i> signals complete</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>effect:</i> cancels upstream, errors downstream</td>
+   *     <td><i>effect:</i> receives error</td>
+   *     <td><i>cause:</i> signals error or throws</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>effect:</i> cancels upstream, completes downstream</td>
+   *     <td><i>cause:</i> cancels</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   * </table>
+   *
+   */
+  def fromSinkAndSourceCoupled[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
+    new Flow(scaladsl.Flow.fromSinkAndSourceCoupled(sink, source))
+
+  /**
+   * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
+   * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
+   * however the Sink will also be completed. The table on [[Flow.fromSinkAndSourceCoupled]]
+   * illustrates the effects in detail.
+   *
+   * The `combine` function is used to compose the materialized values of the `sink` and `source`
+   * into the materialized value of the resulting [[Flow]].
+   */
+  def fromSinkAndSourceCoupledMat[I, O, M1, M2, M](
+    sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2],
+    combine: function.Function2[M1, M2, M]): Flow[I, O, M] =
+    new Flow(scaladsl.Flow.fromSinkAndSourceCoupledMat(sink, source)(combinerToScala(combine)))
 }
 
 /** Create a `Flow` which can process elements of type `T`. */
@@ -702,9 +783,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * The last group before end-of-stream will contain the buffered elements
    * since the previously emitted group.
    *
-   * '''Emits when''' the configured time elapses since the last group has been emitted
+   * '''Emits when''' the configured time elapses since the last group has been emitted or `n` elements is buffered
    *
-   * '''Backpressures when''' the configured time elapses since the last group has been emitted
+   * '''Backpressures when''' downstream backpressures, and there are `n+1` buffered elements
    *
    * '''Completes when''' upstream completes (emits last group)
    *
@@ -715,6 +796,27 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   def groupedWithin(n: Int, d: FiniteDuration): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] =
     new Flow(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
+
+  /**
+   * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the weight of the elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   *
+   * '''Emits when''' the configured time elapses since the last group has been emitted or weight limit reached
+   *
+   * '''Backpressures when''' downstream backpressures, and buffered group (+ pending element) weighs more than `maxWeight`
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
+   *
+   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * IllegalArgumentException is thrown.
+   */
+  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, Long], d: FiniteDuration): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] =
+    new Flow(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
 
   /**
    * Shifts elements emission in time by a specified amount. It allows to store elements
@@ -897,7 +999,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
-   * attempt to recover at all. Passing in -1 will behave exactly the same as  `recoverWith`.
+   * attempt to recover at all.
+   *
+   * A negative `attempts` number is interpreted as "infinite", which results in the exact same behavior as `recoverWith`.
    *
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.

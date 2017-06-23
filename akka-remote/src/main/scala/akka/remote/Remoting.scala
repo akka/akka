@@ -631,7 +631,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           val drop = matchesQuarantine(pendingHandle)
           // Side-effecting here
           if (drop) {
-            pendingHandle.disassociate()
+            pendingHandle.disassociate("the pending handle was quarantined", log)
             context.stop(pendingActor)
           }
           !drop
@@ -643,7 +643,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           writer → associations.filter { assoc ⇒
             val handle = assoc.association.asInstanceOf[AkkaProtocolHandle]
             val drop = matchesQuarantine(handle)
-            if (drop) handle.disassociate()
+            if (drop) handle.disassociate("the stashed inbound handle was quarantined", log)
             !drop
           }
       }
@@ -745,7 +745,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   def handleInboundAssociation(ia: InboundAssociation, writerIsIdle: Boolean): Unit = ia match {
     case ia @ InboundAssociation(handle: AkkaProtocolHandle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
       case Some((endpoint, _)) ⇒
-        pendingReadHandoffs.get(endpoint) foreach (_.disassociate())
+        pendingReadHandoffs.get(endpoint) foreach (_.disassociate("the existing readOnly association was replaced by a new incoming one", log))
         pendingReadHandoffs += endpoint → handle
         endpoint ! EndpointWriter.TakeOver(handle, self)
         endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
@@ -766,7 +766,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
               createAndRegisterEndpoint(handle, refuseUid = endpoints.refuseUid(handle.remoteAddress))
           case Some(Pass(ep, Some(uid), _)) ⇒
             if (handle.handshakeInfo.uid == uid) {
-              pendingReadHandoffs.get(ep) foreach (_.disassociate())
+              pendingReadHandoffs.get(ep) foreach (_.disassociate("the existing writable association was replaced by a new incoming one", log))
               pendingReadHandoffs += ep → handle
               ep ! EndpointWriter.StopReading(ep, self)
               ep ! ReliableDeliverySupervisor.Ungate

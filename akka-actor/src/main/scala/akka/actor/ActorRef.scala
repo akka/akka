@@ -472,7 +472,9 @@ sealed trait AllDeadLetters {
 
 /**
  * When a message is sent to an Actor that is terminated before receiving the message, it will be sent as a DeadLetter
- * to the ActorSystem's EventStream
+ * to the ActorSystem's EventStream.
+ *
+ * When this message was sent without a sender [[ActorRef]], `sender` will be `system.deadLetters`.
  */
 @SerialVersionUID(1L)
 final case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef) extends AllDeadLetters {

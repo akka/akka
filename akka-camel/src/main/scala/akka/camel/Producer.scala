@@ -59,7 +59,11 @@ trait ProducerSupport extends Actor with CamelSupport {
   protected def produce: Receive = {
     case CamelProducerObjects(endpoint, processor) ⇒
       if (producerChild.isEmpty) {
-        producerChild = Some(context.actorOf(Props(new ProducerChild(endpoint, processor))))
+        val disp = camel.settings.ProducerChildDispatcher match {
+          case "" ⇒ context.props.dispatcher
+          case d  ⇒ d
+        }
+        producerChild = Some(context.actorOf(Props(new ProducerChild(endpoint, processor)).withDispatcher(disp)))
         messages = {
           for (
             child ← producerChild;
@@ -128,7 +132,7 @@ trait ProducerSupport extends Actor with CamelSupport {
     protected def produce(endpoint: Endpoint, processor: SendProcessor, msg: Any, pattern: ExchangePattern): Unit = {
       // Need copies of sender reference here since the callback could be done
       // later by another thread.
-      val producer = self
+      val producer = context.parent
       val originalSender = sender()
       val xchg = new CamelExchangeAdapter(endpoint.createExchange(pattern))
       val cmsg = CamelMessage.canonicalize(msg)

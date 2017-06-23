@@ -59,15 +59,9 @@ object CoupledTerminationFlow {
    *
    * The order in which the `in` and `out` sides receive their respective completion signals is not defined, do not rely on its ordering.
    */
+  @deprecated("Use `Flow.fromSinkAndSourceCoupledMat(..., ...)(Keep.both)` instead", "2.5.2")
   def fromSinkAndSource[I, O, M1, M2](in: Sink[I, M1], out: Source[O, M2]): Flow[I, O, (M1, M2)] =
-      // format: OFF
-      Flow.fromGraph(GraphDSL.create(in, out)(Keep.both) { implicit b => (i, o) =>
-        import GraphDSL.Implicits._
-        val bidi = b.add(new CoupledTerminationBidi[I, O])
-        /* bidi.in1 ~> */ bidi.out1 ~> i; o ~> bidi.in2 /* ~> bidi.out2 */
-        FlowShape(bidi.in1, bidi.out2)
-      })
-  // format: ON
+    Flow.fromSinkAndSourceCoupledMat(in, out)(Keep.both)
 
 }
 

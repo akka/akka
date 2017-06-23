@@ -4,10 +4,11 @@
 package akka.typed
 package internal
 
-import scala.annotation.{ tailrec, switch }
 import scala.util.control.NonFatal
-import scala.util.control.Exception.Catcher
 import akka.event.Logging
+import akka.typed.Behavior.{ DeferredBehavior, undefer, validateAsInitial }
+import akka.typed.Behavior.StoppedBehavior
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -69,8 +70,8 @@ private[typed] trait SupervisionMechanics[T] {
     behavior = initialBehavior
     if (system.settings.untyped.DebugLifecycle)
       publish(Logging.Debug(self.path.toString, clazz(behavior), "started"))
-    if (Behavior.isAlive(behavior)) next(behavior.management(ctx, PreStart), PreStart)
-    else self.sendSystem(Terminate())
+    behavior = validateAsInitial(undefer(behavior, ctx))
+    if (!Behavior.isAlive(behavior)) self.sendSystem(Terminate())
     true
   }
 
@@ -88,9 +89,19 @@ private[typed] trait SupervisionMechanics[T] {
     val a = behavior
     /*
      * The following order is crucial for things to work properly. Only change this if you're very confident and lucky.
+     *
+     *
      */
-    try if (a ne null) a.management(ctx, PostStop)
-    catch { case NonFatal(ex) ⇒ publish(Logging.Error(ex, self.path.toString, clazz(a), "failure during PostStop")) }
+    try a match {
+      case null                   ⇒ // skip PostStop
+      case _: DeferredBehavior[_] ⇒
+      // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
+      case s: StoppedBehavior[_] ⇒ s.postStop match {
+        case OptionVal.Some(postStop) ⇒ Behavior.interpretSignal(postStop, ctx, PostStop)
+        case OptionVal.None           ⇒ // no postStop behavior defined
+      }
+      case _ ⇒ Behavior.interpretSignal(a, ctx, PostStop)
+    } catch { case NonFatal(ex) ⇒ publish(Logging.Error(ex, self.path.toString, clazz(a), "failure during PostStop")) }
     finally try tellWatchersWeDied()
     finally try parent.sendSystem(DeathWatchNotification(self, failed))
     finally {

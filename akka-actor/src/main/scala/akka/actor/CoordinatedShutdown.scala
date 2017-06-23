@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.actor
 
@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 
@@ -24,7 +23,6 @@ import java.util.concurrent.TimeoutException
 import scala.util.control.NonFatal
 import akka.event.Logging
 import akka.dispatch.ExecutionContexts
-import java.util.concurrent.Executors
 import scala.util.Try
 import scala.concurrent.Await
 import java.util.concurrent.CountDownLatch
@@ -34,17 +32,70 @@ import java.util.concurrent.CompletionStage
 import java.util.Optional
 
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
+  /**
+   * The first pre-defined phase that applications can add tasks to.
+   * Note that more phases can be be added in the application's
+   * configuration by overriding this phase with an additional
+   * depends-on.
+   */
   val PhaseBeforeServiceUnbind = "before-service-unbind"
+
+  /**
+   * Stop accepting new incoming requests in for example HTTP.
+   */
   val PhaseServiceUnbind = "service-unbind"
+
+  /**
+   * Wait for requests that are in progress to be completed.
+   */
   val PhaseServiceRequestsDone = "service-requests-done"
+
+  /**
+   * Final shutdown of service endpoints.
+   */
   val PhaseServiceStop = "service-stop"
+  /**
+   * Phase for custom application tasks that are to be run
+   * after service shutdown and before cluster shutdown.
+   */
   val PhaseBeforeClusterShutdown = "before-cluster-shutdown"
+
+  /**
+   * Graceful shutdown of the Cluster Sharding regions.
+   */
   val PhaseClusterShardingShutdownRegion = "cluster-sharding-shutdown-region"
+
+  /**
+   * Emit the leave command for the node that is shutting down.
+   */
   val PhaseClusterLeave = "cluster-leave"
+
+  /**
+   * Shutdown cluster singletons
+   */
   val PhaseClusterExiting = "cluster-exiting"
+
+  /**
+   * Wait until exiting has been completed
+   */
   val PhaseClusterExitingDone = "cluster-exiting-done"
+
+  /**
+   * Shutdown the cluster extension
+   */
   val PhaseClusterShutdown = "cluster-shutdown"
+
+  /**
+   * Phase for custom application tasks that are to be run
+   * after cluster shutdown and before ActorSystem termination.
+   */
   val PhaseBeforeActorSystemTerminate = "before-actor-system-terminate"
+
+  /**
+   * Last phase. See terminate-actor-system and exit-jvm above.
+   * Don't add phases that depends on this phase because the
+   * dispatcher and scheduler of the ActorSystem have been shutdown.
+   */
   val PhaseActorSystemTerminate = "actor-system-terminate"
 
   @volatile private var runningJvmHook = false

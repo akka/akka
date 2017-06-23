@@ -15,6 +15,7 @@ import scala.concurrent.duration.FiniteDuration
  * Finite State Machine actor trait. Use as follows:
  *
  * <pre>
+ *   object A {
  *     trait State
  *     case class One extends State
  *     case class Two extends State

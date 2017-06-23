@@ -304,6 +304,8 @@ if [ ! $no_mima ] && [ $dry_run ]; then
   echodry "Finished migration manager report"
 fi
 
+try sbt whitesourceCheckPolicies
+
 # commit and tag this release
 echolog "Committing and tagging..."
 try git add .
@@ -347,6 +349,14 @@ else
   important git push origin --tags
 fi
 
+echolog "Uploading whitesource report"
+if [ $dry_run ]; then
+  echodry "Not actually uploading whitesource report. Commands:"
+  echodry "  sbt whitesourceUpdate"
+else
+  important sbt whitesourceUpdate
+fi
+
 # push the release to the server
 echolog "Pushing ${release_dir} to ${publish_path} ..."
 if [ $dry_run ]; then
@@ -355,8 +365,8 @@ if [ $dry_run ]; then
 else
   important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'before publishing version $version'; true"
   important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/
-  important ssh ${release_server} cp -v ${release_path}/docs/akka/${version}/_static/warnOldDocs.js ${release_path}/docs/akka
-  important ssh ${release_server} ln -snvf ../../warnOldDocs.js ${release_path}/docs/akka/${version}/_static/warnOldDocs.js
+  #important ssh ${release_server} cp -v ${release_path}/docs/akka/${version}/_static/warnOldDocs.js ${release_path}/docs/akka
+  #important ssh ${release_server} ln -snvf ../../warnOldDocs.js ${release_path}/docs/akka/${version}/_static/warnOldDocs.js
   important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'publish version $version'"
 fi
 

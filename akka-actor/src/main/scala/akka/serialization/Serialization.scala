@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 import java.util.NoSuchElementException
+import akka.annotation.InternalApi
 
 object Serialization {
 
@@ -389,7 +390,10 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     serializer.isInstanceOf[JavaSerializer] && !system.settings.AllowJavaSerialization
   }
 
-  private def shouldWarnAboutJavaSerializer(serializedClass: Class[_], serializer: Serializer) = {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def shouldWarnAboutJavaSerializer(serializedClass: Class[_], serializer: Serializer) = {
 
     def suppressWarningOnNonSerializationVerification(serializedClass: Class[_]) = {
       //suppressed, only when warn-on-no-serialization-verification = off, and extending NoSerializationVerificationNeeded

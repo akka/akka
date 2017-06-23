@@ -17,10 +17,10 @@ object Dependencies {
   val sslConfigVersion = "0.2.1"
   val slf4jVersion = "1.7.23"
   val scalaXmlVersion = "1.0.6"
-  val aeronVersion = "1.2.3"
+  val aeronVersion = "1.2.5"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.8", "2.12.1"),
+    crossScalaVersions := Seq("2.11.11", "2.12.2"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
@@ -41,7 +41,7 @@ object Dependencies {
   object Compile {
     // Compile
 
-    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.4" exclude("org.slf4j", "slf4j-api") // ApacheV2
+    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.15.6" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config        = "com.typesafe"                % "config"                       % "1.3.1"       // ApacheV2
@@ -86,7 +86,7 @@ object Dependencies {
       val commonsIo    = "commons-io"                  % "commons-io"                   % "2.5"              % "test" // ApacheV2
       val commonsCodec = "commons-codec"               % "commons-codec"                % "1.10"             % "test" // ApacheV2
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
-      val logback      = "ch.qos.logback"              % "logback-classic"              % "1.2.1"            % "test" // EPL 1.0 / LGPL 2.1
+      val logback      = "ch.qos.logback"              % "logback-classic"              % "1.2.3"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"  % scalaTestVersion.value   % "test" } // ApacheV2
@@ -117,6 +117,7 @@ object Dependencies {
 
     object Provided {
       // TODO remove from "test" config
+      // If changed, update akka-docs/build.sbt as well
       val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.6-rev002"     %     "optional;provided;test" // ApacheV2
 
       val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.7"    %  "optional;provided"     // ApacheV2
