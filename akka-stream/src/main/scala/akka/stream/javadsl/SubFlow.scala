@@ -1315,7 +1315,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
    *
    * '''Completes when''' upstream completes
    *
@@ -1352,7 +1352,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
    *
    * '''Completes when''' upstream completes
    *

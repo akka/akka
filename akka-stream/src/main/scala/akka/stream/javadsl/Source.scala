@@ -2073,7 +2073,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
    *
    * '''Completes when''' upstream completes
    *
@@ -2103,7 +2103,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
    *
    * '''Completes when''' upstream completes
    *
