@@ -1224,7 +1224,18 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.apply"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnRestartSupervisor.this"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.replyWhileStopped"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withReplyWhileStopped")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withReplyWhileStopped"),
+
+        // #22710 overloaded Flow.interleave()-related methods
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.interleaveGraph"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.interleaveMat"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.interleaveGraph"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.interleaveGraph"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph$default$3"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleave"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.interleaveGraph")
       ),
       "2.5.2" -> Seq(
         // #22881 Make sure connections are aborted correctly on Windows
@@ -1238,7 +1249,18 @@ object MiMa extends AutoPlugin {
 
         // #23023 added a new overload with implementation to trait, so old transport implementations compiled against
         // older versions will be missing the method. We accept that incompatibility for now.
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate"),
+
+        // #22710 overloaded Flow.interleave()-related methods
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.interleaveGraph"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.interleaveMat"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.interleaveGraph"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.interleaveGraph"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph$default$3"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleave"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.interleaveGraph")
       )
     )
 
