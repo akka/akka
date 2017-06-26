@@ -22,6 +22,9 @@ class Member private[cluster] (
   val status:                    MemberStatus,
   val roles:                     Set[String]) extends Serializable {
 
+  lazy val team: String = roles.find(_.startsWith("team-"))
+    .getOrElse(throw new IllegalStateException("Team undefined, should not be possible"))
+
   def address: Address = uniqueAddress.address
 
   override def hashCode = uniqueAddress.##

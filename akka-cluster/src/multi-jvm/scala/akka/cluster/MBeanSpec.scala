@@ -120,6 +120,7 @@ abstract class MBeanSpec
              |    {
              |      "address": "${sortedNodes(0)}",
              |      "roles": [
+             |        "team-default",
              |        "testNode"
              |      ],
              |      "status": "Up"
@@ -127,6 +128,7 @@ abstract class MBeanSpec
              |    {
              |      "address": "${sortedNodes(1)}",
              |      "roles": [
+             |        "team-default",
              |        "testNode"
              |      ],
              |      "status": "Up"
@@ -134,6 +136,7 @@ abstract class MBeanSpec
              |    {
              |      "address": "${sortedNodes(2)}",
              |      "roles": [
+             |        "team-default",
              |        "testNode"
              |      ],
              |      "status": "Up"
@@ -141,6 +144,7 @@ abstract class MBeanSpec
              |    {
              |      "address": "${sortedNodes(3)}",
              |      "roles": [
+             |        "team-default",
              |        "testNode"
              |      ],
              |      "status": "Up"
