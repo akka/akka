@@ -142,6 +142,7 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val UnsupportedMediaType         = reg(c(415)("Unsupported Media Type", "The request entity has a media type which the server or resource does not support."))
   val RequestedRangeNotSatisfiable = reg(c(416)("Requested Range Not Satisfiable", "The client has asked for a portion of the file, but the server cannot supply that portion."))
   val ExpectationFailed            = reg(c(417)("Expectation Failed", "The server cannot meet the requirements of the Expect request-header field."))
+  val ImATeapot                    = reg(c(418)("I'm a teapot", "The resulting entity body MAY be short and stout."))
   val EnhanceYourCalm              = reg(c(420)("Enhance Your Calm", "You are being rate-limited.")) // Twitter only
   val UnprocessableEntity          = reg(c(422)("Unprocessable Entity", "The request was well-formed but was unable to be followed due to semantic errors."))
   val Locked                       = reg(c(423)("Locked", "The resource that is being accessed is locked."))

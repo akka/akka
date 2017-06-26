@@ -58,6 +58,7 @@ public final class StatusCodes {
     public static final StatusCode UNSUPPORTED_MEDIA_TYPE = akka.http.scaladsl.model.StatusCodes.UnsupportedMediaType();
     public static final StatusCode REQUESTED_RANGE_NOT_SATISFIABLE = akka.http.scaladsl.model.StatusCodes.RequestedRangeNotSatisfiable();
     public static final StatusCode EXPECTATION_FAILED = akka.http.scaladsl.model.StatusCodes.ExpectationFailed();
+    public static final StatusCode IM_A_TEAPOT = akka.http.scaladsl.model.StatusCodes.ImATeapot();
     public static final StatusCode ENHANCE_YOUR_CALM = akka.http.scaladsl.model.StatusCodes.EnhanceYourCalm();
     public static final StatusCode UNPROCESSABLE_ENTITY = akka.http.scaladsl.model.StatusCodes.UnprocessableEntity();
     public static final StatusCode LOCKED = akka.http.scaladsl.model.StatusCodes.Locked();
