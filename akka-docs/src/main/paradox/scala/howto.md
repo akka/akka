@@ -10,10 +10,10 @@ sense to add to the `akka.pattern` package for creating an [OTP-like library](ht
 
 @@@ div { .group-java }
 
-You might find some of the patterns described in the Scala chapter of 
+You might find some of the patterns described in the Scala chapter of
 this page useful even though the example code is written in Scala.
 
-@@@ 
+@@@
 
 @@@ div { .group-scala }
 
@@ -30,7 +30,7 @@ The pattern is described in [Throttling Messages in Akka 2](http://letitcrash.co
 Contributed by: Derek Wyatt
 
 "Often times, people want the functionality of the BalancingDispatcher with the
-stipulation that the Actors doing the work have distinct Mailboxes on remote 
+stipulation that the Actors doing the work have distinct Mailboxes on remote
 nodes. In this post we’ll explore the implementation of such a concept."
 
 The pattern is described [Balancing Workload across Nodes with Akka 2](http://letitcrash.com/post/29044669086/balancing-workload-across-nodes-with-akka-2).
@@ -39,10 +39,10 @@ The pattern is described [Balancing Workload across Nodes with Akka 2](http://le
 
 Contributed by: Michael Pollmeier
 
-"This pattern ensures that your mailboxes don’t overflow if creating work is fast than 
-actually doing it – which can lead to out of memory errors when the mailboxes 
+"This pattern ensures that your mailboxes don’t overflow if creating work is fast than
+actually doing it – which can lead to out of memory errors when the mailboxes
 eventually become too full. It also let’s you distribute work around your cluster,
-scale dynamically scale and is completely non-blocking. This pattern is a 
+scale dynamically scale and is completely non-blocking. This pattern is a
 specialisation of the above 'Balancing Workload Pattern'."
 
 The pattern is described [Work Pulling Pattern to prevent mailbox overflow, throttle and distribute work](http://www.michaelpollmeier.com/akka-work-pulling-pattern).
@@ -54,8 +54,8 @@ Contributed by: Derek Wyatt
 "When an Actor stops, its children stop in an undefined order. Child termination is
 asynchronous and thus non-deterministic.
 
-If an Actor has children that have order dependencies, then you might need to ensure 
-a particular shutdown order of those children so that their postStop() methods get 
+If an Actor has children that have order dependencies, then you might need to ensure
+a particular shutdown order of those children so that their postStop() methods get
 called in the right order."
 
 The pattern is described [An Akka 2 Terminator](http://letitcrash.com/post/29773618510/an-akka-2-terminator).
@@ -118,7 +118,7 @@ This is where the Spider pattern comes in."
 
 The pattern is described [Discovering Message Flows in Actor System with the Spider Pattern](http://letitcrash.com/post/30585282971/discovering-message-flows-in-actor-systems-with-the).
 
-@@@ 
+@@@
 
 ## Scheduling Periodic Messages
 
@@ -182,7 +182,7 @@ Such an actor is unlikely to be reused in a different actor hierarchy and contai
 
 This pattern provides a way to encapsulate supervision and error propagation to the temporary actor.
 Finally the promise returned by Patterns.ask() is fulfilled as a failure, including the exception
-(see also @ref:[Java 8 and Scala Compatibility](scala-compat.md) for Java compatibility).
+(see also @ref:[Java 8 Compatibility](java8-compat.md) for Java compatibility).
 
 Let's have a look at the example code:
 
@@ -201,4 +201,4 @@ Finally we are able to execute an actor and receive the results or exceptions.
 
 @@snip [SupervisedAskSpec.java]($code$/java/jdocs/pattern/SupervisedAskSpec.java)
 
-@@@ 
+@@@
