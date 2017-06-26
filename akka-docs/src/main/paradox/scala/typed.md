@@ -9,16 +9,58 @@ This module is currently marked as @ref:[may change](common/may-change.md) in th
 
 @@@
 
+## Dependency
+
+Akka Typed APIs are bundled in the `akka-typed` artifact.
+Make sure that you have the following dependency in your project:
+
+sbt
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-typed" % "$akka.version$"
+    ```
+    @@@
+
+gradle
+:   @@@vars
+    ```
+    dependencies {
+      compile group: 'com.typesafe.akka', name: 'akka-typed_2.11', version: '$akka.version$'
+    }
+    ```
+    @@@
+
+maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-typed_$scala.binary_version$</artifactId>
+      <version>$akka.version$</version>
+    </dependency>
+    ```
+    @@@
+
+## Introduction
+
 As discussed in @ref:[Actor Systems](general/actor-systems.md) (and following chapters) Actors are about
 sending messages between independent units of computation, but how does that
 look like? In all of the following these imports are assumed:
 
-@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #imports }
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #imports }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #imports }
 
 With these in place we can define our first Actor, and of course it will say
 hello!
 
-@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-actor }
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-actor }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-actor }
 
 This small piece of code defines two message types, one for commanding the
 Actor to greet someone and one that the Actor will use to confirm that it has
@@ -54,7 +96,11 @@ wrapped scope—the `HelloWorld` object.
 
 Now we want to try out this Actor, so we must start an ActorSystem to host it:
 
-@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world }
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
 
 After importing the Actor’s protocol definition we start an Actor system from
 the defined behavior.
@@ -150,7 +196,11 @@ a message that contains their screen name and then they can post messages. The
 chat room Actor will disseminate all posted messages to all currently connected
 client Actors. The protocol definition could look like the following:
 
-@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-protocol }
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-protocol }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-protocol }
 
 Initially the client Actors only get access to an `ActorRef[GetSession]`
 which allows them to make the first step. Once a client’s session has been
@@ -167,12 +217,16 @@ full protocol that can involve multiple Actors and that can evolve over
 multiple steps. The implementation of the chat room protocol would be as simple
 as the following:
 
-@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-behavior }
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-behavior }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-behavior }
 
 The core of this behavior is stateful, the chat room itself does not change
 into something else when sessions are established, but we introduce a variable
 that tracks the opened sessions. Note that by using a method parameter a `var`
-is not needed. When a new `GetSession` command comes in we add that client to the 
+is not needed. When a new `GetSession` command comes in we add that client to the
 list that is in the returned behavior. Then we also need to create the session’s
 `ActorRef` that will be used to post messages. In this case we want to
 create a very simple Actor that just repackages the `PostMessage`
@@ -208,7 +262,11 @@ problematic, so passing an `ActorRef[PostSessionMessage]` where
 
 In order to see this chat room in action we need to write a client Actor that can use it:
 
-@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-gabbler }
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-gabbler }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-gabbler }
 
 From this behavior we can create an Actor that will accept a chat room session,
 post a message, wait to see it published, and then terminate. The last step
@@ -227,7 +285,11 @@ want—it complicates its logic) or the gabbler from the chat room (which is
 nonsensical) or we start both of them from a third Actor—our only sensible
 choice:
 
-@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-main }
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-main }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-main }
 
 In good tradition we call the `main` Actor what it is, it directly
 corresponds to the `main` method in a traditional Java application. This
@@ -243,7 +305,7 @@ This particular `main` Actor is created using `Actor.deferred`, which is like a 
 Creation of the behavior instance is deferred until the actor is started, as opposed to `Actor.immutable`
 that creates the behavior instance immediately before the actor is running. The factory function in 
 `deferred` pass the `ActorContext` as parameter and that can for example be used for spawning child actors.
-This ``main`` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
+This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
 gabbler is finished we will receive the `Terminated` event due to having
 called `ctx.watch` for it. This allows us to shut down the Actor system: when
 the main Actor terminates there is nothing more to do.
