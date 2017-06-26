@@ -4,7 +4,7 @@
 
 package akka.dispatch.affinity
 
-import java.lang.invoke.MethodHandles
+import java.lang.invoke.{ MethodHandle, MethodHandles }
 import java.lang.invoke.MethodType.methodType
 import java.util
 import java.util.Collections
@@ -22,6 +22,10 @@ import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 import scala.util.Try
 import java.lang.Integer.reverseBytes
+
+import akka.util.OptionVal
+
+import scala.util.control.NonFatal
 
 private[akka] class AffinityPool(
   parallelism:               Int,
@@ -182,8 +186,15 @@ private[akka] class AffinityPool(
     private var yields = 0L
     private var parkPeriodNs = 0L
 
-    private val onSpinWaitMethodHandle =
-      Try(MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Unit]))).toOption
+    private val onSpinWaitMethodHandle = {
+      var result: MethodHandle = null
+      try {
+        result = MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Unit]))
+      } catch {
+        case NonFatal(_) ⇒
+      }
+      OptionVal(result)
+    }
 
     def idle(): Unit = {
       state match {
@@ -191,7 +202,8 @@ private[akka] class AffinityPool(
           state = Spinning
           spins += 1
         case Spinning ⇒
-          onSpinWaitMethodHandle.foreach(_.invokeExact())
+          if (onSpinWaitMethodHandle.isDefined)
+            onSpinWaitMethodHandle.get.invokeExact()
           spins += 1
           if (spins > maxSpins) {
             state = Yielding
