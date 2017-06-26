@@ -25,19 +25,22 @@ object TeamSingletonManagerSpec extends MultiNodeConfig {
     akka.actor.serialize-creators = off
     akka.remote.log-remote-lifecycle-events = off"""))
 
-  nodeConfig(controller)(
-    ConfigFactory.parseString("akka.cluster.team = one\n" +
-      "akka.cluster.roles = [ ]"))
-  nodeConfig(first) {
-    ConfigFactory.parseString("akka.cluster.team = one\n" +
-      "akka.cluster.roles = [ worker ]")
+  nodeConfig(controller) {
+    ConfigFactory.parseString("""
+      akka.cluster.team = one
+      akka.cluster.roles = []""")
   }
-  nodeConfig(second)(
-    ConfigFactory.parseString("akka.cluster.team = two\n" +
-      "akka.cluster.roles = [ worker ]"))
-  nodeConfig(third)(
-    ConfigFactory.parseString("akka.cluster.team = two\n" +
-      "akka.cluster.roles = [ worker ]"))
+
+  nodeConfig(first) {
+    ConfigFactory.parseString("""
+      akka.cluster.team = one
+      akka.cluster.roles = [ worker ]""")
+  }
+  nodeConfig(second, third) {
+    ConfigFactory.parseString("""
+      akka.cluster.team = two
+      akka.cluster.roles = [ worker ]""")
+  }
 }
 
 class TeamSingletonManagerMultiJvmNode1 extends TeamSingletonManagerSpec
@@ -103,6 +106,20 @@ abstract class TeamSingletonManagerSpec extends MultiNodeSpec(TeamSingletonManag
         pong.roles should contain("team-two")
       }
 
+      enterBarrier("after-1")
+    }
+
+    "be able to use proxy across different team" in {
+      runOn(third) {
+        val proxy = system.actorOf(ClusterSingletonProxy.props(
+          "/user/singletonManager",
+          ClusterSingletonProxySettings(system).withRole(worker).withTeam("one")))
+        proxy ! TeamSingleton.Ping
+        val pong = expectMsgType[TeamSingleton.Pong](10.seconds)
+        pong.fromTeam should ===("one")
+        pong.roles should contain(worker)
+        pong.roles should contain("team-one")
+      }
       enterBarrier("after-1")
     }
 
