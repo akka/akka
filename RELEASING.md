@@ -2,7 +2,7 @@
 
 1. Add a release notes entry in docs/src/main/paradox/release-notes.md. As a helper run
 `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule.
-2. Create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description including notable changes mentioning external contributors.
+2. Once the release notes have been merged, create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description including notable changes mentioning external contributors.
 3. Travis CI will start a [CI build](https://travis-ci.org/akka/akka-http/builds) for the new tag and publish artifacts to Bintray and will sync them to Maven Central.
 4. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.2 deployRsync repo.akka.io"` to deploy API and reference documentation.
 5. Go to https://bintray.com/akka/maven/com.typesafe.akka:akka-http_2.11 and select the just released version
