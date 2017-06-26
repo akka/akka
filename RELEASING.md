@@ -10,9 +10,10 @@
    - (Optional, should happen automatically if selected in Bintray) Log in to Sonatype to Close the staging repository
    - Run a test against the staging repository to make sure the release went well, for examply by using https://github.com/akka/akka-http-scala-seed.g8 and adding the sonatype staging repo with `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxx"`
    - Release the staging repository to Maven Central.
-7. Create a news item on https://github.com/akka/akka.github.com
-8. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
-9. Send a release notification to akka-user and tweet using the akka account (or ask someone to) about the new release
+7. Create a new milestone for the next version at https://github.com/akka/akka-http/milestones, move all unclosed issues there and close the version you're releasing
+8. Create a news item on https://github.com/akka/akka.github.com, using the milestones and `scripts/authors.scala previousVersion thisVersion`
+9. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
+10. Send a release notification to akka-user and tweet using the akka account (or ask someone to) about the new release
 
 ### Follow up steps
 
