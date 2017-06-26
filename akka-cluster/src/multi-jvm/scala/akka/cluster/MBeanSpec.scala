@@ -120,28 +120,32 @@ abstract class MBeanSpec
              |    {
              |      "address": "${sortedNodes(0)}",
              |      "roles": [
-             |        "testNode"
+             |        "testNode",
+             |        "team-default"
              |      ],
              |      "status": "Up"
              |    },
              |    {
              |      "address": "${sortedNodes(1)}",
              |      "roles": [
-             |        "testNode"
+             |        "testNode",
+             |        "team-default"
              |      ],
              |      "status": "Up"
              |    },
              |    {
              |      "address": "${sortedNodes(2)}",
              |      "roles": [
-             |        "testNode"
+             |        "testNode",
+             |        "team-default"
              |      ],
              |      "status": "Up"
              |    },
              |    {
              |      "address": "${sortedNodes(3)}",
              |      "roles": [
-             |        "testNode"
+             |        "testNode",
+             |        "team-default"
              |      ],
              |      "status": "Up"
              |    }
