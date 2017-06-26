@@ -94,7 +94,14 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
 
   val Team: String = cc.getString("team")
-  val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet + s"team-$Team"
+  val Roles: Set[String] = {
+    val configuredRoles = (immutableSeq(cc.getStringList("roles")).toSet) requiring (
+      _.forall(!_.startsWith("team-")),
+      "Roles must not start with 'team-' as that is reserved for the cluster team setting"
+    )
+
+    configuredRoles + s"team-$Team"
+  }
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")
   } requiring (_ > 0, "min-nr-of-members must be > 0")
