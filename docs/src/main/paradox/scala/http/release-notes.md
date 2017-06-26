@@ -1,5 +1,11 @@
 # Release Notes
 
+## 10.0.9
+
+This release fixes a regression in 10.0.8 that occurred when using media ranges and connecting to a HTTP server that fails to specify the charset in the `ContentType` [#1222](https://github.com/akka/akka-http/issues/1222).
+
+Additionally, support for HTTP status code 418 has been introduced [#1206](https://github.com/akka/akka-http/issues/1206)
+
 ## 10.0.8
 
 ### Https Proxy Support
@@ -15,17 +21,17 @@ Akka-http has a strongly typed media type / content type system, and knows at co
 are supposed to express a character set attribute, e.g. `text/plain; charset=UTF-8`. Before this release, akka would
 silently assume UTF-8 for `ContentType` instances of media types with a missing `charset` attribute.
 
-From now on, content types missing a charset can be both parsed and expressed directly, using the new 
-`ContentType.WithMissingCharset` trait/class. 
+From now on, content types missing a charset can be both parsed and expressed directly, using the new
+`ContentType.WithMissingCharset` trait/class.
 
-- For incoming Content-Type headers with values missing a charset, such as `text/plain`, the header 
-  `ContentType` will be represented as `WithMissingCharset`, rather than assuming an UTF-8 charset 
+- For incoming Content-Type headers with values missing a charset, such as `text/plain`, the header
+  `ContentType` will be represented as `WithMissingCharset`, rather than assuming an UTF-8 charset
   (which could have been a wrong guess).
 - If you need to create such a content type programmatically, use e.g. ```MediaTypes.`text/plain`.withMissingCharset```
   (scala) or `MediaTypes.TEXT_PLAIN.toContentTypeWithMissingCharset()` (java).
 
 *Note to scala users*: If you have `match` statements across `ContentType`, keep an eye out for new compiler hints. You need
-to decide what what to do in case you get a content type with a missing character set, by adding a 
+to decide what what to do in case you get a content type with a missing character set, by adding a
 `ContentType.WithMissingCharset` case.
 
 ### Server-Sent Events Support
@@ -99,7 +105,7 @@ please check the @ref[documentation page](routing-dsl/directives/path-directives
 
 ##### akka-http-core
  * Dates in RFC1123 format with single-digit-day are now properly parsed ([#1110](https://github.com/akka/akka-http/issues/1110))
- 
+
 
 ## 10.0.6
 
