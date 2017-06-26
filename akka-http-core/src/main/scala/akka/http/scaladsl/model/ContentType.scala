@@ -11,13 +11,12 @@ import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 final case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpCharsetRange) extends jm.ContentTypeRange with ValueRenderable {
-  def matches(contentType: jm.ContentType) = {
+  def matches(contentType: jm.ContentType) =
     convertToScala(contentType) match {
       case ContentType.Binary(mt)             ⇒ mediaRange.matches(mt)
       case ContentType.WithMissingCharset(mt) ⇒ mediaRange.matches(mt)
       case x: ContentType.NonBinary           ⇒ mediaRange.matches(x.mediaType) && charsetRange.matches(x.charset)
     }
-  }
 
   def render[R <: Rendering](r: R): r.type = charsetRange match {
     case HttpCharsetRange.`*` ⇒ r ~~ mediaRange
@@ -70,13 +69,13 @@ object ContentType {
   }
 
   /** Represents a content-type which we know to contain text, where the charset always has the same predefined value. */
-  final case class WithFixedCharset(val mediaType: MediaType.WithFixedCharset)
+  final case class WithFixedCharset(mediaType: MediaType.WithFixedCharset)
     extends jm.ContentType.WithFixedCharset with NonBinary {
     def charset = mediaType.charset
   }
 
   /** Represents a content-type which we know to contain text, and the charset is known at runtime. */
-  final case class WithCharset(val mediaType: MediaType.WithOpenCharset, val charset: HttpCharset)
+  final case class WithCharset(mediaType: MediaType.WithOpenCharset, charset: HttpCharset)
     extends jm.ContentType.WithCharset with NonBinary {
 
     private[http] override def render[R <: Rendering](r: R): r.type =

@@ -76,9 +76,9 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
   }
 
   "Unmarshaller.forContentTypes" - {
-    "forContentTypes should handle media ranges of types with missing charset" in {
-      val um = Unmarshaller.byteArrayUnmarshaller.forContentTypes(MediaTypes.`text/plain`)
-      Await.result(um(HttpEntity("Hello")), 1.second.dilated) should ===("Hello".getBytes)
+    "should handle media ranges of types with missing charset by assuming UTF-8 charset when matching" in {
+      val um = Unmarshaller.stringUnmarshaller.forContentTypes(MediaTypes.`text/plain`)
+      Await.result(um(HttpEntity(MediaTypes.`text/plain`.withMissingCharset, "Hêllö".getBytes("utf-8"))), 1.second.dilated) should ===("Hêllö")
     }
   }
 
