@@ -3,13 +3,15 @@
  */
 package akka.remote.transport
 
-import scala.concurrent.{ Promise, Future }
-import akka.actor.{ NoSerializationVerificationNeeded, ActorRef, Address }
+import scala.concurrent.{ Future, Promise }
+import akka.actor.{ ActorRef, Address, NoSerializationVerificationNeeded }
 import akka.util.ByteString
 import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.AkkaException
+
 import scala.util.control.NoStackTrace
 import akka.actor.DeadLetterSuppression
+import akka.event.LoggingAdapter
 
 object Transport {
 
@@ -261,7 +263,22 @@ trait AssociationHandle {
    * could be called arbitrarily many times.
    *
    */
+  @deprecated(message = "Use method that states reasons to make sure disassociation reasons are logged.", since = "2.5.3")
   def disassociate(): Unit
 
+  /**
+   * Closes the underlying transport link, if needed. Some transports might not need an explicit teardown (UDP) and
+   * some transports may not support it (hardware connections). Remote endpoint of the channel or connection MAY
+   * be notified, but this is not guaranteed. The Transport that provides the handle MUST guarantee that disassociate()
+   * could be called arbitrarily many times.
+   */
+  def disassociate(reason: String, log: LoggingAdapter): Unit = {
+    if (log.isDebugEnabled)
+      log.debug(
+        "Association between local [{}] and remote [{}] was disassociated because {}",
+        localAddress, remoteAddress, reason)
+
+    disassociate()
+  }
 }
 
