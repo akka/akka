@@ -162,10 +162,12 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     identifyTimer = None
   }
 
-  def matchingRole(member: Member): Boolean = role match {
+  private val selfTeam = "team-" + cluster.settings.Team
+
+  def matchingRole(member: Member): Boolean = member.hasRole(selfTeam) && (role match {
     case None    ⇒ true
     case Some(r) ⇒ member.hasRole(r)
-  }
+  })
 
   def handleInitial(state: CurrentClusterState): Unit = {
     trackChange {
