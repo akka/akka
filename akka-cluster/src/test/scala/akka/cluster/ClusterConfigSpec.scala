@@ -46,7 +46,7 @@ class ClusterConfigSpec extends AkkaSpec {
       MinNrOfMembers should ===(1)
       MinNrOfMembersOfRole should ===(Map.empty[String, Int])
       Team should ===("default")
-      Roles should ===(Set("team-default"))
+      Roles should ===(Set(ClusterSettings.TeamRolePrefix + "default"))
       JmxEnabled should ===(true)
       UseDispatcher should ===(Dispatchers.DefaultDispatcherId)
       GossipDifferentViewProbability should ===(0.8 +- 0.0001)
@@ -66,7 +66,7 @@ class ClusterConfigSpec extends AkkaSpec {
           |}
         """.stripMargin).withFallback(ConfigFactory.load()), system.name)
       import settings._
-      Roles should ===(Set("hamlet", "team-blue"))
+      Roles should ===(Set("hamlet", ClusterSettings.TeamRolePrefix + "blue"))
       Team should ===("blue")
     }
   }

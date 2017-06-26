@@ -12,6 +12,7 @@ import akka.cluster.Cluster
 
 import akka.testkit.ImplicitSender
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
+import akka.cluster.ClusterSettings
 
 object TeamSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -100,10 +101,10 @@ abstract class TeamSingletonManagerSpec extends MultiNodeSpec(TeamSingletonManag
       pong.fromTeam should equal(Cluster(system).settings.Team)
       pong.roles should contain(worker)
       runOn(controller, first) {
-        pong.roles should contain("team-one")
+        pong.roles should contain(ClusterSettings.TeamRolePrefix + "one")
       }
       runOn(second, third) {
-        pong.roles should contain("team-two")
+        pong.roles should contain(ClusterSettings.TeamRolePrefix + "two")
       }
 
       enterBarrier("after-1")
@@ -118,7 +119,7 @@ abstract class TeamSingletonManagerSpec extends MultiNodeSpec(TeamSingletonManag
         val pong = expectMsgType[TeamSingleton.Pong](10.seconds)
         pong.fromTeam should ===("one")
         pong.roles should contain(worker)
-        pong.roles should contain("team-one")
+        pong.roles should contain(ClusterSettings.TeamRolePrefix + "one")
       }
       enterBarrier("after-1")
     }
