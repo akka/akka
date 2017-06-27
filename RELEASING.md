@@ -14,6 +14,7 @@
 8. Create a news item on https://github.com/akka/akka.github.com, using the milestones and `scripts/authors.scala previousVersion thisVersion`
 9. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
 10. Send a release notification to akka-user and tweet using the akka account (or ask someone to) about the new release
+11. Log into repo.akka.io and update the `current` link on repo.akka.io to point to the latest version with `ln -sf /home/akkarepo/www/docs/akka-http/<latestversion> /home/akkarepo/www/docs/akka-http/current`.
 
 ### Follow up steps
 
