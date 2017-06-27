@@ -1699,7 +1699,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
    *
    * '''Completes when''' upstream completes
    *
@@ -1735,7 +1735,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
    *
    * '''Completes when''' upstream completes
    *
