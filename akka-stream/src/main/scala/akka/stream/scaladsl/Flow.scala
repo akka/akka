@@ -1335,10 +1335,12 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Emits when''' downstream stops backpressuring and there is a pending element in the buffer
    *
-   * '''Backpressures when''' depending on OverflowStrategy
-   *  * Backpressure - backpressures when buffer is full
-   *  * DropHead, DropTail, DropBuffer - never backpressures
-   *  * Fail - fails the stream if buffer gets full
+   * '''Backpressures when''' downstream backpressures or depending on OverflowStrategy:
+   *  <ul>
+   *    <li>Backpressure - backpressures when buffer is full</li>
+   *    <li>DropHead, DropTail, DropBuffer - never backpressures</li>
+   *    <li>Fail - fails the stream if buffer gets full</li>
+   *  </ul>
    *
    * '''Completes when''' upstream completes and buffered elements have been drained
    *
