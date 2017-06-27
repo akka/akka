@@ -66,6 +66,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
               unreachable = newUnreachable)
           case LeaderChanged(leader) ⇒
             _state = _state.copy(leader = leader)
+          case TeamLeaderChanged(group, leader) ⇒
+            _state = _state.copy(teamLeaderMap = _state.teamLeaderMap + (group → leader))
           case RoleLeaderChanged(role, leader) ⇒
             _state = _state.copy(roleLeaderMap = _state.roleLeaderMap + (role → leader))
           case stats: CurrentInternalStats ⇒ _latestStats = stats
@@ -109,12 +111,12 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   def status: MemberStatus = self.status
 
   /**
-   * Is this node the leader?
+   * Is this node the leader (if using cluster teams the leader of the team of this node)?
    */
   def isLeader: Boolean = leader.contains(selfAddress)
 
   /**
-   * Get the address of the current leader.
+   * Get the address of the current leader (if using cluster teams the leader of the team of this node).
    */
   def leader: Option[Address] = state.leader
 

@@ -22,8 +22,9 @@ class Member private[cluster] (
   val status:                    MemberStatus,
   val roles:                     Set[String]) extends Serializable {
 
-  lazy val team: String = roles.find(_.startsWith("team-"))
+  lazy val team: String = roles.find(_.startsWith(ClusterSettings.TeamRolePrefix))
     .getOrElse(throw new IllegalStateException("Team undefined, should not be possible"))
+    .substring(ClusterSettings.TeamRolePrefix.length)
 
   def address: Address = uniqueAddress.address
 
@@ -32,7 +33,11 @@ class Member private[cluster] (
     case m: Member ⇒ uniqueAddress == m.uniqueAddress
     case _         ⇒ false
   }
-  override def toString = s"Member(address = ${address}, status = ${status})"
+  override def toString =
+    if (team == ClusterSettings.DefaultTeam)
+      s"Member(address = $address, status = $status)"
+    else
+      s"Member(address = $address, team = $team, status = $status)"
 
   def hasRole(role: String): Boolean = roles.contains(role)
 

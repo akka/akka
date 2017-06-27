@@ -52,7 +52,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
 
       diffMemberEvents(g1, g2) should ===(Seq(MemberUp(bUp), MemberJoined(eJoining)))
       diffUnreachable(g1, g2, selfDummyAddress) should ===(Seq.empty)
-      diffSeen(g1, g2, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
+      diffSeen(ClusterSettings.DefaultTeam, g1, g2, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
 
     "be produced for changed status of members" in {
@@ -61,7 +61,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
 
       diffMemberEvents(g1, g2) should ===(Seq(MemberUp(aUp), MemberLeft(cLeaving), MemberJoined(eJoining)))
       diffUnreachable(g1, g2, selfDummyAddress) should ===(Seq.empty)
-      diffSeen(g1, g2, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
+      diffSeen(ClusterSettings.DefaultTeam, g1, g2, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
 
     "be produced for members in unreachable" in {
@@ -76,7 +76,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       diffUnreachable(g1, g2, selfDummyAddress) should ===(Seq(UnreachableMember(bDown)))
       // never include self member in unreachable
       diffUnreachable(g1, g2, bDown.uniqueAddress) should ===(Seq())
-      diffSeen(g1, g2, selfDummyAddress) should ===(Seq.empty)
+      diffSeen(ClusterSettings.DefaultTeam, g1, g2, selfDummyAddress) should ===(Seq.empty)
     }
 
     "be produced for members becoming reachable after unreachable" in {
@@ -104,7 +104,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
 
       diffMemberEvents(g1, g2) should ===(Seq(MemberRemoved(dRemoved, Exiting)))
       diffUnreachable(g1, g2, selfDummyAddress) should ===(Seq.empty)
-      diffSeen(g1, g2, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
+      diffSeen(ClusterSettings.DefaultTeam, g1, g2, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
 
     "be produced for convergence changes" in {
@@ -113,10 +113,10 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
 
       diffMemberEvents(g1, g2) should ===(Seq.empty)
       diffUnreachable(g1, g2, selfDummyAddress) should ===(Seq.empty)
-      diffSeen(g1, g2, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address))))
+      diffSeen(ClusterSettings.DefaultTeam, g1, g2, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address))))
       diffMemberEvents(g2, g1) should ===(Seq.empty)
       diffUnreachable(g2, g1, selfDummyAddress) should ===(Seq.empty)
-      diffSeen(g2, g1, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address, eJoining.address))))
+      diffSeen(ClusterSettings.DefaultTeam, g2, g1, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address, eJoining.address))))
     }
 
     "be produced for leader changes" in {
@@ -125,27 +125,38 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
 
       diffMemberEvents(g1, g2) should ===(Seq(MemberRemoved(aRemoved, Up)))
       diffUnreachable(g1, g2, selfDummyAddress) should ===(Seq.empty)
-      diffSeen(g1, g2, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
-      diffLeader(g1, g2, selfDummyAddress) should ===(Seq(LeaderChanged(Some(bUp.address))))
+      diffSeen(ClusterSettings.DefaultTeam, g1, g2, selfDummyAddress) should ===(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
+      diffLeader(ClusterSettings.DefaultTeam, g1, g2, selfDummyAddress) should ===(Seq(LeaderChanged(Some(bUp.address))))
     }
 
-    "be produced for role leader changes" in {
+    "be produced for role leader changes in the same team" in {
       val g0 = Gossip.empty
       val g1 = Gossip(members = SortedSet(aUp, bUp, cUp, dLeaving, eJoining))
       val g2 = Gossip(members = SortedSet(bUp, cUp, dExiting, eJoining))
-      diffRolesLeader(g0, g1, selfDummyAddress) should ===(
+      diffRolesLeader(ClusterSettings.DefaultTeam, g0, g1, selfDummyAddress) should ===(
         Set(
+          // since this role is implicitly added
+          RoleLeaderChanged(ClusterSettings.TeamRolePrefix + ClusterSettings.DefaultTeam, Some(aUp.address)),
           RoleLeaderChanged("AA", Some(aUp.address)),
           RoleLeaderChanged("AB", Some(aUp.address)),
           RoleLeaderChanged("BB", Some(bUp.address)),
           RoleLeaderChanged("DD", Some(dLeaving.address)),
           RoleLeaderChanged("DE", Some(dLeaving.address)),
           RoleLeaderChanged("EE", Some(eUp.address))))
-      diffRolesLeader(g1, g2, selfDummyAddress) should ===(
+      diffRolesLeader(ClusterSettings.DefaultTeam, g1, g2, selfDummyAddress) should ===(
         Set(
+          RoleLeaderChanged(ClusterSettings.TeamRolePrefix + ClusterSettings.DefaultTeam, Some(bUp.address)),
           RoleLeaderChanged("AA", None),
           RoleLeaderChanged("AB", Some(bUp.address)),
           RoleLeaderChanged("DE", Some(eJoining.address))))
+    }
+
+    "not be produced for role leader changes in other teams" in {
+      val g0 = Gossip.empty
+      val g1 = Gossip(members = SortedSet(aUp, bUp, cUp, dLeaving, eJoining))
+      val g2 = Gossip(members = SortedSet(bUp, cUp, dExiting, eJoining))
+      diffRolesLeader("dc2", g0, g1, selfDummyAddress) should ===(Set.empty)
+      diffRolesLeader("dc2", g1, g2, selfDummyAddress) should ===(Set.empty)
     }
   }
 }

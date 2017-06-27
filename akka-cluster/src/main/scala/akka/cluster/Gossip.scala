@@ -5,6 +5,7 @@
 package akka.cluster
 
 import scala.collection.immutable
+import ClusterSettings.Team
 import MemberStatus._
 import scala.concurrent.duration.Deadline
 
@@ -165,20 +166,26 @@ private[cluster] final case class Gossip(
    *
    * @return true if convergence have been reached and false if not
    */
-  def convergence(selfUniqueAddress: UniqueAddress, exitingConfirmed: Set[UniqueAddress]): Boolean = {
+  def convergence(team: Team, selfUniqueAddress: UniqueAddress, exitingConfirmed: Set[UniqueAddress]): Boolean = {
     // First check that:
-    //   1. we don't have any members that are unreachable, excluding observations from members
+    //   1. we don't have any members that are unreachable in the team, excluding observations from members
     //      that have status DOWN, or
     //   2. all unreachable members in the set have status DOWN or EXITING
     // Else we can't continue to check for convergence
     // When that is done we check that all members with a convergence
     // status is in the seen table, i.e. has seen this version
-    val unreachable = reachabilityExcludingDownedObservers.allUnreachableOrTerminated.collect {
-      case node if (node != selfUniqueAddress && !exitingConfirmed(node)) ⇒ member(node)
-    }
-    unreachable.forall(m ⇒ Gossip.convergenceSkipUnreachableWithMemberStatus(m.status)) &&
-      !members.exists(m ⇒ Gossip.convergenceMemberStatus(m.status) &&
-        !(seenByNode(m.uniqueAddress) || exitingConfirmed(m.uniqueAddress)))
+    val unreachableInTeam = teamReachabilityExcludingDownedObservers(team).allUnreachableOrTerminated.collect {
+      case node if node != selfUniqueAddress && !exitingConfirmed(node) ⇒ member(node)
+    }.filter(_.team == team)
+
+    unreachableInTeam.forall(m ⇒
+      Gossip.convergenceSkipUnreachableWithMemberStatus(m.status)) &&
+      // there must be no member in the same team that is up or leaving who has not been seen or is exiting
+      !members.exists(m ⇒
+        m.team == team &&
+          Gossip.convergenceMemberStatus(m.status) &&
+          !(seenByNode(m.uniqueAddress) || exitingConfirmed(m.uniqueAddress))
+      )
   }
 
   lazy val reachabilityExcludingDownedObservers: Reachability = {
@@ -186,14 +193,19 @@ private[cluster] final case class Gossip(
     overview.reachability.removeObservers(downed.map(_.uniqueAddress))
   }
 
-  def isLeader(node: UniqueAddress, selfUniqueAddress: UniqueAddress): Boolean =
-    leader(selfUniqueAddress).contains(node)
+  def teamReachabilityExcludingDownedObservers(team: Team): Reachability = {
+    val membersToExclude = members.collect { case m if m.status == Down || m.team != team ⇒ m.uniqueAddress }
+    overview.reachability.removeObservers(membersToExclude)
+  }
 
-  def leader(selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
-    leaderOf(members, selfUniqueAddress)
+  def isTeamLeader(team: Team, node: UniqueAddress, selfUniqueAddress: UniqueAddress): Boolean =
+    teamLeader(team, selfUniqueAddress).contains(node)
 
-  def roleLeader(role: String, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
-    leaderOf(members.filter(_.hasRole(role)), selfUniqueAddress)
+  def teamLeader(team: Team, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
+    leaderOf(members.filter(_.team == team), selfUniqueAddress)
+
+  def roleLeader(team: Team, role: String, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
+    leaderOf(members.filter(m ⇒ m.team == team && m.hasRole(role)), selfUniqueAddress)
 
   def leaderOf(mbrs: immutable.SortedSet[Member], selfUniqueAddress: UniqueAddress): Option[UniqueAddress] = {
     val reachableMembers =
@@ -204,6 +216,8 @@ private[cluster] final case class Gossip(
     else reachableMembers.find(m ⇒ Gossip.leaderMemberStatus(m.status)).
       orElse(Some(reachableMembers.min(Member.leaderStatusOrdering))).map(_.uniqueAddress)
   }
+
+  def allTeams: Set[Team] = members.map(_.team)
 
   def allRoles: Set[String] = members.flatMap(_.roles)
 

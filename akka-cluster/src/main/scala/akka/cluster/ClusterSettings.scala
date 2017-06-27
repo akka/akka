@@ -16,8 +16,15 @@ import akka.util.Helpers.{ Requiring, ConfigOps, toRootLowerCase }
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
 
-final class ClusterSettings(val config: Config, val systemName: String) {
+object ClusterSettings {
+  type Team = String
+  val TeamRolePrefix = "team-"
+  val DefaultTeam: Team = "default"
 
+}
+
+final class ClusterSettings(val config: Config, val systemName: String) {
+  import ClusterSettings._
   private val cc = config.getConfig("akka.cluster")
 
   val LogInfo: Boolean = cc.getBoolean("log-info")
@@ -93,14 +100,14 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
   val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
 
-  val Team: String = cc.getString("team")
+  val Team: Team = cc.getString("team")
   val Roles: Set[String] = {
     val configuredRoles = (immutableSeq(cc.getStringList("roles")).toSet) requiring (
-      _.forall(!_.startsWith("team-")),
-      "Roles must not start with 'team-' as that is reserved for the cluster team setting"
+      _.forall(!_.startsWith(TeamRolePrefix)),
+      s"Roles must not start with '${TeamRolePrefix}' as that is reserved for the cluster team setting"
     )
 
-    configuredRoles + s"team-$Team"
+    configuredRoles + s"$TeamRolePrefix$Team"
   }
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")

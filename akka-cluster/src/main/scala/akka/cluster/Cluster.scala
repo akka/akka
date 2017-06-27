@@ -420,13 +420,32 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   private[cluster] object InfoLogger {
 
     def logInfo(message: String): Unit =
-      if (LogInfo) log.info("Cluster Node [{}] - {}", selfAddress, message)
+      if (LogInfo)
+        if (settings.Team == ClusterSettings.DefaultTeam)
+          log.info("Cluster Node [{}] - {}", selfAddress, message)
+        else
+          log.info("Cluster Node [{}] team [{}] - {}", selfAddress, settings.Team, message)
 
     def logInfo(template: String, arg1: Any): Unit =
-      if (LogInfo) log.info("Cluster Node [{}] - " + template, selfAddress, arg1)
+      if (LogInfo)
+        if (settings.Team == ClusterSettings.DefaultTeam)
+          log.info("Cluster Node [{}] - " + template, selfAddress, arg1)
+        else
+          log.info("Cluster Node [{}] team [{}] - " + template, selfAddress, settings.Team, arg1)
 
     def logInfo(template: String, arg1: Any, arg2: Any): Unit =
-      if (LogInfo) log.info("Cluster Node [{}] - " + template, selfAddress, arg1, arg2)
+      if (LogInfo)
+        if (settings.Team == ClusterSettings.DefaultTeam)
+          log.info("Cluster Node [{}] - " + template, selfAddress, arg1, arg2)
+        else
+          log.info("Cluster Node [{}] team [{}] - " + template, selfAddress, settings.Team, arg1, arg2)
+
+    def logInfo(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
+      if (LogInfo)
+        if (settings.Team == ClusterSettings.DefaultTeam)
+          log.info("Cluster Node [{}] - " + template, selfAddress, arg1, arg2, arg3)
+        else
+          log.info("Cluster Node [{}] team [" + settings.Team + "] - " + template, selfAddress, arg1, arg2, arg3)
   }
 
 }
