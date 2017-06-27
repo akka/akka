@@ -26,8 +26,8 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString("""
-      akka.loglevel = WARNING
-      akka.remote.log-remote-lifecycle-events = WARNING
+      akka.loglevel = DEBUG
+      akka.remote.log-remote-lifecycle-events = DEBUG
 
       # Keep it long, we don't want reconnects
       akka.remote.retry-gate-closed-for  = 1 s
