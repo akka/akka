@@ -26,11 +26,11 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
   case class Probe(msg: String, replyTo: ActorRef[String])
 
   trait CommonTests {
-    def system[T](name: String, behavior: Behavior[T]): ActorSystem[T]
+    def system[T](behavior: Behavior[T], name: String): ActorSystem[T]
     def suite: String
 
     def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(block: ActorSystem[T] ⇒ Unit): Terminated = {
-      val sys = system(s"$suite-$name", behavior)
+      val sys = system(behavior, s"$suite-$name")
       try {
         block(sys)
         if (doTerminate) sys.terminate().futureValue else sys.whenTerminated.futureValue
@@ -55,13 +55,15 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
 
     def `must terminate the guardian actor`(): Unit = {
       val inbox = Inbox[String]("terminate")
-      val sys = system("terminate", immutable[Probe] {
-        case (_, _) ⇒ unhandled
-      } onSignal {
-        case (ctx, PostStop) ⇒
-          inbox.ref ! "done"
-          same
-      })
+      val sys = system(
+        immutable[Probe] {
+          case (_, _) ⇒ unhandled
+        } onSignal {
+          case (ctx, PostStop) ⇒
+            inbox.ref ! "done"
+            same
+        },
+        "terminate")
       sys.terminate().futureValue
       inbox.receiveAll() should ===("done" :: Nil)
     }
@@ -98,7 +100,7 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
   }
 
   object `An ActorSystemImpl` extends CommonTests {
-    def system[T](name: String, behavior: Behavior[T]): ActorSystem[T] = ActorSystem(name, behavior)
+    def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name)
     def suite = "native"
 
     // this is essential to complete ActorCellSpec, see there
@@ -133,7 +135,7 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
   }
 
   object `An ActorSystemAdapter` extends CommonTests {
-    def system[T](name: String, behavior: Behavior[T]): ActorSystem[T] = ActorSystem.adapter(name, behavior)
+    def system[T](behavior: Behavior[T], name: String) = ActorSystem.adapter(name, behavior)
     def suite = "adapter"
   }
 }

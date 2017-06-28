@@ -45,7 +45,7 @@ public class ActorCompile {
   Behavior<MyMsg> actor9 = widened(actor7, pf -> pf.match(MyMsgA.class, x -> x));
   Behavior<MyMsg> actor10 = immutable((ctx, msg) -> stopped(actor4), (ctx, signal) -> same());
 
-  ActorSystem<MyMsg> system = ActorSystem.create("Sys", actor1);
+  ActorSystem<MyMsg> system = ActorSystem.create(actor1, "Sys");
 
   {
     Actor.<MyMsg>immutable((ctx, msg) -> {
