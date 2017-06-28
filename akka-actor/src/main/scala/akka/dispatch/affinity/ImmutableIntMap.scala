@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.remote.artery
+package akka.util
 
 import scala.annotation.tailrec
 import akka.util.OptionVal

@@ -21,7 +21,7 @@ import com.typesafe.config.Config
 import scala.annotation.tailrec
 import java.lang.Integer.reverseBytes
 
-import akka.remote.artery.ImmutableIntMap
+import akka.util.ImmutableIntMap
 import akka.util.OptionVal
 
 import scala.collection.mutable
