@@ -70,6 +70,7 @@ import akka.stream._
 
     val merge = name("merge")
     val mergePreferred = name("mergePreferred")
+    val mergePrioritized = name("mergePrioritized")
     val flattenMerge = name("flattenMerge")
     val recoverWith = name("recoverWith")
     val broadcast = name("broadcast")
@@ -134,7 +135,5 @@ import akka.stream._
     val fileSink = name("fileSink") and IODispatcher
     val fromJavaStream = name("fromJavaStream")
   }
-
-  import DefaultAttributes._
 
 }
