@@ -4,13 +4,13 @@
 
 package akka.dispatch.affinity
 
-import java.lang.invoke.{ MethodHandle, MethodHandles }
+import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType.methodType
 import java.util
 import java.util.Collections
 import java.util.concurrent.TimeUnit.MICROSECONDS
 import java.util.concurrent._
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{ AtomicInteger, AtomicReference }
 import java.util.concurrent.locks.{ Lock, LockSupport, ReentrantLock }
 
 import akka.dispatch._
@@ -19,12 +19,12 @@ import akka.util.Helpers.Requiring
 import com.typesafe.config.Config
 
 import scala.annotation.tailrec
-import scala.collection.JavaConversions._
-import scala.util.Try
 import java.lang.Integer.reverseBytes
 
+import akka.remote.artery.ImmutableIntMap
 import akka.util.OptionVal
 
+import scala.collection.mutable
 import scala.util.control.NonFatal
 
 private[akka] class AffinityPool(
@@ -53,24 +53,40 @@ private[akka] class AffinityPool(
   @volatile final private var poolState: PoolState = Running
 
   private final val workQueues = Array.fill(parallelism)(new BoundedTaskQueue(affinityGroupSize))
-  private final val workers = new java.util.HashSet[ThreadPoolWorker]()
+  private final val workers = mutable.Set[ThreadPoolWorker]()
 
   // a counter that gets incremented every time a task is queued
   private val executionCounter: AtomicInteger = new AtomicInteger(0)
   // maps a runnable to an index of a worker queue
-  private val runnableToWorkerQueueIndex: java.util.Map[Int, Int] = new ConcurrentHashMap[Int, Int]()
+  private val runnableToWorkerQueueIndex = new AtomicReference(ImmutableIntMap.empty)
 
   private def getQueueForRunnable(command: Runnable) = {
 
-    def sbhash(i: Int) = reverseBytes(i * 0x9e3775cd) * 0x9e3775cd
-    def getNext = executionCounter.incrementAndGet() % parallelism
     val runnableHash = command.hashCode()
 
+    def sbhash(i: Int) = reverseBytes(i * 0x9e3775cd) * 0x9e3775cd
+
+    def getNext = executionCounter.incrementAndGet() % parallelism
+
+    def updateIfAbsentAndGetQueueIndex(
+      workerQueueIndex: AtomicReference[ImmutableIntMap],
+      runnableHash:     Int, queueIndex: ⇒ Int): Int = {
+      @tailrec
+      def updateIndex(): Unit = {
+        val prev = workerQueueIndex.get()
+        if (!runnableToWorkerQueueIndex.compareAndSet(prev, prev.putIfAbsent(runnableHash, queueIndex))) {
+          updateIndex()
+        }
+      }
+      updateIndex()
+      workerQueueIndex.get().get(runnableHash) // can safely call get..
+    }
+
     val workQueueIndex =
-      if (runnableToWorkerQueueIndex.size() > fairDistributionThreshold)
+      if (runnableToWorkerQueueIndex.get().size > fairDistributionThreshold)
         Math.abs(sbhash(runnableHash)) % parallelism
       else
-        runnableToWorkerQueueIndex.getOrElseUpdate(command.hashCode, getNext)
+        updateIfAbsentAndGetQueueIndex(runnableToWorkerQueueIndex, runnableHash, getNext)
 
     workQueues(workQueueIndex)
   }
@@ -80,7 +96,7 @@ private[akka] class AffinityPool(
     workQueues.foreach(q ⇒ addWorker(workers, q))
   }
 
-  private def addWorker(workers: java.util.Set[ThreadPoolWorker], q: BoundedTaskQueue): Unit = {
+  private def addWorker(workers: mutable.Set[ThreadPoolWorker], q: BoundedTaskQueue): Unit = {
     locked(bookKeepingLock) {
       val worker = new ThreadPoolWorker(q, new IdleStrategy(idleCpuLevel))
       workers.add(worker)
@@ -186,15 +202,12 @@ private[akka] class AffinityPool(
     private var yields = 0L
     private var parkPeriodNs = 0L
 
-    private val onSpinWaitMethodHandle = {
-      var result: MethodHandle = null
-      try {
-        result = MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Unit]))
-      } catch {
-        case NonFatal(_) ⇒
+    private val onSpinWaitMethodHandle =
+      try
+        OptionVal.Some(MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Unit])))
+      catch {
+        case NonFatal(_) ⇒ OptionVal.None
       }
-      OptionVal(result)
-    }
 
     def idle(): Unit = {
       state match {
@@ -202,8 +215,10 @@ private[akka] class AffinityPool(
           state = Spinning
           spins += 1
         case Spinning ⇒
-          if (onSpinWaitMethodHandle.isDefined)
-            onSpinWaitMethodHandle.get.invokeExact()
+          onSpinWaitMethodHandle match {
+            case OptionVal.Some(m) ⇒ m.invokeExact()
+            case OptionVal.None    ⇒
+          }
           spins += 1
           if (spins > maxSpins) {
             state = Yielding

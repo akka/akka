@@ -8,7 +8,6 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
-import scala.util.Random
 
 object BenchmarkActors {
 
@@ -16,42 +15,6 @@ object BenchmarkActors {
 
   case object Message
   case object Stop
-
-  case class Request(userId: Int)
-  case object StopUserService
-
-  case class User(userId: Int, firstName: String, lastName: String, ssn: Int, friends: Seq[Int])
-
-  class UserServiceActor(userDB: Map[Int, User], latch: CountDownLatch, numQueries: Int) extends Actor {
-
-    var left = numQueries
-
-    def receive = {
-      case Request(id) =>
-        userDB.get(id).foreach(u => sender() ! u)
-
-        if (left == 0) {
-          latch.countDown()
-          context stop self
-        }
-        left -= 1
-    }
-
-  }
-
-  object UserServiceActor {
-
-    def props(numQueriesForActor: Int, numUsersInDB: Int, latch: CountDownLatch, randomGen: Random) = {
-      val users = for {
-        id <- 0 until numUsersInDB
-        firstName = randomGen.nextString(5)
-        lastName = randomGen.nextString(7)
-        ssn = randomGen.nextInt()
-        friendIds = for { _ <- 0 until 5 } yield randomGen.nextInt(numUsersInDB)
-      } yield id -> User(id, firstName, lastName, ssn, friendIds)
-      Props(new UserServiceActor(users.toMap, latch, numQueriesForActor))
-    }
-  }
 
   class PingPong(val messages: Int, latch: CountDownLatch) extends Actor {
     var left = messages / 2
@@ -99,15 +62,6 @@ object BenchmarkActors {
     (actors, latch)
   }
 
-  private def startUserServiceActors(numActors: Int, numQueriesPerActor: Int, numUsersInDBPerActor: Int, dispatcher: String, randomGen: Random)(implicit system: ActorSystem) = {
-    val fullPathToDispatcher = "akka.actor." + dispatcher
-    val latch = new CountDownLatch(numActors)
-    val actors = for {
-      i <- (1 to numActors).toVector
-    } yield system.actorOf(UserServiceActor.props(numQueriesPerActor, numUsersInDBPerActor, latch, randomGen).withDispatcher(fullPathToDispatcher))
-    (actors, latch)
-  }
-
   private def initiatePingPongForPairs(refs: Vector[(ActorRef, ActorRef)], inFlight: Int) = {
     for {
       (ping, pong) <- refs
@@ -117,7 +71,7 @@ object BenchmarkActors {
     }
   }
 
-  private def printProgress(totalMessages: Long, numActors: Int, startNanoTime: Long) = {
+  def printProgress(totalMessages: Long, numActors: Int, startNanoTime: Long) = {
     val durationMicros = (System.nanoTime() - startNanoTime) / 1000
     println(f"  $totalMessages messages by $numActors actors took ${durationMicros / 1000} ms, " +
       f"${totalMessages.toDouble / durationMicros}%,.2f M msg/s")
@@ -137,21 +91,6 @@ object BenchmarkActors {
     initiatePingPongForPairs(actors, inFlight = throughPut * 2)
     latch.await(shutdownTimeout.toSeconds, TimeUnit.SECONDS)
     printProgress(totalNumMessages, numActors, startNanoTime)
-  }
-
-  def benchmarkUserServiceActor(numQueriesPerActor: Int, numUserServiceActors: Int, numUsersInDB: Int, randomSeed: Int, dispatcher: String, shutdownTimeout: Duration)(implicit system: ActorSystem): Unit = {
-    val randomGen = new Random(randomSeed)
-    val totalNumberOfQueries = numQueriesPerActor * numUserServiceActors
-    val (actors, latch) = startUserServiceActors(numUserServiceActors, numUsersInDB, numQueriesPerActor, dispatcher, randomGen)
-    val startNanoTime = System.nanoTime()
-    for {
-      serviceActor <- actors
-      _ <- 0 until numQueriesPerActor
-    } {
-      serviceActor ! Request(randomGen.nextInt(numUsersInDB))
-    }
-    latch.await(shutdownTimeout.toSeconds, TimeUnit.SECONDS)
-    printProgress(totalNumberOfQueries, numUserServiceActors, startNanoTime)
   }
 
   def tearDownSystem()(implicit system: ActorSystem): Unit = {

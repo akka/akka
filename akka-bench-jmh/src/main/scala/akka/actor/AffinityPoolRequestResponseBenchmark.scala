@@ -3,7 +3,7 @@
  */
 package akka.actor
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.actor.BenchmarkActors._
 import akka.actor.ForkJoinActorBenchmark.cores
@@ -18,20 +18,24 @@ import org.openjdk.jmh.annotations._
 @Measurement(iterations = 10, time = 20, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 class AffinityPoolRequestResponseBenchmark {
 
-  @Param(Array("1"))
+  @Param(Array("1", "5", "50"))
   var throughPut = 0
 
-  @Param(Array("affinity-dispatcher", "default-fj-dispatcher"))
+  @Param(Array("affinity-dispatcher", "default-fj-dispatcher", "fixed-size-dispatcher"))
   var dispatcher = ""
 
   @Param(Array("SingleConsumerOnlyUnboundedMailbox")) //"default"
   var mailbox = ""
 
   final val numThreads, numActors = 8
-  final val numQueriesPerActor = 90000
-  final val totalNumberOfQueries = numQueriesPerActor * numActors
+  final val numQueriesPerActor = 400000
+  final val totalNumberOfMessages = numQueriesPerActor * numActors
+  final val numUsersInDB = 300000
 
   implicit var system: ActorSystem = _
+
+  var actors: Vector[(ActorRef, ActorRef)] = null
+  var latch: CountDownLatch = null
 
   @Setup(Level.Trial)
   def setup(): Unit = {
@@ -88,7 +92,19 @@ class AffinityPoolRequestResponseBenchmark {
   @TearDown(Level.Trial)
   def shutdown(): Unit = tearDownSystem()
 
+  @Setup(Level.Invocation)
+  def setupActors(): Unit = {
+    val (_actors, _latch) = RequestResponseActors.startUserQueryActorPairs(numActors, numQueriesPerActor, numUsersInDB, dispatcher)
+    actors = _actors
+    latch = _latch
+  }
+
   @Benchmark
-  @OperationsPerInvocation(totalNumberOfQueries)
-  def pingPong(): Unit = benchmarkUserServiceActor(numQueriesPerActor, numActors, 50000, 31, dispatcher, timeout)
+  @OperationsPerInvocation(totalNumberOfMessages)
+  def queryUserServiceActor(): Unit = {
+    val startNanoTime = System.nanoTime()
+    RequestResponseActors.initiateQuerySimulation(actors, throughPut * 2)
+    latch.await(BenchmarkActors.timeout.toSeconds, TimeUnit.SECONDS)
+    BenchmarkActors.printProgress(totalNumberOfMessages, numActors, startNanoTime)
+  }
 }
