@@ -99,6 +99,56 @@ object MergePreferred {
 }
 
 /**
+ * Merge several streams, taking elements as they arrive from input streams
+ * (picking from prioritized once when several have elements ready).
+ *
+ * A `MergePrioritized` has one `out` port, one or more input port with their priorities.
+ *
+ * '''Emits when''' one of the inputs has an element available, preferring
+ * a input based on its priority if multiple have elements available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
+ *
+ * '''Cancels when''' downstream cancels
+ *
+ * A `Broadcast` has one `in` port and 2 or more `out` ports.
+ */
+object MergePrioritized {
+  /**
+   * Create a new `MergePrioritized` stage with the specified output type.
+   */
+  def create[T](priorities: Array[Int]): Graph[UniformFanInShape[T, T], NotUsed] =
+    scaladsl.MergePrioritized(priorities)
+
+  /**
+   * Create a new `MergePrioritized` stage with the specified output type.
+   */
+  def create[T](clazz: Class[T], priorities: Array[Int]): Graph[UniformFanInShape[T, T], NotUsed] =
+    create(priorities)
+
+  /**
+   * Create a new `MergePrioritized` stage with the specified output type.
+   *
+   * @param eagerComplete set to true in order to make this stage eagerly
+   *                   finish as soon as one of its inputs completes
+   */
+  def create[T](priorities: Array[Int], eagerComplete: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
+    scaladsl.MergePrioritized(priorities, eagerComplete = eagerComplete)
+
+  /**
+   * Create a new `MergePrioritized` stage with the specified output type.
+   *
+   * @param eagerComplete set to true in order to make this stage eagerly
+   *                   finish as soon as one of its inputs completes
+   */
+  def create[T](clazz: Class[T], priorities: Array[Int], eagerComplete: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
+    create(priorities, eagerComplete)
+
+}
+
+/**
  * Fan-out the stream to several streams. emitting each incoming upstream element to all downstream consumers.
  * It will not shutdown until the subscriptions for at least
  * two downstream subscribers have been established.
