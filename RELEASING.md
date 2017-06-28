@@ -21,6 +21,7 @@
 1. Update Akka HTTP dependency on akka.io website: https://github.com/akka/akka.github.com/blob/master/_config.yml
 2. Update Akka HTTP dependency in akka-http seed templates ([scala](https://github.com/akka/akka-http-scala-seed.g8/) & [java](https://github.com/akka/akka-http-java-seed.g8/)) 
 3. Update Akka HTTP dependency in [akka-management](https://github.com/akka/akka-management/blob/master/project/Dependencies.scala)
+4. Update Akka HTTP reference in [reactive-platform-docs](https://github.com/typesafehub/reactive-platform-docs/blob/master/build.sbt#L29)
 
 ### Under the Travis hood
 
