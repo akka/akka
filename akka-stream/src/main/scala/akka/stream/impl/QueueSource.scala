@@ -28,7 +28,7 @@ import scala.compat.java8.FutureConverters._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
+@InternalApi private[akka] final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy, logBufferFill: Boolean = false) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
   import QueueSource._
 
   val out = Outlet[T]("queueSource.out")
@@ -36,7 +36,7 @@ import scala.compat.java8.FutureConverters._
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val completion = Promise[Done]
-    val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Input[T]] with OutHandler {
+    val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Input[T]] with OutHandler with StageLogging {
       var buffer: Buffer[T] = _
       var pendingOffer: Option[Offer[T]] = None
       var terminating = false
@@ -54,8 +54,20 @@ import scala.compat.java8.FutureConverters._
         }
       }
 
-      private def enqueueAndSuccess(offer: Offer[T]): Unit = {
+      private def enqueueAndSuccess(offer: Offer[T], skipLog: Boolean = false): Unit = {
         buffer.enqueue(offer.elem)
+
+        if (logBufferFill && !skipLog) {
+          // log buffer fill every 10% of capacity
+          if (buffer.used % (maxBuffer / 10) == 0) {
+            val logMsg = s"Queue is using [${100.0 * buffer.used / maxBuffer} %] of its buffer capacity."
+            if (buffer.used < maxBuffer / 2)
+              log.info(logMsg)
+            else
+              log.warning(logMsg + " Downstream consumer stage may be blocking.")
+          }
+        }
+
         offer.promise.success(QueueOfferResult.Enqueued)
       }
 
@@ -65,13 +77,13 @@ import scala.compat.java8.FutureConverters._
         } else overflowStrategy match {
           case DropHead ⇒
             buffer.dropHead()
-            enqueueAndSuccess(offer)
+            enqueueAndSuccess(offer, skipLog = true)
           case DropTail ⇒
             buffer.dropTail()
-            enqueueAndSuccess(offer)
+            enqueueAndSuccess(offer, skipLog = true)
           case DropBuffer ⇒
             buffer.clear()
-            enqueueAndSuccess(offer)
+            enqueueAndSuccess(offer, skipLog = true)
           case DropNew ⇒
             offer.promise.success(QueueOfferResult.Dropped)
           case Fail ⇒
