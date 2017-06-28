@@ -119,13 +119,13 @@ object MergePrioritized {
   /**
    * Create a new `MergePrioritized` stage with the specified output type.
    */
-  def create[T](priorities: Seq[Int]): Graph[UniformFanInShape[T, T], NotUsed] =
+  def create[T](priorities: Array[Int]): Graph[UniformFanInShape[T, T], NotUsed] =
     scaladsl.MergePrioritized(priorities)
 
   /**
    * Create a new `MergePrioritized` stage with the specified output type.
    */
-  def create[T](clazz: Class[T], priorities: Seq[Int]): Graph[UniformFanInShape[T, T], NotUsed] =
+  def create[T](clazz: Class[T], priorities: Array[Int]): Graph[UniformFanInShape[T, T], NotUsed] =
     create(priorities)
 
   /**
@@ -134,7 +134,7 @@ object MergePrioritized {
    * @param eagerComplete set to true in order to make this stage eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](priorities: Seq[Int], eagerComplete: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
+  def create[T](priorities: Array[Int], eagerComplete: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
     scaladsl.MergePrioritized(priorities, eagerComplete = eagerComplete)
 
   /**
@@ -143,7 +143,7 @@ object MergePrioritized {
    * @param eagerComplete set to true in order to make this stage eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](clazz: Class[T], priorities: Seq[Int], eagerComplete: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
+  def create[T](clazz: Class[T], priorities: Array[Int], eagerComplete: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
     create(priorities, eagerComplete)
 
 }

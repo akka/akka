@@ -329,7 +329,7 @@ final class MergePrioritized[T] private (val priorities: Seq[Int], val eagerComp
       case (inlet, buffer) ⇒
         setHandler(inlet, new InHandler {
           override def onPush(): Unit = {
-            if (isAvailable(out) && pending == 0) {
+            if (isAvailable(out) && !hasPending) {
               push(out, grab(inlet))
               tryPull(inlet)
             } else {
@@ -341,29 +341,29 @@ final class MergePrioritized[T] private (val priorities: Seq[Int], val eagerComp
             if (eagerComplete) {
               in.foreach(cancel)
               runningUpstreams = 0
-              if (pending == 0) completeStage()
+              if (!hasPending) completeStage()
             } else {
               runningUpstreams -= 1
-              if (upstreamsClosed && pending == 0) completeStage()
+              if (upstreamsClosed && !hasPending) completeStage()
             }
           }
         })
     }
 
     override def onPull(): Unit = {
-      if (pending > 0) dequeueAndDispatch()
+      if (hasPending) dequeueAndDispatch()
     }
 
     setHandler(out, this)
 
-    private def pending: Int = allBuffers.count(_.nonEmpty)
+    private def hasPending: Boolean = allBuffers.exists(_.nonEmpty)
 
     private def upstreamsClosed = runningUpstreams == 0
 
     private def dequeueAndDispatch(): Unit = {
       val in = selectNextElement()
       push(out, grab(in))
-      if (upstreamsClosed && pending == 0) completeStage() else tryPull(in)
+      if (upstreamsClosed && !hasPending) completeStage() else tryPull(in)
     }
 
     private def selectNextElement() = {
