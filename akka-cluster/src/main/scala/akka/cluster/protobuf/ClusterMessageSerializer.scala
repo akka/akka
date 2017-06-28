@@ -336,7 +336,16 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
 
     def memberFromProto(member: cm.Member) =
       new Member(addressMapping(member.getAddressIndex), member.getUpNumber, memberStatusFromInt(member.getStatus.getNumber),
-        member.getRolesIndexesList.asScala.map(roleMapping(_))(breakOut))
+        rolesFromProto(member.getRolesIndexesList.asScala))
+
+    @tailrec
+    def rolesFromProto(roleIndexes: Seq[Integer], resultSoFar: Set[String] = Set.empty): Set[String] = roleIndexes match {
+      case Seq() ⇒ resultSoFar + "team-default"
+      case Seq(head, tail @ _*) ⇒
+        val headrole = roleMapping(head)
+        if (headrole.startsWith("team-")) resultSoFar ++ roleIndexes.map(roleMapping(_)).toSet
+        else rolesFromProto(tail, resultSoFar + headrole)
+    }
 
     val members: immutable.SortedSet[Member] = gossip.getMembersList.asScala.map(memberFromProto)(breakOut)
 

@@ -16,16 +16,18 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
 
-  def checkSerialization(obj: AnyRef): Unit = {
+  def roundtrip[T <: AnyRef](obj: T): T = {
     val blob = serializer.toBinary(obj)
-    val ref = serializer.fromBinary(blob, obj.getClass)
-    obj match {
-      case env: GossipEnvelope ⇒
-        val env2 = obj.asInstanceOf[GossipEnvelope]
+    serializer.fromBinary(blob, obj.getClass).asInstanceOf[T]
+  }
+
+  def checkSerialization(obj: AnyRef): Unit = {
+    (obj, roundtrip(obj)) match {
+      case (env: GossipEnvelope, env2: GossipEnvelope) ⇒
         env2.from should ===(env.from)
         env2.to should ===(env.to)
         env2.gossip should ===(env.gossip)
-      case _ ⇒
+      case (_, ref) ⇒
         ref should ===(obj)
     }
 
@@ -35,10 +37,10 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
   val a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Joining, Set.empty)
   val b1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, Set("r1"))
-  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, Set("r2"))
-  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Exiting, Set("r1", "r2"))
+  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, Set("team-foo"))
+  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Exiting, Set("r1", "team-foo"))
   val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Down, Set("r3"))
-  val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("r2", "r3"))
+  val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("team-foo", "r3"))
 
   "ClusterMessages" must {
 
@@ -74,6 +76,12 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       checkSerialization(GossipStatus(a1.uniqueAddress, g3.version))
 
       checkSerialization(InternalClusterAction.Welcome(uniqueAddress, g2))
+    }
+
+    "add a default team role if none is present" in {
+      val env = roundtrip(GossipEnvelope(a1.uniqueAddress, d1.uniqueAddress, Gossip(SortedSet(a1, d1))))
+      env.gossip.members.head.roles should be(Set("team-default"))
+      env.gossip.members.tail.head.roles should be(Set("r1", "team-foo"))
     }
   }
   "Cluster router pool" must {
