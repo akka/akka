@@ -21,11 +21,13 @@ object MultiTeamMultiJvmSpec extends MultiNodeConfig {
   nodeConfig(first, second)(ConfigFactory.parseString(
     """
       akka.cluster.team = "dc1"
+      akka.loglevel = DEBUG
     """))
 
   nodeConfig(third, fourth, fifth)(ConfigFactory.parseString(
     """
       akka.cluster.team = "dc2"
+      akka.loglevel = DEBUG
     """))
 
   testTransport(on = true)
@@ -55,8 +57,8 @@ abstract class MultiTeamSpec
       enterBarrier("form-cluster-join-attempt")
 
       runOn(first, second, third, fourth) {
-        within(15.seconds) {
-          awaitAssert(clusterView.members.count(_.status == MemberStatus.Up) should ===(4))
+        within(20.seconds) {
+          awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size (4))
         }
       }
 
@@ -68,46 +70,42 @@ abstract class MultiTeamSpec
         cluster.settings.Team should ===("dc1")
         clusterView.leader shouldBe defined
         val dc1 = Set(address(first), address(second))
-        dc1.contains(clusterView.leader.get) should ===(true)
+        dc1 should contain(clusterView.leader.get)
       }
       runOn(third, fourth) {
         cluster.settings.Team should ===("dc2")
         clusterView.leader shouldBe defined
         val dc2 = Set(address(third), address(fourth))
-        dc2.contains(clusterView.leader.get) should ===(true)
+        dc2 should contain(clusterView.leader.get)
       }
 
       enterBarrier("leader per team")
     }
 
-    "be able to have team member changes while there is inter-team unreachability" in within(10.seconds) {
+    "be able to have team member changes while there is inter-team unreachability" in within(20.seconds) {
       runOn(first) {
         testConductor.blackhole(first, third, Direction.Both)
       }
       runOn(first, second, third, fourth) {
-        within(remaining) {
-          awaitAssert(clusterView.unreachableMembers.nonEmpty)
-        }
+        awaitAssert(clusterView.unreachableMembers should not be empty)
       }
       enterBarrier("inter-team unreachability")
 
       runOn(fifth) {
-        cluster.join(first)
+        cluster.join(third)
       }
 
       // should be able to join and become up since the
-      // unreachable is between dc1 and dc2
-      within(15.seconds) {
-        awaitAssert(clusterView.members.count(_.status == MemberStatus.Up) should ===(5))
+      // unreachable is between dc1 and dc2,
+      within(10.seconds) {
+        awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size (5))
       }
 
       runOn(first) {
         testConductor.passThrough(first, third, Direction.Both)
       }
       runOn(first, second, third, fourth) {
-        within(remaining) {
-          awaitAssert(clusterView.unreachableMembers.isEmpty)
-        }
+        awaitAssert(clusterView.unreachableMembers should not be empty)
       }
       enterBarrier("end")
     }
@@ -117,9 +115,7 @@ abstract class MultiTeamSpec
         testConductor.blackhole(first, second, Direction.Both)
       }
       runOn(first, second, third, fourth) {
-        within(remaining) {
-          awaitAssert(clusterView.unreachableMembers.nonEmpty)
-        }
+        awaitAssert(clusterView.unreachableMembers should not be empty)
       }
       enterBarrier("other-team-internal-unreachable")
 

@@ -55,16 +55,18 @@ object ClusterEvent {
   /**
    * Current snapshot state of the cluster. Sent to new subscriber.
    *
-   * @param leader this field should not be used if cluster teams are used as in that case there is no single leader
-   *               for the entire cluster. In that case you should instead use [[CurrentClusterState#leader(String)]]
+   * @param leader leader of the
    */
   final case class CurrentClusterState(
     members:       immutable.SortedSet[Member]  = immutable.SortedSet.empty,
     unreachable:   Set[Member]                  = Set.empty,
     seenBy:        Set[Address]                 = Set.empty,
     leader:        Option[Address]              = None,
-    roleLeaderMap: Map[String, Option[Address]] = Map.empty,
-    teamLeaderMap: Map[String, Option[Address]] = Map.empty) {
+    roleLeaderMap: Map[String, Option[Address]] = Map.empty) {
+
+    private lazy val teamLeaderMap = roleLeaderMap.collect {
+      case t if t._1.startsWith(ClusterSettings.TeamRolePrefix) ⇒ t._1.substring(ClusterSettings.TeamRolePrefix.length) → t._2
+    }
 
     /**
      * Java API: get current member list.
@@ -93,17 +95,6 @@ object ClusterEvent {
      * single leader for the entire cluster. In that case you should instead use [[CurrentClusterState#getLeader(String)]]
      */
     def getLeader: Address = leader orNull
-
-    /**
-     * Java API: get address of current leader, or null if none
-     */
-    def getLeader(group: String): Address = leader(group) orNull
-
-    /**
-     * Scala API:
-     * @return Leader of the given cluster group, if there is one
-     */
-    def leader(group: String): Option[Address] = teamLeaderMap.getOrElse(group, None)
 
     /**
      * get address of current leader, if any, within the role set
@@ -202,7 +193,7 @@ object ClusterEvent {
   }
 
   /**
-   * Leader of the cluster members changed. Published when the state change
+   * Leader of the cluster team of this node changed. Published when the state change
    * is first seen on a node.
    */
   final case class LeaderChanged(leader: Option[Address]) extends ClusterDomainEvent {
@@ -218,18 +209,6 @@ object ClusterEvent {
    * Published when the state change is first seen on a node.
    */
   final case class RoleLeaderChanged(role: String, leader: Option[Address]) extends ClusterDomainEvent {
-    /**
-     * Java API
-     * @return address of current leader, or null if none
-     */
-    def getLeader: Address = leader orNull
-  }
-
-  /**
-   * First member (leader) of the members within a team changed.
-   * Published when the state change is first seen on a node.
-   */
-  final case class TeamLeaderChanged(team: String, leader: Option[Address]) extends ClusterDomainEvent {
     /**
      * Java API
      * @return address of current leader, or null if none
@@ -351,17 +330,6 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffTeamLeader(oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): Set[TeamLeaderChanged] = {
-    for {
-      team ← (oldGossip.allTeams union newGossip.allTeams)
-      newLeader = newGossip.teamLeader(team, selfUniqueAddress)
-      if newLeader != oldGossip.teamLeader(team, selfUniqueAddress)
-    } yield TeamLeaderChanged(team, newLeader.map(_.address))
-  }
-
-  /**
-   * INTERNAL API
-   */
   private[cluster] def diffRolesLeader(team: Team, oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): Set[RoleLeaderChanged] = {
     for {
       role ← oldGossip.allRoles union newGossip.allRoles
@@ -442,9 +410,6 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       leader = latestGossip.teamLeader(myTeam, selfUniqueAddress).map(_.address),
       roleLeaderMap = latestGossip.allRoles.map(r ⇒
         r → latestGossip.roleLeader(cluster.settings.Team, r, selfUniqueAddress).map(_.address)
-      )(collection.breakOut),
-      teamLeaderMap = latestGossip.allTeams.map(t ⇒
-        t → latestGossip.teamLeader(t, selfUniqueAddress).map(_.address)
       )(collection.breakOut)
     )
     receiver ! state
@@ -482,7 +447,6 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     diffUnreachable(oldGossip, newGossip, selfUniqueAddress) foreach pub
     diffReachable(oldGossip, newGossip, selfUniqueAddress) foreach pub
     diffLeader(myTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub
-    diffTeamLeader(oldGossip, newGossip, selfUniqueAddress) foreach pub
     diffRolesLeader(myTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub
     // publish internal SeenState for testing purposes
     diffSeen(myTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub

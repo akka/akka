@@ -1232,13 +1232,9 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate"),
 
         // #23228 single leader per cluster team
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent#CurrentClusterState.copy"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent#CurrentClusterState.this"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.diffLeader"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.diffRolesLeader"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.diffSeen"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent#CurrentClusterState.apply"),
-        ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ClusterEvent$CurrentClusterState$"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.isLeader"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.leader"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.roleLeader"),

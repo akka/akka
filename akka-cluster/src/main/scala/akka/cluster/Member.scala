@@ -6,6 +6,7 @@ package akka.cluster
 
 import akka.actor.Address
 import MemberStatus._
+import akka.cluster.ClusterSettings.Team
 
 import scala.runtime.AbstractFunction2
 
@@ -145,7 +146,7 @@ object Member {
     // group all members by Address => Seq[Member]
     val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
     // pick highest MemberStatus
-    (Member.none /: groupedByAddress) {
+    groupedByAddress.foldLeft(Member.none) {
       case (acc, (_, members)) ⇒
         if (members.size == 2) acc + members.reduceLeft(highestPriorityOf)
         else {

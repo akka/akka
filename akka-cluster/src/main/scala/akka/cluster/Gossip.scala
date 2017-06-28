@@ -161,31 +161,32 @@ private[cluster] final case class Gossip(
   }
 
   /**
-   * Checks if we have a cluster convergence. If there are any unreachable nodes then we can't have a convergence -
-   * waiting for user to act (issuing DOWN) or leader to act (issuing DOWN through auto-down).
+   * Checks if we have a cluster convergence. If there are any in team node pairs that cannot reach each other
+   * then we can't have a convergence until those nodes reach each other again or one of them is downed
    *
    * @return true if convergence have been reached and false if not
    */
   def convergence(team: Team, selfUniqueAddress: UniqueAddress, exitingConfirmed: Set[UniqueAddress]): Boolean = {
-    // First check that:
-    //   1. we don't have any members that are unreachable in the team, excluding observations from members
-    //      that have status DOWN, or
-    //   2. all unreachable members in the set have status DOWN or EXITING
-    // Else we can't continue to check for convergence
-    // When that is done we check that all members with a convergence
-    // status is in the seen table, i.e. has seen this version
+    // Find cluster members that are unreachable excluding observations from members outside of the team,
+    // that have status DOWN or is passed in as confirmed exiting.
     val unreachableInTeam = teamReachabilityExcludingDownedObservers(team).allUnreachableOrTerminated.collect {
       case node if node != selfUniqueAddress && !exitingConfirmed(node) ⇒ member(node)
-    }.filter(_.team == team)
+    }
 
-    unreachableInTeam.forall(m ⇒
-      Gossip.convergenceSkipUnreachableWithMemberStatus(m.status)) &&
-      // there must be no member in the same team that is up or leaving who has not been seen or is exiting
-      !members.exists(m ⇒
-        m.team == team &&
-          Gossip.convergenceMemberStatus(m.status) &&
-          !(seenByNode(m.uniqueAddress) || exitingConfirmed(m.uniqueAddress))
+    // If another member in the team that is up or leaving who has not been seen or is exiting
+    // convergence cannot be reached
+    def teamMemberHinderingConvergenceExists =
+      members.exists(member ⇒
+        member.team == team &&
+          Gossip.convergenceMemberStatus(member.status) &&
+          !(seenByNode(member.uniqueAddress) || exitingConfirmed(member.uniqueAddress))
       )
+
+    // unreachables outside of the team or with status DOWN or EXITING does not affect convergence
+    def allUnreachablesCanBeIgnored =
+      unreachableInTeam.forall(unreachable ⇒ Gossip.convergenceSkipUnreachableWithMemberStatus(unreachable.status))
+
+    allUnreachablesCanBeIgnored && !teamMemberHinderingConvergenceExists
   }
 
   lazy val reachabilityExcludingDownedObservers: Reachability = {
@@ -193,25 +194,30 @@ private[cluster] final case class Gossip(
     overview.reachability.removeObservers(downed.map(_.uniqueAddress))
   }
 
+  /**
+   * @return reachability for team nodes, with observations from outside the team or from downed nodes filtered out
+   */
   def teamReachabilityExcludingDownedObservers(team: Team): Reachability = {
     val membersToExclude = members.collect { case m if m.status == Down || m.team != team ⇒ m.uniqueAddress }
-    overview.reachability.removeObservers(membersToExclude)
+    overview.reachability.removeObservers(membersToExclude).remove(members.collect { case m if m.team != team ⇒ m.uniqueAddress })
   }
 
   def isTeamLeader(team: Team, node: UniqueAddress, selfUniqueAddress: UniqueAddress): Boolean =
     teamLeader(team, selfUniqueAddress).contains(node)
 
   def teamLeader(team: Team, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
-    leaderOf(members.filter(_.team == team), selfUniqueAddress)
+    leaderOf(team, members, selfUniqueAddress)
 
   def roleLeader(team: Team, role: String, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
-    leaderOf(members.filter(m ⇒ m.team == team && m.hasRole(role)), selfUniqueAddress)
+    leaderOf(team, members.filter(_.hasRole(role)), selfUniqueAddress)
 
-  def leaderOf(mbrs: immutable.SortedSet[Member], selfUniqueAddress: UniqueAddress): Option[UniqueAddress] = {
+  def leaderOf(team: Team, mbrs: immutable.SortedSet[Member], selfUniqueAddress: UniqueAddress): Option[UniqueAddress] = {
     val reachableMembers =
-      if (overview.reachability.isAllReachable) mbrs.filterNot(_.status == Down)
-      else mbrs.filter(m ⇒ m.status != Down &&
-        (overview.reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress))
+      if (overview.reachability.isAllReachable) mbrs.filter(m ⇒ m.team == team && m.status != Down)
+      else mbrs.filter(m ⇒
+        m.team == team &&
+          m.status != Down &&
+          (overview.reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress))
     if (reachableMembers.isEmpty) None
     else reachableMembers.find(m ⇒ Gossip.leaderMemberStatus(m.status)).
       orElse(Some(reachableMembers.min(Member.leaderStatusOrdering))).map(_.uniqueAddress)
@@ -226,6 +232,7 @@ private[cluster] final case class Gossip(
   def member(node: UniqueAddress): Member = {
     membersMap.getOrElse(
       node,
+      // TODO what about team for the place holder?
       Member.removed(node)) // placeholder for removed member
   }
 
