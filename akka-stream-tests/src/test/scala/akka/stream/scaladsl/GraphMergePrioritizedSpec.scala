@@ -45,7 +45,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
     }
 
     "stream data with priority" in {
-      val elementCount = 10000
+      val elementCount = 20000
       val source1 = Source.fromIterator(() ⇒ Seq.fill(elementCount)(1).iterator)
       val source2 = Source.fromIterator(() ⇒ Seq.fill(elementCount)(2).iterator)
       val source3 = Source.fromIterator(() ⇒ Seq.fill(elementCount)(3).iterator)
@@ -103,7 +103,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
     }
 
     "stream data with priority when only two sources produce" in {
-      val elementCount = 10000
+      val elementCount = 20000
       val source1 = Source.fromIterator(() ⇒ Seq.fill(elementCount)(1).iterator)
       val source2 = Source.fromIterator(() ⇒ Seq.fill(elementCount)(2).iterator)
       val source3 = Source.fromIterator(() ⇒ Seq.empty[Int].iterator)
