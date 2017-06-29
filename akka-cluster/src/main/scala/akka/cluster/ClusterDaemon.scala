@@ -709,11 +709,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     val localMembers = localGossip.members
     val localOverview = localGossip.overview
     val localSeen = localOverview.seen
-    val localReachability = localOverview.reachability
+    val localReachability = localGossip.teamReachability(selfTeam)
 
-    // check if the node to DOWN is in the `members` set
+    // check if the node to DOWN is in the team `members` set
     localMembers.find(_.address == address) match {
-      case Some(m) if (m.status != Down) ⇒
+      case Some(m) if m.status != Down ⇒
         if (localReachability.isReachable(m.uniqueAddress))
           logInfo("Marking node [{}] as [{}]", m.address, Down)
         else
@@ -754,7 +754,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
   def receiveGossipStatus(status: GossipStatus): Unit = {
     val from = status.from
-    if (!latestGossip.overview.reachability.isReachable(selfUniqueAddress, from))
+    if (!latestGossip.isReachable(selfUniqueAddress, from))
       logInfo("Ignoring received gossip status from unreachable [{}] ", from)
     else if (latestGossip.members.forall(_.uniqueAddress != from))
       log.debug("Cluster Node [{}] - Ignoring received gossip status from unknown [{}]", selfAddress, from)
@@ -781,6 +781,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    * Receive new gossip.
    */
   def receiveGossip(envelope: GossipEnvelope): ReceiveGossipType = {
+
     val from = envelope.from
     val remoteGossip = envelope.gossip
     val localGossip = latestGossip
@@ -791,7 +792,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     } else if (envelope.to != selfUniqueAddress) {
       logInfo("Ignoring received gossip intended for someone else, from [{}] to [{}]", from.address, envelope.to)
       Ignored
-    } else if (!localGossip.overview.reachability.isReachable(selfUniqueAddress, from)) {
+    } else if (!localGossip.isReachable(selfUniqueAddress, from)) {
       logInfo("Ignoring received gossip from unreachable [{}] ", from)
       Ignored
     } else if (localGossip.members.forall(_.uniqueAddress != from)) {
@@ -1030,8 +1031,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     if (latestGossip.member(selfUniqueAddress).status == Down) {
       // When all reachable have seen the state this member will shutdown itself when it has
       // status Down. The down commands should spread before we shutdown.
-      val unreachable = latestGossip.overview.reachability.allUnreachableOrTerminated
-      val downed = latestGossip.members.collect { case m if m.status == Down ⇒ m.uniqueAddress }
+      val unreachable = latestGossip.teamReachability(selfTeam).allUnreachableOrTerminated
+      val downed = latestGossip.teamMembers(selfTeam).collect { case m if m.status == Down ⇒ m.uniqueAddress }
       if (downed.forall(node ⇒ unreachable(node) || latestGossip.seenByNode(node))) {
         // the reason for not shutting down immediately is to give the gossip a chance to spread
         // the downing information to other downed nodes, so that they can shutdown themselves
@@ -1276,14 +1277,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       clusterCore(node.address) ! GossipStatus(selfUniqueAddress, latestGossip.version)
 
   def validNodeForGossip(node: UniqueAddress): Boolean =
-    if (node == selfUniqueAddress || !latestGossip.hasMember(node)) false
-    else {
-      val member = latestGossip.member(node)
-
-      // if member is in our team, we ignore cross-team unreachability
-      if (member.team == selfTeam) latestGossip.teamReachabilityExcludingDownedObservers(selfTeam).isReachable(node)
-      else latestGossip.reachabilityExcludingDownedObservers.isReachable(node)
-    }
+    node != selfUniqueAddress && latestGossip.isReachable(selfUniqueAddress, node)
 
   def updateLatestGossip(newGossip: Gossip): Unit = {
     // Updating the vclock version for the changes

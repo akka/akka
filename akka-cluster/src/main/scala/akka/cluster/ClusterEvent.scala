@@ -13,6 +13,7 @@ import akka.cluster.MemberStatus._
 import akka.event.EventStream
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 import akka.actor.DeadLetterSuppression
+import scala.collection.breakOut
 
 /**
  * Domain events published to the event bus.
@@ -55,7 +56,7 @@ object ClusterEvent {
   /**
    * Current snapshot state of the cluster. Sent to new subscriber.
    *
-   * @param leader leader of the
+   * @param leader leader of the team of this node
    */
   final case class CurrentClusterState(
     members:       immutable.SortedSet[Member]  = immutable.SortedSet.empty,
@@ -63,10 +64,6 @@ object ClusterEvent {
     seenBy:        Set[Address]                 = Set.empty,
     leader:        Option[Address]              = None,
     roleLeaderMap: Map[String, Option[Address]] = Map.empty) {
-
-    private lazy val teamLeaderMap = roleLeaderMap.collect {
-      case t if t._1.startsWith(ClusterSettings.TeamRolePrefix) ⇒ t._1.substring(ClusterSettings.TeamRolePrefix.length) → t._2
-    }
 
     /**
      * Java API: get current member list.
@@ -89,10 +86,7 @@ object ClusterEvent {
       scala.collection.JavaConverters.setAsJavaSetConverter(seenBy).asJava
 
     /**
-     * Java API: get address of current leader, or null if none
-     *
-     * Note: this method should not be used if cluster teams are used as in that case there is no
-     * single leader for the entire cluster. In that case you should instead use [[CurrentClusterState#getLeader(String)]]
+     * Java API: get address of current team leader, or null if none
      */
     def getLeader: Address = leader orNull
 
@@ -121,7 +115,7 @@ object ClusterEvent {
     /**
      * All teams in the cluster
      */
-    def allTeams: Set[String] = teamLeaderMap.keySet
+    def allTeams: Set[String] = members.map(_.team)(breakOut)
 
     /**
      * Java API: All teams in the cluster

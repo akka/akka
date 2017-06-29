@@ -279,12 +279,61 @@ class GossipSpec extends WordSpec with Matchers {
       g.convergence("dc2", dc2c1.uniqueAddress, Set.empty) should ===(true)
     }
 
+    "ignore cross team unreachability when determining inside of team reachability" in {
+      val r1 = Reachability.empty
+        .unreachable(dc1a1.uniqueAddress, dc2c1.uniqueAddress)
+        .unreachable(dc2c1.uniqueAddress, dc1a1.uniqueAddress)
+
+      val g = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1), overview = GossipOverview(reachability = r1))
+
+      // inside of the teams we don't care about the cross team unreachability
+      g.isReachable(dc1a1.uniqueAddress, dc1b1.uniqueAddress) should ===(true)
+      g.isReachable(dc1b1.uniqueAddress, dc1a1.uniqueAddress) should ===(true)
+      g.isReachable(dc2c1.uniqueAddress, dc2d1.uniqueAddress) should ===(true)
+      g.isReachable(dc2d1.uniqueAddress, dc2c1.uniqueAddress) should ===(true)
+
+      // between teams it matters though
+      g.isReachable(dc1a1.uniqueAddress, dc2c1.uniqueAddress) should ===(false)
+      g.isReachable(dc1b1.uniqueAddress, dc2c1.uniqueAddress) should ===(false)
+      g.isReachable(dc2c1.uniqueAddress, dc1a1.uniqueAddress) should ===(false)
+      g.isReachable(dc2d1.uniqueAddress, dc1a1.uniqueAddress) should ===(false)
+
+      // between the two other nodes there is no unreachability
+      g.isReachable(dc1b1.uniqueAddress, dc2d1.uniqueAddress) should ===(true)
+      g.isReachable(dc2d1.uniqueAddress, dc1b1.uniqueAddress) should ===(true)
+    }
+
+    "not returning a downed team leader" in {
+      val g = Gossip(members = SortedSet(dc1a1.copy(Down), dc1b1))
+      g.leaderOf("dc1", g.members, dc1b1.uniqueAddress) should ===(Some(dc1b1.uniqueAddress))
+    }
+
+    "ignore cross team unreachability when determining team leader" in {
+      val r1 = Reachability.empty
+        .unreachable(dc1a1.uniqueAddress, dc2d1.uniqueAddress)
+        .unreachable(dc2d1.uniqueAddress, dc1a1.uniqueAddress)
+
+      val g = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1), overview = GossipOverview(reachability = r1))
+
+      g.leaderOf("dc1", g.members, dc1a1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
+      g.leaderOf("dc1", g.members, dc1b1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
+      g.leaderOf("dc1", g.members, dc2c1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
+      g.leaderOf("dc1", g.members, dc2d1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
+
+      g.leaderOf("dc2", g.members, dc1a1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
+      g.leaderOf("dc2", g.members, dc1b1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
+      g.leaderOf("dc2", g.members, dc2c1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
+      g.leaderOf("dc2", g.members, dc2d1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
+    }
+
+    // TODO test coverage for when leaderOf returns None - I have not been able to figure it out
+
     "not reintroduce members from out-of-team gossip when merging" in {
       // dc1 does not know about any unreachability nor that the node has been downed
       val gdc1 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1))
 
       // dc2 has downed the dc2d1 node, seen it as unreachable and removed it
-      val gdc2 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1))
+      val gdc2 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1))
 
       // when we merge the two, it should not be reintroduced
       val merged1 = gdc2 merge gdc1

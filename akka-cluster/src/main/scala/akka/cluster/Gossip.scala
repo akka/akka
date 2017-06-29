@@ -4,9 +4,10 @@
 
 package akka.cluster
 
-import scala.collection.immutable
+import scala.collection.{ SortedSet, immutable }
 import ClusterSettings.Team
 import MemberStatus._
+
 import scala.concurrent.duration.Deadline
 
 /**
@@ -202,6 +203,12 @@ private[cluster] final case class Gossip(
     overview.reachability.removeObservers(membersToExclude).remove(members.collect { case m if m.team != team ⇒ m.uniqueAddress })
   }
 
+  def teamMembers(team: Team): SortedSet[Member] =
+    members.filter(_.team == team)
+
+  def teamReachability(team: Team): Reachability =
+    overview.reachability.removeObservers(members.collect { case m if m.team != team ⇒ m.uniqueAddress })
+
   def isTeamLeader(team: Team, node: UniqueAddress, selfUniqueAddress: UniqueAddress): Boolean =
     teamLeader(team, selfUniqueAddress).contains(node)
 
@@ -212,15 +219,18 @@ private[cluster] final case class Gossip(
     leaderOf(team, members.filter(_.hasRole(role)), selfUniqueAddress)
 
   def leaderOf(team: Team, mbrs: immutable.SortedSet[Member], selfUniqueAddress: UniqueAddress): Option[UniqueAddress] = {
-    val reachableMembers =
-      if (overview.reachability.isAllReachable) mbrs.filter(m ⇒ m.team == team && m.status != Down)
+    val reachability = teamReachability(team)
+
+    val reachableTeamMembers =
+      if (reachability.isAllReachable) mbrs.filter(m ⇒ m.team == team && m.status != Down)
       else mbrs.filter(m ⇒
         m.team == team &&
           m.status != Down &&
-          (overview.reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress))
-    if (reachableMembers.isEmpty) None
-    else reachableMembers.find(m ⇒ Gossip.leaderMemberStatus(m.status)).
-      orElse(Some(reachableMembers.min(Member.leaderStatusOrdering))).map(_.uniqueAddress)
+          (reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress))
+    if (reachableTeamMembers.isEmpty) None
+    else reachableTeamMembers.find(m ⇒ Gossip.leaderMemberStatus(m.status))
+      .orElse(Some(reachableTeamMembers.min(Member.leaderStatusOrdering)))
+      .map(_.uniqueAddress)
   }
 
   def allTeams: Set[Team] = members.map(_.team)
@@ -228,6 +238,21 @@ private[cluster] final case class Gossip(
   def allRoles: Set[String] = members.flatMap(_.roles)
 
   def isSingletonCluster: Boolean = members.size == 1
+
+  /**
+   * @return true if fromAddress should be able to reach toAddress based on the unreachability data and their
+   *         respective teams
+   */
+  def isReachable(fromAddress: UniqueAddress, toAddress: UniqueAddress): Boolean =
+    if (!hasMember(toAddress)) false
+    else {
+      val from = member(fromAddress)
+      val to = member(toAddress)
+
+      // if member is in the same team, we ignore cross-team unreachability
+      if (from.team == to.team) teamReachabilityExcludingDownedObservers(from.team).isReachable(toAddress)
+      else reachabilityExcludingDownedObservers.isReachable(toAddress)
+    }
 
   def member(node: UniqueAddress): Member = {
     membersMap.getOrElse(
