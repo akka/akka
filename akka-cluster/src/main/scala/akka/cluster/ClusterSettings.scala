@@ -132,6 +132,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
   object Debug {
     val VerboseHeartbeatLogging = cc.getBoolean("debug.verbose-heartbeat-logging")
+    val VerboseGossipLogging = cc.getBoolean("debug.verbose-gossip-logging")
   }
 
 }

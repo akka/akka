@@ -226,12 +226,12 @@ class GossipSpec extends WordSpec with Matchers {
       g.convergence("dc2", dc2c1.uniqueAddress, Set.empty) should ===(true)
     }
 
-    "reach convergence per team even if another team contains unseen" in {
+    "reach convergence per team even if members of another team has not seen the gossip" in {
       val g = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1))
         .seen(dc1a1.uniqueAddress)
         .seen(dc1b1.uniqueAddress)
         .seen(dc2c1.uniqueAddress)
-      // dc2d1 is unseen
+      // dc2d1 has not seen the gossip
 
       // so dc1 can reach convergence
       g.teamLeader("dc1", dc1a1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
@@ -261,24 +261,9 @@ class GossipSpec extends WordSpec with Matchers {
     }
 
     "reach convergence per team even if there is unreachable nodes in another team" in {
-      val r1 = Reachability.empty.unreachable(dc1a1.uniqueAddress, dc2d1.uniqueAddress)
-
-      val g = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1), overview = GossipOverview(reachability = r1))
-        .seen(dc1a1.uniqueAddress)
-        .seen(dc1b1.uniqueAddress)
-        .seen(dc2c1.uniqueAddress)
-        .seen(dc2d1.uniqueAddress)
-
-      // neither team is affected by the inter-team unreachability as far as convergence goes
-      g.teamLeader("dc1", dc1a1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
-      g.convergence("dc1", dc1a1.uniqueAddress, Set.empty) should ===(true)
-
-      g.teamLeader("dc2", dc2c1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
-      g.convergence("dc2", dc2c1.uniqueAddress, Set.empty) should ===(true)
-    }
-
-    "reach convergence per team even if there is nodes in another team that cannot reach in team nodes" in {
-      val r1 = Reachability.empty.unreachable(dc2d1.uniqueAddress, dc1a1.uniqueAddress)
+      val r1 = Reachability.empty
+        .unreachable(dc1a1.uniqueAddress, dc2d1.uniqueAddress)
+        .unreachable(dc2d1.uniqueAddress, dc1a1.uniqueAddress)
 
       val g = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1), overview = GossipOverview(reachability = r1))
         .seen(dc1a1.uniqueAddress)

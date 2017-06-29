@@ -615,8 +615,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     if (joinWith != from.address)
       logInfo("Ignoring welcome from [{}] when trying to join with [{}]", from.address, joinWith)
     else {
-      logInfo("Welcome from [{}], gossip: [{}]", from.address, gossip)
       latestGossip = gossip seen selfUniqueAddress
+      logInfo("Welcome from [{}]", from.address)
       assertLatestGossip()
       publish(latestGossip)
       if (from != selfUniqueAddress)
@@ -1143,7 +1143,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
       // log status changes
       changedMembers foreach { m ⇒
-        logInfo("Leader is moving node [{}] to [{}], gossip: [{}]", m.address, m.status, latestGossip)
+        logInfo("Leader is moving node [{}] to [{}]", m.address, m.status)
       }
 
       // log the removal of the unreachable nodes
@@ -1302,6 +1302,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       throw new IllegalStateException(s"Too many vector clock entries in gossip state ${latestGossip}")
 
   def publish(newGossip: Gossip): Unit = {
+    if (cluster.settings.Debug.VerboseGossipLogging)
+      log.debug("Cluster Node [{}] team [{}] - New gossip published [{}]", selfAddress, cluster.settings.Team, newGossip)
+
     publisher ! PublishChanges(newGossip)
     if (PublishStatsInterval == Duration.Zero) publishInternalStats()
   }

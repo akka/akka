@@ -167,13 +167,13 @@ private[cluster] final case class Gossip(
    * @return true if convergence have been reached and false if not
    */
   def convergence(team: Team, selfUniqueAddress: UniqueAddress, exitingConfirmed: Set[UniqueAddress]): Boolean = {
-    // Find cluster members that are unreachable excluding observations from members outside of the team,
-    // that have status DOWN or is passed in as confirmed exiting.
+    // Find cluster members in the team that are unreachable from other members of the team
+    // excluding observations from members outside of the team, that have status DOWN or is passed in as confirmed exiting.
     val unreachableInTeam = teamReachabilityExcludingDownedObservers(team).allUnreachableOrTerminated.collect {
       case node if node != selfUniqueAddress && !exitingConfirmed(node) ⇒ member(node)
     }
 
-    // If another member in the team that is up or leaving who has not been seen or is exiting
+    // If another member in the team that is UP or LEAVING and has not seen this gossip or is exiting
     // convergence cannot be reached
     def teamMemberHinderingConvergenceExists =
       members.exists(member ⇒
