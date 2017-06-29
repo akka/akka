@@ -12,6 +12,7 @@
 * [cluster-sharding](cluster-sharding.md)
 * [cluster-metrics](cluster-metrics.md)
 * [distributed-data](distributed-data.md)
+* [cluster-dc](cluster-dc.md)
 * [remoting](remoting.md)
 * [remoting-artery](remoting-artery.md)
 * [serialization](serialization.md)

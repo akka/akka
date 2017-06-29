@@ -6,6 +6,7 @@ package akka.cluster.sharding;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.util.Optional;
 import scala.concurrent.duration.Duration;
 
 import akka.actor.AbstractActor;
@@ -91,6 +92,15 @@ public class ClusterShardingTest {
     ClusterSharding.get(system).start("SupervisedCounter",
         Props.create(CounterSupervisor.class), settings, messageExtractor);
     //#counter-supervisor-start
+
+    //#proxy-dc
+    ActorRef counterProxyDcB =
+      ClusterSharding.get(system).startProxy(
+        "Counter",
+        Optional.empty(),
+        Optional.of("B"), // data center name
+        messageExtractor);
+    //#proxy-dc
   }
 
   public void demonstrateUsage2() {
