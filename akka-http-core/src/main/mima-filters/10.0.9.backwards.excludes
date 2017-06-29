@@ -1,0 +1,7 @@
+# Changes allow for adding proxy auth headers to the client transport.
+# Changes allow for backwards compatibility when auth is not needed. Most changes are to internal classes only.
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.ClientTransport$HttpsProxyTransport$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ClientTransport#HttpsProxyTransport.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ClientTransport#HttpsProxyTransport.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.client.HttpsProxyGraphStage.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.client.HttpsProxyGraphStage.apply")

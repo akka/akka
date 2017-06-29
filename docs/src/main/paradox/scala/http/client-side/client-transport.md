@@ -57,6 +57,8 @@ requests targeting HTTP endpoints, but we have not yet found a proxy that in fac
 
 Instantiate the HTTPS proxy transport using `ClientTransport.httpsProxy(proxyAddress)`.
 
+In order to use the HTTPS proxy with proxy credentials, use  `ClientTransport.httpsProxy(proxyAddress, proxyAuth)`.
+
 ## Implementing Custom Transports
 
 Implement `ClientTransport.connectTo` to implement a custom client transport.

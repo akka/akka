@@ -9,6 +9,7 @@ import akka.annotation.InternalApi
 import akka.http.impl.engine.parsing.HttpMessageParser.StateResult
 import akka.http.impl.engine.parsing.ParserOutput.{ NeedMoreData, RemainingBytes, ResponseStart }
 import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpResponseParser, ParserOutput }
+import akka.http.scaladsl.model.headers.{ HttpCredentials, `Proxy-Authorization` }
 import akka.http.scaladsl.model.{ HttpMethods, StatusCodes }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.scaladsl.BidiFlow
@@ -29,13 +30,13 @@ private[http] object HttpsProxyGraphStage {
   // State after Proxy responded  back
   case object Connected extends State
 
-  def apply(targetHostName: String, targetPort: Int, settings: ClientConnectionSettings): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
-    BidiFlow.fromGraph(new HttpsProxyGraphStage(targetHostName, targetPort, settings))
+  def apply(targetHostName: String, targetPort: Int, settings: ClientConnectionSettings, proxyAuth: Option[HttpCredentials] = None): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
+    BidiFlow.fromGraph(new HttpsProxyGraphStage(targetHostName, targetPort, settings, proxyAuth))
 }
 
 /** INTERNAL API */
 @InternalApi
-private final class HttpsProxyGraphStage(targetHostName: String, targetPort: Int, settings: ClientConnectionSettings)
+private final class HttpsProxyGraphStage(targetHostName: String, targetPort: Int, settings: ClientConnectionSettings, proxyAuth: Option[HttpCredentials])
   extends GraphStage[BidiShape[ByteString, ByteString, ByteString, ByteString]] {
 
   import HttpsProxyGraphStage._
@@ -48,7 +49,13 @@ private final class HttpsProxyGraphStage(targetHostName: String, targetPort: Int
 
   override def shape: BidiShape[ByteString, ByteString, ByteString, ByteString] = BidiShape.apply(sslIn, bytesOut, bytesIn, sslOut)
 
-  private val connectMsg = ByteString(s"CONNECT $targetHostName:$targetPort HTTP/1.1\r\nHost: $targetHostName\r\n\r\n")
+  private def createProxyHeader() = {
+    proxyAuth.fold("") { httpCredentials ⇒
+      s"${`Proxy-Authorization`(httpCredentials)}\r\n"
+    }
+  }
+
+  private val connectMsg = ByteString(s"CONNECT $targetHostName:$targetPort HTTP/1.1\r\nHost: $targetHostName\r\n${createProxyHeader()}\r\n")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with StageLogging {
     private var state: State = Starting
