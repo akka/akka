@@ -21,15 +21,13 @@ object MultiTeamMultiJvmSpec extends MultiNodeConfig {
   nodeConfig(first, second)(ConfigFactory.parseString(
     """
       akka.cluster.team = "dc1"
-      akka.loglevel = DEBUG
-      akka.cluster.debug.verbose-gossip-logging = on
+      akka.loglevel = INFO
     """))
 
   nodeConfig(third, fourth, fifth)(ConfigFactory.parseString(
     """
       akka.cluster.team = "dc2"
-      akka.loglevel = DEBUG
-      akka.cluster.debug.verbose-gossip-logging = on
+      akka.loglevel = INFO
     """))
 
   testTransport(on = true)

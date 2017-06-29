@@ -1276,8 +1276,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       clusterCore(node.address) ! GossipStatus(selfUniqueAddress, latestGossip.version)
 
   def validNodeForGossip(node: UniqueAddress): Boolean =
-    (node != selfUniqueAddress && latestGossip.hasMember(node) &&
-      latestGossip.reachabilityExcludingDownedObservers.isReachable(node))
+    if (node == selfUniqueAddress || !latestGossip.hasMember(node)) false
+    else {
+      val member = latestGossip.member(node)
+
+      // if member is in our team, we ignore cross-team unreachability
+      if (member.team == selfTeam) latestGossip.teamReachabilityExcludingDownedObservers(selfTeam).isReachable(node)
+      else latestGossip.reachabilityExcludingDownedObservers.isReachable(node)
+    }
 
   def updateLatestGossip(newGossip: Gossip): Unit = {
     // Updating the vclock version for the changes
