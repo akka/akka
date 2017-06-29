@@ -2,12 +2,8 @@
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.util
-
-import scala.annotation.tailrec
-import akka.util.OptionVal
-import scala.reflect.ClassTag
 import java.util.Arrays
-import akka.util.HashCode
+import scala.annotation.tailrec
 
 /**
  * INTERNAL API
@@ -27,7 +23,6 @@ private[akka] object ImmutableIntMap {
  */
 private[akka] class ImmutableIntMap private (
   private val keys: Array[Int], private val values: Array[Int]) {
-  import ImmutableIntMap.MaxScanLength
 
   val size: Int = keys.length
 
@@ -37,7 +32,7 @@ private[akka] class ImmutableIntMap private (
   def get(key: Int): Int = {
     val i = Arrays.binarySearch(keys, key)
     if (i >= 0) values(i)
-    else Int.MinValue
+    else Int.MinValue // cant use null, cant use OptionVal, other option is to throw an exception...
   }
 
   /**
@@ -47,7 +42,7 @@ private[akka] class ImmutableIntMap private (
     Arrays.binarySearch(keys, key) >= 0
   }
 
-  def putIfAbsent(key: Int, value: ⇒ Int): ImmutableIntMap = {
+  def updateIfAbsent(key: Int, value: ⇒ Int): ImmutableIntMap = {
     if (contains(key))
       this
     else

@@ -74,7 +74,7 @@ private[akka] class AffinityPool(
       @tailrec
       def updateIndex(): Unit = {
         val prev = workerQueueIndex.get()
-        if (!runnableToWorkerQueueIndex.compareAndSet(prev, prev.putIfAbsent(runnableHash, queueIndex))) {
+        if (!runnableToWorkerQueueIndex.compareAndSet(prev, prev.updateIfAbsent(runnableHash, queueIndex))) {
           updateIndex()
         }
       }
