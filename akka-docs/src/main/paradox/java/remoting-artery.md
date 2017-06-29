@@ -2,8 +2,8 @@
 
 @@@ note
 
-This page describes the @ref:[may change](common/may-change.md) remoting subsystem, codenamed *Artery* that will eventually
-replace the old remoting implementation. For the current stable remoting system please refer to @ref:[Remoting](remoting.md).
+This page describes the @ref:[may change](common/may-change.md) remoting subsystem, codenamed *Artery* that will eventually replace the
+old remoting implementation. For the current stable remoting system please refer to @ref:[Remoting](remoting.md).
 
 @@@
 
@@ -22,7 +22,7 @@ acts as a "server" to which arbitrary systems on the same network can connect to
 ## What is new in Artery
 
 Artery is a reimplementation of the old remoting module aimed at improving performance and stability. It is mostly
-source compatible with the old implementation and it is a drop-in replacement in many cases. Main features
+backwards compatible with the old implementation and it is a drop-in replacement in many cases. Main features
 of Artery compared to the previous implementation:
 
  * Based on [Aeron](https://github.com/real-logic/Aeron) (UDP) instead of TCP
@@ -45,15 +45,23 @@ are also different.
 
 The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project:
 
-@@@vars
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-remote_$scala.binary_version$</artifactId>
-  <version>$akka.version$</version>
-</dependency>
-```
-@@@
+Scala
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-remote_$scala.binary_version$</artifactId>
+      <version>$akka.version$</version>
+    </dependency>
+    ```
+    @@@
+
+Java
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-remote" % "$akka.version$"
+    ```
+    @@@
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
 to your `application.conf` file:
@@ -126,7 +134,7 @@ In order to communicate with an actor, it is necessary to have its `ActorRef`. I
 the creator of the actor (the caller of `actorOf()`) is who gets the `ActorRef` for an actor that it can
 then send to other actors. In other words:
 
- * An Actor can get a remote Actor's reference simply by receiving a message from it (as it's available as `getSender()` then),
+ * An Actor can get a remote Actor's reference simply by receiving a message from it (as it's available as @scala[`sender()`]@java[`getSender()`] then),
 or inside of a remote message (e.g. *PleaseReply(message: String, remoteActorRef: ActorRef)*)
 
 Alternatively, an actor can look up another located at a known path using
@@ -141,10 +149,21 @@ In the next sections the two alternatives are described in detail.
 
 `actorSelection(path)` will obtain an `ActorSelection` to an Actor on a remote node, e.g.:
 
-```
-ActorSelection selection =
-  context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName");
-```
+Scala
+:   @@@vars
+    ```
+    ActorSelection selection =
+      context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName");
+    ```
+    @@@
+
+Java
+:   @@@vars
+    ```
+    val selection =
+      context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName")
+    ```
+    @@@
 
 As you can see from the example above the following pattern is used to find an actor on a remote node:
 
@@ -160,9 +179,19 @@ Unlike with earlier remoting, the protocol field is always *akka* as pluggable t
 
 Once you obtained a selection to the actor you can interact with it in the same way you would with a local actor, e.g.:
 
-```
-selection.tell("Pretty awesome feature", getSelf());
-```
+Scala
+:   @@@vars
+    ```
+    selection.tell("Pretty awesome feature", getSelf());
+    ```
+    @@@
+
+Java
+:   @@@vars
+    ```
+    selection ! "Pretty awesome feature"
+    ```
+    @@@
 
 To acquire an `ActorRef` for an `ActorSelection` you need to
 send a message to the selection and use the `sender` reference of the reply from
@@ -211,7 +240,11 @@ which in this sample corresponds to `sampleActorSystem@127.0.0.1:2553`.
 
 Once you have configured the properties above you would do the following in code:
 
-@@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
+Scala
+:  @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
+
+Java
+:  @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
 
 The actor class `SampleActor` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
@@ -247,15 +280,27 @@ precedence.
 
 With these imports:
 
-@@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
+Scala
+:  @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
+
+Java
+:  @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
 
 and a remote address like this:
 
-@@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address-artery }
+Scala
+:  @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address-artery }
+
+Java
+:  @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address-artery }
 
 you can advise the system to create a child on that remote node like so:
 
-@@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
+Scala
+:  @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
+
+Java
+:  @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
 
 ### Remote deployment whitelist
 
@@ -274,7 +319,6 @@ should not allow others to remote deploy onto it. The full settings section may 
 
 Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
 
-<a id="remote-security-java-artery"></a>
 ## Remote Security
 
 An `ActorSystem` should not be exposed via Akka Remote (Artery) over plain Aeron/UDP to an untrusted network (e.g. internet).
@@ -284,7 +328,7 @@ so if network security is not considered as enough protection the classic remoti
 
 Best practice is that Akka remoting nodes should only be accessible from the adjacent network.
 
-It is also security best-practice to [disable the Java serializer](#disable-java-serializer-java-artery) because of
+It is also security best practice to @ref:[disable the Java serializer](#disabling-the-java-serializer) because of
 its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
 
 ### Untrusted Mode
@@ -311,7 +355,7 @@ as a marker trait to user-defined messages.
 
 Untrusted mode does not give full protection against attacks by itself.
 It makes it slightly harder to perform malicious or unintended actions but
-it should be complemented with [disabled Java serializer](#disable-java-serializer-java-artery).
+it should be complemented with @ref[disabled Java serializer](#disabling-the-java-serializer)
 Additional protection can be achieved when running in an untrusted network by
 network security (e.g. firewalls).
 
@@ -321,9 +365,19 @@ Messages sent with actor selection are by default discarded in untrusted mode, b
 permission to receive actor selection messages can be granted to specific actors
 defined in configuration:
 
-```
-akka.remote.artery.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
-```
+Scala
+:   @@@vars
+    ```
+    akka.remote.artery.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
+    ```
+    @@@
+
+Java
+:   @@@vars
+    ```
+    akka.remote.artery..trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
+    ```
+    @@@
 
 The actual message must still not be of type `PossiblyHarmful`.
 
@@ -489,7 +543,11 @@ remained the same, we recommend reading the @ref:[Serialization](serialization.m
 
 Implementing an `akka.serialization.ByteBufferSerializer` works the same way as any other serializer,
 
-@@snip [ByteBufferSerializerDocTest.java]($code$/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #ByteBufferSerializer-interface }
+Scala
+:  @@snip [Serializer.scala]($akka$/akka-actor/src/main/scala/akka/serialization/Serializer.scala) { #ByteBufferSerializer }
+
+Java
+:  @@snip [ByteBufferSerializerDocTest.java]($code$/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #ByteBufferSerializer-interface }
 
 Implementing a serializer for Artery is therefore as simple as implementing this interface, and binding the serializer
 as usual (which is explained in @ref:[Serialization](serialization.md)).
@@ -500,9 +558,12 @@ The array based methods will be used when `ByteBuffer` is not used, e.g. in Akka
 
 Note that the array based methods can be implemented by delegation like this:
 
-@@snip [ByteBufferSerializerDocTest.java]($code$/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #bytebufserializer-with-manifest }
+Scala
+:  @@snip [ByteBufferSerializerDocSpec.scala]($code$/scala/docs/actor/ByteBufferSerializerDocSpec.scala) { #bytebufserializer-with-manifest }
 
-<a id="disable-java-serializer-java-artery"></a>
+Java
+:  @@snip [ByteBufferSerializerDocTest.java]($code$/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #bytebufserializer-with-manifest }
+
 ### Disabling the Java Serializer
 
 It is possible to completely disable Java Serialization for the entire Actor system.
@@ -539,6 +600,8 @@ This will completely disable the use of `akka.serialization.JavaSerialization` b
 Akka Serialization extension, instead `DisabledJavaSerializer` will
 be inserted which will fail explicitly if attempts to use java serialization are made.
 
+It will also enable the above mentioned *enable-additional-serialization-bindings*.
+
 The log messages emitted by such serializer SHOULD be be treated as potential
 attacks which the serializer prevented, as they MAY indicate an external operator
 attempting to send malicious messages intending to use java serialization as attack vector.
@@ -568,12 +631,11 @@ This configuration setting will send messages to the defined remote actor paths.
 It requires that you create the destination actors on the remote nodes with matching paths.
 That is not done by the router.
 
-<a id="remote-sample-java-artery"></a>
 ## Remoting Sample
 
-You can download a ready to run @extref[remoting sample](ecs:akka-samples-remote-java)
+You can download a ready to run @scala[@extref[remoting sample](ecs:akka-samples-remote-scala)]@java[@extref[remoting sample](ecs:akka-samples-remote-java)]
 together with a tutorial for a more hands-on experience. The source code of this sample can be found in the
-@extref[Akka Samples Repository](samples:akka-sample-remote-java).
+@scala[@extref[Akka Samples Repository](samples:akka-sample-remote-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-remote-java)].
 
 ## Performance tuning
 
@@ -778,7 +840,7 @@ containers the hostname and port pair that Akka binds to will be different than 
 host name and port pair that is used to connect to the system from the outside. This requires
 special configuration that sets both the logical and the bind pairs for remoting.
 
-```ruby
+```
 akka {
   remote {
     artery {
