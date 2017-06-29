@@ -16,7 +16,7 @@
 
 package akka.http.javadsl.marshalling.sse;
 
-import akka.http.javadsl.marshalling.sse.EventStreamMarshalling;
+import akka.http.javadsl.model.sse.ServerSentEvent;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRouteResult;
@@ -24,8 +24,6 @@ import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import java.util.ArrayList;
 import java.util.List;
-
-import akka.http.javadsl.model.sse.ServerSentEvent;
 import org.junit.Test;
 import static akka.http.javadsl.model.HttpRequest.GET;
 import static akka.http.javadsl.model.MediaTypes.TEXT_EVENT_STREAM;
@@ -34,10 +32,12 @@ public class EventStreamMarshallingTest extends JUnitRouteTest {
 
     @Test
     public void testToEventStream() {
+        //#event-stream-marshalling-example
         final List<ServerSentEvent> events = new ArrayList<>();
         events.add(ServerSentEvent.create("1"));
         events.add(ServerSentEvent.create("2"));
         final Route route = completeOK(Source.from(events), EventStreamMarshalling.toEventStream());
+        //#event-stream-marshalling-example
 
         final ByteString expectedEntity = events
                 .stream()

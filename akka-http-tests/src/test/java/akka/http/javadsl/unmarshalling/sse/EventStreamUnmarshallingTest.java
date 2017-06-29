@@ -41,12 +41,14 @@ public class EventStreamUnmarshallingTest extends JUnitSuite {
             List<ServerSentEvent> events = EventStreamUnmarshallingSpec.eventsAsJava();
             HttpEntity entity = EventStreamUnmarshallingSpec.entity();
 
+            //#event-stream-unmarshalling-example
             List<ServerSentEvent> unmarshalledEvents =
                     EventStreamUnmarshalling.fromEventStream()
                             .unmarshal(entity, system.dispatcher(), mat)
                             .thenCompose(source -> source.runWith(Sink.seq(), mat))
                             .toCompletableFuture()
                             .get(3000, TimeUnit.SECONDS);
+            //#event-stream-unmarshalling-example
 
             Assert.assertEquals(events, unmarshalledEvents);
         } finally {
