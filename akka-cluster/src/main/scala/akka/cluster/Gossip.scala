@@ -14,6 +14,7 @@ import scala.concurrent.duration.Deadline
  * INTERNAL API
  */
 private[cluster] object Gossip {
+  type Timestamp = Long
   val emptyMembers: immutable.SortedSet[Member] = immutable.SortedSet.empty
   val empty: Gossip = new Gossip(Gossip.emptyMembers)
 
@@ -62,9 +63,10 @@ private[cluster] object Gossip {
  */
 @SerialVersionUID(1L)
 private[cluster] final case class Gossip(
-  members:  immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
-  overview: GossipOverview              = GossipOverview(),
-  version:  VectorClock                 = VectorClock()) { // vector clock version
+  members:    immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
+  overview:   GossipOverview                       = GossipOverview(),
+  version:    VectorClock                          = VectorClock(), // vector clock version
+  tombstones: Map[UniqueAddress, Gossip.Timestamp] = Map.empty) {
 
   if (Cluster.isAssertInvariantsEnabled) assertInvariants()
 
@@ -140,15 +142,18 @@ private[cluster] final case class Gossip(
     this copy (overview = overview copy (seen = overview.seen union that.overview.seen))
 
   /**
-   * Merges two Gossip instances including membership tables, and the VectorClock histories.
+   * Merges two Gossip instances including membership tables, tombstones, and the VectorClock histories.
    */
   def merge(that: Gossip): Gossip = {
 
     // 1. merge vector clocks
     val mergedVClock = this.version merge that.version
 
+    // 2. merge sets of tombstones
+    val mergedTombstones = tombstones ++ that.tombstones
+
     // 2. merge members by selecting the single Member with highest MemberStatus out of the Member groups
-    val mergedMembers = Gossip.emptyMembers union Member.pickHighestPriority(this.members, that.members)
+    val mergedMembers = Gossip.emptyMembers union Member.pickHighestPriority(this.members, that.members, mergedTombstones)
 
     // 3. merge reachability table by picking records with highest version
     val mergedReachability = this.overview.reachability.merge(
@@ -158,7 +163,7 @@ private[cluster] final case class Gossip(
     // 4. Nobody can have seen this new gossip yet
     val mergedSeen = Set.empty[UniqueAddress]
 
-    Gossip(mergedMembers, GossipOverview(mergedSeen, mergedReachability), mergedVClock)
+    Gossip(mergedMembers, GossipOverview(mergedSeen, mergedReachability), mergedVClock, mergedTombstones)
   }
 
   /**
@@ -257,7 +262,6 @@ private[cluster] final case class Gossip(
   def member(node: UniqueAddress): Member = {
     membersMap.getOrElse(
       node,
-      // TODO what about team for the place holder?
       Member.removed(node)) // placeholder for removed member
   }
 
@@ -268,10 +272,37 @@ private[cluster] final case class Gossip(
     members.maxBy(m ⇒ if (m.upNumber == Int.MaxValue) 0 else m.upNumber)
   }
 
+  /**
+   * Remove the given member from the set of members and mark it's removal with a tombstone to avoid having it
+   * reintroduced when merging with another gossip that has not seen the removal.
+   */
+  def remove(node: UniqueAddress, removalTimestamp: Long): Gossip = {
+    // removing REMOVED nodes from the `seen` table
+    val newSeen = overview.seen - node
+    // removing REMOVED nodes from the `reachability` table
+    val newReachability = overview.reachability.remove(node :: Nil)
+    val newOverview = overview.copy(seen = newSeen, reachability = newReachability)
+
+    // Clear the VectorClock when member is removed. The change made by the leader is stamped
+    // and will propagate as is if there are no other changes on other nodes.
+    // If other concurrent changes on other nodes (e.g. join) the pruning is also
+    // taken care of when receiving gossips.
+    val newVersion = version.prune(VectorClock.Node(ClusterCoreDaemon.vclockName(node)))
+    val newMembers = members.filterNot(_.uniqueAddress == node)
+    val newTombstones = tombstones + (node → removalTimestamp)
+    copy(version = newVersion, members = newMembers, overview = newOverview, tombstones = newTombstones)
+  }
+
   def prune(removedNode: VectorClock.Node): Gossip = {
     val newVersion = version.prune(removedNode)
     if (newVersion eq version) this
     else copy(version = newVersion)
+  }
+
+  def pruneTombstones(removeEarlierThan: Gossip.Timestamp): Gossip = {
+    val newTombstones = tombstones.filter { t ⇒ t._2 < removeEarlierThan }
+    if (newTombstones.size == tombstones.size) this
+    else copy(tombstones = newTombstones)
   }
 
   override def toString =

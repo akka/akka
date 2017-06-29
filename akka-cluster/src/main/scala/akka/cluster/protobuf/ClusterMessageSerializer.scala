@@ -244,7 +244,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
 
   private def gossipToProto(gossip: Gossip): cm.Gossip.Builder = {
     val allMembers = gossip.members.toVector
-    val allAddresses: Vector[UniqueAddress] = allMembers.map(_.uniqueAddress)
+    val allAddresses: Vector[UniqueAddress] = allMembers.map(_.uniqueAddress) ++ gossip.tombstones.keys
     val addressMapping = allAddresses.zipWithIndex.toMap
     val allRoles = allMembers.foldLeft(Set.empty[String])((acc, m) ⇒ acc union m.roles).to[Vector]
     val roleMapping = allRoles.zipWithIndex.toMap
@@ -271,6 +271,12 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       }
     }
 
+    def tombstoneToProto(t: (UniqueAddress, Long)): cm.Tombstone =
+      cm.Tombstone.newBuilder()
+        .setAddressIndex(mapUniqueAddress(t._1))
+        .setTimestamp(t._2)
+        .build()
+
     val reachability = reachabilityToProto(gossip.overview.reachability)
     val members = gossip.members.map(memberToProto)
     val seen = gossip.overview.seen.map(mapUniqueAddress)
@@ -279,8 +285,12 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       addAllObserverReachability(reachability.map(_.build).asJava)
 
     cm.Gossip.newBuilder().addAllAllAddresses(allAddresses.map(uniqueAddressToProto(_).build).asJava).
-      addAllAllRoles(allRoles.asJava).addAllAllHashes(allHashes.asJava).addAllMembers(members.map(_.build).asJava).
-      setOverview(overview).setVersion(vectorClockToProto(gossip.version, hashMapping))
+      addAllAllRoles(allRoles.asJava)
+      .addAllAllHashes(allHashes.asJava)
+      .addAllMembers(members.map(_.build).asJava)
+      .setOverview(overview)
+      .setVersion(vectorClockToProto(gossip.version, hashMapping))
+      .addAllTombstones(gossip.tombstones.map(tombstoneToProto).asJava)
   }
 
   private def vectorClockToProto(version: VectorClock, hashMapping: Map[String, Int]): cm.VectorClock.Builder = {
@@ -338,13 +348,17 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       new Member(addressMapping(member.getAddressIndex), member.getUpNumber, memberStatusFromInt(member.getStatus.getNumber),
         member.getRolesIndexesList.asScala.map(roleMapping(_))(breakOut))
 
+    def tombstoneFromProto(tombstone: cm.Tombstone): (UniqueAddress, Long) =
+      (addressMapping(tombstone.getAddressIndex), tombstone.getTimestamp)
+
     val members: immutable.SortedSet[Member] = gossip.getMembersList.asScala.map(memberFromProto)(breakOut)
 
     val reachability = reachabilityFromProto(gossip.getOverview.getObserverReachabilityList.asScala)
     val seen: Set[UniqueAddress] = gossip.getOverview.getSeenList.asScala.map(addressMapping(_))(breakOut)
     val overview = GossipOverview(seen, reachability)
+    val tombstones: Map[UniqueAddress, Long] = gossip.getTombstonesList.asScala.map(tombstoneFromProto)(breakOut)
 
-    Gossip(members, overview, vectorClockFromProto(gossip.getVersion, hashMapping))
+    Gossip(members, overview, vectorClockFromProto(gossip.getVersion, hashMapping), tombstones)
   }
 
   private def vectorClockFromProto(version: cm.VectorClock, hashMapping: immutable.Seq[String]) = {

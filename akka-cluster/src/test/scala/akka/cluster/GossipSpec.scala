@@ -334,10 +334,28 @@ class GossipSpec extends WordSpec with Matchers {
 
       // dc2 has downed the dc2d1 node, seen it as unreachable and removed it
       val gdc2 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1))
+        .remove(dc2d1.uniqueAddress, System.currentTimeMillis())
+
+      gdc2.tombstones.keys should contain(dc2d1.uniqueAddress)
 
       // when we merge the two, it should not be reintroduced
       val merged1 = gdc2 merge gdc1
       merged1.members should ===(SortedSet(dc1a1, dc1b1, dc2c1))
+
+      merged1.tombstones.keys should contain(dc2d1.uniqueAddress)
+    }
+
+    "prune old tombstones" in {
+      val timestamp = 352684800
+      val g = Gossip(members = SortedSet(dc1a1, dc1b1))
+        .remove(dc1b1.uniqueAddress, timestamp)
+
+      g.tombstones.keys should contain(dc1b1.uniqueAddress)
+
+      val pruned = g.pruneTombstones(timestamp + 1)
+
+      // when we merge the two, it should not be reintroduced
+      pruned.tombstones.keys should not contain (dc2d1.uniqueAddress)
     }
   }
 }

@@ -266,9 +266,20 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
 /**
  * INTERNAL API.
  */
+private[cluster] object ClusterCoreDaemon {
+  def vclockName(node: UniqueAddress): String = s"${node.address}-${node.longUid}"
+
+  val NumberOfGossipsBeforeShutdownWhenLeaderExits = 5
+  val MaxGossipsBeforeShuttingDownMyself = 5
+}
+
+/**
+ * INTERNAL API.
+ */
 private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with ActorLogging
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
+  import ClusterCoreDaemon._
 
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, selfRoles, scheduler, failureDetector }
@@ -277,10 +288,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
-  val NumberOfGossipsBeforeShutdownWhenLeaderExits = 5
-  val MaxGossipsBeforeShuttingDownMyself = 5
-
-  def vclockName(node: UniqueAddress): String = s"${node.address}-${node.longUid}"
   val vclockNode = VectorClock.Node(vclockName(selfUniqueAddress))
 
   // note that self is not initially member,
@@ -843,10 +850,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       // Don't mark gossip state as seen while exiting is in progress, e.g.
       // shutting down singleton actors. This delays removal of the member until
       // the exiting tasks have been completed.
-      if (exitingTasksInProgress)
-        latestGossip = winningGossip
-      else
-        latestGossip = winningGossip seen selfUniqueAddress
+      latestGossip =
+        (if (exitingTasksInProgress) winningGossip
+        else winningGossip seen selfUniqueAddress)
+          .pruneTombstones(System.currentTimeMillis() - PruneGossipTombstonesAfter.toMillis)
       assertLatestGossip()
 
       // for all new joining nodes we remove them from the failure detector
@@ -1110,24 +1117,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     if (removedUnreachable.nonEmpty || removedExitingConfirmed.nonEmpty || changedMembers.nonEmpty) {
       // handle changes
 
-      // replace changed members
-      val newMembers = changedMembers.union(localMembers).diff(removedUnreachable)
-        .filterNot(m ⇒ removedExitingConfirmed(m.uniqueAddress))
+      val gossipWithoutRemoved = removedUnreachable.map(_.uniqueAddress).union(removedExitingConfirmed)
+        .foldLeft(localGossip)((gossip, node) ⇒ gossip.remove(node, System.currentTimeMillis()))
 
-      // removing REMOVED nodes from the `seen` table
-      val removed = removedUnreachable.map(_.uniqueAddress).union(removedExitingConfirmed)
-      val newSeen = localSeen diff removed
-      // removing REMOVED nodes from the `reachability` table
-      val newReachability = localOverview.reachability.remove(removed)
-      val newOverview = localOverview copy (seen = newSeen, reachability = newReachability)
-      // Clear the VectorClock when member is removed. The change made by the leader is stamped
-      // and will propagate as is if there are no other changes on other nodes.
-      // If other concurrent changes on other nodes (e.g. join) the pruning is also
-      // taken care of when receiving gossips.
-      val newVersion = removed.foldLeft(localGossip.version) { (v, node) ⇒
-        v.prune(VectorClock.Node(vclockName(node)))
-      }
-      val newGossip = localGossip copy (members = newMembers, overview = newOverview, version = newVersion)
+      // replace changed members
+      val newMembers = changedMembers.union(gossipWithoutRemoved.members)
+      val newGossip = localGossip copy (members = newMembers)
 
       if (!exitingTasksInProgress && newGossip.member(selfUniqueAddress).status == Exiting) {
         // Leader is moving itself from Leaving to Exiting.

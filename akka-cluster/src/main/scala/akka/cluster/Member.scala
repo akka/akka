@@ -93,7 +93,7 @@ object Member {
   /**
    * INTERNAL API
    */
-  private[cluster] def removed(node: UniqueAddress): Member = new Member(node, Int.MaxValue, Removed, Set.empty)
+  private[cluster] def removed(node: UniqueAddress): Member = new Member(node, Int.MaxValue, Removed, Set(ClusterSettings.TeamRolePrefix + "-N/A"))
 
   /**
    * `Address` ordering type class, sorts addresses by host and port.
@@ -142,7 +142,7 @@ object Member {
     (a, b) ⇒ a.isOlderThan(b)
   }
 
-  def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] = {
+  def pickHighestPriority(a: Set[Member], b: Set[Member], tombstones: Map[UniqueAddress, Long]): Set[Member] = {
     // group all members by Address => Seq[Member]
     val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
     // pick highest MemberStatus
@@ -151,7 +151,7 @@ object Member {
         if (members.size == 2) acc + members.reduceLeft(highestPriorityOf)
         else {
           val m = members.head
-          if (Gossip.removeUnreachableWithMemberStatus(m.status)) acc // removed
+          if (tombstones.contains(m.uniqueAddress) || Gossip.removeUnreachableWithMemberStatus(m.status)) acc // removed
           else acc + m
         }
     }

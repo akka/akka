@@ -65,6 +65,11 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     }
   }
 
+  val PruneGossipTombstonesAfter: Duration = {
+    val key = "prune-gossip-tombstones-after"
+    cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s")
+  }
+
   // specific to the [[akka.cluster.DefaultDowningProvider]]
   val AutoDownUnreachableAfter: Duration = {
     val key = "auto-down-unreachable-after"
