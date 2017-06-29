@@ -9,6 +9,7 @@ import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster._
 import akka.cluster.protobuf.msg.{ ClusterMessages ⇒ cm }
+import akka.japi.Util.immutableSeq
 import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.protobuf.{ ByteString, MessageLite }
 
@@ -166,8 +167,8 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     builder.setAllowLocalRoutees(settings.allowLocalRoutees)
       .setMaxInstancesPerNode(settings.maxInstancesPerNode)
       .setTotalInstances(settings.totalInstances)
+      .addAllUseRoleSet(settings.useRoleSet.asJava)
 
-    settings.useRole.foreach(builder.setUseRole)
     builder.build()
   }
 
@@ -382,7 +383,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       totalInstances = crps.getTotalInstances,
       maxInstancesPerNode = crps.getMaxInstancesPerNode,
       allowLocalRoutees = crps.getAllowLocalRoutees,
-      useRole = if (crps.hasUseRole) Some(crps.getUseRole) else None
+      useRoleSet = immutableSeq(crps.getUseRoleSetList).toSet
     )
   }
 

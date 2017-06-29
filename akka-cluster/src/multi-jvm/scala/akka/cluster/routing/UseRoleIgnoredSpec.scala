@@ -99,12 +99,12 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
     "pool local: off, roles: off, 6 => 0,2,2" taggedAs LongRunningTest in {
 
       runOn(first) {
-        val role = Some("b")
+        val roleSet = Set("b")
 
         val router = system.actorOf(
           ClusterRouterPool(
             RoundRobinPool(nrOfInstances = 6),
-            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = false, useRole = role)).
+            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = false, useRoleSet = roleSet)).
             props(Props[SomeActor]),
           "router-2")
 
@@ -129,13 +129,13 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
     "group local: off, roles: off, 6 => 0,2,2" taggedAs LongRunningTest in {
 
       runOn(first) {
-        val role = Some("b")
+        val roleSet = Set("b")
 
         val router = system.actorOf(
           ClusterRouterGroup(
           RoundRobinGroup(paths = Nil),
           ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
-            allowLocalRoutees = false, useRole = role)).props,
+            allowLocalRoutees = false, useRoleSet = roleSet)).props,
           "router-2b")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -159,12 +159,12 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
     "pool local: on, role: b, 6 => 0,2,2" taggedAs LongRunningTest in {
 
       runOn(first) {
-        val role = Some("b")
+        val roleSet = Set("b")
 
         val router = system.actorOf(
           ClusterRouterPool(
             RoundRobinPool(nrOfInstances = 6),
-            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRole = role)).
+            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRoleSet = roleSet)).
             props(Props[SomeActor]),
           "router-3")
 
@@ -189,13 +189,13 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
     "group local: on, role: b, 6 => 0,2,2" taggedAs LongRunningTest in {
 
       runOn(first) {
-        val role = Some("b")
+        val roleSet = Set("b")
 
         val router = system.actorOf(
           ClusterRouterGroup(
           RoundRobinGroup(paths = Nil),
           ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
-            allowLocalRoutees = true, useRole = role)).props,
+            allowLocalRoutees = true, useRoleSet = roleSet)).props,
           "router-3b")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -219,12 +219,12 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
     "pool local: on, role: a, 6 => 2,0,0" taggedAs LongRunningTest in {
 
       runOn(first) {
-        val role = Some("a")
+        val roleSet = Set("a")
 
         val router = system.actorOf(
           ClusterRouterPool(
             RoundRobinPool(nrOfInstances = 6),
-            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRole = role)).
+            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRoleSet = roleSet)).
             props(Props[SomeActor]),
           "router-4")
 
@@ -249,13 +249,13 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
     "group local: on, role: a, 6 => 2,0,0" taggedAs LongRunningTest in {
 
       runOn(first) {
-        val role = Some("a")
+        val roleSet = Set("a")
 
         val router = system.actorOf(
           ClusterRouterGroup(
           RoundRobinGroup(paths = Nil),
           ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
-            allowLocalRoutees = true, useRole = role)).props,
+            allowLocalRoutees = true, useRoleSet = roleSet)).props,
           "router-4b")
 
         awaitAssert(currentRoutees(router).size should ===(2))
@@ -279,12 +279,12 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
     "pool local: on, role: c, 6 => 2,2,2" taggedAs LongRunningTest in {
 
       runOn(first) {
-        val role = Some("c")
+        val roleSet = Set("c")
 
         val router = system.actorOf(
           ClusterRouterPool(
             RoundRobinPool(nrOfInstances = 6),
-            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRole = role)).
+            ClusterRouterPoolSettings(totalInstances = 6, maxInstancesPerNode = 2, allowLocalRoutees = true, useRoleSet = roleSet)).
             props(Props[SomeActor]),
           "router-5")
 
@@ -309,13 +309,13 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
     "group local: on, role: c, 6 => 2,2,2" taggedAs LongRunningTest in {
 
       runOn(first) {
-        val role = Some("c")
+        val roleSet = Set("c")
 
         val router = system.actorOf(
           ClusterRouterGroup(
           RoundRobinGroup(paths = Nil),
           ClusterRouterGroupSettings(totalInstances = 6, routeesPaths = List("/user/foo", "/user/bar"),
-            allowLocalRoutees = true, useRole = role)).props,
+            allowLocalRoutees = true, useRoleSet = roleSet)).props,
           "router-5b")
 
         awaitAssert(currentRoutees(router).size should ===(6))

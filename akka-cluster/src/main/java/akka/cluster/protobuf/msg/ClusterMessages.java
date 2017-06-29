@@ -13135,20 +13135,25 @@ public final class ClusterMessages {
      */
     boolean getAllowLocalRoutees();
 
-    // optional string useRole = 4;
+    // repeated string useRoleSet = 4;
     /**
-     * <code>optional string useRole = 4;</code>
+     * <code>repeated string useRoleSet = 4;</code>
      */
-    boolean hasUseRole();
+    java.util.List<java.lang.String>
+    getUseRoleSetList();
     /**
-     * <code>optional string useRole = 4;</code>
+     * <code>repeated string useRoleSet = 4;</code>
      */
-    java.lang.String getUseRole();
+    int getUseRoleSetCount();
     /**
-     * <code>optional string useRole = 4;</code>
+     * <code>repeated string useRoleSet = 4;</code>
+     */
+    java.lang.String getUseRoleSet(int index);
+    /**
+     * <code>repeated string useRoleSet = 4;</code>
      */
     akka.protobuf.ByteString
-        getUseRoleBytes();
+        getUseRoleSetBytes(int index);
   }
   /**
    * Protobuf type {@code ClusterRouterPoolSettings}
@@ -13217,8 +13222,11 @@ public final class ClusterMessages {
               break;
             }
             case 34: {
-              bitField0_ |= 0x00000008;
-              useRole_ = input.readBytes();
+              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
+                useRoleSet_ = new akka.protobuf.LazyStringArrayList();
+                mutable_bitField0_ |= 0x00000008;
+              }
+              useRoleSet_.add(input.readBytes());
               break;
             }
           }
@@ -13229,6 +13237,9 @@ public final class ClusterMessages {
         throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
+        if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
+          useRoleSet_ = new akka.protobuf.UnmodifiableLazyStringList(useRoleSet_);
+        }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
@@ -13309,54 +13320,41 @@ public final class ClusterMessages {
       return allowLocalRoutees_;
     }
 
-    // optional string useRole = 4;
-    public static final int USEROLE_FIELD_NUMBER = 4;
-    private java.lang.Object useRole_;
+    // repeated string useRoleSet = 4;
+    public static final int USEROLESET_FIELD_NUMBER = 4;
+    private akka.protobuf.LazyStringList useRoleSet_;
     /**
-     * <code>optional string useRole = 4;</code>
+     * <code>repeated string useRoleSet = 4;</code>
      */
-    public boolean hasUseRole() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+    public java.util.List<java.lang.String>
+        getUseRoleSetList() {
+      return useRoleSet_;
     }
     /**
-     * <code>optional string useRole = 4;</code>
+     * <code>repeated string useRoleSet = 4;</code>
      */
-    public java.lang.String getUseRole() {
-      java.lang.Object ref = useRole_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          useRole_ = s;
-        }
-        return s;
-      }
+    public int getUseRoleSetCount() {
+      return useRoleSet_.size();
     }
     /**
-     * <code>optional string useRole = 4;</code>
+     * <code>repeated string useRoleSet = 4;</code>
+     */
+    public java.lang.String getUseRoleSet(int index) {
+      return useRoleSet_.get(index);
+    }
+    /**
+     * <code>repeated string useRoleSet = 4;</code>
      */
     public akka.protobuf.ByteString
-        getUseRoleBytes() {
-      java.lang.Object ref = useRole_;
-      if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        useRole_ = b;
-        return b;
-      } else {
-        return (akka.protobuf.ByteString) ref;
-      }
+        getUseRoleSetBytes(int index) {
+      return useRoleSet_.getByteString(index);
     }
 
     private void initFields() {
       totalInstances_ = 0;
       maxInstancesPerNode_ = 0;
       allowLocalRoutees_ = false;
-      useRole_ = "";
+      useRoleSet_ = akka.protobuf.LazyStringArrayList.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -13391,8 +13389,8 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeBool(3, allowLocalRoutees_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBytes(4, getUseRoleBytes());
+      for (int i = 0; i < useRoleSet_.size(); i++) {
+        output.writeBytes(4, useRoleSet_.getByteString(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -13415,9 +13413,14 @@ public final class ClusterMessages {
         size += akka.protobuf.CodedOutputStream
           .computeBoolSize(3, allowLocalRoutees_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(4, getUseRoleBytes());
+      {
+        int dataSize = 0;
+        for (int i = 0; i < useRoleSet_.size(); i++) {
+          dataSize += akka.protobuf.CodedOutputStream
+            .computeBytesSizeNoTag(useRoleSet_.getByteString(i));
+        }
+        size += dataSize;
+        size += 1 * getUseRoleSetList().size();
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -13541,7 +13544,7 @@ public final class ClusterMessages {
         bitField0_ = (bitField0_ & ~0x00000002);
         allowLocalRoutees_ = false;
         bitField0_ = (bitField0_ & ~0x00000004);
-        useRole_ = "";
+        useRoleSet_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
@@ -13583,10 +13586,12 @@ public final class ClusterMessages {
           to_bitField0_ |= 0x00000004;
         }
         result.allowLocalRoutees_ = allowLocalRoutees_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-          to_bitField0_ |= 0x00000008;
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          useRoleSet_ = new akka.protobuf.UnmodifiableLazyStringList(
+              useRoleSet_);
+          bitField0_ = (bitField0_ & ~0x00000008);
         }
-        result.useRole_ = useRole_;
+        result.useRoleSet_ = useRoleSet_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -13612,9 +13617,14 @@ public final class ClusterMessages {
         if (other.hasAllowLocalRoutees()) {
           setAllowLocalRoutees(other.getAllowLocalRoutees());
         }
-        if (other.hasUseRole()) {
-          bitField0_ |= 0x00000008;
-          useRole_ = other.useRole_;
+        if (!other.useRoleSet_.isEmpty()) {
+          if (useRoleSet_.isEmpty()) {
+            useRoleSet_ = other.useRoleSet_;
+            bitField0_ = (bitField0_ & ~0x00000008);
+          } else {
+            ensureUseRoleSetIsMutable();
+            useRoleSet_.addAll(other.useRoleSet_);
+          }
           onChanged();
         }
         this.mergeUnknownFields(other.getUnknownFields());
@@ -13755,76 +13765,95 @@ public final class ClusterMessages {
         return this;
       }
 
-      // optional string useRole = 4;
-      private java.lang.Object useRole_ = "";
-      /**
-       * <code>optional string useRole = 4;</code>
-       */
-      public boolean hasUseRole() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+      // repeated string useRoleSet = 4;
+      private akka.protobuf.LazyStringList useRoleSet_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      private void ensureUseRoleSetIsMutable() {
+        if (!((bitField0_ & 0x00000008) == 0x00000008)) {
+          useRoleSet_ = new akka.protobuf.LazyStringArrayList(useRoleSet_);
+          bitField0_ |= 0x00000008;
+         }
       }
       /**
-       * <code>optional string useRole = 4;</code>
+       * <code>repeated string useRoleSet = 4;</code>
        */
-      public java.lang.String getUseRole() {
-        java.lang.Object ref = useRole_;
-        if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          useRole_ = s;
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
+      public java.util.List<java.lang.String>
+          getUseRoleSetList() {
+        return java.util.Collections.unmodifiableList(useRoleSet_);
       }
       /**
-       * <code>optional string useRole = 4;</code>
+       * <code>repeated string useRoleSet = 4;</code>
+       */
+      public int getUseRoleSetCount() {
+        return useRoleSet_.size();
+      }
+      /**
+       * <code>repeated string useRoleSet = 4;</code>
+       */
+      public java.lang.String getUseRoleSet(int index) {
+        return useRoleSet_.get(index);
+      }
+      /**
+       * <code>repeated string useRoleSet = 4;</code>
        */
       public akka.protobuf.ByteString
-          getUseRoleBytes() {
-        java.lang.Object ref = useRole_;
-        if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          useRole_ = b;
-          return b;
-        } else {
-          return (akka.protobuf.ByteString) ref;
-        }
+          getUseRoleSetBytes(int index) {
+        return useRoleSet_.getByteString(index);
       }
       /**
-       * <code>optional string useRole = 4;</code>
+       * <code>repeated string useRoleSet = 4;</code>
        */
-      public Builder setUseRole(
+      public Builder setUseRoleSet(
+          int index, java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureUseRoleSetIsMutable();
+        useRoleSet_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string useRoleSet = 4;</code>
+       */
+      public Builder addUseRoleSet(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000008;
-        useRole_ = value;
+  ensureUseRoleSetIsMutable();
+        useRoleSet_.add(value);
         onChanged();
         return this;
       }
       /**
-       * <code>optional string useRole = 4;</code>
+       * <code>repeated string useRoleSet = 4;</code>
        */
-      public Builder clearUseRole() {
+      public Builder addAllUseRoleSet(
+          java.lang.Iterable<java.lang.String> values) {
+        ensureUseRoleSetIsMutable();
+        super.addAll(values, useRoleSet_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string useRoleSet = 4;</code>
+       */
+      public Builder clearUseRoleSet() {
+        useRoleSet_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
-        useRole_ = getDefaultInstance().getUseRole();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string useRole = 4;</code>
+       * <code>repeated string useRoleSet = 4;</code>
        */
-      public Builder setUseRoleBytes(
+      public Builder addUseRoleSetBytes(
           akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000008;
-        useRole_ = value;
+  ensureUseRoleSetIsMutable();
+        useRoleSet_.add(value);
         onChanged();
         return this;
       }
@@ -13967,15 +13996,16 @@ public final class ClusterMessages {
       "\001(\r\"V\n\021ClusterRouterPool\022\023\n\004pool\030\001 \002(\0132\005" +
       ".Pool\022,\n\010settings\030\002 \002(\0132\032.ClusterRouterP" +
       "oolSettings\"<\n\004Pool\022\024\n\014serializerId\030\001 \002(" +
-      "\r\022\020\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 \002(\014\"|\n\031Clu" +
+      "\r\022\020\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 \002(\014\"\177\n\031Clu" +
       "sterRouterPoolSettings\022\026\n\016totalInstances" +
       "\030\001 \002(\r\022\033\n\023maxInstancesPerNode\030\002 \002(\r\022\031\n\021a" +
-      "llowLocalRoutees\030\003 \002(\010\022\017\n\007useRole\030\004 \001(\t*" +
-      "D\n\022ReachabilityStatus\022\r\n\tReachable\020\000\022\017\n\013" +
-      "Unreachable\020\001\022\016\n\nTerminated\020\002*b\n\014MemberS" +
-      "tatus\022\013\n\007Joining\020\000\022\006\n\002Up\020\001\022\013\n\007Leaving\020\002\022",
-      "\013\n\007Exiting\020\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005\022\014\n\010W" +
-      "eaklyUp\020\006B\035\n\031akka.cluster.protobuf.msgH\001"
+      "llowLocalRoutees\030\003 \002(\010\022\022\n\nuseRoleSet\030\004 \003" +
+      "(\t*D\n\022ReachabilityStatus\022\r\n\tReachable\020\000\022" +
+      "\017\n\013Unreachable\020\001\022\016\n\nTerminated\020\002*b\n\014Memb" +
+      "erStatus\022\013\n\007Joining\020\000\022\006\n\002Up\020\001\022\013\n\007Leaving",
+      "\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005\022\014" +
+      "\n\010WeaklyUp\020\006B\035\n\031akka.cluster.protobuf.ms" +
+      "gH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -14083,7 +14113,7 @@ public final class ClusterMessages {
           internal_static_ClusterRouterPoolSettings_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ClusterRouterPoolSettings_descriptor,
-              new java.lang.String[] { "TotalInstances", "MaxInstancesPerNode", "AllowLocalRoutees", "UseRole", });
+              new java.lang.String[] { "TotalInstances", "MaxInstancesPerNode", "AllowLocalRoutees", "UseRoleSet", });
           return null;
         }
       };
