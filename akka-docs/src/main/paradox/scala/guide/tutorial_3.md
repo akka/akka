@@ -186,9 +186,9 @@ after one device have been stopped, so we need to handle this message. The steps
  2. When we are notified that a device actor has been stopped we also need to remove it from the @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`] which maps
     devices to device actors.
 
-Unfortunately, the `Terminated` message contains only contains the `ActorRef` of the child actor but we do not know
+Unfortunately, the `Terminated` message only contains the `ActorRef` of the child actor but we do not know
 its ID, which we need to remove it from the map of existing device to device actor mappings. To be able to do this removal, we
-need to introduce another placeholder, @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`], that allow us to find out the device ID corresponding to a given `ActorRef`. Putting
+need to introduce another placeholder, @scala[`Map[ActorRef, String]`] @java[`Map<ActorRef, String>`], that allow us to find out the device ID corresponding to a given `ActorRef`. Putting
 this together the result is:
 
 Scala
