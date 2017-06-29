@@ -328,6 +328,16 @@ class GossipSpec extends WordSpec with Matchers {
 
     // TODO test coverage for when leaderOf returns None - I have not been able to figure it out
 
+    "clear out a bunch of stuff when removing a node" in {
+      val g = Gossip(members = SortedSet(dc1a1, dc1b1))
+        .remove(dc1b1.uniqueAddress, System.currentTimeMillis())
+
+      g.seenBy should not contain (dc1b1.uniqueAddress)
+      g.overview.reachability.records.exists(_.observer == dc1b1.uniqueAddress) should be(false)
+      g.overview.reachability.records.exists(_.subject == dc1b1.uniqueAddress) should be(false)
+      g.version.versions should have size (0)
+    }
+
     "not reintroduce members from out-of-team gossip when merging" in {
       // dc1 does not know about any unreachability nor that the node has been downed
       val gdc1 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1))
