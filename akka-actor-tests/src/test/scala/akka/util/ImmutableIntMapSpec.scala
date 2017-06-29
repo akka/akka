@@ -1,6 +1,6 @@
 /**
-  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
-  */
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.util
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
