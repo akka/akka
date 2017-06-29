@@ -370,7 +370,7 @@ Java
 
 It is possible to acquire an ActorRef that can be addressed from the outside of the stage, similarly how
 `AsyncCallback` allows injecting asynchronous events into a stage logic. This reference can be obtained
-by calling `getStageActorRef(receive)` passing in a function that takes a `Pair` of the sender
+by calling `getStageActor(receive)` passing in a function that takes a `Pair` of the sender
 `ActorRef` and the received message. This reference can be used to watch other actors by calling its `watch(ref)`
 or `unwatch(ref)` methods. The reference can be also watched by external actors. The current limitations of this
 `ActorRef` are:
