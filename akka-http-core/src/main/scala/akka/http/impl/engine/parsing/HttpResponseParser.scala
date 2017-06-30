@@ -108,6 +108,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
           maxResponseReasonLength + " characters")
       skipReason(startIdx)
     } else if (isNewLine(cursor + 3)) {
+      parseStatusCode()
       // Status format with no reason phrase and no trailing space accepted, diverging from the spec
       // See https://github.com/akka/akka-http/pull/989
       skipNewLine(cursor + 3)

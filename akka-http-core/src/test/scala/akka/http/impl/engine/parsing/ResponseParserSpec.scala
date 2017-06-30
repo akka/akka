@@ -85,12 +85,12 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
       }
 
       "a response with a missing reason phrase" in new Test {
-        s"HTTP/1.1 200 ${newLine}Content-Length: 0${newLine}${newLine}" should parseTo(HttpResponse(OK))
+        s"HTTP/1.1 404 ${newLine}Content-Length: 0${newLine}${newLine}" should parseTo(HttpResponse(NotFound))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
       "a response with no reason phrase and no trailing space" in new Test {
-        s"""HTTP/1.1 200${newLine}Content-Length: 0${newLine}${newLine}""".stripMargin should parseTo(HEAD, HttpResponse())
+        s"""HTTP/1.1 404${newLine}Content-Length: 0${newLine}${newLine}""".stripMargin should parseTo(HEAD, HttpResponse(NotFound))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
