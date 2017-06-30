@@ -246,6 +246,22 @@ private[cluster] final case class Gossip(
 
   def isSingletonCluster: Boolean = members.size == 1
 
+  // TODO this one uses reachable(toAddress) while the other isReachable(from, to), need to distinguish somehhow with better naming
+  /**
+   * @return true if fromAddress should be able to reach toAddress based on the unreachability data and their
+   *         respective teams
+   */
+  def isReachableExcludingDownedObservers(fromAddress: UniqueAddress, toAddress: UniqueAddress): Boolean =
+    if (!hasMember(toAddress)) false
+    else {
+      val from = member(fromAddress)
+      val to = member(toAddress)
+
+      // if member is in the same team, we ignore cross-team unreachability
+      if (from.team == to.team) teamReachabilityExcludingDownedObservers(from.team).isReachable(toAddress)
+      else reachabilityExcludingDownedObservers.isReachable(toAddress)
+    }
+
   /**
    * @return true if fromAddress should be able to reach toAddress based on the unreachability data and their
    *         respective teams
@@ -257,8 +273,8 @@ private[cluster] final case class Gossip(
       val to = member(toAddress)
 
       // if member is in the same team, we ignore cross-team unreachability
-      if (from.team == to.team) teamReachabilityExcludingDownedObservers(from.team).isReachable(toAddress)
-      else reachabilityExcludingDownedObservers.isReachable(toAddress)
+      if (from.team == to.team) teamReachability(from.team).isReachable(fromAddress, toAddress)
+      else overview.reachability.isReachable(fromAddress, toAddress)
     }
 
   def member(node: UniqueAddress): Member = {
