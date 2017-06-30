@@ -10,17 +10,20 @@ import docs.CompileOnlySpec
 
 class RouteSealExampleSpec extends RoutingSpec with Directives with CompileOnlySpec {
 
-  compileOnlySpec {
+  "seal route example" in compileOnlySpec {
     //#route-seal-example
     val route = respondWithHeader(RawHeader("special-header", "you always have this even in 404")) {
       Route.seal(
         get {
           pathSingleSlash {
-            complete { "Captain on the bridge!" }
+            complete {
+              "Captain on the bridge!"
+            }
           }
         }
       )
     }
     //#route-seal-example
   }
+
 }
