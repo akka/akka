@@ -259,14 +259,14 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
                 path(segment("foo").slash(), () -> complete("OK")),
                 path(segment("bad-1"), () -> 
                     // MISTAKE!
-                    // Missing `/` in path, causes this path to never match,
+                    // Missing .slash() in path, causes this path to never match,
                     // because it is inside a `redirectToTrailingSlashIfMissing`
                     complete(StatusCodes.NOT_IMPLEMENTED)
                 ),
-                path(segment("bad-2").slash(), () -> 
+                path(segment("bad-2/"), () ->
                     // MISTAKE!
-                    // / should be explicit as path element separator and not *in* the path element
-                    // So it should be: "bad-1" /
+                    // / should be explicit with `.slash()` and not *in* the path element
+                    // So it should be: segment("bad-2").slash()
                     complete(StatusCodes.NOT_IMPLEMENTED)
                 )
             )
