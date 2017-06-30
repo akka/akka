@@ -347,12 +347,19 @@ class GossipSpec extends WordSpec with Matchers {
         .remove(dc2d1.uniqueAddress, System.currentTimeMillis())
 
       gdc2.tombstones.keys should contain(dc2d1.uniqueAddress)
+      gdc2.members should not contain (dc2d1)
+      gdc2.overview.reachability.records.filter(r ⇒ r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
+      gdc2.overview.reachability.versions.keys should not contain (dc2d1.uniqueAddress)
 
       // when we merge the two, it should not be reintroduced
       val merged1 = gdc2 merge gdc1
       merged1.members should ===(SortedSet(dc1a1, dc1b1, dc2c1))
 
       merged1.tombstones.keys should contain(dc2d1.uniqueAddress)
+      merged1.members should not contain (dc2d1)
+      merged1.overview.reachability.records.filter(r ⇒ r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
+      merged1.overview.reachability.versions.keys should not contain (dc2d1.uniqueAddress)
+
     }
 
     "prune old tombstones" in {
@@ -366,6 +373,20 @@ class GossipSpec extends WordSpec with Matchers {
 
       // when we merge the two, it should not be reintroduced
       pruned.tombstones.keys should not contain (dc2d1.uniqueAddress)
+    }
+
+    "mark a node as down" in {
+      val g = Gossip(members = SortedSet(dc1a1, dc1b1))
+        .seen(dc1a1.uniqueAddress)
+        .seen(dc1b1.uniqueAddress)
+        .markAsDown(dc1b1)
+
+      g.member(dc1b1.uniqueAddress).status should ===(MemberStatus.Down)
+      g.overview.seen should not contain (dc1b1.uniqueAddress)
+
+      // obviously the other member should be unaffected
+      g.member(dc1a1.uniqueAddress).status should ===(dc1a1.status)
+      g.overview.seen should contain(dc1a1.uniqueAddress)
     }
   }
 }

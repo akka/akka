@@ -553,28 +553,28 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    * Received `Join` message and replies with `Welcome` message, containing
    * current gossip state, including the new joining member.
    */
-  def joining(node: UniqueAddress, roles: Set[String]): Unit = {
+  def joining(joiningNode: UniqueAddress, roles: Set[String]): Unit = {
     val selfStatus = latestGossip.member(selfUniqueAddress).status
-    if (node.address.protocol != selfAddress.protocol)
+    if (joiningNode.address.protocol != selfAddress.protocol)
       log.warning(
         "Member with wrong protocol tried to join, but was ignored, expected [{}] but was [{}]",
-        selfAddress.protocol, node.address.protocol)
-    else if (node.address.system != selfAddress.system)
+        selfAddress.protocol, joiningNode.address.protocol)
+    else if (joiningNode.address.system != selfAddress.system)
       log.warning(
         "Member with wrong ActorSystem name tried to join, but was ignored, expected [{}] but was [{}]",
-        selfAddress.system, node.address.system)
+        selfAddress.system, joiningNode.address.system)
     else if (Gossip.removeUnreachableWithMemberStatus.contains(selfStatus))
-      logInfo("Trying to join [{}] to [{}] member, ignoring. Use a member that is Up instead.", node, selfStatus)
+      logInfo("Trying to join [{}] to [{}] member, ignoring. Use a member that is Up instead.", joiningNode, selfStatus)
     else {
       val localMembers = latestGossip.members
 
       // check by address without uid to make sure that node with same host:port is not allowed
       // to join until previous node with that host:port has been removed from the cluster
-      localMembers.find(_.address == node.address) match {
-        case Some(m) if m.uniqueAddress == node ⇒
+      localMembers.find(_.address == joiningNode.address) match {
+        case Some(m) if m.uniqueAddress == joiningNode ⇒
           // node retried join attempt, probably due to lost Welcome message
           logInfo("Existing member [{}] is joining again.", m)
-          if (node != selfUniqueAddress)
+          if (joiningNode != selfUniqueAddress)
             sender() ! Welcome(selfUniqueAddress, latestGossip)
         case Some(m) ⇒
           // node restarted, same host:port as existing member, but with different uid
@@ -593,17 +593,17 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           }
         case None ⇒
           // remove the node from the failure detector
-          failureDetector.remove(node.address)
+          failureDetector.remove(joiningNode.address)
 
           // add joining node as Joining
           // add self in case someone else joins before self has joined (Set discards duplicates)
-          val newMembers = localMembers + Member(node, roles) + Member(selfUniqueAddress, cluster.selfRoles)
+          val newMembers = localMembers + Member(joiningNode, roles) + Member(selfUniqueAddress, cluster.selfRoles)
           val newGossip = latestGossip copy (members = newMembers)
 
           updateLatestGossip(newGossip)
 
-          logInfo("Node [{}] is JOINING, roles [{}]", node.address, roles.mkString(", "))
-          if (node == selfUniqueAddress) {
+          logInfo("Node [{}] is JOINING, roles [{}]", joiningNode.address, roles.mkString(", "))
+          if (joiningNode == selfUniqueAddress) {
             if (localMembers.isEmpty)
               leaderActions() // important for deterministic oldest when bootstrapping
           } else
@@ -719,23 +719,15 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     val localReachability = localGossip.teamReachability(selfTeam)
 
     // check if the node to DOWN is in the team `members` set
-    localMembers.find(_.address == address) match {
+    localMembers.find(m ⇒ m.team == selfTeam && m.address == address) match {
       case Some(m) if m.status != Down ⇒
         if (localReachability.isReachable(m.uniqueAddress))
           logInfo("Marking node [{}] as [{}]", m.address, Down)
         else
           logInfo("Marking unreachable node [{}] as [{}]", m.address, Down)
 
-        // replace member (changed status)
-        val newMembers = localMembers - m + m.copy(status = Down)
-        // remove nodes marked as DOWN from the `seen` table
-        val newSeen = localSeen - m.uniqueAddress
-
-        // update gossip overview
-        val newOverview = localOverview copy (seen = newSeen)
-        val newGossip = localGossip copy (members = newMembers, overview = newOverview) // update gossip
+        val newGossip = localGossip.markAsDown(m)
         updateLatestGossip(newGossip)
-
         publish(latestGossip)
       case Some(_) ⇒ // already down
       case None ⇒
@@ -1115,14 +1107,13 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     }
 
     if (removedUnreachable.nonEmpty || removedExitingConfirmed.nonEmpty || changedMembers.nonEmpty) {
-      // handle changes
-
+      // remove removed members
       val gossipWithoutRemoved = removedUnreachable.map(_.uniqueAddress).union(removedExitingConfirmed)
         .foldLeft(localGossip)((gossip, node) ⇒ gossip.remove(node, System.currentTimeMillis()))
 
       // replace changed members
       val newMembers = changedMembers.union(gossipWithoutRemoved.members)
-      val newGossip = localGossip copy (members = newMembers)
+      val newGossip = gossipWithoutRemoved copy (members = newMembers)
 
       if (!exitingTasksInProgress && newGossip.member(selfUniqueAddress).status == Exiting) {
         // Leader is moving itself from Leaving to Exiting.
@@ -1210,10 +1201,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
       if (newlyDetectedUnreachableMembers.nonEmpty || newlyDetectedReachableMembers.nonEmpty) {
 
-        val newReachability1 = (localOverview.reachability /: newlyDetectedUnreachableMembers) {
+        val newReachability1 = newlyDetectedUnreachableMembers.foldLeft(localOverview.reachability) {
           (reachability, m) ⇒ reachability.unreachable(selfUniqueAddress, m.uniqueAddress)
         }
-        val newReachability2 = (newReachability1 /: newlyDetectedReachableMembers) {
+        val newReachability2 = newlyDetectedReachableMembers.foldLeft(newReachability1) {
           (reachability, m) ⇒ reachability.reachable(selfUniqueAddress, m.uniqueAddress)
         }
 

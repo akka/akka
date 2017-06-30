@@ -293,6 +293,17 @@ private[cluster] final case class Gossip(
     copy(version = newVersion, members = newMembers, overview = newOverview, tombstones = newTombstones)
   }
 
+  def markAsDown(member: Member): Gossip = {
+    // replace member (changed status)
+    val newMembers = members - member + member.copy(status = Down)
+    // remove nodes marked as DOWN from the `seen` table
+    val newSeen = overview.seen - member.uniqueAddress
+
+    // update gossip overview
+    val newOverview = overview copy (seen = newSeen)
+    copy(members = newMembers, overview = newOverview) // update gossip
+  }
+
   def prune(removedNode: VectorClock.Node): Gossip = {
     val newVersion = version.prune(removedNode)
     if (newVersion eq version) this
