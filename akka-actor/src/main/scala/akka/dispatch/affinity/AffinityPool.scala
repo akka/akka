@@ -10,8 +10,8 @@ import java.util
 import java.util.Collections
 import java.util.concurrent.TimeUnit.MICROSECONDS
 import java.util.concurrent._
-import java.util.concurrent.atomic.{ AtomicInteger, AtomicReference }
-import java.util.concurrent.locks.{ Lock, LockSupport, ReentrantLock }
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import java.util.concurrent.locks.{Lock, LockSupport, ReentrantLock}
 
 import akka.dispatch._
 import akka.dispatch.affinity.AffinityPool._
@@ -21,12 +21,19 @@ import com.typesafe.config.Config
 import scala.annotation.tailrec
 import java.lang.Integer.reverseBytes
 
+import akka.annotation.InternalApi
+import akka.annotation.ApiMayChange
 import akka.util.ImmutableIntMap
 import akka.util.OptionVal
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
+/**
+  * INTERNAL API
+  */
+@InternalApi
+@ApiMayChange
 private[akka] class AffinityPool(
   parallelism:               Int,
   affinityGroupSize:         Int,
@@ -83,7 +90,8 @@ private[akka] class AffinityPool(
     }
 
     val workQueueIndex =
-      if (runnableToWorkerQueueIndex.get().size > fairDistributionThreshold)
+      if (fairDistributionThreshold > 0
+        && runnableToWorkerQueueIndex.get().size > fairDistributionThreshold)
         Math.abs(sbhash(runnableHash)) % parallelism
       else
         updateIfAbsentAndGetQueueIndex(runnableToWorkerQueueIndex, runnableHash, getNext)
@@ -355,6 +363,8 @@ final class BoundedTaskQueue(capacity: Int) extends AbstractBoundedNodeQueue[Run
 final class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends ExecutorServiceConfigurator(config, prerequisites) {
 
+  private final val MaxfairDistributionThreshold = 2048
+
   private val poolSize = ThreadPoolConfig.scaledPoolSize(
     config.getInt("parallelism-min"),
     config.getDouble("parallelism-factor"),
@@ -364,8 +374,8 @@ final class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPr
   private val idleCpuLevel = config.getInt("idle-cpu-level").requiring(level ⇒
     1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
 
-  //TODO Maybe put some kind an upper bound here... to ensure map does not get too large
-  private val fairDistributionThreshold = config.getInt("fair-work-distribution-threshold")
+  private val fairDistributionThreshold = config.getInt("fair-work-distribution-threshold").requiring(thr ⇒
+    0 <= thr && thr <= MaxfairDistributionThreshold, s"idle-cpu-level must be between 1 and $MaxfairDistributionThreshold")
 
   private val rejectionHandlerFCQN = config.getString("rejection-handler-factory")
 

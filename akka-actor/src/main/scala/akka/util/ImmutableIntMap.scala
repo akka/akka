@@ -3,12 +3,15 @@
  */
 package akka.util
 import java.util.Arrays
+
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 
 /**
  * INTERNAL API
  */
-private[akka] object ImmutableIntMap {
+@InternalApi private[akka] object ImmutableIntMap {
   def empty: ImmutableIntMap =
     new ImmutableIntMap(Array.emptyIntArray, Array.empty)
 
@@ -21,7 +24,7 @@ private[akka] object ImmutableIntMap {
  * Keys and values are backed by arrays and lookup is performed with binary
  * search. It's intended for rather small (<1000) maps.
  */
-private[akka] class ImmutableIntMap private (
+@InternalApi private[akka] class ImmutableIntMap private (
   private val keys: Array[Int], private val values: Array[Int]) {
 
   val size: Int = keys.length
