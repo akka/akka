@@ -102,8 +102,8 @@ private[http] object BodyPartRenderer {
         renderHeaders(r, part.headers, log)
         r ~~ part.entity.data
       }
-      renderFinalBoundary(r, boundary)
     }
+    renderFinalBoundary(r, boundary)
     r.get
   }
 
