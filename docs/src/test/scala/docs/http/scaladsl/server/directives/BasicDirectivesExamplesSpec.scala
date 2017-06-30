@@ -614,7 +614,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     }
     //#pass
   }
-  "0provide" in {
+  "provide0" in {
     //#provide0
     def providePrefixedString(value: String): Directive1[String] = provide("prefix:" + value)
     val route =

@@ -319,7 +319,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
           path("bad-2/") {
             // MISTAKE!
             // / should be explicit as path element separator and not *in* the path element
-            // So it should be: "bad-1" /
+            // So it should be: "bad-2" /
             ???
           }
       }
