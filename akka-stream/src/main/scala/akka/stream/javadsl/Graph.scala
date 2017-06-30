@@ -206,7 +206,7 @@ object Partition {
    * @param outputCount number of output ports
    * @param partitioner function deciding which output each element will be targeted
    */
-  def create[T](outputCount: Int, partitioner: function.Function[T, Int]): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](outputCount: Int, partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
     scaladsl.Partition(outputCount, partitioner = (t: T) ⇒ partitioner.apply(t))
 
   /**
@@ -215,7 +215,7 @@ object Partition {
    * @param outputCount number of output ports
    * @param partitioner function deciding which output each element will be targeted
    */
-  def create[T](clazz: Class[T], outputCount: Int, partitioner: function.Function[T, Int]): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](clazz: Class[T], outputCount: Int, partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
     create(outputCount, partitioner)
 
 }
