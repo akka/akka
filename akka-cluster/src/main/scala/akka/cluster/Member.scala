@@ -93,7 +93,8 @@ object Member {
   /**
    * INTERNAL API
    */
-  private[cluster] def removed(node: UniqueAddress): Member = new Member(node, Int.MaxValue, Removed, Set(ClusterSettings.TeamRolePrefix + "-N/A"))
+  private[cluster] def removed(node: UniqueAddress): Member =
+    new Member(node, Int.MaxValue, Removed, Set(ClusterSettings.TeamRolePrefix + "-N/A"))
 
   /**
    * `Address` ordering type class, sorts addresses by host and port.

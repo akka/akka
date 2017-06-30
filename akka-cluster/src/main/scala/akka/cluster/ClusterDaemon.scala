@@ -1063,94 +1063,85 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    * 9. Update the state with the new gossip
    */
   def leaderActionsOnConvergence(): Unit = {
-    val localGossip = latestGossip
-    val localMembers = localGossip.members
-    val localOverview = localGossip.overview
-    val localSeen = localOverview.seen
-
-    val enoughMembers: Boolean = isMinNrOfMembersFulfilled
-    def isJoiningToUp(m: Member): Boolean = (m.status == Joining || m.status == WeaklyUp) && enoughMembers
 
     val removedUnreachable = for {
-      node ← localOverview.reachability.allUnreachableOrTerminated
-      m = localGossip.member(node)
+      node ← latestGossip.teamReachability(selfTeam).allUnreachableOrTerminated
+      m = latestGossip.member(node)
       if m.team == selfTeam && Gossip.removeUnreachableWithMemberStatus(m.status)
     } yield m
 
     val removedExitingConfirmed = exitingConfirmed.filter { n ⇒
-      val member = localGossip.member(n)
+      val member = latestGossip.member(n)
       member.team == selfTeam && member.status == Exiting
     }
 
-    val changedMembers = localMembers collect {
-      var upNumber = 0
+    val changedMembers = {
+      val enoughMembers: Boolean = isMinNrOfMembersFulfilled
+      def isJoiningToUp(m: Member): Boolean = (m.status == Joining || m.status == WeaklyUp) && enoughMembers
 
-      {
-        case m if m.team == selfTeam && isJoiningToUp(m) ⇒
-          // Move JOINING => UP (once all nodes have seen that this node is JOINING, i.e. we have a convergence)
-          // and minimum number of nodes have joined the cluster
-          if (upNumber == 0) {
-            // It is alright to use same upNumber as already used by a removed member, since the upNumber
-            // is only used for comparing age of current cluster members (Member.isOlderThan)
-            val youngest = localGossip.youngestMember
-            upNumber = 1 + (if (youngest.upNumber == Int.MaxValue) 0 else youngest.upNumber)
-          } else {
-            upNumber += 1
-          }
-          m.copyUp(upNumber)
+      latestGossip.members collect {
+        var upNumber = 0
 
-        case m if m.team == selfTeam && m.status == Leaving ⇒
-          // Move LEAVING => EXITING (once we have a convergence on LEAVING)
-          m copy (status = Exiting)
+        {
+          case m if m.team == selfTeam && isJoiningToUp(m) ⇒
+            // Move JOINING => UP (once all nodes have seen that this node is JOINING, i.e. we have a convergence)
+            // and minimum number of nodes have joined the cluster
+            if (upNumber == 0) {
+              // It is alright to use same upNumber as already used by a removed member, since the upNumber
+              // is only used for comparing age of current cluster members (Member.isOlderThan)
+              val youngest = latestGossip.youngestMember
+              upNumber = 1 + (if (youngest.upNumber == Int.MaxValue) 0 else youngest.upNumber)
+            } else {
+              upNumber += 1
+            }
+            m.copyUp(upNumber)
+
+          case m if m.team == selfTeam && m.status == Leaving ⇒
+            // Move LEAVING => EXITING (once we have a convergence on LEAVING)
+            m copy (status = Exiting)
+        }
       }
     }
 
-    if (removedUnreachable.nonEmpty || removedExitingConfirmed.nonEmpty || changedMembers.nonEmpty) {
-      // remove removed members
-      val gossipWithoutRemoved = removedUnreachable.map(_.uniqueAddress).union(removedExitingConfirmed)
-        .foldLeft(localGossip)((gossip, node) ⇒ gossip.remove(node, System.currentTimeMillis()))
+    val updatedGossip: Gossip =
+      if (removedUnreachable.nonEmpty || removedExitingConfirmed.nonEmpty || changedMembers.nonEmpty) {
 
-      // replace changed members
-      val newMembers = changedMembers.union(gossipWithoutRemoved.members)
-      val newGossip = gossipWithoutRemoved.copy(members = newMembers)
-        .pruneTombstones(System.currentTimeMillis() - PruneGossipTombstonesAfter.toMillis)
+        // replace changed members
+        val removed = removedUnreachable.map(_.uniqueAddress).union(removedExitingConfirmed)
+        val newGossip =
+          latestGossip.update(changedMembers).removeAll(removed, System.currentTimeMillis())
 
-      if (!exitingTasksInProgress && newGossip.member(selfUniqueAddress).status == Exiting) {
-        // Leader is moving itself from Leaving to Exiting.
-        // ExitingCompleted will be received via CoordinatedShutdown to continue
-        // the leaving process. Meanwhile the gossip state is not marked as seen.
-        exitingTasksInProgress = true
-        logInfo("Exiting (leader), starting coordinated shutdown")
-        selfExiting.trySuccess(Done)
-        coordShutdown.run()
-      }
+        if (!exitingTasksInProgress && newGossip.member(selfUniqueAddress).status == Exiting) {
+          // Leader is moving itself from Leaving to Exiting.
+          // ExitingCompleted will be received via CoordinatedShutdown to continue
+          // the leaving process. Meanwhile the gossip state is not marked as seen.
+          exitingTasksInProgress = true
+          logInfo("Exiting (leader), starting coordinated shutdown")
+          selfExiting.trySuccess(Done)
+          coordShutdown.run()
+        }
 
-      updateLatestGossip(newGossip)
-      exitingConfirmed = exitingConfirmed.filterNot(removedExitingConfirmed)
+        exitingConfirmed = exitingConfirmed.filterNot(removedExitingConfirmed)
 
-      // log status changes
-      changedMembers foreach { m ⇒
-        logInfo("Leader is moving node [{}] to [{}]", m.address, m.status)
-      }
+        changedMembers foreach { m ⇒
+          logInfo("Leader is moving node [{}] to [{}]", m.address, m.status)
+        }
+        removedUnreachable foreach { m ⇒
+          val status = if (m.status == Exiting) "exiting" else "unreachable"
+          logInfo("Leader is removing {} node [{}]", status, m.address)
+        }
+        removedExitingConfirmed.foreach { n ⇒
+          logInfo("Leader is removing confirmed Exiting node [{}]", n.address)
+        }
 
-      // log the removal of the unreachable nodes
-      removedUnreachable foreach { m ⇒
-        val status = if (m.status == Exiting) "exiting" else "unreachable"
-        logInfo("Leader is removing {} node [{}]", status, m.address)
-      }
-      removedExitingConfirmed.foreach { n ⇒
-        logInfo("Leader is removing confirmed Exiting node [{}]", n.address)
-      }
+        newGossip
+      } else
+        latestGossip
 
-      publish(latestGossip)
-    } else {
-
-      val newGossip = localGossip.pruneTombstones(System.currentTimeMillis() - PruneGossipTombstonesAfter.toMillis)
-      if (newGossip ne localGossip) {
-        updateLatestGossip(newGossip)
-        publish(latestGossip)
-      }
-
+    val pruned = updatedGossip.pruneTombstones(System.currentTimeMillis() - PruneGossipTombstonesAfter.toMillis)
+    if (pruned ne latestGossip) {
+      updateLatestGossip(pruned)
+      publish(pruned)
     }
   }
 

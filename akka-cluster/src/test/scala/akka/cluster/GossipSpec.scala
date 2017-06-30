@@ -388,5 +388,19 @@ class GossipSpec extends WordSpec with Matchers {
       g.member(dc1a1.uniqueAddress).status should ===(dc1a1.status)
       g.overview.seen should contain(dc1a1.uniqueAddress)
     }
+
+    "update members" in {
+      val joining = TestMember(Address("akka.tcp", "sys", "d", 2552), Joining, Set.empty, team = "dc2")
+      val g = Gossip(members = SortedSet(dc1a1, joining))
+
+      g.member(joining.uniqueAddress).status should ===(Joining)
+
+      val updated = g.update(SortedSet(joining.copy(status = Up)))
+
+      updated.member(joining.uniqueAddress).status should ===(Up)
+
+      // obviously the other member should be unaffected
+      updated.member(dc1a1.uniqueAddress).status should ===(dc1a1.status)
+    }
   }
 }

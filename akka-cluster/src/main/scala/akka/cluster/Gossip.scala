@@ -272,6 +272,14 @@ private[cluster] final case class Gossip(
     members.maxBy(m ⇒ if (m.upNumber == Int.MaxValue) 0 else m.upNumber)
   }
 
+  def removeAll(nodes: Iterable[UniqueAddress], removalTimestamp: Long): Gossip = {
+    nodes.foldLeft(this)((gossip, node) ⇒ gossip.remove(node, removalTimestamp))
+  }
+
+  def update(updatedMembers: immutable.SortedSet[Member]): Gossip = {
+    copy(members = updatedMembers union members)
+  }
+
   /**
    * Remove the given member from the set of members and mark it's removal with a tombstone to avoid having it
    * reintroduced when merging with another gossip that has not seen the removal.
