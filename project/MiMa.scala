@@ -1232,13 +1232,25 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate"),
 
         // #23228 single leader per cluster team
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.apply"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.copy"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.convergence"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.isLeader"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.leader"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.leaderOf"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.roleLeader"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterCoreDaemon.NumberOfGossipsBeforeShutdownWhenLeaderExits"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterCoreDaemon.vclockName"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterCoreDaemon.MaxGossipsBeforeShuttingDownMyself"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.diffLeader"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.diffRolesLeader"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.diffSeen"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.isLeader"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.leader"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.roleLeader"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.convergence")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#GossipOrBuilder.getTombstonesCount"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#GossipOrBuilder.getTombstones"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#GossipOrBuilder.getTombstonesList"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#GossipOrBuilder.getTombstonesOrBuilderList"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#GossipOrBuilder.getTombstonesOrBuilder")
       )
     )
 

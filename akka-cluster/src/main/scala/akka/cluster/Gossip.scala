@@ -7,6 +7,7 @@ package akka.cluster
 import scala.collection.{ SortedSet, immutable }
 import ClusterSettings.Team
 import MemberStatus._
+import akka.annotation.InternalApi
 
 import scala.concurrent.duration.Deadline
 
@@ -62,6 +63,7 @@ private[cluster] object Gossip {
  * removed node telling it to shut itself down.
  */
 @SerialVersionUID(1L)
+@InternalApi
 private[cluster] final case class Gossip(
   members:    immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
   overview:   GossipOverview                       = GossipOverview(),

@@ -11,8 +11,10 @@ import akka.cluster.ClusterSettings.Team
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
 import akka.event.EventStream
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.actor.DeadLetterSuppression
+import akka.annotation.InternalApi
+
 import scala.collection.breakOut
 
 /**
@@ -315,6 +317,7 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] def diffLeader(team: Team, oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): immutable.Seq[LeaderChanged] = {
     val newLeader = newGossip.teamLeader(team, selfUniqueAddress)
     if (newLeader != oldGossip.teamLeader(team, selfUniqueAddress)) List(LeaderChanged(newLeader.map(_.address)))
@@ -324,6 +327,7 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] def diffRolesLeader(team: Team, oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): Set[RoleLeaderChanged] = {
     for {
       role ← oldGossip.allRoles union newGossip.allRoles
@@ -335,6 +339,7 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] def diffSeen(team: Team, oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): immutable.Seq[SeenChanged] =
     if (newGossip eq oldGossip) Nil
     else {
@@ -348,6 +353,7 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] def diffReachability(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[ReachabilityChanged] =
     if (newGossip.overview.reachability eq oldGossip.overview.reachability) Nil
     else List(ReachabilityChanged(newGossip.overview.reachability))

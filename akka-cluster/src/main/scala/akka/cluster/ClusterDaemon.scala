@@ -7,19 +7,24 @@ import language.existentials
 import scala.collection.immutable
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.util.control.NonFatal
 import akka.actor._
 import akka.actor.SupervisorStrategy.Stop
 import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+
 import scala.collection.breakOut
 import akka.remote.QuarantinedEvent
 import java.util.ArrayList
 import java.util.Collections
+
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.Done
+import akka.annotation.InternalApi
+
 import scala.concurrent.Future
 import scala.concurrent.Promise
 
@@ -266,6 +271,7 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
 /**
  * INTERNAL API.
  */
+@InternalApi
 private[cluster] object ClusterCoreDaemon {
   def vclockName(node: UniqueAddress): String = s"${node.address}-${node.longUid}"
 
@@ -276,6 +282,7 @@ private[cluster] object ClusterCoreDaemon {
 /**
  * INTERNAL API.
  */
+@InternalApi
 private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with ActorLogging
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._

@@ -6,6 +6,7 @@ package akka.cluster
 
 import akka.actor.Address
 import MemberStatus._
+import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.Team
 
 import scala.runtime.AbstractFunction2
@@ -143,7 +144,15 @@ object Member {
     (a, b) ⇒ a.isOlderThan(b)
   }
 
-  def pickHighestPriority(a: Set[Member], b: Set[Member], tombstones: Map[UniqueAddress, Long]): Set[Member] = {
+  @deprecated("Was accidentally made a public API, internal", since = "2.5.3")
+  def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] =
+    pickHighestPriority(a, b, Map.empty)
+
+  /**
+   * INTERNAL API.
+   */
+  @InternalApi
+  private[akka] def pickHighestPriority(a: Set[Member], b: Set[Member], tombstones: Map[UniqueAddress, Long]): Set[Member] = {
     // group all members by Address => Seq[Member]
     val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
     // pick highest MemberStatus
