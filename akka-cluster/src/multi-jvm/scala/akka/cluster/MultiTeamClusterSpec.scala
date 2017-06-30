@@ -110,7 +110,7 @@ abstract class MultiTeamSpec
       enterBarrier("end")
     }
 
-    "be able to have team member changes while there is unreachability in another team" in within(10.seconds) {
+    "be able to have team member changes while there is unreachability in another team" in within(20.seconds) {
       runOn(first) {
         testConductor.blackhole(first, second, Direction.Both)
       }
@@ -125,11 +125,8 @@ abstract class MultiTeamSpec
 
       // should be able to leave and become removed
       // since the unreachable nodes are inside of dc1
-      within(15.seconds) {
-        awaitAssert(clusterView.members.find(_.status == MemberStatus.Removed))
-      }
-
-      enterBarrier("end")
+      awaitAssert(clusterView.members.find(_.status == MemberStatus.Removed))
+      enterBarrier("removed-seen")
     }
 
   }

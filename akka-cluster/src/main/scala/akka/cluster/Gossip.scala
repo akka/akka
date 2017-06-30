@@ -311,13 +311,13 @@ private[cluster] final case class Gossip(
   }
 
   def pruneTombstones(removeEarlierThan: Gossip.Timestamp): Gossip = {
-    val newTombstones = tombstones.filter { t ⇒ t._2 < removeEarlierThan }
+    val newTombstones = tombstones.filter { case (_, timestamp) ⇒ timestamp < removeEarlierThan }
     if (newTombstones.size == tombstones.size) this
     else copy(tombstones = newTombstones)
   }
 
   override def toString =
-    s"Gossip(members = [${members.mkString(", ")}], overview = ${overview}, version = ${version})"
+    s"Gossip(members = [${members.mkString(", ")}], overview = $overview, version = $version, tombstones = $tombstones)"
 }
 
 /**

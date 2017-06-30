@@ -843,9 +843,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       // shutting down singleton actors. This delays removal of the member until
       // the exiting tasks have been completed.
       latestGossip =
-        (if (exitingTasksInProgress) winningGossip
-        else winningGossip seen selfUniqueAddress)
-          .pruneTombstones(System.currentTimeMillis() - PruneGossipTombstonesAfter.toMillis)
+        if (exitingTasksInProgress) winningGossip
+        else winningGossip seen selfUniqueAddress
       assertLatestGossip()
 
       // for all new joining nodes we remove them from the failure detector
@@ -1113,7 +1112,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
       // replace changed members
       val newMembers = changedMembers.union(gossipWithoutRemoved.members)
-      val newGossip = gossipWithoutRemoved copy (members = newMembers)
+      val newGossip = gossipWithoutRemoved.copy(members = newMembers)
+        .pruneTombstones(System.currentTimeMillis() - PruneGossipTombstonesAfter.toMillis)
 
       if (!exitingTasksInProgress && newGossip.member(selfUniqueAddress).status == Exiting) {
         // Leader is moving itself from Leaving to Exiting.
@@ -1143,6 +1143,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       }
 
       publish(latestGossip)
+    } else {
+
+      val newGossip = localGossip.pruneTombstones(System.currentTimeMillis() - PruneGossipTombstonesAfter.toMillis)
+      if (newGossip ne localGossip) {
+        updateLatestGossip(newGossip)
+        publish(latestGossip)
+      }
+
     }
   }
 
