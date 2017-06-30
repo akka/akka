@@ -12,7 +12,7 @@ import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
-import akka.util.Helpers.{ConfigOps, Requiring, toRootLowerCase}
+import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
 
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
