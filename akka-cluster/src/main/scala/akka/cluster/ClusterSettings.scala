@@ -10,16 +10,26 @@ import com.typesafe.config.ConfigObject
 import scala.concurrent.duration.Duration
 import akka.actor.Address
 import akka.actor.AddressFromURIString
+import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
-import akka.util.Helpers.{ Requiring, ConfigOps, toRootLowerCase }
+import akka.util.Helpers.{ConfigOps, Requiring, toRootLowerCase}
 
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
 
 object ClusterSettings {
   type Team = String
-  val TeamRolePrefix = "team-"
-  val DefaultTeam: Team = "default"
+  /**
+   * INTERNAL API.
+   */
+  @InternalApi
+  private[akka] val TeamRolePrefix = "team-"
+
+  /**
+   * INTERNAL API.
+   */
+  @InternalApi
+  private[akka] val DefaultTeam: Team = "default"
 
 }
 
