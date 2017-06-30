@@ -124,6 +124,8 @@ private[akka] trait ClusterRouterSettingsBase {
   def useRoleSet: Set[String]
 
   require(totalInstances > 0, "totalInstances of cluster router must be > 0")
+  require(useRoleSet != null, "useRoleSet must be non-null")
+  require(!useRoleSet.exists(role => role == null || role.isEmpty), "All roles in useRoleSet must be non-empty")
 }
 
 /**
