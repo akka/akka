@@ -30,8 +30,12 @@ any other node.
 There a two different modes of message delivery, explained in the sections
 [Publish](#distributed-pub-sub-publish) and [Send](#distributed-pub-sub-send) below.
 
+@@@ div { .group-scala }
+
 A more comprehensive sample is available in the
 tutorial named [Akka Clustered PubSub with Scala!](https://github.com/typesafehub/activator-akka-clustering).
+
+@@@
 
 <a id="distributed-pub-sub-publish"></a>
 ## Publish
@@ -43,7 +47,7 @@ Actors are registered to a named topic. This enables many subscribers on each no
 The message will be delivered to all subscribers of the topic.
 
 For efficiency the message is sent over the wire only once per node (that has a matching topic),
-and then delivered to all subscribers of the local topic representation. (See more in )
+and then delivered to all subscribers of the local topic representation.
 
 You register actors to the local mediator with `DistributedPubSubMediator.Subscribe`.
 Successful `Subscribe` and `Unsubscribe` is acknowledged with
@@ -59,20 +63,36 @@ can explicitly remove entries with `DistributedPubSubMediator.Unsubscribe`.
 
 An example of a subscriber actor:
 
-@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #subscriber }
+Scala
+:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #subscriber }
+
+Java
+:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #subscriber }
 
 Subscriber actors can be started on several nodes in the cluster, and all will receive
 messages published to the "content" topic.
 
-@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-subscribers }
+Scala
+:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-subscribers }
+
+Java
+:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-subscribers }
 
 A simple actor that publishes to this "content" topic:
 
-@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publisher }
+Scala
+:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publisher }
+
+Java
+:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publisher }
 
 It can publish messages to the topic from anywhere in the cluster:
 
-@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publish-message }
+Scala
+:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publish-message }
+
+Java
+:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publish-message }
 
 ### Topic Groups
 
@@ -109,7 +129,7 @@ cluster aware router where the routees dynamically can register themselves.
 The message will be delivered to one recipient with a matching path, if any such
 exists in the registry. If several entries match the path because it has been registered
 on several nodes the message will be sent via the supplied `RoutingLogic` (default random)
-to one destination. The sender() of the message can specify that local affinity is preferred,
+to one destination. The sender of the message can specify that local affinity is preferred,
 i.e. the message is sent to an actor in the same local actor system as the used mediator actor,
 if any such exists, otherwise route to any other matching entry.
 
@@ -128,20 +148,36 @@ can explicitly remove entries with `DistributedPubSubMediator.Remove`.
 
 An example of a destination actor:
 
-@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-destination }
+Scala
+:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-destination }
+
+Java
+:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-destination }
 
 Destination actors can be started on several nodes in the cluster, and all will receive
 messages sent to the path (without address information).
 
-@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-send-destinations }
+Scala
+:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-send-destinations }
+
+Java
+:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-send-destinations }
 
 A simple actor that sends to the path:
 
-@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #sender }
+Scala
+:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #sender }
+
+Java
+:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #sender }
 
 It can send messages to the path from anywhere in the cluster:
 
-@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-message }
+Scala
+:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-message }
+
+Java
+:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-message }
 
 It is also possible to broadcast messages to the actors that have been registered with
 `Put`. Send `DistributedPubSubMediator.SendToAll` message to the local mediator and the wrapped message
