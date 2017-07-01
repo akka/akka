@@ -22,7 +22,7 @@ acts as a "server" to which arbitrary systems on the same network can connect to
 ## What is new in Artery
 
 Artery is a reimplementation of the old remoting module aimed at improving performance and stability. It is mostly
-backwards compatible with the old implementation and it is a drop-in replacement in many cases. Main features
+source compatible with the old implementation and it is a drop-in replacement in many cases. Main features
 of Artery compared to the previous implementation:
 
  * Based on [Aeron](https://github.com/real-logic/Aeron) (UDP) instead of TCP
@@ -48,6 +48,13 @@ The Akka remoting is a separate jar file. Make sure that you have the following 
 Scala
 :   @@@vars
     ```
+    "com.typesafe.akka" %% "akka-remote" % "$akka.version$"
+    ```
+    @@@
+
+Java
+:   @@@vars
+    ```
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-remote_$scala.binary_version$</artifactId>
@@ -56,12 +63,6 @@ Scala
     ```
     @@@
 
-Java
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-remote" % "$akka.version$"
-    ```
-    @@@
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
 to your `application.conf` file:
@@ -150,20 +151,17 @@ In the next sections the two alternatives are described in detail.
 `actorSelection(path)` will obtain an `ActorSelection` to an Actor on a remote node, e.g.:
 
 Scala
-:   @@@vars
-    ```
+:   ```
     ActorSelection selection =
       context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName");
     ```
-    @@@
-
+    
 Java
-:   @@@vars
-    ```
+:   ```
     val selection =
       context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName")
     ```
-    @@@
+    
 
 As you can see from the example above the following pattern is used to find an actor on a remote node:
 
@@ -328,7 +326,7 @@ so if network security is not considered as enough protection the classic remoti
 
 Best practice is that Akka remoting nodes should only be accessible from the adjacent network.
 
-It is also security best practice to @ref:[disable the Java serializer](#disabling-the-java-serializer) because of
+It is also security best practice to @ref[disable the Java serializer](#disabling-the-java-serializer) because of
 its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
 
 ### Untrusted Mode
@@ -375,7 +373,7 @@ Scala
 Java
 :   @@@vars
     ```
-    akka.remote.artery..trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
+    akka.remote.artery.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
     ```
     @@@
 
