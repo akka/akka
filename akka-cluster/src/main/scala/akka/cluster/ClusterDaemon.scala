@@ -1269,7 +1269,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       clusterCore(node.address) ! GossipStatus(selfUniqueAddress, latestGossip.version)
 
   def validNodeForGossip(node: UniqueAddress): Boolean =
-    node != selfUniqueAddress && latestGossip.isReachableExcludingDownedObservers(selfUniqueAddress, node)
+    node != selfUniqueAddress && latestGossip.isReachableExcludingDownedObservers(selfTeam, node)
 
   def updateLatestGossip(newGossip: Gossip): Unit = {
     // Updating the vclock version for the changes

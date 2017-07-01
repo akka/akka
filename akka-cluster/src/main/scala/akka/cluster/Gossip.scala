@@ -203,6 +203,13 @@ private[cluster] final case class Gossip(
   }
 
   /**
+   * @return Reachability excluding observations from nodes outside of the team, but including observed unreachable
+   *         nodes outside of the team
+   */
+  def teamReachability(team: Team): Reachability =
+    overview.reachability.removeObservers(members.collect { case m if m.team != team ⇒ m.uniqueAddress })
+
+  /**
    * @return reachability for team nodes, with observations from outside the team or from downed nodes filtered out
    */
   def teamReachabilityExcludingDownedObservers(team: Team): Reachability = {
@@ -212,9 +219,6 @@ private[cluster] final case class Gossip(
 
   def teamMembers(team: Team): SortedSet[Member] =
     members.filter(_.team == team)
-
-  def teamReachability(team: Team): Reachability =
-    overview.reachability.removeObservers(members.collect { case m if m.team != team ⇒ m.uniqueAddress })
 
   def isTeamLeader(team: Team, node: UniqueAddress, selfUniqueAddress: UniqueAddress): Boolean =
     teamLeader(team, selfUniqueAddress).contains(node)
@@ -246,19 +250,17 @@ private[cluster] final case class Gossip(
 
   def isSingletonCluster: Boolean = members.size == 1
 
-  // TODO this one uses reachable(toAddress) while the other isReachable(from, to), need to distinguish somehhow with better naming
   /**
    * @return true if fromAddress should be able to reach toAddress based on the unreachability data and their
    *         respective teams
    */
-  def isReachableExcludingDownedObservers(fromAddress: UniqueAddress, toAddress: UniqueAddress): Boolean =
+  def isReachableExcludingDownedObservers(fromTeam: Team, toAddress: UniqueAddress): Boolean =
     if (!hasMember(toAddress)) false
     else {
-      val from = member(fromAddress)
       val to = member(toAddress)
 
       // if member is in the same team, we ignore cross-team unreachability
-      if (from.team == to.team) teamReachabilityExcludingDownedObservers(from.team).isReachable(toAddress)
+      if (fromTeam == to.team) teamReachabilityExcludingDownedObservers(fromTeam).isReachable(toAddress, toAddress)
       else reachabilityExcludingDownedObservers.isReachable(toAddress)
     }
 
@@ -274,7 +276,7 @@ private[cluster] final case class Gossip(
 
       // if member is in the same team, we ignore cross-team unreachability
       if (from.team == to.team) teamReachability(from.team).isReachable(fromAddress, toAddress)
-      else overview.reachability.isReachable(fromAddress, toAddress)
+      else overview.reachability.isReachable(toAddress)
     }
 
   def member(node: UniqueAddress): Member = {

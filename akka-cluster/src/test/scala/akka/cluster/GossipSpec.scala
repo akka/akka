@@ -292,15 +292,28 @@ class GossipSpec extends WordSpec with Matchers {
       g.isReachable(dc2c1.uniqueAddress, dc2d1.uniqueAddress) should ===(true)
       g.isReachable(dc2d1.uniqueAddress, dc2c1.uniqueAddress) should ===(true)
 
+      g.isReachableExcludingDownedObservers(dc1a1.team, dc1b1.uniqueAddress) should ===(true)
+      g.isReachableExcludingDownedObservers(dc1b1.team, dc1a1.uniqueAddress) should ===(true)
+      g.isReachableExcludingDownedObservers(dc2c1.team, dc2d1.uniqueAddress) should ===(true)
+      g.isReachableExcludingDownedObservers(dc2d1.team, dc2c1.uniqueAddress) should ===(true)
+
       // between teams it matters though
       g.isReachable(dc1a1.uniqueAddress, dc2c1.uniqueAddress) should ===(false)
       g.isReachable(dc1b1.uniqueAddress, dc2c1.uniqueAddress) should ===(false)
       g.isReachable(dc2c1.uniqueAddress, dc1a1.uniqueAddress) should ===(false)
       g.isReachable(dc2d1.uniqueAddress, dc1a1.uniqueAddress) should ===(false)
 
+      g.isReachableExcludingDownedObservers(dc1a1.team, dc2c1.uniqueAddress) should ===(false)
+      g.isReachableExcludingDownedObservers(dc1b1.team, dc2c1.uniqueAddress) should ===(false)
+      g.isReachableExcludingDownedObservers(dc2c1.team, dc1a1.uniqueAddress) should ===(false)
+      g.isReachableExcludingDownedObservers(dc2d1.team, dc1a1.uniqueAddress) should ===(false)
+
       // between the two other nodes there is no unreachability
       g.isReachable(dc1b1.uniqueAddress, dc2d1.uniqueAddress) should ===(true)
       g.isReachable(dc2d1.uniqueAddress, dc1b1.uniqueAddress) should ===(true)
+
+      g.isReachableExcludingDownedObservers(dc1b1.team, dc2d1.uniqueAddress) should ===(true)
+      g.isReachableExcludingDownedObservers(dc2d1.team, dc1b1.uniqueAddress) should ===(true)
     }
 
     "not returning a downed team leader" in {
