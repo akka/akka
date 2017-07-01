@@ -86,7 +86,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
           totalInstances = 2,
           maxInstancesPerNode = 5,
           allowLocalRoutees = true,
-          useRoleSet = Set("Richard, Duke of Gloucester")
+          useRoles = Set("Richard, Duke of Gloucester")
         )
       ))
     }

@@ -42,7 +42,7 @@ class ClusterRouterSupervisorSpec extends AkkaSpec("""
           totalInstances = 1,
           maxInstancesPerNode = 1,
           allowLocalRoutees = true,
-          useRoleSet = Set.empty)).
+          useRoles = Set.empty)).
           props(Props(classOf[KillableActor], testActor)), name = "therouter")
 
       router ! "go away"

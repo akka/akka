@@ -36,7 +36,7 @@ object ClusterRouterGroupSettings {
       totalInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
       routeesPaths = immutableSeq(config.getStringList("routees.paths")),
       allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
-      useRoleSet = asScalaBuffer(config.getStringList("cluster.use-role-set")).toSet)
+      useRoles = asScalaBuffer(config.getStringList("cluster.use-roles")).toSet)
 }
 
 /**
@@ -47,13 +47,13 @@ final case class ClusterRouterGroupSettings(
   totalInstances:    Int,
   routeesPaths:      immutable.Seq[String],
   allowLocalRoutees: Boolean,
-  useRoleSet:        Set[String]) extends ClusterRouterSettingsBase {
+  useRoles:          Set[String]) extends ClusterRouterSettingsBase {
 
   /**
    * Java API
    */
-  def this(totalInstances: Int, routeesPaths: java.lang.Iterable[String], allowLocalRoutees: Boolean, useRoleSet: java.util.Set[String]) =
-    this(totalInstances, immutableSeq(routeesPaths), allowLocalRoutees, asScalaSet(useRoleSet).toSet)
+  def this(totalInstances: Int, routeesPaths: java.lang.Iterable[String], allowLocalRoutees: Boolean, useRoles: java.util.Set[String]) =
+    this(totalInstances, immutableSeq(routeesPaths), allowLocalRoutees, asScalaSet(useRoles).toSet)
 
   if (totalInstances <= 0) throw new IllegalArgumentException("totalInstances of cluster router must be > 0")
   if ((routeesPaths eq null) || routeesPaths.isEmpty || routeesPaths.head == "")
@@ -73,7 +73,7 @@ object ClusterRouterPoolSettings {
       totalInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
       maxInstancesPerNode = config.getInt("cluster.max-nr-of-instances-per-node"),
       allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
-      useRoleSet = asScalaBuffer(config.getStringList("cluster.use-role-set")).toSet)
+      useRoles = asScalaBuffer(config.getStringList("cluster.use-roles")).toSet)
 }
 
 /**
@@ -86,13 +86,13 @@ final case class ClusterRouterPoolSettings(
   totalInstances:      Int,
   maxInstancesPerNode: Int,
   allowLocalRoutees:   Boolean,
-  useRoleSet:          Set[String]) extends ClusterRouterSettingsBase {
+  useRoles:            Set[String]) extends ClusterRouterSettingsBase {
 
   /**
    * Java API
    */
-  def this(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean, useRoleSet: java.util.Set[String]) =
-    this(totalInstances, maxInstancesPerNode, allowLocalRoutees, asScalaSet(useRoleSet).toSet)
+  def this(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean, useRoles: java.util.Set[String]) =
+    this(totalInstances, maxInstancesPerNode, allowLocalRoutees, asScalaSet(useRoles).toSet)
 
   if (maxInstancesPerNode <= 0) throw new IllegalArgumentException("maxInstancesPerNode of cluster pool router must be > 0")
 
@@ -121,11 +121,11 @@ private[akka] object ClusterRouterSettingsBase {
 private[akka] trait ClusterRouterSettingsBase {
   def totalInstances: Int
   def allowLocalRoutees: Boolean
-  def useRoleSet: Set[String]
+  def useRoles: Set[String]
 
   require(totalInstances > 0, "totalInstances of cluster router must be > 0")
-  require(useRoleSet != null, "useRoleSet must be non-null")
-  require(!useRoleSet.exists(role => role == null || role.isEmpty), "All roles in useRoleSet must be non-empty")
+  require(useRoles != null, "useRoles must be non-null")
+  require(!useRoles.exists(role ⇒ role == null || role.isEmpty), "All roles in useRoles must be non-empty")
 }
 
 /**
@@ -138,11 +138,11 @@ private[akka] trait ClusterRouterSettingsBase {
 final case class ClusterRouterGroup(local: Group, settings: ClusterRouterGroupSettings) extends Group with ClusterRouterConfigBase {
 
   override def paths(system: ActorSystem): immutable.Iterable[String] =
-    if (settings.allowLocalRoutees && settings.useRoleSet.nonEmpty) {
-      if (settings.useRoleSet.subsetOf(Cluster(system).selfRoles)) {
+    if (settings.allowLocalRoutees && settings.useRoles.nonEmpty) {
+      if (settings.useRoles.subsetOf(Cluster(system).selfRoles)) {
         settings.routeesPaths
       } else Nil
-    } else if (settings.allowLocalRoutees && settings.useRoleSet.isEmpty) {
+    } else if (settings.allowLocalRoutees && settings.useRoles.isEmpty) {
       settings.routeesPaths
     } else Nil
 
@@ -189,11 +189,11 @@ final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSetti
    * Initial number of routee instances
    */
   override def nrOfInstances(sys: ActorSystem): Int =
-    if (settings.allowLocalRoutees && settings.useRoleSet.nonEmpty) {
-      if (settings.useRoleSet.subsetOf(Cluster(sys).selfRoles)) {
+    if (settings.allowLocalRoutees && settings.useRoles.nonEmpty) {
+      if (settings.useRoles.subsetOf(Cluster(sys).selfRoles)) {
         settings.maxInstancesPerNode
       } else 0
-    } else if (settings.allowLocalRoutees && settings.useRoleSet.isEmpty) {
+    } else if (settings.allowLocalRoutees && settings.useRoles.isEmpty) {
       settings.maxInstancesPerNode
     } else 0
 
@@ -380,14 +380,14 @@ private[akka] trait ClusterRouterActor { this: RouterActor ⇒
 
   def isAvailable(m: Member): Boolean =
     (m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp) &&
-      satisfiesRoleSet(m.roles) &&
+      satisfiesRoles(m.roles) &&
       (settings.allowLocalRoutees || m.address != cluster.selfAddress)
 
-  private def satisfiesRoleSet(memberRoles: Set[String]): Boolean = settings.useRoleSet.subsetOf(memberRoles)
+  private def satisfiesRoles(memberRoles: Set[String]): Boolean = settings.useRoles.subsetOf(memberRoles)
 
   def availableNodes: immutable.SortedSet[Address] = {
     import akka.cluster.Member.addressOrdering
-    if (nodes.isEmpty && settings.allowLocalRoutees && satisfiesRoleSet(cluster.selfRoles))
+    if (nodes.isEmpty && settings.allowLocalRoutees && satisfiesRoles(cluster.selfRoles))
       // use my own node, cluster information not updated yet
       immutable.SortedSet(cluster.selfAddress)
     else

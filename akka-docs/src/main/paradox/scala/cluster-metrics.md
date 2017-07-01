@@ -185,7 +185,7 @@ akka.actor.deployment {
     routees.paths = ["/user/factorialBackend"]
     cluster {
       enabled = on
-      use-role-set = ["backend"]
+      use-roles = ["backend"]
       allow-local-routees = off
     }
   }

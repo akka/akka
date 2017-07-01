@@ -167,7 +167,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     builder.setAllowLocalRoutees(settings.allowLocalRoutees)
       .setMaxInstancesPerNode(settings.maxInstancesPerNode)
       .setTotalInstances(settings.totalInstances)
-      .addAllUseRoleSet(settings.useRoleSet.asJava)
+      .addAllUseRoles(settings.useRoles.asJava)
 
     builder.build()
   }
@@ -383,7 +383,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       totalInstances = crps.getTotalInstances,
       maxInstancesPerNode = crps.getMaxInstancesPerNode,
       allowLocalRoutees = crps.getAllowLocalRoutees,
-      useRoleSet = immutableSeq(crps.getUseRoleSetList).toSet
+      useRoles = immutableSeq(crps.getUseRolesList).toSet
     )
   }
 

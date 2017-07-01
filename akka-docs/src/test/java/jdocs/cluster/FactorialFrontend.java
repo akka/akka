@@ -79,12 +79,12 @@ abstract class FactorialFrontend2 extends AbstractActor {
   int totalInstances = 100;
   Iterable<String> routeesPaths = Arrays.asList("/user/factorialBackend", "");
   boolean allowLocalRoutees = true;
-  Set<String> useRoleSet = new HashSet<>(Arrays.asList("backend"));
+  Set<String> useRoles = new HashSet<>(Arrays.asList("backend"));
   ActorRef backend = getContext().actorOf(
     new ClusterRouterGroup(new AdaptiveLoadBalancingGroup(
       HeapMetricsSelector.getInstance(), Collections.<String> emptyList()),
         new ClusterRouterGroupSettings(totalInstances, routeesPaths,
-          allowLocalRoutees, useRoleSet)).props(), "factorialBackendRouter2");
+          allowLocalRoutees, useRoles)).props(), "factorialBackendRouter2");
 
   //#router-lookup-in-code
 }
@@ -95,12 +95,12 @@ abstract class FactorialFrontend3 extends AbstractActor {
   int totalInstances = 100;
   int maxInstancesPerNode = 3;
   boolean allowLocalRoutees = false;
-  Set<String> useRoleSet = new HashSet<>(Arrays.asList("backend"));
+  Set<String> useRoles = new HashSet<>(Arrays.asList("backend"));
   ActorRef backend = getContext().actorOf(
     new ClusterRouterPool(new AdaptiveLoadBalancingPool(
       SystemLoadAverageMetricsSelector.getInstance(), 0),
         new ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode,
-          allowLocalRoutees, useRoleSet)).props(Props
+          allowLocalRoutees, useRoles)).props(Props
             .create(FactorialBackend.class)), "factorialBackendRouter3");
   //#router-deploy-in-code
 }

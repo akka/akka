@@ -58,11 +58,11 @@ abstract class StatsService2 extends AbstractActor {
   Iterable<String> routeesPaths = Collections
     .singletonList("/user/statsWorker");
   boolean allowLocalRoutees = true;
-  Set<String> useRoleSet = new HashSet<>(Arrays.asList("compute"));
+  Set<String> useRoles = new HashSet<>(Arrays.asList("compute"));
   ActorRef workerRouter = getContext().actorOf(
     new ClusterRouterGroup(new ConsistentHashingGroup(routeesPaths),
       new ClusterRouterGroupSettings(totalInstances, routeesPaths,
-        allowLocalRoutees, useRoleSet)).props(), "workerRouter2");
+        allowLocalRoutees, useRoles)).props(), "workerRouter2");
   //#router-lookup-in-code
 }
 
@@ -72,11 +72,11 @@ abstract class StatsService3 extends AbstractActor {
   int totalInstances = 100;
   int maxInstancesPerNode = 3;
   boolean allowLocalRoutees = false;
-  Set<String> useRoleSet = new HashSet<>(Arrays.asList("compute"));
+  Set<String> useRoles = new HashSet<>(Arrays.asList("compute"));
   ActorRef workerRouter = getContext().actorOf(
     new ClusterRouterPool(new ConsistentHashingPool(0),
       new ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode,
-        allowLocalRoutees, useRoleSet)).props(Props
+        allowLocalRoutees, useRoles)).props(Props
           .create(StatsWorker.class)), "workerRouter3");
   //#router-deploy-in-code
 }
