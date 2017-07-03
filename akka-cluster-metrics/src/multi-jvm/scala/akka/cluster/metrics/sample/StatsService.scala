@@ -71,7 +71,7 @@ abstract class StatsService3 extends Actor {
   val workerRouter = context.actorOf(
     ClusterRouterPool(ConsistentHashingPool(0), ClusterRouterPoolSettings(
       totalInstances = 100, maxInstancesPerNode = 3,
-      allowLocalRoutees = false, useRoles = Set.empty)).props(Props[StatsWorker]),
+      allowLocalRoutees = false)).props(Props[StatsWorker]),
     name = "workerRouter3")
   //#router-deploy-in-code
 }
