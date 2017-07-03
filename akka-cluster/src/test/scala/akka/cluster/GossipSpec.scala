@@ -299,10 +299,12 @@ class GossipSpec extends WordSpec with Matchers {
 
       // between teams it matters though
       g.isReachable(dc1a1.uniqueAddress, dc2c1.uniqueAddress) should ===(false)
-      g.isReachable(dc1b1.uniqueAddress, dc2c1.uniqueAddress) should ===(false)
       g.isReachable(dc2c1.uniqueAddress, dc1a1.uniqueAddress) should ===(false)
-      g.isReachable(dc2d1.uniqueAddress, dc1a1.uniqueAddress) should ===(false)
+      // this isReachable method only says false for specific unreachable entries between the nodes
+      g.isReachable(dc1b1.uniqueAddress, dc2c1.uniqueAddress) should ===(true)
+      g.isReachable(dc2d1.uniqueAddress, dc1a1.uniqueAddress) should ===(true)
 
+      // this one looks at all unreachable-entries for the to-address
       g.isReachableExcludingDownedObservers(dc1a1.team, dc2c1.uniqueAddress) should ===(false)
       g.isReachableExcludingDownedObservers(dc1b1.team, dc2c1.uniqueAddress) should ===(false)
       g.isReachableExcludingDownedObservers(dc2c1.team, dc1a1.uniqueAddress) should ===(false)

@@ -251,8 +251,9 @@ private[cluster] final case class Gossip(
   def isSingletonCluster: Boolean = members.size == 1
 
   /**
-   * @return true if fromAddress should be able to reach toAddress based on the unreachability data and their
-   *         respective teams
+   * @return true if toAddress should be reachable from the fromTeam in general, within a team
+   *         this means only caring about team-local observations, across teams it means caring
+   *         about all observations for the toAddress.
    */
   def isReachableExcludingDownedObservers(fromTeam: Team, toAddress: UniqueAddress): Boolean =
     if (!hasMember(toAddress)) false
@@ -260,7 +261,8 @@ private[cluster] final case class Gossip(
       val to = member(toAddress)
 
       // if member is in the same team, we ignore cross-team unreachability
-      if (fromTeam == to.team) teamReachabilityExcludingDownedObservers(fromTeam).isReachable(toAddress, toAddress)
+      if (fromTeam == to.team) teamReachabilityExcludingDownedObservers(fromTeam).isReachable(toAddress)
+      // if not it is enough that any non-downed node observed it as unreachable
       else reachabilityExcludingDownedObservers.isReachable(toAddress)
     }
 
@@ -271,12 +273,8 @@ private[cluster] final case class Gossip(
   def isReachable(fromAddress: UniqueAddress, toAddress: UniqueAddress): Boolean =
     if (!hasMember(toAddress)) false
     else {
-      val from = member(fromAddress)
-      val to = member(toAddress)
-
-      // if member is in the same team, we ignore cross-team unreachability
-      if (from.team == to.team) teamReachability(from.team).isReachable(fromAddress, toAddress)
-      else overview.reachability.isReachable(toAddress)
+      // as it looks for specific unreachable entires for the node pair we don't have to filter on team
+      overview.reachability.isReachable(fromAddress, toAddress)
     }
 
   def member(node: UniqueAddress): Member = {
