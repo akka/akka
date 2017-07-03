@@ -339,7 +339,7 @@ private[cluster] final case class Gossip(
   }
 
   def pruneTombstones(removeEarlierThan: Gossip.Timestamp): Gossip = {
-    val newTombstones = tombstones.filter { case (_, timestamp) ⇒ timestamp < removeEarlierThan }
+    val newTombstones = tombstones.filter { case (_, timestamp) ⇒ timestamp > removeEarlierThan }
     if (newTombstones.size == tombstones.size) this
     else copy(tombstones = newTombstones)
   }

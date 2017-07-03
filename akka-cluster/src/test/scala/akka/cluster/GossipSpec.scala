@@ -388,7 +388,7 @@ class GossipSpec extends WordSpec with Matchers {
       val pruned = g.pruneTombstones(timestamp + 1)
 
       // when we merge the two, it should not be reintroduced
-      pruned.tombstones.keys should not contain (dc2d1.uniqueAddress)
+      pruned.tombstones.keys should not contain (dc1b1.uniqueAddress)
     }
 
     "mark a node as down" in {
