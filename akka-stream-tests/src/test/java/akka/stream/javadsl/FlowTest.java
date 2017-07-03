@@ -635,9 +635,9 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseBatchWeighted() throws Exception {
     final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
-    final Flow<String, String, NotUsed> flow = Flow.of(String.class).batchWeighted(3L, new Function<String, Object>() {
+    final Flow<String, String, NotUsed> flow = Flow.of(String.class).batchWeighted(3L, new Function<String, java.lang.Long>() {
       @Override
-      public Object apply(String s) throws Exception {
+      public java.lang.Long apply(String s) throws Exception {
         return 1L;
       }
     }, new Function<String, String>() {
