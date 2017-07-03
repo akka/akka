@@ -154,7 +154,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
         val members = clusterView.members.toSeq.sorted(Member.ordering).map { m ⇒
           s"""{
               |      "address": "${m.address}",
-              |      "roles": [${if (m.roles.isEmpty) "" else m.roles.toList.sorted.map("\"" + _ + "\"").mkString("\n        ", ",\n        ", "\n      ")}],
+              |      "roles": [${if (m.roles.isEmpty) "" else m.roles.map("\"" + _ + "\"").mkString("\n        ", ",\n        ", "\n      ")}],
               |      "status": "${m.status}"
               |    }""".stripMargin
         } mkString (",\n    ")
