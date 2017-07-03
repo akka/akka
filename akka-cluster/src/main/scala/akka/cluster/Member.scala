@@ -53,7 +53,9 @@ class Member private[cluster] (
    * Is this member older, has been part of cluster longer, than another
    * member. It is only correct when comparing two existing members in a
    * cluster. A member that joined after removal of another member may be
-   * considered older than the removed member.
+   * considered older than the removed member. Note that is only makes
+   * sense to compare with other members inside of one team (upNumber has
+   * a higher risk of being reused across teams).
    */
   def isOlderThan(other: Member): Boolean =
     if (upNumber == other.upNumber)
@@ -144,7 +146,7 @@ object Member {
     (a, b) ⇒ a.isOlderThan(b)
   }
 
-  @deprecated("Was accidentally made a public API, internal", since = "2.5.3")
+  @deprecated("Was accidentally made a public API, internal", since = "2.5.4")
   def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] =
     pickHighestPriority(a, b, Map.empty)
 

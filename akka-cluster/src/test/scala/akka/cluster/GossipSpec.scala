@@ -342,13 +342,16 @@ class GossipSpec extends WordSpec with Matchers {
     // TODO test coverage for when leaderOf returns None - I have not been able to figure it out
 
     "clear out a bunch of stuff when removing a node" in {
-      val g = Gossip(members = SortedSet(dc1a1, dc1b1))
+      val g = Gossip(members = SortedSet(dc1a1, dc1b1, dc2d2))
         .remove(dc1b1.uniqueAddress, System.currentTimeMillis())
 
       g.seenBy should not contain (dc1b1.uniqueAddress)
       g.overview.reachability.records.exists(_.observer == dc1b1.uniqueAddress) should be(false)
       g.overview.reachability.records.exists(_.subject == dc1b1.uniqueAddress) should be(false)
       g.version.versions should have size (0)
+
+      // sort order should be kept
+      g.members.toList should ===(List(dc1a1, dc2d2))
     }
 
     "not reintroduce members from out-of-team gossip when merging" in {
@@ -407,6 +410,7 @@ class GossipSpec extends WordSpec with Matchers {
       val g = Gossip(members = SortedSet(dc1a1, joining))
 
       g.member(joining.uniqueAddress).status should ===(Joining)
+      val oldMembers = g.members
 
       val updated = g.update(SortedSet(joining.copy(status = Up)))
 
@@ -414,6 +418,9 @@ class GossipSpec extends WordSpec with Matchers {
 
       // obviously the other member should be unaffected
       updated.member(dc1a1.uniqueAddress).status should ===(dc1a1.status)
+
+      // order should be kept
+      updated.members.toList.map(_.uniqueAddress) should ===(List(dc1a1.uniqueAddress, joining.uniqueAddress))
     }
   }
 }

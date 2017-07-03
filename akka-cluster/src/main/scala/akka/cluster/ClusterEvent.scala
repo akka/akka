@@ -93,13 +93,13 @@ object ClusterEvent {
     def getLeader: Address = leader orNull
 
     /**
-     * get address of current leader, if any, within the role set
+     * get address of current leader, if any, within the team that has the given role
      */
     def roleLeader(role: String): Option[Address] = roleLeaderMap.getOrElse(role, None)
 
     /**
-     * Java API: get address of current leader within the role set,
-     * or null if no node with that role
+     * Java API: get address of current leader, if any, within the team that has the given role
+     * or null if no such node exists
      */
     def getRoleLeader(role: String): Address = roleLeaderMap.get(role).flatten.orNull
 
@@ -372,7 +372,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   val cluster = Cluster(context.system)
   val selfUniqueAddress = cluster.selfUniqueAddress
   var latestGossip: Gossip = Gossip.empty
-  def myTeam = cluster.settings.Team
+  def selfTeam = cluster.settings.Team
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
     // don't postStop when restarted, no children to stop
@@ -407,9 +407,9 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       members = latestGossip.members,
       unreachable = unreachable,
       seenBy = latestGossip.seenBy.map(_.address),
-      leader = latestGossip.teamLeader(myTeam, selfUniqueAddress).map(_.address),
+      leader = latestGossip.teamLeader(selfTeam, selfUniqueAddress).map(_.address),
       roleLeaderMap = latestGossip.allRoles.map(r ⇒
-        r → latestGossip.roleLeader(cluster.settings.Team, r, selfUniqueAddress).map(_.address)
+        r → latestGossip.roleLeader(selfTeam, r, selfUniqueAddress).map(_.address)
       )(collection.breakOut)
     )
     receiver ! state
@@ -446,10 +446,10 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     diffMemberEvents(oldGossip, newGossip) foreach pub
     diffUnreachable(oldGossip, newGossip, selfUniqueAddress) foreach pub
     diffReachable(oldGossip, newGossip, selfUniqueAddress) foreach pub
-    diffLeader(myTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub
-    diffRolesLeader(myTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub
+    diffLeader(selfTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub
+    diffRolesLeader(selfTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub
     // publish internal SeenState for testing purposes
-    diffSeen(myTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub
+    diffSeen(selfTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub
     diffReachability(oldGossip, newGossip) foreach pub
   }
 

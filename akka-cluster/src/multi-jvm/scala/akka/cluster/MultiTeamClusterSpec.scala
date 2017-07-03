@@ -84,7 +84,7 @@ abstract class MultiTeamSpec
 
     "be able to have team member changes while there is inter-team unreachability" in within(20.seconds) {
       runOn(first) {
-        testConductor.blackhole(first, third, Direction.Both)
+        testConductor.blackhole(first, third, Direction.Both).await
       }
       runOn(first, second, third, fourth) {
         awaitAssert(clusterView.unreachableMembers should not be empty)
@@ -102,7 +102,7 @@ abstract class MultiTeamSpec
       }
 
       runOn(first) {
-        testConductor.passThrough(first, third, Direction.Both)
+        testConductor.passThrough(first, third, Direction.Both).await
       }
       runOn(first, second, third, fourth) {
         awaitAssert(clusterView.unreachableMembers should not be empty)
@@ -112,7 +112,7 @@ abstract class MultiTeamSpec
 
     "be able to have team member changes while there is unreachability in another team" in within(20.seconds) {
       runOn(first) {
-        testConductor.blackhole(first, second, Direction.Both)
+        testConductor.blackhole(first, second, Direction.Both).await
       }
       runOn(first, second, third, fourth) {
         awaitAssert(clusterView.unreachableMembers should not be empty)

@@ -53,7 +53,7 @@ abstract class MultiTeamSplitBrainSpec
         dc1Node ← dc1
         dc2Node ← dc2
       } {
-        testConductor.blackhole(dc1Node, dc2Node, Direction.Both)
+        testConductor.blackhole(dc1Node, dc2Node, Direction.Both).await
       }
     }
 
@@ -72,7 +72,7 @@ abstract class MultiTeamSplitBrainSpec
         dc1Node ← dc1
         dc2Node ← dc2
       } {
-        testConductor.passThrough(dc1Node, dc2Node, Direction.Both)
+        testConductor.passThrough(dc1Node, dc2Node, Direction.Both).await
       }
     }
 

@@ -861,7 +861,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
       log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
 
-      if (comparison == VectorClock.Concurrent) {
+      if (comparison == VectorClock.Concurrent && cluster.settings.Debug.VerboseGossipLogging) {
         log.debug(
           """Couldn't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merged them into [{}]""",
           remoteGossip, localGossip, winningGossip)
