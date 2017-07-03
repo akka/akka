@@ -5,13 +5,9 @@
 package akka.cluster
 
 import language.postfixOps
-import scala.concurrent.duration._
-
-import com.typesafe.config.ConfigFactory
-
 import akka.testkit.AkkaSpec
 import akka.dispatch.Dispatchers
-
+import scala.concurrent.duration._
 import akka.remote.PhiAccrualFailureDetector
 import akka.util.Helpers.ConfigOps
 import akka.actor.Address
@@ -45,29 +41,13 @@ class ClusterConfigSpec extends AkkaSpec {
       DownRemovalMargin should ===(Duration.Zero)
       MinNrOfMembers should ===(1)
       MinNrOfMembersOfRole should ===(Map.empty[String, Int])
-      Team should ===("default")
-      Roles should ===(Set("team-default"))
+      Roles should ===(Set.empty[String])
       JmxEnabled should ===(true)
       UseDispatcher should ===(Dispatchers.DefaultDispatcherId)
       GossipDifferentViewProbability should ===(0.8 +- 0.0001)
       ReduceGossipDifferentViewProbability should ===(400)
       SchedulerTickDuration should ===(33 millis)
       SchedulerTicksPerWheel should ===(512)
-    }
-
-    "be able to parse non-default cluster config elements" in {
-      val settings = new ClusterSettings(ConfigFactory.parseString(
-        """
-          |akka {
-          |  cluster {
-          |    roles = [ "hamlet" ]
-          |    team = "blue"
-          |  }
-          |}
-        """.stripMargin).withFallback(ConfigFactory.load()), system.name)
-      import settings._
-      Roles should ===(Set("hamlet", "team-blue"))
-      Team should ===("blue")
     }
   }
 }
