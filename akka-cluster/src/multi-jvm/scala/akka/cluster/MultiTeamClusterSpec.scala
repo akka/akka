@@ -3,6 +3,7 @@
  */
 package akka.cluster
 
+import akka.cluster.MemberStatus.Up
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import com.typesafe.config.ConfigFactory
@@ -107,7 +108,7 @@ abstract class MultiTeamSpec
       runOn(first, second, third, fourth) {
         awaitAssert(clusterView.unreachableMembers should not be empty)
       }
-      enterBarrier("end")
+      enterBarrier("inter-team unreachability end")
     }
 
     "be able to have team member changes while there is unreachability in another team" in within(20.seconds) {
@@ -119,14 +120,33 @@ abstract class MultiTeamSpec
       }
       enterBarrier("other-team-internal-unreachable")
 
-      runOn(fifth) {
-        cluster.leave(first)
+      runOn(third) {
+        cluster.join(fifth)
+        // should be able to join and leave
+        // since the unreachable nodes are inside of dc1
+        cluster.leave(fourth)
+
+        awaitAssert(clusterView.members.map(_.address) should not contain (address(fourth)))
+        awaitAssert(clusterView.members.collect { case m if m.status == Up ⇒ m.address } should contain(address(fifth)))
       }
 
-      // should be able to leave and become removed
-      // since the unreachable nodes are inside of dc1
-      awaitAssert(clusterView.members.find(_.status == MemberStatus.Removed))
-      enterBarrier("removed-seen")
+      enterBarrier("other-team-internal-unreachable changed")
+
+      runOn(first) {
+        testConductor.passThrough(first, second, Direction.Both).await
+      }
+      enterBarrier("other-team-internal-unreachable end")
+    }
+
+    "be able to down a member of another team" in within(20.seconds) {
+      runOn(fifth) {
+        cluster.down(address(second))
+      }
+
+      runOn(first, third, fifth) {
+        awaitAssert(clusterView.members.map(_.address) should not contain (address(second)))
+      }
+      enterBarrier("cross-team-downed")
     }
 
   }

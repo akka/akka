@@ -725,8 +725,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     val localSeen = localOverview.seen
     val localReachability = localGossip.teamReachability(selfTeam)
 
-    // check if the node to DOWN is in the team `members` set
-    localMembers.find(m ⇒ m.team == selfTeam && m.address == address) match {
+    // check if the node to DOWN is in the `members` set
+    localMembers.find(_.address == address) match {
       case Some(m) if m.status != Down ⇒
         if (localReachability.isReachable(m.uniqueAddress))
           logInfo("Marking node [{}] as [{}]", m.address, Down)
