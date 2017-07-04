@@ -163,7 +163,7 @@ object Member {
         if (members.size == 2) acc + members.reduceLeft(highestPriorityOf)
         else {
           val m = members.head
-          if (tombstones.contains(m.uniqueAddress) || Gossip.removeUnreachableWithMemberStatus(m.status)) acc // removed
+          if (tombstones.contains(m.uniqueAddress) || MembershipState.removeUnreachableWithMemberStatus(m.status)) acc // removed
           else acc + m
         }
     }
