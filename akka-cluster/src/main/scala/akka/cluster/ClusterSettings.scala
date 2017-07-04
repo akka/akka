@@ -10,14 +10,31 @@ import com.typesafe.config.ConfigObject
 import scala.concurrent.duration.Duration
 import akka.actor.Address
 import akka.actor.AddressFromURIString
+import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
-import akka.util.Helpers.{ Requiring, ConfigOps, toRootLowerCase }
+import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
 
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
 
-final class ClusterSettings(val config: Config, val systemName: String) {
+object ClusterSettings {
+  type Team = String
+  /**
+   * INTERNAL API.
+   */
+  @InternalApi
+  private[akka] val TeamRolePrefix = "team-"
 
+  /**
+   * INTERNAL API.
+   */
+  @InternalApi
+  private[akka] val DefaultTeam: Team = "default"
+
+}
+
+final class ClusterSettings(val config: Config, val systemName: String) {
+  import ClusterSettings._
   private val cc = config.getConfig("akka.cluster")
 
   val LogInfo: Boolean = cc.getBoolean("log-info")
@@ -58,6 +75,11 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     }
   }
 
+  val PruneGossipTombstonesAfter: Duration = {
+    val key = "prune-gossip-tombstones-after"
+    cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s")
+  }
+
   // specific to the [[akka.cluster.DefaultDowningProvider]]
   val AutoDownUnreachableAfter: Duration = {
     val key = "auto-down-unreachable-after"
@@ -93,8 +115,15 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
   val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
 
-  val Team: String = cc.getString("team")
-  val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet + s"team-$Team"
+  val Team: Team = cc.getString("team")
+  val Roles: Set[String] = {
+    val configuredRoles = (immutableSeq(cc.getStringList("roles")).toSet) requiring (
+      _.forall(!_.startsWith(TeamRolePrefix)),
+      s"Roles must not start with '${TeamRolePrefix}' as that is reserved for the cluster team setting"
+    )
+
+    configuredRoles + s"$TeamRolePrefix$Team"
+  }
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")
   } requiring (_ > 0, "min-nr-of-members must be > 0")
@@ -118,6 +147,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
   object Debug {
     val VerboseHeartbeatLogging = cc.getBoolean("debug.verbose-heartbeat-logging")
+    val VerboseGossipLogging = cc.getBoolean("debug.verbose-gossip-logging")
   }
 
 }

@@ -3,6 +3,8 @@
  */
 package akka.cluster
 
+import akka.annotation.InternalApi
+
 import scala.collection.immutable
 import scala.collection.breakOut
 
@@ -46,6 +48,7 @@ private[cluster] object Reachability {
  * - Reachable otherwise, i.e. no observer node considers it as Unreachable
  */
 @SerialVersionUID(1L)
+@InternalApi
 private[cluster] class Reachability private (
   val records:  immutable.IndexedSeq[Reachability.Record],
   val versions: Map[UniqueAddress, Long]) extends Serializable {
@@ -205,8 +208,14 @@ private[cluster] class Reachability private (
     else if (cache.allUnreachable(node)) Unreachable
     else Reachable
 
+  /**
+   * @return true if there is no observer that has marked node unreachable or terminated
+   */
   def isReachable(node: UniqueAddress): Boolean = isAllReachable || !allUnreachableOrTerminated.contains(node)
 
+  /**
+   * @return true if there is no specific entry saying observer observed subject as unreachable
+   */
   def isReachable(observer: UniqueAddress, subject: UniqueAddress): Boolean =
     status(observer, subject) == Reachable
 

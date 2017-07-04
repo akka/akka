@@ -21,7 +21,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
     val ref = serializer.fromBinary(blob, obj.getClass)
     obj match {
       case env: GossipEnvelope ⇒
-        val env2 = obj.asInstanceOf[GossipEnvelope]
+        val env2 = ref.asInstanceOf[GossipEnvelope]
         env2.from should ===(env.from)
         env2.to should ===(env.to)
         env2.gossip should ===(env.gossip)
@@ -65,9 +65,11 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       val g2 = (g1 :+ node3 :+ node4).seen(a1.uniqueAddress).seen(c1.uniqueAddress)
       val reachability3 = Reachability.empty.unreachable(a1.uniqueAddress, e1.uniqueAddress).unreachable(b1.uniqueAddress, e1.uniqueAddress)
       val g3 = g2.copy(members = SortedSet(a1, b1, c1, d1, e1), overview = g2.overview.copy(reachability = reachability3))
+      val g4 = g1.remove(d1.uniqueAddress, 352684800)
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g1))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g2))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g3))
+      checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g4))
 
       checkSerialization(GossipStatus(a1.uniqueAddress, g1.version))
       checkSerialization(GossipStatus(a1.uniqueAddress, g2.version))

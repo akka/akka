@@ -131,7 +131,10 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       publisher ! Subscribe(subscriber.ref, InitialStateAsSnapshot, Set(classOf[RoleLeaderChanged]))
       subscriber.expectMsgType[CurrentClusterState]
       publisher ! PublishChanges(Gossip(members = SortedSet(cJoining, dUp)))
-      subscriber.expectMsg(RoleLeaderChanged("GRP", Some(dUp.address)))
+      subscriber.expectMsgAllOf(
+        RoleLeaderChanged("GRP", Some(dUp.address)),
+        RoleLeaderChanged(ClusterSettings.TeamRolePrefix + ClusterSettings.DefaultTeam, Some(dUp.address))
+      )
       publisher ! PublishChanges(Gossip(members = SortedSet(cUp, dUp)))
       subscriber.expectMsg(RoleLeaderChanged("GRP", Some(cUp.address)))
     }
