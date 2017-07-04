@@ -356,11 +356,11 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
         roleIndex ← roleIndexes
         role = roleMapping(roleIndex)
       } {
-        if (role.startsWith("team-")) containsDc = true
+        if (role.startsWith(ClusterSettings.TeamRolePrefix)) containsDc = true
         roles += role
       }
 
-      if (!containsDc) roles + "team-default"
+      if (!containsDc) roles + (ClusterSettings.TeamRolePrefix + "default")
       else roles
     }
 

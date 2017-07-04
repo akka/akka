@@ -37,10 +37,10 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
   val a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Joining, Set.empty)
   val b1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, Set("r1"))
-  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, Set("team-foo"))
-  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Exiting, Set("r1", "team-foo"))
+  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, Set.empty, "foo")
+  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Exiting, Set("r1"), "foo")
   val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Down, Set("r3"))
-  val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("team-foo", "r3"))
+  val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("r3"), "foo")
 
   "ClusterMessages" must {
 
@@ -82,8 +82,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
     "add a default team role if none is present" in {
       val env = roundtrip(GossipEnvelope(a1.uniqueAddress, d1.uniqueAddress, Gossip(SortedSet(a1, d1))))
-      env.gossip.members.head.roles should be(Set("team-default"))
-      env.gossip.members.tail.head.roles should be(Set("r1", "team-foo"))
+      env.gossip.members.head.roles should be(Set(ClusterSettings.TeamRolePrefix + "default"))
+      env.gossip.members.tail.head.roles should be(Set("r1", ClusterSettings.TeamRolePrefix + "foo"))
     }
   }
   "Cluster router pool" must {
