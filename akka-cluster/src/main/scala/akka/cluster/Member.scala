@@ -6,6 +6,8 @@ package akka.cluster
 
 import akka.actor.Address
 import MemberStatus._
+import akka.annotation.InternalApi
+import akka.cluster.ClusterSettings.Team
 
 import scala.runtime.AbstractFunction2
 
@@ -22,8 +24,9 @@ class Member private[cluster] (
   val status:                    MemberStatus,
   val roles:                     Set[String]) extends Serializable {
 
-  lazy val team: String = roles.find(_.startsWith("team-"))
+  lazy val team: String = roles.find(_.startsWith(ClusterSettings.TeamRolePrefix))
     .getOrElse(throw new IllegalStateException("Team undefined, should not be possible"))
+    .substring(ClusterSettings.TeamRolePrefix.length)
 
   def address: Address = uniqueAddress.address
 
@@ -32,7 +35,11 @@ class Member private[cluster] (
     case m: Member ⇒ uniqueAddress == m.uniqueAddress
     case _         ⇒ false
   }
-  override def toString = s"Member(address = ${address}, status = ${status})"
+  override def toString =
+    if (team == ClusterSettings.DefaultTeam)
+      s"Member(address = $address, status = $status)"
+    else
+      s"Member(address = $address, team = $team, status = $status)"
 
   def hasRole(role: String): Boolean = roles.contains(role)
 
@@ -46,7 +53,9 @@ class Member private[cluster] (
    * Is this member older, has been part of cluster longer, than another
    * member. It is only correct when comparing two existing members in a
    * cluster. A member that joined after removal of another member may be
-   * considered older than the removed member.
+   * considered older than the removed member. Note that is only makes
+   * sense to compare with other members inside of one team (upNumber has
+   * a higher risk of being reused across teams).
    */
   def isOlderThan(other: Member): Boolean =
     if (upNumber == other.upNumber)
@@ -87,7 +96,8 @@ object Member {
   /**
    * INTERNAL API
    */
-  private[cluster] def removed(node: UniqueAddress): Member = new Member(node, Int.MaxValue, Removed, Set.empty)
+  private[cluster] def removed(node: UniqueAddress): Member =
+    new Member(node, Int.MaxValue, Removed, Set(ClusterSettings.TeamRolePrefix + "-N/A"))
 
   /**
    * `Address` ordering type class, sorts addresses by host and port.
@@ -136,16 +146,24 @@ object Member {
     (a, b) ⇒ a.isOlderThan(b)
   }
 
-  def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] = {
+  @deprecated("Was accidentally made a public API, internal", since = "2.5.4")
+  def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] =
+    pickHighestPriority(a, b, Map.empty)
+
+  /**
+   * INTERNAL API.
+   */
+  @InternalApi
+  private[akka] def pickHighestPriority(a: Set[Member], b: Set[Member], tombstones: Map[UniqueAddress, Long]): Set[Member] = {
     // group all members by Address => Seq[Member]
     val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
     // pick highest MemberStatus
-    (Member.none /: groupedByAddress) {
+    groupedByAddress.foldLeft(Member.none) {
       case (acc, (_, members)) ⇒
         if (members.size == 2) acc + members.reduceLeft(highestPriorityOf)
         else {
           val m = members.head
-          if (Gossip.removeUnreachableWithMemberStatus(m.status)) acc // removed
+          if (tombstones.contains(m.uniqueAddress) || Gossip.removeUnreachableWithMemberStatus(m.status)) acc // removed
           else acc + m
         }
     }
