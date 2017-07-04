@@ -10,11 +10,10 @@ import java.util
 import java.util.Collections
 import java.util.concurrent.TimeUnit.MICROSECONDS
 import java.util.concurrent._
-import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
-import java.util.concurrent.locks.{Lock, LockSupport, ReentrantLock}
+import java.util.concurrent.atomic.{ AtomicInteger, AtomicReference }
+import java.util.concurrent.locks.{ Lock, LockSupport, ReentrantLock }
 
 import akka.dispatch._
-import akka.dispatch.affinity.AffinityPool._
 import akka.util.Helpers.Requiring
 import com.typesafe.config.Config
 
@@ -30,8 +29,13 @@ import scala.collection.mutable
 import scala.util.control.NonFatal
 
 /**
-  * INTERNAL API
-  */
+ * An [[ExecutorService]] implementation which pins actor to particular threads
+ * and guaranteed that an actor's [[Mailbox]] will e run on the thread it used
+ * it used to run. In situations where we see a lot of cache ping pong, this
+ * might lead to significant performance improvements.
+ *
+ * INTERNAL API
+ */
 @InternalApi
 @ApiMayChange
 private[akka] class AffinityPool(
@@ -67,6 +71,15 @@ private[akka] class AffinityPool(
   // maps a runnable to an index of a worker queue
   private val runnableToWorkerQueueIndex = new AtomicReference(ImmutableIntMap.empty)
 
+  private def locked[T](l: Lock)(body: ⇒ T) = {
+    l.lock()
+    try {
+      body
+    } finally {
+      l.unlock()
+    }
+  }
+
   private def getQueueForRunnable(command: Runnable) = {
 
     val runnableHash = command.hashCode()
@@ -90,8 +103,7 @@ private[akka] class AffinityPool(
     }
 
     val workQueueIndex =
-      if (fairDistributionThreshold > 0
-        && runnableToWorkerQueueIndex.get().size > fairDistributionThreshold)
+      if (fairDistributionThreshold == 0 || runnableToWorkerQueueIndex.get().size > fairDistributionThreshold)
         Math.abs(sbhash(runnableHash)) % parallelism
       else
         updateIfAbsentAndGetQueueIndex(runnableToWorkerQueueIndex, runnableHash, getNext)
@@ -192,7 +204,34 @@ private[akka] class AffinityPool(
 
   override def isTerminated: Boolean = poolState == Terminated
 
-  private class IdleStrategy(val idleCpuLevel: Int) {
+  // Following are auxiliary class and trait definitions
+
+  private sealed trait PoolState extends Ordered[PoolState] {
+    def order: Int
+    override def compare(that: PoolState): Int = this.order compareTo that.order
+  }
+
+  // accepts new tasks and processes tasks that are enqueued
+  private case object Running extends PoolState {
+    override val order: Int = 0
+  }
+
+  // does not accept new tasks, processes tasks that are in the queue
+  private case object ShuttingDown extends PoolState {
+    override def order: Int = 1
+  }
+
+  // does not accept new tasks, does not process tasks in queue
+  private case object ShutDown extends PoolState {
+    override def order: Int = 2
+  }
+
+  // all threads have been stopped, does not process tasks and does not accept new ones
+  private case object Terminated extends PoolState {
+    override def order: Int = 3
+  }
+
+  private final class IdleStrategy(val idleCpuLevel: Int) {
 
     private val maxSpins = 1100 * idleCpuLevel - 1000
     private val maxYields = 5 * idleCpuLevel
@@ -252,7 +291,9 @@ private[akka] class AffinityPool(
 
   }
 
-  private class ThreadPoolWorker(val q: BoundedTaskQueue, val idleStrategy: IdleStrategy) extends Runnable {
+  private final class BoundedTaskQueue(capacity: Int) extends AbstractBoundedNodeQueue[Runnable](capacity)
+
+  private final class ThreadPoolWorker(val q: BoundedTaskQueue, val idleStrategy: IdleStrategy) extends Runnable {
 
     private sealed trait WorkerState
     private case object NotStarted extends WorkerState
@@ -321,46 +362,12 @@ private[akka] class AffinityPool(
 
 }
 
-object AffinityPool {
-
-  private def locked[T](l: Lock)(body: ⇒ T) = {
-    l.lock()
-    try {
-      body
-    } finally {
-      l.unlock()
-    }
-  }
-
-  private sealed trait PoolState extends Ordered[PoolState] {
-    def order: Int
-    override def compare(that: PoolState): Int = this.order compareTo that.order
-  }
-
-  // accepts new tasks and processes tasks that are enqueued
-  private case object Running extends PoolState {
-    override val order: Int = 0
-  }
-
-  // does not accept new tasks, processes tasks that are in the queue
-  private case object ShuttingDown extends PoolState {
-    override def order: Int = 1
-  }
-
-  // does not accept new tasks, does not process tasks in queue
-  private case object ShutDown extends PoolState {
-    override def order: Int = 2
-  }
-
-  // all threads have been stopped, does not process tasks and does not accept new ones
-  private case object Terminated extends PoolState {
-    override def order: Int = 3
-  }
-}
-
-final class BoundedTaskQueue(capacity: Int) extends AbstractBoundedNodeQueue[Runnable](capacity)
-
-final class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
+/**
+ * INTERNAL API
+ */
+@InternalApi
+@ApiMayChange
+private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends ExecutorServiceConfigurator(config, prerequisites) {
 
   private final val MaxfairDistributionThreshold = 2048
@@ -401,6 +408,11 @@ trait RejectionHandlerFactory {
   def create(): RejectionHandler
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
+@ApiMayChange
 private[akka] final class DefaultRejectionHandlerFactory extends RejectionHandlerFactory {
   private class DefaultRejectionHandler extends RejectionHandler {
     override def reject(command: Runnable, service: ExecutorService): Unit =

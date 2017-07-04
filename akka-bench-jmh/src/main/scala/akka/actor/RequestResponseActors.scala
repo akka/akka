@@ -5,9 +5,8 @@ package akka.actor
 
 import java.util.concurrent.CountDownLatch
 
-import akka.dispatch.forkjoin.ThreadLocalRandom
-
 import scala.collection.mutable
+import scala.util.Random
 
 object RequestResponseActors {
 
@@ -18,7 +17,7 @@ object RequestResponseActors {
 
     private var left = numQueries
     private val receivedUsers: mutable.Map[Int, User] = mutable.Map()
-    private val randGenerator = ThreadLocalRandom.current()
+    private val randGenerator = new Random()
 
     override def receive: Receive = {
       case u: User => {
@@ -59,16 +58,11 @@ object RequestResponseActors {
 
   object UserServiceActor {
     def props(latch: CountDownLatch, numQueries: Int, numUsersInDB: Int) = {
-
-      val r = ThreadLocalRandom.current()
-      val alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-      val size = alpha.length
-      def randStr(n: Int) = (1 to n).map(x => alpha(r.nextInt().abs % size)).mkString
-
+      val r = new Random()
       val users = for {
         id <- 0 until numUsersInDB
-        firstName = randStr(5)
-        lastName = randStr(7)
+        firstName = r.nextString(5)
+        lastName = r.nextString(7)
         ssn = r.nextInt()
         friendIds = for { _ <- 0 until 5 } yield r.nextInt(numUsersInDB)
       } yield id -> User(id, firstName, lastName, ssn, friendIds)

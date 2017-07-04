@@ -46,7 +46,7 @@ class AffinityPoolIdleCPULevelBenchmark {
          |         parallelism-max = $numThreads
          |         task-queue-size = 512
          |         idle-cpu-level = $idleCPULevel
-         |         fair-work-distribution-threshold = ${Int.MaxValue}
+         |         fair-work-distribution-threshold = 2048
          |     }
          |     throughput = $throughPut
          |    }

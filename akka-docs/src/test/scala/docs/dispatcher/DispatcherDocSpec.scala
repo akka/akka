@@ -92,6 +92,28 @@ object DispatcherDocSpec {
     }
     //#my-thread-pool-dispatcher-config
 
+    //#affinity-pool-dispatcher-config
+    affinity-pool-dispatcher {
+      # Dispatcher is the name of the event-based dispatcher
+      type = Dispatcher
+      # What kind of ExecutionService to use
+      executor = "affinity-pool-executor"
+      # Configuration for the thread pool
+      affinity-pool-executor {
+        # Min number of threads to cap factor-based parallelism number to
+        parallelism-min = 8
+        # Parallelism (threads) ... ceil(available processors * factor)
+        parallelism-factor = 1
+        # Max number of threads to cap factor-based parallelism number to
+        parallelism-max = 16
+      }
+      # Throughput defines the maximum number of messages to be
+      # processed per actor before the thread jumps to the next actor.
+      # Set to 1 for as fair as possible.
+      throughput = 100
+    }
+    //#affinity-pool-dispatcher-config    
+
     //#fixed-pool-size-dispatcher-config
     blocking-io-dispatcher {
       type = Dispatcher
@@ -284,6 +306,14 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     val myActor =
       context.actorOf(Props[MyActor].withDispatcher("blocking-io-dispatcher"), "myactor2")
     //#defining-fixed-pool-size-dispatcher
+  }
+
+  "defining affinity-pool dispatcher" in {
+    val context = system
+    //#defining-affinity-pool-dispatcher
+    val myActor =
+      context.actorOf(Props[MyActor].withDispatcher("affinity-pool-dispatcher"), "myactor2")
+    //#defining-affinity-pool-dispatcher
   }
 
   "defining pinned dispatcher" in {
