@@ -57,19 +57,21 @@ final class Flow[-In, +Out, +Mat](
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    * {{{
-   *     +----------------------------+
-   *     | Resulting Sink             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | flow | ~Out~> | sink |  |
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
+   *     +------------------------------+
+   *     | Resulting Sink[In, Mat]      |
+   *     |                              |
+   *     |  +------+          +------+  |
+   *     |  |      |          |      |  |
+   * In ~~> | flow | ~~Out~~> | sink |  |
+   *     |  |   Mat|          |     M|  |
+   *     |  +------+          +------+  |
+   *     +------------------------------+
    * }}}
    * The materialized value of the combined [[Sink]] will be the materialized
    * value of the current flow (ignoring the given Sink’s value), use
    * [[Flow#toMat[Mat2* toMat]] if a different strategy is needed.
+   *
+   * See also [[toMat]] when access to materialized values of the parameter is needed.
    */
   def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Sink[In, Mat] = toMat(sink)(Keep.left)
 
@@ -77,12 +79,12 @@ final class Flow[-In, +Out, +Mat](
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    * {{{
    *     +----------------------------+
-   *     | Resulting Sink             |
+   *     | Resulting Sink[In, M2]     |
    *     |                            |
    *     |  +------+        +------+  |
    *     |  |      |        |      |  |
    * In ~~> | flow | ~Out~> | sink |  |
-   *     |  |      |        |      |  |
+   *     |  |   Mat|        |     M|  |
    *     |  +------+        +------+  |
    *     +----------------------------+
    * }}}
@@ -316,10 +318,25 @@ object Flow {
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
    * will be sent to the Sink and the Flow's output will come from the Source.
    *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +----------------------------------------------+
+   *     | Resulting Flow[I, O, NotUsed]                |
+   *     |                                              |
+   *     |  +---------+                  +-----------+  |
+   *     |  |         |                  |           |  |
+   * I  ~~> | Sink[I] | [no-connection!] | Source[O] | ~~> O
+   *     |  |         |                  |           |  |
+   *     |  +---------+                  +-----------+  |
+   *     +----------------------------------------------+
+   * }}}
+   *
    * The completion of the Sink and Source sides of a Flow constructed using
    * this method are independent. So if the Sink receives a completion signal,
    * the Source side will remain unaware of that. If you are looking to couple
    * the termination signals of the two sides use `Flow.fromSinkAndSourceCoupled` instead.
+   *
+   * See also [[fromSinkAndSourceMat]] when access to materialized values of the parameters is needed.
    */
   def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     fromSinkAndSourceMat(sink, source)(Keep.none)
@@ -327,6 +344,19 @@ object Flow {
   /**
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
    * will be sent to the Sink and the Flow's output will come from the Source.
+   *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +-------------------------------------------------------+
+   *     | Resulting Flow[I, O, M]                              |
+   *     |                                                      |
+   *     |  +-------------+                  +---------------+  |
+   *     |  |             |                  |               |  |
+   * I  ~~> | Sink[I, M1] | [no-connection!] | Source[O, M2] | ~~> O
+   *     |  |             |                  |               |  |
+   *     |  +-------------+                  +---------------+  |
+   *     +------------------------------------------------------+
+   * }}}
    *
    * The completion of the Sink and Source sides of a Flow constructed using
    * this method are independent. So if the Sink receives a completion signal,
@@ -342,6 +372,19 @@ object Flow {
   /**
    * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
    * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +---------------------------------------------+
+   *     | Resulting Flow[I, O, NotUsed]               |
+   *     |                                             |
+   *     |  +---------+                 +-----------+  |
+   *     |  |         |                 |           |  |
+   * I  ~~> | Sink[I] | ~~~(coupled)~~~ | Source[O] | ~~> O
+   *     |  |         |                 |           |  |
+   *     |  +---------+                 +-----------+  |
+   *     +---------------------------------------------+
+   * }}}
    *
    * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
    * however the Sink will also be completed. The table below illustrates the effects in detail:
@@ -384,6 +427,7 @@ object Flow {
    *   </tr>
    * </table>
    *
+   * See also [[fromSinkAndSourceCoupledMat]] when access to materialized values of the parameters is needed.
    */
   def fromSinkAndSourceCoupled[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     fromSinkAndSourceCoupledMat(sink, source)(Keep.none)
@@ -391,6 +435,19 @@ object Flow {
   /**
    * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
    * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +-----------------------------------------------------+
+   *     | Resulting Flow[I, O, M]                             |
+   *     |                                                     |
+   *     |  +-------------+                 +---------------+  |
+   *     |  |             |                 |               |  |
+   * I  ~~> | Sink[I, M1] | ~~~(coupled)~~~ | Source[O, M2] | ~~> O
+   *     |  |             |                 |               |  |
+   *     |  +-------------+                 +---------------+  |
+   *     +-----------------------------------------------------+
+   * }}}
    *
    * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
    * however the Sink will also be completed. The table on [[Flow.fromSinkAndSourceCoupled]]
@@ -474,19 +531,21 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Transform this [[Flow]] by appending the given processing steps.
    * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
+   *     +---------------------------------+
+   *     | Resulting Flow[In, T, Mat]  |
+   *     |                                 |
+   *     |  +------+             +------+  |
+   *     |  |      |             |      |  |
+   * In ~~> | this |  ~~Out~~>   | flow | ~~> T
+   *     |  |   Mat|             |     M|  |
+   *     |  +------+             +------+  |
+   *     +---------------------------------+
    * }}}
    * The materialized value of the combined [[Flow]] will be the materialized
    * value of the current flow (ignoring the other Flow’s value), use
    * [[Flow#viaMat viaMat]] if a different strategy is needed.
+   *
+   * See also [[FlowOpsMat.viaMat]] when access to materialized values of the parameter is needed.
    */
   def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T]
 
@@ -2043,19 +2102,22 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    * {{{
-   *     +----------------------------+
-   *     | Resulting Sink             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | flow | ~Out~> | sink |  |
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
+   *     +------------------------------+
+   *     | Resulting Sink[In, Mat]      |
+   *     |                              |
+   *     |  +------+          +------+  |
+   *     |  |      |          |      |  |
+   * In ~~> | flow | ~~Out~~> | sink |  |
+   *     |  |   Mat|          |     M|  |
+   *     |  +------+          +------+  |
+   *     +------------------------------+
    * }}}
+   *
    * The materialized value of the combined [[Sink]] will be the materialized
    * value of the current flow (ignoring the given Sink’s value), use
    * [[Flow#toMat[Mat2* toMat]] if a different strategy is needed.
+   *
+   * See also [[FlowOpsMat.toMat]] when access to materialized values of the parameter is needed.
    */
   def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed
 
@@ -2124,15 +2186,15 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
   /**
    * Transform this [[Flow]] by appending the given processing steps.
    * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
+   *     +---------------------------------+
+   *     | Resulting Flow[In, T, M2]       |
+   *     |                                 |
+   *     |  +------+            +------+   |
+   *     |  |      |            |      |   |
+   * In ~~> | this |  ~~Out~~>  | flow |  ~~> T
+   *     |  |   Mat|            |     M|   |
+   *     |  +------+            +------+   |
+   *     +---------------------------------+
    * }}}
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting Flow.
