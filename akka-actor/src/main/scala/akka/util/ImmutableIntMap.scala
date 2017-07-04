@@ -12,10 +12,10 @@ import scala.annotation.tailrec
  * INTERNAL API
  */
 @InternalApi private[akka] object ImmutableIntMap {
-  def empty: ImmutableIntMap =
+  val empty: ImmutableIntMap =
     new ImmutableIntMap(Array.emptyIntArray, Array.empty)
 
-  private val MaxScanLength = 10
+  private final val MaxScanLength = 10
 }
 
 /**
@@ -27,7 +27,7 @@ import scala.annotation.tailrec
 @InternalApi private[akka] class ImmutableIntMap private (
   private val keys: Array[Int], private val values: Array[Int]) {
 
-  val size: Int = keys.length
+  final val size: Int = keys.length
 
   /**
    * Worst case `O(log n)`, allocation free.

@@ -308,20 +308,20 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     //#defining-fixed-pool-size-dispatcher
   }
 
-  "defining affinity-pool dispatcher" in {
-    val context = system
-    //#defining-affinity-pool-dispatcher
-    val myActor =
-      context.actorOf(Props[MyActor].withDispatcher("affinity-pool-dispatcher"), "myactor2")
-    //#defining-affinity-pool-dispatcher
-  }
-
   "defining pinned dispatcher" in {
     val context = system
     //#defining-pinned-dispatcher
     val myActor =
       context.actorOf(Props[MyActor].withDispatcher("my-pinned-dispatcher"), "myactor3")
     //#defining-pinned-dispatcher
+  }
+
+  "defining affinity-pool dispatcher" in {
+    val context = system
+    //#defining-affinity-pool-dispatcher
+    val myActor =
+      context.actorOf(Props[MyActor].withDispatcher("affinity-pool-dispatcher"), "myactor4")
+    //#defining-affinity-pool-dispatcher
   }
 
   "looking up a dispatcher" in {
