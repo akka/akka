@@ -1221,6 +1221,14 @@ object MiMa extends AutoPlugin {
         // #22881 Make sure connections are aborted correctly on Windows
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancel"),
         
+        // #23231 multi-DC Sharding
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.Replicator.leader"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator.receiveLeaderChanged"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.Replicator.leader_="),
+        FilterAnyProblemStartingWith("akka.cluster.sharding.ClusterShardingGuardian"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.proxyProps"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.this"),
+        
         // #23144 recoverWithRetries cleanup
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.RecoverWith.InfiniteRetries"),  
 
