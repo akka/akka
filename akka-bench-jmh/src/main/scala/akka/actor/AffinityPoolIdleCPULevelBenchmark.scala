@@ -62,7 +62,7 @@ class AffinityPoolIdleCPULevelBenchmark {
 
   @Benchmark
   @OutputTimeUnit(TimeUnit.NANOSECONDS)
-  @OperationsPerInvocation(totalNumberOfMessages)
+  @OperationsPerInvocation(8000000)
   def pingPong(): Unit = benchmarkPingPongActors(numMessagesPerActorPair, numActors, "affinity-dispatcher", throughPut, timeout)
 
 }

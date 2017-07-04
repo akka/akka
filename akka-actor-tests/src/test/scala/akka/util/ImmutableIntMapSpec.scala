@@ -36,7 +36,7 @@ class ImmutableIntMapSpec extends WordSpec with Matchers {
 
       val m5 = m4.updated(15, 15)
       m5.keysIterator.toList should be(List(5, 10, 15, 20))
-      m5.keysIterator.map(m5.get).toList should be(List(5, 10, 15, 0))
+      m5.keysIterator.map(m5.get).toList should be(List(5, 10, 15, 20))
     }
 
     "replace entries" in {
