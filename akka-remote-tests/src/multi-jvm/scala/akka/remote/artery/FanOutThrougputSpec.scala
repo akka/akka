@@ -41,6 +41,7 @@ object FanOutThroughputSpec extends MultiNodeConfig {
        # for serious measurements you should increase the totalMessagesFactor (20)
        akka.test.FanOutThroughputSpec.totalMessagesFactor = 10.0
        akka.test.FanOutThroughputSpec.real-message = off
+       akka.test.FanOutThroughputSpec.actor-selection = off
        """))
     .withFallback(MaxThroughputSpec.cfg)
     .withFallback(RemotingMultiNodeSpec.commonConfig))
@@ -61,6 +62,7 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
 
   val totalMessagesFactor = system.settings.config.getDouble("akka.test.FanOutThroughputSpec.totalMessagesFactor")
   val realMessage = system.settings.config.getBoolean("akka.test.FanOutThroughputSpec.real-message")
+  val actorSelection = system.settings.config.getBoolean("akka.test.FanOutThroughputSpec.actor-selection")
 
   var plot = PlotResult()
 
@@ -85,9 +87,12 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
     super.afterAll()
   }
 
-  def identifyReceiver(name: String, r: RoleName): ActorRef = {
-    system.actorSelection(node(r) / "user" / name) ! Identify(None)
-    expectMsgType[ActorIdentity](10.seconds).ref.get
+  def identifyReceiver(name: String, r: RoleName): Target = {
+    val sel = system.actorSelection(node(r) / "user" / name)
+    sel ! Identify(None)
+    val ref = expectMsgType[ActorIdentity](10.seconds).ref.get
+    if (actorSelection) ActorSelectionTarget(sel, ref)
+    else ActorRefTarget(ref)
   }
 
   val burstSize = 2000 / senderReceiverPairs
@@ -143,7 +148,7 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
     runOn(roles.head) {
       enterBarrier(receiverName + "-started")
       val ignore = TestProbe()
-      val receivers = targetNodes.map(target ⇒ identifyReceiver(receiverName, target)).toArray[ActorRef]
+      val receivers = targetNodes.map(target ⇒ identifyReceiver(receiverName, target)).toArray[Target]
       val senders = for ((target, i) ← targetNodes.zipWithIndex) yield {
         val receiver = receivers(i)
         val plotProbe = TestProbe()

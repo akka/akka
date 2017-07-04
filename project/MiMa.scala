@@ -1219,9 +1219,6 @@ object MiMa extends AutoPlugin {
         // #22881 Make sure connections are aborted correctly on Windows
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancel"),
         
-        // #21880 PartitionHub in Artery
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArterySettings#Advanced.InboundBroadcastHubBufferSize"),
-        
         // #23144 recoverWithRetries cleanup
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.RecoverWith.InfiniteRetries"),
 
@@ -1242,7 +1239,10 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.attributes"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.create"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.this"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$")
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$"),
+        
+        // #21880 PartitionHub in Artery
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArterySettings#Advanced.InboundBroadcastHubBufferSize")
       )
       // make sure that this list ends with the latest released version number
     )

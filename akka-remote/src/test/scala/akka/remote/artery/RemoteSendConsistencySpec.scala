@@ -9,6 +9,7 @@ import akka.testkit.{ AkkaSpec, ImplicitSender, TestActors, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.duration._
+import akka.actor.ActorSelection
 
 class RemoteSendConsistencySpec extends AbstractRemoteSendConsistencySpec(ArterySpecSupport.defaultConfig)
 
@@ -33,18 +34,26 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config) extends ArteryM
         }
       }), "echo")
 
-      val remoteRef = {
+      val echoSel = system.actorSelection(rootB / "user" / "echo")
+      val echoRef = {
         system.actorSelection(rootB / "user" / "echo") ! Identify(None)
         expectMsgType[ActorIdentity](5.seconds).ref.get
       }
 
-      remoteRef ! "ping"
+      echoRef ! "ping"
       expectMsg("pong")
 
-      remoteRef ! "ping"
+      echoRef ! "ping"
       expectMsg("pong")
 
-      remoteRef ! "ping"
+      echoRef ! "ping"
+      expectMsg("pong")
+
+      // and actorSelection
+      echoSel ! "ping"
+      expectMsg("pong")
+
+      echoSel ! "ping"
       expectMsg("pong")
     }
 
@@ -113,6 +122,45 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config) extends ArteryM
         expectMsg("success")
         expectMsg("success")
         expectMsg("success")
+      }
+    }
+
+    "be able to send messages with actorSelection concurrently preserving order" in {
+      systemB.actorOf(TestActors.echoActorProps, "echoA2")
+      systemB.actorOf(TestActors.echoActorProps, "echoB2")
+      systemB.actorOf(TestActors.echoActorProps, "echoC2")
+
+      val selA = system.actorSelection(rootB / "user" / "echoA2")
+      val selB = system.actorSelection(rootB / "user" / "echoB2")
+      val selC = system.actorSelection(rootB / "user" / "echoC2")
+
+      def senderProps(sel: ActorSelection) = Props(new Actor {
+        var counter = 1000
+        sel ! counter
+
+        override def receive: Receive = {
+          case i: Int ⇒
+            if (i != counter) testActor ! s"Failed, expected $counter got $i"
+            else if (counter == 0) {
+              testActor ! "success2"
+              context.stop(self)
+            } else {
+              counter -= 1
+              sel ! counter
+            }
+        }
+      }).withDeploy(Deploy.local)
+
+      system.actorOf(senderProps(selA))
+      system.actorOf(senderProps(selB))
+      system.actorOf(senderProps(selC))
+      system.actorOf(senderProps(selA))
+
+      within(10.seconds) {
+        expectMsg("success2")
+        expectMsg("success2")
+        expectMsg("success2")
+        expectMsg("success2")
       }
     }
 

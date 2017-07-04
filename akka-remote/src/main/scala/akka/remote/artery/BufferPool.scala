@@ -377,12 +377,11 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     // Write fixed length parts
     byteBuffer.put(VersionOffset, header.version)
     byteBuffer.put(FlagsOffset, header.flags)
-    byteBuffer.putLong(UidOffset, header.uid)
-    byteBuffer.putInt(SerializerOffset, header.serializer)
-
     // compression table version numbers
     byteBuffer.put(ActorRefCompressionTableVersionOffset, header.outboundActorRefCompression.version)
     byteBuffer.put(ClassManifestCompressionTableVersionOffset, header.outboundClassManifestCompression.version)
+    byteBuffer.putLong(UidOffset, header.uid)
+    byteBuffer.putInt(SerializerOffset, header.serializer)
 
     // maybe write some metadata
     // after metadata is written (or not), buffer is at correct position to continue writing literals
@@ -421,12 +420,11 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     // Read fixed length parts
     header.setVersion(byteBuffer.get(VersionOffset))
     header.setFlags(byteBuffer.get(FlagsOffset))
-    header.setUid(byteBuffer.getLong(UidOffset))
-    header.setSerializer(byteBuffer.getInt(SerializerOffset))
-
     // compression table versions (stored in the Tag)
     header._inboundActorRefCompressionTableVersion = byteBuffer.get(ActorRefCompressionTableVersionOffset)
     header._inboundClassManifestCompressionTableVersion = byteBuffer.get(ClassManifestCompressionTableVersionOffset)
+    header.setUid(byteBuffer.getLong(UidOffset))
+    header.setSerializer(byteBuffer.getInt(SerializerOffset))
 
     byteBuffer.position(MetadataContainerAndLiteralSectionOffset)
     if (header.flag(MetadataPresentFlag)) {
