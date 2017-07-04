@@ -18,7 +18,7 @@ import org.openjdk.jmh.annotations._
 @Measurement(iterations = 10, time = 20, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 class AffinityPoolRequestResponseBenchmark {
 
-  @Param(Array("1"))
+  @Param(Array("1", "5", "50"))
   var throughPut = 0
 
   @Param(Array("affinity-dispatcher", "default-fj-dispatcher", "fixed-size-dispatcher"))
