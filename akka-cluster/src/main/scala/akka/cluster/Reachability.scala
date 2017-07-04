@@ -290,7 +290,7 @@ private[cluster] class Reachability private (
   // only used for testing
   override def equals(obj: Any): Boolean = obj match {
     case other: Reachability ⇒
-      records.size == other.records.size && versions == versions &&
+      records.size == other.records.size && versions == other.versions &&
         cache.observerRowsMap == other.cache.observerRowsMap
     case _ ⇒ false
   }
