@@ -30,6 +30,7 @@ import akka.cluster.ddata.Replicator
 import scala.util.control.NonFatal
 import akka.actor.Status
 import akka.cluster.ClusterSettings
+import akka.cluster.ClusterSettings.DataCenter
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -343,7 +344,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     role:            Option[String],
     extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId:  ShardRegion.ExtractShardId): ActorRef =
-    startProxy(typeName, role, team = None, extractEntityId, extractShardId)
+    startProxy(typeName, role, dataCenter = None, extractEntityId, extractShardId)
 
   /**
    * Scala API: Register a named entity type `ShardRegion` on this node that will run in proxy only mode,
@@ -357,8 +358,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * @param typeName the name of the entity type
    * @param role specifies that this entity type is located on cluster nodes with a specific role.
    *   If the role is not specified all nodes in the cluster are used.
-   * @param team The team of the cluster nodes where the cluster sharding is running.
-   *   If None then the same team as current node.
+   * @param dataCenter The data center of the cluster nodes where the cluster sharding is running.
+   *   If None then the same data center as current node.
    * @param extractEntityId partial function to extract the entity id and the message to send to the
    *   entity from the incoming message, if the partial function does not match the message will
    *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
@@ -369,21 +370,21 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def startProxy(
     typeName:        String,
     role:            Option[String],
-    team:            Option[String],
+    dataCenter:      Option[DataCenter],
     extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId:  ShardRegion.ExtractShardId): ActorRef = {
 
     implicit val timeout = system.settings.CreationTimeout
     val settings = ClusterShardingSettings(system).withRole(role)
-    val startMsg = StartProxy(typeName, team, settings, extractEntityId, extractShardId)
+    val startMsg = StartProxy(typeName, dataCenter, settings, extractEntityId, extractShardId)
     val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
-    // it must be possible to start several proxies, one per team
-    regions.put(proxyName(typeName, team), shardRegion)
+    // it must be possible to start several proxies, one per data center
+    regions.put(proxyName(typeName, dataCenter), shardRegion)
     shardRegion
   }
 
-  private def proxyName(typeName: String, team: Option[String]): String = {
-    team match {
+  private def proxyName(typeName: String, dataCenter: Option[DataCenter]): String = {
+    dataCenter match {
       case None    ⇒ typeName
       case Some(t) ⇒ typeName + "-" + t
     }
@@ -409,7 +410,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     typeName:         String,
     role:             Optional[String],
     messageExtractor: ShardRegion.MessageExtractor): ActorRef =
-    startProxy(typeName, role, team = Optional.empty(), messageExtractor)
+    startProxy(typeName, role, dataCenter = Optional.empty(), messageExtractor)
 
   /**
    * Java/Scala API: Register a named entity type `ShardRegion` on this node that will run in proxy only mode,
@@ -423,8 +424,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * @param typeName the name of the entity type
    * @param role specifies that this entity type is located on cluster nodes with a specific role.
    *   If the role is not specified all nodes in the cluster are used.
-   * @param team The team of the cluster nodes where the cluster sharding is running.
-   *   If None then the same team as current node.
+   * @param dataCenter The data center of the cluster nodes where the cluster sharding is running.
+   *   If None then the same data center as current node.
    * @param messageExtractor functions to extract the entity id, shard id, and the message to send to the
    *   entity from the incoming message
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
@@ -432,10 +433,10 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def startProxy(
     typeName:         String,
     role:             Optional[String],
-    team:             Optional[String],
+    dataCenter:       Optional[String],
     messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
 
-    startProxy(typeName, Option(role.orElse(null)), Option(team.orElse(null)),
+    startProxy(typeName, Option(role.orElse(null)), Option(dataCenter.orElse(null)),
       extractEntityId = {
       case msg if messageExtractor.entityId(msg) ne null ⇒
         (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
@@ -456,13 +457,13 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
   /**
    * Retrieve the actor reference of the [[ShardRegion]] actor that will act as a proxy to the
-   * named entity type running in another team. A proxy within the same team can be accessed
+   * named entity type running in another data center. A proxy within the same data center can be accessed
    * with [[#shardRegion]] instead of this method. The entity type must be registered with the
    * [[#startProxy]] method before it can be used here. Messages to the entity is always sent
    * via the `ShardRegion`.
    */
-  def shardRegionProxy(typeName: String, team: String): ActorRef = {
-    regions.get(proxyName(typeName, Some(team))) match {
+  def shardRegionProxy(typeName: String, dataCenter: DataCenter): ActorRef = {
+    regions.get(proxyName(typeName, Some(dataCenter))) match {
       case null ⇒ throw new IllegalArgumentException(s"Shard type [$typeName] must be started first")
       case ref  ⇒ ref
     }
@@ -479,7 +480,7 @@ private[akka] object ClusterShardingGuardian {
                          extractEntityId: ShardRegion.ExtractEntityId, extractShardId: ShardRegion.ExtractShardId,
                          allocationStrategy: ShardAllocationStrategy, handOffStopMessage: Any)
     extends NoSerializationVerificationNeeded
-  final case class StartProxy(typeName: String, team: Option[String], settings: ClusterShardingSettings,
+  final case class StartProxy(typeName: String, dataCenter: Option[DataCenter], settings: ClusterShardingSettings,
                               extractEntityId: ShardRegion.ExtractEntityId, extractShardId: ShardRegion.ExtractShardId)
     extends NoSerializationVerificationNeeded
   final case class Started(shardRegion: ActorRef) extends NoSerializationVerificationNeeded
@@ -518,8 +519,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
             case Some(r) ⇒ URLEncoder.encode(r, ByteString.UTF_8) + "Replicator"
             case None    ⇒ "replicator"
           }
-          // Use members within the team and with the given role (if any)
-          val replicatorRoles = Set(ClusterSettings.TeamRolePrefix + cluster.settings.Team) ++ settings.role
+          // Use members within the data center and with the given role (if any)
+          val replicatorRoles = Set(ClusterSettings.DcRolePrefix + cluster.settings.DataCenter) ++ settings.role
           val ref = context.actorOf(Replicator.props(replicatorSettings.withRoles(replicatorRoles)), name)
           replicatorByRole = replicatorByRole.updated(settings.role, ref)
           ref
@@ -584,14 +585,14 @@ private[akka] class ClusterShardingGuardian extends Actor {
           sender() ! Status.Failure(e)
       }
 
-    case StartProxy(typeName, team, settings, extractEntityId, extractShardId) ⇒
+    case StartProxy(typeName, dataCenter, settings, extractEntityId, extractShardId) ⇒
       try {
 
         val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
         val cName = coordinatorSingletonManagerName(encName)
         val cPath = coordinatorPath(encName)
-        // it must be possible to start several proxies, one per team
-        val actorName = team match {
+        // it must be possible to start several proxies, one per data center
+        val actorName = dataCenter match {
           case None    ⇒ encName
           case Some(t) ⇒ URLEncoder.encode(typeName + "-" + t, ByteString.UTF_8)
         }
@@ -599,7 +600,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
           context.actorOf(
             ShardRegion.proxyProps(
               typeName = typeName,
-              team = team,
+              dataCenter = dataCenter,
               settings = settings,
               coordinatorPath = cPath,
               extractEntityId = extractEntityId,

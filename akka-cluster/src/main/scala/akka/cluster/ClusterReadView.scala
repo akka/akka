@@ -109,12 +109,12 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   def status: MemberStatus = self.status
 
   /**
-   * Is this node the current team leader
+   * Is this node the current data center leader
    */
   def isLeader: Boolean = leader.contains(selfAddress)
 
   /**
-   * Get the address of the current team leader
+   * Get the address of the current data center leader
    */
   def leader: Option[Address] = state.leader
 

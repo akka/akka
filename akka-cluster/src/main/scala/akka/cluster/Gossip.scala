@@ -5,7 +5,7 @@
 package akka.cluster
 
 import scala.collection.{ SortedSet, immutable }
-import ClusterSettings.Team
+import ClusterSettings.DataCenter
 import MemberStatus._
 import akka.annotation.InternalApi
 
@@ -169,32 +169,31 @@ private[cluster] final case class Gossip(
   }
 
   /**
-   * Checks if we have a cluster convergence. If there are any in team node pairs that cannot reach each other
+   * Checks if we have a cluster convergence. If there are any in data center node pairs that cannot reach each other
    * then we can't have a convergence until those nodes reach each other again or one of them is downed
    *
    * @return true if convergence have been reached and false if not
    */
-  def convergence(team: Team, selfUniqueAddress: UniqueAddress, exitingConfirmed: Set[UniqueAddress]): Boolean = {
-    // Find cluster members in the team that are unreachable from other members of the team
-    // excluding observations from members outside of the team, that have status DOWN or is passed in as confirmed exiting.
-    val unreachableInTeam = teamReachabilityExcludingDownedObservers(team).allUnreachableOrTerminated.collect {
+  def convergence(dc: DataCenter, selfUniqueAddress: UniqueAddress, exitingConfirmed: Set[UniqueAddress]): Boolean = {
+    // Find cluster members in the data center that are unreachable from other members of the data center
+    // excluding observations from members outside of the data center, that have status DOWN or is passed in as confirmed exiting.
+    val unreachableInDc = dcReachabilityExcludingDownedObservers(dc).allUnreachableOrTerminated.collect {
       case node if node != selfUniqueAddress && !exitingConfirmed(node) ⇒ member(node)
     }
 
-    // If another member in the team that is UP or LEAVING and has not seen this gossip or is exiting
+    // If another member in the data center that is UP or LEAVING and has not seen this gossip or is exiting
     // convergence cannot be reached
-    def teamMemberHinderingConvergenceExists =
+    def memberHinderingConvergenceExists =
       members.exists(member ⇒
-        member.team == team &&
+        member.dataCenter == dc &&
           Gossip.convergenceMemberStatus(member.status) &&
-          !(seenByNode(member.uniqueAddress) || exitingConfirmed(member.uniqueAddress))
-      )
+          !(seenByNode(member.uniqueAddress) || exitingConfirmed(member.uniqueAddress)))
 
-    // unreachables outside of the team or with status DOWN or EXITING does not affect convergence
+    // unreachables outside of the data center or with status DOWN or EXITING does not affect convergence
     def allUnreachablesCanBeIgnored =
-      unreachableInTeam.forall(unreachable ⇒ Gossip.convergenceSkipUnreachableWithMemberStatus(unreachable.status))
+      unreachableInDc.forall(unreachable ⇒ Gossip.convergenceSkipUnreachableWithMemberStatus(unreachable.status))
 
-    allUnreachablesCanBeIgnored && !teamMemberHinderingConvergenceExists
+    allUnreachablesCanBeIgnored && !memberHinderingConvergenceExists
   }
 
   lazy val reachabilityExcludingDownedObservers: Reachability = {
@@ -203,77 +202,77 @@ private[cluster] final case class Gossip(
   }
 
   /**
-   * @return Reachability excluding observations from nodes outside of the team, but including observed unreachable
-   *         nodes outside of the team
+   * @return Reachability excluding observations from nodes outside of the data center, but including observed unreachable
+   *         nodes outside of the data center
    */
-  def teamReachability(team: Team): Reachability =
-    overview.reachability.removeObservers(members.collect { case m if m.team != team ⇒ m.uniqueAddress })
+  def dcReachability(dc: DataCenter): Reachability =
+    overview.reachability.removeObservers(members.collect { case m if m.dataCenter != dc ⇒ m.uniqueAddress })
 
   /**
-   * @return reachability for team nodes, with observations from outside the team or from downed nodes filtered out
+   * @return reachability for data center nodes, with observations from outside the data center or from downed nodes filtered out
    */
-  def teamReachabilityExcludingDownedObservers(team: Team): Reachability = {
-    val membersToExclude = members.collect { case m if m.status == Down || m.team != team ⇒ m.uniqueAddress }
-    overview.reachability.removeObservers(membersToExclude).remove(members.collect { case m if m.team != team ⇒ m.uniqueAddress })
+  def dcReachabilityExcludingDownedObservers(dc: DataCenter): Reachability = {
+    val membersToExclude = members.collect { case m if m.status == Down || m.dataCenter != dc ⇒ m.uniqueAddress }
+    overview.reachability.removeObservers(membersToExclude).remove(members.collect { case m if m.dataCenter != dc ⇒ m.uniqueAddress })
   }
 
-  def teamMembers(team: Team): SortedSet[Member] =
-    members.filter(_.team == team)
+  def dcMembers(dc: DataCenter): SortedSet[Member] =
+    members.filter(_.dataCenter == dc)
 
-  def isTeamLeader(team: Team, node: UniqueAddress, selfUniqueAddress: UniqueAddress): Boolean =
-    teamLeader(team, selfUniqueAddress).contains(node)
+  def isDcLeader(dc: DataCenter, node: UniqueAddress, selfUniqueAddress: UniqueAddress): Boolean =
+    dcLeader(dc, selfUniqueAddress).contains(node)
 
-  def teamLeader(team: Team, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
-    leaderOf(team, members, selfUniqueAddress)
+  def dcLeader(dc: DataCenter, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
+    leaderOf(dc, members, selfUniqueAddress)
 
-  def roleLeader(team: Team, role: String, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
-    leaderOf(team, members.filter(_.hasRole(role)), selfUniqueAddress)
+  def roleLeader(dc: DataCenter, role: String, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
+    leaderOf(dc, members.filter(_.hasRole(role)), selfUniqueAddress)
 
-  def leaderOf(team: Team, mbrs: immutable.SortedSet[Member], selfUniqueAddress: UniqueAddress): Option[UniqueAddress] = {
-    val reachability = teamReachability(team)
+  def leaderOf(dc: DataCenter, mbrs: immutable.SortedSet[Member], selfUniqueAddress: UniqueAddress): Option[UniqueAddress] = {
+    val reachability = dcReachability(dc)
 
-    val reachableTeamMembers =
-      if (reachability.isAllReachable) mbrs.filter(m ⇒ m.team == team && m.status != Down)
+    val reachableMembersInDc =
+      if (reachability.isAllReachable) mbrs.filter(m ⇒ m.dataCenter == dc && m.status != Down)
       else mbrs.filter(m ⇒
-        m.team == team &&
+        m.dataCenter == dc &&
           m.status != Down &&
           (reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress))
-    if (reachableTeamMembers.isEmpty) None
-    else reachableTeamMembers.find(m ⇒ Gossip.leaderMemberStatus(m.status))
-      .orElse(Some(reachableTeamMembers.min(Member.leaderStatusOrdering)))
+    if (reachableMembersInDc.isEmpty) None
+    else reachableMembersInDc.find(m ⇒ Gossip.leaderMemberStatus(m.status))
+      .orElse(Some(reachableMembersInDc.min(Member.leaderStatusOrdering)))
       .map(_.uniqueAddress)
   }
 
-  def allTeams: Set[Team] = members.map(_.team)
+  def allDataCenters: Set[DataCenter] = members.map(_.dataCenter)
 
   def allRoles: Set[String] = members.flatMap(_.roles)
 
   def isSingletonCluster: Boolean = members.size == 1
 
   /**
-   * @return true if toAddress should be reachable from the fromTeam in general, within a team
-   *         this means only caring about team-local observations, across teams it means caring
-   *         about all observations for the toAddress.
+   * @return true if toAddress should be reachable from the fromDc in general, within a data center
+   *         this means only caring about data center local observations, across data centers it
+   *         means caring about all observations for the toAddress.
    */
-  def isReachableExcludingDownedObservers(fromTeam: Team, toAddress: UniqueAddress): Boolean =
+  def isReachableExcludingDownedObservers(fromDc: DataCenter, toAddress: UniqueAddress): Boolean =
     if (!hasMember(toAddress)) false
     else {
       val to = member(toAddress)
 
-      // if member is in the same team, we ignore cross-team unreachability
-      if (fromTeam == to.team) teamReachabilityExcludingDownedObservers(fromTeam).isReachable(toAddress)
+      // if member is in the same data center, we ignore cross data center unreachability
+      if (fromDc == to.dataCenter) dcReachabilityExcludingDownedObservers(fromDc).isReachable(toAddress)
       // if not it is enough that any non-downed node observed it as unreachable
       else reachabilityExcludingDownedObservers.isReachable(toAddress)
     }
 
   /**
    * @return true if fromAddress should be able to reach toAddress based on the unreachability data and their
-   *         respective teams
+   *         respective data centers
    */
   def isReachable(fromAddress: UniqueAddress, toAddress: UniqueAddress): Boolean =
     if (!hasMember(toAddress)) false
     else {
-      // as it looks for specific unreachable entires for the node pair we don't have to filter on team
+      // as it looks for specific unreachable entires for the node pair we don't have to filter on data center
       overview.reachability.isReachable(fromAddress, toAddress)
     }
 
