@@ -460,7 +460,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         val proxy = system.actorOf(
           ShardRegion.proxyProps(
             typeName = "counter",
-            team = None,
+            dataCenter = None,
             settings,
             coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
             extractEntityId = extractEntityId,

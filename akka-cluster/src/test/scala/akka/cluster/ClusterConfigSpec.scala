@@ -45,8 +45,8 @@ class ClusterConfigSpec extends AkkaSpec {
       DownRemovalMargin should ===(Duration.Zero)
       MinNrOfMembers should ===(1)
       MinNrOfMembersOfRole should ===(Map.empty[String, Int])
-      Team should ===("default")
-      Roles should ===(Set(ClusterSettings.TeamRolePrefix + "default"))
+      DataCenter should ===("default")
+      Roles should ===(Set(ClusterSettings.DcRolePrefix + "default"))
       JmxEnabled should ===(true)
       UseDispatcher should ===(Dispatchers.DefaultDispatcherId)
       GossipDifferentViewProbability should ===(0.8 +- 0.0001)
@@ -61,13 +61,13 @@ class ClusterConfigSpec extends AkkaSpec {
           |akka {
           |  cluster {
           |    roles = [ "hamlet" ]
-          |    team = "blue"
+          |    data-center = "blue"
           |  }
           |}
         """.stripMargin).withFallback(ConfigFactory.load()), system.name)
       import settings._
-      Roles should ===(Set("hamlet", ClusterSettings.TeamRolePrefix + "blue"))
-      Team should ===("blue")
+      Roles should ===(Set("hamlet", ClusterSettings.DcRolePrefix + "blue"))
+      DataCenter should ===("blue")
     }
   }
 }

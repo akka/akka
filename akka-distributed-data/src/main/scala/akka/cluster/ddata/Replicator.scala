@@ -1134,7 +1134,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   override def preStart(): Unit = {
     if (hasDurableKeys)
       durableStore ! LoadAll
-    // not using LeaderChanged/RoleLeaderChanged because here we need one node independent of team
+    // not using LeaderChanged/RoleLeaderChanged because here we need one node independent of data center
     cluster.subscribe(self, initialStateMode = InitialStateAsEvents,
       classOf[MemberEvent], classOf[ReachabilityEvent])
   }

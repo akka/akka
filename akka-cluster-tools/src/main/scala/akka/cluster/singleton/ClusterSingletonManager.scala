@@ -257,10 +257,10 @@ object ClusterSingletonManager {
       }
       override def postStop(): Unit = cluster.unsubscribe(self)
 
-      private val selfTeam = ClusterSettings.TeamRolePrefix + cluster.settings.Team
+      private val selfDc = ClusterSettings.DcRolePrefix + cluster.settings.DataCenter
 
       def matchingRole(member: Member): Boolean =
-        member.hasRole(selfTeam) && role.forall(member.hasRole)
+        member.hasRole(selfDc) && role.forall(member.hasRole)
 
       def trackChange(block: () ⇒ Unit): Unit = {
         val before = membersByAge.headOption

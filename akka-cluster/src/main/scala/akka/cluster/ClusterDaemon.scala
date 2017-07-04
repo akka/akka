@@ -330,7 +330,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   }
   var exitingConfirmed = Set.empty[UniqueAddress]
 
-  def selfTeam = cluster.settings.Team
+  def selfDc = cluster.settings.DataCenter
 
   /**
    * Looks up and returns the remote cluster command connection for the specific address.
@@ -681,10 +681,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     // send ExitingConfirmed to two potential leaders
     val membersExceptSelf = latestGossip.members.filter(_.uniqueAddress != selfUniqueAddress)
 
-    latestGossip.leaderOf(selfTeam, membersExceptSelf, selfUniqueAddress) match {
+    latestGossip.leaderOf(selfDc, membersExceptSelf, selfUniqueAddress) match {
       case Some(node1) ⇒
         clusterCore(node1.address) ! ExitingConfirmed(selfUniqueAddress)
-        latestGossip.leaderOf(selfTeam, membersExceptSelf.filterNot(_.uniqueAddress == node1), selfUniqueAddress) match {
+        latestGossip.leaderOf(selfDc, membersExceptSelf.filterNot(_.uniqueAddress == node1), selfUniqueAddress) match {
           case Some(node2) ⇒
             clusterCore(node2.address) ! ExitingConfirmed(selfUniqueAddress)
           case None ⇒ // no more potential leader
@@ -723,7 +723,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     val localMembers = localGossip.members
     val localOverview = localGossip.overview
     val localSeen = localOverview.seen
-    val localReachability = localGossip.teamReachability(selfTeam)
+    val localReachability = localGossip.dcReachability(selfDc)
 
     // check if the node to DOWN is in the `members` set
     localMembers.find(_.address == address) match {
@@ -1004,11 +1004,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    * Runs periodic leader actions, such as member status transitions, assigning partitions etc.
    */
   def leaderActions(): Unit = {
-    if (latestGossip.isTeamLeader(selfTeam, selfUniqueAddress, selfUniqueAddress)) {
-      // only run the leader actions if we are the LEADER of the team
+    if (latestGossip.isDcLeader(selfDc, selfUniqueAddress, selfUniqueAddress)) {
+      // only run the leader actions if we are the LEADER of the data center
       val firstNotice = 20
       val periodicNotice = 60
-      if (latestGossip.convergence(selfTeam, selfUniqueAddress, exitingConfirmed)) {
+      if (latestGossip.convergence(selfDc, selfUniqueAddress, exitingConfirmed)) {
         if (leaderActionCounter >= firstNotice)
           logInfo("Leader can perform its duties again")
         leaderActionCounter = 0
@@ -1021,9 +1021,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         if (leaderActionCounter == firstNotice || leaderActionCounter % periodicNotice == 0)
           logInfo(
             "Leader can currently not perform its duties, reachability status: [{}], member status: [{}]",
-            latestGossip.teamReachabilityExcludingDownedObservers(selfTeam),
+            latestGossip.dcReachabilityExcludingDownedObservers(selfDc),
             latestGossip.members.collect {
-              case m if m.team == selfTeam ⇒
+              case m if m.dataCenter == selfDc ⇒
                 s"${m.address} ${m.status} seen=${latestGossip.seenByNode(m.uniqueAddress)}"
             }.mkString(", "))
       }
@@ -1036,8 +1036,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     if (latestGossip.member(selfUniqueAddress).status == Down) {
       // When all reachable have seen the state this member will shutdown itself when it has
       // status Down. The down commands should spread before we shutdown.
-      val unreachable = latestGossip.teamReachability(selfTeam).allUnreachableOrTerminated
-      val downed = latestGossip.teamMembers(selfTeam).collect { case m if m.status == Down ⇒ m.uniqueAddress }
+      val unreachable = latestGossip.dcReachability(selfDc).allUnreachableOrTerminated
+      val downed = latestGossip.dcMembers(selfDc).collect { case m if m.status == Down ⇒ m.uniqueAddress }
       if (downed.forall(node ⇒ unreachable(node) || latestGossip.seenByNode(node))) {
         // the reason for not shutting down immediately is to give the gossip a chance to spread
         // the downing information to other downed nodes, so that they can shutdown themselves
@@ -1072,14 +1072,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def leaderActionsOnConvergence(): Unit = {
 
     val removedUnreachable = for {
-      node ← latestGossip.teamReachability(selfTeam).allUnreachableOrTerminated
+      node ← latestGossip.dcReachability(selfDc).allUnreachableOrTerminated
       m = latestGossip.member(node)
-      if m.team == selfTeam && Gossip.removeUnreachableWithMemberStatus(m.status)
+      if m.dataCenter == selfDc && Gossip.removeUnreachableWithMemberStatus(m.status)
     } yield m
 
     val removedExitingConfirmed = exitingConfirmed.filter { n ⇒
       val member = latestGossip.member(n)
-      member.team == selfTeam && member.status == Exiting
+      member.dataCenter == selfDc && member.status == Exiting
     }
 
     val changedMembers = {
@@ -1090,7 +1090,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         var upNumber = 0
 
         {
-          case m if m.team == selfTeam && isJoiningToUp(m) ⇒
+          case m if m.dataCenter == selfDc && isJoiningToUp(m) ⇒
             // Move JOINING => UP (once all nodes have seen that this node is JOINING, i.e. we have a convergence)
             // and minimum number of nodes have joined the cluster
             if (upNumber == 0) {
@@ -1103,7 +1103,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
             }
             m.copyUp(upNumber)
 
-          case m if m.team == selfTeam && m.status == Leaving ⇒
+          case m if m.dataCenter == selfDc && m.status == Leaving ⇒
             // Move LEAVING => EXITING (once we have a convergence on LEAVING)
             m copy (status = Exiting)
         }
@@ -1158,10 +1158,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
     val enoughMembers: Boolean = isMinNrOfMembersFulfilled
     def isJoiningToWeaklyUp(m: Member): Boolean =
-      m.team == selfTeam &&
+      m.dataCenter == selfDc &&
         m.status == Joining &&
         enoughMembers &&
-        latestGossip.teamReachabilityExcludingDownedObservers(selfTeam).isReachable(m.uniqueAddress)
+        latestGossip.dcReachabilityExcludingDownedObservers(selfDc).isReachable(m.uniqueAddress)
     val changedMembers = localMembers.collect {
       case m if isJoiningToWeaklyUp(m) ⇒ m.copy(status = WeaklyUp)
     }
@@ -1269,7 +1269,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       clusterCore(node.address) ! GossipStatus(selfUniqueAddress, latestGossip.version)
 
   def validNodeForGossip(node: UniqueAddress): Boolean =
-    node != selfUniqueAddress && latestGossip.isReachableExcludingDownedObservers(selfTeam, node)
+    node != selfUniqueAddress && latestGossip.isReachableExcludingDownedObservers(selfDc, node)
 
   def updateLatestGossip(newGossip: Gossip): Unit = {
     // Updating the vclock version for the changes
@@ -1295,7 +1295,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
   def publish(newGossip: Gossip): Unit = {
     if (cluster.settings.Debug.VerboseGossipLogging)
-      log.debug("Cluster Node [{}] team [{}] - New gossip published [{}]", selfAddress, cluster.settings.Team, newGossip)
+      log.debug("Cluster Node [{}] dc [{}] - New gossip published [{}]", selfAddress, cluster.settings.DataCenter, newGossip)
 
     publisher ! PublishChanges(newGossip)
     if (PublishStatsInterval == Duration.Zero) publishInternalStats()
