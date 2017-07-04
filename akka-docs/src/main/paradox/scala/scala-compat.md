@@ -1,9 +1,7 @@
-# Java 8 and Scala Compatibility
+# Java 8 Compatibility
 
 Akka requires that you have [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or
 later installed on your machine.
-
-## Java 8 types
 
 Starting with Akka 2.4.2 we have begun to introduce Java 8 types (most
 prominently `java.util.concurrent.CompletionStage` and
@@ -26,12 +24,3 @@ we can rely on Scala 2.12 to provide full interoperability—this will mean that
 Scala users can directly implement Java Functional Interfaces using lambda syntax
 as well as that Java users can directly implement Scala functions using lambda
 syntax.
-
-## Do not use -optimize Scala compiler flag
-
-@@@ warning
-
-Akka has not been compiled or tested with -optimize Scala compiler flag.
-Strange behavior has been reported by users that have tried it.
-
-@@@

@@ -35,4 +35,8 @@
 
 # Full Source Code of the Fault Tolerance Sample
 
-@@snip [FaultHandlingDocSample.scala]($code$/scala/docs/actor/FaultHandlingDocSample.scala) { #all }
+Scala
+:  @@snip [FaultHandlingDocSample.scala]($code$/scala/docs/actor/FaultHandlingDocSample.scala) { #all }
+
+Java
+:  @@snip [FaultHandlingDocSample.java]($code$/java/jdocs/actor/FaultHandlingDocSample.java) { #all }

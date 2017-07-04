@@ -43,8 +43,8 @@ public class ExtensionsTest extends JUnitSuite {
   @Test
   public void loadJavaExtensionsFromConfig() {
     final ActorSystem<Object> system = ActorSystem.create(
-        "loadJavaExtensionsFromConfig",
         Behavior.empty(),
+        "loadJavaExtensionsFromConfig",
         Optional.empty(),
         Optional.of(ConfigFactory.parseString("akka.typed.extensions += \"akka.typed.ExtensionsTest$MyExtension\"").resolve()),
         Optional.empty(),
@@ -66,7 +66,7 @@ public class ExtensionsTest extends JUnitSuite {
 
   @Test
   public void loadScalaExtension() {
-    final ActorSystem<Object> system = ActorSystem.create("loadScalaExtension", Behavior.empty());
+    final ActorSystem<Object> system = ActorSystem.create(Behavior.empty(), "loadScalaExtension");
     try {
       DummyExtension1 instance1 = DummyExtension1.get(system);
       DummyExtension1 instance2 = DummyExtension1.get(system);

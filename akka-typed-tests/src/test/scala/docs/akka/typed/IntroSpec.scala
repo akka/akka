@@ -83,7 +83,7 @@ class IntroSpec extends TypedSpec {
     // using global pool since we want to run tasks after system.terminate
     import scala.concurrent.ExecutionContext.Implicits.global
 
-    val system: ActorSystem[Greet] = ActorSystem("hello", greeter)
+    val system: ActorSystem[Greet] = ActorSystem(greeter, "hello")
 
     val future: Future[Greeted] = system ? (Greet("world", _))
 
@@ -133,7 +133,7 @@ class IntroSpec extends TypedSpec {
         }
       }
 
-    val system = ActorSystem("ChatRoomDemo", main)
+    val system = ActorSystem(main, "ChatRoomDemo")
     Await.result(system.whenTerminated, 3.seconds)
     //#chatroom-main
   }

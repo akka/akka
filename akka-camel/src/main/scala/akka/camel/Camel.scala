@@ -87,6 +87,8 @@ class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess
    */
   final val StreamingCache: Boolean = config.getBoolean("akka.camel.streamingCache")
 
+  final val ProducerChildDispatcher: String = config.getString("akka.camel.producer.use-dispatcher")
+
   final val Conversions: (String, RouteDefinition) ⇒ RouteDefinition = {
     val specifiedConversions = {
       import scala.collection.JavaConverters.asScalaSetConverter

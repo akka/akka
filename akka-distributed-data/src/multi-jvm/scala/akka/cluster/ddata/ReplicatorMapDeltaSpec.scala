@@ -13,6 +13,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
+import akka.event.Logging.Error
 
 object ReplicatorMapDeltaSpec extends MultiNodeConfig {
   val first = role("first")
@@ -21,13 +22,14 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.log-dead-letters-during-shutdown = off
     akka.actor {
       serialize-messages = off
       allow-java-serialization = off
     }
+    #akka.remote.artery.enabled = on
     """))
 
   testTransport(on = true)
@@ -187,6 +189,9 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
     r ! Replicator.Internal.TestFullStateGossip(enabled = false)
     r
   }
+  // both deltas and full state
+  val ordinaryReplicator = system.actorOf(Replicator.props(
+    ReplicatorSettings(system).withGossipInterval(1.second)), "ordinaryReplicator")
 
   var afterCounter = 0
   def enterBarrierAfterTestStep(): Unit = {
@@ -288,6 +293,34 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
       enterBarrierAfterTestStep()
     }
 
+    "replicate high throughput changes without OversizedPayloadException" in {
+      val N = 1000
+      val errorLogProbe = TestProbe()
+      system.eventStream.subscribe(errorLogProbe.ref, classOf[Error])
+      runOn(first) {
+        for (_ ← 1 to N; key ← List(KeyA, KeyB)) {
+          ordinaryReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_ increment key._2)
+        }
+      }
+      enterBarrier("updated-2")
+
+      within(5.seconds) {
+        awaitAssert {
+          val p = TestProbe()
+          List(KeyA, KeyB).foreach { key ⇒
+            ordinaryReplicator.tell(Get(key._1, ReadLocal), p.ref)
+            p.expectMsgType[GetSuccess[PNCounterMap[String]]].dataValue.get(key._2).get.intValue should be(N)
+          }
+        }
+      }
+
+      enterBarrier("replicated-2")
+      // no OversizedPayloadException logging
+      errorLogProbe.expectNoMsg(100.millis)
+
+      enterBarrierAfterTestStep()
+    }
+
     "be eventually consistent" in {
       val operations = generateOperations(onNode = myself)
       log.debug(s"random operations on [${myself.name}]: ${operations.mkString(", ")}")
@@ -344,7 +377,7 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
           }
         }
 
-        enterBarrier("updated-2")
+        enterBarrier("updated-3")
 
         List(KeyA, KeyB, KeyC).foreach { key ⇒
           within(5.seconds) {

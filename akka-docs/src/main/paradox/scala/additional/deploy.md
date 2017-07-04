@@ -5,7 +5,14 @@ Akka can be used in different ways:
  * As a library: used as a regular JAR on the classpath and/or in a web app, to
 be put into `WEB-INF/lib`
  * As an application packaged with [sbt-native-packager](https://github.com/sbt/sbt-native-packager)
- * As an application packaged and deployed using [Lightbend ConductR](http://www.lightbend.com/products/conductr).
+ 
+## Lightbend Enterprise Suite
+ 
+An Akka application can also be packaged and deployed using [Lightbend Enterprise Suite](https://conductr.lightbend.com/docs/2.2.x/DevQuickStart).
+
+Lightbend Enterprise Suite is a solution for managing Lightbend Reactive Platform applications across a cluster of machines.
+It is reactive from the ground up thus enabling operations to provide the resiliency required to unleash the full benefits 
+of the Lightbend Reactive Platform in their organization.
 
 ## Native Packager
 

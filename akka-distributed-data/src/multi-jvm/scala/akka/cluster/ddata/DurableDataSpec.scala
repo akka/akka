@@ -23,7 +23,7 @@ final case class DurableDataSpecConfig(writeBehind: Boolean) extends MultiNodeCo
   val second = role("second")
 
   commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.log-dead-letters-during-shutdown = off
     akka.cluster.distributed-data.durable.keys = ["durable*"]
@@ -32,7 +32,8 @@ final case class DurableDataSpecConfig(writeBehind: Boolean) extends MultiNodeCo
       map-size = 10 MiB
       write-behind-interval = ${if (writeBehind) "200ms" else "off"}
     }
-    akka.test.single-expect-default = 5s
+    # initialization of lmdb can be very slow in CI environment
+    akka.test.single-expect-default = 15s
     """))
 }
 
