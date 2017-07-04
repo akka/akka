@@ -20,6 +20,7 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.concurrent.Promise
 import akka.Done
+import akka.cluster.ClusterSettings
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -40,7 +41,7 @@ object ShardRegion {
     handOffStopMessage: Any,
     replicator:         ActorRef,
     majorityMinCap:     Int): Props =
-    Props(new ShardRegion(typeName, Some(entityProps), settings, coordinatorPath, extractEntityId,
+    Props(new ShardRegion(typeName, Some(entityProps), team = None, settings, coordinatorPath, extractEntityId,
       extractShardId, handOffStopMessage, replicator, majorityMinCap)).withDeploy(Deploy.local)
 
   /**
@@ -50,13 +51,14 @@ object ShardRegion {
    */
   private[akka] def proxyProps(
     typeName:        String,
+    team:            Option[String],
     settings:        ClusterShardingSettings,
     coordinatorPath: String,
     extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId:  ShardRegion.ExtractShardId,
     replicator:      ActorRef,
     majorityMinCap:  Int): Props =
-    Props(new ShardRegion(typeName, None, settings, coordinatorPath, extractEntityId, extractShardId,
+    Props(new ShardRegion(typeName, None, team, settings, coordinatorPath, extractEntityId, extractShardId,
       PoisonPill, replicator, majorityMinCap)).withDeploy(Deploy.local)
 
   /**
@@ -365,6 +367,7 @@ object ShardRegion {
 private[akka] class ShardRegion(
   typeName:           String,
   entityProps:        Option[Props],
+  team:               Option[String],
   settings:           ClusterShardingSettings,
   coordinatorPath:    String,
   extractEntityId:    ShardRegion.ExtractEntityId,
@@ -419,10 +422,14 @@ private[akka] class ShardRegion(
     retryTask.cancel()
   }
 
-  def matchingRole(member: Member): Boolean = role match {
-    case None    ⇒ true
-    case Some(r) ⇒ member.hasRole(r)
+  // when using proxy the team can be different that the own team
+  private val targetTeamRole = team match {
+    case Some(t) ⇒ ClusterSettings.TeamRolePrefix + t
+    case None    ⇒ ClusterSettings.TeamRolePrefix + cluster.settings.Team
   }
+
+  def matchingRole(member: Member): Boolean =
+    member.hasRole(targetTeamRole) && role.forall(member.hasRole)
 
   def coordinatorSelection: Option[ActorSelection] =
     membersByAge.headOption.map(m ⇒ context.actorSelection(RootActorPath(m.address) + coordinatorPath))
