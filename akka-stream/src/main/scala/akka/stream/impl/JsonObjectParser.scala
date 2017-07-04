@@ -120,7 +120,7 @@ import scala.annotation.switch
       pos += 1
       trimFront += 1
     } else if (input == Backslash) {
-      if (lastInput == Backslash) isStartOfEscapeSequence = false
+      if (lastInput == Backslash & isStartOfEscapeSequence) isStartOfEscapeSequence = false
       else isStartOfEscapeSequence = true
       pos += 1
     } else if (input == DoubleQuote) {

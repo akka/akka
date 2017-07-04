@@ -297,6 +297,21 @@ class JsonFramingSpec extends AkkaSpec {
                                                   | "key": "\""
                                                   | }""".stripMargin
         }
+
+        "successfully parse a string that contains escape sequence" in {
+          val buffer = new JsonObjectParser()
+          buffer.offer(ByteString(
+            """
+              |{
+              | "key": "\\\""
+              | }
+              | """.stripMargin
+          ))
+
+          buffer.poll().get.utf8String shouldBe """{
+                                                  | "key": "\\\""
+                                                  | }""".stripMargin
+        }
       }
 
       "has nested array" should {
