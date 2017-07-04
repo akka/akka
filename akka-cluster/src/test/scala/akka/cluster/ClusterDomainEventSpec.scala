@@ -89,6 +89,33 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       diffSeen(state(g1), state(g2)) should ===(Seq.empty)
     }
 
+    "be produced for unreachability observations from the same dc" in {
+      val dc2AMemberUp = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Up, Set.empty, "dc2")
+      val dc2AMemberDown = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Down, Set.empty, "dc2")
+      val dc2BMemberUp = TestMember(Address("akka.tcp", "sys", "dc2B", 2552), Up, Set.empty, "dc2")
+
+      val dc3AMemberUp = TestMember(Address("akka.tcp", "sys", "dc3A", 2552), Up, Set.empty, "dc3")
+      val dc3BMemberUp = TestMember(Address("akka.tcp", "sys", "dc3B", 2552), Up, Set.empty, "dc3")
+
+      val reachability1 = Reachability.empty
+      val g1 = Gossip(members = SortedSet(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp), overview = GossipOverview(reachability = reachability1))
+
+      val reachability2 = reachability1
+        .unreachable(aUp.uniqueAddress, dc2AMemberDown.uniqueAddress)
+        .unreachable(dc2BMemberUp.uniqueAddress, dc2AMemberDown.uniqueAddress)
+      val g2 = Gossip(members = SortedSet(aUp, bUp, dc2AMemberDown, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp), overview = GossipOverview(reachability = reachability2))
+
+      Set(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp).foreach { member ⇒
+        val unreachableDc =
+          if (member.dataCenter == ClusterSettings.DefaultDataCenter) Seq(UnreachableDataCenter("dc2"))
+          else Seq()
+
+        diffUnreachableDataCenter(
+          MembershipState(g1, member.uniqueAddress, member.dataCenter),
+          MembershipState(g2, member.uniqueAddress, member.dataCenter)) should ===(unreachableDc)
+      }
+    }
+
     "be produced for members becoming reachable after unreachable" in {
       val reachability1 = Reachability.empty.
         unreachable(aUp.uniqueAddress, cUp.uniqueAddress).reachable(aUp.uniqueAddress, cUp.uniqueAddress).
