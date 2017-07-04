@@ -152,14 +152,14 @@ In the next sections the two alternatives are described in detail.
 
 Scala
 :   ```
-    ActorSelection selection =
-      context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName");
+    val selection =
+      context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName")
     ```
     
 Java
 :   ```
-    val selection =
-      context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName")
+    ActorSelection selection =
+      context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName");
     ```
     
 
@@ -180,16 +180,17 @@ Once you obtained a selection to the actor you can interact with it in the same 
 Scala
 :   @@@vars
     ```
-    selection.tell("Pretty awesome feature", getSelf());
+    selection ! "Pretty awesome feature"
     ```
     @@@
 
 Java
 :   @@@vars
     ```
-    selection ! "Pretty awesome feature"
+    selection.tell("Pretty awesome feature", getSelf());
     ```
     @@@
+
 
 To acquire an `ActorRef` for an `ActorSelection` you need to
 send a message to the selection and use the `sender` reference of the reply from
@@ -363,19 +364,10 @@ Messages sent with actor selection are by default discarded in untrusted mode, b
 permission to receive actor selection messages can be granted to specific actors
 defined in configuration:
 
-Scala
-:   @@@vars
-    ```
-    akka.remote.artery.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
-    ```
-    @@@
+```
+akka.remote.artery.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
+```
 
-Java
-:   @@@vars
-    ```
-    akka.remote.artery.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
-    ```
-    @@@
 
 The actual message must still not be of type `PossiblyHarmful`.
 
