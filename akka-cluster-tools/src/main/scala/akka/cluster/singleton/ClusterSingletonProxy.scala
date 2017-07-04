@@ -19,6 +19,7 @@ import com.typesafe.config.Config
 import akka.actor.NoSerializationVerificationNeeded
 import akka.event.Logging
 import akka.util.MessageBuffer
+import akka.cluster.ClusterSettings
 
 object ClusterSingletonProxySettings {
 
@@ -63,6 +64,7 @@ object ClusterSingletonProxySettings {
 /**
  * @param singletonName The actor name of the singleton actor that is started by the [[ClusterSingletonManager]].
  * @param role The role of the cluster nodes where the singleton can be deployed. If None, then any node will do.
+ * @param team The team of the cluster nodes where the singleton is running. If None then the same team as current node.
  * @param singletonIdentificationInterval Interval at which the proxy will try to resolve the singleton instance.
  * @param bufferSize If the location of the singleton is unknown the proxy will buffer this number of messages
  *   and deliver them when the singleton is identified. When the buffer is full old messages will be dropped
@@ -72,8 +74,17 @@ object ClusterSingletonProxySettings {
 final class ClusterSingletonProxySettings(
   val singletonName:                   String,
   val role:                            Option[String],
+  val team:                            Option[String],
   val singletonIdentificationInterval: FiniteDuration,
   val bufferSize:                      Int) extends NoSerializationVerificationNeeded {
+
+  // for backwards compatibility
+  def this(
+    singletonName:                   String,
+    role:                            Option[String],
+    singletonIdentificationInterval: FiniteDuration,
+    bufferSize:                      Int) =
+    this(singletonName, role, None, singletonIdentificationInterval, bufferSize)
 
   require(bufferSize >= 0 && bufferSize <= 10000, "bufferSize must be >= 0 and <= 10000")
 
@@ -82,6 +93,8 @@ final class ClusterSingletonProxySettings(
   def withRole(role: String): ClusterSingletonProxySettings = copy(role = ClusterSingletonProxySettings.roleOption(role))
 
   def withRole(role: Option[String]): ClusterSingletonProxySettings = copy(role = role)
+
+  def withTeam(team: String): ClusterSingletonProxySettings = copy(team = Some(team))
 
   def withSingletonIdentificationInterval(singletonIdentificationInterval: FiniteDuration): ClusterSingletonProxySettings =
     copy(singletonIdentificationInterval = singletonIdentificationInterval)
@@ -92,9 +105,10 @@ final class ClusterSingletonProxySettings(
   private def copy(
     singletonName:                   String         = singletonName,
     role:                            Option[String] = role,
+    team:                            Option[String] = team,
     singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
     bufferSize:                      Int            = bufferSize): ClusterSingletonProxySettings =
-    new ClusterSingletonProxySettings(singletonName, role, singletonIdentificationInterval, bufferSize)
+    new ClusterSingletonProxySettings(singletonName, role, team, singletonIdentificationInterval, bufferSize)
 }
 
 object ClusterSingletonProxy {
@@ -162,10 +176,13 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     identifyTimer = None
   }
 
-  def matchingRole(member: Member): Boolean = role match {
-    case None    ⇒ true
-    case Some(r) ⇒ member.hasRole(r)
+  private val targetTeam = settings.team match {
+    case Some(t) ⇒ ClusterSettings.TeamRolePrefix + t
+    case None    ⇒ ClusterSettings.TeamRolePrefix + cluster.settings.Team
   }
+
+  def matchingRole(member: Member): Boolean =
+    member.hasRole(targetTeam) && role.forall(member.hasRole)
 
   def handleInitial(state: CurrentClusterState): Unit = {
     trackChange {
