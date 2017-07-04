@@ -4,7 +4,7 @@
 package akka.cluster
 
 import language.existentials
-import scala.collection.immutable
+import scala.collection.{ SortedSet, breakOut, immutable, mutable }
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 
@@ -15,8 +15,6 @@ import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings.DataCenter
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-
-import scala.collection.breakOut
 import akka.remote.QuarantinedEvent
 import java.util.ArrayList
 import java.util.Collections
@@ -925,6 +923,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    */
   def gossipRandomN(n: Int): Unit = {
     if (!isSingletonCluster && n > 0) {
+      // TODO what about local vs cross dc here?
       val localGossip = latestGossip
       // using ArrayList to be able to shuffle
       val possibleTargets = new ArrayList[UniqueAddress](localGossip.members.size)
@@ -949,35 +948,69 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   /**
    * Initiates a new round of gossip.
    */
-  def gossip(): Unit = {
-
+  def gossip(): Unit =
     if (!isSingletonCluster) {
-      val localGossip = latestGossip
+      val gossipTargets =
+        // TODO break this two methods out and unit test?
+        if (latestGossip.isMultiDc) multiDcGossipTargets()
+        else localDcGossipTargets()
 
-      val preferredGossipTargets: Vector[UniqueAddress] =
-        if (ThreadLocalRandom.current.nextDouble() < adjustedGossipDifferentViewProbability) {
-          // If it's time to try to gossip to some nodes with a different view
-          // gossip to a random alive member with preference to a member with older gossip version
-          localGossip.members.collect {
-            case m if !localGossip.seenByNode(m.uniqueAddress) && validNodeForGossip(m.uniqueAddress) ⇒
-              m.uniqueAddress
-          }(breakOut)
-        } else Vector.empty
-
-      if (preferredGossipTargets.nonEmpty) {
-        val peer = selectRandomNode(preferredGossipTargets)
-        // send full gossip because it has different view
-        peer foreach gossipTo
-      } else {
-        // Fall back to localGossip; important to not accidentally use `map` of the SortedSet, since the original order is not preserved)
-        val peer = selectRandomNode(localGossip.members.toIndexedSeq.collect {
-          case m if validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
-        })
-        peer foreach { node ⇒
-          if (localGossip.seenByNode(node)) gossipStatusTo(node)
-          else gossipTo(node)
-        }
+      selectRandomNode(gossipTargets) match {
+        case Some(peer) ⇒ gossipTo(peer)
+        case None       ⇒ // nothing to see here
       }
+    }
+
+  /**
+   * Chooses a set of possible gossip targets that is in the same dc. If the cluster is not multi dc this will
+   * means it is a choice among all nodes of the cluster.
+   */
+  def localDcGossipTargets(): Vector[UniqueAddress] = {
+    val firstSelection =
+      if (ThreadLocalRandom.current.nextDouble() < adjustedGossipDifferentViewProbability) {
+        // If it's time to try to gossip to some nodes with a different view
+        // gossip to a random alive same dc member with preference to a member with older gossip version
+        latestGossip.members.collect {
+          case m if m.team == selfTeam && !latestGossip.seenByNode(m.uniqueAddress) && validNodeForGossip(m.uniqueAddress) ⇒
+            m.uniqueAddress
+        }(breakOut)
+      } else Vector.empty
+
+    // Fall back to localGossip
+    if (firstSelection.isEmpty) {
+      latestGossip.members.toVector.collect {
+        case m if m.team == selfTeam && validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
+      }
+    } else Vector.empty
+
+  }
+
+  /**
+   * Choose cross-dc nodes if this one of the N oldest nodes, and if not fall back to gosip locally in the dc
+   */
+  def multiDcGossipTargets(): Vector[UniqueAddress] = {
+    // TODO cache this until gossip changes??
+    val nodesPerDc = latestGossip.members.foldLeft(Map.empty[String, SortedSet[Member]]) { (acc, member) ⇒
+      acc.get(member.team) match {
+        case Some(set) if set.size > cluster.settings.CrossDcConnections ⇒ acc
+        case Some(set) ⇒ acc + (member.team → (set + member))
+        case None ⇒ acc + (member.team → (SortedSet.empty(Member.ageOrdering) + member))
+      }
+    }
+
+    val localTargets = localDcGossipTargets()
+    // only do cross DC gossip if this node is among the N oldest
+    if (!nodesPerDc(selfTeam).exists(_.uniqueAddress == selfUniqueAddress)) localTargets
+    else {
+      // nOldest of all other Dcs, keeping the order as long as the reachable set of nodes is stable
+      val crossDcTargets = (nodesPerDc - selfTeam).valuesIterator.foldLeft(Vector.newBuilder[UniqueAddress])((acc, set) ⇒
+        set.foldLeft(acc)((acc, member) ⇒
+          if (validNodeForGossip(member.uniqueAddress)) acc += member.uniqueAddress
+          else acc
+        )
+      )
+
+      (crossDcTargets ++= localTargets).result()
     }
   }
 
@@ -1261,6 +1294,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    * Gossips latest gossip to a node.
    */
   def gossipTo(node: UniqueAddress): Unit =
+    // FIXME now this is evaluated multiple times on gossip :(
     if (validNodeForGossip(node))
       clusterCore(node.address) ! GossipEnvelope(selfUniqueAddress, node, latestGossip)
 

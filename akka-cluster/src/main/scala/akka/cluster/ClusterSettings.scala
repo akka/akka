@@ -51,6 +51,9 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     FailureDetectorConfig.getInt("monitored-by-nr-of-members")
   } requiring (_ > 0, "failure-detector.monitored-by-nr-of-members must be > 0")
 
+  val CrossDcConnections: Int = cc.getInt("cross-data-center-connections")
+    .requiring(_ > 0, "cross-data-center-connections must be > 0")
+
   val SeedNodes: immutable.IndexedSeq[Address] =
     immutableSeq(cc.getStringList("seed-nodes")).map { case AddressFromURIString(addr) ⇒ addr }.toVector
   val SeedNodeTimeout: FiniteDuration = cc.getMillisDuration("seed-node-timeout")
