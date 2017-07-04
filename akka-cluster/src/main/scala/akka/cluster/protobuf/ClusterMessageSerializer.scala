@@ -348,13 +348,12 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       new Member(addressMapping(member.getAddressIndex), member.getUpNumber, memberStatusFromInt(member.getStatus.getNumber),
         rolesFromProto(member.getRolesIndexesList.asScala))
 
-    @tailrec
-    def rolesFromProto(roleIndexes: Seq[Integer], resultSoFar: Set[String] = Set.empty): Set[String] = roleIndexes match {
-      case Seq() ⇒ resultSoFar + "team-default"
-      case Seq(head, tail @ _*) ⇒
-        val headrole = roleMapping(head)
-        if (headrole.startsWith("team-")) resultSoFar ++ roleIndexes.map(roleMapping(_)).toSet
-        else rolesFromProto(tail, resultSoFar + headrole)
+    def rolesFromProto(roleIndexes: Seq[Integer], resultSoFar: Set[String] = Set.empty): Set[String] = {
+      val roles = roleIndexes.map(roleMapping(_)).toSet
+      roles.find(_.startsWith("team-")) match {
+        case Some(_) ⇒ roles
+        case None    ⇒ roles + "team-default"
+      }
     }
 
     def tombstoneFromProto(tombstone: cm.Tombstone): (UniqueAddress, Long) =
