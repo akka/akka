@@ -186,6 +186,8 @@ java.lang.Exception: I failed!
         at akka.dispatch.forkjoin.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)
         at akka.dispatch.forkjoin.ForkJoinPool.runWorker(ForkJoinPool.java:1979)
         at akka.dispatch.forkjoin.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)
+        
+supervised actor stopped
 ```
 
 We see that after failure the actor is stopped and immediately started. We also see a log entry reporting the
