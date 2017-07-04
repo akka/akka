@@ -734,11 +734,18 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
             .via(hubKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
 
-        // select lane based on destination, to preserve message order
+        // Select lane based on destination to preserve message order,
+        // Also include the uid of the sending system in the hash to spread
+        // "hot" destinations, e.g. ActorSelection anchor.
         val partitioner: InboundEnvelope ⇒ Int = env ⇒ {
           env.recipient match {
-            case OptionVal.Some(r) ⇒ math.abs(r.path.uid) % inboundLanes
-            case OptionVal.None    ⇒ 0
+            case OptionVal.Some(r) ⇒
+              val a = r.path.uid
+              val b = env.originUid
+              val hashA = 23 + a
+              val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
+              math.abs(hash) % inboundLanes
+            case OptionVal.None ⇒ 0
           }
         }
 

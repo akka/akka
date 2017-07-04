@@ -33,6 +33,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
      # for serious measurements you should increase the totalMessagesFactor (20)
      akka.test.MaxThroughputSpec.totalMessagesFactor = 10.0
      akka.test.MaxThroughputSpec.real-message = off
+     akka.test.MaxThroughputSpec.actor-selection = off
      akka {
        loglevel = INFO
        log-dead-letters = 10000
@@ -97,6 +98,19 @@ object MaxThroughputSpec extends MultiNodeConfig {
   final case class EndResult(totalReceived: Long) extends JavaSerializable
   final case class FlowControl(burstStartTime: Long) extends Echo
 
+  sealed trait Target {
+    def tell(msg: Any, sender: ActorRef): Unit
+    def ref: ActorRef
+  }
+
+  final case class ActorRefTarget(override val ref: ActorRef) extends Target {
+    override def tell(msg: Any, sender: ActorRef) = ref.tell(msg, sender)
+  }
+
+  final case class ActorSelectionTarget(sel: ActorSelection, override val ref: ActorRef) extends Target {
+    override def tell(msg: Any, sender: ActorRef) = sel.tell(msg, sender)
+  }
+
   def receiverProps(reporter: RateReporter, payloadSize: Int, printTaskRunnerMetrics: Boolean, numSenders: Int): Props =
     Props(new Receiver(reporter, payloadSize, printTaskRunnerMetrics, numSenders)).withDispatcher("akka.remote.default-remote-dispatcher")
 
@@ -137,11 +151,11 @@ object MaxThroughputSpec extends MultiNodeConfig {
     }
   }
 
-  def senderProps(mainTarget: ActorRef, targets: Array[ActorRef], testSettings: TestSettings, plotRef: ActorRef,
+  def senderProps(mainTarget: Target, targets: Array[Target], testSettings: TestSettings, plotRef: ActorRef,
                   printTaskRunnerMetrics: Boolean, reporter: BenchmarkFileReporter): Props =
     Props(new Sender(mainTarget, targets, testSettings, plotRef, printTaskRunnerMetrics, reporter))
 
-  class Sender(target: ActorRef, targets: Array[ActorRef], testSettings: TestSettings, plotRef: ActorRef, printTaskRunnerMetrics: Boolean, reporter: BenchmarkFileReporter)
+  class Sender(target: Target, targets: Array[Target], testSettings: TestSettings, plotRef: ActorRef, printTaskRunnerMetrics: Boolean, reporter: BenchmarkFileReporter)
     extends Actor {
     val numTargets = targets.size
 
@@ -161,7 +175,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
     def receive = {
       case Run ⇒
         if (compressionEnabled) {
-          target ! Warmup(payload)
+          target.tell(Warmup(payload), self)
           context.setReceiveTimeout(1.second)
           context.become(waitingForCompression)
         } else runWarmup()
@@ -169,18 +183,22 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
     def waitingForCompression: Receive = {
       case ReceivedActorRefCompressionTable(_, table) ⇒
-        if (table.dictionary.contains(target)) {
+        val ref = target match {
+          case ActorRefTarget(ref)          ⇒ ref
+          case ActorSelectionTarget(sel, _) ⇒ sel.anchor
+        }
+        if (table.dictionary.contains(ref)) {
           context.setReceiveTimeout(Duration.Undefined)
           runWarmup()
         } else
-          target ! Warmup(payload)
+          target.tell(Warmup(payload), self)
       case ReceiveTimeout ⇒
-        target ! Warmup(payload)
+        target.tell(Warmup(payload), self)
     }
 
     def runWarmup(): Unit = {
       sendBatch(warmup = true) // first some warmup
-      targets.foreach(_ ! Start(target)) // then Start, which will echo back here
+      targets.foreach(_.tell(Start(target.ref), self)) // then Start, which will echo back here
       context.become(warmup)
     }
 
@@ -268,9 +286,9 @@ object MaxThroughputSpec extends MultiNodeConfig {
     def sendFlowControl(t0: Long): Unit = {
       if (remaining <= 0) {
         context.become(waitingForEndResult)
-        targets.foreach(_ ! End)
+        targets.foreach(_.tell(End, self))
       } else
-        target ! FlowControl(t0)
+        target.tell(FlowControl(t0), self)
     }
   }
 
@@ -331,6 +349,7 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
 
   val totalMessagesFactor = system.settings.config.getDouble("akka.test.MaxThroughputSpec.totalMessagesFactor")
   val realMessage = system.settings.config.getBoolean("akka.test.MaxThroughputSpec.real-message")
+  val actorSelection = system.settings.config.getBoolean("akka.test.MaxThroughputSpec.actor-selection")
 
   var plot = PlotResult()
 
@@ -355,9 +374,12 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
     super.afterAll()
   }
 
-  def identifyReceiver(name: String, r: RoleName = second): ActorRef = {
-    system.actorSelection(node(r) / "user" / name) ! Identify(None)
-    expectMsgType[ActorIdentity](10.seconds).ref.get
+  def identifyReceiver(name: String, r: RoleName = second): Target = {
+    val sel = system.actorSelection(node(r) / "user" / name)
+    sel ! Identify(None)
+    val ref = expectMsgType[ActorIdentity](10.seconds).ref.get
+    if (actorSelection) ActorSelectionTarget(sel, ref)
+    else ActorRefTarget(ref)
   }
 
   val scenarios = List(

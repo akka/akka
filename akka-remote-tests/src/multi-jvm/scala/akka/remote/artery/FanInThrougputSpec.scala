@@ -41,6 +41,7 @@ object FanInThroughputSpec extends MultiNodeConfig {
        # for serious measurements you should increase the totalMessagesFactor (20)
        akka.test.FanInThroughputSpec.totalMessagesFactor = 10.0
        akka.test.FanInThroughputSpec.real-message = off
+       akka.test.FanInThroughputSpec.actor-selection = on
        """))
     .withFallback(MaxThroughputSpec.cfg)
     .withFallback(RemotingMultiNodeSpec.commonConfig))
@@ -61,6 +62,7 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
 
   val totalMessagesFactor = system.settings.config.getDouble("akka.test.FanInThroughputSpec.totalMessagesFactor")
   val realMessage = system.settings.config.getBoolean("akka.test.FanInThroughputSpec.real-message")
+  val actorSelection = system.settings.config.getBoolean("akka.test.FanInThroughputSpec.actor-selection")
 
   var plot = PlotResult()
 
@@ -85,9 +87,12 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
     super.afterAll()
   }
 
-  def identifyReceiver(name: String, r: RoleName): ActorRef = {
-    system.actorSelection(node(r) / "user" / name) ! Identify(None)
-    expectMsgType[ActorIdentity](10.seconds).ref.get
+  def identifyReceiver(name: String, r: RoleName): Target = {
+    val sel = system.actorSelection(node(r) / "user" / name)
+    sel ! Identify(None)
+    val ref = expectMsgType[ActorIdentity](10.seconds).ref.get
+    if (actorSelection) ActorSelectionTarget(sel, ref)
+    else ActorRefTarget(ref)
   }
 
   val scenarios = List(
@@ -146,7 +151,7 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
       val ignore = TestProbe()
       val receivers = (1 to sendingNodes.size).map { n ⇒
         identifyReceiver(receiverName + "-" + n, roles.head)
-      }.toArray[ActorRef]
+      }.toArray[Target]
 
       val idx = roles.indexOf(myself) - 1
       val receiver = receivers(idx)
