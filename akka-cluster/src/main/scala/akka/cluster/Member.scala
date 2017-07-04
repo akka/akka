@@ -7,7 +7,7 @@ package akka.cluster
 import akka.actor.Address
 import MemberStatus._
 import akka.annotation.InternalApi
-import akka.cluster.ClusterSettings.Team
+import akka.cluster.ClusterSettings.DataCenter
 
 import scala.runtime.AbstractFunction2
 
@@ -24,9 +24,9 @@ class Member private[cluster] (
   val status:                    MemberStatus,
   val roles:                     Set[String]) extends Serializable {
 
-  lazy val team: String = roles.find(_.startsWith(ClusterSettings.TeamRolePrefix))
-    .getOrElse(throw new IllegalStateException("Team undefined, should not be possible"))
-    .substring(ClusterSettings.TeamRolePrefix.length)
+  lazy val dataCenter: DataCenter = roles.find(_.startsWith(ClusterSettings.DcRolePrefix))
+    .getOrElse(throw new IllegalStateException("DataCenter undefined, should not be possible"))
+    .substring(ClusterSettings.DcRolePrefix.length)
 
   def address: Address = uniqueAddress.address
 
@@ -36,10 +36,10 @@ class Member private[cluster] (
     case _         ⇒ false
   }
   override def toString =
-    if (team == ClusterSettings.DefaultTeam)
+    if (dataCenter == ClusterSettings.DefaultDataCenter)
       s"Member(address = $address, status = $status)"
     else
-      s"Member(address = $address, team = $team, status = $status)"
+      s"Member(address = $address, dataCenter = $dataCenter, status = $status)"
 
   def hasRole(role: String): Boolean = roles.contains(role)
 
@@ -54,8 +54,8 @@ class Member private[cluster] (
    * member. It is only correct when comparing two existing members in a
    * cluster. A member that joined after removal of another member may be
    * considered older than the removed member. Note that is only makes
-   * sense to compare with other members inside of one team (upNumber has
-   * a higher risk of being reused across teams).
+   * sense to compare with other members inside of one data center (upNumber has
+   * a higher risk of being reused across data centers).
    */
   def isOlderThan(other: Member): Boolean =
     if (upNumber == other.upNumber)
@@ -97,7 +97,7 @@ object Member {
    * INTERNAL API
    */
   private[cluster] def removed(node: UniqueAddress): Member =
-    new Member(node, Int.MaxValue, Removed, Set(ClusterSettings.TeamRolePrefix + "-N/A"))
+    new Member(node, Int.MaxValue, Removed, Set(ClusterSettings.DcRolePrefix + "-N/A"))
 
   /**
    * `Address` ordering type class, sorts addresses by host and port.

@@ -80,25 +80,22 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       checkSerialization(InternalClusterAction.Welcome(uniqueAddress, g2))
     }
 
-    "add a default team role if none is present" in {
+    "add a default data center role if none is present" in {
       val env = roundtrip(GossipEnvelope(a1.uniqueAddress, d1.uniqueAddress, Gossip(SortedSet(a1, d1))))
-      env.gossip.members.head.roles should be(Set(ClusterSettings.TeamRolePrefix + "default"))
-      env.gossip.members.tail.head.roles should be(Set("r1", ClusterSettings.TeamRolePrefix + "foo"))
+      env.gossip.members.head.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
+      env.gossip.members.tail.head.roles should be(Set("r1", ClusterSettings.DcRolePrefix + "foo"))
     }
   }
   "Cluster router pool" must {
     "be serializable" in {
       checkSerialization(ClusterRouterPool(
         RoundRobinPool(
-          nrOfInstances = 4
-        ),
+          nrOfInstances = 4),
         ClusterRouterPoolSettings(
           totalInstances = 2,
           maxInstancesPerNode = 5,
           allowLocalRoutees = true,
-          useRole = Some("Richard, Duke of Gloucester")
-        )
-      ))
+          useRole = Some("Richard, Duke of Gloucester"))))
     }
   }
 

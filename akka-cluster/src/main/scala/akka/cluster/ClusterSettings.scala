@@ -18,18 +18,18 @@ import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
 
 object ClusterSettings {
-  type Team = String
+  type DataCenter = String
   /**
    * INTERNAL API.
    */
   @InternalApi
-  private[akka] val TeamRolePrefix = "team-"
+  private[akka] val DcRolePrefix = "dc-"
 
   /**
    * INTERNAL API.
    */
   @InternalApi
-  private[akka] val DefaultTeam: Team = "default"
+  private[akka] val DefaultDataCenter: DataCenter = "default"
 
 }
 
@@ -116,14 +116,13 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
   val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
 
-  val Team: Team = cc.getString("team")
+  val DataCenter: DataCenter = cc.getString("data-center")
   val Roles: Set[String] = {
     val configuredRoles = (immutableSeq(cc.getStringList("roles")).toSet) requiring (
-      _.forall(!_.startsWith(TeamRolePrefix)),
-      s"Roles must not start with '${TeamRolePrefix}' as that is reserved for the cluster team setting"
-    )
+      _.forall(!_.startsWith(DcRolePrefix)),
+      s"Roles must not start with '${DcRolePrefix}' as that is reserved for the cluster data-center setting")
 
-    configuredRoles + s"$TeamRolePrefix$Team"
+    configuredRoles + s"$DcRolePrefix$DataCenter"
   }
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")

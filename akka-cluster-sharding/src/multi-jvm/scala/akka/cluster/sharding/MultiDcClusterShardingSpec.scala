@@ -21,7 +21,7 @@ import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 
-object TeamClusterShardingSpec {
+object MultiDcClusterShardingSpec {
   sealed trait EntityMsg {
     def id: String
   }
@@ -48,7 +48,7 @@ object TeamClusterShardingSpec {
   }
 }
 
-object TeamClusterShardingSpecConfig extends MultiNodeConfig {
+object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -62,23 +62,23 @@ object TeamClusterShardingSpecConfig extends MultiNodeConfig {
     """))
 
   nodeConfig(first, second) {
-    ConfigFactory.parseString("akka.cluster.team = DC1")
+    ConfigFactory.parseString("akka.cluster.data-center = DC1")
   }
 
   nodeConfig(third, fourth) {
-    ConfigFactory.parseString("akka.cluster.team = DC2")
+    ConfigFactory.parseString("akka.cluster.data-center = DC2")
   }
 }
 
-class TeamClusterShardingMultiJvmNode1 extends TeamClusterShardingSpec
-class TeamClusterShardingMultiJvmNode2 extends TeamClusterShardingSpec
-class TeamClusterShardingMultiJvmNode3 extends TeamClusterShardingSpec
-class TeamClusterShardingMultiJvmNode4 extends TeamClusterShardingSpec
+class MultiDcClusterShardingMultiJvmNode1 extends MultiDcClusterShardingSpec
+class MultiDcClusterShardingMultiJvmNode2 extends MultiDcClusterShardingSpec
+class MultiDcClusterShardingMultiJvmNode3 extends MultiDcClusterShardingSpec
+class MultiDcClusterShardingMultiJvmNode4 extends MultiDcClusterShardingSpec
 
-abstract class TeamClusterShardingSpec extends MultiNodeSpec(TeamClusterShardingSpecConfig)
+abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterShardingSpecConfig)
   with STMultiNodeSpec with ImplicitSender {
-  import TeamClusterShardingSpec._
-  import TeamClusterShardingSpecConfig._
+  import MultiDcClusterShardingSpec._
+  import MultiDcClusterShardingSpecConfig._
 
   override def initialParticipants = roles.size
 
@@ -119,7 +119,7 @@ abstract class TeamClusterShardingSpec extends MultiNodeSpec(TeamClusterSharding
     }, 10.seconds)
   }
 
-  s"Cluster sharding with teams" must {
+  s"Cluster sharding in multi data center cluster" must {
     "join cluster" in within(20.seconds) {
       join(first, first)
       join(second, first)
@@ -171,7 +171,7 @@ abstract class TeamClusterShardingSpec extends MultiNodeSpec(TeamClusterSharding
       enterBarrier("after-2")
     }
 
-    "not mix entities in different teams" in {
+    "not mix entities in different data centers" in {
       runOn(second) {
         region ! GetCount("5")
         expectMsg(1)
@@ -183,12 +183,12 @@ abstract class TeamClusterShardingSpec extends MultiNodeSpec(TeamClusterSharding
       enterBarrier("after-3")
     }
 
-    "allow proxy within same team" in {
+    "allow proxy within same data center" in {
       runOn(second) {
         val proxy = ClusterSharding(system).startProxy(
           typeName = "Entity",
           role = None,
-          team = None, // by default use own team
+          dataCenter = None, // by default use own DC
           extractEntityId = extractEntityId,
           extractShardId = extractShardId)
 
@@ -198,12 +198,12 @@ abstract class TeamClusterShardingSpec extends MultiNodeSpec(TeamClusterSharding
       enterBarrier("after-4")
     }
 
-    "allow proxy across different teams" in {
+    "allow proxy across different data centers" in {
       runOn(second) {
         val proxy = ClusterSharding(system).startProxy(
           typeName = "Entity",
           role = None,
-          team = Some("DC2"), // proxy to other DC
+          dataCenter = Some("DC2"), // proxy to other DC
           extractEntityId = extractEntityId,
           extractShardId = extractShardId)
 

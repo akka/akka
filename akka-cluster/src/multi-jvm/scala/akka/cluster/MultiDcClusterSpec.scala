@@ -10,7 +10,7 @@ import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 
-object MultiTeamMultiJvmSpec extends MultiNodeConfig {
+object MultiDcMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -21,32 +21,32 @@ object MultiTeamMultiJvmSpec extends MultiNodeConfig {
 
   nodeConfig(first, second)(ConfigFactory.parseString(
     """
-      akka.cluster.team = "dc1"
+      akka.cluster.data-center = "dc1"
       akka.loglevel = INFO
     """))
 
   nodeConfig(third, fourth, fifth)(ConfigFactory.parseString(
     """
-      akka.cluster.team = "dc2"
+      akka.cluster.data-center = "dc2"
       akka.loglevel = INFO
     """))
 
   testTransport(on = true)
 }
 
-class MultiTeamMultiJvmNode1 extends MultiTeamSpec
-class MultiTeamMultiJvmNode2 extends MultiTeamSpec
-class MultiTeamMultiJvmNode3 extends MultiTeamSpec
-class MultiTeamMultiJvmNode4 extends MultiTeamSpec
-class MultiTeamMultiJvmNode5 extends MultiTeamSpec
+class MultiDcMultiJvmNode1 extends MultiDcSpec
+class MultiDcMultiJvmNode2 extends MultiDcSpec
+class MultiDcMultiJvmNode3 extends MultiDcSpec
+class MultiDcMultiJvmNode4 extends MultiDcSpec
+class MultiDcMultiJvmNode5 extends MultiDcSpec
 
-abstract class MultiTeamSpec
-  extends MultiNodeSpec(MultiTeamMultiJvmSpec)
+abstract class MultiDcSpec
+  extends MultiNodeSpec(MultiDcMultiJvmSpec)
   with MultiNodeClusterSpec {
 
-  import MultiTeamMultiJvmSpec._
+  import MultiDcMultiJvmSpec._
 
-  "A cluster with multiple cluster teams" must {
+  "A cluster with multiple data centers" must {
     "be able to form" in {
 
       runOn(first) {
@@ -66,31 +66,31 @@ abstract class MultiTeamSpec
       enterBarrier("cluster started")
     }
 
-    "have a leader per team" in {
+    "have a leader per data center" in {
       runOn(first, second) {
-        cluster.settings.Team should ===("dc1")
+        cluster.settings.DataCenter should ===("dc1")
         clusterView.leader shouldBe defined
         val dc1 = Set(address(first), address(second))
         dc1 should contain(clusterView.leader.get)
       }
       runOn(third, fourth) {
-        cluster.settings.Team should ===("dc2")
+        cluster.settings.DataCenter should ===("dc2")
         clusterView.leader shouldBe defined
         val dc2 = Set(address(third), address(fourth))
         dc2 should contain(clusterView.leader.get)
       }
 
-      enterBarrier("leader per team")
+      enterBarrier("leader per data center")
     }
 
-    "be able to have team member changes while there is inter-team unreachability" in within(20.seconds) {
+    "be able to have data center member changes while there is inter data center unreachability" in within(20.seconds) {
       runOn(first) {
         testConductor.blackhole(first, third, Direction.Both).await
       }
       runOn(first, second, third, fourth) {
         awaitAssert(clusterView.unreachableMembers should not be empty)
       }
-      enterBarrier("inter-team unreachability")
+      enterBarrier("inter-data-center unreachability")
 
       runOn(fifth) {
         cluster.join(third)
@@ -108,17 +108,17 @@ abstract class MultiTeamSpec
       runOn(first, second, third, fourth) {
         awaitAssert(clusterView.unreachableMembers should not be empty)
       }
-      enterBarrier("inter-team unreachability end")
+      enterBarrier("inter-data-center unreachability end")
     }
 
-    "be able to have team member changes while there is unreachability in another team" in within(20.seconds) {
+    "be able to have data center member changes while there is unreachability in another data center" in within(20.seconds) {
       runOn(first) {
         testConductor.blackhole(first, second, Direction.Both).await
       }
       runOn(first, second, third, fourth) {
         awaitAssert(clusterView.unreachableMembers should not be empty)
       }
-      enterBarrier("other-team-internal-unreachable")
+      enterBarrier("other-data-center-internal-unreachable")
 
       runOn(third) {
         cluster.join(fifth)
@@ -130,15 +130,15 @@ abstract class MultiTeamSpec
         awaitAssert(clusterView.members.collect { case m if m.status == Up ⇒ m.address } should contain(address(fifth)))
       }
 
-      enterBarrier("other-team-internal-unreachable changed")
+      enterBarrier("other-data-center-internal-unreachable changed")
 
       runOn(first) {
         testConductor.passThrough(first, second, Direction.Both).await
       }
-      enterBarrier("other-team-internal-unreachable end")
+      enterBarrier("other-datac-enter-internal-unreachable end")
     }
 
-    "be able to down a member of another team" in within(20.seconds) {
+    "be able to down a member of another data-center" in within(20.seconds) {
       runOn(fifth) {
         cluster.down(address(second))
       }
@@ -146,7 +146,7 @@ abstract class MultiTeamSpec
       runOn(first, third, fifth) {
         awaitAssert(clusterView.members.map(_.address) should not contain (address(second)))
       }
-      enterBarrier("cross-team-downed")
+      enterBarrier("cross-data-center-downed")
     }
 
   }

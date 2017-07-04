@@ -1239,7 +1239,7 @@ object MiMa extends AutoPlugin {
         // older versions will be missing the method. We accept that incompatibility for now.
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate"),
 
-        // #23228 single leader per cluster team
+        // #23228 single leader per cluster data center
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.apply"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.copy"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.this"),
