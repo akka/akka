@@ -14,7 +14,7 @@ import akka.testkit.ImplicitSender
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.cluster.ClusterSettings
 
-object TeamSingletonManagerSpec extends MultiNodeConfig {
+object MultiDcSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
   val first = role("first")
   val second = role("second")
@@ -28,44 +28,44 @@ object TeamSingletonManagerSpec extends MultiNodeConfig {
 
   nodeConfig(controller) {
     ConfigFactory.parseString("""
-      akka.cluster.team = one
+      akka.cluster.data-center = one
       akka.cluster.roles = []""")
   }
 
   nodeConfig(first) {
     ConfigFactory.parseString("""
-      akka.cluster.team = one
+      akka.cluster.data-center = one
       akka.cluster.roles = [ worker ]""")
   }
   nodeConfig(second, third) {
     ConfigFactory.parseString("""
-      akka.cluster.team = two
+      akka.cluster.data-center = two
       akka.cluster.roles = [ worker ]""")
   }
 }
 
-class TeamSingletonManagerMultiJvmNode1 extends TeamSingletonManagerSpec
-class TeamSingletonManagerMultiJvmNode2 extends TeamSingletonManagerSpec
-class TeamSingletonManagerMultiJvmNode3 extends TeamSingletonManagerSpec
-class TeamSingletonManagerMultiJvmNode4 extends TeamSingletonManagerSpec
+class MultiDcSingletonManagerMultiJvmNode1 extends MultiDcSingletonManagerSpec
+class MultiDcSingletonManagerMultiJvmNode2 extends MultiDcSingletonManagerSpec
+class MultiDcSingletonManagerMultiJvmNode3 extends MultiDcSingletonManagerSpec
+class MultiDcSingletonManagerMultiJvmNode4 extends MultiDcSingletonManagerSpec
 
-class TeamSingleton extends Actor with ActorLogging {
-  import TeamSingleton._
+class MultiDcSingleton extends Actor with ActorLogging {
+  import MultiDcSingleton._
 
   val cluster = Cluster(context.system)
 
   override def receive: Receive = {
     case Ping ⇒
-      sender() ! Pong(cluster.settings.Team, cluster.selfAddress, cluster.selfRoles)
+      sender() ! Pong(cluster.settings.DataCenter, cluster.selfAddress, cluster.selfRoles)
   }
 }
-object TeamSingleton {
+object MultiDcSingleton {
   case object Ping
-  case class Pong(fromTeam: String, fromAddress: Address, roles: Set[String])
+  case class Pong(fromDc: String, fromAddress: Address, roles: Set[String])
 }
 
-abstract class TeamSingletonManagerSpec extends MultiNodeSpec(TeamSingletonManagerSpec) with STMultiNodeSpec with ImplicitSender {
-  import TeamSingletonManagerSpec._
+abstract class MultiDcSingletonManagerSpec extends MultiNodeSpec(MultiDcSingletonManagerSpec) with STMultiNodeSpec with ImplicitSender {
+  import MultiDcSingletonManagerSpec._
 
   override def initialParticipants = roles.size
 
@@ -75,13 +75,13 @@ abstract class TeamSingletonManagerSpec extends MultiNodeSpec(TeamSingletonManag
 
   val worker = "worker"
 
-  "A SingletonManager in a team" must {
-    "start a singleton instance for each team" in {
+  "A SingletonManager in a multi data center cluster" must {
+    "start a singleton instance for each data center" in {
 
       runOn(first, second, third) {
         system.actorOf(
           ClusterSingletonManager.props(
-            Props[TeamSingleton](),
+            Props[MultiDcSingleton](),
             PoisonPill,
             ClusterSingletonManagerSettings(system).withRole(worker)),
           "singletonManager")
@@ -93,33 +93,33 @@ abstract class TeamSingletonManagerSpec extends MultiNodeSpec(TeamSingletonManag
 
       enterBarrier("managers-started")
 
-      proxy ! TeamSingleton.Ping
-      val pong = expectMsgType[TeamSingleton.Pong](10.seconds)
+      proxy ! MultiDcSingleton.Ping
+      val pong = expectMsgType[MultiDcSingleton.Pong](10.seconds)
 
       enterBarrier("pongs-received")
 
-      pong.fromTeam should equal(Cluster(system).settings.Team)
+      pong.fromDc should equal(Cluster(system).settings.DataCenter)
       pong.roles should contain(worker)
       runOn(controller, first) {
-        pong.roles should contain(ClusterSettings.TeamRolePrefix + "one")
+        pong.roles should contain(ClusterSettings.DcRolePrefix + "one")
       }
       runOn(second, third) {
-        pong.roles should contain(ClusterSettings.TeamRolePrefix + "two")
+        pong.roles should contain(ClusterSettings.DcRolePrefix + "two")
       }
 
       enterBarrier("after-1")
     }
 
-    "be able to use proxy across different team" in {
+    "be able to use proxy across different data centers" in {
       runOn(third) {
         val proxy = system.actorOf(ClusterSingletonProxy.props(
           "/user/singletonManager",
-          ClusterSingletonProxySettings(system).withRole(worker).withTeam("one")))
-        proxy ! TeamSingleton.Ping
-        val pong = expectMsgType[TeamSingleton.Pong](10.seconds)
-        pong.fromTeam should ===("one")
+          ClusterSingletonProxySettings(system).withRole(worker).withDataCenter("one")))
+        proxy ! MultiDcSingleton.Ping
+        val pong = expectMsgType[MultiDcSingleton.Pong](10.seconds)
+        pong.fromDc should ===("one")
         pong.roles should contain(worker)
-        pong.roles should contain(ClusterSettings.TeamRolePrefix + "one")
+        pong.roles should contain(ClusterSettings.DcRolePrefix + "one")
       }
       enterBarrier("after-1")
     }

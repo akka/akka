@@ -21,6 +21,7 @@ import scala.reflect.ClassTag
 import scala.concurrent.Promise
 import akka.Done
 import akka.cluster.ClusterSettings
+import akka.cluster.ClusterSettings.DataCenter
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -41,7 +42,7 @@ object ShardRegion {
     handOffStopMessage: Any,
     replicator:         ActorRef,
     majorityMinCap:     Int): Props =
-    Props(new ShardRegion(typeName, Some(entityProps), team = None, settings, coordinatorPath, extractEntityId,
+    Props(new ShardRegion(typeName, Some(entityProps), dataCenter = None, settings, coordinatorPath, extractEntityId,
       extractShardId, handOffStopMessage, replicator, majorityMinCap)).withDeploy(Deploy.local)
 
   /**
@@ -51,14 +52,14 @@ object ShardRegion {
    */
   private[akka] def proxyProps(
     typeName:        String,
-    team:            Option[String],
+    dataCenter:      Option[DataCenter],
     settings:        ClusterShardingSettings,
     coordinatorPath: String,
     extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId:  ShardRegion.ExtractShardId,
     replicator:      ActorRef,
     majorityMinCap:  Int): Props =
-    Props(new ShardRegion(typeName, None, team, settings, coordinatorPath, extractEntityId, extractShardId,
+    Props(new ShardRegion(typeName, None, dataCenter, settings, coordinatorPath, extractEntityId, extractShardId,
       PoisonPill, replicator, majorityMinCap)).withDeploy(Deploy.local)
 
   /**
@@ -367,7 +368,7 @@ object ShardRegion {
 private[akka] class ShardRegion(
   typeName:           String,
   entityProps:        Option[Props],
-  team:               Option[String],
+  dataCenter:         Option[DataCenter],
   settings:           ClusterShardingSettings,
   coordinatorPath:    String,
   extractEntityId:    ShardRegion.ExtractEntityId,
@@ -422,14 +423,14 @@ private[akka] class ShardRegion(
     retryTask.cancel()
   }
 
-  // when using proxy the team can be different that the own team
-  private val targetTeamRole = team match {
-    case Some(t) ⇒ ClusterSettings.TeamRolePrefix + t
-    case None    ⇒ ClusterSettings.TeamRolePrefix + cluster.settings.Team
+  // when using proxy the data center can be different from the own data center
+  private val targetDcRole = dataCenter match {
+    case Some(t) ⇒ ClusterSettings.DcRolePrefix + t
+    case None    ⇒ ClusterSettings.DcRolePrefix + cluster.settings.DataCenter
   }
 
   def matchingRole(member: Member): Boolean =
-    member.hasRole(targetTeamRole) && role.forall(member.hasRole)
+    member.hasRole(targetDcRole) && role.forall(member.hasRole)
 
   def coordinatorSelection: Option[ActorSelection] =
     membersByAge.headOption.map(m ⇒ context.actorSelection(RootActorPath(m.address) + coordinatorPath))

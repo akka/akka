@@ -421,31 +421,31 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
     def logInfo(message: String): Unit =
       if (LogInfo)
-        if (settings.Team == ClusterSettings.DefaultTeam)
+        if (settings.DataCenter == ClusterSettings.DefaultDataCenter)
           log.info("Cluster Node [{}] - {}", selfAddress, message)
         else
-          log.info("Cluster Node [{}] team [{}] - {}", selfAddress, settings.Team, message)
+          log.info("Cluster Node [{}] dc [{}] - {}", selfAddress, settings.DataCenter, message)
 
     def logInfo(template: String, arg1: Any): Unit =
       if (LogInfo)
-        if (settings.Team == ClusterSettings.DefaultTeam)
+        if (settings.DataCenter == ClusterSettings.DefaultDataCenter)
           log.info("Cluster Node [{}] - " + template, selfAddress, arg1)
         else
-          log.info("Cluster Node [{}] team [{}] - " + template, selfAddress, settings.Team, arg1)
+          log.info("Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.DataCenter, arg1)
 
     def logInfo(template: String, arg1: Any, arg2: Any): Unit =
       if (LogInfo)
-        if (settings.Team == ClusterSettings.DefaultTeam)
+        if (settings.DataCenter == ClusterSettings.DefaultDataCenter)
           log.info("Cluster Node [{}] - " + template, selfAddress, arg1, arg2)
         else
-          log.info("Cluster Node [{}] team [{}] - " + template, selfAddress, settings.Team, arg1, arg2)
+          log.info("Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.DataCenter, arg1, arg2)
 
     def logInfo(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
       if (LogInfo)
-        if (settings.Team == ClusterSettings.DefaultTeam)
+        if (settings.DataCenter == ClusterSettings.DefaultDataCenter)
           log.info("Cluster Node [{}] - " + template, selfAddress, arg1, arg2, arg3)
         else
-          log.info("Cluster Node [{}] team [" + settings.Team + "] - " + template, selfAddress, arg1, arg2, arg3)
+          log.info("Cluster Node [{}] dc [" + settings.DataCenter + "] - " + template, selfAddress, arg1, arg2, arg3)
   }
 
 }

@@ -7,7 +7,7 @@ import language.postfixOps
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address }
-import akka.cluster.ClusterSettings.Team
+import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
 import akka.event.EventStream
@@ -58,7 +58,7 @@ object ClusterEvent {
   /**
    * Current snapshot state of the cluster. Sent to new subscriber.
    *
-   * @param leader leader of the team of this node
+   * @param leader leader of the data center of this node
    */
   final case class CurrentClusterState(
     members:       immutable.SortedSet[Member]  = immutable.SortedSet.empty,
@@ -88,17 +88,17 @@ object ClusterEvent {
       scala.collection.JavaConverters.setAsJavaSetConverter(seenBy).asJava
 
     /**
-     * Java API: get address of current team leader, or null if none
+     * Java API: get address of current data center leader, or null if none
      */
     def getLeader: Address = leader orNull
 
     /**
-     * get address of current leader, if any, within the team that has the given role
+     * get address of current leader, if any, within the data center that has the given role
      */
     def roleLeader(role: String): Option[Address] = roleLeaderMap.getOrElse(role, None)
 
     /**
-     * Java API: get address of current leader, if any, within the team that has the given role
+     * Java API: get address of current leader, if any, within the data center that has the given role
      * or null if no such node exists
      */
     def getRoleLeader(role: String): Address = roleLeaderMap.get(role).flatten.orNull
@@ -115,15 +115,15 @@ object ClusterEvent {
       scala.collection.JavaConverters.setAsJavaSetConverter(allRoles).asJava
 
     /**
-     * All teams in the cluster
+     * All data centers in the cluster
      */
-    def allTeams: Set[String] = members.map(_.team)(breakOut)
+    def allDataCenters: Set[String] = members.map(_.dataCenter)(breakOut)
 
     /**
-     * Java API: All teams in the cluster
+     * Java API: All data centers in the cluster
      */
-    def getAllTeams: java.util.Set[String] =
-      scala.collection.JavaConverters.setAsJavaSetConverter(allTeams).asJava
+    def getAllDataCenters: java.util.Set[String] =
+      scala.collection.JavaConverters.setAsJavaSetConverter(allDataCenters).asJava
 
   }
 
@@ -189,7 +189,7 @@ object ClusterEvent {
   }
 
   /**
-   * Leader of the cluster team of this node changed. Published when the state change
+   * Leader of the cluster data center of this node changed. Published when the state change
    * is first seen on a node.
    */
   final case class LeaderChanged(leader: Option[Address]) extends ClusterDomainEvent {
@@ -201,7 +201,8 @@ object ClusterEvent {
   }
 
   /**
-   * First member (leader) of the members within a role set (in the same team as this node, if cluster teams are used) changed.
+   * First member (leader) of the members within a role set (in the same data center as this node,
+   * if data centers are used) changed.
    * Published when the state change is first seen on a node.
    */
   final case class RoleLeaderChanged(role: String, leader: Option[Address]) extends ClusterDomainEvent {
@@ -318,9 +319,9 @@ object ClusterEvent {
    * INTERNAL API
    */
   @InternalApi
-  private[cluster] def diffLeader(team: Team, oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): immutable.Seq[LeaderChanged] = {
-    val newLeader = newGossip.teamLeader(team, selfUniqueAddress)
-    if (newLeader != oldGossip.teamLeader(team, selfUniqueAddress)) List(LeaderChanged(newLeader.map(_.address)))
+  private[cluster] def diffLeader(dc: DataCenter, oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): immutable.Seq[LeaderChanged] = {
+    val newLeader = newGossip.dcLeader(dc, selfUniqueAddress)
+    if (newLeader != oldGossip.dcLeader(dc, selfUniqueAddress)) List(LeaderChanged(newLeader.map(_.address)))
     else Nil
   }
 
@@ -328,11 +329,11 @@ object ClusterEvent {
    * INTERNAL API
    */
   @InternalApi
-  private[cluster] def diffRolesLeader(team: Team, oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): Set[RoleLeaderChanged] = {
+  private[cluster] def diffRolesLeader(dc: DataCenter, oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): Set[RoleLeaderChanged] = {
     for {
       role ← oldGossip.allRoles union newGossip.allRoles
-      newLeader = newGossip.roleLeader(team, role, selfUniqueAddress)
-      if newLeader != oldGossip.roleLeader(team, role, selfUniqueAddress)
+      newLeader = newGossip.roleLeader(dc, role, selfUniqueAddress)
+      if newLeader != oldGossip.roleLeader(dc, role, selfUniqueAddress)
     } yield RoleLeaderChanged(role, newLeader.map(_.address))
   }
 
@@ -340,12 +341,12 @@ object ClusterEvent {
    * INTERNAL API
    */
   @InternalApi
-  private[cluster] def diffSeen(team: Team, oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): immutable.Seq[SeenChanged] =
+  private[cluster] def diffSeen(dc: DataCenter, oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): immutable.Seq[SeenChanged] =
     if (newGossip eq oldGossip) Nil
     else {
-      val newConvergence = newGossip.convergence(team, selfUniqueAddress, Set.empty)
+      val newConvergence = newGossip.convergence(dc, selfUniqueAddress, Set.empty)
       val newSeenBy = newGossip.seenBy
-      if (newConvergence != oldGossip.convergence(team, selfUniqueAddress, Set.empty) || newSeenBy != oldGossip.seenBy)
+      if (newConvergence != oldGossip.convergence(dc, selfUniqueAddress, Set.empty) || newSeenBy != oldGossip.seenBy)
         List(SeenChanged(newConvergence, newSeenBy.map(_.address)))
       else Nil
     }
@@ -372,7 +373,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   val cluster = Cluster(context.system)
   val selfUniqueAddress = cluster.selfUniqueAddress
   var latestGossip: Gossip = Gossip.empty
-  def selfTeam = cluster.settings.Team
+  def selfDc = cluster.settings.DataCenter
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
     // don't postStop when restarted, no children to stop
@@ -407,11 +408,9 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       members = latestGossip.members,
       unreachable = unreachable,
       seenBy = latestGossip.seenBy.map(_.address),
-      leader = latestGossip.teamLeader(selfTeam, selfUniqueAddress).map(_.address),
+      leader = latestGossip.dcLeader(selfDc, selfUniqueAddress).map(_.address),
       roleLeaderMap = latestGossip.allRoles.map(r ⇒
-        r → latestGossip.roleLeader(selfTeam, r, selfUniqueAddress).map(_.address)
-      )(collection.breakOut)
-    )
+        r → latestGossip.roleLeader(selfDc, r, selfUniqueAddress).map(_.address))(collection.breakOut))
     receiver ! state
   }
 
@@ -446,10 +445,10 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     diffMemberEvents(oldGossip, newGossip) foreach pub
     diffUnreachable(oldGossip, newGossip, selfUniqueAddress) foreach pub
     diffReachable(oldGossip, newGossip, selfUniqueAddress) foreach pub
-    diffLeader(selfTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub
-    diffRolesLeader(selfTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub
+    diffLeader(selfDc, oldGossip, newGossip, selfUniqueAddress) foreach pub
+    diffRolesLeader(selfDc, oldGossip, newGossip, selfUniqueAddress) foreach pub
     // publish internal SeenState for testing purposes
-    diffSeen(selfTeam, oldGossip, newGossip, selfUniqueAddress) foreach pub
+    diffSeen(selfDc, oldGossip, newGossip, selfUniqueAddress) foreach pub
     diffReachability(oldGossip, newGossip) foreach pub
   }
 
