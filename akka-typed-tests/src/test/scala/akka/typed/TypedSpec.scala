@@ -60,7 +60,7 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
 
   private var nativeSystemUsed = false
   lazy val nativeSystem: ActorSystem[TypedSpec.Command] = {
-    val sys = ActorSystem(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
+    val sys = ActorSystem(guardian(), AkkaSpec.getCallerName(classOf[TypedSpec]), config = Some(config withFallback AkkaSpec.testConf))
     nativeSystemUsed = true
     sys
   }
