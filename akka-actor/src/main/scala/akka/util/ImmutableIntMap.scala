@@ -24,7 +24,7 @@ import scala.annotation.tailrec
  * Keys and values are backed by arrays and lookup is performed with binary
  * search. It's intended for rather small (<1000) maps.
  */
-@InternalApi private[akka] class ImmutableIntMap private (
+@InternalApi private[akka] final class ImmutableIntMap private (
   private val keys: Array[Int], private val values: Array[Int]) {
 
   final val size: Int = keys.length
