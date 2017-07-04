@@ -7,6 +7,7 @@ package akka.cluster
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor.Address
+import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ClusterSettings.DefaultDataCenter
 
 import scala.collection.immutable.SortedSet
@@ -33,6 +34,9 @@ class GossipSpec extends WordSpec with Matchers {
   val dc2d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Up, Set.empty, dataCenter = "dc2")
   val dc2d2 = TestMember(dc2d1.address, status = Down, roles = Set.empty, dataCenter = dc2d1.dataCenter)
 
+  private def state(g: Gossip, selfMember: Member = a1): MembershipState =
+    MembershipState(g, selfMember.uniqueAddress, selfMember.dataCenter)
+
   "A Gossip" must {
 
     "have correct test setup" in {
@@ -41,40 +45,40 @@ class GossipSpec extends WordSpec with Matchers {
     }
 
     "reach convergence when it's empty" in {
-      Gossip.empty.convergence(DefaultDataCenter, a1.uniqueAddress, Set.empty) should ===(true)
+      state(Gossip.empty).convergence(Set.empty) should ===(true)
     }
 
     "reach convergence for one node" in {
       val g1 = Gossip(members = SortedSet(a1)).seen(a1.uniqueAddress)
-      g1.convergence(DefaultDataCenter, a1.uniqueAddress, Set.empty) should ===(true)
+      state(g1).convergence(Set.empty) should ===(true)
     }
 
     "not reach convergence until all have seen version" in {
       val g1 = Gossip(members = SortedSet(a1, b1)).seen(a1.uniqueAddress)
-      g1.convergence(DefaultDataCenter, a1.uniqueAddress, Set.empty) should ===(false)
+      state(g1).convergence(Set.empty) should ===(false)
     }
 
     "reach convergence for two nodes" in {
       val g1 = Gossip(members = SortedSet(a1, b1)).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
-      g1.convergence(DefaultDataCenter, a1.uniqueAddress, Set.empty) should ===(true)
+      state(g1).convergence(Set.empty) should ===(true)
     }
 
     "reach convergence, skipping joining" in {
       // e1 is joining
       val g1 = Gossip(members = SortedSet(a1, b1, e1)).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
-      g1.convergence(DefaultDataCenter, a1.uniqueAddress, Set.empty) should ===(true)
+      state(g1).convergence(Set.empty) should ===(true)
     }
 
     "reach convergence, skipping down" in {
       // e3 is down
       val g1 = Gossip(members = SortedSet(a1, b1, e3)).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
-      g1.convergence(DefaultDataCenter, a1.uniqueAddress, Set.empty) should ===(true)
+      state(g1).convergence(Set.empty) should ===(true)
     }
 
     "reach convergence, skipping Leaving with exitingConfirmed" in {
       // c1 is Leaving
       val g1 = Gossip(members = SortedSet(a1, b1, c1)).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
-      g1.convergence(DefaultDataCenter, a1.uniqueAddress, Set(c1.uniqueAddress)) should ===(true)
+      state(g1).convergence(Set(c1.uniqueAddress)) should ===(true)
     }
 
     "reach convergence, skipping unreachable Leaving with exitingConfirmed" in {
@@ -82,16 +86,16 @@ class GossipSpec extends WordSpec with Matchers {
       val r1 = Reachability.empty.unreachable(b1.uniqueAddress, c1.uniqueAddress)
       val g1 = Gossip(members = SortedSet(a1, b1, c1), overview = GossipOverview(reachability = r1))
         .seen(a1.uniqueAddress).seen(b1.uniqueAddress)
-      g1.convergence(DefaultDataCenter, a1.uniqueAddress, Set(c1.uniqueAddress)) should ===(true)
+      state(g1).convergence(Set(c1.uniqueAddress)) should ===(true)
     }
 
     "not reach convergence when unreachable" in {
       val r1 = Reachability.empty.unreachable(b1.uniqueAddress, a1.uniqueAddress)
       val g1 = (Gossip(members = SortedSet(a1, b1), overview = GossipOverview(reachability = r1)))
         .seen(a1.uniqueAddress).seen(b1.uniqueAddress)
-      g1.convergence(DefaultDataCenter, b1.uniqueAddress, Set.empty) should ===(false)
+      state(g1, b1).convergence(Set.empty) should ===(false)
       // but from a1's point of view (it knows that itself is not unreachable)
-      g1.convergence(DefaultDataCenter, a1.uniqueAddress, Set.empty) should ===(true)
+      state(g1).convergence(Set.empty) should ===(true)
     }
 
     "reach convergence when downed node has observed unreachable" in {
@@ -99,7 +103,7 @@ class GossipSpec extends WordSpec with Matchers {
       val r1 = Reachability.empty.unreachable(e3.uniqueAddress, a1.uniqueAddress)
       val g1 = (Gossip(members = SortedSet(a1, b1, e3), overview = GossipOverview(reachability = r1)))
         .seen(a1.uniqueAddress).seen(b1.uniqueAddress).seen(e3.uniqueAddress)
-      g1.convergence(DefaultDataCenter, b1.uniqueAddress, Set.empty) should ===(true)
+      state(g1, b1).convergence(Set.empty) should ===(true)
     }
 
     "merge members by status priority" in {
@@ -146,37 +150,33 @@ class GossipSpec extends WordSpec with Matchers {
     }
 
     "have leader as first member based on ordering, except Exiting status" in {
-      Gossip(members = SortedSet(c2, e2)).dcLeader(DefaultDataCenter, c2.uniqueAddress) should ===(Some(c2.uniqueAddress))
-      Gossip(members = SortedSet(c3, e2)).dcLeader(DefaultDataCenter, c3.uniqueAddress) should ===(Some(e2.uniqueAddress))
-      Gossip(members = SortedSet(c3)).dcLeader(DefaultDataCenter, c3.uniqueAddress) should ===(Some(c3.uniqueAddress))
+      state(Gossip(members = SortedSet(c2, e2)), c2).leader should ===(Some(c2.uniqueAddress))
+      state(Gossip(members = SortedSet(c3, e2)), c3).leader should ===(Some(e2.uniqueAddress))
+      state(Gossip(members = SortedSet(c3)), c3).leader should ===(Some(c3.uniqueAddress))
     }
 
     "have leader as first reachable member based on ordering" in {
       val r1 = Reachability.empty.unreachable(e2.uniqueAddress, c2.uniqueAddress)
       val g1 = Gossip(members = SortedSet(c2, e2), overview = GossipOverview(reachability = r1))
-      g1.dcLeader(DefaultDataCenter, e2.uniqueAddress) should ===(Some(e2.uniqueAddress))
+      state(g1, e2).leader should ===(Some(e2.uniqueAddress))
       // but when c2 is selfUniqueAddress
-      g1.dcLeader(DefaultDataCenter, c2.uniqueAddress) should ===(Some(c2.uniqueAddress))
+      state(g1, c2).leader should ===(Some(c2.uniqueAddress))
     }
 
     "not have Down member as leader" in {
-      Gossip(members = SortedSet(e3)).dcLeader(DefaultDataCenter, e3.uniqueAddress) should ===(None)
+      state(Gossip(members = SortedSet(e3)), e3).leader should ===(None)
     }
 
     "have a leader per data center" in {
       val g1 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1))
 
-      // everybodys point of view is dc1a1 being leader of dc1
-      g1.dcLeader("dc1", dc1a1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
-      g1.dcLeader("dc1", dc1b1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
-      g1.dcLeader("dc1", dc2c1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
-      g1.dcLeader("dc1", dc2d1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
+      // dc1a1 being leader of dc1
+      state(g1, dc1a1).leader should ===(Some(dc1a1.uniqueAddress))
+      state(g1, dc1b1).leader should ===(Some(dc1a1.uniqueAddress))
 
       // and dc2c1 being leader of dc2
-      g1.dcLeader("dc2", dc1a1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
-      g1.dcLeader("dc2", dc1b1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
-      g1.dcLeader("dc2", dc2c1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
-      g1.dcLeader("dc2", dc2d1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
+      state(g1, dc2c1).leader should ===(Some(dc2c1.uniqueAddress))
+      state(g1, dc2d1).leader should ===(Some(dc2c1.uniqueAddress))
     }
 
     "merge seen table correctly" in {
@@ -218,11 +218,11 @@ class GossipSpec extends WordSpec with Matchers {
         .seen(dc1b1.uniqueAddress)
         .seen(dc2c1.uniqueAddress)
         .seen(dc2d1.uniqueAddress)
-      g.dcLeader("dc1", dc1a1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
-      g.convergence("dc1", dc1a1.uniqueAddress, Set.empty) should ===(true)
+      state(g, dc1a1).leader should ===(Some(dc1a1.uniqueAddress))
+      state(g, dc1a1).convergence(Set.empty) should ===(true)
 
-      g.dcLeader("dc2", dc2c1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
-      g.convergence("dc2", dc2c1.uniqueAddress, Set.empty) should ===(true)
+      state(g, dc2c1).leader should ===(Some(dc2c1.uniqueAddress))
+      state(g, dc2c1).convergence(Set.empty) should ===(true)
     }
 
     "reach convergence per data center even if members of another data center has not seen the gossip" in {
@@ -233,12 +233,12 @@ class GossipSpec extends WordSpec with Matchers {
       // dc2d1 has not seen the gossip
 
       // so dc1 can reach convergence
-      g.dcLeader("dc1", dc1a1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
-      g.convergence("dc1", dc1a1.uniqueAddress, Set.empty) should ===(true)
+      state(g, dc1a1).leader should ===(Some(dc1a1.uniqueAddress))
+      state(g, dc1a1).convergence(Set.empty) should ===(true)
 
       // but dc2 cannot
-      g.dcLeader("dc2", dc2c1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
-      g.convergence("dc2", dc2c1.uniqueAddress, Set.empty) should ===(false)
+      state(g, dc2c1).leader should ===(Some(dc2c1.uniqueAddress))
+      state(g, dc2c1).convergence(Set.empty) should ===(false)
     }
 
     "reach convergence per data center even if another data center contains unreachable" in {
@@ -251,12 +251,12 @@ class GossipSpec extends WordSpec with Matchers {
         .seen(dc2d1.uniqueAddress)
 
       // this data center doesn't care about dc2 having reachability problems and can reach convergence
-      g.dcLeader("dc1", dc1a1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
-      g.convergence("dc1", dc1a1.uniqueAddress, Set.empty) should ===(true)
+      state(g, dc1a1).leader should ===(Some(dc1a1.uniqueAddress))
+      state(g, dc1a1).convergence(Set.empty) should ===(true)
 
       // this data center is cannot reach convergence because of unreachability within the data center
-      g.dcLeader("dc2", dc2c1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
-      g.convergence("dc2", dc2c1.uniqueAddress, Set.empty) should ===(false)
+      state(g, dc2c1).leader should ===(Some(dc2c1.uniqueAddress))
+      state(g, dc2c1).convergence(Set.empty) should ===(false)
     }
 
     "reach convergence per data center even if there is unreachable nodes in another data center" in {
@@ -271,11 +271,11 @@ class GossipSpec extends WordSpec with Matchers {
         .seen(dc2d1.uniqueAddress)
 
       // neither data center is affected by the inter data center unreachability as far as convergence goes
-      g.dcLeader("dc1", dc1a1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
-      g.convergence("dc1", dc1a1.uniqueAddress, Set.empty) should ===(true)
+      state(g, dc1a1).leader should ===(Some(dc1a1.uniqueAddress))
+      state(g, dc1a1).convergence(Set.empty) should ===(true)
 
-      g.dcLeader("dc2", dc2c1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
-      g.convergence("dc2", dc2c1.uniqueAddress, Set.empty) should ===(true)
+      state(g, dc2c1).leader should ===(Some(dc2c1.uniqueAddress))
+      state(g, dc2c1).convergence(Set.empty) should ===(true)
     }
 
     "ignore cross data center unreachability when determining inside of data center reachability" in {
@@ -291,10 +291,10 @@ class GossipSpec extends WordSpec with Matchers {
       g.isReachable(dc2c1.uniqueAddress, dc2d1.uniqueAddress) should ===(true)
       g.isReachable(dc2d1.uniqueAddress, dc2c1.uniqueAddress) should ===(true)
 
-      g.isReachableExcludingDownedObservers(dc1a1.dataCenter, dc1b1.uniqueAddress) should ===(true)
-      g.isReachableExcludingDownedObservers(dc1b1.dataCenter, dc1a1.uniqueAddress) should ===(true)
-      g.isReachableExcludingDownedObservers(dc2c1.dataCenter, dc2d1.uniqueAddress) should ===(true)
-      g.isReachableExcludingDownedObservers(dc2d1.dataCenter, dc2c1.uniqueAddress) should ===(true)
+      state(g, dc1a1).isReachableExcludingDownedObservers(dc1b1.uniqueAddress) should ===(true)
+      state(g, dc1b1).isReachableExcludingDownedObservers(dc1a1.uniqueAddress) should ===(true)
+      state(g, dc2c1).isReachableExcludingDownedObservers(dc2d1.uniqueAddress) should ===(true)
+      state(g, dc2d1).isReachableExcludingDownedObservers(dc2c1.uniqueAddress) should ===(true)
 
       // between data centers it matters though
       g.isReachable(dc1a1.uniqueAddress, dc2c1.uniqueAddress) should ===(false)
@@ -304,22 +304,22 @@ class GossipSpec extends WordSpec with Matchers {
       g.isReachable(dc2d1.uniqueAddress, dc1a1.uniqueAddress) should ===(true)
 
       // this one looks at all unreachable-entries for the to-address
-      g.isReachableExcludingDownedObservers(dc1a1.dataCenter, dc2c1.uniqueAddress) should ===(false)
-      g.isReachableExcludingDownedObservers(dc1b1.dataCenter, dc2c1.uniqueAddress) should ===(false)
-      g.isReachableExcludingDownedObservers(dc2c1.dataCenter, dc1a1.uniqueAddress) should ===(false)
-      g.isReachableExcludingDownedObservers(dc2d1.dataCenter, dc1a1.uniqueAddress) should ===(false)
+      state(g, dc1a1).isReachableExcludingDownedObservers(dc2c1.uniqueAddress) should ===(false)
+      state(g, dc1b1).isReachableExcludingDownedObservers(dc2c1.uniqueAddress) should ===(false)
+      state(g, dc2c1).isReachableExcludingDownedObservers(dc1a1.uniqueAddress) should ===(false)
+      state(g, dc2d1).isReachableExcludingDownedObservers(dc1a1.uniqueAddress) should ===(false)
 
       // between the two other nodes there is no unreachability
       g.isReachable(dc1b1.uniqueAddress, dc2d1.uniqueAddress) should ===(true)
       g.isReachable(dc2d1.uniqueAddress, dc1b1.uniqueAddress) should ===(true)
 
-      g.isReachableExcludingDownedObservers(dc1b1.dataCenter, dc2d1.uniqueAddress) should ===(true)
-      g.isReachableExcludingDownedObservers(dc2d1.dataCenter, dc1b1.uniqueAddress) should ===(true)
+      state(g, dc1b1).isReachableExcludingDownedObservers(dc2d1.uniqueAddress) should ===(true)
+      state(g, dc2d1).isReachableExcludingDownedObservers(dc1b1.uniqueAddress) should ===(true)
     }
 
     "not returning a downed data center leader" in {
       val g = Gossip(members = SortedSet(dc1a1.copy(Down), dc1b1))
-      g.leaderOf("dc1", g.members, dc1b1.uniqueAddress) should ===(Some(dc1b1.uniqueAddress))
+      state(g, dc1b1).leaderOf(g.members) should ===(Some(dc1b1.uniqueAddress))
     }
 
     "ignore cross data center unreachability when determining data center leader" in {
@@ -329,15 +329,11 @@ class GossipSpec extends WordSpec with Matchers {
 
       val g = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1), overview = GossipOverview(reachability = r1))
 
-      g.leaderOf("dc1", g.members, dc1a1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
-      g.leaderOf("dc1", g.members, dc1b1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
-      g.leaderOf("dc1", g.members, dc2c1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
-      g.leaderOf("dc1", g.members, dc2d1.uniqueAddress) should ===(Some(dc1a1.uniqueAddress))
+      state(g, dc1a1).leaderOf(g.members) should ===(Some(dc1a1.uniqueAddress))
+      state(g, dc1b1).leaderOf(g.members) should ===(Some(dc1a1.uniqueAddress))
 
-      g.leaderOf("dc2", g.members, dc1a1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
-      g.leaderOf("dc2", g.members, dc1b1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
-      g.leaderOf("dc2", g.members, dc2c1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
-      g.leaderOf("dc2", g.members, dc2d1.uniqueAddress) should ===(Some(dc2c1.uniqueAddress))
+      state(g, dc2c1).leaderOf(g.members) should ===(Some(dc2c1.uniqueAddress))
+      state(g, dc2d1).leaderOf(g.members) should ===(Some(dc2c1.uniqueAddress))
     }
 
     // TODO test coverage for when leaderOf returns None - I have not been able to figure it out
