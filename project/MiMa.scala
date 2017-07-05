@@ -1221,14 +1221,6 @@ object MiMa extends AutoPlugin {
         // #22881 Make sure connections are aborted correctly on Windows
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancel"),
         
-        // #23231 multi-DC Sharding
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.Replicator.leader"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator.receiveLeaderChanged"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.Replicator.leader_="),
-        FilterAnyProblemStartingWith("akka.cluster.sharding.ClusterShardingGuardian"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.proxyProps"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.this"),
-        
         // #23144 recoverWithRetries cleanup
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.RecoverWith.InfiniteRetries"),  
 
@@ -1237,23 +1229,29 @@ object MiMa extends AutoPlugin {
         
         // #23023 added a new overload with implementation to trait, so old transport implementations compiled against
         // older versions will be missing the method. We accept that incompatibility for now.
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate"),
-
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate")
+      ),
+      "2.5.3" -> Seq(
+        // #23231 multi-DC Sharding
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.Replicator.leader"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator.receiveLeaderChanged"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.Replicator.leader_="),
+        FilterAnyProblemStartingWith("akka.cluster.sharding.ClusterShardingGuardian"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.proxyProps"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.this"),
+        
         // #23228 single leader per cluster data center
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.apply"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.copy"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.this"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.convergence"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.isLeader"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.leader"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.leaderOf"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.roleLeader"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterCoreDaemon.NumberOfGossipsBeforeShutdownWhenLeaderExits"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterCoreDaemon.vclockName"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterCoreDaemon.MaxGossipsBeforeShuttingDownMyself"),
+        FilterAnyProblemStartingWith("akka.cluster.Gossip"),
+        FilterAnyProblemStartingWith("akka.cluster.ClusterCoreDaemon"),
+        FilterAnyProblemStartingWith("akka.cluster.ClusterDomainEventPublisher"),
+        FilterAnyProblemStartingWith("akka.cluster.InternalClusterAction"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.diffReachable"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.diffLeader"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.diffRolesLeader"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.diffSeen"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ClusterEvent.diffReachability"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.diffUnreachable"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ClusterEvent.diffMemberEvents"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#GossipOrBuilder.getTombstonesCount"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#GossipOrBuilder.getTombstones"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#GossipOrBuilder.getTombstonesList"),
