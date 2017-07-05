@@ -530,7 +530,7 @@ object MiMa extends AutoPlugin {
       // small changes in attributes
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.StreamTestKit#ProbeSource.withAttributes"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.StreamTestKit#ProbeSink.withAttributes"),
-      
+
       // #22332 protobuf serializers for remote deployment
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getConfigManifest"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasScopeManifest"),
@@ -1161,8 +1161,6 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers_=")
       ),
       "2.4.18" -> Seq(
-      ),
-      "2.4.19" -> Seq(
       )
       // make sure that
       //  * this list ends with the latest released version number
@@ -1199,14 +1197,14 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.watchWith"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching_="),
-        
+
         // #22868 store shards
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.sendUpdate"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.waitingForUpdate"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.getState"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.waitingForState"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.this"),
-          
+
         // #21213 Feature request: Let BackoffSupervisor reply to messages when its child is stopped
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffSupervisor.this"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.copy"),
@@ -1222,14 +1220,26 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancel"),
         
         // #23144 recoverWithRetries cleanup
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.RecoverWith.InfiniteRetries"),  
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.RecoverWith.InfiniteRetries"),
 
         // #23025 OversizedPayloadException DeltaPropagation
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.DeltaPropagationSelector.maxDeltaSize"),
-        
+
         // #23023 added a new overload with implementation to trait, so old transport implementations compiled against
         // older versions will be missing the method. We accept that incompatibility for now.
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate")
+      ),
+      "2.5.3" -> Seq(
+        // #22789 Source.maybe rewritten as a graph stage
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$MaybeSubscription"),
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.MaybeSource"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.newInstance"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.withAttributes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.attributes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.create"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.this"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$")
       )
     )
 
