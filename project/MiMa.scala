@@ -1229,7 +1229,15 @@ object MiMa extends AutoPlugin {
         
         // #23023 added a new overload with implementation to trait, so old transport implementations compiled against
         // older versions will be missing the method. We accept that incompatibility for now.
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate"),
+
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.FileSource"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.newInstance"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.FileSource.withAttributes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.attributes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.label"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.create"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.this")
       )
     )
 

@@ -3,7 +3,9 @@
  */
 package akka.stream.io
 
-import java.nio.file.{ FileSystems, Files }
+import java.nio.ByteBuffer
+import java.nio.channels.AsynchronousFileChannel
+import java.nio.file.{ StandardOpenOption, FileSystems, Files }
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Random
 
@@ -75,10 +77,9 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   "FileSource" must {
     "read contents from a file" in assertAllStagesStopped {
       val chunkSize = 512
-      val bufferAttributes = Attributes.inputBuffer(1, 2)
 
       val p = FileIO.fromPath(testFile, chunkSize)
-        .withAttributes(bufferAttributes)
+        .addAttributes(Attributes.inputBuffer(1, 2))
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[ByteString]()
       p.subscribe(c)
@@ -136,14 +137,41 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       c.expectComplete()
     }
 
+    "read contents from a file when file size is proportional to chunkSize" in assertAllStagesStopped {
+      val chunkSize = 1000
+
+      val p = FileIO.fromPath(testFile, chunkSize)
+        .addAttributes(Attributes.inputBuffer(1, 1))
+        .runWith(Sink.asPublisher(false))
+      val c = TestSubscriber.manualProbe[ByteString]()
+      p.subscribe(c)
+      val sub = c.expectSubscription()
+
+      var remaining = TestText
+      def nextChunk() = {
+        val (chunk, rest) = remaining.splitAt(chunkSize)
+        remaining = rest
+        chunk
+      }
+
+      sub.request(6)
+      var expectedChunk = nextChunk().toString
+      while (expectedChunk != "") {
+        c.expectNext().utf8String should ===(expectedChunk)
+        expectedChunk = nextChunk().toString
+      }
+      sub.request(1)
+
+      c.expectComplete()
+    }
+
     "complete only when all contents of a file have been signalled" in assertAllStagesStopped {
       val chunkSize = 256
-      val bufferAttributes = Attributes.inputBuffer(4, 8)
 
       val demandAllButOneChunks = TestText.length / chunkSize - 1
 
       val p = FileIO.fromPath(testFile, chunkSize)
-        .withAttributes(bufferAttributes)
+        .addAttributes(Attributes.inputBuffer(4, 8))
         .runWith(Sink.asPublisher(false))
 
       val c = TestSubscriber.manualProbe[ByteString]()
@@ -177,7 +205,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       c.expectSubscription()
       c.expectError()
-      val ioResult = Await.result(r, 3.seconds.dilated).status.isFailure shouldBe true
+      Await.result(r, 3.seconds.dilated).status.isFailure shouldBe true
     }
 
     List(
@@ -198,7 +226,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         }
       }
 
-    "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
+    "use non blocking dispatcher by default" in assertAllStagesStopped {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
       try {
@@ -206,7 +234,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
         materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
-        try assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher") finally p.cancel()
+        try assertDispatcher(ref, "akka.test.stream-dispatcher") finally p.cancel()
       } finally shutdown(sys)
     }
 
