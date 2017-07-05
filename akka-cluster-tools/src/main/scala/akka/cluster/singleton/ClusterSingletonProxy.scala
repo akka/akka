@@ -222,7 +222,8 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
   def add(m: Member): Unit = {
     if (matchingRole(m))
       trackChange { () ⇒
-        membersByAge -= m // replace
+        // replace, it's possible that the upNumber is changed
+        membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
         membersByAge += m
       }
   }
@@ -233,8 +234,9 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
    */
   def remove(m: Member): Unit = {
     if (matchingRole(m))
-      trackChange {
-        () ⇒ membersByAge -= m
+      trackChange { () ⇒
+        // filter, it's possible that the upNumber is changed
+        membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
       }
   }
 

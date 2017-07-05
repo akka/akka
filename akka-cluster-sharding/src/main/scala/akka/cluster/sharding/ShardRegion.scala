@@ -479,13 +479,23 @@ private[akka] class ShardRegion(
   def receiveClusterEvent(evt: ClusterDomainEvent): Unit = evt match {
     case MemberUp(m) ⇒
       if (matchingRole(m))
-        changeMembers(membersByAge - m + m) // replace
+        changeMembers {
+          // replace, it's possible that the upNumber is changed
+          membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
+          membersByAge += m
+          membersByAge
+        }
 
     case MemberRemoved(m, _) ⇒
       if (m.uniqueAddress == cluster.selfUniqueAddress)
         context.stop(self)
       else if (matchingRole(m))
-        changeMembers(membersByAge - m)
+        changeMembers {
+          // filter, it's possible that the upNumber is changed
+          membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
+          membersByAge += m
+          membersByAge
+        }
 
     case _: MemberEvent ⇒ // these are expected, no need to warn about them
 

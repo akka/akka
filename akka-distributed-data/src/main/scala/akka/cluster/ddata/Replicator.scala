@@ -1740,7 +1740,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (m.address == selfAddress)
       context stop self
     else if (matchingRole(m)) {
-      leader -= m
+      // filter, it's possible that the ordering is changed since it based on MemberStatus
+      leader = leader.filterNot(_.uniqueAddress == m.uniqueAddress)
       nodes -= m.address
       weaklyUpNodes -= m.address
       log.debug("adding removed node [{}] from MemberRemoved", m.uniqueAddress)
@@ -1752,8 +1753,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def receiveOtherMemberEvent(m: Member): Unit =
     if (matchingRole(m)) {
-      // update changed status
-      leader = (leader - m) + m
+      // replace, it's possible that the ordering is changed since it based on MemberStatus
+      leader = leader.filterNot(_.uniqueAddress == m.uniqueAddress)
+      leader += m
     }
 
   def receiveUnreachable(m: Member): Unit =
