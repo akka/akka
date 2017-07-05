@@ -1009,23 +1009,31 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       // decide this)
       if (!nodesPerDc(selfDc).exists(_.uniqueAddress == selfUniqueAddress)) localDcGossipTargets()
       else {
-        def findFirstDcWithValidNodes(left: List[DataCenter]): Vector[UniqueAddress] =
+        def findFirstDcWithValidNodes(left: List[DataCenter], onlyUnseen: Boolean): Vector[UniqueAddress] =
           left match {
             case dc :: tail ⇒
               val validNodes = nodesPerDc(dc).collect {
-                case member if validNodeForGossip(member.uniqueAddress) ⇒ member.uniqueAddress
+                case member if validNodeForGossip(member.uniqueAddress) && (!onlyUnseen || latestGossip.seenByNode(member.uniqueAddress))⇒
+                  member.uniqueAddress
               }
               if (validNodes.nonEmpty) validNodes.toVector
-              else findFirstDcWithValidNodes(tail) // no valid nodes in dc, try next
+              else findFirstDcWithValidNodes(tail, onlyUnseen) // no valid nodes in dc, try next
 
             case Nil ⇒
-              // no other dc with reachable nodes, fall back to local gossip
-              localDcGossipTargets()
+              Vector.empty
           }
 
         // chose another DC at random
         val otherDcsInRandomOrder = Random.shuffle((nodesPerDc - selfDc).keys.toList)
-        findFirstDcWithValidNodes(otherDcsInRandomOrder)
+        val unseenNodes = findFirstDcWithValidNodes(otherDcsInRandomOrder, onlyUnseen = true)
+        val unseenOrValidForGossip =
+          if (unseenNodes.nonEmpty) unseenNodes
+          else findFirstDcWithValidNodes(otherDcsInRandomOrder, onlyUnseen = false)
+
+        if (unseenOrValidForGossip.nonEmpty) unseenOrValidForGossip
+        // no other dc with reachable nodes, fall back to local gossip
+        else localDcGossipTargets()
+
       }
     }
   }
