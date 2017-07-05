@@ -958,8 +958,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         else localDcGossipTargets()
 
       selectRandomNode(gossipTargets) match {
-        case Some(peer) ⇒ gossipTo(peer)
-        case None       ⇒ // nothing to see here
+        case Some(peer) if !latestGossip.seenByNode(peer) ⇒ gossipTo(peer)
+        case Some(peer)                                   ⇒ gossipStatusTo(peer)
+        case None                                         ⇒ // nothing to see here
       }
     }
 
@@ -1005,15 +1006,15 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         }
       }
 
-      // only do cross DC gossip if this node is among the N oldest (but we had to do the above member summary to
-      // decide this)
-      if (!nodesPerDc(selfDc).exists(_.uniqueAddress == selfUniqueAddress)) localDcGossipTargets()
+      // only do cross DC gossip if this node is among the N oldest
+      val selfMember = latestGossip.member(selfUniqueAddress)
+      if (!nodesPerDc(selfDc).contains(selfMember)) localDcGossipTargets()
       else {
         def findFirstDcWithValidNodes(left: List[DataCenter], onlyUnseen: Boolean): Vector[UniqueAddress] =
           left match {
             case dc :: tail ⇒
               val validNodes = nodesPerDc(dc).collect {
-                case member if validNodeForGossip(member.uniqueAddress) && (!onlyUnseen || latestGossip.seenByNode(member.uniqueAddress))⇒
+                case member if validNodeForGossip(member.uniqueAddress) && (!onlyUnseen || latestGossip.seenByNode(member.uniqueAddress)) ⇒
                   member.uniqueAddress
               }
               if (validNodes.nonEmpty) validNodes.toVector
