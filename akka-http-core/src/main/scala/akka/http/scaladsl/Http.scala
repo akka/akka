@@ -890,7 +890,8 @@ trait DefaultSSLContextCreation {
   def createDefaultClientHttpsContext(): HttpsConnectionContext =
     createClientHttpsContext(sslConfig)
 
-  // currently the same configuration as client by default, however we should tune this for server-side apropriately (!)
+  // TODO: currently the same configuration as client by default, however we should tune this for server-side apropriately (!)
+  // https://github.com/akka/akka-http/issues/55
   def createServerHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
     log.warning("Automatic server-side configuration is not supported yet, will attempt to use client-side settings. " +
       "Instead it is recommended to construct the Servers HttpsConnectionContext manually (via SSLContext).")
