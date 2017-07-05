@@ -22,11 +22,6 @@ private[cluster] object Gossip {
   def apply(members: immutable.SortedSet[Member]) =
     if (members.isEmpty) empty else empty.copy(members = members)
 
-  private val leaderMemberStatus = Set[MemberStatus](Up, Leaving)
-  private val convergenceMemberStatus = Set[MemberStatus](Up, Leaving)
-  val convergenceSkipUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
-  val removeUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
-
 }
 
 /**
@@ -75,7 +70,7 @@ private[cluster] final case class Gossip(
   private def assertInvariants(): Unit = {
 
     if (members.exists(_.status == Removed))
-      throw new IllegalArgumentException(s"Live members must have status [${Removed}], " +
+      throw new IllegalArgumentException(s"Live members must not have status [${Removed}], " +
         s"got [${members.filter(_.status == Removed)}]")
 
     val inReachabilityButNotMember = overview.reachability.allObservers diff members.map(_.uniqueAddress)
@@ -168,79 +163,9 @@ private[cluster] final case class Gossip(
     Gossip(mergedMembers, GossipOverview(mergedSeen, mergedReachability), mergedVClock, mergedTombstones)
   }
 
-  /**
-   * Checks if we have a cluster convergence. If there are any in data center node pairs that cannot reach each other
-   * then we can't have a convergence until those nodes reach each other again or one of them is downed
-   *
-   * @return true if convergence have been reached and false if not
-   */
-  def convergence(dc: DataCenter, selfUniqueAddress: UniqueAddress, exitingConfirmed: Set[UniqueAddress]): Boolean = {
-    // Find cluster members in the data center that are unreachable from other members of the data center
-    // excluding observations from members outside of the data center, that have status DOWN or is passed in as confirmed exiting.
-    val unreachableInDc = dcReachabilityExcludingDownedObservers(dc).allUnreachableOrTerminated.collect {
-      case node if node != selfUniqueAddress && !exitingConfirmed(node) ⇒ member(node)
-    }
-
-    // If another member in the data center that is UP or LEAVING and has not seen this gossip or is exiting
-    // convergence cannot be reached
-    def memberHinderingConvergenceExists =
-      members.exists(member ⇒
-        member.dataCenter == dc &&
-          Gossip.convergenceMemberStatus(member.status) &&
-          !(seenByNode(member.uniqueAddress) || exitingConfirmed(member.uniqueAddress)))
-
-    // unreachables outside of the data center or with status DOWN or EXITING does not affect convergence
-    def allUnreachablesCanBeIgnored =
-      unreachableInDc.forall(unreachable ⇒ Gossip.convergenceSkipUnreachableWithMemberStatus(unreachable.status))
-
-    allUnreachablesCanBeIgnored && !memberHinderingConvergenceExists
-  }
-
   lazy val reachabilityExcludingDownedObservers: Reachability = {
     val downed = members.collect { case m if m.status == Down ⇒ m }
     overview.reachability.removeObservers(downed.map(_.uniqueAddress))
-  }
-
-  /**
-   * @return Reachability excluding observations from nodes outside of the data center, but including observed unreachable
-   *         nodes outside of the data center
-   */
-  def dcReachability(dc: DataCenter): Reachability =
-    overview.reachability.removeObservers(members.collect { case m if m.dataCenter != dc ⇒ m.uniqueAddress })
-
-  /**
-   * @return reachability for data center nodes, with observations from outside the data center or from downed nodes filtered out
-   */
-  def dcReachabilityExcludingDownedObservers(dc: DataCenter): Reachability = {
-    val membersToExclude = members.collect { case m if m.status == Down || m.dataCenter != dc ⇒ m.uniqueAddress }
-    overview.reachability.removeObservers(membersToExclude).remove(members.collect { case m if m.dataCenter != dc ⇒ m.uniqueAddress })
-  }
-
-  def dcMembers(dc: DataCenter): SortedSet[Member] =
-    members.filter(_.dataCenter == dc)
-
-  def isDcLeader(dc: DataCenter, node: UniqueAddress, selfUniqueAddress: UniqueAddress): Boolean =
-    dcLeader(dc, selfUniqueAddress).contains(node)
-
-  def dcLeader(dc: DataCenter, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
-    leaderOf(dc, members, selfUniqueAddress)
-
-  def roleLeader(dc: DataCenter, role: String, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
-    leaderOf(dc, members.filter(_.hasRole(role)), selfUniqueAddress)
-
-  def leaderOf(dc: DataCenter, mbrs: immutable.SortedSet[Member], selfUniqueAddress: UniqueAddress): Option[UniqueAddress] = {
-    val reachability = dcReachability(dc)
-
-    val reachableMembersInDc =
-      if (reachability.isAllReachable) mbrs.filter(m ⇒ m.dataCenter == dc && m.status != Down)
-      else mbrs.filter(m ⇒
-        m.dataCenter == dc &&
-          m.status != Down &&
-          (reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress))
-    if (reachableMembersInDc.isEmpty) None
-    else reachableMembersInDc.find(m ⇒ Gossip.leaderMemberStatus(m.status))
-      .orElse(Some(reachableMembersInDc.min(Member.leaderStatusOrdering)))
-      .map(_.uniqueAddress)
   }
 
   def allDataCenters: Set[DataCenter] = members.map(_.dataCenter)
@@ -248,22 +173,6 @@ private[cluster] final case class Gossip(
   def allRoles: Set[String] = members.flatMap(_.roles)
 
   def isSingletonCluster: Boolean = members.size == 1
-
-  /**
-   * @return true if toAddress should be reachable from the fromDc in general, within a data center
-   *         this means only caring about data center local observations, across data centers it
-   *         means caring about all observations for the toAddress.
-   */
-  def isReachableExcludingDownedObservers(fromDc: DataCenter, toAddress: UniqueAddress): Boolean =
-    if (!hasMember(toAddress)) false
-    else {
-      val to = member(toAddress)
-
-      // if member is in the same data center, we ignore cross data center unreachability
-      if (fromDc == to.dataCenter) dcReachabilityExcludingDownedObservers(fromDc).isReachable(toAddress)
-      // if not it is enough that any non-downed node observed it as unreachable
-      else reachabilityExcludingDownedObservers.isReachable(toAddress)
-    }
 
   /**
    * @return true if fromAddress should be able to reach toAddress based on the unreachability data and their
