@@ -90,8 +90,8 @@ private[cluster] final case class Gossip(
   @transient lazy val isMultiDc =
     if (members.size <= 1) false
     else {
-      val dc1 = members.head.team
-      members.exists(_.team != dc1)
+      val dc1 = members.head.dataCenter
+      members.exists(_.dataCenter != dc1)
     }
 
   /**

@@ -23,9 +23,11 @@ import akka.pattern.ask
 import akka.util.Timeout
 import akka.Done
 import akka.annotation.InternalApi
+import akka.cluster.ClusterSettings.DataCenter
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.util.Random
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -971,7 +973,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         // If it's time to try to gossip to some nodes with a different view
         // gossip to a random alive same dc member with preference to a member with older gossip version
         latestGossip.members.collect {
-          case m if m.team == selfTeam && !latestGossip.seenByNode(m.uniqueAddress) && validNodeForGossip(m.uniqueAddress) ⇒
+          case m if m.dataCenter == selfDc && !latestGossip.seenByNode(m.uniqueAddress) && validNodeForGossip(m.uniqueAddress) ⇒
             m.uniqueAddress
         }(breakOut)
       } else Vector.empty
@@ -979,7 +981,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     // Fall back to localGossip
     if (firstSelection.isEmpty) {
       latestGossip.members.toVector.collect {
-        case m if m.team == selfTeam && validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
+        case m if m.dataCenter == selfDc && validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
       }
     } else Vector.empty
 
@@ -989,28 +991,42 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    * Choose cross-dc nodes if this one of the N oldest nodes, and if not fall back to gosip locally in the dc
    */
   def multiDcGossipTargets(): Vector[UniqueAddress] = {
-    // TODO cache this until gossip changes??
-    val nodesPerDc = latestGossip.members.foldLeft(Map.empty[String, SortedSet[Member]]) { (acc, member) ⇒
-      acc.get(member.team) match {
-        case Some(set) if set.size > cluster.settings.CrossDcConnections ⇒ acc
-        case Some(set) ⇒ acc + (member.team → (set + member))
-        case None ⇒ acc + (member.team → (SortedSet.empty(Member.ageOrdering) + member))
-      }
-    }
 
-    val localTargets = localDcGossipTargets()
-    // only do cross DC gossip if this node is among the N oldest
-    if (!nodesPerDc(selfTeam).exists(_.uniqueAddress == selfUniqueAddress)) localTargets
+    // 20% of the times across dcs and 80% local (doing it for all nodes to avoid having to collect the oldest nodes per
+    // dc all the time, when #23290 is merged we can maybe cache oldest members per dc in that)
+    if (ThreadLocalRandom.current.nextDouble() > 0.2D) localDcGossipTargets()
     else {
-      // nOldest of all other Dcs, keeping the order as long as the reachable set of nodes is stable
-      val crossDcTargets = (nodesPerDc - selfTeam).valuesIterator.foldLeft(Vector.newBuilder[UniqueAddress])((acc, set) ⇒
-        set.foldLeft(acc)((acc, member) ⇒
-          if (validNodeForGossip(member.uniqueAddress)) acc += member.uniqueAddress
-          else acc
-        )
-      )
+      // TODO cache this until gossip changes??
+      val nodesPerDc = latestGossip.members.foldLeft(Map.empty[String, SortedSet[Member]]) { (acc, member) ⇒
+        acc.get(member.dataCenter) match {
+          case Some(set) if set.size > cluster.settings.CrossDcConnections ⇒ acc
+          case Some(set) ⇒ acc + (member.dataCenter → (set + member))
+          case None ⇒ acc + (member.dataCenter → (SortedSet.empty(Member.ageOrdering) + member))
+        }
+      }
 
-      (crossDcTargets ++= localTargets).result()
+      // only do cross DC gossip if this node is among the N oldest (but we had to do the above member summary to
+      // decide this)
+      if (!nodesPerDc(selfDc).exists(_.uniqueAddress == selfUniqueAddress)) localDcGossipTargets()
+      else {
+        def findFirstDcWithValidNodes(left: List[DataCenter]): Vector[UniqueAddress] =
+          left match {
+            case dc :: tail ⇒
+              val validNodes = nodesPerDc(dc).collect {
+                case member if validNodeForGossip(member.uniqueAddress) ⇒ member.uniqueAddress
+              }
+              if (validNodes.nonEmpty) validNodes.toVector
+              else findFirstDcWithValidNodes(tail) // no valid nodes in dc, try next
+
+            case Nil ⇒
+              // no other dc with reachable nodes, fall back to local gossip
+              localDcGossipTargets()
+          }
+
+        // chose another DC at random
+        val otherDcsInRandomOrder = Random.shuffle((nodesPerDc - selfDc).keys.toList)
+        findFirstDcWithValidNodes(otherDcsInRandomOrder)
+      }
     }
   }
 
