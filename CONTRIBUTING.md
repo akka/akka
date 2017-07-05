@@ -236,6 +236,7 @@ The generated html documentation is in `akka-docs/target/paradox/site/main/index
 ### Java- or Scala-specific documentation
 
 For new documentation chapters, we recommend adding a page to the `scala` tree documenting both Java and Scala, using [tabs](http://developer.lightbend.com/docs/paradox/latest/features/snippet-inclusion.html) for code snippets and [groups]( http://developer.lightbend.com/docs/paradox/latest/features/groups.html) for other Java- or Scala-specific segments or sections.
+An example of such a 'merged' page is `akka-docs/src/main/paradox/scala/actors.md`.
 
 Add a symlink to the `java` tree to make the page available there as well.
 
