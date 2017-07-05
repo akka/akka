@@ -129,12 +129,12 @@ import scala.annotation.tailrec
       else if (size == 0 && other.size == 0) true
       else {
         @tailrec def check(i: Int): Boolean = {
-          if (i == size) true
+          if (i < 0) true
           else if (keys(i) == other.keys(i) && values(i) == other.values(i))
-            check(i + 1) // recur, next elem
+            check(i - 1) // recur, next elem
           else false
         }
-        check(0)
+        check(size - 1)
       }
     case _ ⇒ false
   }
