@@ -76,6 +76,9 @@ import akka.annotation.InternalApi
     overview.reachability.removeObservers(membersToExclude).remove(members.collect { case m if m.dataCenter != selfDc ⇒ m.uniqueAddress })
   }
 
+  lazy val dcReachabilityNoOutsideNodes: Reachability =
+    overview.reachability.remove(members.collect { case m if m.dataCenter != selfDc ⇒ m.uniqueAddress })
+
   /**
    * @return true if toAddress should be reachable from the fromDc in general, within a data center
    *         this means only caring about data center local observations, across data centers it
