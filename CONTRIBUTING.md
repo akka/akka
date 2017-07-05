@@ -233,6 +233,15 @@ akka-docs/paradox
 
 The generated html documentation is in `akka-docs/target/paradox/site/main/index.html`.
 
+### Java- or Scala-specific documentation
+
+For new documentation chapters, we recommend adding a page to the `scala` tree documenting both Java and Scala, using [tabs](http://developer.lightbend.com/docs/paradox/latest/features/snippet-inclusion.html) for code snippets and [groups]( http://developer.lightbend.com/docs/paradox/latest/features/groups.html) for other Java- or Scala-specific segments or sections.
+An example of such a 'merged' page is `akka-docs/src/main/paradox/scala/actors.md`.
+
+Add a symlink to the `java` tree to make the page available there as well.
+
+Consolidation of existing pages is tracked in [issue #23052](https://github.com/akka/akka/issues/23052)
+
 ### Note for paradox on Windows
 
 On Windows, you need special care to generate html documentation with paradox.
