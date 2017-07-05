@@ -355,16 +355,13 @@ object Source {
    * with None.
    */
   def maybe[T]: Source[T, Promise[Option[T]]] =
-    fromGraph(new MaybeSource[T](DefaultAttributes.maybeSource, shape("MaybeSource")))
+    Source.fromGraph(MaybeSource.asInstanceOf[Graph[SourceShape[T], Promise[Option[T]]]])
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
    */
   def failed[T](cause: Throwable): Source[T, NotUsed] =
-    fromGraph(new PublisherSource(
-      ErrorPublisher(cause, "FailedSource")[T],
-      DefaultAttributes.failedSource,
-      shape("FailedSource")))
+    Source.fromGraph(new FailedSource[T](cause))
 
   /**
    * Creates a `Source` that is not materialized until there is downstream demand, when the source gets materialized
