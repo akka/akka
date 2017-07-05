@@ -91,8 +91,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
           overview = GossipOverview(
             reachability = Reachability.empty.unreachable(aDc1, bDc1))),
         aDc1,
-        aDc1.dataCenter
-      )
+        aDc1.dataCenter)
       val gossipTo = alwaysLocalSelector.gossipTargets(state)
 
       // a1 cannot reach b1 so only option is c1
@@ -113,10 +112,40 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
               .unreachable(aDc1, eDc2)
               .unreachable(aDc1, fDc2))),
         aDc1,
-        aDc1.dataCenter
-      )
+        aDc1.dataCenter)
       val gossipTo = selector.gossipTargets(state)
       gossipTo should ===(Vector[UniqueAddress](gDc3, hDc3))
+    }
+
+    "not care about seen/unseen for cross dc" in {
+      val selector = new GossipTargetSelector(crossDcConnections = 5, reduceGossipDifferentViewProbability = 400) {
+        override protected def selectDcLocalNodes: Boolean = false
+        override protected def dcsInRandomOrder(dcs: List[DataCenter]): List[DataCenter] = dcs.sorted // sort on name
+      }
+
+      val state = MembershipState(
+        Gossip(
+          members = SortedSet(aDc1, bDc1, eDc2, fDc2, gDc3, hDc3)
+        ).seen(fDc2).seen(hDc3),
+        aDc1,
+        aDc1.dataCenter)
+      val gossipTo = selector.gossipTargets(state)
+      gossipTo should ===(Vector[UniqueAddress](eDc2, fDc2))
+    }
+
+    "limit the numbers of chosen cross dc nodes to the crossDcConnections setting" in {
+      val selector = new GossipTargetSelector(crossDcConnections = 1, reduceGossipDifferentViewProbability = 400) {
+        override protected def selectDcLocalNodes: Boolean = false
+        override protected def dcsInRandomOrder(dcs: List[DataCenter]): List[DataCenter] = dcs.sorted // sort on name
+      }
+
+      val state = MembershipState(
+        Gossip(
+          members = SortedSet(aDc1, bDc1, eDc2, fDc2, gDc3, hDc3)),
+        aDc1,
+        aDc1.dataCenter)
+      val gossipTo = selector.gossipTargets(state)
+      gossipTo should ===(Vector[UniqueAddress](eDc2))
     }
 
   }

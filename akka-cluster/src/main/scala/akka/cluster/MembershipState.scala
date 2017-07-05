@@ -11,6 +11,7 @@ import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
 import akka.annotation.InternalApi
 
+import scala.annotation.tailrec
 import scala.collection.breakOut
 import scala.util.Random
 
@@ -80,6 +81,17 @@ import scala.util.Random
     val membersToExclude = members.collect { case m if m.status == Down || m.dataCenter != selfDc ⇒ m.uniqueAddress }
     overview.reachability.removeObservers(membersToExclude).remove(members.collect { case m if m.dataCenter != selfDc ⇒ m.uniqueAddress })
   }
+
+  /**
+   * @return All members grouped by dc and sorted by age
+   */
+  lazy val ageSortedNodesPerDc: Map[DataCenter, SortedSet[Member]] =
+    latestGossip.members.foldLeft(Map.empty[DataCenter, SortedSet[Member]]) { (acc, member) ⇒
+      acc.get(member.dataCenter) match {
+        case Some(set) ⇒ acc + (member.dataCenter → (set + member))
+        case None      ⇒ acc + (member.dataCenter → (SortedSet.empty(Member.ageOrdering) + member))
+      }
+    }
 
   /**
    * @return true if toAddress should be reachable from the fromDc in general, within a data center
@@ -176,21 +188,24 @@ import scala.util.Random
     // dc all the time, when #23290 is merged we can maybe cache oldest members per dc in that)
     if (selectDcLocalNodes) localDcGossipTargets(state)
     else {
-      val nodesPerDc = oldestNMembersPerDc(state)
+      val nodesPerDc = state.ageSortedNodesPerDc
 
       // only do cross DC gossip if this node is among the N oldest
       val selfMember = state.latestGossip.member(state.selfUniqueAddress)
       if (!nodesPerDc(state.selfDc).contains(selfMember)) localDcGossipTargets(state)
       else {
-        def findFirstDcWithValidNodes(left: List[DataCenter], onlyUnseen: Boolean): Vector[UniqueAddress] =
+        @tailrec
+        def findFirstDcWithValidNodes(left: List[DataCenter]): Vector[UniqueAddress] =
           left match {
             case dc :: tail ⇒
+
               val validNodes = nodesPerDc(dc).collect {
-                case member if state.validNodeForGossip(member.uniqueAddress) && (!onlyUnseen || latestGossip.seenByNode(member.uniqueAddress)) ⇒
+                case member if state.validNodeForGossip(member.uniqueAddress) ⇒
                   member.uniqueAddress
-              }
+              }.take(crossDcConnections)
+
               if (validNodes.nonEmpty) validNodes.toVector
-              else findFirstDcWithValidNodes(tail, onlyUnseen) // no valid nodes in dc, try next
+              else findFirstDcWithValidNodes(tail) // no valid nodes in dc, try next
 
             case Nil ⇒
               Vector.empty
@@ -198,27 +213,13 @@ import scala.util.Random
 
         // chose another DC at random
         val otherDcsInRandomOrder = dcsInRandomOrder((nodesPerDc - state.selfDc).keys.toList)
-        val unseenNodes = findFirstDcWithValidNodes(otherDcsInRandomOrder, onlyUnseen = true)
-        val unseenOrValidForGossip =
-          if (unseenNodes.nonEmpty) unseenNodes
-          else findFirstDcWithValidNodes(otherDcsInRandomOrder, onlyUnseen = false)
-
-        if (unseenOrValidForGossip.nonEmpty) unseenOrValidForGossip
+        val nodes = findFirstDcWithValidNodes(otherDcsInRandomOrder)
+        if (nodes.nonEmpty) nodes
         // no other dc with reachable nodes, fall back to local gossip
         else localDcGossipTargets(state)
-
       }
     }
   }
-
-  private def oldestNMembersPerDc(state: MembershipState): Map[String, SortedSet[Member]] =
-    state.latestGossip.members.foldLeft(Map.empty[String, SortedSet[Member]]) { (acc, member) ⇒
-      acc.get(member.dataCenter) match {
-        case Some(set) if set.size > crossDcConnections ⇒ acc
-        case Some(set)                                  ⇒ acc + (member.dataCenter → (set + member))
-        case None                                       ⇒ acc + (member.dataCenter → (SortedSet.empty(Member.ageOrdering) + member))
-      }
-    }
 
   /**
    * For large clusters we should avoid shooting down individual
@@ -256,5 +257,5 @@ import scala.util.Random
 
   protected def selectRandomNode(nodes: IndexedSeq[UniqueAddress]): Option[UniqueAddress] =
     if (nodes.isEmpty) None
-    else Some(nodes(ThreadLocalRandom.current nextInt nodes.size))
+    else Some(nodes(ThreadLocalRandom.current.nextInt(nodes.size)))
 }

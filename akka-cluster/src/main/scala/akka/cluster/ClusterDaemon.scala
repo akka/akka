@@ -1213,7 +1213,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    * Gossips latest gossip to a node.
    */
   def gossipTo(node: UniqueAddress): Unit =
-    // FIXME now this is evaluated multiple times on gossip :(
     if (membershipState.validNodeForGossip(node))
       clusterCore(node.address) ! GossipEnvelope(selfUniqueAddress, node, latestGossip)
 
