@@ -1,0 +1,127 @@
+/**
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+package akka.cluster
+
+import akka.actor.Address
+import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.MemberStatus.Up
+import org.scalatest.{ Matchers, WordSpec }
+
+import scala.collection.immutable.SortedSet
+
+class GossipTargetSelectorSpec extends WordSpec with Matchers {
+
+  val aDc1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Up, Set.empty, dataCenter = "dc1")
+  val bDc1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, Set.empty, dataCenter = "dc1")
+  val cDc1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Up, Set.empty, dataCenter = "dc1")
+
+  val eDc2 = TestMember(Address("akka.tcp", "sys", "e", 2552), Up, Set.empty, dataCenter = "dc2")
+  val fDc2 = TestMember(Address("akka.tcp", "sys", "f", 2552), Up, Set.empty, dataCenter = "dc2")
+
+  val gDc3 = TestMember(Address("akka.tcp", "sys", "g", 2552), Up, Set.empty, dataCenter = "dc3")
+  val hDc3 = TestMember(Address("akka.tcp", "sys", "h", 2552), Up, Set.empty, dataCenter = "dc3")
+
+  "The gossip target selection" should {
+
+    "select local nodes in a multi dc setting when chance says so" in {
+      val alwaysLocalSelector = new GossipTargetSelector(crossDcConnections = 5, reduceGossipDifferentViewProbability = 400) {
+        override protected def selectDcLocalNodes: Boolean = true
+      }
+
+      val state = MembershipState(Gossip(SortedSet(aDc1, bDc1, eDc2, fDc2)), aDc1, aDc1.dataCenter)
+      val gossipTo = alwaysLocalSelector.gossipTargets(state)
+
+      // only one other local node
+      gossipTo should ===(Vector[UniqueAddress](bDc1))
+    }
+
+    "select cross dc nodes when chance says so" in {
+      val alwaysCrossDcSelector = new GossipTargetSelector(crossDcConnections = 5, reduceGossipDifferentViewProbability = 400) {
+        override protected def selectDcLocalNodes: Boolean = false
+      }
+
+      val state = MembershipState(Gossip(SortedSet(aDc1, bDc1, eDc2, fDc2)), aDc1, aDc1.dataCenter)
+      val gossipTo = alwaysCrossDcSelector.gossipTargets(state)
+
+      // only one other local node
+      gossipTo should (contain(eDc2.uniqueAddress) or contain(fDc2.uniqueAddress))
+    }
+
+    "select local nodes that hasn't seen the gossip when chance says so" in {
+      val alwaysLocalSelector = new GossipTargetSelector(crossDcConnections = 5, reduceGossipDifferentViewProbability = 400) {
+        override protected def preferNodesWithDifferentView(state: MembershipState): Boolean = true
+      }
+
+      val state = MembershipState(
+        Gossip(SortedSet(aDc1, bDc1, cDc1)).seen(bDc1),
+        aDc1,
+        aDc1.dataCenter
+      )
+      val gossipTo = alwaysLocalSelector.gossipTargets(state)
+
+      // a1 is self, b1 has seen so only option is c1
+      gossipTo should ===(Vector[UniqueAddress](cDc1))
+    }
+
+    "select among all local nodes regardless if they saw the gossip already when chance says so" in {
+      val alwaysLocalSelector = new GossipTargetSelector(crossDcConnections = 5, reduceGossipDifferentViewProbability = 400) {
+        override protected def preferNodesWithDifferentView(state: MembershipState): Boolean = false
+      }
+
+      val state = MembershipState(
+        Gossip(SortedSet(aDc1, bDc1, cDc1)).seen(bDc1),
+        aDc1,
+        aDc1.dataCenter
+      )
+      val gossipTo = alwaysLocalSelector.gossipTargets(state)
+
+      // a1 is self, b1 is the only that has seen
+      gossipTo should ===(Vector[UniqueAddress](bDc1, cDc1))
+    }
+
+    "not choose unreachable nodes" in {
+      val alwaysLocalSelector = new GossipTargetSelector(crossDcConnections = 5, reduceGossipDifferentViewProbability = 400) {
+        override protected def preferNodesWithDifferentView(state: MembershipState): Boolean = false
+      }
+
+      val state = MembershipState(
+        Gossip(
+          members = SortedSet(aDc1, bDc1, cDc1),
+          overview = GossipOverview(
+            reachability = Reachability.empty.unreachable(aDc1, bDc1))),
+        aDc1,
+        aDc1.dataCenter
+      )
+      val gossipTo = alwaysLocalSelector.gossipTargets(state)
+
+      // a1 cannot reach b1 so only option is c1
+      gossipTo should ===(Vector[UniqueAddress](cDc1))
+    }
+
+    "continue with the next dc when doing cross dc and no node where suitable" in {
+      val selector = new GossipTargetSelector(crossDcConnections = 5, reduceGossipDifferentViewProbability = 400) {
+        override protected def selectDcLocalNodes: Boolean = false
+        override protected def dcsInRandomOrder(dcs: List[DataCenter]): List[DataCenter] = dcs.sorted // sort on name
+      }
+
+      val state = MembershipState(
+        Gossip(
+          members = SortedSet(aDc1, bDc1, eDc2, fDc2, gDc3, hDc3),
+          overview = GossipOverview(
+            reachability = Reachability.empty
+              .unreachable(aDc1, eDc2)
+              .unreachable(aDc1, fDc2))),
+        aDc1,
+        aDc1.dataCenter
+      )
+      val gossipTo = selector.gossipTargets(state)
+      gossipTo should ===(Vector[UniqueAddress](gDc3, hDc3))
+    }
+
+  }
+
+  // made the test so much easier to read
+  import scala.language.implicitConversions
+  private implicit def memberToUniqueAddress(m: Member): UniqueAddress = m.uniqueAddress
+}

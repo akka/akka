@@ -301,6 +301,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
   val vclockNode = VectorClock.Node(vclockName(selfUniqueAddress))
+  val gossipTargetSelector = new GossipTargetSelector(CrossDcConnections, ReduceGossipDifferentViewProbability)
 
   // note that self is not initially member,
   // and the Gossip is not versioned for this 'Node' yet
@@ -930,7 +931,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       // using ArrayList to be able to shuffle
       val possibleTargets = new ArrayList[UniqueAddress](localGossip.members.size)
       localGossip.members.foreach { m ⇒
-        if (validNodeForGossip(m.uniqueAddress))
+        if (membershipState.validNodeForGossip(m.uniqueAddress))
           possibleTargets.add(m.uniqueAddress)
       }
       val randomTargets =
@@ -952,119 +953,16 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    */
   def gossip(): Unit =
     if (!isSingletonCluster) {
-      val gossipTargets =
-        // TODO break this two methods out and unit test?
-        if (latestGossip.isMultiDc) multiDcGossipTargets()
-        else localDcGossipTargets()
-
-      selectRandomNode(gossipTargets) match {
-        case Some(peer) if !latestGossip.seenByNode(peer) ⇒ gossipTo(peer)
-        case Some(peer)                                   ⇒ gossipStatusTo(peer)
-        case None                                         ⇒ // nothing to see here
+      gossipTargetSelector.gossipTarget(membershipState) match {
+        case Some(peer) ⇒
+          if (latestGossip.member(peer).dataCenter != selfDc || latestGossip.seenByNode(peer))
+            // avoid transferring the full state if possible
+            gossipStatusTo(peer)
+          else
+            gossipTo(peer)
+        case None ⇒ // nothing to see here
       }
     }
-
-  /**
-   * Chooses a set of possible gossip targets that is in the same dc. If the cluster is not multi dc this will
-   * means it is a choice among all nodes of the cluster.
-   */
-  def localDcGossipTargets(): Vector[UniqueAddress] = {
-    val firstSelection =
-      if (ThreadLocalRandom.current.nextDouble() < adjustedGossipDifferentViewProbability) {
-        // If it's time to try to gossip to some nodes with a different view
-        // gossip to a random alive same dc member with preference to a member with older gossip version
-        latestGossip.members.collect {
-          case m if m.dataCenter == selfDc && !latestGossip.seenByNode(m.uniqueAddress) && validNodeForGossip(m.uniqueAddress) ⇒
-            m.uniqueAddress
-        }(breakOut)
-      } else Vector.empty
-
-    // Fall back to localGossip
-    if (firstSelection.isEmpty) {
-      latestGossip.members.toVector.collect {
-        case m if m.dataCenter == selfDc && validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
-      }
-    } else Vector.empty
-
-  }
-
-  /**
-   * Choose cross-dc nodes if this one of the N oldest nodes, and if not fall back to gosip locally in the dc
-   */
-  def multiDcGossipTargets(): Vector[UniqueAddress] = {
-
-    // 20% of the times across dcs and 80% local (doing it for all nodes to avoid having to collect the oldest nodes per
-    // dc all the time, when #23290 is merged we can maybe cache oldest members per dc in that)
-    if (ThreadLocalRandom.current.nextDouble() > 0.2D) localDcGossipTargets()
-    else {
-      // TODO cache this until gossip changes??
-      val nodesPerDc = latestGossip.members.foldLeft(Map.empty[String, SortedSet[Member]]) { (acc, member) ⇒
-        acc.get(member.dataCenter) match {
-          case Some(set) if set.size > cluster.settings.CrossDcConnections ⇒ acc
-          case Some(set) ⇒ acc + (member.dataCenter → (set + member))
-          case None ⇒ acc + (member.dataCenter → (SortedSet.empty(Member.ageOrdering) + member))
-        }
-      }
-
-      // only do cross DC gossip if this node is among the N oldest
-      val selfMember = latestGossip.member(selfUniqueAddress)
-      if (!nodesPerDc(selfDc).contains(selfMember)) localDcGossipTargets()
-      else {
-        def findFirstDcWithValidNodes(left: List[DataCenter], onlyUnseen: Boolean): Vector[UniqueAddress] =
-          left match {
-            case dc :: tail ⇒
-              val validNodes = nodesPerDc(dc).collect {
-                case member if validNodeForGossip(member.uniqueAddress) && (!onlyUnseen || latestGossip.seenByNode(member.uniqueAddress)) ⇒
-                  member.uniqueAddress
-              }
-              if (validNodes.nonEmpty) validNodes.toVector
-              else findFirstDcWithValidNodes(tail, onlyUnseen) // no valid nodes in dc, try next
-
-            case Nil ⇒
-              Vector.empty
-          }
-
-        // chose another DC at random
-        val otherDcsInRandomOrder = Random.shuffle((nodesPerDc - selfDc).keys.toList)
-        val unseenNodes = findFirstDcWithValidNodes(otherDcsInRandomOrder, onlyUnseen = true)
-        val unseenOrValidForGossip =
-          if (unseenNodes.nonEmpty) unseenNodes
-          else findFirstDcWithValidNodes(otherDcsInRandomOrder, onlyUnseen = false)
-
-        if (unseenOrValidForGossip.nonEmpty) unseenOrValidForGossip
-        // no other dc with reachable nodes, fall back to local gossip
-        else localDcGossipTargets()
-
-      }
-    }
-  }
-
-  /**
-   * For large clusters we should avoid shooting down individual
-   * nodes. Therefore the probability is reduced for large clusters.
-   */
-  def adjustedGossipDifferentViewProbability: Double = {
-    val size = latestGossip.members.size
-    val low = ReduceGossipDifferentViewProbability
-    val high = low * 3
-    // start reduction when cluster is larger than configured ReduceGossipDifferentViewProbability
-    if (size <= low)
-      GossipDifferentViewProbability
-    else {
-      // don't go lower than 1/10 of the configured GossipDifferentViewProbability
-      val minP = GossipDifferentViewProbability / 10
-      if (size >= high)
-        minP
-      else {
-        // linear reduction of the probability with increasing number of nodes
-        // from ReduceGossipDifferentViewProbability at ReduceGossipDifferentViewProbability nodes
-        // to ReduceGossipDifferentViewProbability / 10 at ReduceGossipDifferentViewProbability * 3 nodes
-        // i.e. default from 0.8 at 400 nodes, to 0.08 at 1600 nodes
-        val k = (minP - GossipDifferentViewProbability) / (high - low)
-        GossipDifferentViewProbability + (size - low) * k
-      }
-    }
-  }
 
   /**
    * Runs periodic leader actions, such as member status transitions, assigning partitions etc.
@@ -1302,10 +1200,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     }
   }
 
-  def selectRandomNode(nodes: IndexedSeq[UniqueAddress]): Option[UniqueAddress] =
-    if (nodes.isEmpty) None
-    else Some(nodes(ThreadLocalRandom.current nextInt nodes.size))
-
   def isSingletonCluster: Boolean = latestGossip.isSingletonCluster
 
   // needed for tests
@@ -1320,23 +1214,20 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    */
   def gossipTo(node: UniqueAddress): Unit =
     // FIXME now this is evaluated multiple times on gossip :(
-    if (validNodeForGossip(node))
+    if (membershipState.validNodeForGossip(node))
       clusterCore(node.address) ! GossipEnvelope(selfUniqueAddress, node, latestGossip)
 
   def gossipTo(node: UniqueAddress, destination: ActorRef): Unit =
-    if (validNodeForGossip(node))
+    if (membershipState.validNodeForGossip(node))
       destination ! GossipEnvelope(selfUniqueAddress, node, latestGossip)
 
   def gossipStatusTo(node: UniqueAddress, destination: ActorRef): Unit =
-    if (validNodeForGossip(node))
+    if (membershipState.validNodeForGossip(node))
       destination ! GossipStatus(selfUniqueAddress, latestGossip.version)
 
   def gossipStatusTo(node: UniqueAddress): Unit =
-    if (validNodeForGossip(node))
+    if (membershipState.validNodeForGossip(node))
       clusterCore(node.address) ! GossipStatus(selfUniqueAddress, latestGossip.version)
-
-  def validNodeForGossip(node: UniqueAddress): Boolean =
-    node != selfUniqueAddress && membershipState.isReachableExcludingDownedObservers(node)
 
   def updateLatestGossip(gossip: Gossip): Unit = {
     // Updating the vclock version for the changes

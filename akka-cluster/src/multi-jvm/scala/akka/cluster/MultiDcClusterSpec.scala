@@ -38,19 +38,19 @@ class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
 
 object MultiDcNormalConfig extends MultiDcSpecConfig()
 
-class MultiTeamMultiJvmNode1 extends MultiDcSpec(MultiDcNormalConfig)
-class MultiTeamMultiJvmNode2 extends MultiDcSpec(MultiDcNormalConfig)
-class MultiTeamMultiJvmNode3 extends MultiDcSpec(MultiDcNormalConfig)
-class MultiTeamMultiJvmNode4 extends MultiDcSpec(MultiDcNormalConfig)
-class MultiTeamMultiJvmNode5 extends MultiDcSpec(MultiDcNormalConfig)
+class MultiDcMultiJvmNode1 extends MultiDcSpec(MultiDcNormalConfig)
+class MultiDcMultiJvmNode2 extends MultiDcSpec(MultiDcNormalConfig)
+class MultiDcMultiJvmNode3 extends MultiDcSpec(MultiDcNormalConfig)
+class MultiDcMultiJvmNode4 extends MultiDcSpec(MultiDcNormalConfig)
+class MultiDcMultiJvmNode5 extends MultiDcSpec(MultiDcNormalConfig)
 
 object MultiDcFewCrossDcConnectionsConfig extends MultiDcSpecConfig(1)
 
-class MultiTeamFewCrossDcMultiJvmNode1 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
-class MultiTeamFewCrossDcMultiJvmNode2 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
-class MultiTeamFewCrossDcMultiJvmNode3 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
-class MultiTeamFewCrossDcMultiJvmNode4 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
-class MultiTeamFewCrossDcMultiJvmNode5 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
+class MultiDcFewCrossDcMultiJvmNode1 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
+class MultiDcFewCrossDcMultiJvmNode2 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
+class MultiDcFewCrossDcMultiJvmNode3 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
+class MultiDcFewCrossDcMultiJvmNode4 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
+class MultiDcFewCrossDcMultiJvmNode5 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
 
 abstract class MultiDcSpec(config: MultiDcSpecConfig)
   extends MultiNodeSpec(config)
