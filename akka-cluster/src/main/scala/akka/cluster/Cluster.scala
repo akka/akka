@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.ConfigurationException
 import akka.actor._
+import akka.cluster.ClusterSettings.DataCenter
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.{ Logging, LoggingAdapter }
 import akka.japi.Util
@@ -77,6 +78,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   def selfAddress: Address = selfUniqueAddress.address
 
+  /** Data center to which this node belongs to (defaults to "default" if not configured explicitly) */
+  def selfDataCenter: DataCenter = settings.DataCenter
+
   /**
    * roles that this member has
    */
@@ -96,10 +100,17 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   logInfo("Starting up...")
 
   val failureDetector: FailureDetectorRegistry[Address] = {
-    def createFailureDetector(): FailureDetector =
+    val createFailureDetector = () ⇒
       FailureDetectorLoader.load(settings.FailureDetectorImplementationClass, settings.FailureDetectorConfig, system)
 
-    new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
+    new DefaultFailureDetectorRegistry(createFailureDetector)
+  }
+
+  val crossDcFailureDetector: FailureDetectorRegistry[Address] = {
+    val createFailureDetector = () ⇒
+      FailureDetectorLoader.load(settings.CrossDcFailureDetectorSettings.ImplementationClass, settings.CrossDcFailureDetectorSettings.config, system)
+
+    new DefaultFailureDetectorRegistry(createFailureDetector)
   }
 
   // needs to be lazy to allow downing provider impls to access Cluster (if not we get deadlock)
@@ -411,7 +422,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   private def closeScheduler(): Unit = scheduler match {
     case x: Closeable ⇒ x.close()
-    case _            ⇒
+    case _            ⇒ // ignore, this is fine
   }
 
   /**
