@@ -1230,13 +1230,6 @@ object MiMa extends AutoPlugin {
         // #23023 added a new overload with implementation to trait, so old transport implementations compiled against
         // older versions will be missing the method. We accept that incompatibility for now.
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate")
-      ),
-      "2.5.3" -> Seq(
-
-        // #22129 Framing, custom frame size
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.javadsl.Framing.lengthField"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.javadsl.Framing.delimiter"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.javadsl.Framing.simpleFramingProtocol")
       )
     )
 
