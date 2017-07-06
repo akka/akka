@@ -20,7 +20,7 @@ class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString(
     s"""
       akka.loglevel = INFO
-      akka.cluster.cross-data-center-connections = $crossDcConnections
+      akka.cluster.multi-data-center.cross-data-center-connections = $crossDcConnections
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString(
