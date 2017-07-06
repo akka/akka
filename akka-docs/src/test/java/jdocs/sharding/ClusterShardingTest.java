@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.cluster.sharding;
+package jdocs.sharding;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -18,7 +18,17 @@ import akka.actor.Props;
 import akka.actor.SupervisorStrategy;
 import akka.actor.Terminated;
 import akka.actor.ReceiveTimeout;
+//#counter-extractor
+import akka.cluster.sharding.ShardRegion;
+
+//#counter-extractor
+
+//#counter-start
 import akka.japi.Option;
+import akka.cluster.sharding.ClusterSharding;
+import akka.cluster.sharding.ClusterShardingSettings;
+
+//#counter-start
 import akka.persistence.AbstractPersistentActor;
 import akka.cluster.Cluster;
 import akka.japi.pf.DeciderBuilder;
