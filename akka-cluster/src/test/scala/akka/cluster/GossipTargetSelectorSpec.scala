@@ -22,12 +22,15 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
   val gDc3 = TestMember(Address("akka.tcp", "sys", "g", 2552), Up, Set.empty, dataCenter = "dc3")
   val hDc3 = TestMember(Address("akka.tcp", "sys", "h", 2552), Up, Set.empty, dataCenter = "dc3")
 
-  val defaultSelector = new GossipTargetSelector(reduceGossipDifferentViewProbability = 400)
+  val defaultSelector = new GossipTargetSelector(
+    reduceGossipDifferentViewProbability = 400,
+    crossDcGossipProbability = 0.2
+  )
 
   "The gossip target selection" should {
 
     "select local nodes in a multi dc setting when chance says so" in {
-      val alwaysLocalSelector = new GossipTargetSelector(reduceGossipDifferentViewProbability = 400) {
+      val alwaysLocalSelector = new GossipTargetSelector(400, 0.2) {
         override protected def selectDcLocalNodes: Boolean = true
       }
 
@@ -39,7 +42,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
     }
 
     "select cross dc nodes when chance says so" in {
-      val alwaysCrossDcSelector = new GossipTargetSelector(reduceGossipDifferentViewProbability = 400) {
+      val alwaysCrossDcSelector = new GossipTargetSelector(400, 0.2) {
         override protected def selectDcLocalNodes: Boolean = false
       }
 
@@ -51,7 +54,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
     }
 
     "select local nodes that hasn't seen the gossip when chance says so" in {
-      val alwaysLocalSelector = new GossipTargetSelector(reduceGossipDifferentViewProbability = 400) {
+      val alwaysLocalSelector = new GossipTargetSelector(400, 0.2) {
         override protected def preferNodesWithDifferentView(state: MembershipState): Boolean = true
       }
 
@@ -68,7 +71,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
     }
 
     "select among all local nodes regardless if they saw the gossip already when chance says so" in {
-      val alwaysLocalSelector = new GossipTargetSelector(reduceGossipDifferentViewProbability = 400) {
+      val alwaysLocalSelector = new GossipTargetSelector(400, 0.2) {
         override protected def preferNodesWithDifferentView(state: MembershipState): Boolean = false
       }
 
@@ -85,7 +88,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
     }
 
     "not choose unreachable nodes" in {
-      val alwaysLocalSelector = new GossipTargetSelector(reduceGossipDifferentViewProbability = 400) {
+      val alwaysLocalSelector = new GossipTargetSelector(400, 0.2) {
         override protected def preferNodesWithDifferentView(state: MembershipState): Boolean = false
       }
 
@@ -104,7 +107,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
     }
 
     "continue with the next dc when doing cross dc and no node where suitable" in {
-      val selector = new GossipTargetSelector(reduceGossipDifferentViewProbability = 400) {
+      val selector = new GossipTargetSelector(400, 0.2) {
         override protected def selectDcLocalNodes: Boolean = false
         override protected def dcsInRandomOrder(dcs: List[DataCenter]): List[DataCenter] = dcs.sorted // sort on name
       }
@@ -124,7 +127,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
     }
 
     "not care about seen/unseen for cross dc" in {
-      val selector = new GossipTargetSelector(reduceGossipDifferentViewProbability = 400) {
+      val selector = new GossipTargetSelector(400, 0.2) {
         override protected def selectDcLocalNodes: Boolean = false
         override protected def dcsInRandomOrder(dcs: List[DataCenter]): List[DataCenter] = dcs.sorted // sort on name
       }
@@ -141,7 +144,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
     }
 
     "limit the numbers of chosen cross dc nodes to the crossDcConnections setting" in {
-      val selector = new GossipTargetSelector(reduceGossipDifferentViewProbability = 400) {
+      val selector = new GossipTargetSelector(400, 0.2) {
         override protected def selectDcLocalNodes: Boolean = false
         override protected def dcsInRandomOrder(dcs: List[DataCenter]): List[DataCenter] = dcs.sorted // sort on name
       }

@@ -382,7 +382,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     Gossip.empty,
     cluster.selfUniqueAddress,
     cluster.settings.DataCenter,
-    cluster.settings.CrossDcConnections)
+    cluster.settings.MultiDataCenter.CrossDcConnections)
   var membershipState: MembershipState = emptyMembershipState
   def selfDc = cluster.settings.DataCenter
 

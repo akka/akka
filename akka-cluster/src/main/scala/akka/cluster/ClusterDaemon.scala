@@ -301,7 +301,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
   val vclockNode = VectorClock.Node(vclockName(selfUniqueAddress))
-  val gossipTargetSelector = new GossipTargetSelector(ReduceGossipDifferentViewProbability)
+  val gossipTargetSelector = new GossipTargetSelector(
+    ReduceGossipDifferentViewProbability,
+    cluster.settings.MultiDataCenter.CrossDcGossipProbability)
 
   // note that self is not initially member,
   // and the Gossip is not versioned for this 'Node' yet
@@ -309,7 +311,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     Gossip.empty,
     cluster.selfUniqueAddress,
     cluster.settings.DataCenter,
-    cluster.settings.CrossDcConnections)
+    cluster.settings.MultiDataCenter.CrossDcConnections)
 
   def latestGossip: Gossip = membershipState.latestGossip
 

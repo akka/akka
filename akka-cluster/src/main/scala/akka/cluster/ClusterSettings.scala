@@ -51,8 +51,13 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     FailureDetectorConfig.getInt("monitored-by-nr-of-members")
   } requiring (_ > 0, "failure-detector.monitored-by-nr-of-members must be > 0")
 
-  val CrossDcConnections: Int = cc.getInt("cross-data-center-connections")
-    .requiring(_ > 0, "cross-data-center-connections must be > 0")
+  object MultiDataCenter {
+    val CrossDcConnections: Int = cc.getInt("multi-data-center.cross-data-center-connections")
+      .requiring(_ > 0, "cross-data-center-connections must be > 0")
+
+    val CrossDcGossipProbability: Double = cc.getDouble("multi-data-center.cross-data-center-gossip-probability")
+      .requiring(d ⇒ d >= 0.0D && d <= 1.0D, "cross-data-center-gossip-probability must be >= 0.0 and <= 1.0")
+  }
 
   val SeedNodes: immutable.IndexedSeq[Address] =
     immutableSeq(cc.getStringList("seed-nodes")).map { case AddressFromURIString(addr) ⇒ addr }.toVector

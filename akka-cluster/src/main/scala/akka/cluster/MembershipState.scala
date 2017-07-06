@@ -152,7 +152,7 @@ import scala.util.Random
   def validNodeForGossip(node: UniqueAddress): Boolean =
     node != selfUniqueAddress &&
       ((isInSameDc(node) && isReachableExcludingDownedObservers(node)) ||
-        // if cross DC we need to check pairwise down observation
+        // if cross DC we need to check pairwise unreachable observation
         overview.reachability.isReachable(selfUniqueAddress, node))
 
 }
@@ -160,7 +160,9 @@ import scala.util.Random
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class GossipTargetSelector(val reduceGossipDifferentViewProbability: Double) {
+@InternalApi private[akka] class GossipTargetSelector(
+  reduceGossipDifferentViewProbability: Double,
+  crossDcGossipProbability:             Double) {
 
   final def gossipTarget(state: MembershipState): Option[UniqueAddress] = {
     selectRandomNode(gossipTargets(state))
@@ -239,9 +241,8 @@ import scala.util.Random
    */
   protected def multiDcGossipTargets(state: MembershipState): Vector[UniqueAddress] = {
     val latestGossip = state.latestGossip
-    // 20% of the times across dcs and 80% local (doing it for all nodes to avoid having to collect the oldest nodes per
-    // dc all the time, when #23290 is merged we can maybe cache oldest members per dc in that)
-    if (selectDcLocalNodes) localDcGossipTargets(state)
+    // only a fraction of the time across data centers
+    if (selectDcLocalNodes()) localDcGossipTargets(state)
     else {
       val nodesPerDc = state.ageSortedNodesPerDc
 
@@ -302,7 +303,7 @@ import scala.util.Random
     }
   }
 
-  protected def selectDcLocalNodes: Boolean = ThreadLocalRandom.current.nextDouble() > 0.2D
+  protected def selectDcLocalNodes(): Boolean = ThreadLocalRandom.current.nextDouble() > crossDcGossipProbability
 
   protected def preferNodesWithDifferentView(state: MembershipState): Boolean =
     ThreadLocalRandom.current.nextDouble() < adjustedGossipDifferentViewProbability(state.latestGossip.members.size)
