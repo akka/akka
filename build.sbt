@@ -103,6 +103,7 @@ lazy val docs = akkaModule("akka-docs")
   .dependsOn(
     actor, cluster, clusterMetrics, slf4j, agent, camel, osgi, persistenceTck, persistenceQuery, distributedData, stream,
     clusterTools % "compile->compile;test->test",
+    clusterSharding % "compile->compile;test->test",
     testkit % "compile->compile;test->test",
     remote % "compile->compile;test->test",
     persistence % "compile->compile;provided->provided;test->test",
