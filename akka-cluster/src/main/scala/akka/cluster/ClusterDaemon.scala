@@ -931,25 +931,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    */
   def gossipRandomN(n: Int): Unit = {
     if (!isSingletonCluster && n > 0) {
-      // TODO what about local vs cross dc here?
-      val localGossip = latestGossip
-      // using ArrayList to be able to shuffle
-      val possibleTargets = new ArrayList[UniqueAddress](localGossip.members.size)
-      localGossip.members.foreach { m ⇒
-        if (membershipState.validNodeForGossip(m.uniqueAddress))
-          possibleTargets.add(m.uniqueAddress)
-      }
-      val randomTargets =
-        if (possibleTargets.size <= n)
-          possibleTargets
-        else {
-          Collections.shuffle(possibleTargets, ThreadLocalRandom.current())
-          possibleTargets.subList(0, n)
-        }
-
-      val iter = randomTargets.iterator
-      while (iter.hasNext)
-        gossipTo(iter.next())
+      gossipTargetSelector.randomNodesForFullGossip(membershipState, n).foreach(gossipTo)
     }
   }
 

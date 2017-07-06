@@ -22,6 +22,8 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
   val gDc3 = TestMember(Address("akka.tcp", "sys", "g", 2552), Up, Set.empty, dataCenter = "dc3")
   val hDc3 = TestMember(Address("akka.tcp", "sys", "h", 2552), Up, Set.empty, dataCenter = "dc3")
 
+  val defaultSelector = new GossipTargetSelector(reduceGossipDifferentViewProbability = 400)
+
   "The gossip target selection" should {
 
     "select local nodes in a multi dc setting when chance says so" in {
@@ -152,6 +154,45 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
         crossDcConnections = 1)
       val gossipTo = selector.gossipTargets(state)
       gossipTo should ===(Vector[UniqueAddress](eDc2))
+    }
+
+    "select N random local nodes when single dc" in {
+      val state = MembershipState(
+        Gossip(
+          members = SortedSet(aDc1, bDc1, cDc1)),
+        aDc1,
+        aDc1.dataCenter,
+        crossDcConnections = 1) // means only a e and g are oldest
+
+      val randomNodes = defaultSelector.randomNodesForFullGossip(state, 3)
+
+      randomNodes.toSet should ===(Set[UniqueAddress](bDc1, cDc1))
+    }
+
+    "select N random local nodes when not self among oldest" in {
+      val state = MembershipState(
+        Gossip(
+          members = SortedSet(aDc1, bDc1, cDc1, eDc2, fDc2, gDc3, hDc3)),
+        bDc1,
+        bDc1.dataCenter,
+        crossDcConnections = 1) // means only a, e and g are oldest
+
+      val randomNodes = defaultSelector.randomNodesForFullGossip(state, 3)
+
+      randomNodes.toSet should ===(Set[UniqueAddress](aDc1, cDc1))
+    }
+
+    "select N-1 random local nodes plus one cross dc oldest node when self among oldest" in {
+      val state = MembershipState(
+        Gossip(
+          members = SortedSet(aDc1, bDc1, cDc1, eDc2, fDc2)),
+        aDc1,
+        aDc1.dataCenter,
+        crossDcConnections = 1) // means only a and e are oldest
+
+      val randomNodes = defaultSelector.randomNodesForFullGossip(state, 3)
+
+      randomNodes.toSet should ===(Set[UniqueAddress](bDc1, cDc1, eDc2))
     }
 
   }
