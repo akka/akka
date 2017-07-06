@@ -493,7 +493,6 @@ private[akka] class ShardRegion(
         changeMembers {
           // filter, it's possible that the upNumber is changed
           membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
-          membersByAge += m
           membersByAge
         }
 
