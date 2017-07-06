@@ -301,11 +301,16 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
   val vclockNode = VectorClock.Node(vclockName(selfUniqueAddress))
-  val gossipTargetSelector = new GossipTargetSelector(CrossDcConnections, ReduceGossipDifferentViewProbability)
+  val gossipTargetSelector = new GossipTargetSelector(ReduceGossipDifferentViewProbability)
 
   // note that self is not initially member,
   // and the Gossip is not versioned for this 'Node' yet
-  var membershipState = MembershipState(Gossip.empty, cluster.selfUniqueAddress, cluster.settings.DataCenter)
+  var membershipState = MembershipState(
+    Gossip.empty,
+    cluster.selfUniqueAddress,
+    cluster.settings.DataCenter,
+    cluster.settings.CrossDcConnections)
+
   def latestGossip: Gossip = membershipState.latestGossip
 
   val statsEnabled = PublishStatsInterval.isFinite
@@ -955,7 +960,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     if (!isSingletonCluster) {
       gossipTargetSelector.gossipTarget(membershipState) match {
         case Some(peer) ⇒
-          if (latestGossip.member(peer).dataCenter != selfDc || latestGossip.seenByNode(peer))
+          if (!membershipState.isInSameDc(peer) || latestGossip.seenByNode(peer))
             // avoid transferring the full state if possible
             gossipStatusTo(peer)
           else

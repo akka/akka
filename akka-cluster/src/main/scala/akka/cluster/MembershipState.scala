@@ -29,7 +29,12 @@ import scala.util.Random
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class MembershipState(latestGossip: Gossip, selfUniqueAddress: UniqueAddress, selfDc: DataCenter) {
+@InternalApi private[akka] final case class MembershipState(
+  latestGossip:       Gossip,
+  selfUniqueAddress:  UniqueAddress,
+  selfDc:             DataCenter,
+  crossDcConnections: Int) {
+
   import MembershipState._
 
   def members: immutable.SortedSet[Member] = latestGossip.members
@@ -83,13 +88,15 @@ import scala.util.Random
   }
 
   /**
-   * @return All members grouped by dc and sorted by age
+   * @return Up to `crossDcConnections` oldest members for each DC
    */
   lazy val ageSortedNodesPerDc: Map[DataCenter, SortedSet[Member]] =
     latestGossip.members.foldLeft(Map.empty[DataCenter, SortedSet[Member]]) { (acc, member) ⇒
       acc.get(member.dataCenter) match {
-        case Some(set) ⇒ acc + (member.dataCenter → (set + member))
-        case None      ⇒ acc + (member.dataCenter → (SortedSet.empty(Member.ageOrdering) + member))
+        case Some(set) ⇒
+          if (set.size < crossDcConnections) acc + (member.dataCenter → (set + member))
+          else acc
+        case None ⇒ acc + (member.dataCenter → (SortedSet.empty(Member.ageOrdering) + member))
       }
     }
 
@@ -136,15 +143,21 @@ import scala.util.Random
       .map(_.uniqueAddress)
   }
 
+  def isInSameDc(node: UniqueAddress): Boolean =
+    node == selfUniqueAddress || latestGossip.member(node).dataCenter == selfDc
+
   def validNodeForGossip(node: UniqueAddress): Boolean =
-    node != selfUniqueAddress && isReachableExcludingDownedObservers(node)
+    node != selfUniqueAddress &&
+      ((isInSameDc(node) && isReachableExcludingDownedObservers(node)) ||
+        // if cross DC we need to check pairwise down observation
+        overview.reachability.isReachable(selfUniqueAddress, node))
 
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class GossipTargetSelector(val crossDcConnections: Int, val reduceGossipDifferentViewProbability: Double) {
+@InternalApi private[akka] class GossipTargetSelector(val reduceGossipDifferentViewProbability: Double) {
 
   final def gossipTarget(state: MembershipState): Option[UniqueAddress] = {
     selectRandomNode(gossipTargets(state))
@@ -202,7 +215,7 @@ import scala.util.Random
               val validNodes = nodesPerDc(dc).collect {
                 case member if state.validNodeForGossip(member.uniqueAddress) ⇒
                   member.uniqueAddress
-              }.take(crossDcConnections)
+              }
 
               if (validNodes.nonEmpty) validNodes.toVector
               else findFirstDcWithValidNodes(tail) // no valid nodes in dc, try next
