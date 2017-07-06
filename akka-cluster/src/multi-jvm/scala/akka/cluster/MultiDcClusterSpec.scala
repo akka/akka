@@ -108,18 +108,27 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
         cluster.join(third)
       }
 
+      runOn(third, fourth, fifth) {
+        // should be able to join and become up since the
+        // unreachable is between dc1 and dc2,
+        within(10.seconds) {
+          awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size (5))
+        }
+      }
+
+      runOn(first) {
+        testConductor.passThrough(first, third, Direction.Both).await
+      }
+
+      // reachable again
+      awaitAssert(clusterView.unreachableMembers should be(empty))
+
       // should be able to join and become up since the
       // unreachable is between dc1 and dc2,
       within(10.seconds) {
         awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size (5))
       }
 
-      runOn(first) {
-        testConductor.passThrough(first, third, Direction.Both).await
-      }
-      runOn(first, second, third, fourth) {
-        awaitAssert(clusterView.unreachableMembers should not be empty)
-      }
       enterBarrier("inter-data-center unreachability end")
     }
 
