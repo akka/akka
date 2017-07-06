@@ -39,7 +39,7 @@ Scala
 :  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-actor }
 
 Java
-:  @@snip [ClusterSharding.java]($code$/java/jdocs/sharding/ClusterSharding.java) { #counter-actor }
+:  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-actor }
 
 The above actor uses event sourcing and the support provided in @scala[`PersistentActor`] @java[`AbstractPersistentActor`] to store its state.
 It does not have to be a persistent actor, but in case of failure or migration of entities between nodes it must be able to recover
@@ -56,7 +56,7 @@ Scala
 :  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-start }
 
 Java
-:  @@snip [ClusterSharding.java]($code$/java/jdocs/sharding/ClusterSharding.java) { #counter-start }
+:  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-start }
 
 The @scala[`extractEntityId` and `extractShardId` are two] @java[`messageExtractor` defines] application specific @scala[functions] @java[methods] to extract the entity
 identifier and the shard identifier from incoming messages.
@@ -65,7 +65,7 @@ Scala
 :  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-extractor }
 
 Java
-:  @@snip [ClusterSharding.java]($code$/java/jdocs/sharding/ClusterSharding.java) { #counter-extractor }
+:  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-extractor }
 
 This example illustrates two different ways to define the entity identifier in the messages:
 
@@ -103,7 +103,7 @@ Scala
 :  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-usage }
 
 Java
-:  @@snip [ClusterSharding.java]($code$/java/jdocs/sharding/ClusterSharding.java) { #counter-usage }
+:  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-usage }
 
 @@@ div { .group-scala }
 
@@ -298,7 +298,7 @@ Scala
 :  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #extractShardId-StartEntity }
 
 Java
-:  @@snip [ClusterSharding.java]($code$/java/jdocs/sharding/ClusterSharding.java) { #extractShardId-StartEntity }
+:  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #extractShardId-StartEntity }
 
 When configured to remember entities, whenever a `Shard` is rebalanced onto another
 node or recovers after a crash it will recreate all the entities which were previously
@@ -335,7 +335,7 @@ Scala
 :  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #supervisor }
 
 Java
-:  @@snip [ClusterSharding.java]($code$/java/jdocs/sharding/ClusterSharding.java) { #supervisor }
+:  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #supervisor }
 
 You start such a supervisor in the same way as if it was the entity actor.
 
@@ -343,7 +343,7 @@ Scala
 :  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-supervisor-start }
 
 Java
-:  @@snip [ClusterSharding.java]($code$/java/jdocs/sharding/ClusterSharding.java) { #counter-supervisor-start }
+:  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-supervisor-start }
 
 Note that stopped entities will be started again when a new message is targeted to the entity.
 

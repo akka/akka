@@ -34,7 +34,7 @@ import akka.cluster.Cluster;
 import akka.japi.pf.DeciderBuilder;
 
 // Doc code, compile only
-public class ClusterSharding {
+public class ClusterShardingTest {
 
   ActorSystem system = null;
 
