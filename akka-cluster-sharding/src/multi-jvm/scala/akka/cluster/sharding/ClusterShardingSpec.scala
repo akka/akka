@@ -699,6 +699,21 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
 
   }
 
+  "demonstrate API for DC proxy" in within(50.seconds) {
+    runOn(sixth) {
+      // #proxy-dc
+      val counterProxyDcB: ActorRef = ClusterSharding(system).startProxy(
+        typeName = "Counter",
+        role = None,
+        dataCenter = Some("B"),
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
+      // #proxy-dc
+    }
+    enterBarrier("after-dc-proxy")
+
+  }
+
   "Persistent Cluster Shards" must {
     "recover entities upon restart" in within(50.seconds) {
       runOn(third, fourth, fifth) {
