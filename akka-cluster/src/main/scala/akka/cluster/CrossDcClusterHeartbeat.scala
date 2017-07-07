@@ -301,7 +301,7 @@ private[cluster] object CrossDcHeartbeatingState {
       crossDcFailureDetector,
       nrOfMonitoredNodesPerDc,
       state = {
-      // TODO unduplicate this with other places where we do this
+      // TODO unduplicate this with the logic in MembershipState.ageSortedTopOldestMembersPerDc
       val groupedByDc = members.groupBy(_.dataCenter)
 
       if (members.ordering == Member.ageOrdering) {

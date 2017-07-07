@@ -93,7 +93,8 @@ import scala.util.Random
   /**
    * @return Up to `crossDcConnections` oldest members for each DC
    */
-  lazy val ageSortedNodesPerDc: Map[DataCenter, SortedSet[Member]] =
+  lazy val ageSortedTopOldestMembersPerDc: Map[DataCenter, SortedSet[Member]] =
+    // TODO make this recursive and bail early when size reached to make it fast for large clusters
     latestGossip.members.foldLeft(Map.empty[DataCenter, SortedSet[Member]]) { (acc, member) ⇒
       acc.get(member.dataCenter) match {
         case Some(set) ⇒
@@ -176,7 +177,7 @@ import scala.util.Random
    * Select `n` random nodes to gossip to (used to quickly inform the rest of the cluster when leaving for example)
    */
   def randomNodesForFullGossip(state: MembershipState, n: Int): Vector[UniqueAddress] =
-    if (state.latestGossip.isMultiDc && state.ageSortedNodesPerDc(state.selfDc).contains(state.selfMember)) {
+    if (state.latestGossip.isMultiDc && state.ageSortedTopOldestMembersPerDc(state.selfDc).contains(state.selfMember)) {
       // this node is one of the N oldest in the cluster, gossip to one cross-dc but mostly locally
       val randomLocalNodes = Random.shuffle(state.members.toVector.collect {
         case m if m.dataCenter == state.selfDc && state.validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
@@ -187,7 +188,7 @@ import scala.util.Random
         randomizedDcs match {
           case Nil ⇒ None // couldn't find a single cross-dc-node to talk to
           case dc :: tail ⇒
-            state.ageSortedNodesPerDc(dc).collectFirst {
+            state.ageSortedTopOldestMembersPerDc(dc).collectFirst {
               case m if state.validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
             } match {
               case Some(addr) ⇒ Some(addr)
@@ -195,7 +196,7 @@ import scala.util.Random
             }
 
         }
-      val otherDcs = Random.shuffle((state.ageSortedNodesPerDc.keySet - state.selfDc).toList)
+      val otherDcs = Random.shuffle((state.ageSortedTopOldestMembersPerDc.keySet - state.selfDc).toList)
 
       selectOtherDcNode(otherDcs) match {
         case Some(node) ⇒ randomLocalNodes.take(n - 1) :+ node
@@ -203,7 +204,7 @@ import scala.util.Random
       }
 
     } else {
-      // single dc or not N oldest - select local nodes
+      // single dc or not among the N oldest - select local nodes
       val selectedNodes = state.members.toVector.collect {
         case m if m.dataCenter == state.selfDc && state.validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
       }
@@ -213,7 +214,7 @@ import scala.util.Random
     }
 
   /**
-   * Chooses a set of possible gossip targets that is in the same dc. If the cluster is not multi dc this will
+   * Chooses a set of possible gossip targets that is in the same dc. If the cluster is not multi dc this
    * means it is a choice among all nodes of the cluster.
    */
   protected def localDcGossipTargets(state: MembershipState): Vector[UniqueAddress] = {
@@ -245,7 +246,7 @@ import scala.util.Random
     // only a fraction of the time across data centers
     if (selectDcLocalNodes()) localDcGossipTargets(state)
     else {
-      val nodesPerDc = state.ageSortedNodesPerDc
+      val nodesPerDc = state.ageSortedTopOldestMembersPerDc
 
       // only do cross DC gossip if this node is among the N oldest
 
