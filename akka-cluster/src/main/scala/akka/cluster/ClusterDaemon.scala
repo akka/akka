@@ -296,6 +296,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   import cluster.settings._
   import cluster.InfoLogger._
 
+  val selfDc = cluster.selfDataCenter
+
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
   val vclockNode = VectorClock.Node(vclockName(selfUniqueAddress))
@@ -333,8 +335,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       }
   }
   var exitingConfirmed = Set.empty[UniqueAddress]
-
-  def selfDc = cluster.settings.DataCenter
 
   /**
    * Looks up and returns the remote cluster command connection for the specific address.
@@ -431,8 +431,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def becomeInitialized(): Unit = {
     // start heartbeatSender here, and not in constructor to make sure that
     // heartbeating doesn't start before Welcome is received
-    context.actorOf(Props[ClusterHeartbeatSender].
-      withDispatcher(UseDispatcher), name = "heartbeatSender")
+    val internalHeartbeatSenderProps = Props(new ClusterHeartbeatSender()).withDispatcher(UseDispatcher)
+    context.actorOf(internalHeartbeatSenderProps, name = "heartbeatSender")
+
+    val externalHeartbeatProps = Props(new CrossDcHeartbeatSender()).withDispatcher(UseDispatcher)
+    context.actorOf(externalHeartbeatProps, name = "crossDcHeartbeatSender")
+
     // make sure that join process is stopped
     stopSeedNodeProcess()
     context.become(initialized)
