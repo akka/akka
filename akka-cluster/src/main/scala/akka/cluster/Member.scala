@@ -55,7 +55,7 @@ class Member private[cluster] (
    * cluster. A member that joined after removal of another member may be
    * considered older than the removed member. Note that is only makes
    * sense to compare with other members inside of one data center (upNumber has
-   * a higher risk of being reused across data centers).
+   * a higher risk of being reused across data centers). // TODO should we enforce this to compare only within DCs?
    */
   def isOlderThan(other: Member): Boolean =
     if (upNumber == other.upNumber)

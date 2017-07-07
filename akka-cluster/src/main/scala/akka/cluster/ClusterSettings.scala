@@ -10,7 +10,7 @@ import com.typesafe.config.ConfigObject
 import scala.concurrent.duration.Duration
 import akka.actor.Address
 import akka.actor.AddressFromURIString
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.Dispatchers
 import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
 
@@ -117,6 +117,21 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
 
   val DataCenter: DataCenter = cc.getString("data-center")
+
+  final class CrossDcFailureDetectorSettings(val config: Config) {
+    val ImplementationClass: String = config.getString("implementation-class")
+    val HeartbeatInterval: FiniteDuration = {
+      config.getMillisDuration("heartbeat-interval")
+    } requiring (_ > Duration.Zero, "failure-detector.heartbeat-interval must be > 0")
+    val HeartbeatExpectedResponseAfter: FiniteDuration = {
+      config.getMillisDuration("expected-response-after")
+    } requiring (_ > Duration.Zero, "failure-detector.expected-response-after > 0")
+    val NrOfMonitoringActors: Int = {
+      config.getInt("nr-of-monitoring-members")
+    } requiring (_ > 0, "failure-detector.nr-of-monitoring-members must be > 0")
+  }
+  val CrossDcFailureDetectorSettings = new CrossDcFailureDetectorSettings(cc.getConfig("multi-data-center.failure-detector"))
+
   val Roles: Set[String] = {
     val configuredRoles = (immutableSeq(cc.getStringList("roles")).toSet) requiring (
       _.forall(!_.startsWith(DcRolePrefix)),
@@ -124,6 +139,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
     configuredRoles + s"$DcRolePrefix$DataCenter"
   }
+
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")
   } requiring (_ > 0, "min-nr-of-members must be > 0")
