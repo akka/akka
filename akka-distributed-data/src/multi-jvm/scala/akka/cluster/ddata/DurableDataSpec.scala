@@ -81,7 +81,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
 
   implicit val cluster = Cluster(system)
 
-  val timeout = 5.seconds.dilated
+  val timeout = 14.seconds.dilated // initialization of lmdb can be very slow in CI environment
   val writeTwo = WriteTo(2, timeout)
   val readTwo = ReadFrom(2, timeout)
 
