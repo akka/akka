@@ -88,7 +88,7 @@ abstract class MultiDcSpec
         testConductor.blackhole(first, third, Direction.Both).await
       }
       runOn(first, second, third, fourth) {
-        awaitAssert(clusterView.unreachableMembers should not be empty)
+        awaitAssert(clusterView.reachability.allUnreachable should not be empty)
       }
       enterBarrier("inter-data-center unreachability")
 
@@ -106,7 +106,7 @@ abstract class MultiDcSpec
         testConductor.passThrough(first, third, Direction.Both).await
       }
       runOn(first, second, third, fourth) {
-        awaitAssert(clusterView.unreachableMembers should not be empty)
+        awaitAssert(clusterView.reachability.allUnreachable should not be empty)
       }
       enterBarrier("inter-data-center unreachability end")
     }
@@ -116,7 +116,7 @@ abstract class MultiDcSpec
         testConductor.blackhole(first, second, Direction.Both).await
       }
       runOn(first, second, third, fourth) {
-        awaitAssert(clusterView.unreachableMembers should not be empty)
+        awaitAssert(clusterView.reachability.allUnreachable should not be empty)
       }
       enterBarrier("other-data-center-internal-unreachable")
 

@@ -60,10 +60,10 @@ abstract class MultiDcSplitBrainSpec
     }
 
     runOn(dc1: _*) {
-      awaitAssert(clusterView.unreachableMembers.map(_.address) should contain allElementsOf (dc2.map(address)))
+      awaitAssert(clusterView.reachability.allUnreachable.map(_.address) should contain allElementsOf (dc2.map(address)))
     }
     runOn(dc2: _*) {
-      awaitAssert(clusterView.unreachableMembers.map(_.address) should contain allElementsOf (dc1.map(address)))
+      awaitAssert(clusterView.reachability.allUnreachable.map(_.address) should contain allElementsOf (dc1.map(address)))
     }
 
   }
@@ -79,7 +79,7 @@ abstract class MultiDcSplitBrainSpec
     }
 
     runOn(dc1 ++ dc2: _*) {
-      awaitAssert(clusterView.unreachableMembers.map(_.address) should be(empty))
+      awaitAssert(clusterView.reachability.allUnreachable.map(_.address) should be(empty))
     }
   }
 
