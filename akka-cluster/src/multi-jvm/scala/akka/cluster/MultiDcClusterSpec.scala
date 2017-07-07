@@ -99,9 +99,6 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
       runOn(first) {
         testConductor.blackhole(first, third, Direction.Both).await
       }
-      runOn(first, second, third, fourth) {
-        awaitAssert(clusterView.unreachableMembers should not be empty)
-      }
       enterBarrier("inter-data-center unreachability")
 
       runOn(fifth) {
@@ -120,9 +117,6 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
         testConductor.passThrough(first, third, Direction.Both).await
       }
 
-      // reachable again
-      awaitAssert(clusterView.unreachableMembers should be(empty))
-
       // should be able to join and become up since the
       // unreachable is between dc1 and dc2,
       within(10.seconds) {
@@ -135,9 +129,6 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
     "be able to have data center member changes while there is unreachability in another data center" in within(20.seconds) {
       runOn(first) {
         testConductor.blackhole(first, second, Direction.Both).await
-      }
-      runOn(first, second, third, fourth) {
-        awaitAssert(clusterView.unreachableMembers should not be empty)
       }
       enterBarrier("other-data-center-internal-unreachable")
 
