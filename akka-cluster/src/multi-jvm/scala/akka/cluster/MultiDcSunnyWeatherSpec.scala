@@ -45,17 +45,10 @@ object MultiDcSunnyWeatherMultiJvmSpec extends MultiNodeConfig {
       remote.log-remote-lifecycle-events = off
       
       cluster {
-      
         debug.verbose-heartbeat-logging = off
-        
-        failure-detector {
-          monitored-by-nr-of-members = 2
-        }
-        
+       
         multi-data-center {
-          failure-detector {
-            nr-of-monitoring-members = 2
-          }
+          cross-data-center-connections = 2
         }
       }
     }
