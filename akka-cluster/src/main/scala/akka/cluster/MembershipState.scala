@@ -198,7 +198,7 @@ import scala.util.Random
       val otherDcs = Random.shuffle((state.ageSortedNodesPerDc.keySet - state.selfDc).toList)
 
       selectOtherDcNode(otherDcs) match {
-        case Some(node) ⇒ randomLocalNodes.take(n) :+ node
+        case Some(node) ⇒ randomLocalNodes.take(n - 1) :+ node
         case None       ⇒ randomLocalNodes.take(n)
       }
 
@@ -208,7 +208,8 @@ import scala.util.Random
         case m if m.dataCenter == state.selfDc && state.validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
       }
 
-      Random.shuffle(selectedNodes).take(n)
+      if (selectedNodes.size <= n) selectedNodes
+      else Random.shuffle(selectedNodes).take(n)
     }
 
   /**
