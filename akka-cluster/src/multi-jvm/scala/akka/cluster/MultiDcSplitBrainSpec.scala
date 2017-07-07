@@ -58,14 +58,6 @@ abstract class MultiDcSplitBrainSpec
         testConductor.blackhole(dc1Node, dc2Node, Direction.Both).await
       }
     }
-
-    runOn(dc1: _*) {
-      awaitAssert(clusterView.unreachableMembers.map(_.address) should contain allElementsOf (dc2.map(address)))
-    }
-    runOn(dc2: _*) {
-      awaitAssert(clusterView.unreachableMembers.map(_.address) should contain allElementsOf (dc1.map(address)))
-    }
-
   }
 
   def unsplitDataCenters(dc1: Seq[RoleName], dc2: Seq[RoleName]): Unit = {
@@ -78,9 +70,6 @@ abstract class MultiDcSplitBrainSpec
       }
     }
 
-    runOn(dc1 ++ dc2: _*) {
-      awaitAssert(clusterView.unreachableMembers.map(_.address) should be(empty))
-    }
   }
 
   "A cluster with multiple data centers" must {

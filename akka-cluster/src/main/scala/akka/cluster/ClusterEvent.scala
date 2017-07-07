@@ -378,7 +378,11 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
 
   val cluster = Cluster(context.system)
   val selfUniqueAddress = cluster.selfUniqueAddress
-  val emptyMembershipState = MembershipState(Gossip.empty, cluster.selfUniqueAddress, cluster.settings.DataCenter)
+  val emptyMembershipState = MembershipState(
+    Gossip.empty,
+    cluster.selfUniqueAddress,
+    cluster.settings.DataCenter,
+    cluster.settings.MultiDataCenter.CrossDcConnections)
   var membershipState: MembershipState = emptyMembershipState
   def selfDc = cluster.settings.DataCenter
 
