@@ -87,6 +87,13 @@ private[cluster] final case class Gossip(
   @transient private lazy val membersMap: Map[UniqueAddress, Member] =
     members.map(m ⇒ m.uniqueAddress → m)(collection.breakOut)
 
+  @transient lazy val isMultiDc =
+    if (members.size <= 1) false
+    else {
+      val dc1 = members.head.dataCenter
+      members.exists(_.dataCenter != dc1)
+    }
+
   /**
    * Increments the version for this 'Node'.
    */

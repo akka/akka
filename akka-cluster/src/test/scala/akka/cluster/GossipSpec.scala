@@ -35,7 +35,7 @@ class GossipSpec extends WordSpec with Matchers {
   val dc2d2 = TestMember(dc2d1.address, status = Down, roles = Set.empty, dataCenter = dc2d1.dataCenter)
 
   private def state(g: Gossip, selfMember: Member = a1): MembershipState =
-    MembershipState(g, selfMember.uniqueAddress, selfMember.dataCenter)
+    MembershipState(g, selfMember.uniqueAddress, selfMember.dataCenter, crossDcConnections = 5)
 
   "A Gossip" must {
 

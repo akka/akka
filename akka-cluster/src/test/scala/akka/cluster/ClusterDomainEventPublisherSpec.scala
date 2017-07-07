@@ -19,7 +19,7 @@ import akka.testkit.ImplicitSender
 import akka.actor.ActorRef
 import akka.remote.RARP
 import akka.testkit.TestProbe
-import akka.cluster.ClusterSettings.DefaultDataCenter
+import akka.cluster.ClusterSettings.{ DataCenter, DefaultDataCenter }
 
 object ClusterDomainEventPublisherSpec {
   val config = """
@@ -50,27 +50,30 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
   val a51Up = TestMember(Address(protocol, "sys", "a", 2551), Up)
   val dUp = TestMember(Address(protocol, "sys", "d", 2552), Up, Set("GRP"))
 
-  val emptyMembershipState = MembershipState(Gossip.empty, aUp.uniqueAddress, DefaultDataCenter)
+  private def state(gossip: Gossip, self: UniqueAddress, dc: DataCenter) =
+    MembershipState(gossip, self, DefaultDataCenter, crossDcConnections = 5)
+
+  val emptyMembershipState = state(Gossip.empty, aUp.uniqueAddress, DefaultDataCenter)
 
   val g0 = Gossip(members = SortedSet(aUp)).seen(aUp.uniqueAddress)
-  val state0 = MembershipState(g0, aUp.uniqueAddress, DefaultDataCenter)
+  val state0 = state(g0, aUp.uniqueAddress, DefaultDataCenter)
   val g1 = Gossip(members = SortedSet(aUp, cJoining)).seen(aUp.uniqueAddress).seen(cJoining.uniqueAddress)
-  val state1 = MembershipState(g1, aUp.uniqueAddress, DefaultDataCenter)
+  val state1 = state(g1, aUp.uniqueAddress, DefaultDataCenter)
   val g2 = Gossip(members = SortedSet(aUp, bExiting, cUp)).seen(aUp.uniqueAddress)
-  val state2 = MembershipState(g2, aUp.uniqueAddress, DefaultDataCenter)
+  val state2 = state(g2, aUp.uniqueAddress, DefaultDataCenter)
   val g3 = g2.seen(bExiting.uniqueAddress).seen(cUp.uniqueAddress)
-  val state3 = MembershipState(g3, aUp.uniqueAddress, DefaultDataCenter)
+  val state3 = state(g3, aUp.uniqueAddress, DefaultDataCenter)
   val g4 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp)).seen(aUp.uniqueAddress)
-  val state4 = MembershipState(g4, aUp.uniqueAddress, DefaultDataCenter)
+  val state4 = state(g4, aUp.uniqueAddress, DefaultDataCenter)
   val g5 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp)).seen(aUp.uniqueAddress).seen(bExiting.uniqueAddress).seen(cUp.uniqueAddress).seen(a51Up.uniqueAddress)
-  val state5 = MembershipState(g5, aUp.uniqueAddress, DefaultDataCenter)
+  val state5 = state(g5, aUp.uniqueAddress, DefaultDataCenter)
   val g6 = Gossip(members = SortedSet(aLeaving, bExiting, cUp)).seen(aUp.uniqueAddress)
-  val state6 = MembershipState(g6, aUp.uniqueAddress, DefaultDataCenter)
+  val state6 = state(g6, aUp.uniqueAddress, DefaultDataCenter)
   val g7 = Gossip(members = SortedSet(aExiting, bExiting, cUp)).seen(aUp.uniqueAddress)
-  val state7 = MembershipState(g7, aUp.uniqueAddress, DefaultDataCenter)
+  val state7 = state(g7, aUp.uniqueAddress, DefaultDataCenter)
   val g8 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp), overview = GossipOverview(reachability =
     Reachability.empty.unreachable(aUp.uniqueAddress, dUp.uniqueAddress))).seen(aUp.uniqueAddress)
-  val state8 = MembershipState(g8, aUp.uniqueAddress, DefaultDataCenter)
+  val state8 = state(g8, aUp.uniqueAddress, DefaultDataCenter)
 
   // created in beforeEach
   var memberSubscriber: TestProbe = _
@@ -143,11 +146,11 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       val subscriber = TestProbe()
       publisher ! Subscribe(subscriber.ref, InitialStateAsSnapshot, Set(classOf[RoleLeaderChanged]))
       subscriber.expectMsgType[CurrentClusterState]
-      publisher ! PublishChanges(MembershipState(Gossip(members = SortedSet(cJoining, dUp)), dUp.uniqueAddress, DefaultDataCenter))
+      publisher ! PublishChanges(state(Gossip(members = SortedSet(cJoining, dUp)), dUp.uniqueAddress, DefaultDataCenter))
       subscriber.expectMsgAllOf(
         RoleLeaderChanged("GRP", Some(dUp.address)),
         RoleLeaderChanged(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter, Some(dUp.address)))
-      publisher ! PublishChanges(MembershipState(Gossip(members = SortedSet(cUp, dUp)), dUp.uniqueAddress, DefaultDataCenter))
+      publisher ! PublishChanges(state(Gossip(members = SortedSet(cUp, dUp)), dUp.uniqueAddress, DefaultDataCenter))
       subscriber.expectMsg(RoleLeaderChanged("GRP", Some(cUp.address)))
     }
 
