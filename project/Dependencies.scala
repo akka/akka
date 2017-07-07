@@ -75,7 +75,6 @@ object Dependencies {
 
     val aeronDriver = "io.aeron"                      % "aeron-driver"                 % aeronVersion       // ApacheV2
     val aeronClient = "io.aeron"                      % "aeron-client"                 % aeronVersion       // ApacheV2
-
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.3"             % "test"
       val gson        = "com.google.code.gson"        % "gson"                         % "2.8.0"             % "test"
