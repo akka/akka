@@ -108,7 +108,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   val crossDcFailureDetector: FailureDetectorRegistry[Address] = {
     val createFailureDetector = () ⇒
-      FailureDetectorLoader.load(settings.CrossDcFailureDetectorSettings.ImplementationClass, settings.CrossDcFailureDetectorSettings.config, system)
+      FailureDetectorLoader.load(
+        settings.MultiDataCenter.CrossDcFailureDetectorSettings.ImplementationClass,
+        settings.MultiDataCenter.CrossDcFailureDetectorSettings.config, system)
 
     new DefaultFailureDetectorRegistry(createFailureDetector)
   }

@@ -47,7 +47,9 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   val isExternalClusterMember: Member ⇒ Boolean =
     member ⇒ member.dataCenter != cluster.selfDataCenter
 
-  val crossDcSettings: cluster.settings.CrossDcFailureDetectorSettings = cluster.settings.CrossDcFailureDetectorSettings
+  val crossDcSettings: cluster.settings.CrossDcFailureDetectorSettings =
+    cluster.settings.MultiDataCenter.CrossDcFailureDetectorSettings
+
   val crossDcFailureDetector = cluster.crossDcFailureDetector
 
   val selfHeartbeat = ClusterHeartbeatSender.Heartbeat(selfAddress)

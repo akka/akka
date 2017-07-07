@@ -10,7 +10,7 @@ import com.typesafe.config.ConfigObject
 import scala.concurrent.duration.Duration
 import akka.actor.Address
 import akka.actor.AddressFromURIString
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
 import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
 
@@ -35,7 +35,6 @@ object ClusterSettings {
 
 final class ClusterSettings(val config: Config, val systemName: String) {
   import ClusterSettings._
-  import ClusterSettings._
   private val cc = config.getConfig("akka.cluster")
 
   val LogInfo: Boolean = cc.getBoolean("log-info")
@@ -51,12 +50,26 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     FailureDetectorConfig.getInt("monitored-by-nr-of-members")
   } requiring (_ > 0, "failure-detector.monitored-by-nr-of-members must be > 0")
 
+  final class CrossDcFailureDetectorSettings(val config: Config) {
+    val ImplementationClass: String = config.getString("implementation-class")
+    val HeartbeatInterval: FiniteDuration = {
+      config.getMillisDuration("heartbeat-interval")
+    } requiring (_ > Duration.Zero, "failure-detector.heartbeat-interval must be > 0")
+    val HeartbeatExpectedResponseAfter: FiniteDuration = {
+      config.getMillisDuration("expected-response-after")
+    } requiring (_ > Duration.Zero, "failure-detector.expected-response-after > 0")
+    def NrOfMonitoringActors: Int = MultiDataCenter.CrossDcConnections
+  }
+
   object MultiDataCenter {
     val CrossDcConnections: Int = cc.getInt("multi-data-center.cross-data-center-connections")
       .requiring(_ > 0, "cross-data-center-connections must be > 0")
 
     val CrossDcGossipProbability: Double = cc.getDouble("multi-data-center.cross-data-center-gossip-probability")
       .requiring(d ⇒ d >= 0.0D && d <= 1.0D, "cross-data-center-gossip-probability must be >= 0.0 and <= 1.0")
+
+    val CrossDcFailureDetectorSettings: CrossDcFailureDetectorSettings =
+      new CrossDcFailureDetectorSettings(cc.getConfig("multi-data-center.failure-detector"))
   }
 
   val SeedNodes: immutable.IndexedSeq[Address] =
@@ -122,23 +135,9 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val QuarantineRemovedNodeAfter: FiniteDuration =
     cc.getMillisDuration("quarantine-removed-node-after") requiring (_ > Duration.Zero, "quarantine-removed-node-after must be > 0")
 
-  val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
+  val AllowWeaklyUpMembers: Boolean = cc.getBoolean("allow-weakly-up-members")
 
   val DataCenter: DataCenter = cc.getString("data-center")
-
-  final class CrossDcFailureDetectorSettings(val config: Config) {
-    val ImplementationClass: String = config.getString("implementation-class")
-    val HeartbeatInterval: FiniteDuration = {
-      config.getMillisDuration("heartbeat-interval")
-    } requiring (_ > Duration.Zero, "failure-detector.heartbeat-interval must be > 0")
-    val HeartbeatExpectedResponseAfter: FiniteDuration = {
-      config.getMillisDuration("expected-response-after")
-    } requiring (_ > Duration.Zero, "failure-detector.expected-response-after > 0")
-    val NrOfMonitoringActors: Int = {
-      config.getInt("nr-of-monitoring-members")
-    } requiring (_ > 0, "failure-detector.nr-of-monitoring-members must be > 0")
-  }
-  val CrossDcFailureDetectorSettings = new CrossDcFailureDetectorSettings(cc.getConfig("multi-data-center.failure-detector"))
 
   val Roles: Set[String] = {
     val configuredRoles = (immutableSeq(cc.getStringList("roles")).toSet) requiring (
@@ -170,8 +169,8 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val SchedulerTicksPerWheel: Int = cc.getInt("scheduler.ticks-per-wheel")
 
   object Debug {
-    val VerboseHeartbeatLogging = cc.getBoolean("debug.verbose-heartbeat-logging")
-    val VerboseGossipLogging = cc.getBoolean("debug.verbose-gossip-logging")
+    val VerboseHeartbeatLogging: Boolean = cc.getBoolean("debug.verbose-heartbeat-logging")
+    val VerboseGossipLogging: Boolean = cc.getBoolean("debug.verbose-gossip-logging")
   }
 
 }
