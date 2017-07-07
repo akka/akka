@@ -7,6 +7,7 @@ package akka.cluster
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor.Address
+
 import scala.collection.immutable.SortedSet
 
 class ClusterDomainEventSpec extends WordSpec with Matchers {
@@ -39,7 +40,10 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
     ((gossip, Set.empty[UniqueAddress]) /: gossip.members) { case ((gs, as), m) ⇒ (gs.seen(m.uniqueAddress), as + m.uniqueAddress) }
 
   private def state(g: Gossip): MembershipState =
-    MembershipState(g, selfDummyAddress, ClusterSettings.DefaultDataCenter)
+    state(g, selfDummyAddress)
+
+  private def state(g: Gossip, self: UniqueAddress): MembershipState =
+    MembershipState(g, self, ClusterSettings.DefaultDataCenter, crossDcConnections = 5)
 
   "Domain events" must {
 
@@ -80,8 +84,8 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       // never include self member in unreachable
 
       diffUnreachable(
-        MembershipState(g1, bDown.uniqueAddress, ClusterSettings.DefaultDataCenter),
-        MembershipState(g2, bDown.uniqueAddress, ClusterSettings.DefaultDataCenter)) should ===(Seq())
+        state(g1, bDown.uniqueAddress),
+        state(g2, bDown.uniqueAddress)) should ===(Seq())
       diffSeen(state(g1), state(g2)) should ===(Seq.empty)
     }
 
@@ -99,13 +103,13 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       diffUnreachable(state(g1), state(g2)) should ===(Seq(UnreachableMember(cUp)))
       // never include self member in unreachable
       diffUnreachable(
-        MembershipState(g1, cUp.uniqueAddress, ClusterSettings.DefaultDataCenter),
-        MembershipState(g2, cUp.uniqueAddress, ClusterSettings.DefaultDataCenter)) should ===(Seq())
+        state(g1, cUp.uniqueAddress),
+        state(g2, cUp.uniqueAddress)) should ===(Seq())
       diffReachable(state(g1), state(g2)) should ===(Seq(ReachableMember(bUp)))
       // never include self member in reachable
       diffReachable(
-        MembershipState(g1, bUp.uniqueAddress, ClusterSettings.DefaultDataCenter),
-        MembershipState(g2, bUp.uniqueAddress, ClusterSettings.DefaultDataCenter)) should ===(Seq())
+        state(g1, bUp.uniqueAddress),
+        state(g2, bUp.uniqueAddress)) should ===(Seq())
     }
 
     "be produced for removed members" in {

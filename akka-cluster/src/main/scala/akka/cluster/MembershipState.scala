@@ -3,11 +3,18 @@
  */
 package akka.cluster
 
+import java.util.{ ArrayList, Collections }
+import java.util.concurrent.ThreadLocalRandom
+
 import scala.collection.immutable
 import scala.collection.SortedSet
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
 import akka.annotation.InternalApi
+
+import scala.annotation.tailrec
+import scala.collection.breakOut
+import scala.util.Random
 
 /**
  * INTERNAL API
@@ -23,8 +30,15 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class MembershipState(latestGossip: Gossip, selfUniqueAddress: UniqueAddress, selfDc: DataCenter) {
+@InternalApi private[akka] final case class MembershipState(
+  latestGossip:       Gossip,
+  selfUniqueAddress:  UniqueAddress,
+  selfDc:             DataCenter,
+  crossDcConnections: Int) {
+
   import MembershipState._
+
+  lazy val selfMember = latestGossip.member(selfUniqueAddress)
 
   def members: immutable.SortedSet[Member] = latestGossip.members
 
@@ -80,6 +94,20 @@ import akka.annotation.InternalApi
     overview.reachability.remove(members.collect { case m if m.dataCenter != selfDc ⇒ m.uniqueAddress })
 
   /**
+   * @return Up to `crossDcConnections` oldest members for each DC
+   */
+  lazy val ageSortedTopOldestMembersPerDc: Map[DataCenter, SortedSet[Member]] =
+    // TODO make this recursive and bail early when size reached to make it fast for large clusters
+    latestGossip.members.foldLeft(Map.empty[DataCenter, SortedSet[Member]]) { (acc, member) ⇒
+      acc.get(member.dataCenter) match {
+        case Some(set) ⇒
+          if (set.size < crossDcConnections) acc + (member.dataCenter → (set + member))
+          else acc
+        case None ⇒ acc + (member.dataCenter → (SortedSet.empty(Member.ageOrdering) + member))
+      }
+    }
+
+  /**
    * @return true if toAddress should be reachable from the fromDc in general, within a data center
    *         this means only caring about data center local observations, across data centers it
    *         means caring about all observations for the toAddress.
@@ -122,4 +150,173 @@ import akka.annotation.InternalApi
       .map(_.uniqueAddress)
   }
 
+  def isInSameDc(node: UniqueAddress): Boolean =
+    node == selfUniqueAddress || latestGossip.member(node).dataCenter == selfDc
+
+  def validNodeForGossip(node: UniqueAddress): Boolean =
+    node != selfUniqueAddress &&
+      ((isInSameDc(node) && isReachableExcludingDownedObservers(node)) ||
+        // if cross DC we need to check pairwise unreachable observation
+        overview.reachability.isReachable(selfUniqueAddress, node))
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] class GossipTargetSelector(
+  reduceGossipDifferentViewProbability: Double,
+  crossDcGossipProbability:             Double) {
+
+  final def gossipTarget(state: MembershipState): Option[UniqueAddress] = {
+    selectRandomNode(gossipTargets(state))
+  }
+
+  final def gossipTargets(state: MembershipState): Vector[UniqueAddress] =
+    if (state.latestGossip.isMultiDc) multiDcGossipTargets(state)
+    else localDcGossipTargets(state)
+
+  /**
+   * Select `n` random nodes to gossip to (used to quickly inform the rest of the cluster when leaving for example)
+   */
+  def randomNodesForFullGossip(state: MembershipState, n: Int): Vector[UniqueAddress] =
+    if (state.latestGossip.isMultiDc && state.ageSortedTopOldestMembersPerDc(state.selfDc).contains(state.selfMember)) {
+      // this node is one of the N oldest in the cluster, gossip to one cross-dc but mostly locally
+      val randomLocalNodes = Random.shuffle(state.members.toVector.collect {
+        case m if m.dataCenter == state.selfDc && state.validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
+      })
+
+      @tailrec
+      def selectOtherDcNode(randomizedDcs: List[DataCenter]): Option[UniqueAddress] =
+        randomizedDcs match {
+          case Nil ⇒ None // couldn't find a single cross-dc-node to talk to
+          case dc :: tail ⇒
+            state.ageSortedTopOldestMembersPerDc(dc).collectFirst {
+              case m if state.validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
+            } match {
+              case Some(addr) ⇒ Some(addr)
+              case None       ⇒ selectOtherDcNode(tail)
+            }
+
+        }
+      val otherDcs = Random.shuffle((state.ageSortedTopOldestMembersPerDc.keySet - state.selfDc).toList)
+
+      selectOtherDcNode(otherDcs) match {
+        case Some(node) ⇒ randomLocalNodes.take(n - 1) :+ node
+        case None       ⇒ randomLocalNodes.take(n)
+      }
+
+    } else {
+      // single dc or not among the N oldest - select local nodes
+      val selectedNodes = state.members.toVector.collect {
+        case m if m.dataCenter == state.selfDc && state.validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
+      }
+
+      if (selectedNodes.size <= n) selectedNodes
+      else Random.shuffle(selectedNodes).take(n)
+    }
+
+  /**
+   * Chooses a set of possible gossip targets that is in the same dc. If the cluster is not multi dc this
+   * means it is a choice among all nodes of the cluster.
+   */
+  protected def localDcGossipTargets(state: MembershipState): Vector[UniqueAddress] = {
+    val latestGossip = state.latestGossip
+    val firstSelection: Vector[UniqueAddress] =
+      if (preferNodesWithDifferentView(state)) {
+        // If it's time to try to gossip to some nodes with a different view
+        // gossip to a random alive same dc member with preference to a member with older gossip version
+        latestGossip.members.collect {
+          case m if m.dataCenter == state.selfDc && !latestGossip.seenByNode(m.uniqueAddress) && state.validNodeForGossip(m.uniqueAddress) ⇒
+            m.uniqueAddress
+        }(breakOut)
+      } else Vector.empty
+
+    // Fall back to localGossip
+    if (firstSelection.isEmpty) {
+      latestGossip.members.toVector.collect {
+        case m if m.dataCenter == state.selfDc && state.validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
+      }
+    } else firstSelection
+
+  }
+
+  /**
+   * Choose cross-dc nodes if this one of the N oldest nodes, and if not fall back to gosip locally in the dc
+   */
+  protected def multiDcGossipTargets(state: MembershipState): Vector[UniqueAddress] = {
+    val latestGossip = state.latestGossip
+    // only a fraction of the time across data centers
+    if (selectDcLocalNodes()) localDcGossipTargets(state)
+    else {
+      val nodesPerDc = state.ageSortedTopOldestMembersPerDc
+
+      // only do cross DC gossip if this node is among the N oldest
+
+      if (!nodesPerDc(state.selfDc).contains(state.selfMember)) localDcGossipTargets(state)
+      else {
+        @tailrec
+        def findFirstDcWithValidNodes(left: List[DataCenter]): Vector[UniqueAddress] =
+          left match {
+            case dc :: tail ⇒
+
+              val validNodes = nodesPerDc(dc).collect {
+                case member if state.validNodeForGossip(member.uniqueAddress) ⇒
+                  member.uniqueAddress
+              }
+
+              if (validNodes.nonEmpty) validNodes.toVector
+              else findFirstDcWithValidNodes(tail) // no valid nodes in dc, try next
+
+            case Nil ⇒
+              Vector.empty
+          }
+
+        // chose another DC at random
+        val otherDcsInRandomOrder = dcsInRandomOrder((nodesPerDc - state.selfDc).keys.toList)
+        val nodes = findFirstDcWithValidNodes(otherDcsInRandomOrder)
+        if (nodes.nonEmpty) nodes
+        // no other dc with reachable nodes, fall back to local gossip
+        else localDcGossipTargets(state)
+      }
+    }
+  }
+
+  /**
+   * For large clusters we should avoid shooting down individual
+   * nodes. Therefore the probability is reduced for large clusters.
+   */
+  protected def adjustedGossipDifferentViewProbability(clusterSize: Int): Double = {
+    val low = reduceGossipDifferentViewProbability
+    val high = low * 3
+    // start reduction when cluster is larger than configured ReduceGossipDifferentViewProbability
+    if (clusterSize <= low)
+      reduceGossipDifferentViewProbability
+    else {
+      // don't go lower than 1/10 of the configured GossipDifferentViewProbability
+      val minP = reduceGossipDifferentViewProbability / 10
+      if (clusterSize >= high)
+        minP
+      else {
+        // linear reduction of the probability with increasing number of nodes
+        // from ReduceGossipDifferentViewProbability at ReduceGossipDifferentViewProbability nodes
+        // to ReduceGossipDifferentViewProbability / 10 at ReduceGossipDifferentViewProbability * 3 nodes
+        // i.e. default from 0.8 at 400 nodes, to 0.08 at 1600 nodes
+        val k = (minP - reduceGossipDifferentViewProbability) / (high - low)
+        reduceGossipDifferentViewProbability + (clusterSize - low) * k
+      }
+    }
+  }
+
+  protected def selectDcLocalNodes(): Boolean = ThreadLocalRandom.current.nextDouble() > crossDcGossipProbability
+
+  protected def preferNodesWithDifferentView(state: MembershipState): Boolean =
+    ThreadLocalRandom.current.nextDouble() < adjustedGossipDifferentViewProbability(state.latestGossip.members.size)
+
+  protected def dcsInRandomOrder(dcs: List[DataCenter]): List[DataCenter] =
+    Random.shuffle(dcs)
+
+  protected def selectRandomNode(nodes: IndexedSeq[UniqueAddress]): Option[UniqueAddress] =
+    if (nodes.isEmpty) None
+    else Some(nodes(ThreadLocalRandom.current.nextInt(nodes.size)))
 }

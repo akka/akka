@@ -10,41 +10,53 @@ import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 
-object MultiDcMultiJvmSpec extends MultiNodeConfig {
+class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
   val fifth = role("fifth")
 
-  commonConfig(MultiNodeClusterSpec.clusterConfig)
+  commonConfig(ConfigFactory.parseString(
+    s"""
+      akka.loglevel = INFO
+      akka.cluster.multi-data-center.cross-data-center-connections = $crossDcConnections
+    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString(
     """
       akka.cluster.data-center = "dc1"
-      akka.loglevel = INFO
     """))
 
   nodeConfig(third, fourth, fifth)(ConfigFactory.parseString(
     """
       akka.cluster.data-center = "dc2"
-      akka.loglevel = INFO
     """))
 
   testTransport(on = true)
 }
 
-class MultiDcMultiJvmNode1 extends MultiDcSpec
-class MultiDcMultiJvmNode2 extends MultiDcSpec
-class MultiDcMultiJvmNode3 extends MultiDcSpec
-class MultiDcMultiJvmNode4 extends MultiDcSpec
-class MultiDcMultiJvmNode5 extends MultiDcSpec
+object MultiDcNormalConfig extends MultiDcSpecConfig()
 
-abstract class MultiDcSpec
-  extends MultiNodeSpec(MultiDcMultiJvmSpec)
+class MultiDcMultiJvmNode1 extends MultiDcSpec(MultiDcNormalConfig)
+class MultiDcMultiJvmNode2 extends MultiDcSpec(MultiDcNormalConfig)
+class MultiDcMultiJvmNode3 extends MultiDcSpec(MultiDcNormalConfig)
+class MultiDcMultiJvmNode4 extends MultiDcSpec(MultiDcNormalConfig)
+class MultiDcMultiJvmNode5 extends MultiDcSpec(MultiDcNormalConfig)
+
+object MultiDcFewCrossDcConnectionsConfig extends MultiDcSpecConfig(1)
+
+class MultiDcFewCrossDcMultiJvmNode1 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
+class MultiDcFewCrossDcMultiJvmNode2 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
+class MultiDcFewCrossDcMultiJvmNode3 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
+class MultiDcFewCrossDcMultiJvmNode4 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
+class MultiDcFewCrossDcMultiJvmNode5 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
+
+abstract class MultiDcSpec(config: MultiDcSpecConfig)
+  extends MultiNodeSpec(config)
   with MultiNodeClusterSpec {
 
-  import MultiDcMultiJvmSpec._
+  import config._
 
   "A cluster with multiple data centers" must {
     "be able to form" in {
@@ -87,13 +99,22 @@ abstract class MultiDcSpec
       runOn(first) {
         testConductor.blackhole(first, third, Direction.Both).await
       }
-      runOn(first, second, third, fourth) {
-        awaitAssert(clusterView.reachability.allUnreachable should not be empty)
-      }
       enterBarrier("inter-data-center unreachability")
 
       runOn(fifth) {
         cluster.join(third)
+      }
+
+      runOn(third, fourth, fifth) {
+        // should be able to join and become up since the
+        // unreachable is between dc1 and dc2,
+        within(10.seconds) {
+          awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size (5))
+        }
+      }
+
+      runOn(first) {
+        testConductor.passThrough(first, third, Direction.Both).await
       }
 
       // should be able to join and become up since the
@@ -102,21 +123,12 @@ abstract class MultiDcSpec
         awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size (5))
       }
 
-      runOn(first) {
-        testConductor.passThrough(first, third, Direction.Both).await
-      }
-      runOn(first, second, third, fourth) {
-        awaitAssert(clusterView.reachability.allUnreachable should not be empty)
-      }
       enterBarrier("inter-data-center unreachability end")
     }
 
     "be able to have data center member changes while there is unreachability in another data center" in within(20.seconds) {
       runOn(first) {
         testConductor.blackhole(first, second, Direction.Both).await
-      }
-      runOn(first, second, third, fourth) {
-        awaitAssert(clusterView.reachability.allUnreachable should not be empty)
       }
       enterBarrier("other-data-center-internal-unreachable")
 

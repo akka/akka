@@ -4,7 +4,7 @@
 package akka.cluster
 
 import language.existentials
-import scala.collection.immutable
+import scala.collection.{ SortedSet, breakOut, immutable, mutable }
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 
@@ -15,8 +15,6 @@ import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings.DataCenter
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-
-import scala.collection.breakOut
 import akka.remote.QuarantinedEvent
 import java.util.ArrayList
 import java.util.Collections
@@ -25,9 +23,11 @@ import akka.pattern.ask
 import akka.util.Timeout
 import akka.Done
 import akka.annotation.InternalApi
+import akka.cluster.ClusterSettings.DataCenter
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.util.Random
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -296,13 +296,23 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   import cluster.settings._
   import cluster.InfoLogger._
 
+  val selfDc = cluster.selfDataCenter
+
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
   val vclockNode = VectorClock.Node(vclockName(selfUniqueAddress))
+  val gossipTargetSelector = new GossipTargetSelector(
+    ReduceGossipDifferentViewProbability,
+    cluster.settings.MultiDataCenter.CrossDcGossipProbability)
 
   // note that self is not initially member,
   // and the Gossip is not versioned for this 'Node' yet
-  var membershipState = MembershipState(Gossip.empty, cluster.selfUniqueAddress, cluster.settings.DataCenter)
+  var membershipState = MembershipState(
+    Gossip.empty,
+    cluster.selfUniqueAddress,
+    cluster.settings.DataCenter,
+    cluster.settings.MultiDataCenter.CrossDcConnections)
+
   def latestGossip: Gossip = membershipState.latestGossip
 
   val statsEnabled = PublishStatsInterval.isFinite
@@ -333,8 +343,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       }
   }
   var exitingConfirmed = Set.empty[UniqueAddress]
-
-  def selfDc = cluster.settings.DataCenter
 
   /**
    * Looks up and returns the remote cluster command connection for the specific address.
@@ -431,8 +439,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def becomeInitialized(): Unit = {
     // start heartbeatSender here, and not in constructor to make sure that
     // heartbeating doesn't start before Welcome is received
-    context.actorOf(Props[ClusterHeartbeatSender].
-      withDispatcher(UseDispatcher), name = "heartbeatSender")
+    val internalHeartbeatSenderProps = Props(new ClusterHeartbeatSender()).withDispatcher(UseDispatcher)
+    context.actorOf(internalHeartbeatSenderProps, name = "heartbeatSender")
+
+    val externalHeartbeatProps = Props(new CrossDcHeartbeatSender()).withDispatcher(UseDispatcher)
+    context.actorOf(externalHeartbeatProps, name = "crossDcHeartbeatSender")
+
     // make sure that join process is stopped
     stopSeedNodeProcess()
     context.become(initialized)
@@ -921,88 +933,25 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    */
   def gossipRandomN(n: Int): Unit = {
     if (!isSingletonCluster && n > 0) {
-      val localGossip = latestGossip
-      // using ArrayList to be able to shuffle
-      val possibleTargets = new ArrayList[UniqueAddress](localGossip.members.size)
-      localGossip.members.foreach { m ⇒
-        if (validNodeForGossip(m.uniqueAddress))
-          possibleTargets.add(m.uniqueAddress)
-      }
-      val randomTargets =
-        if (possibleTargets.size <= n)
-          possibleTargets
-        else {
-          Collections.shuffle(possibleTargets, ThreadLocalRandom.current())
-          possibleTargets.subList(0, n)
-        }
-
-      val iter = randomTargets.iterator
-      while (iter.hasNext)
-        gossipTo(iter.next())
+      gossipTargetSelector.randomNodesForFullGossip(membershipState, n).foreach(gossipTo)
     }
   }
 
   /**
    * Initiates a new round of gossip.
    */
-  def gossip(): Unit = {
-
+  def gossip(): Unit =
     if (!isSingletonCluster) {
-      val localGossip = latestGossip
-
-      val preferredGossipTargets: Vector[UniqueAddress] =
-        if (ThreadLocalRandom.current.nextDouble() < adjustedGossipDifferentViewProbability) {
-          // If it's time to try to gossip to some nodes with a different view
-          // gossip to a random alive member with preference to a member with older gossip version
-          localGossip.members.collect {
-            case m if !localGossip.seenByNode(m.uniqueAddress) && validNodeForGossip(m.uniqueAddress) ⇒
-              m.uniqueAddress
-          }(breakOut)
-        } else Vector.empty
-
-      if (preferredGossipTargets.nonEmpty) {
-        val peer = selectRandomNode(preferredGossipTargets)
-        // send full gossip because it has different view
-        peer foreach gossipTo
-      } else {
-        // Fall back to localGossip; important to not accidentally use `map` of the SortedSet, since the original order is not preserved)
-        val peer = selectRandomNode(localGossip.members.toIndexedSeq.collect {
-          case m if validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
-        })
-        peer foreach { node ⇒
-          if (localGossip.seenByNode(node)) gossipStatusTo(node)
-          else gossipTo(node)
-        }
+      gossipTargetSelector.gossipTarget(membershipState) match {
+        case Some(peer) ⇒
+          if (!membershipState.isInSameDc(peer) || latestGossip.seenByNode(peer))
+            // avoid transferring the full state if possible
+            gossipStatusTo(peer)
+          else
+            gossipTo(peer)
+        case None ⇒ // nothing to see here
       }
     }
-  }
-
-  /**
-   * For large clusters we should avoid shooting down individual
-   * nodes. Therefore the probability is reduced for large clusters.
-   */
-  def adjustedGossipDifferentViewProbability: Double = {
-    val size = latestGossip.members.size
-    val low = ReduceGossipDifferentViewProbability
-    val high = low * 3
-    // start reduction when cluster is larger than configured ReduceGossipDifferentViewProbability
-    if (size <= low)
-      GossipDifferentViewProbability
-    else {
-      // don't go lower than 1/10 of the configured GossipDifferentViewProbability
-      val minP = GossipDifferentViewProbability / 10
-      if (size >= high)
-        minP
-      else {
-        // linear reduction of the probability with increasing number of nodes
-        // from ReduceGossipDifferentViewProbability at ReduceGossipDifferentViewProbability nodes
-        // to ReduceGossipDifferentViewProbability / 10 at ReduceGossipDifferentViewProbability * 3 nodes
-        // i.e. default from 0.8 at 400 nodes, to 0.08 at 1600 nodes
-        val k = (minP - GossipDifferentViewProbability) / (high - low)
-        GossipDifferentViewProbability + (size - low) * k
-      }
-    }
-  }
 
   /**
    * Runs periodic leader actions, such as member status transitions, assigning partitions etc.
@@ -1240,10 +1189,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     }
   }
 
-  def selectRandomNode(nodes: IndexedSeq[UniqueAddress]): Option[UniqueAddress] =
-    if (nodes.isEmpty) None
-    else Some(nodes(ThreadLocalRandom.current nextInt nodes.size))
-
   def isSingletonCluster: Boolean = latestGossip.isSingletonCluster
 
   // needed for tests
@@ -1257,23 +1202,20 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    * Gossips latest gossip to a node.
    */
   def gossipTo(node: UniqueAddress): Unit =
-    if (validNodeForGossip(node))
+    if (membershipState.validNodeForGossip(node))
       clusterCore(node.address) ! GossipEnvelope(selfUniqueAddress, node, latestGossip)
 
   def gossipTo(node: UniqueAddress, destination: ActorRef): Unit =
-    if (validNodeForGossip(node))
+    if (membershipState.validNodeForGossip(node))
       destination ! GossipEnvelope(selfUniqueAddress, node, latestGossip)
 
   def gossipStatusTo(node: UniqueAddress, destination: ActorRef): Unit =
-    if (validNodeForGossip(node))
+    if (membershipState.validNodeForGossip(node))
       destination ! GossipStatus(selfUniqueAddress, latestGossip.version)
 
   def gossipStatusTo(node: UniqueAddress): Unit =
-    if (validNodeForGossip(node))
+    if (membershipState.validNodeForGossip(node))
       clusterCore(node.address) ! GossipStatus(selfUniqueAddress, latestGossip.version)
-
-  def validNodeForGossip(node: UniqueAddress): Boolean =
-    node != selfUniqueAddress && membershipState.isReachableExcludingDownedObservers(node)
 
   def updateLatestGossip(gossip: Gossip): Unit = {
     // Updating the vclock version for the changes
