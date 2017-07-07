@@ -1230,6 +1230,15 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate")
       ),
       "2.5.3" -> Seq(
+
+        // #15733 Timers
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.fsm.PersistentFSM#Timer.apply"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.fsm.PersistentFSM#Timer.copy"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.fsm.PersistentFSM#Timer.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.copy"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.apply"),  
+          
         // #22789 Source.maybe rewritten as a graph stage
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$MaybeSubscription"),
