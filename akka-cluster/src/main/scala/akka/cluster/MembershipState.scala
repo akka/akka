@@ -90,6 +90,9 @@ import scala.util.Random
     overview.reachability.removeObservers(membersToExclude).remove(members.collect { case m if m.dataCenter != selfDc ⇒ m.uniqueAddress })
   }
 
+  lazy val dcReachabilityNoOutsideNodes: Reachability =
+    overview.reachability.remove(members.collect { case m if m.dataCenter != selfDc ⇒ m.uniqueAddress })
+
   /**
    * @return Up to `crossDcConnections` oldest members for each DC
    */
