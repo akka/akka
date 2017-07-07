@@ -143,6 +143,13 @@ Another example that uses the thread pool based on the number of cores (e.g. for
 <!--same config text for Scala & Java-->
 @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-thread-pool-dispatcher-config }
 
+A different kind of dispatcher that uses an affinity pool may increase throughput in cases where there is relatively small
+number of actors that maintain some internal state. The affinity pool tries its best to ensure that an actor is always
+scheduled to run on the same thread. This actor to thread pinning aims to decrease CPU cache misses which can result 
+in significant throughput improvement.
+
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #affinity-pool-dispatcher-config }
+
 Configuring a `PinnedDispatcher`:
 
 <!--same config text for Scala & Java-->
