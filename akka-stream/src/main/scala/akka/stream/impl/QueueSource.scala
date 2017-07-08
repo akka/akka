@@ -30,7 +30,7 @@ import scala.compat.java8.FutureConverters._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy, logBufferFill: Boolean = false) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
+@InternalApi private[akka] final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
   import QueueSource._
 
   val out = Outlet[T]("queueSource.out")

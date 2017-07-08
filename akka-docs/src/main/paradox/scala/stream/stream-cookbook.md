@@ -48,7 +48,6 @@ Scala
 Java
 :   @@snip [RecipeLoggingElements.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #verbose-logging }
 
-
 ### Flattening a stream of sequences
 
 **Situation:** A stream is given as a stream of sequence of elements, but a stream of elements needed instead, streaming
