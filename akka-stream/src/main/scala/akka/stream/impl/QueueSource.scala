@@ -5,6 +5,8 @@ package akka.stream.impl
 
 import akka.stream.OverflowStrategies._
 import akka.stream._
+import akka.stream.Attributes._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.Done
@@ -28,13 +30,15 @@ import scala.compat.java8.FutureConverters._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy, logBufferFill: Boolean = false) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
+@InternalApi private[akka] final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
   import QueueSource._
 
   val out = Outlet[T]("queueSource.out")
   override val shape: SourceShape[T] = SourceShape.of(out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    val verboseLogging = inheritedAttributes.contains(VerboseLogging)
+
     val completion = Promise[Done]
     val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Input[T]] with OutHandler with StageLogging {
       var buffer: Buffer[T] = _
@@ -57,7 +61,7 @@ import scala.compat.java8.FutureConverters._
       private def enqueueAndSuccess(offer: Offer[T], skipLog: Boolean = false): Unit = {
         buffer.enqueue(offer.elem)
 
-        if (logBufferFill && !skipLog) {
+        if (verboseLogging && !skipLog) {
           // log buffer fill every 10% of capacity
           if (buffer.used % (maxBuffer / 10) == 0) {
             val logMsg = s"Queue is using [${100.0 * buffer.used / maxBuffer} %] of its buffer capacity."

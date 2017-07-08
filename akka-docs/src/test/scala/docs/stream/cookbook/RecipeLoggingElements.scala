@@ -1,8 +1,9 @@
 package docs.stream.cookbook
 
 import akka.event.Logging
-import akka.stream.Attributes
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.{ Attributes, OverflowStrategy }
+import akka.stream.scaladsl.{ Keep, Sink, Source, SourceQueueWithComplete }
+import akka.stream.testkit.TestSubscriber
 import akka.testkit.{ EventFilter, TestProbe }
 
 class RecipeLoggingElements extends RecipeSpec {
@@ -45,6 +46,24 @@ class RecipeLoggingElements extends RecipeSpec {
 
     }
 
+    "enable verbose logging" in {
+      val mySource = Source.queue[Int](100, OverflowStrategy.dropHead)
+      val s = TestSubscriber.manualProbe[Int]()
+
+      //#verbose-logging
+      // enable verbose logging in source stage
+      mySource.addAttributes(Attributes.verboseLogging)
+      //#verbose-logging
+
+      val queueSource: SourceQueueWithComplete[Int] =
+        mySource.addAttributes(Attributes.verboseLogging)
+          .toMat(Sink.fromSubscriber(s))(Keep.left).run()
+
+      EventFilter.warning(pattern = "Queue is using .* of its buffer capacity", occurrences = 6).intercept {
+        for (n ← 1 to 100) queueSource.offer(n)
+      }
+
+    }
   }
 
 }

@@ -212,6 +212,7 @@ object Attributes {
   final case class Name(n: String) extends Attribute
   final case class InputBuffer(initial: Int, max: Int) extends Attribute
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) extends Attribute
+  final case object VerboseLogging extends Attribute
   final case object AsyncBoundary extends Attribute
 
   object LogLevels {
@@ -227,6 +228,7 @@ object Attributes {
 
   val none: Attributes = Attributes()
 
+  val verboseLogging: Attributes = Attributes(VerboseLogging)
   val asyncBoundary: Attributes = Attributes(AsyncBoundary)
 
   /**

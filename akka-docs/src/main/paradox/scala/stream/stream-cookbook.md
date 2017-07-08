@@ -40,6 +40,15 @@ Scala
 Java
 :   @@snip [RecipeLoggingElements.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #log-custom }
 
+There are some cases were a stage may include verbose logging about its operations.  These logs can be enabled by adding `Attributes.verboseLogging` to the stage attributes.
+
+Scala
+:   @@snip [RecipeLoggingElements.scala]($code$/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #verbose-logging }
+
+Java
+:   @@snip [RecipeLoggingElements.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #verbose-logging }
+
+
 ### Flattening a stream of sequences
 
 **Situation:** A stream is given as a stream of sequence of elements, but a stream of elements needed instead, streaming

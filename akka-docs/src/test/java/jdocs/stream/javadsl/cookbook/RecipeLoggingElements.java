@@ -10,9 +10,16 @@ import akka.event.LoggingAdapter;
 import akka.stream.ActorMaterializer;
 import akka.stream.Attributes;
 import akka.stream.Materializer;
+import akka.stream.OverflowStrategy;
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.javadsl.SourceQueue;
+import akka.stream.javadsl.SourceQueueWithComplete;
+import akka.stream.testkit.TestSubscriber;
 import akka.testkit.DebugFilter;
+import akka.testkit.InfoFilter;
+import akka.testkit.WarningFilter;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
 import jdocs.stream.SilenceSystemOut;
@@ -93,5 +100,31 @@ public class RecipeLoggingElements extends RecipeTest {
       }
     };
   }
+  @Test
+  public void enableVerboseLogging() throws Exception {
+    new TestKit(system) {
+      {
+        final Source<Integer,SourceQueueWithComplete<Integer>> mySource = Source.<Integer>queue(100, OverflowStrategy.dropHead());
+        final TestSubscriber.Probe<Integer> s = TestSubscriber.probe(system);
 
+        //#verbose-logging
+        // enable verbose logging in source stage
+        mySource.addAttributes(Attributes.verboseLogging());
+        //#verbose-logging
+
+        final SourceQueueWithComplete<Integer> queueSource = 
+          mySource.addAttributes(Attributes.verboseLogging())
+            .toMat(Sink.fromSubscriber(s), Keep.left()).run(mat);
+
+        new WarningFilter(null, "Queue is using .* of its buffer capacity", true, false, 6).intercept(new AbstractFunction0<Object> () {
+          public Void apply() {
+            for(int i = 1; i <= 100; i++)
+              queueSource.offer(i);
+            return null;
+          }
+        }, system);
+      }
+    };
+  }
+  
 }
