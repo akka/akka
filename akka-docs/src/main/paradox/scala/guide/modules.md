@@ -159,8 +159,8 @@ Some of the challenges that HTTP tackles:
 
 The above is an incomplete list of all the available modules, but it gives a nice overview of the landscape of modules
 and the level of sophistication you can reach when you start building systems on top of Akka. All these modules
-integrate with together seamlessly. For example, take a large set of stateful business objects
-(a document, a shopping cart, etc) that is accessed by on-line users of your website. Model these as sharded
+integrate together seamlessly. For example, take a large set of stateful business objects
+(a document, a shopping cart, etc) that is accessed by on-line users from your website. Model these as sharded
 entities using Sharding and Persistence to keep them balanced across a cluster that you can scale out on-demand
 (for example during an advertising campaign before holidays) and keep them available even if some systems crash.
 Take the real-time stream of domain events of your business objects with Persistence Query and use Streams to pipe
@@ -168,4 +168,4 @@ it into a streaming BigData engine. Take the output of that engine as a Stream, 
 operators and expose it as web socket connections served by a load balanced set of HTTP servers hosted by your cluster
 to power your real-time business analytics tool.
 
-Hope this have gotten you interested? Keep on reading to learn more.
+Has this gotten you interested? Keep on reading to learn more.
