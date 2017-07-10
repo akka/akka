@@ -3,23 +3,23 @@
  */
 package akka.cluster
 
-import akka.Done
-import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.annotation.InternalApi
-import akka.cluster.ClusterEvent._
+import akka.actor.SupervisorStrategy.Stop
 import akka.cluster.MemberStatus._
-import akka.cluster.Gossip.vclockName
+import akka.cluster.ClusterEvent._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.Done
 import akka.pattern.ask
 import akka.remote.QuarantinedEvent
 import akka.util.Timeout
 
 import scala.collection.immutable
-import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
-import scala.language.existentials
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.util.control.NonFatal
+import language.existentials
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -267,6 +267,7 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
 private[cluster] object ClusterCoreDaemon {
   val NumberOfGossipsBeforeShutdownWhenLeaderExits = 5
   val MaxGossipsBeforeShuttingDownMyself = 5
+
 }
 
 /**
@@ -275,20 +276,20 @@ private[cluster] object ClusterCoreDaemon {
 @InternalApi
 private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with ActorLogging
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-  import ClusterCoreDaemon._
   import InternalClusterAction._
+  import ClusterCoreDaemon._
   import MembershipState._
 
   val cluster = Cluster(context.system)
-  import cluster.InfoLogger._
+  import cluster.{ selfAddress, selfRoles, scheduler, failureDetector }
   import cluster.settings._
-  import cluster.{ failureDetector, scheduler, selfAddress, selfRoles }
+  import cluster.InfoLogger._
 
   val selfDc = cluster.selfDataCenter
 
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
-  val vclockNode = VectorClock.Node(vclockName(selfUniqueAddress))
+  val vclockNode = VectorClock.Node(Gossip.vclockName(selfUniqueAddress))
   val gossipTargetSelector = new GossipTargetSelector(
     ReduceGossipDifferentViewProbability,
     cluster.settings.MultiDataCenter.CrossDcGossipProbability)
@@ -725,8 +726,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def downing(address: Address): Unit = {
     val localGossip = latestGossip
     val localMembers = localGossip.members
-    val localOverview = localGossip.overview
-    val localSeen = localOverview.seen
     val localReachability = membershipState.dcReachability
 
     // check if the node to DOWN is in the `members` set
@@ -835,14 +834,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           val prunedLocalGossip = localGossip.members.foldLeft(localGossip) { (g, m) ⇒
             if (removeUnreachableWithMemberStatus(m.status) && !remoteGossip.members.contains(m)) {
               log.debug("Cluster Node [{}] - Pruned conflicting local gossip: {}", selfAddress, m)
-              g.prune(VectorClock.Node(vclockName(m.uniqueAddress)))
+              g.prune(VectorClock.Node(Gossip.vclockName(m.uniqueAddress)))
             } else
               g
           }
           val prunedRemoteGossip = remoteGossip.members.foldLeft(remoteGossip) { (g, m) ⇒
             if (removeUnreachableWithMemberStatus(m.status) && !localGossip.members.contains(m)) {
               log.debug("Cluster Node [{}] - Pruned conflicting remote gossip: {}", selfAddress, m)
-              g.prune(VectorClock.Node(vclockName(m.uniqueAddress)))
+              g.prune(VectorClock.Node(Gossip.vclockName(m.uniqueAddress)))
             } else
               g
           }
@@ -1259,8 +1258,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
  * that other seed node to join existing cluster.
  */
 private[cluster] final class FirstSeedNodeProcess(seedNodes: immutable.IndexedSeq[Address]) extends Actor with ActorLogging {
-  import ClusterUserAction.JoinTo
   import InternalClusterAction._
+  import ClusterUserAction.JoinTo
 
   val cluster = Cluster(context.system)
   import cluster.InfoLogger._
@@ -1337,8 +1336,8 @@ private[cluster] final class FirstSeedNodeProcess(seedNodes: immutable.IndexedSe
  *
  */
 private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq[Address]) extends Actor with ActorLogging {
-  import ClusterUserAction.JoinTo
   import InternalClusterAction._
+  import ClusterUserAction.JoinTo
 
   def selfAddress = Cluster(context.system).selfAddress
 
