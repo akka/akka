@@ -212,6 +212,9 @@ object Attributes {
   final case class Name(n: String) extends Attribute
   final case class InputBuffer(initial: Int, max: Int) extends Attribute
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) extends Attribute
+  /**
+   * Enable verbose logging, if such logging is supported within the stage.
+   */
   final case object VerboseLogging extends Attribute
   final case object AsyncBoundary extends Attribute
 
@@ -228,6 +231,15 @@ object Attributes {
 
   val none: Attributes = Attributes()
 
+  /**
+   * Enable verbose logging, if such logging is supported within the stage.  
+   * 
+   * Some stages may include verbose logging about their operations that may be useful
+   * when debugging unexpected behavior, in either passing elements or the state of buffers.
+   * 
+   * As this can generate a significant amount of logs, this attribute is not intended for
+   * standard production use.
+   */
   val verboseLogging: Attributes = Attributes(VerboseLogging)
   val asyncBoundary: Attributes = Attributes(AsyncBoundary)
 
