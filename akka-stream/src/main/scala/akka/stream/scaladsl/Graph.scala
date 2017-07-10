@@ -1292,7 +1292,7 @@ object GraphDSL extends GraphApply {
 
     @tailrec
     private[stream] def findOut[I, O](b: Builder[_], junction: UniformFanOutShape[I, O], n: Int): Outlet[O] = {
-      if (n == junction.outArray.length)
+      if (n == junction.outSeq.length)
         throw new IllegalArgumentException(s"no more outlets free on $junction")
       else if (!b.traversalBuilder.isUnwired(junction.out(n))) findOut(b, junction, n + 1)
       else junction.out(n)
@@ -1363,7 +1363,7 @@ object GraphDSL extends GraphApply {
 
       def <~[In](junction: UniformFanOutShape[In, T])(implicit b: Builder[_]): ReversePortOps[In] = {
         def bind(n: Int): Unit = {
-          if (n == junction.outArray.length)
+          if (n == junction.outSeq.length)
             throw new IllegalArgumentException(s"no more outlets free on $junction")
           else if (!b.traversalBuilder.isUnwired(junction.out(n))) bind(n + 1)
           else b.addEdge(junction.out(n), importAndGetPortReverse(b))

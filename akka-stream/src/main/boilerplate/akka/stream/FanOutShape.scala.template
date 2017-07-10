@@ -59,8 +59,10 @@ class UniformFanOutShape[-I, +O](n: Int, _init: FanOutShape.Init[I @uncheckedVar
   override protected def construct(init: FanOutShape.Init[I @uncheckedVariance]): FanOutShape[I] = new UniformFanOutShape(n, init)
   override def deepCopy(): UniformFanOutShape[I, O] = super.deepCopy().asInstanceOf[UniformFanOutShape[I, O]]
   
-  val outArray: Array[Outlet[O @uncheckedVariance]] = Array.tabulate(n)(i => newOutlet[O](s"out$i"))
-  def out(n: Int): Outlet[O @uncheckedVariance] = outArray(n)
+  val outSeq: immutable.IndexedSeq[Outlet[O @uncheckedVariance]] = Vector.tabulate(n)(i => newOutlet[O](s"out$i"))
+  @deprecated("outArray is deprecated; use outSeq instead", "2.5.3")
+  val outArray: Array[Outlet[O @uncheckedVariance]] = outSeq.toArray
+  def out(n: Int): Outlet[O @uncheckedVariance] = outSeq(n)
 }
 
 [2..#class FanOutShape1[-I, [#+O0#]](_init: FanOutShape.Init[I @uncheckedVariance]) extends FanOutShape[I](_init) {
