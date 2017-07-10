@@ -12,4 +12,6 @@ object Timeouts {
 
   def defaultTimeoutMillis: Int = 800
 
+  def defaultNoSignalsTimeoutMillis: Int = 200
+
 }
