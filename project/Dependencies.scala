@@ -60,7 +60,7 @@ object Dependencies {
     val sigar         = "org.fusesource"              % "sigar"                        % "1.6.4"       // ApacheV2
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.0" // CC0
+    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.0" // CC0 // TODO update to 1.0.1 once it's released, we don't want to ship artifacts depending on RCs
 
     // ssl-config
     val sslConfigCore = "com.typesafe"                %% "ssl-config-core"             % sslConfigVersion // ApacheV2
@@ -111,7 +111,7 @@ object Dependencies {
       val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % slf4jVersion    % "test"    // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.0" % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.1-RC1" % "test" // CC0
     }
 
     object Provided {
