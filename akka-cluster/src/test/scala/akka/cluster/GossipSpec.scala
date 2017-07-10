@@ -7,7 +7,7 @@ package akka.cluster
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor.Address
-import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.Gossip.vclockName
 import akka.cluster.ClusterSettings.DefaultDataCenter
 
 import scala.collection.immutable.SortedSet
@@ -354,9 +354,13 @@ class GossipSpec extends WordSpec with Matchers {
     "not reintroduce members from out-of data center gossip when merging" in {
       // dc1 does not know about any unreachability nor that the node has been downed
       val gdc1 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1))
+        .seen(dc1b1.uniqueAddress)
+        .seen(dc2c1.uniqueAddress)
+        .:+(VectorClock.Node(vclockName(dc2d1.uniqueAddress))) // just to make sure these are also pruned
 
       // dc2 has downed the dc2d1 node, seen it as unreachable and removed it
       val gdc2 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1))
+        .seen(dc1a1.uniqueAddress)
         .remove(dc2d1.uniqueAddress, System.currentTimeMillis())
 
       gdc2.tombstones.keys should contain(dc2d1.uniqueAddress)
@@ -372,7 +376,7 @@ class GossipSpec extends WordSpec with Matchers {
       merged1.members should not contain (dc2d1)
       merged1.overview.reachability.records.filter(r ⇒ r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
       merged1.overview.reachability.versions.keys should not contain (dc2d1.uniqueAddress)
-
+      merged1.version.versions.keys should not contain (VectorClock.Node(vclockName(dc2d1.uniqueAddress)))
     }
 
     "prune old tombstones" in {

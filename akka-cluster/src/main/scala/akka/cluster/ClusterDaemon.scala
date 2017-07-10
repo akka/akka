@@ -3,31 +3,23 @@
  */
 package akka.cluster
 
-import language.existentials
-import scala.collection.{ SortedSet, breakOut, immutable, mutable }
-import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
-
-import scala.util.control.NonFatal
-import akka.actor._
-import akka.actor.SupervisorStrategy.Stop
-import akka.cluster.MemberStatus._
-import akka.cluster.ClusterEvent._
-import akka.cluster.ClusterSettings.DataCenter
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.remote.QuarantinedEvent
-import java.util.ArrayList
-import java.util.Collections
-
-import akka.pattern.ask
-import akka.util.Timeout
 import akka.Done
+import akka.actor.SupervisorStrategy.Stop
+import akka.actor._
 import akka.annotation.InternalApi
-import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.ClusterEvent._
+import akka.cluster.MemberStatus._
+import akka.cluster.Gossip.vclockName
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.pattern.ask
+import akka.remote.QuarantinedEvent
+import akka.util.Timeout
 
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.util.Random
+import scala.collection.immutable
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration._
+import scala.language.existentials
+import scala.util.control.NonFatal
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -235,7 +227,6 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
  */
 private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLogging
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-  import InternalClusterAction._
 
   // Important - don't use Cluster(context.system) in constructor because that would
   // cause deadlock. The Cluster extension is currently being created and is waiting
@@ -274,11 +265,8 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
  */
 @InternalApi
 private[cluster] object ClusterCoreDaemon {
-  def vclockName(node: UniqueAddress): String = s"${node.address}-${node.longUid}"
-
   val NumberOfGossipsBeforeShutdownWhenLeaderExits = 5
   val MaxGossipsBeforeShuttingDownMyself = 5
-
 }
 
 /**
@@ -287,14 +275,14 @@ private[cluster] object ClusterCoreDaemon {
 @InternalApi
 private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with ActorLogging
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-  import InternalClusterAction._
   import ClusterCoreDaemon._
+  import InternalClusterAction._
   import MembershipState._
 
   val cluster = Cluster(context.system)
-  import cluster.{ selfAddress, selfRoles, scheduler, failureDetector }
-  import cluster.settings._
   import cluster.InfoLogger._
+  import cluster.settings._
+  import cluster.{ failureDetector, scheduler, selfAddress, selfRoles }
 
   val selfDc = cluster.selfDataCenter
 
@@ -1271,8 +1259,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
  * that other seed node to join existing cluster.
  */
 private[cluster] final class FirstSeedNodeProcess(seedNodes: immutable.IndexedSeq[Address]) extends Actor with ActorLogging {
-  import InternalClusterAction._
   import ClusterUserAction.JoinTo
+  import InternalClusterAction._
 
   val cluster = Cluster(context.system)
   import cluster.InfoLogger._
@@ -1349,8 +1337,8 @@ private[cluster] final class FirstSeedNodeProcess(seedNodes: immutable.IndexedSe
  *
  */
 private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq[Address]) extends Actor with ActorLogging {
-  import InternalClusterAction._
   import ClusterUserAction.JoinTo
+  import InternalClusterAction._
 
   def selfAddress = Cluster(context.system).selfAddress
 

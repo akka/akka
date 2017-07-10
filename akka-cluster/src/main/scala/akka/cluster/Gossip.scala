@@ -22,6 +22,8 @@ private[cluster] object Gossip {
   def apply(members: immutable.SortedSet[Member]) =
     if (members.isEmpty) empty else empty.copy(members = members)
 
+  def vclockName(node: UniqueAddress): String = s"${node.address}-${node.longUid}"
+
 }
 
 /**
@@ -150,11 +152,14 @@ private[cluster] final case class Gossip(
    */
   def merge(that: Gossip): Gossip = {
 
-    // 1. merge vector clocks
-    val mergedVClock = this.version merge that.version
-
-    // 2. merge sets of tombstones
+    // 1. merge sets of tombstones
     val mergedTombstones = tombstones ++ that.tombstones
+    val newTombstonedNodes = mergedTombstones.keySet diff that.tombstones.keySet
+
+    // 2. merge vector clocks (but remove entries for tombstoned nodes)
+    val mergedVClock = newTombstonedNodes.foldLeft(this.version merge that.version) { (vclock, node) ⇒
+      vclock.prune(VectorClock.Node(Gossip.vclockName(node)))
+    }
 
     // 2. merge members by selecting the single Member with highest MemberStatus out of the Member groups
     val mergedMembers = Gossip.emptyMembers union Member.pickHighestPriority(this.members, that.members, mergedTombstones)
@@ -228,7 +233,7 @@ private[cluster] final case class Gossip(
     // and will propagate as is if there are no other changes on other nodes.
     // If other concurrent changes on other nodes (e.g. join) the pruning is also
     // taken care of when receiving gossips.
-    val newVersion = version.prune(VectorClock.Node(ClusterCoreDaemon.vclockName(node)))
+    val newVersion = version.prune(VectorClock.Node(Gossip.vclockName(node)))
     val newMembers = members.filterNot(_.uniqueAddress == node)
     val newTombstones = tombstones + (node → removalTimestamp)
     copy(version = newVersion, members = newMembers, overview = newOverview, tombstones = newTombstones)
