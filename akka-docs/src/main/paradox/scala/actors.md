@@ -851,7 +851,7 @@ That has benefits such as:
 The `Receive` can be implemented in other ways than using the `ReceiveBuilder` since it in the
 end is just a wrapper around a Scala `PartialFunction`. In Java, you can implement `PartialFunction` by
 extending `AbstractPartialFunction`. For example, one could implement an adapter
-to [Javaslang Pattern Matching DSL](http://www.javaslang.io/javaslang-jdocs/#_pattern_matching).
+to [Vavr Pattern Matching DSL](http://www.vavr.io/vavr-docs/#_pattern_matching).
 
 If the validation of the `ReceiveBuilder` match logic turns out to be a bottleneck for some of your
 actors you can consider to implement it at lower level by extending `UntypedAbstractActor` instead
