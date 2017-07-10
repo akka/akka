@@ -232,11 +232,11 @@ object Attributes {
   val none: Attributes = Attributes()
 
   /**
-   * Enable verbose logging, if such logging is supported within the stage.  
-   * 
+   * Enable verbose logging, if such logging is supported within the stage.
+   *
    * Some stages may include verbose logging about their operations that may be useful
    * when debugging unexpected behavior, in either passing elements or the state of buffers.
-   * 
+   *
    * As this can generate a significant amount of logs, this attribute is not intended for
    * standard production use.
    */
