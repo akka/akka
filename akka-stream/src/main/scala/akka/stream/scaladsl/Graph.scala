@@ -215,7 +215,7 @@ final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolea
 
     override def preStart(): Unit = {
       tryPull(preferred)
-      shape.inSeq.foreach(tryPull)
+      shape.inlets.foreach(tryPull)
     }
 
     setHandler(out, eagerTerminateOutput)
@@ -961,7 +961,7 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] ⇒ O)(n: Int) extends GraphStage[
   override def initialAttributes = DefaultAttributes.zipWithN
   override val shape = new UniformFanInShape[A, O](n)
   def out = shape.out
-  val inSeq = shape.inSeq
+  val inlets = shape.inlets
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
     var pending = 0
@@ -972,16 +972,16 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] ⇒ O)(n: Int) extends GraphStage[
     val pullInlet = pull[A] _
 
     private def pushAll(): Unit = {
-      push(out, zipper(inSeq.map(grabInlet)))
+      push(out, zipper(inlets.map(grabInlet)))
       if (willShutDown) completeStage()
-      else inSeq.foreach(pullInlet)
+      else inlets.foreach(pullInlet)
     }
 
     override def preStart(): Unit = {
-      inSeq.foreach(pullInlet)
+      inlets.foreach(pullInlet)
     }
 
-    inSeq.foreach(in ⇒ {
+    inlets.foreach(in ⇒ {
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           pending -= 1
@@ -1292,7 +1292,7 @@ object GraphDSL extends GraphApply {
 
     @tailrec
     private[stream] def findOut[I, O](b: Builder[_], junction: UniformFanOutShape[I, O], n: Int): Outlet[O] = {
-      if (n == junction.outSeq.length)
+      if (n == junction.numberOfOutlets)
         throw new IllegalArgumentException(s"no more outlets free on $junction")
       else if (!b.traversalBuilder.isUnwired(junction.out(n))) findOut(b, junction, n + 1)
       else junction.out(n)
@@ -1300,7 +1300,7 @@ object GraphDSL extends GraphApply {
 
     @tailrec
     private[stream] def findIn[I, O](b: Builder[_], junction: UniformFanInShape[I, O], n: Int): Inlet[I] = {
-      if (n == junction.inSeq.length)
+      if (n == junction.numberOfInlets)
         throw new IllegalArgumentException(s"no more inlets free on $junction")
       else if (!b.traversalBuilder.isUnwired(junction.in(n))) findIn(b, junction, n + 1)
       else junction.in(n)
@@ -1320,7 +1320,7 @@ object GraphDSL extends GraphApply {
 
       def ~>[Out](junction: UniformFanInShape[T, Out])(implicit b: Builder[_]): PortOps[Out] = {
         def bind(n: Int): Unit = {
-          if (n == junction.inSeq.length)
+          if (n == junction.numberOfInlets)
             throw new IllegalArgumentException(s"no more inlets free on $junction")
           else if (!b.traversalBuilder.isUnwired(junction.in(n))) bind(n + 1)
           else b.addEdge(importAndGetPort(b), junction.in(n))
@@ -1363,7 +1363,7 @@ object GraphDSL extends GraphApply {
 
       def <~[In](junction: UniformFanOutShape[In, T])(implicit b: Builder[_]): ReversePortOps[In] = {
         def bind(n: Int): Unit = {
-          if (n == junction.outSeq.length)
+          if (n == junction.outlets.length)
             throw new IllegalArgumentException(s"no more outlets free on $junction")
           else if (!b.traversalBuilder.isUnwired(junction.out(n))) bind(n + 1)
           else b.addEdge(junction.out(n), importAndGetPortReverse(b))
