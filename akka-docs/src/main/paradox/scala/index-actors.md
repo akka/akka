@@ -16,7 +16,6 @@
 * [persistence-query](persistence-query.md)
 * [persistence-query-leveldb](persistence-query-leveldb.md)
 * [testing](testing.md)
-* [actordsl](actordsl.md)
 * [typed-actors](typed-actors.md)
 
 @@@
