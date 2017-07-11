@@ -339,14 +339,20 @@ class GossipSpec extends WordSpec with Matchers {
     // TODO test coverage for when leaderOf returns None - I have not been able to figure it out
 
     "clear out a bunch of stuff when removing a node" in {
-      val g = Gossip(members = SortedSet(dc1a1, dc1b1, dc2d2))
+      val g = Gossip(
+        members = SortedSet(dc1a1, dc1b1, dc2d2),
+        overview = GossipOverview(reachability =
+          Reachability.empty
+            .unreachable(dc1b1.uniqueAddress, dc2d2.uniqueAddress)
+            .unreachable(dc2d2.uniqueAddress, dc1b1.uniqueAddress)
+        ))
         .:+(VectorClock.Node(Gossip.vclockName(dc1b1.uniqueAddress)))
         .:+(VectorClock.Node(Gossip.vclockName(dc2d2.uniqueAddress)))
         .remove(dc1b1.uniqueAddress, System.currentTimeMillis())
 
       g.seenBy should not contain (dc1b1.uniqueAddress)
-      g.overview.reachability.records.exists(_.observer == dc1b1.uniqueAddress) should be(false)
-      g.overview.reachability.records.exists(_.subject == dc1b1.uniqueAddress) should be(false)
+      g.overview.reachability.records.map(_.observer) should not contain (dc1b1.uniqueAddress)
+      g.overview.reachability.records.map(_.subject) should not contain (dc1b1.uniqueAddress)
 
       // sort order should be kept
       g.members.toList should ===(List(dc1a1, dc2d2))
