@@ -86,9 +86,7 @@ import scala.util.Random
    *        but including observed unreachable nodes outside of the data center
    */
   lazy val dcReachabilityWithoutObservationsWithin: Reachability =
-    dcReachability.filterRecords { r ⇒
-      latestGossip.member(r.observer).dataCenter != selfDc || latestGossip.member(r.subject).dataCenter != selfDc
-    }
+    dcReachability.filterRecords { r ⇒ latestGossip.member(r.subject).dataCenter != selfDc }
 
   /**
    * @return reachability for data center nodes, with observations from outside the data center or from downed nodes filtered out
