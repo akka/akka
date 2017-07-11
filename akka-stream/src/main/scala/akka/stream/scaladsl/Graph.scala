@@ -877,9 +877,9 @@ object ZipWith extends ZipWithApply
  *
  * An `Unzip` has one `in` port and one `left` and one `right` output port.
  *
- * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ * '''Emits when''' all of the outputs stop backpressuring and there is an input element available
  *
- * '''Backpressures when''' any of the outputs backpressures
+ * '''Backpressures when''' any of the outputs backpressure
  *
  * '''Completes when''' upstream completes
  *
@@ -893,7 +893,17 @@ object Unzip {
 }
 
 /**
- * Combine the elements of multiple streams into a stream of the combined elements.
+ * Takes a stream of pair elements and splits each pair to two output streams.
+ *
+ * An `Unzip` has one `in` port and one `left` and one `right` output port.
+ *
+ * '''Emits when''' all of the outputs stop backpressuring and there is an input element available
+ *
+ * '''Backpressures when''' any of the outputs backpressure
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' any downstream cancels
  */
 final class Unzip[A, B]() extends UnzipWith2[(A, B), A, B](ConstantFun.scalaIdentityFunction) {
   override def toString = "Unzip"
@@ -902,9 +912,9 @@ final class Unzip[A, B]() extends UnzipWith2[(A, B), A, B](ConstantFun.scalaIden
 /**
  * Transforms each element of input stream into multiple streams using a splitter function.
  *
- * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
+ * '''Emits when''' all of the outputs stop backpressuring and there is an input element available
  *
- * '''Backpressures when''' any of the outputs backpressures
+ * '''Backpressures when''' any of the outputs backpressure
  *
  * '''Completes when''' upstream completes
  *
