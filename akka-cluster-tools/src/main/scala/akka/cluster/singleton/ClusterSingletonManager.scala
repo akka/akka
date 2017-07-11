@@ -5,6 +5,7 @@
 package akka.cluster.singleton
 
 import com.typesafe.config.Config
+
 import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.actor.Actor
@@ -25,9 +26,11 @@ import akka.AkkaException
 import akka.actor.NoSerializationVerificationNeeded
 import akka.cluster.UniqueAddress
 import akka.cluster.ClusterEvent
+
 import scala.concurrent.Promise
 import akka.Done
 import akka.actor.CoordinatedShutdown
+import akka.annotation.DoNotInherit
 import akka.pattern.ask
 import akka.util.Timeout
 
@@ -394,6 +397,8 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * Use factory method [[ClusterSingletonManager#props]] to create the
  * [[akka.actor.Props]] for the actor.
  *
+ * Not intended for subclassing by user code.
+ *
  *
  * @param singletonProps [[akka.actor.Props]] of the singleton actor instance.
  *
@@ -407,6 +412,7 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *
  * @param settings see [[ClusterSingletonManagerSettings]]
  */
+@DoNotInherit
 class ClusterSingletonManager(
   singletonProps:     Props,
   terminationMessage: Any,
