@@ -94,11 +94,11 @@ first ! "stop"
 
   "supervise actors" in {
     // format: OFF
-    //#supervise
+    //#supervise-main
 
 val supervisingActor = system.actorOf(Props[SupervisingActor], "supervising-actor")
 supervisingActor ! "failChild"
-    //#supervise
+    //#supervise-main
     // format: ON
   }
 }

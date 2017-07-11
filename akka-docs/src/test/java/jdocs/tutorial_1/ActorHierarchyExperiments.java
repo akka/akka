@@ -154,9 +154,9 @@ class ActorHierarchyExperimentsTest extends JUnitSuite {
 
   @Test
   public void testSuperviseActors() {
-    //#supervise
+    //#supervise-main
     ActorRef supervisingActor = system.actorOf(Props.create(SupervisingActor.class), "supervising-actor");
     supervisingActor.tell("failChild", ActorRef.noSender());
-    //#supervise
+    //#supervise-main
   }
 }

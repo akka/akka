@@ -100,7 +100,7 @@ Parents and children are connected throughout their lifecycles. Whenever an acto
 to the parent, which then decides how to handle the exception caused by the child actor. In this way, parents act as supervisors for their children. The default _supervisor strategy_ is to
 stop and restart the child. If you don't change the default strategy all failures result in a restart.
 
-Let's observe the default strategy in a simple experiment. Add the following code to your `ActorQuickstart` source file, just as you did with the previous snippets:
+Let's observe the default strategy in a simple experiment. Add the following classes to your project, just as you did with the previous ones:
 
 Scala
 :   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #supervise }
@@ -108,7 +108,15 @@ Scala
 Java
 :   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #supervise }
 
-After running the snippet, you should see output similar to the following:
+And run with:
+
+Scala
+:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #supervise-main }
+
+Java
+:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #supervise-main }
+
+You should see output similar to the following:
 
 ```
 supervised actor started
