@@ -305,27 +305,38 @@ object ClusterEvent {
       }(collection.breakOut)
     }
 
+  private def isReachable(state: MembershipState, oldUnreachableNodes: Set[UniqueAddress])(otherDc: DataCenter): Boolean = {
+    val unrelatedDcNodes = state.latestGossip.members.collect {
+      case m if m.dataCenter != otherDc && m.dataCenter != state.selfDc ⇒ m.uniqueAddress
+    }
+
+    val reachabilityForOtherDc = state.dcReachabilityWithoutObservationsWithin.remove(unrelatedDcNodes)
+    reachabilityForOtherDc.allUnreachable.filterNot(oldUnreachableNodes).isEmpty
+  }
+
   /**
    * INTERNAL API
    */
   private[cluster] def diffUnreachableDataCenter(oldState: MembershipState, newState: MembershipState): immutable.Seq[UnreachableDataCenter] = {
-    if (oldState eq newState) Nil
+    if (newState eq oldState) Nil
     else {
-      val oldGossip = oldState.latestGossip
-      val oldUnreachableNodes = oldState.dcReachability.allUnreachableOrTerminated
-      val newGossip = newState.latestGossip
+      val otherDcs = (oldState.latestGossip.allDataCenters union newState.latestGossip.allDataCenters) - newState.selfDc
+      otherDcs.filterNot(isReachable(newState, oldState.dcReachability.allUnreachableOrTerminated)).map(UnreachableDataCenter)(collection.breakOut)
+    }
+  }
 
-      def isReachable(otherDc: DataCenter): Boolean = {
-        val unrelatedDcNodes = newGossip.members.collect {
-          case m if m.dataCenter != otherDc && m.dataCenter != newState.selfDc ⇒ m.uniqueAddress
-        }
+  /**
+   * INTERNAL API
+   */
+  private[cluster] def diffReachableDataCenter(oldState: MembershipState, newState: MembershipState): immutable.Seq[ReachableDataCenter] = {
+    if (newState eq oldState) Nil
+    else {
+      val otherDcs = (oldState.latestGossip.allDataCenters union newState.latestGossip.allDataCenters) - newState.selfDc
 
-        val reachabilityForOtherDc = newState.dcReachabilityWithoutObservationsWithin.remove(unrelatedDcNodes)
-        reachabilityForOtherDc.allUnreachable.filterNot(oldUnreachableNodes).isEmpty
-      }
+      val oldUnreachableDcs = otherDcs.filterNot(isReachable(oldState, Set()))
+      val currentUnreachableDcs = otherDcs.filterNot(isReachable(newState, Set()))
 
-      val otherDcs = (oldGossip.allDataCenters union newGossip.allDataCenters) - newState.selfDc
-      otherDcs.filterNot(isReachable).map(UnreachableDataCenter)(collection.breakOut)
+      (oldUnreachableDcs diff currentUnreachableDcs).map(ReachableDataCenter)(collection.breakOut)
     }
   }
 
