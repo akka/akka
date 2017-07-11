@@ -22,7 +22,7 @@ The code is similar to the actor examples we used in the previous experiments, b
 * Instead of `println()` we use @scala[the `ActorLogging` helper trait] @java[`akka.event.Logging`], which directly invokes Akka's built in logging facility.
 * We use the recommended pattern for creating actors by defining a `props()` @scala[method in the [companion object](http://docs.scala-lang.org/tutorials/tour/singleton-objects.html#companions) of] @java[static method on] the actor.
 
-To provide the `main` entry point that creates the actor system, add the following code to the new `IotApp` source file.
+To provide the `main` entry point that creates the actor system, add the following code to the new `IotApp` @scala[companion object]@java[class].
 
 Scala
 :   @@snip [IotApp.scala]($code$/scala/tutorial_2/IotApp.scala) { #iot-app }

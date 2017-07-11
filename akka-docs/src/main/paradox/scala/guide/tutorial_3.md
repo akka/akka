@@ -129,13 +129,13 @@ Java
 
 Note in the code that:
 
-* The helper object defines how to construct a `Device` actor. The `props` parameters include an ID for the device and the group to which it belongs, which we will use later.
-* The helper object includes the definitions of the messages we reasoned about previously.
+* The @scala[companion object]@java[static method] defines how to construct a `Device` actor. The `props` parameters include an ID for the device and the group to which it belongs, which we will use later.
+* The @scala[companion object]@java[class] includes the definitions of the messages we reasoned about previously.
 * In the `Device` class, the value of `lastTemperatureReading` is initially set to @scala[`None`]@java[`Optional.empty()`], and the actor will simply report it back if queried.
 
 ## Testing the actor
 
-Based on the simple actor above, we could write a simple test. In the `\test\scala\com\lightbend\akka\sample` directory of your project, add the following code to a `DeviceSpec.scala` file.
+Based on the simple actor above, we could write a simple test. In the `akka.sample` package in the test tree of your project, add the following code to a @scala[`DeviceSpec.scala`]@java[`DeviceTest.java`] file.
 @scala[(We use ScalaTest but any other test framework can be used with the Akka Testkit)].
 
 You can run this test @java[by running `mvn test` or] by running `test` at the sbt prompt.
