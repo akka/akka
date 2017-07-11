@@ -3,6 +3,7 @@
 Before delving into some best practices for writing actors, it will be helpful to preview the most commonly used Akka libraries. This will help you start thinking about the functionality you want to use in your system. All core Akka functionality is available as Open Source Software (OSS). Lightbend sponsors Akka development but can also help you with [commercial offerings ](https://www.lightbend.com/platform/subscription) such as training, consulting, support, and [Enterprise Suite](https://www.lightbend.com/platform/production) &#8212; a comprehensive set of tools for managing Akka systems.
 
 The following capabilities are included with Akka OSS and are introduced later on this page:
+
 * [Actor library](#actor-library)
 * [Remoting](#remoting)
 * [Cluster](#cluster)
@@ -14,6 +15,7 @@ The following capabilities are included with Akka OSS and are introduced later o
 * [HTTP](#http)
 
 With a Lightbend subscription, you can use [Enterprise Suite](https://www.lightbend.com/platform/production) in production. Enterprise Suite includes the following extensions to Akka core functionality:
+
 * [Split Brain Resolver](https://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html) &#8212; Detects and recovers from network partitions, eliminating data inconsistencies and possible downtime.
 * [Configuration Checker](https://developer.lightbend.com/docs/akka-commercial-addons/current/config-checker.html) &#8212; Checks for potential configuration issues and logs suggestions.
 * [Diagnostics Recorder](https://developer.lightbend.com/docs/akka-commercial-addons/current/diagnostics-recorder.html) &#8212; Captures configuration and system information in a format that makes it easy to troubleshoot issues during development and production.
