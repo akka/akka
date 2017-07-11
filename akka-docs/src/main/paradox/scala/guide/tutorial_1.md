@@ -18,16 +18,13 @@ In fact, before you create an actor in your code, Akka has already created three
    you, it has nothing to do with end users, nor with user handling. Every actor you create using the Akka library will have the constant path `/user/` prepended to it.
  - `/system` the _system guardian_.
 
-> Does the root guardian (the root path `/`) have a parent? As it turns out, it has. This special entity is called
-> the "Bubble-Walker". This special entity is internal and is invisible to you.
-
 In the Hello World example, we have already seen how `system.actorOf()`, creates an actor directly under `/user`. We call this a _top level_ actor, even though, in practice it is only on the top of the
 _user defined_ hierarchy. We create child, or non-top-level, actors by invoking `context.actorOf()` from an existing actor. The `context.actorOf()` method has a signature identical to `system.actorOf()`, its top-level counterpart.
 
 The easiest way to see the actor hierarchy in action is to simply print `ActorRef` instances. In this small experiment, we create an actor, print its reference, create a child of this actor, and print the child's reference. We start with the Hello World project, if you have not downloaded it, download the Quickstart project from the @scala[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&project=akka-quickstart-scala)]@java[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&project=akka-quickstart-java)].
 
 
-In your Hello World project, navigate to the @scala[`src\main\scala\com\lightbend\akka\sample\`]@java[`src\main\java\com\lightbend\akka\sample`] directory and create a new @scala[Scala]@java[Java] file here. Copy and paste the code from the snippet below to this new source file. Save your file and run `sbt` to observe the output.
+In your Hello World project, navigate to the `akka.sample` package and create a new @scala[Scala]@java[Java] file here. Copy and paste the code from the snippet below to this new source file. Save your file and run `sbt` to observe the output.
 
 Scala
 :   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #print-refs }
