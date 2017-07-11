@@ -312,6 +312,7 @@ object ClusterEvent {
     if (oldState eq newState) Nil
     else {
       val oldGossip = oldState.latestGossip
+      val oldUnreachableNodes = oldState.dcReachability.allUnreachableOrTerminated
       val newGossip = newState.latestGossip
 
       def isReachable(otherDc: DataCenter): Boolean = {
@@ -320,7 +321,7 @@ object ClusterEvent {
         }
 
         val reachabilityForOtherDc = newState.dcReachabilityWithoutObservationsWithin.remove(unrelatedDcNodes)
-        reachabilityForOtherDc.isAllReachable
+        reachabilityForOtherDc.allUnreachable.filterNot(oldUnreachableNodes).isEmpty
       }
 
       val otherDcs = (oldGossip.allDataCenters union newGossip.allDataCenters) - newState.selfDc

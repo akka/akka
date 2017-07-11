@@ -111,9 +111,29 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
           else Seq()
 
         diffUnreachableDataCenter(
-          MembershipState(g1, member.uniqueAddress, member.dataCenter),
-          MembershipState(g2, member.uniqueAddress, member.dataCenter)) should ===(unreachableDc)
+          MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5),
+          MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(unreachableDc)
       }
+    }
+
+    "not be produced for unreachability seen a second time" in {
+      val dc2AMemberUp = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Up, Set.empty, "dc2")
+      val dc2AMemberDown = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Down, Set.empty, "dc2")
+
+      val reachability1 = Reachability.empty
+      val g1 = Gossip(members = SortedSet(aUp, dc2AMemberUp), overview = GossipOverview(reachability = reachability1))
+
+      val reachability2 = reachability1
+        .unreachable(aUp.uniqueAddress, dc2AMemberDown.uniqueAddress)
+      val g2 = Gossip(members = SortedSet(aUp, dc2AMemberDown), overview = GossipOverview(reachability = reachability2))
+
+      diffUnreachableDataCenter(
+        MembershipState(g1, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5),
+        MembershipState(g2, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5)) should ===(Seq(UnreachableDataCenter("dc2")))
+
+      diffUnreachableDataCenter(
+        MembershipState(g2, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5),
+        MembershipState(g2, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5)) should ===(Seq())
     }
 
     "be produced for members becoming reachable after unreachable" in {
