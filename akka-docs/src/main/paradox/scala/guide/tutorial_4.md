@@ -106,7 +106,7 @@ Java
 
 @@@ note
 
-We used the `expectNoMsg()` helper method from @scala[`TestProbe`] @java[`TestKit`]. This assertion waits until the defined time-limit and fails if it receives any messages during this period. If no messages are received during the waiting period, the assertion passes. It is usually a good idea to keep these timeouts low (but not too low) because they add significant test execution time.
+We used the `expectNoMsg()` helper method from @scala[`TestProbe`]@java[`TestKit`]. This assertion waits until the defined time-limit and fails if it receives any messages during this period. If no messages are received during the waiting period, the assertion passes. It is usually a good idea to keep these timeouts low (but not too low) because they add significant test execution time.
 
 @@@
 
@@ -120,7 +120,7 @@ We are done with registration support at the device level, now we have to implem
 
 ### Handling the registration request
 
-A device group actor must either forward the request to an existing child, or it should create one. To look up child actors by their device IDs we will use a @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`].
+A device group actor must either forward the request to an existing child, or it should create one. To look up child actors by their device IDs we will use a @scala[`Map[String, ActorRef]`]@java[`Map<String, ActorRef>`].
 
 We also want to keep the the ID of the original sender of the request so that our device actor can reply directly. This is possible by using `forward` instead of the @scala[`!`] @java[`tell`] operator. The only difference between the two is that `forward` keeps the original
 sender while @scala[`!`] @java[`tell`] sets the sender to be the current actor. Just like with our device actor, we ensure that we don't respond to wrong group IDs. Add the following to your source file:

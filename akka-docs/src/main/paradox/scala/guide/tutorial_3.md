@@ -156,7 +156,7 @@ Scala
 Java
 :   @@snip [DeviceInProgress3.java]($code$/java/jdocs/tutorial_3/DeviceInProgress3.java) { #write-protocol-1 }
 
-However, this approach does not take into account that the sender of the record temperature message can never be sure if the message was processed or not. We have seen that Akka does not guarantee delivery of these messages and leaves it to the application to provide success notifications. In our case, we would like to send an acknowledgment to the sender once we have updated our last temperature recording, e.g. @scala[`final case class TemperatureRecorded(requestId: Long)`] @java[`TemperatureRecorded`].
+However, this approach does not take into account that the sender of the record temperature message can never be sure if the message was processed or not. We have seen that Akka does not guarantee delivery of these messages and leaves it to the application to provide success notifications. In our case, we would like to send an acknowledgment to the sender once we have updated our last temperature recording, e.g. @scala[`final case class TemperatureRecorded(requestId: Long)`]@java[`TemperatureRecorded`].
 Just like in the case of temperature queries and responses, it is a good idea to include an ID field to provide maximum flexibility.
 
 ## Actor with read and write messages
