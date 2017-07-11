@@ -1,3 +1,6 @@
+// Prevent package clashes with the Java examples:
+package docs.tutorial_1
+
 //#print-refs
 package com.lightbend.akka.sample
 
