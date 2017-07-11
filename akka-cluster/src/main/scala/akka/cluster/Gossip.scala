@@ -154,10 +154,9 @@ private[cluster] final case class Gossip(
 
     // 1. merge sets of tombstones
     val mergedTombstones = tombstones ++ that.tombstones
-    val newTombstonedNodes = mergedTombstones.keySet diff that.tombstones.keySet
 
     // 2. merge vector clocks (but remove entries for tombstoned nodes)
-    val mergedVClock = newTombstonedNodes.foldLeft(this.version merge that.version) { (vclock, node) ⇒
+    val mergedVClock = mergedTombstones.keys.foldLeft(this.version merge that.version) { (vclock, node) ⇒
       vclock.prune(VectorClock.Node(Gossip.vclockName(node)))
     }
 

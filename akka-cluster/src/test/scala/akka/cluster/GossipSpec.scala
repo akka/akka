@@ -339,16 +339,25 @@ class GossipSpec extends WordSpec with Matchers {
     // TODO test coverage for when leaderOf returns None - I have not been able to figure it out
 
     "clear out a bunch of stuff when removing a node" in {
-      val g = Gossip(members = SortedSet(dc1a1, dc1b1, dc2d2))
+      val g = Gossip(
+        members = SortedSet(dc1a1, dc1b1, dc2d2),
+        overview = GossipOverview(reachability =
+          Reachability.empty
+            .unreachable(dc1b1.uniqueAddress, dc2d2.uniqueAddress)
+            .unreachable(dc2d2.uniqueAddress, dc1b1.uniqueAddress)
+        ))
+        .:+(VectorClock.Node(Gossip.vclockName(dc1b1.uniqueAddress)))
+        .:+(VectorClock.Node(Gossip.vclockName(dc2d2.uniqueAddress)))
         .remove(dc1b1.uniqueAddress, System.currentTimeMillis())
 
       g.seenBy should not contain (dc1b1.uniqueAddress)
-      g.overview.reachability.records.exists(_.observer == dc1b1.uniqueAddress) should be(false)
-      g.overview.reachability.records.exists(_.subject == dc1b1.uniqueAddress) should be(false)
-      g.version.versions should have size (0)
+      g.overview.reachability.records.map(_.observer) should not contain (dc1b1.uniqueAddress)
+      g.overview.reachability.records.map(_.subject) should not contain (dc1b1.uniqueAddress)
 
       // sort order should be kept
       g.members.toList should ===(List(dc1a1, dc2d2))
+      g.version.versions.keySet should not contain (VectorClock.Node(Gossip.vclockName(dc1b1.uniqueAddress)))
+      g.version.versions.keySet should contain(VectorClock.Node(Gossip.vclockName(dc2d2.uniqueAddress)))
     }
 
     "not reintroduce members from out-of data center gossip when merging" in {
@@ -377,6 +386,35 @@ class GossipSpec extends WordSpec with Matchers {
       merged1.overview.reachability.records.filter(r ⇒ r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
       merged1.overview.reachability.versions.keys should not contain (dc2d1.uniqueAddress)
       merged1.version.versions.keys should not contain (VectorClock.Node(vclockName(dc2d1.uniqueAddress)))
+    }
+
+    "correctly prune vector clocks based on tombstones when merging" in {
+      val gdc1 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1))
+        .:+(VectorClock.Node(vclockName(dc1a1.uniqueAddress)))
+        .:+(VectorClock.Node(vclockName(dc1b1.uniqueAddress)))
+        .:+(VectorClock.Node(vclockName(dc2c1.uniqueAddress)))
+        .:+(VectorClock.Node(vclockName(dc2d1.uniqueAddress)))
+        .remove(dc1b1.uniqueAddress, System.currentTimeMillis())
+
+      gdc1.version.versions.keySet should not contain (VectorClock.Node(vclockName(dc1b1.uniqueAddress)))
+
+      val gdc2 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1))
+        .seen(dc1a1.uniqueAddress)
+        .:+(VectorClock.Node(vclockName(dc1a1.uniqueAddress)))
+        .:+(VectorClock.Node(vclockName(dc1b1.uniqueAddress)))
+        .:+(VectorClock.Node(vclockName(dc2c1.uniqueAddress)))
+        .:+(VectorClock.Node(vclockName(dc2d1.uniqueAddress)))
+        .remove(dc2c1.uniqueAddress, System.currentTimeMillis())
+
+      gdc2.version.versions.keySet should not contain (VectorClock.Node(vclockName(dc2c1.uniqueAddress)))
+
+      // when we merge the two, the nodes should not be reintroduced
+      val merged1 = gdc2 merge gdc1
+      merged1.members should ===(SortedSet(dc1a1, dc2d1))
+
+      merged1.version.versions.keySet should ===(Set(
+        VectorClock.Node(vclockName(dc1a1.uniqueAddress)),
+        VectorClock.Node(vclockName(dc2d1.uniqueAddress))))
     }
 
     "prune old tombstones" in {
