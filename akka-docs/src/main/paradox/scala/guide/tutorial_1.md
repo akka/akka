@@ -149,7 +149,7 @@ We see that when we stopped actor `first` it recursively stopped actor `second` 
 This ordering is strict, _all_ `postStop()` hooks of the children are called before the `postStop()` hook of the parent
 is called.
 
-The family of these lifecycle hooks is rich, and we recommend reading [the actor lifecycle](http://doc.akka.io/docs/akka/current/scala/actors.html#Actor_Lifecycle) section of the reference for all details.
+The family of these lifecycle hooks is rich, and we recommend reading @ref[the actor lifecycle](../actors.md#actor-lifecycle) section of the reference for all details.
 
 ### Hierarchy and Failure Handling (Supervision)
 
