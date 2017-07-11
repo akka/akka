@@ -1,9 +1,9 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_2;
 
 //#iot-app
+package com.lightbend.akka.sample;
 
 import java.io.IOException;
 
@@ -13,7 +13,7 @@ import akka.actor.ActorRef;
 public class IotMain {
 
   public static void main(String[] args) throws IOException {
-    ActorSystem system = ActorSystem.create("iot-system");
+    ActorSystem sy{stem = ActorSystem.create("iot-system");
 
     try {
       // Create top level supervisor

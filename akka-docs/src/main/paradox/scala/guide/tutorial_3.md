@@ -107,9 +107,7 @@ For the full details on delivery guarantees please refer to the @ref[reference p
 
 ## Adding flexibility to device messages
 
-Our first query protocol was correct, but did not take into account distributed application execution. If we want to implement resends in the actor that queries a device actor (because of timed out requests), or if we want to query multiple actors, we need to be able to correlate requests and responses. Hence, we add one more field to our messages, so that an ID can be provided by the requester.
-
-You can now add the following message definitions to your `IotApp` source file:
+Our first query protocol was correct, but did not take into account distributed application execution. If we want to implement resends in the actor that queries a device actor (because of timed out requests), or if we want to query multiple actors, we need to be able to correlate requests and responses. Hence, we add one more field to our messages, so that an ID can be provided by the requester  (we will add this code to our app in a later step):
 
 Scala
 :   @@snip [DeviceInProgress.scala]($code$/scala/tutorial_3/DeviceInProgress.scala) { #read-protocol-2 }
@@ -119,7 +117,7 @@ Java
 
 ## Defining the device actor and its read protocol
 
-As we learned in the Hello World example, each actor defines the type of messages it will accept. Our device actor has the responsibility to use the same ID parameter for the response of a given query, which would make it look like the following (we will add this code to our app in a later step).
+As we learned in the Hello World example, each actor defines the type of messages it will accept. Our device actor has the responsibility to use the same ID parameter for the response of a given query, which would make it look like the following.
 
 Scala
 :   @@snip [DeviceInProgress.scala]($code$/scala/tutorial_3/DeviceInProgress.scala) { #device-with-read }
@@ -163,7 +161,7 @@ Just like in the case of temperature queries and responses, it is a good idea to
 
 ## Actor with read and write messages
 
-Putting the read and write protocol together, the device actor looks like the following example. You can add this to you `IotApp` source file.
+Putting the read and write protocol together, the device actor looks like the following example:
 
 Scala
 :  @@snip [Device.scala]($code$/scala/tutorial_3/Device.scala) { #full-device }

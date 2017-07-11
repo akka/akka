@@ -4,6 +4,8 @@
 package tutorial_2
 
 //#iot-supervisor
+package com.lightbend.akka.sample
+
 import akka.actor.{ Actor, ActorLogging, Props }
 
 object IotSupervisor {

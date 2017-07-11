@@ -4,6 +4,8 @@
 package tutorial_2
 
 //#iot-app
+package com.lightbend.akka.sample
+
 import akka.actor.ActorSystem
 import scala.io.StdIn
 
