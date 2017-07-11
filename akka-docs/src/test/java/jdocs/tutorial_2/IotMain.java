@@ -13,7 +13,7 @@ import akka.actor.ActorRef;
 public class IotMain {
 
   public static void main(String[] args) throws IOException {
-    ActorSystem sy{stem = ActorSystem.create("iot-system");
+    ActorSystem system = ActorSystem.create("iot-system");
 
     try {
       // Create top level supervisor
