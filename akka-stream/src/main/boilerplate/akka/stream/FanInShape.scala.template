@@ -54,9 +54,6 @@ object UniformFanInShape {
 }
 
 class UniformFanInShape[-I, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {
-
-  for (i <- 0 until n) newInlet[I](s"in$i")
-
   def this(n: Int) = this(n, FanInShape.Name[O]("UniformFanIn"))
   def this(n: Int, name: String) = this(n, FanInShape.Name[O](name))
   def this(outlet: Outlet[O], inlets: Array[Inlet[I]]) = this(inlets.length, FanInShape.Ports(outlet, inlets.toList))
@@ -65,9 +62,11 @@ class UniformFanInShape[-I, +O](val n: Int, _init: FanInShape.Init[O]) extends F
 
   final override def inlets: immutable.Seq[Inlet[I @uncheckedVariance]] = super.inlets.asInstanceOf[immutable.Seq[Inlet[I]]]
 
+  private[stream] val inArray: Array[Inlet[I @uncheckedVariance]] = Array.tabulate(n)(i => newInlet[I](s"in$i"))
+
   @deprecated("Use `inlets` or `in(id)` instead.", "2.5.4")
-  def inSeq: immutable.IndexedSeq[Inlet[I @uncheckedVariance]] = inlets.toIndexedSeq
-  def in(n: Int): Inlet[I @uncheckedVariance] = inlets(n)
+  lazy val inSeq: immutable.IndexedSeq[Inlet[I @uncheckedVariance]] = inArray.toIndexedSeq
+  def in(n: Int): Inlet[I @uncheckedVariance] = inArray(n)
 }
 
 class FanInShape1N[-T0, -T1, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {

@@ -215,8 +215,7 @@ final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolea
 
     override def preStart(): Unit = {
       tryPull(preferred)
-      //XXX: tests fail here. But why?
-      shape.inlets.foreach(tryPull)
+      shape.inArray.foreach(tryPull)
     }
 
     setHandler(out, eagerTerminateOutput)
