@@ -1,7 +1,6 @@
-package tutorial_1
-
-import akka.testkit.AkkaSpec
 //#print-refs
+package com.lightbend.akka.sample
+
 import akka.actor.{ Actor, Props, ActorSystem }
 import scala.io.StdIn
 
@@ -13,6 +12,8 @@ class PrintMyActorRefActor extends Actor {
   }
 }
 //#print-refs
+
+import akka.testkit.AkkaSpec
 
 //#start-stop
 class StartStopActor1 extends Actor {
@@ -67,7 +68,7 @@ object ActorHierarchyExperiments extends App {
   val system = ActorSystem()
 
   val firstRef = system.actorOf(Props[PrintMyActorRefActor], "first-actor")
-  println(s"First : $firstRef")
+  println(s"First: $firstRef")
   firstRef ! "printit"
 
   println(">>> Press ENTER to exit <<<")
@@ -80,11 +81,11 @@ object ActorHierarchyExperiments extends App {
 
   "start and stop actors" in {
     // format: OFF
-    //#start-stop
+    //#start-stop-main
 
 val first = system.actorOf(Props[StartStopActor1], "first")
 first ! "stop"
-    //#start-stop
+    //#start-stop-main
     // format: ON
   }
 

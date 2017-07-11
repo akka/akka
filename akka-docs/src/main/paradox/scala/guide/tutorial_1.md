@@ -7,7 +7,7 @@ Use of Akka relieves you from creating the infrastructure for an actor system an
 An actor in Akka always belongs to a parent. Typically, you create an actor by calling  @java[`getContext().actorOf()`]@scala[`context.actorOf()`]. Rather than creating a "freestanding" actor, this injects the new actor as a child into an already existing tree: the creator actor becomes the
 _parent_ of the newly created _child_ actor. You might ask then, who is the parent of the _first_ actor you create?
 
-As illustrated below, all actors have a common parent, the user guardian. New actor instances can be created under this actor using `system.actorOf()`. As we covered in the @scala[[QuickStart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala/)]@java[[QuickStart Guide](https://developer.lightbend.com/guides/akka-quickstart-java/)], creation of an actor returns a reference that is a valid URL. So, for example, if we create an actor named `someActor` with `system.actorOf`, its reference will include the path `/user/someActor`.
+As illustrated below, all actors have a common parent, the user guardian. New actor instances can be created under this actor using `system.actorOf()`. As we covered in the @scala[[QuickStart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala/)]@java[[QuickStart Guide](https://developer.lightbend.com/guides/akka-quickstart-java/)], creation of an actor returns a reference that is a valid URL. So, for example, if we create an actor named `someActor` with `system.actorOf(..., "someActor")`, its reference will include the path `/user/someActor`.
 
 ![box diagram of the architecture](diagrams/actor_top_tree.png)
 
@@ -19,12 +19,13 @@ In fact, before you create an actor in your code, Akka has already created three
  - `/system` the _system guardian_.
 
 In the Hello World example, we have already seen how `system.actorOf()`, creates an actor directly under `/user`. We call this a _top level_ actor, even though, in practice it is only on the top of the
-_user defined_ hierarchy. We create child, or non-top-level, actors by invoking `context.actorOf()` from an existing actor. The `context.actorOf()` method has a signature identical to `system.actorOf()`, its top-level counterpart.
+_user defined_ hierarchy. You typically have only one (or very few) top level actors in your `ActorSystem`.
+We create child, or non-top-level, actors by invoking `context.actorOf()` from an existing actor. The `context.actorOf()` method has a signature identical to `system.actorOf()`, its top-level counterpart.
 
 The easiest way to see the actor hierarchy in action is to simply print `ActorRef` instances. In this small experiment, we create an actor, print its reference, create a child of this actor, and print the child's reference. We start with the Hello World project, if you have not downloaded it, download the Quickstart project from the @scala[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&project=akka-quickstart-scala)]@java[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&project=akka-quickstart-java)].
 
 
-In your Hello World project, navigate to the `akka.sample` package and create a new @scala[Scala]@java[Java] file here. Copy and paste the code from the snippet below to this new source file. Save your file and run `sbt` to observe the output.
+In your Hello World project, navigate to the `com.lightbend.akka.sample` package and create a new @scala[Scala file called `ActorHierarchyExperiments.scala`]@java[Java file called `ActorHierarchyExperiments.java`] here. Copy and paste the code from the snippet below to this new source file. Save your file and run `sbt "runMain com.lightbend.akka.sample.ActorHierarchyExperiments"` to observe the output.
 
 Scala
 :   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #print-refs }
@@ -32,10 +33,10 @@ Scala
 Java
 :   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #print-refs }
 
-Note the way a message asked the first actor to do its work. We sent the message by using the parent's reference: @scala[`firstRef ! "printit"`]@java[firstRef.tell("printit", ActorRef.noSender())]. When the code executes, the output includes the references for the first actor and the child it created as part of the `printit` case. Your output should look similar to the following:
+Note the way a message asked the first actor to do its work. We sent the message by using the parent's reference: @scala[`firstRef ! "printit"`]@java[`firstRef.tell("printit", ActorRef.noSender())`]. When the code executes, the output includes the references for the first actor and the child it created as part of the `printit` case. Your output should look similar to the following:
 
 ```
-First : Actor[akka://testSystem/user/first-actor#1053618476]
+First: Actor[akka://testSystem/user/first-actor#1053618476]
 Second: Actor[akka://testSystem/user/first-actor/second-actor#-1544706041]
 ```
 
@@ -55,8 +56,7 @@ An important role of the hierarchy is to safely manage actor lifecycles. Let's c
 Actors pop into existence when created, then later, at user requests, they are stopped. Whenever an actor is stopped, all of its children are _recursively stopped_ too.
 This behavior greatly simplifies resource cleanup and helps avoid resource leaks such as those caused by open sockets and files. In fact, a commonly overlooked difficulty when dealing with low-level multi-threaded code is the lifecycle management of various concurrent resources.
 
-To stop an actor, the recommended pattern is to call `context.stop(self)` inside the actor to stop itself, usually as a response to some user defined stop message or when the actor is done with its job. Stopping another actor is also possible by calling `context.stop(actorRef)`. **It is considered a bad practice to stop arbitrary actors this way**, try sending them a `PoisonPill` or custom stop message
-instead.
+To stop an actor, the recommended pattern is to call @scala[`context.stop(self)`]@java[`getContext().stop(getSelf())`] inside the actor to stop itself, usually as a response to some user defined stop message or when the actor is done with its job. Stopping another actor is technically possible by calling @scala[`context.stop(actorRef)`]@java[`getContext().stop(actorRef)`], but **It is considered a bad practice to stop arbitrary actors this way**: try sending them a `PoisonPill` or custom stop message instead.
 
 The Akka actor API exposes many lifecycle hooks that you can override in an actor implementation. The most commonly used are
 `preStart()` and `postStop()`.
@@ -64,12 +64,7 @@ The Akka actor API exposes many lifecycle hooks that you can override in an acto
  * `preStart()` is invoked after the actor has started but before it processes its first message.
  * `postStop()` is invoked just before the actor stops. No messages are processed after this point.
 
-Let's use the `preStart()` and `postStop()` lifecycle hooks in a simple experiment to observe the behavior when we stop an actor. Add the code shown in the snippet to your `ActorQuickStart` source file as follows:
-
-1. Add the class below the existing actor class definitions.
-1. In the `try` block `#create-actors` section, add the `systemOf` statement to create the first actor.
-1. In the `try` block, replace the `main-send-messages` with the `stop` message.
-1. Save the file and run sbt to observe the output.
+Let's use the `preStart()` and `postStop()` lifecycle hooks in a simple experiment to observe the behavior when we stop an actor. First, add the following 2 actor classes to your project:
 
 Scala
 :   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #start-stop }
@@ -77,7 +72,15 @@ Scala
 Java
 :   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #start-stop }
 
-The output should look like this:
+And create a 'main' class like above to start the actors and then send them a `"stop"` message:
+
+Scala
+:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #start-stop-main }
+
+Java
+:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #start-stop-main }
+
+You can again use `sbt` to start this program. The output should look like this:
 
 ```
 first started

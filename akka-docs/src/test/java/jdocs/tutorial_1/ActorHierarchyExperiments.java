@@ -1,4 +1,7 @@
-package jdocs.tutorial_1;
+//#print-refs
+package com.lightbend.akka.sample;
+
+//#print-refs
 
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
@@ -109,11 +112,11 @@ class SupervisedActor extends AbstractActor {
 
 //#print-refs
 public class ActorHierarchyExperiments {
-  public static void main() throws java.io.IOException {
+  public static void main(String[] args) throws java.io.IOException {
     ActorSystem system = ActorSystem.create("test");
 
     ActorRef firstRef = system.actorOf(Props.create(PrintMyActorRefActor.class), "first-actor");
-    System.out.println("First : " + firstRef);
+    System.out.println("First: " + firstRef);
     firstRef.tell("printit", ActorRef.noSender());
 
     System.out.println(">>> Press ENTER to exit <<<");
@@ -143,10 +146,10 @@ class ActorHierarchyExperimentsTest extends JUnitSuite {
 
   @Test
   public void testStartAndStopActors() {
-    //#start-stop
+    //#start-stop-main
     ActorRef first = system.actorOf(Props.create(StartStopActor1.class), "first");
     first.tell("stop", ActorRef.noSender());
-    //#start-stop
+    //#start-stop-main
   }
 
   @Test
