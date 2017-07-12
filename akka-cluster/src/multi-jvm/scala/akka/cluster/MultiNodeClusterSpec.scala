@@ -306,7 +306,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
       awaitAssert(clusterView.members.map(_.status) should ===(Set(MemberStatus.Up)))
       // clusterView.leader is updated by LeaderChanged, await that to be updated also
       val expectedLeader = clusterView.members.collectFirst {
-        case m if m.dataCenter == cluster.settings.DataCenter ⇒ m.address
+        case m if m.dataCenter == cluster.settings.SelfDataCenter ⇒ m.address
       }
       awaitAssert(clusterView.leader should ===(expectedLeader))
     }

@@ -137,14 +137,14 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
   val AllowWeaklyUpMembers: Boolean = cc.getBoolean("allow-weakly-up-members")
 
-  val DataCenter: DataCenter = cc.getString("data-center")
+  val SelfDataCenter: DataCenter = cc.getString("multi-data-center.self-data-center")
 
   val Roles: Set[String] = {
     val configuredRoles = (immutableSeq(cc.getStringList("roles")).toSet) requiring (
       _.forall(!_.startsWith(DcRolePrefix)),
-      s"Roles must not start with '${DcRolePrefix}' as that is reserved for the cluster data-center setting")
+      s"Roles must not start with '${DcRolePrefix}' as that is reserved for the cluster self-data-center setting")
 
-    configuredRoles + s"$DcRolePrefix$DataCenter"
+    configuredRoles + s"$DcRolePrefix$SelfDataCenter"
   }
 
   val MinNrOfMembers: Int = {
