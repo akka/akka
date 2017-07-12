@@ -38,6 +38,8 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
 
   var publisher: ActorRef = _
 
+  final val OtherDataCenter = "dc2"
+
   val aUp = TestMember(Address(protocol, "sys", "a", 2552), Up)
   val aLeaving = aUp.copy(status = Leaving)
   val aExiting = aLeaving.copy(status = Exiting)
@@ -49,6 +51,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
   val cRemoved = cUp.copy(status = Removed)
   val a51Up = TestMember(Address(protocol, "sys", "a", 2551), Up)
   val dUp = TestMember(Address(protocol, "sys", "d", 2552), Up, Set("GRP"))
+  val eUp = TestMember(Address(protocol, "sys", "e", 2552), Up, Set("GRP"), OtherDataCenter)
 
   private def state(gossip: Gossip, self: UniqueAddress, dc: DataCenter) =
     MembershipState(gossip, self, DefaultDataCenter, crossDcConnections = 5)
@@ -74,6 +77,12 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
   val g8 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp), overview = GossipOverview(reachability =
     Reachability.empty.unreachable(aUp.uniqueAddress, dUp.uniqueAddress))).seen(aUp.uniqueAddress)
   val state8 = state(g8, aUp.uniqueAddress, DefaultDataCenter)
+  val g9 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp, eUp), overview = GossipOverview(reachability =
+    Reachability.empty.unreachable(aUp.uniqueAddress, eUp.uniqueAddress)))
+  val state9 = state(g9, aUp.uniqueAddress, DefaultDataCenter)
+  val g10 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp, eUp), overview = GossipOverview(reachability =
+    Reachability.empty))
+  val state10 = state(g10, aUp.uniqueAddress, DefaultDataCenter)
 
   // created in beforeEach
   var memberSubscriber: TestProbe = _
@@ -160,7 +169,6 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       subscriber.expectMsgType[CurrentClusterState]
       // but only to the new subscriber
       memberSubscriber.expectNoMsg(500 millis)
-
     }
 
     "send events corresponding to current state when subscribe" in {
@@ -169,6 +177,17 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       publisher ! Subscribe(subscriber.ref, InitialStateAsEvents, Set(classOf[MemberEvent], classOf[ReachabilityEvent]))
       subscriber.receiveN(4).toSet should be(Set(MemberUp(aUp), MemberUp(cUp), MemberUp(dUp), MemberExited(bExiting)))
       subscriber.expectMsg(UnreachableMember(dUp))
+      subscriber.expectNoMsg(500 millis)
+    }
+
+    "send datacenter reachability events" in {
+      val subscriber = TestProbe()
+      publisher ! PublishChanges(state9)
+      publisher ! Subscribe(subscriber.ref, InitialStateAsEvents, Set(classOf[DataCenterReachabilityEvent]))
+      subscriber.expectMsg(UnreachableDataCenter(OtherDataCenter))
+      subscriber.expectNoMsg(500 millis)
+      publisher ! PublishChanges(state10)
+      subscriber.expectMsg(ReachableDataCenter(OtherDataCenter))
       subscriber.expectNoMsg(500 millis)
     }
 
