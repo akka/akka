@@ -209,6 +209,9 @@ private[cluster] class Reachability private (
       Reachability(newRecords, newVersions)
     }
 
+  def filterRecords(f: Record ⇒ Boolean) =
+    Reachability(records.filter(f), versions)
+
   def status(observer: UniqueAddress, subject: UniqueAddress): ReachabilityStatus =
     observerRows(observer) match {
       case None ⇒ Reachable

@@ -245,6 +245,22 @@ object ClusterEvent {
   final case class ReachableMember(member: Member) extends ReachabilityEvent
 
   /**
+   * Marker interface to facilitate subscription of
+   * both [[UnreachableDataCenter]] and [[ReachableDataCenter]].
+   */
+  sealed trait DataCenterReachabilityEvent extends ClusterDomainEvent
+
+  /**
+   * A data center is considered as unreachable when any members from the data center are unreachable
+   */
+  final case class UnreachableDataCenter(dataCenter: DataCenter) extends DataCenterReachabilityEvent
+
+  /**
+   * A data center is considered reachable when all members from the data center are reachable
+   */
+  final case class ReachableDataCenter(dataCenter: DataCenter) extends DataCenterReachabilityEvent
+
+  /**
    * INTERNAL API
    * The nodes that have seen current version of the Gossip.
    */
@@ -288,6 +304,41 @@ object ClusterEvent {
           ReachableMember(newGossip.member(node))
       }(collection.breakOut)
     }
+
+  private def isReachable(state: MembershipState, oldUnreachableNodes: Set[UniqueAddress])(otherDc: DataCenter): Boolean = {
+    val unrelatedDcNodes = state.latestGossip.members.collect {
+      case m if m.dataCenter != otherDc && m.dataCenter != state.selfDc ⇒ m.uniqueAddress
+    }
+
+    val reachabilityForOtherDc = state.dcReachabilityWithoutObservationsWithin.remove(unrelatedDcNodes)
+    reachabilityForOtherDc.allUnreachable.filterNot(oldUnreachableNodes).isEmpty
+  }
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] def diffUnreachableDataCenter(oldState: MembershipState, newState: MembershipState): immutable.Seq[UnreachableDataCenter] = {
+    if (newState eq oldState) Nil
+    else {
+      val otherDcs = (oldState.latestGossip.allDataCenters union newState.latestGossip.allDataCenters) - newState.selfDc
+      otherDcs.filterNot(isReachable(newState, oldState.dcReachability.allUnreachableOrTerminated)).map(UnreachableDataCenter)(collection.breakOut)
+    }
+  }
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] def diffReachableDataCenter(oldState: MembershipState, newState: MembershipState): immutable.Seq[ReachableDataCenter] = {
+    if (newState eq oldState) Nil
+    else {
+      val otherDcs = (oldState.latestGossip.allDataCenters union newState.latestGossip.allDataCenters) - newState.selfDc
+
+      val oldUnreachableDcs = otherDcs.filterNot(isReachable(oldState, Set()))
+      val currentUnreachableDcs = otherDcs.filterNot(isReachable(newState, Set()))
+
+      (oldUnreachableDcs diff currentUnreachableDcs).map(ReachableDataCenter)(collection.breakOut)
+    }
+  }
 
   /**
    * INTERNAL API.
@@ -457,6 +508,8 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     diffMemberEvents(oldState, newState) foreach pub
     diffUnreachable(oldState, newState) foreach pub
     diffReachable(oldState, newState) foreach pub
+    diffUnreachableDataCenter(oldState, newState) foreach pub
+    diffReachableDataCenter(oldState, newState) foreach pub
     diffLeader(oldState, newState) foreach pub
     diffRolesLeader(oldState, newState) foreach pub
     // publish internal SeenState for testing purposes
