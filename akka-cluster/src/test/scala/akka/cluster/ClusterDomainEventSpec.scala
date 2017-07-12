@@ -89,7 +89,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       diffSeen(state(g1), state(g2)) should ===(Seq.empty)
     }
 
-    "be produced for unreachability observations from the same dc" in {
+    "be produced for reachability observations between data centers" in {
       val dc2AMemberUp = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Up, Set.empty, "dc2")
       val dc2AMemberDown = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Down, Set.empty, "dc2")
       val dc2BMemberUp = TestMember(Address("akka.tcp", "sys", "dc2B", 2552), Up, Set.empty, "dc2")
@@ -120,7 +120,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       }
     }
 
-    "not be produced for unreachability seen a second time" in {
+    "not be produced for same reachability observations between data centers" in {
       val dc2AMemberUp = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Up, Set.empty, "dc2")
       val dc2AMemberDown = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Down, Set.empty, "dc2")
 
@@ -133,19 +133,11 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
 
       diffUnreachableDataCenter(
         MembershipState(g1, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5),
-        MembershipState(g2, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5)) should ===(Seq(UnreachableDataCenter("dc2")))
-
-      diffUnreachableDataCenter(
-        MembershipState(g1, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5),
         MembershipState(g1, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5)) should ===(Seq())
 
       diffUnreachableDataCenter(
         MembershipState(g2, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5),
         MembershipState(g2, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5)) should ===(Seq())
-
-      diffReachableDataCenter(
-        MembershipState(g2, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5),
-        MembershipState(g1, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5)) should ===(Seq(ReachableDataCenter("dc2")))
 
       diffReachableDataCenter(
         MembershipState(g1, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5),
