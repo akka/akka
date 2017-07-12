@@ -28,18 +28,18 @@ object MultiDcSingletonManagerSpec extends MultiNodeConfig {
 
   nodeConfig(controller) {
     ConfigFactory.parseString("""
-      akka.cluster.data-center = one
+      akka.cluster.multi-data-center.self-data-center = one
       akka.cluster.roles = []""")
   }
 
   nodeConfig(first) {
     ConfigFactory.parseString("""
-      akka.cluster.data-center = one
+      akka.cluster.multi-data-center.self-data-center = one
       akka.cluster.roles = [ worker ]""")
   }
   nodeConfig(second, third) {
     ConfigFactory.parseString("""
-      akka.cluster.data-center = two
+      akka.cluster.multi-data-center.self-data-center = two
       akka.cluster.roles = [ worker ]""")
   }
 }
@@ -56,7 +56,7 @@ class MultiDcSingleton extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case Ping ⇒
-      sender() ! Pong(cluster.settings.DataCenter, cluster.selfAddress, cluster.selfRoles)
+      sender() ! Pong(cluster.settings.SelfDataCenter, cluster.selfAddress, cluster.selfRoles)
   }
 }
 object MultiDcSingleton {
@@ -98,7 +98,7 @@ abstract class MultiDcSingletonManagerSpec extends MultiNodeSpec(MultiDcSingleto
 
       enterBarrier("pongs-received")
 
-      pong.fromDc should equal(Cluster(system).settings.DataCenter)
+      pong.fromDc should equal(Cluster(system).settings.SelfDataCenter)
       pong.roles should contain(worker)
       runOn(controller, first) {
         pong.roles should contain(ClusterSettings.DcRolePrefix + "one")

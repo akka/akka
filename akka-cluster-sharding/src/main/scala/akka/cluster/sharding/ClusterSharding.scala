@@ -520,7 +520,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
             case None    ⇒ "replicator"
           }
           // Use members within the data center and with the given role (if any)
-          val replicatorRoles = Set(ClusterSettings.DcRolePrefix + cluster.settings.DataCenter) ++ settings.role
+          val replicatorRoles = Set(ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter) ++ settings.role
           val ref = context.actorOf(Replicator.props(replicatorSettings.withRoles(replicatorRoles)), name)
           replicatorByRole = replicatorByRole.updated(settings.role, ref)
           ref

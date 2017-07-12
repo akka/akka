@@ -23,14 +23,14 @@ object MultiDcSunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   nodeConfig(first, second, third)(ConfigFactory.parseString(
     """
     akka {
-      cluster.data-center = alpha
+      cluster.multi-data-center.self-data-center = alpha
     }
     """))
 
   nodeConfig(fourth, fifth)(ConfigFactory.parseString(
     """
     akka {
-      cluster.data-center = beta
+      cluster.multi-data-center.self-data-center = beta
     }
     """))
 

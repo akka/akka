@@ -24,12 +24,12 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
 
   nodeConfig(first, second)(ConfigFactory.parseString(
     """
-      akka.cluster.data-center = "dc1"
+      akka.cluster.multi-data-center.self-data-center = "dc1"
     """))
 
   nodeConfig(third, fourth)(ConfigFactory.parseString(
     """
-      akka.cluster.data-center = "dc2"
+      akka.cluster.multi-data-center.self-data-center = "dc2"
     """))
 
   testTransport(on = true)

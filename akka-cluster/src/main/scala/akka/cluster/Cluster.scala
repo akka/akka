@@ -79,7 +79,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   def selfAddress: Address = selfUniqueAddress.address
 
   /** Data center to which this node belongs to (defaults to "default" if not configured explicitly) */
-  def selfDataCenter: DataCenter = settings.DataCenter
+  def selfDataCenter: DataCenter = settings.SelfDataCenter
 
   /**
    * roles that this member has
@@ -434,31 +434,31 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
     def logInfo(message: String): Unit =
       if (LogInfo)
-        if (settings.DataCenter == ClusterSettings.DefaultDataCenter)
+        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
           log.info("Cluster Node [{}] - {}", selfAddress, message)
         else
-          log.info("Cluster Node [{}] dc [{}] - {}", selfAddress, settings.DataCenter, message)
+          log.info("Cluster Node [{}] dc [{}] - {}", selfAddress, settings.SelfDataCenter, message)
 
     def logInfo(template: String, arg1: Any): Unit =
       if (LogInfo)
-        if (settings.DataCenter == ClusterSettings.DefaultDataCenter)
+        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
           log.info("Cluster Node [{}] - " + template, selfAddress, arg1)
         else
-          log.info("Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.DataCenter, arg1)
+          log.info("Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.SelfDataCenter, arg1)
 
     def logInfo(template: String, arg1: Any, arg2: Any): Unit =
       if (LogInfo)
-        if (settings.DataCenter == ClusterSettings.DefaultDataCenter)
+        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
           log.info("Cluster Node [{}] - " + template, selfAddress, arg1, arg2)
         else
-          log.info("Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.DataCenter, arg1, arg2)
+          log.info("Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.SelfDataCenter, arg1, arg2)
 
     def logInfo(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
       if (LogInfo)
-        if (settings.DataCenter == ClusterSettings.DefaultDataCenter)
+        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
           log.info("Cluster Node [{}] - " + template, selfAddress, arg1, arg2, arg3)
         else
-          log.info("Cluster Node [{}] dc [" + settings.DataCenter + "] - " + template, selfAddress, arg1, arg2, arg3)
+          log.info("Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template, selfAddress, arg1, arg2, arg3)
   }
 
 }

@@ -299,7 +299,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   var membershipState = MembershipState(
     Gossip.empty,
     cluster.selfUniqueAddress,
-    cluster.settings.DataCenter,
+    cluster.settings.SelfDataCenter,
     cluster.settings.MultiDataCenter.CrossDcConnections)
 
   def latestGossip: Gossip = membershipState.latestGossip
@@ -1230,7 +1230,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
   def publishMembershipState(): Unit = {
     if (cluster.settings.Debug.VerboseGossipLogging)
-      log.debug("Cluster Node [{}] dc [{}] - New gossip published [{}]", selfAddress, cluster.settings.DataCenter, membershipState.latestGossip)
+      log.debug("Cluster Node [{}] dc [{}] - New gossip published [{}]", selfAddress, cluster.settings.SelfDataCenter, membershipState.latestGossip)
 
     publisher ! PublishChanges(membershipState)
     if (PublishStatsInterval == Duration.Zero) publishInternalStats()

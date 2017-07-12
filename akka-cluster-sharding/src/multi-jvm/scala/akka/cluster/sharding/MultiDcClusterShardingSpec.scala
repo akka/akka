@@ -62,11 +62,11 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
     """))
 
   nodeConfig(first, second) {
-    ConfigFactory.parseString("akka.cluster.data-center = DC1")
+    ConfigFactory.parseString("akka.cluster.multi-data-center.self-data-center = DC1")
   }
 
   nodeConfig(third, fourth) {
-    ConfigFactory.parseString("akka.cluster.data-center = DC2")
+    ConfigFactory.parseString("akka.cluster.multi-data-center.self-data-center = DC2")
   }
 }
 
