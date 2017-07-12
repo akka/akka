@@ -111,7 +111,7 @@ object Dependencies {
       val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % slf4jVersion    % "test"    // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.1-RC1" % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.1-RC2" % "test" // CC0
     }
 
     object Provided {
