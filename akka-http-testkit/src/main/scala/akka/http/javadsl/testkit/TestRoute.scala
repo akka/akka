@@ -17,5 +17,16 @@ import akka.http.javadsl.server.Route
  */
 trait TestRoute {
   def underlying: Route
+
+  /**
+   * Run the request against the sealed route, meaning use a default handler
+   * as a fallback for all cases the route doesn’t handle itself.
+   */
   def run(request: HttpRequest): TestRouteResult
+
+  /**
+   * Run the request against the semi-sealed route, meaning that a default
+   * handler is used for exceptions but not for rejections.
+   */
+  def runWithRejections(request: HttpRequest): TestRouteResult
 }

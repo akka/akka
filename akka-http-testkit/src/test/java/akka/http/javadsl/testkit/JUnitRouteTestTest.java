@@ -58,16 +58,11 @@ public class JUnitRouteTestTest extends JUnitRouteTest {
         )
       );
 
-    route.run(HttpRequest.POST("/abc").withEntity("content"))
-      /* XXX: Expected?
+    route.runWithRejections(HttpRequest.POST("/abc").withEntity("content"))
       .assertRejections(
         Rejections.method(HttpMethods.GET),
         Rejections.method(HttpMethods.PUT)
-      )
-      */
-      .assertStatusCode(StatusCodes.METHOD_NOT_ALLOWED)
-      .assertContentType("text/plain; charset=UTF-8")
-      .assertEntity("HTTP method not allowed, supported methods: GET, PUT");
+      );
   }
 
   @Test
