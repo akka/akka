@@ -508,6 +508,8 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     diffMemberEvents(oldState, newState) foreach pub
     diffUnreachable(oldState, newState) foreach pub
     diffReachable(oldState, newState) foreach pub
+    diffUnreachableDataCenter(oldState, newState) foreach pub
+    diffReachableDataCenter(oldState, newState) foreach pub
     diffLeader(oldState, newState) foreach pub
     diffRolesLeader(oldState, newState) foreach pub
     // publish internal SeenState for testing purposes
