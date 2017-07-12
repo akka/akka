@@ -399,7 +399,7 @@ val log = Logging(system.eventStream, "my.nice.string")
 ```
 
 Java
-:   ```scala
+:   ```java
     final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.string");
     ```
 
@@ -562,7 +562,7 @@ A more advanced (including most Akka added information) example pattern would be
 <a id="jul"></a>
 ## java.util.logging
 
-Akka includes a logger for [java.util.logging](https://docs.oracle.com/javase/8/docs/api/java/util/logging/package-summary.html#package.description)].
+Akka includes a logger for [java.util.logging](https://docs.oracle.com/javase/8/docs/api/java/util/logging/package-summary.html#package.description).
 
 You need to enable the `akka.event.jul.JavaLogger` in the `loggers` element in
 the @ref[configuration](general/configuration.md). Here you can also define the log level of the event bus.
