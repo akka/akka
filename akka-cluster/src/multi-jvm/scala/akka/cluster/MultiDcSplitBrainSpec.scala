@@ -3,9 +3,11 @@
  */
 package akka.cluster
 
+import akka.cluster.ClusterEvent.{ CurrentClusterState, DataCenterReachabilityEvent, ReachableDataCenter, UnreachableDataCenter }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
@@ -48,8 +50,17 @@ abstract class MultiDcSplitBrainSpec
 
   val dc1 = List(first, second)
   val dc2 = List(third, fourth)
+  var barrierCounter = 0
 
   def splitDataCenters(dc1: Seq[RoleName], dc2: Seq[RoleName]): Unit = {
+    val allNodes = dc1 ++ dc2
+    runOn(allNodes: _*) {
+      cluster.subscribe(testActor, classOf[DataCenterReachabilityEvent])
+      expectMsgType[CurrentClusterState]
+    }
+    enterBarrier(s"split-$barrierCounter")
+    barrierCounter += 1
+
     runOn(first) {
       for {
         dc1Node ← dc1
@@ -58,9 +69,24 @@ abstract class MultiDcSplitBrainSpec
         testConductor.blackhole(dc1Node, dc2Node, Direction.Both).await
       }
     }
+
+    runOn(allNodes: _*) {
+      expectMsgType[UnreachableDataCenter]
+      cluster.unsubscribe(testActor)
+    }
+    enterBarrier(s"after-split-$barrierCounter")
+    barrierCounter += 1
   }
 
   def unsplitDataCenters(dc1: Seq[RoleName], dc2: Seq[RoleName]): Unit = {
+    val allNodes = dc1 ++ dc2
+    runOn(allNodes: _*) {
+      cluster.subscribe(testActor, classOf[DataCenterReachabilityEvent])
+      expectMsgType[CurrentClusterState]
+    }
+    enterBarrier(s"unsplit-$barrierCounter")
+    barrierCounter += 1
+
     runOn(first) {
       for {
         dc1Node ← dc1
@@ -69,6 +95,13 @@ abstract class MultiDcSplitBrainSpec
         testConductor.passThrough(dc1Node, dc2Node, Direction.Both).await
       }
     }
+
+    runOn(allNodes: _*) {
+      expectMsgType[ReachableDataCenter]
+      cluster.unsubscribe(testActor)
+    }
+    enterBarrier(s"after-unsplit-$barrierCounter")
+    barrierCounter += 1
 
   }
 
@@ -80,7 +113,6 @@ abstract class MultiDcSplitBrainSpec
     "be able to have a data center member join while there is inter data center split" in within(20.seconds) {
       // introduce a split between data centers
       splitDataCenters(dc1 = List(first, second), dc2 = List(third))
-      enterBarrier("data-center-split-1")
 
       runOn(fourth) {
         cluster.join(third)
@@ -97,7 +129,6 @@ abstract class MultiDcSplitBrainSpec
       enterBarrier("dc2-join-completed")
 
       unsplitDataCenters(dc1 = List(first, second), dc2 = List(third))
-      enterBarrier("data-center-unsplit-1")
 
       runOn(dc1: _*) {
         awaitAssert(clusterView.members.collect {
@@ -110,7 +141,6 @@ abstract class MultiDcSplitBrainSpec
 
     "be able to have data center member leave while there is inter data center split" in within(20.seconds) {
       splitDataCenters(dc1, dc2)
-      enterBarrier("data-center-split-2")
 
       runOn(fourth) {
         cluster.leave(fourth)
@@ -122,7 +152,6 @@ abstract class MultiDcSplitBrainSpec
       enterBarrier("node-4-left")
 
       unsplitDataCenters(dc1, List(third))
-      enterBarrier("data-center-unsplit-2")
 
       runOn(first, second) {
         awaitAssert(clusterView.members.filter(_.address == address(fourth)) should ===(Set.empty))
