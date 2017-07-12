@@ -179,7 +179,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   /** Idempotent, become active if this node is n-th oldest and should monitor other nodes */
   private def becomeActiveIfResponsibleForHeartbeat(): Unit = {
     if (!activelyMonitoring && selfIsResponsibleForCrossDcHeartbeat()) {
-      if (verboseHeartbeat) log.debug("Becoming ACTIVE (for DC: {}), monitoring other DCs oldest nodes", selfDataCenter)
+      log.info("Cross DC heartbeat becoming ACTIVE on this node (for DC: {}), monitoring other DCs oldest nodes", selfDataCenter)
       activelyMonitoring = true
 
       context.become(active orElse introspecting)
