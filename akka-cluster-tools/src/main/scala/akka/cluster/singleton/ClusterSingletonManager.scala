@@ -257,7 +257,7 @@ object ClusterSingletonManager {
       }
       override def postStop(): Unit = cluster.unsubscribe(self)
 
-      private val selfDc = ClusterSettings.DcRolePrefix + cluster.settings.DataCenter
+      private val selfDc = ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
 
       def matchingRole(member: Member): Boolean =
         member.hasRole(selfDc) && role.forall(member.hasRole)

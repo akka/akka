@@ -426,7 +426,7 @@ private[akka] class ShardRegion(
   // when using proxy the data center can be different from the own data center
   private val targetDcRole = dataCenter match {
     case Some(t) ⇒ ClusterSettings.DcRolePrefix + t
-    case None    ⇒ ClusterSettings.DcRolePrefix + cluster.settings.DataCenter
+    case None    ⇒ ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
   }
 
   def matchingRole(member: Member): Boolean =

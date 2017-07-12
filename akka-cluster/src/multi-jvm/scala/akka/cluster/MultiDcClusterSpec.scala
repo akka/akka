@@ -25,12 +25,12 @@ class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
 
   nodeConfig(first, second)(ConfigFactory.parseString(
     """
-      akka.cluster.data-center = "dc1"
+      akka.cluster.multi-data-center.self-data-center = "dc1"
     """))
 
   nodeConfig(third, fourth, fifth)(ConfigFactory.parseString(
     """
-      akka.cluster.data-center = "dc2"
+      akka.cluster.multi-data-center.self-data-center = "dc2"
     """))
 
   testTransport(on = true)
@@ -80,13 +80,13 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
 
     "have a leader per data center" in {
       runOn(first, second) {
-        cluster.settings.DataCenter should ===("dc1")
+        cluster.settings.SelfDataCenter should ===("dc1")
         clusterView.leader shouldBe defined
         val dc1 = Set(address(first), address(second))
         dc1 should contain(clusterView.leader.get)
       }
       runOn(third, fourth) {
-        cluster.settings.DataCenter should ===("dc2")
+        cluster.settings.SelfDataCenter should ===("dc2")
         clusterView.leader shouldBe defined
         val dc2 = Set(address(third), address(fourth))
         dc2 should contain(clusterView.leader.get)

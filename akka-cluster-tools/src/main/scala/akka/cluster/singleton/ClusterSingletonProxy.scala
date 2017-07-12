@@ -179,7 +179,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
 
   private val targetDcRole = settings.dataCenter match {
     case Some(t) ⇒ ClusterSettings.DcRolePrefix + t
-    case None    ⇒ ClusterSettings.DcRolePrefix + cluster.settings.DataCenter
+    case None    ⇒ ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
   }
 
   def matchingRole(member: Member): Boolean =

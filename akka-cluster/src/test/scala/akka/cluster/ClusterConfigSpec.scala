@@ -45,7 +45,7 @@ class ClusterConfigSpec extends AkkaSpec {
       DownRemovalMargin should ===(Duration.Zero)
       MinNrOfMembers should ===(1)
       MinNrOfMembersOfRole should ===(Map.empty[String, Int])
-      DataCenter should ===("default")
+      SelfDataCenter should ===("default")
       Roles should ===(Set(ClusterSettings.DcRolePrefix + "default"))
       JmxEnabled should ===(true)
       UseDispatcher should ===(Dispatchers.DefaultDispatcherId)
@@ -61,13 +61,13 @@ class ClusterConfigSpec extends AkkaSpec {
           |akka {
           |  cluster {
           |    roles = [ "hamlet" ]
-          |    data-center = "blue"
+          |    multi-data-center.self-data-center = "blue"
           |  }
           |}
         """.stripMargin).withFallback(ConfigFactory.load()), system.name)
       import settings._
       Roles should ===(Set("hamlet", ClusterSettings.DcRolePrefix + "blue"))
-      DataCenter should ===("blue")
+      SelfDataCenter should ===("blue")
     }
   }
 }

@@ -378,10 +378,10 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   val emptyMembershipState = MembershipState(
     Gossip.empty,
     cluster.selfUniqueAddress,
-    cluster.settings.DataCenter,
+    cluster.settings.SelfDataCenter,
     cluster.settings.MultiDataCenter.CrossDcConnections)
   var membershipState: MembershipState = emptyMembershipState
-  def selfDc = cluster.settings.DataCenter
+  def selfDc = cluster.settings.SelfDataCenter
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
     // don't postStop when restarted, no children to stop
