@@ -1,9 +1,12 @@
-package tutorial_1
-
-import akka.actor.{ Actor, Props }
-import akka.testkit.AkkaSpec
+// Prevent package clashes with the Java examples:
+package docs.tutorial_1
 
 //#print-refs
+package com.lightbend.akka.sample
+
+import akka.actor.{ Actor, Props, ActorSystem }
+import scala.io.StdIn
+
 class PrintMyActorRefActor extends Actor {
   override def receive: Receive = {
     case "printit" =>
@@ -12,6 +15,8 @@ class PrintMyActorRefActor extends Actor {
   }
 }
 //#print-refs
+
+import akka.testkit.AkkaSpec
 
 //#start-stop
 class StartStopActor1 extends Actor {
@@ -62,30 +67,38 @@ class ActorHierarchyExperiments extends AkkaSpec {
     // format: OFF
     //#print-refs
 
-val firstRef = system.actorOf(Props[PrintMyActorRefActor], "first-actor")
-println(s"First : $firstRef")
-firstRef ! "printit"
+object ActorHierarchyExperiments extends App {
+  val system = ActorSystem()
+
+  val firstRef = system.actorOf(Props[PrintMyActorRefActor], "first-actor")
+  println(s"First: $firstRef")
+  firstRef ! "printit"
+
+  println(">>> Press ENTER to exit <<<")
+  try StdIn.readLine()
+  finally system.terminate()
+}
     //#print-refs
     // format: ON
   }
 
   "start and stop actors" in {
     // format: OFF
-    //#start-stop
+    //#start-stop-main
 
 val first = system.actorOf(Props[StartStopActor1], "first")
 first ! "stop"
-    //#start-stop
+    //#start-stop-main
     // format: ON
   }
 
   "supervise actors" in {
     // format: OFF
-    //#supervise
+    //#supervise-main
 
 val supervisingActor = system.actorOf(Props[SupervisingActor], "supervising-actor")
 supervisingActor ! "failChild"
-    //#supervise
+    //#supervise-main
     // format: ON
   }
 }

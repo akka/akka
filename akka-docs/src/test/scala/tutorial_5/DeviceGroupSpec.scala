@@ -96,6 +96,7 @@ class DeviceGroupSpec extends AkkaSpec {
       }
     }
 
+    //#group-query-integration-test
     "be able to collect temperatures from all active devices" in {
       val probe = TestProbe()
       val groupActor = system.actorOf(DeviceGroup.props("group"))
@@ -128,6 +129,7 @@ class DeviceGroupSpec extends AkkaSpec {
             "device2" -> DeviceGroup.Temperature(2.0),
             "device3" -> DeviceGroup.TemperatureNotAvailable)))
     }
+    //#group-query-integration-test
 
   }
 

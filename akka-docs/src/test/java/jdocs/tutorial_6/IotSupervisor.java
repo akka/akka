@@ -1,12 +1,11 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_1;
+package jdocs.tutorial_6;
 
 //#iot-supervisor
 
 import akka.actor.AbstractActor;
-import akka.actor.ActorLogging;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;

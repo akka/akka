@@ -3,6 +3,8 @@
  */
 package jdocs.tutorial_4;
 
+//#device-with-register
+
 import akka.actor.AbstractActor;
 import akka.actor.Props;
 import akka.event.Logging;
@@ -101,3 +103,4 @@ public class Device extends AbstractActor {
             .build();
   }
 }
+//#device-with-register

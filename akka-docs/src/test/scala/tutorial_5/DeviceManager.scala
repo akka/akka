@@ -5,7 +5,7 @@
 package tutorial_5
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
-import tutorial_5.DeviceManager.RequestTrackDevice
+import DeviceManager.RequestTrackDevice
 
 object DeviceManager {
   def props(): Props = Props(new DeviceManager)
