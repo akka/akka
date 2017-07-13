@@ -1,4 +1,4 @@
-# Streams QuickStart Guide
+# Streams Quickstart Guide
 
 Create a project and add the akka-streams dependency to the build tool of your
 choice.
