@@ -5,7 +5,7 @@ package akka.cluster
 
 import language.postfixOps
 import scala.collection.immutable
-import scala.collection.immutable.VectorBuilder
+import scala.collection.immutable.{ SortedSet, VectorBuilder }
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ClusterEvent._
@@ -16,6 +16,7 @@ import akka.actor.DeadLetterSuppression
 import akka.annotation.InternalApi
 
 import scala.collection.breakOut
+import scala.runtime.AbstractFunction5
 
 /**
  * Domain events published to the event bus.
@@ -55,17 +56,42 @@ object ClusterEvent {
    */
   sealed trait ClusterDomainEvent extends DeadLetterSuppression
 
+  // for binary compatibility (used to be a case class)
+  object CurrentClusterState extends AbstractFunction5[immutable.SortedSet[Member], Set[Member], Set[Address], Option[Address], Map[String, Option[Address]], CurrentClusterState] {
+
+    def apply(
+      members:       immutable.SortedSet[Member]  = immutable.SortedSet.empty,
+      unreachable:   Set[Member]                  = Set.empty,
+      seenBy:        Set[Address]                 = Set.empty,
+      leader:        Option[Address]              = None,
+      roleLeaderMap: Map[String, Option[Address]] = Map.empty): CurrentClusterState =
+      new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap)
+
+    def unapply(cs: CurrentClusterState): Option[(immutable.SortedSet[Member], Set[Member], Set[Address], Option[Address], Map[String, Option[Address]])] =
+      Some((
+        cs.members,
+        cs.unreachable,
+        cs.seenBy,
+        cs.leader,
+        cs.roleLeaderMap
+      ))
+
+  }
+
   /**
    * Current snapshot state of the cluster. Sent to new subscriber.
    *
    * @param leader leader of the data center of this node
    */
-  final case class CurrentClusterState(
-    members:       immutable.SortedSet[Member]  = immutable.SortedSet.empty,
-    unreachable:   Set[Member]                  = Set.empty,
-    seenBy:        Set[Address]                 = Set.empty,
-    leader:        Option[Address]              = None,
-    roleLeaderMap: Map[String, Option[Address]] = Map.empty) {
+  @SerialVersionUID(2)
+  final class CurrentClusterState(
+    val members:       immutable.SortedSet[Member]  = immutable.SortedSet.empty,
+    val unreachable:   Set[Member]                  = Set.empty,
+    val seenBy:        Set[Address]                 = Set.empty,
+    val leader:        Option[Address]              = None,
+    val roleLeaderMap: Map[String, Option[Address]] = Map.empty)
+    extends Product5[immutable.SortedSet[Member], Set[Member], Set[Address], Option[Address], Map[String, Option[Address]]]
+    with Serializable {
 
     /**
      * Java API: get current member list.
@@ -125,6 +151,41 @@ object ClusterEvent {
     def getAllDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allDataCenters).asJava
 
+    // for binary compatibility (used to be a case class)
+    def copy(
+      members:       immutable.SortedSet[Member]  = this.members,
+      unreachable:   Set[Member]                  = this.unreachable,
+      seenBy:        Set[Address]                 = this.seenBy,
+      leader:        Option[Address]              = this.leader,
+      roleLeaderMap: Map[String, Option[Address]] = this.roleLeaderMap) =
+      new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap)
+
+    override def equals(other: Any): Boolean = other match {
+      case that: CurrentClusterState ⇒
+        (this eq that) || (
+          members == that.members &&
+          unreachable == that.unreachable &&
+          seenBy == that.seenBy &&
+          leader == that.leader &&
+          roleLeaderMap == that.roleLeaderMap)
+      case _ ⇒ false
+    }
+
+    override def hashCode(): Int = {
+      val state = Seq(members, unreachable, seenBy, leader, roleLeaderMap)
+      state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
+    }
+
+    // Product5
+    override def productPrefix = "CurrentClusterState"
+    def _1: SortedSet[Member] = members
+    def _2: Set[Member] = unreachable
+    def _3: Set[Address] = seenBy
+    def _4: Option[Address] = leader
+    def _5: Map[String, Option[Address]] = roleLeaderMap
+    def canEqual(that: Any): Boolean = that.isInstanceOf[CurrentClusterState]
+
+    override def toString = s"CurrentClusterState($members, $unreachable, $seenBy, $leader, $roleLeaderMap)"
   }
 
   /**
