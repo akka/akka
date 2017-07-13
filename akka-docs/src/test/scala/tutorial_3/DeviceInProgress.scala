@@ -1,6 +1,4 @@
-package tutorial_2
-
-import tutorial_5.Device.{ ReadTemperature, RecordTemperature, RespondTemperature, TemperatureRecorded }
+package tutorial_3
 
 object DeviceInProgress1 {
 
@@ -28,6 +26,8 @@ object DeviceInProgress2 {
   }
 
   class Device(groupId: String, deviceId: String) extends Actor with ActorLogging {
+    import Device._
+
     var lastTemperatureReading: Option[Double] = None
 
     override def preStart(): Unit = log.info("Device actor {}-{} started", groupId, deviceId)

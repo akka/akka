@@ -16,7 +16,6 @@ import static org.junit.Assert.assertEquals;
 
 import org.scalatest.junit.JUnitSuite;
 
-
 public class DeviceTest extends JUnitSuite {
 
   static ActorSystem system;
