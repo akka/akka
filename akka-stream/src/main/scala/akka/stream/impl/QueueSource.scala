@@ -54,10 +54,10 @@ import scala.util.control.NonFatal
         initCallback(callback.invoke)
       }
       override def postStop(): Unit = {
-        val illegalStateException = new IllegalStateException("Stream is terminated. SourceQueue is detached")
-        completion.tryFailure(illegalStateException)
+        val exception = new AbruptStageTerminationException(this)
+        completion.tryFailure(exception)
         stopCallback {
-          case Offer(elem, promise) ⇒ promise.failure(illegalStateException)
+          case Offer(elem, promise) ⇒ promise.failure(exception)
           case _                    ⇒ // ignore
         }
       }
