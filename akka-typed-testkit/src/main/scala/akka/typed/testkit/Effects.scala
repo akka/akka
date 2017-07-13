@@ -78,7 +78,7 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
   }
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
-    val ref = super.spawnAnonymous(behavior)
+    val ref = super.spawnAnonymous(behavior, props)
     effectQueue.offer(Spawned(ref.path.name))
     ref
   }
@@ -89,7 +89,7 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
   }
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
     effectQueue.offer(Spawned(name))
-    super.spawn(behavior, name)
+    super.spawn(behavior, name, props)
   }
   override def stop[U](child: ActorRef[U]): Boolean = {
     effectQueue.offer(Stopped(child.path.name))
