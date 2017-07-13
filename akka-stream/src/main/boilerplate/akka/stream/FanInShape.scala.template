@@ -53,46 +53,46 @@ object UniformFanInShape {
     new UniformFanInShape(inlets.size, FanInShape.Ports(outlet, inlets.toList))
 }
 
-class UniformFanInShape[-I, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {
+class UniformFanInShape[-T, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {
   def this(n: Int) = this(n, FanInShape.Name[O]("UniformFanIn"))
   def this(n: Int, name: String) = this(n, FanInShape.Name[O](name))
-  def this(outlet: Outlet[O], inlets: Array[Inlet[I]]) = this(inlets.length, FanInShape.Ports(outlet, inlets.toList))
+  def this(outlet: Outlet[O], inlets: Array[Inlet[T]]) = this(inlets.length, FanInShape.Ports(outlet, inlets.toList))
   override protected def construct(init: FanInShape.Init[O @uncheckedVariance]): FanInShape[O] = new UniformFanInShape(n, init)
-  override def deepCopy(): UniformFanInShape[I, O] = super.deepCopy().asInstanceOf[UniformFanInShape[I, O]]
+  override def deepCopy(): UniformFanInShape[T, O] = super.deepCopy().asInstanceOf[UniformFanInShape[T, O]]
 
-  final override def inlets: immutable.Seq[Inlet[I @uncheckedVariance]] = super.inlets.asInstanceOf[immutable.Seq[Inlet[I]]]
+  final override def inlets: immutable.Seq[Inlet[T @uncheckedVariance]] = super.inlets.asInstanceOf[immutable.Seq[Inlet[T]]]
 
-  private[stream] val inArray: Array[Inlet[I @uncheckedVariance]] = Array.tabulate(n)(i => newInlet[I](s"in$i"))
+  private[stream] val inArray: Array[Inlet[T @uncheckedVariance]] = Array.tabulate(n)(i => newInlet[T](s"in$i"))
 
   @deprecated("Use `inlets` or `in(id)` instead.", "2.5.4")
-  lazy val inSeq: immutable.IndexedSeq[Inlet[I @uncheckedVariance]] = inArray.toIndexedSeq
-  def in(n: Int): Inlet[I @uncheckedVariance] = inArray(n)
+  lazy val inSeq: immutable.IndexedSeq[Inlet[T @uncheckedVariance]] = inArray.toIndexedSeq
+  def in(n: Int): Inlet[T @uncheckedVariance] = inArray(n)
 }
 
-class FanInShape1N[-I0, -I1, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {
+class FanInShape1N[-T0, -T1, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {
   def this(n: Int) = this(n, FanInShape.Name[O]("FanInShape1N"))
   def this(n: Int, name: String) = this(n, FanInShape.Name[O](name))
-  def this(outlet: Outlet[O @uncheckedVariance], in0: Inlet[I0 @uncheckedVariance], inlets1: Array[Inlet[I1 @uncheckedVariance]]) = this(inlets1.length, FanInShape.Ports(outlet, in0 :: inlets1.toList))
+  def this(outlet: Outlet[O @uncheckedVariance], in0: Inlet[T0 @uncheckedVariance], inlets1: Array[Inlet[T1 @uncheckedVariance]]) = this(inlets1.length, FanInShape.Ports(outlet, in0 :: inlets1.toList))
   override protected def construct(init: FanInShape.Init[O @uncheckedVariance]): FanInShape[O] = new FanInShape1N(n, init)
-  override def deepCopy(): FanInShape1N[I0, I1, O] = super.deepCopy().asInstanceOf[FanInShape1N[I0, I1, O]]
+  override def deepCopy(): FanInShape1N[T0, T1, O] = super.deepCopy().asInstanceOf[FanInShape1N[T0, T1, O]]
 
-  val in0: Inlet[I0 @uncheckedVariance] = newInlet[I0]("in0")
-  private[stream] val in1Arr: Array[Inlet[I1 @uncheckedVariance]] = Array.tabulate(n)(i => newInlet[I1](s"in${i+1}"))
+  val in0: Inlet[T0 @uncheckedVariance] = newInlet[T0]("in0")
+  private[stream] val in1Arr: Array[Inlet[T1 @uncheckedVariance]] = Array.tabulate(n)(i => newInlet[T1](s"in${i+1}"))
   @deprecated("Use `inlets` or `in0` or `in(id)` instead.", "2.5.4")
-  lazy val in1Seq: immutable.IndexedSeq[Inlet[I1 @uncheckedVariance]] = in1Arr.toIndexedSeq
-  def in(n: Int): Inlet[I1 @uncheckedVariance] = {
+  lazy val in1Seq: immutable.IndexedSeq[Inlet[T1 @uncheckedVariance]] = in1Arr.toIndexedSeq
+  def in(n: Int): Inlet[T1 @uncheckedVariance] = {
     require(n > 0, "n must be > 0")
     in1Arr(n - 1)
   }
 }
 
-[2..#class FanInShape1[[#-I0#], +O](_init: FanInShape.Init[O]) extends FanInShape[O](_init) {
+[2..#class FanInShape1[[#-T0#], +O](_init: FanInShape.Init[O]) extends FanInShape[O](_init) {
   def this(name: String) = this(FanInShape.Name[O](name))
-  def this([#in0: Inlet[I0]#], out: Outlet[O]) = this(FanInShape.Ports(out, [#in0# :: ] :: Nil))
+  def this([#in0: Inlet[T0]#], out: Outlet[O]) = this(FanInShape.Ports(out, [#in0# :: ] :: Nil))
   override protected def construct(init: FanInShape.Init[O @uncheckedVariance]): FanInShape[O] = new FanInShape1(init)
-  override def deepCopy(): FanInShape1[[#I0#], O] = super.deepCopy().asInstanceOf[FanInShape1[[#I0#], O]]
+  override def deepCopy(): FanInShape1[[#T0#], O] = super.deepCopy().asInstanceOf[FanInShape1[[#T0#], O]]
 
-  [#val in0: Inlet[I0 @uncheckedVariance] = newInlet[I0]("in0")#
+  [#val in0: Inlet[T0 @uncheckedVariance] = newInlet[T0]("in0")#
   ]
 }#
 
