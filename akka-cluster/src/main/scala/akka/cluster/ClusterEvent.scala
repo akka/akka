@@ -85,13 +85,23 @@ object ClusterEvent {
    */
   @SerialVersionUID(2)
   final class CurrentClusterState(
-    val members:       immutable.SortedSet[Member]  = immutable.SortedSet.empty,
-    val unreachable:   Set[Member]                  = Set.empty,
-    val seenBy:        Set[Address]                 = Set.empty,
-    val leader:        Option[Address]              = None,
-    val roleLeaderMap: Map[String, Option[Address]] = Map.empty)
+    val members:                immutable.SortedSet[Member],
+    val unreachable:            Set[Member],
+    val seenBy:                 Set[Address],
+    val leader:                 Option[Address],
+    val roleLeaderMap:          Map[String, Option[Address]],
+    val unreachableDataCenters: Set[DataCenter])
     extends Product5[immutable.SortedSet[Member], Set[Member], Set[Address], Option[Address], Map[String, Option[Address]]]
     with Serializable {
+
+    // for binary compatibility
+    def this(
+      members:       immutable.SortedSet[Member]  = immutable.SortedSet.empty,
+      unreachable:   Set[Member]                  = Set.empty,
+      seenBy:        Set[Address]                 = Set.empty,
+      leader:        Option[Address]              = None,
+      roleLeaderMap: Map[String, Option[Address]] = Map.empty) =
+      this(members, unreachable, seenBy, leader, roleLeaderMap, Set.empty)
 
     /**
      * Java API: get current member list.
@@ -151,6 +161,12 @@ object ClusterEvent {
     def getAllDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allDataCenters).asJava
 
+    /**
+     * Replace the set of unreachable datacenters with the given set
+     */
+    def withUnreachableDataCenters(unreachableDataCenters: Set[DataCenter]): CurrentClusterState =
+      new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap, unreachableDataCenters)
+
     // for binary compatibility (used to be a case class)
     def copy(
       members:       immutable.SortedSet[Member]  = this.members,
@@ -158,7 +174,7 @@ object ClusterEvent {
       seenBy:        Set[Address]                 = this.seenBy,
       leader:        Option[Address]              = this.leader,
       roleLeaderMap: Map[String, Option[Address]] = this.roleLeaderMap) =
-      new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap)
+      new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap, unreachableDataCenters)
 
     override def equals(other: Any): Boolean = other match {
       case that: CurrentClusterState ⇒
@@ -366,7 +382,10 @@ object ClusterEvent {
       }(collection.breakOut)
     }
 
-  private def isReachable(state: MembershipState, oldUnreachableNodes: Set[UniqueAddress])(otherDc: DataCenter): Boolean = {
+  /**
+   * Internal API
+   */
+  private[cluster] def isReachable(state: MembershipState, oldUnreachableNodes: Set[UniqueAddress])(otherDc: DataCenter): Boolean = {
     val unrelatedDcNodes = state.latestGossip.members.collect {
       case m if m.dataCenter != otherDc && m.dataCenter != state.selfDc ⇒ m.uniqueAddress
     }
@@ -525,13 +544,20 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       membershipState.dcReachabilityNoOutsideNodes.allUnreachableOrTerminated.collect {
         case node if node != selfUniqueAddress ⇒ membershipState.latestGossip.member(node)
       }
-    val state = CurrentClusterState(
+
+    val unreachableDataCenters: Set[DataCenter] =
+      if (!membershipState.latestGossip.isMultiDc) Set.empty
+      else membershipState.latestGossip.allDataCenters.filterNot(isReachable(membershipState, Set.empty))
+
+    val state = new CurrentClusterState(
       members = membershipState.latestGossip.members,
       unreachable = unreachable,
       seenBy = membershipState.latestGossip.seenBy.map(_.address),
       leader = membershipState.leader.map(_.address),
       roleLeaderMap = membershipState.latestGossip.allRoles.map(r ⇒
-        r → membershipState.roleLeader(r).map(_.address))(collection.breakOut))
+        r → membershipState.roleLeader(r).map(_.address))(collection.breakOut),
+      unreachableDataCenters
+    )
     receiver ! state
   }
 
