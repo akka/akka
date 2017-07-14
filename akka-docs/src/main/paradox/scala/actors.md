@@ -383,9 +383,21 @@ A path in an actor system represents a "place" which might be occupied
 by a living actor. Initially (apart from system initialized actors) a path is
 empty. When `actorOf()` is called it assigns an *incarnation* of the actor
 described by the passed `Props` to the given path. An actor incarnation is
-identified by the path *and a UID*. A restart only swaps the `Actor`
+identified by the path *and a UID*. 
+
+It is worth noting about the difference between:
+
+* restart 
+* stop, followed by re-creation of actor
+
+as explained below.
+
+A restart only swaps the `Actor`
 instance defined by the `Props` but the incarnation and hence the UID remains
 the same.
+As long as the incarnation is same, you can keep using the same `ActorRef`.
+Restart is handled by the [Supervision Strategy](fault-tolerance.md#creating-a-supervisor-strategy) of actor's parent actor,
+and there is more discussion about [what restart means](../general/supervision.md#what-restarting-means)
 
 The lifecycle of an incarnation ends when the actor is stopped. At
 that point the appropriate lifecycle events are called and watching actors
@@ -1332,15 +1344,15 @@ The rich lifecycle hooks of Actors provide a useful toolkit to implement various
 lifetime of an `ActorRef`, an actor can potentially go through several restarts, where the old instance is replaced by
 a fresh one, invisibly to the outside observer who only sees the `ActorRef`.
 
-One may think about the new instances as "incarnations". Initialization might be necessary for every incarnation
-of an actor, but sometimes one needs initialization to happen only at the birth of the first instance when the
+Initialization might be necessary every time an actor is instantiated, 
+but sometimes one needs initialization to happen only at the birth of the first instance when the
 `ActorRef` is created. The following sections provide patterns for different initialization needs.
 
 ### Initialization via constructor
 
 Using the constructor for initialization has various benefits. First of all, it makes it possible to use `val` fields to store
 any state that does not change during the life of the actor instance, making the implementation of the actor more robust.
-The constructor is invoked for every incarnation of the actor, therefore the internals of the actor can always assume
+The constructor is invoked when an actor instance is created calling `actorOf` and also on restart, therefore the internals of the actor can always assume
 that proper initialization happened. This is also the drawback of this approach, as there are cases when one would
 like to avoid reinitializing internals on restart. For example, it is often useful to preserve child actors across
 restarts. The following section provides a pattern for this case.
@@ -1349,11 +1361,11 @@ restarts. The following section provides a pattern for this case.
 
 The method `preStart()` of an actor is only called once directly during the initialization of the first instance, that
 is, at creation of its `ActorRef`. In the case of restarts, `preStart()` is called from `postRestart()`, therefore
-if not overridden, `preStart()` is called on every incarnation. However, by overriding `postRestart()` one can disable
+if not overridden, `preStart()` is called on every restart. However, by overriding `postRestart()` one can disable
 this behavior, and ensure that there is only one call to `preStart()`.
 
 One useful usage of this pattern is to disable creation of new `ActorRefs` for children during restarts. This can be
-achieved by overriding `preRestart()`:
+achieved by overriding `preRestart()`. Below is the default implementation of these lifecycle hooks:
 
 Scala
 :  @@snip [InitializationDocSpec.scala]($code$/scala/docs/actor/InitializationDocSpec.scala) { #preStartInit }
