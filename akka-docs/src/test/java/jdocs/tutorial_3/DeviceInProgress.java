@@ -1,11 +1,11 @@
-package jdocs.tutorial_2;
+package jdocs.tutorial_3;
 
 import java.util.Optional;
 
-import jdocs.tutorial_2.Device.ReadTemperature;
-import jdocs.tutorial_2.Device.RecordTemperature;
-import jdocs.tutorial_2.Device.RespondTemperature;
-import jdocs.tutorial_2.Device.TemperatureRecorded;
+import jdocs.tutorial_3.Device.ReadTemperature;
+import jdocs.tutorial_3.Device.RecordTemperature;
+import jdocs.tutorial_3.Device.RespondTemperature;
+import jdocs.tutorial_3.Device.TemperatureRecorded;
 
 class DeviceInProgress1 {
 

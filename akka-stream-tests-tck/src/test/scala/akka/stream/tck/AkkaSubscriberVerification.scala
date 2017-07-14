@@ -16,7 +16,7 @@ abstract class AkkaSubscriberBlackboxVerification[T](env: TestEnvironment)
   with AkkaSubscriberVerificationLike with ActorSystemLifecycle {
 
   def this(printlnDebug: Boolean) =
-    this(new TestEnvironment(Timeouts.defaultTimeoutMillis, printlnDebug))
+    this(new TestEnvironment(Timeouts.defaultTimeoutMillis, Timeouts.defaultNoSignalsTimeoutMillis, printlnDebug))
 
   def this() = this(false)
 }
@@ -26,7 +26,7 @@ abstract class AkkaSubscriberWhiteboxVerification[T](env: TestEnvironment)
   with AkkaSubscriberVerificationLike {
 
   def this(printlnDebug: Boolean) =
-    this(new TestEnvironment(Timeouts.defaultTimeoutMillis, printlnDebug))
+    this(new TestEnvironment(Timeouts.defaultTimeoutMillis, Timeouts.defaultNoSignalsTimeoutMillis, printlnDebug))
 
   def this() = this(false)
 }

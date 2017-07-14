@@ -1,4 +1,4 @@
-package jdocs.tutorial_2.inprogress2;
+package jdocs.tutorial_3.inprogress2;
 
 //#device-with-read
 

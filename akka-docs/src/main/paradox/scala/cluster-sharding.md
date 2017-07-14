@@ -74,7 +74,7 @@ This example illustrates two different ways to define the entity identifier in t
 sent to the entity actor is wrapped in the envelope.
 
 Note how these two messages types are handled in the @scala[`extractEntityId` function] @java[`entityId` and `entityMessage` methods] shown above.
-The message sent to the entity actor is @scala[the second part of the tuple returned by the `extractEntityId`] @[what `entityMessage` returns] and that makes it possible to unwrap envelopes
+The message sent to the entity actor is @scala[the second part of the tuple returned by the `extractEntityId`] @java[what `entityMessage` returns] and that makes it possible to unwrap envelopes
 if needed.
 
 A shard is a group of entities that will be managed together. The grouping is defined by the

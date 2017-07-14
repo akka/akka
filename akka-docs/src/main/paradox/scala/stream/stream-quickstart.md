@@ -1,9 +1,7 @@
-
-<a id="stream-quickstart"></a>
-# Quick Start Guide
+# Streams Quickstart Guide
 
 Create a project and add the akka-streams dependency to the build tool of your
-choice as described in @ref[Using a build tool](../guide/quickstart.md).
+choice.
 
 A stream usually begins at a source, so this is also how we start an Akka
 Stream. Before we create one, we import the full complement of streaming tools:

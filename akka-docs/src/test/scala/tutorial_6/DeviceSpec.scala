@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package tutorial_5
+package tutorial_6
 
 import akka.testkit.{ AkkaSpec, TestProbe }
 

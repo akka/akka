@@ -1,4 +1,4 @@
-package jdocs.tutorial_2;
+package jdocs.tutorial_3;
 
 class DeviceInProgress3 {
 
