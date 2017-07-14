@@ -81,8 +81,8 @@ object TestPublisher {
      */
     def subscribe(subscriber: Subscriber[_ >: I]): Unit = {
       val subscription: PublisherProbeSubscription[I] = new PublisherProbeSubscription[I](subscriber, probe)
-      probe.ref ! Subscribe(subscription)
       if (autoOnSubscribe) subscriber.onSubscribe(subscription)
+      probe.ref ! Subscribe(subscription)
     }
 
     /**
