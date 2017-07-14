@@ -109,6 +109,35 @@ abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeather
 
       enterBarrier("done")
     }
+
+    "never heartbeat to itself or members of same its own data center" taggedAs LongRunningTest in {
+
+      val observer = TestProbe("alpha-observer")
+
+      val crossDcHeartbeatSenderPath = "/system/cluster/core/daemon/crossDcHeartbeatSender"
+      val selectCrossDcHeartbeatSender = system.actorSelection(crossDcHeartbeatSenderPath)
+
+      enterBarrier("checking-activeReceivers")
+
+      implicit val sender = observer.ref
+      selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
+      observer.expectMsgType[CrossDcHeartbeatSender.MonitoringStateReport](5.seconds) match {
+        case CrossDcHeartbeatSender.MonitoringDormant() ⇒ // ok ...
+        case CrossDcHeartbeatSender.MonitoringActive(state) ⇒
+
+          // must not heartbeat myself
+          state.activeReceivers should not contain cluster.selfUniqueAddress
+
+          // not any of the members in the same datacenter; it's "cross-dc" after all
+          val myDataCenterMembers = state.state.getOrElse(cluster.selfDataCenter, Set.empty)
+          myDataCenterMembers foreach { myDcMember ⇒
+            state.activeReceivers should not contain myDcMember.uniqueAddress
+          }
+
+      }
+
+      enterBarrier("done-checking-activeReceivers")
+    }
   }
 
   /**

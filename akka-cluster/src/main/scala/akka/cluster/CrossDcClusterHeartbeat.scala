@@ -55,6 +55,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   val selfHeartbeat = ClusterHeartbeatSender.Heartbeat(selfAddress)
 
   var dataCentersState: CrossDcHeartbeatingState = CrossDcHeartbeatingState.init(
+    selfDataCenter,
     crossDcFailureDetector,
     crossDcSettings.NrOfMonitoringActors,
     SortedSet.empty
@@ -123,7 +124,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
     // nr of monitored nodes is the same as the number of monitoring nodes (`n` oldest in one DC watch `n` oldest in other)
     val nodes = snapshot.members
     val nrOfMonitoredNodes = crossDcSettings.NrOfMonitoringActors
-    dataCentersState = CrossDcHeartbeatingState.init(crossDcFailureDetector, nrOfMonitoredNodes, nodes)
+    dataCentersState = CrossDcHeartbeatingState.init(selfDataCenter, crossDcFailureDetector, nrOfMonitoredNodes, nodes)
   }
 
   def addMember(m: Member): Unit =
@@ -207,6 +208,7 @@ private[akka] object CrossDcHeartbeatSender {
 /** INTERNAL API */
 @InternalApi
 private[cluster] final case class CrossDcHeartbeatingState(
+  selfDataCenter:          DataCenter,
   failureDetector:         FailureDetectorRegistry[Address],
   nrOfMonitoredNodesPerDc: Int,
   state:                   Map[ClusterSettings.DataCenter, SortedSet[Member]]) {
@@ -265,11 +267,26 @@ private[cluster] final case class CrossDcHeartbeatingState(
     }
   }
 
-  val activeReceivers: Set[UniqueAddress] =
-    dataCenters.flatMap(k ⇒ state(k).take(nrOfMonitoredNodesPerDc).map(_.uniqueAddress)(breakOut))
+  /** Lists addresses that this node should send heartbeats to */
+  val activeReceivers: Set[UniqueAddress] = {
+    val otherDcs = state.filter(_._1 != selfDataCenter)
+    val allOtherNodes = otherDcs.values
 
+    allOtherNodes.flatMap(
+      _.take(nrOfMonitoredNodesPerDc)
+        .map(_.uniqueAddress)(breakOut)
+    ).toSet
+  }
+
+  /** Lists addresses in diven DataCenter that this node should send heartbeats to */
   private def activeReceiversIn(dc: DataCenter): Set[UniqueAddress] =
-    state.getOrElse(dc, emptyMembersSortedSet).take(nrOfMonitoredNodesPerDc).map(_.uniqueAddress)(breakOut)
+    if (dc == selfDataCenter) Set.empty // CrossDcHeartbeatSender is not supposed to send within its own Dc
+    else {
+      val otherNodes = state.getOrElse(dc, emptyMembersSortedSet)
+      otherNodes
+        .take(nrOfMonitoredNodesPerDc)
+        .map(_.uniqueAddress)(breakOut)
+    }
 
   def allMembers: Iterable[Member] =
     state.values.flatMap(ConstantFun.scalaIdentityFunction)
@@ -294,10 +311,12 @@ private[cluster] object CrossDcHeartbeatingState {
   private def emptyMembersSortedSet: SortedSet[Member] = SortedSet.empty[Member](Member.ageOrdering)
 
   def init(
+    selfDataCenter:          DataCenter,
     crossDcFailureDetector:  FailureDetectorRegistry[Address],
     nrOfMonitoredNodesPerDc: Int,
     members:                 SortedSet[Member]): CrossDcHeartbeatingState = {
-    CrossDcHeartbeatingState(
+    new CrossDcHeartbeatingState(
+      selfDataCenter,
       crossDcFailureDetector,
       nrOfMonitoredNodesPerDc,
       state = {
