@@ -28,6 +28,9 @@ abstract class FanInShape[+O] private (_out: Outlet[O @uncheckedVariance], _regi
 
   final def out: Outlet[O @uncheckedVariance] = _out
   final override def outlets: immutable.Seq[Outlet[O @uncheckedVariance]] = _out :: Nil
+  /**
+    * Not meant for overriding outside of Akka.
+    */
   override def inlets: immutable.Seq[Inlet[_]] = _inlets
 
   private var _inlets: Vector[Inlet[_]] = Vector.empty
