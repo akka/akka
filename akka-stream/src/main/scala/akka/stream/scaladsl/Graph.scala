@@ -968,8 +968,8 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] ⇒ O)(n: Int) extends GraphStage[
   override val shape = new UniformFanInShape[A, O](n)
   def out: Outlet[O] = shape.out
 
-  @deprecated("use `shape.inlets` instead", "2.5.4")
-  val inSeq: immutable.IndexedSeq[Inlet[A]] = shape.inlets.asInstanceOf[immutable.IndexedSeq[Inlet[A]]]
+  @deprecated("use `shape.inlets` or `shape.in(id)` instead", "2.5.4")
+  def inSeq: immutable.IndexedSeq[Inlet[A]] = shape.inlets.asInstanceOf[immutable.IndexedSeq[Inlet[A]]]
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
     var pending = 0
@@ -980,16 +980,16 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] ⇒ O)(n: Int) extends GraphStage[
     val pullInlet = pull[A] _
 
     private def pushAll(): Unit = {
-      push(out, zipper(inSeq.map(grabInlet)))
+      push(out, zipper(shape.inlets.map(grabInlet)))
       if (willShutDown) completeStage()
-      else inSeq.foreach(pullInlet)
+      else shape.inlets.foreach(pullInlet)
     }
 
     override def preStart(): Unit = {
-      inSeq.foreach(pullInlet)
+      shape.inlets.foreach(pullInlet)
     }
 
-    inSeq.foreach(in ⇒ {
+    shape.inlets.foreach(in ⇒ {
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           pending -= 1
