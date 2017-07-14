@@ -182,7 +182,7 @@ object MergePreferred {
  * Merge several streams, taking elements as they arrive from input streams
  * (picking from preferred when several have elements ready).
  *
- * A `MergePreferred` has one `out` port, one `preferred` input port and 0 or more secondary `in` ports.
+ * A `MergePreferred` has one `out` port, one `preferred` input port and 1 or more secondary `in` ports.
  *
  * '''Emits when''' one of the inputs has an element available, preferring
  * a specified input if multiple have elements available
@@ -192,11 +192,9 @@ object MergePreferred {
  * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
  *
  * '''Cancels when''' downstream cancels
- *
- * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
 final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolean) extends GraphStage[MergePreferred.MergePreferredShape[T]] {
-  require(secondaryPorts >= 1, "A MergePreferred must have more than 0 secondary input ports")
+  require(secondaryPorts >= 1, "A MergePreferred must have 1 or more secondary input ports")
 
   override def initialAttributes = DefaultAttributes.mergePreferred
   override val shape: MergePreferred.MergePreferredShape[T] =
@@ -214,8 +212,8 @@ final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolea
     }
 
     override def preStart(): Unit = {
-      tryPull(preferred)
-      shape.inArray.foreach(tryPull)
+      //while initializing this `MergePreferredShape`, the `preferred` port gets added to `inlets` by side-effect.
+      shape.inlets.foreach(tryPull)
     }
 
     setHandler(out, eagerTerminateOutput)
@@ -305,8 +303,6 @@ object MergePrioritized {
  * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
  *
  * '''Cancels when''' downstream cancels
- *
- * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
 final class MergePrioritized[T] private (val priorities: Seq[Int], val eagerComplete: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
   private val inputPorts = priorities.size
@@ -961,7 +957,9 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] ⇒ O)(n: Int) extends GraphStage[
   override def initialAttributes = DefaultAttributes.zipWithN
   override val shape = new UniformFanInShape[A, O](n)
   def out: Outlet[O] = shape.out
-  val inSeq: immutable.IndexedSeq[Inlet[A]] = shape.inlets.toIndexedSeq
+
+  @deprecated("use `shape.inlets` instead", "2.5.4")
+  val inSeq: immutable.IndexedSeq[Inlet[A]] = shape.inlets.asInstanceOf[immutable.IndexedSeq[Inlet[A]]]
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
     var pending = 0

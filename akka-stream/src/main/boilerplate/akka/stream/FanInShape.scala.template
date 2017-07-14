@@ -4,7 +4,6 @@
 package akka.stream
 
 import scala.collection.immutable
-import scala.annotation.varargs
 import scala.annotation.unchecked.uncheckedVariance
 
 object FanInShape {
@@ -62,7 +61,8 @@ class UniformFanInShape[-T, +O](val n: Int, _init: FanInShape.Init[O]) extends F
 
   final override def inlets: immutable.Seq[Inlet[T @uncheckedVariance]] = super.inlets.asInstanceOf[immutable.Seq[Inlet[T]]]
 
-  private[stream] val inArray: Array[Inlet[T @uncheckedVariance]] = Array.tabulate(n)(i => newInlet[T](s"in$i"))
+  //duplication of `inlets` as an `Array` for `in(id)` lookup performance
+  private val inArray: Array[Inlet[T @uncheckedVariance]] = Array.tabulate(n)(i => newInlet[T](s"in$i"))
 
   @deprecated("Use `inlets` or `in(id)` instead.", "2.5.4")
   lazy val inSeq: immutable.IndexedSeq[Inlet[T @uncheckedVariance]] = inArray.toIndexedSeq
@@ -77,11 +77,13 @@ class FanInShape1N[-T0, -T1, +O](val n: Int, _init: FanInShape.Init[O]) extends 
   override def deepCopy(): FanInShape1N[T0, T1, O] = super.deepCopy().asInstanceOf[FanInShape1N[T0, T1, O]]
 
   val in0: Inlet[T0 @uncheckedVariance] = newInlet[T0]("in0")
-  private[stream] val in1Arr: Array[Inlet[T1 @uncheckedVariance]] = Array.tabulate(n)(i => newInlet[T1](s"in${i+1}"))
+  //duplication of `inlets` as an `Array` for `in(id)` lookup performance
+  private val in1Arr: Array[Inlet[T1 @uncheckedVariance]] = Array.tabulate(n)(i => newInlet[T1](s"in${i+1}"))
   @deprecated("Use `inlets` or `in0` or `in(id)` instead.", "2.5.4")
   lazy val in1Seq: immutable.IndexedSeq[Inlet[T1 @uncheckedVariance]] = in1Arr.toIndexedSeq
   def in(n: Int): Inlet[T1 @uncheckedVariance] = {
     require(n > 0, "n must be > 0")
+    require(n < this.n, "n must be less than the number of in ports")
     in1Arr(n - 1)
   }
 }
