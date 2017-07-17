@@ -7,7 +7,7 @@ used to retrieve the result of some concurrent operation. This result can be acc
 or asynchronously (non-blocking). To be able to use this from Java, Akka provides a java friendly interface
 in `akka.dispatch.Futures`.
 
-See also @ref:[Java 8 and Scala Compatibility](scala-compat.md) for Java compatibility.
+See also @ref:[Java 8 Compatibility](java8-compat.md) for Java compatibility.
 
 ## Execution Contexts
 

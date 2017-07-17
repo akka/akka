@@ -179,7 +179,13 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
 
   def kill(pingPongActor: ActorRef) = {
     val result = (pingPongActor.?(DieReply)(DilatedTimeout))
-    expectMsg(Timeout, ExceptionMessage)
+    expectMsg(Timeout, ExceptionMessage) //this is sent from PingPongActor's postRestart()
+    intercept[RuntimeException] { Await.result(result, DilatedTimeout) }
+  }
+
+  def killExpectNoRestart(pingPongActor: ActorRef) = {
+    val result = (pingPongActor.?(DieReply)(DilatedTimeout))
+    expectNoMsg(500 milliseconds)
     intercept[RuntimeException] { Await.result(result, DilatedTimeout) }
   }
 
@@ -496,4 +502,46 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
 
     }
   }
+
+  "restarts a child infinitely if maxNrOfRetries = -1 and withinTimeRange = Duration.Inf" in {
+    val supervisor = system.actorOf(Props(new Supervisor(
+      OneForOneStrategy(maxNrOfRetries = -1, withinTimeRange = Duration.Inf)(classOf[Exception] :: Nil))))
+
+    val pingpong = child(supervisor, Props(new PingPongActor(testActor)))
+
+    kill(pingpong)
+    kill(pingpong)
+    kill(pingpong)
+    kill(pingpong)
+    kill(pingpong)
+    kill(pingpong)
+    kill(pingpong)
+    ping(pingpong)
+  }
+
+  "treats maxNrOfRetries = -1 as maxNrOfRetries = 1 if withinTimeRange is non-infinite Duration" in {
+    val supervisor = system.actorOf(Props(new Supervisor(
+      OneForOneStrategy(maxNrOfRetries = -1, withinTimeRange = 10 seconds)(classOf[Exception] :: Nil))))
+
+    val pingpong = child(supervisor, Props(new PingPongActor(testActor)))
+
+    ping(pingpong)
+    kill(pingpong)
+    ping(pingpong)
+    killExpectNoRestart(pingpong)
+  }
+
+  "treats withinTimeRange = Duration.Inf as a single infinite restart window" in {
+    val supervisor = system.actorOf(Props(new Supervisor(
+      OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = Duration.Inf)(classOf[Exception] :: Nil))))
+
+    val pingpong = child(supervisor, Props(new PingPongActor(testActor)))
+
+    //impossible to confirm if the restart window is infinite, so making sure maxNrOfRetries is respected correctly
+    kill(pingpong)
+    kill(pingpong)
+    kill(pingpong)
+    killExpectNoRestart(pingpong)
+  }
+
 }

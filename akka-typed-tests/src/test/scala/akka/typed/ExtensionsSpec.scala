@@ -95,7 +95,7 @@ class ExtensionsSpec extends TypedSpecSetup {
 
     def `04 handle extensions that fail to initialize`(): Unit = {
       def create(): Unit = {
-        ActorSystem[Any]("ExtensionsSpec04", Behavior.EmptyBehavior, config = Some(ConfigFactory.parseString(
+        ActorSystem[Any](Behavior.EmptyBehavior, "ExtensionsSpec04", config = Some(ConfigFactory.parseString(
           """
           akka.typed.extensions = ["akka.typed.FailingToLoadExtension$"]
         """)))
@@ -153,7 +153,7 @@ class ExtensionsSpec extends TypedSpecSetup {
       }
 
     def withEmptyActorSystem[T](name: String, config: Option[Config] = None)(f: ActorSystem[_] ⇒ T): T = {
-      val system = ActorSystem[Any](name, Behavior.EmptyBehavior, config = config)
+      val system = ActorSystem[Any](Behavior.EmptyBehavior, name, config = config)
       try f(system) finally system.terminate().futureValue
     }
 

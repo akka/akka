@@ -55,7 +55,7 @@ object Framing {
    * Creates a Flow that decodes an incoming stream of unstructured byte chunks into a stream of frames, assuming that
    * incoming frames have a field that encodes their length.
    *
-   * If the input stream finishes before the last frame has been fully decoded this Flow will fail the stream reporting
+   * If the input stream finishes before the last frame has been fully decoded, this Flow will fail the stream reporting
    * a truncated frame.
    *
    * The byte order used for when decoding the field defaults to little-endian.
@@ -76,7 +76,7 @@ object Framing {
    * Creates a Flow that decodes an incoming stream of unstructured byte chunks into a stream of frames, assuming that
    * incoming frames have a field that encodes their length.
    *
-   * If the input stream finishes before the last frame has been fully decoded this Flow will fail the stream reporting
+   * If the input stream finishes before the last frame has been fully decoded, this Flow will fail the stream reporting
    * a truncated frame.
    *
    * @param fieldLength The length of the "size" field in bytes
@@ -92,6 +92,39 @@ object Framing {
     maximumFrameLength: Int,
     byteOrder:          ByteOrder): Flow[ByteString, ByteString, NotUsed] =
     scaladsl.Framing.lengthField(fieldLength, fieldOffset, maximumFrameLength, byteOrder).asJava
+
+  /**
+   * Creates a Flow that decodes an incoming stream of unstructured byte chunks into a stream of frames, assuming that
+   * incoming frames have a field that encodes their length.
+   *
+   * If the input stream finishes before the last frame has been fully decoded, this Flow will fail the stream reporting
+   * a truncated frame.
+   *
+   * @param fieldLength The length of the "size" field in bytes
+   * @param fieldOffset The offset of the field from the beginning of the frame in bytes
+   * @param maximumFrameLength The maximum length of allowed frames while decoding. If the maximum length is exceeded
+   *                           this Flow will fail the stream. This length *includes* the header (i.e the offset and
+   *                           the length of the size field)
+   * @param byteOrder The ''ByteOrder'' to be used when decoding the field
+   * @param computeFrameSize This function can be supplied if frame size is varied or needs to be computed in a special fashion.
+   *                         For example, frame can have a shape like this: `[offset bytes][body size bytes][body bytes][footer bytes]`.
+   *                         Then computeFrameSize can be used to compute the frame size: `(offset bytes, computed size) => (actual frame size)`.
+   *                         ''Actual frame size'' must be equal or bigger than sum of `fieldOffset` and `fieldLength`, the stage fails otherwise.
+   *
+   */
+  def lengthField(
+    fieldLength:        Int,
+    fieldOffset:        Int,
+    maximumFrameLength: Int,
+    byteOrder:          ByteOrder,
+    computeFrameSize:   akka.japi.function.Function2[Array[Byte], Integer, Integer]): Flow[ByteString, ByteString, NotUsed] =
+    scaladsl.Framing.lengthField(
+      fieldLength,
+      fieldOffset,
+      maximumFrameLength,
+      byteOrder,
+      (a: Array[Byte], s: Int) ⇒ computeFrameSize.apply(a, s)
+    ).asJava
 
   /**
    * Returns a BidiFlow that implements a simple framing protocol. This is a convenience wrapper over [[Framing#lengthField]]

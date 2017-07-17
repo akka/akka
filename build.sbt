@@ -36,9 +36,9 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
 
 lazy val root = Project(
   id = "akka",
-  base = file("."),
-  aggregate = aggregatedProjects
-).settings(rootSettings: _*)
+  base = file(".")
+).aggregate(aggregatedProjects: _*)
+ .settings(rootSettings: _*)
  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs))
 
 lazy val actor = akkaModule("akka-actor")
@@ -103,6 +103,7 @@ lazy val docs = akkaModule("akka-docs")
   .dependsOn(
     actor, cluster, clusterMetrics, slf4j, agent, camel, osgi, persistenceTck, persistenceQuery, distributedData, stream,
     clusterTools % "compile->compile;test->test",
+    clusterSharding % "compile->compile;test->test",
     testkit % "compile->compile;test->test",
     remote % "compile->compile;test->test",
     persistence % "compile->compile;provided->provided;test->test",

@@ -159,11 +159,13 @@ object ActorSystem {
    * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
    * [[akka.actor.Actor]] instances.
    */
-  def apply[T](name: String, guardianBehavior: Behavior[T],
-               guardianProps:    Props                    = Props.empty,
-               config:           Option[Config]           = None,
-               classLoader:      Option[ClassLoader]      = None,
-               executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
+  def apply[T](
+    guardianBehavior: Behavior[T],
+    name:             String,
+    guardianProps:    Props                    = Props.empty,
+    config:           Option[Config]           = None,
+    classLoader:      Option[ClassLoader]      = None,
+    executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
     Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
@@ -175,13 +177,15 @@ object ActorSystem {
    * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
    * [[akka.actor.Actor]] instances.
    */
-  def create[T](name: String, guardianBehavior: Behavior[T],
-                guardianProps:    Optional[Props],
-                config:           Optional[Config],
-                classLoader:      Optional[ClassLoader],
-                executionContext: Optional[ExecutionContext]): ActorSystem[T] = {
+  def create[T](
+    guardianBehavior: Behavior[T],
+    name:             String,
+    guardianProps:    Optional[Props],
+    config:           Optional[Config],
+    classLoader:      Optional[ClassLoader],
+    executionContext: Optional[ExecutionContext]): ActorSystem[T] = {
     import scala.compat.java8.OptionConverters._
-    apply(name, guardianBehavior, guardianProps.asScala.getOrElse(EmptyProps), config.asScala, classLoader.asScala, executionContext.asScala)
+    apply(guardianBehavior, name, guardianProps.asScala.getOrElse(EmptyProps), config.asScala, classLoader.asScala, executionContext.asScala)
   }
 
   /**
@@ -189,8 +193,8 @@ object ActorSystem {
    * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
    * [[akka.actor.Actor]] instances.
    */
-  def create[T](name: String, guardianBehavior: Behavior[T]): ActorSystem[T] =
-    apply(name, guardianBehavior)
+  def create[T](guardianBehavior: Behavior[T], name: String): ActorSystem[T] =
+    apply(guardianBehavior, name)
 
   /**
    * Create an ActorSystem based on the untyped [[akka.actor.ActorSystem]]

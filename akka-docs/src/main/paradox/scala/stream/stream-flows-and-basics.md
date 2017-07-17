@@ -352,5 +352,5 @@ such as `Zip` however *do guarantee* their outputs order, as each output element
 been signalled already – thus the ordering in the case of zipping is defined by this property.
 
 If you find yourself in need of fine grained control over order of emitted elements in fan-in
-scenarios consider using `MergePreferred` or `GraphStage` – which gives you full control over how the
+scenarios consider using `MergePreferred`, `MergePrioritized` or `GraphStage` – which gives you full control over how the
 merge is performed.

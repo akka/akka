@@ -3,10 +3,13 @@
  */
 package akka.stream.javadsl
 
-import akka.Done
-import java.util.concurrent.CompletionStage
 import java.util.Optional
+import java.util.concurrent.CompletionStage
+
+import akka.Done
 import akka.stream.QueueOfferResult
+
+import scala.concurrent.Future
 
 /**
  * This trait allows to have the queue as a data source for some stream.
@@ -27,7 +30,8 @@ trait SourceQueue[T] {
   def offer(elem: T): CompletionStage[QueueOfferResult]
 
   /**
-   * Method returns future that completes when stream is completed and fails when stream failed
+   * Method returns a [[CompletionStage]] that will be completed if the stream completes,
+   * or will be failed when the stage faces an internal failure.
    */
   def watchCompletion(): CompletionStage[Done]
 }
@@ -47,6 +51,12 @@ trait SourceQueueWithComplete[T] extends SourceQueue[T] {
    * operation’s success.
    */
   def fail(ex: Throwable): Unit
+
+  /**
+   * Method returns a [[Future]] that will be completed if the stream completes,
+   * or will be failed when the stage faces an internal failure or the the [[SourceQueueWithComplete.fail]] method is invoked.
+   */
+  override def watchCompletion(): CompletionStage[Done]
 }
 
 /**

@@ -70,7 +70,7 @@ public class WatchTest extends JUnitSuite {
             watched.tell(new Stop());
             return waitingForTermination(msg.replyTo);
         });
-        ActorSystem<RunTest<Done>> system = ActorSystem.create("sysname", root);
+        ActorSystem<RunTest<Done>> system = ActorSystem.create(root, "sysname");
         try {
           // Not sure why this does not compile without an explicit cast?
           // system.tell(new RunTest());
@@ -93,7 +93,7 @@ public class WatchTest extends JUnitSuite {
                 return unhandled();
             }
         });
-        ActorSystem<Message> system = ActorSystem.create("sysname", root);
+        ActorSystem<Message> system = ActorSystem.create(root, "sysname");
         try {
           // Not sure why this does not compile without an explicit cast?
           // system.tell(new RunTest());

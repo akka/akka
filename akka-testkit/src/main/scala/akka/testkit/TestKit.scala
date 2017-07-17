@@ -408,8 +408,11 @@ trait TestKitBase {
 
   /**
    * Receive one message from the test actor and assert that it is the Terminated message of the given ActorRef.
+   * Before calling this method, you have to `watch` the target actor ref.
    * Wait time is bounded by the given duration, with an AssertionFailure being thrown in case of timeout.
    *
+   * @param target the actor ref expected to be Terminated
+   * @param max wait no more than max time, otherwise throw AssertionFailure
    * @return the received Terminated message
    */
   def expectTerminated(target: ActorRef, max: Duration = Duration.Undefined): Terminated =

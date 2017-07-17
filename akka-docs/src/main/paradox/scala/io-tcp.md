@@ -2,22 +2,34 @@
 
 The code snippets through-out this section assume the following imports:
 
-@@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #imports }
+Scala
+:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #imports }
+
+Java
+:  @@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #imports }
 
 All of the Akka I/O APIs are accessed through manager objects. When using an I/O API, the first step is to acquire a
 reference to the appropriate manager. The code below shows how to acquire a reference to the `Tcp` manager.
 
-@@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #manager }
+Scala
+:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #manager }
+
+Java
+:  @@snip [EchoManager.java]($code$/java/jdocs/io/japi/EchoManager.java) { #manager }
 
 The manager is an actor that handles the underlying low level I/O resources (selectors, channels) and instantiates
 workers for specific tasks, such as listening to incoming connections.
 
 ## Connecting
 
-@@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #client }
+Scala
+:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #client }
 
-The first step of connecting to a remote address is sending a `Connect`
-message to the TCP manager; in addition to the simplest form shown above there
+Java
+:  @@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #client }
+
+The first step of connecting to a remote address is sending a 
+@scala[`Connect` message]@java[message by the `TcpMessage.connect` method] to the TCP manager; in addition to the simplest form shown above there
 is also the possibility to specify a local `InetSocketAddress` to bind
 to and a list of socket options to apply.
 
@@ -27,20 +39,20 @@ The SO_NODELAY (TCP_NODELAY on Windows) socket option defaults to true in
 Akka, independently of the OS default settings. This setting disables Nagle's
 algorithm, considerably improving latency for most applications. This setting
 could be overridden by passing `SO.TcpNoDelay(false)` in the list of socket
-options of the `Connect` message.
+options of the @scala[`Connect` message]@java[message by the `TcpMessage.connect` method].
 
 @@@
 
 The TCP manager will then reply either with a `CommandFailed` or it will
 spawn an internal actor representing the new connection. This new actor will
 then send a `Connected` message to the original sender of the
-`Connect` message.
+@scala[`Connect` message]@java[message by the `TcpMessage.connect` method].
 
-In order to activate the new connection a `Register` message must be
+In order to activate the new connection a @scala[`Register` message]@java[message by the `TcpMessage.register` method] must be
 sent to the connection actor, informing that one about who shall receive data
 from the socket. Before this step is done the connection cannot be used, and
 there is an internal timeout after which the connection actor will shut itself
-down if no `Register` message is received.
+down if no @scala[`Register` message]@java[message by the `TcpMessage.register` method] message is received.
 
 The connection actor watches the registered handler and closes the connection
 when that one terminates, thereby cleaning up all internal resources associated
@@ -56,14 +68,18 @@ fine-grained connection close events, see [Closing Connections](#closing-connect
 
 ## Accepting connections
 
-@@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #server }
+Scala
+:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #server }
 
-To create a TCP server and listen for inbound connections, a `Bind`
-command has to be sent to the TCP manager.  This will instruct the TCP manager
+Java
+:  @@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #server }
+
+To create a TCP server and listen for inbound connections, a @scala[`Bind` command]@java[message by the `TcpMessage.bind` method]
+has to be sent to the TCP manager.  This will instruct the TCP manager
 to listen for TCP connections on a particular `InetSocketAddress`; the
 port may be specified as `0` in order to bind to a random port.
 
-The actor sending the `Bind` message will receive a `Bound`
+The actor sending the @scala[`Bind` message]@java[message by the `TcpMessage.bind` method] will receive a `Bound`
 message signaling that the server is ready to accept incoming connections;
 this message also contains the `InetSocketAddress` to which the socket
 was actually bound (i.e. resolved IP address and correct port number). 
@@ -71,11 +87,15 @@ was actually bound (i.e. resolved IP address and correct port number).
 From this point forward the process of handling connections is the same as for
 outgoing connections. The example demonstrates that handling the reads from a
 certain connection can be delegated to another actor by naming it as the
-handler when sending the `Register` message. Writes can be sent from any
+handler when sending the @scala[`Register` message]@java[message by the `TcpMessage.register` method]. Writes can be sent from any
 actor in the system to the connection actor (i.e. the actor which sent the
 `Connected` message). The simplistic handler is defined as:
 
-@@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #simplistic-handler }
+Scala
+:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #simplistic-handler }
+
+Java
+:  @@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #simplistic-handler }
 
 For a more complete sample which also takes into account the possibility of
 failures when sending please see [Throttling Reads and Writes](#throttling-reads-and-writes) below.
@@ -83,29 +103,30 @@ failures when sending please see [Throttling Reads and Writes](#throttling-reads
 The only difference to outgoing connections is that the internal actor managing
 the listen port—the sender of the `Bound` message—watches the actor
 which was named as the recipient for `Connected` messages in the
-`Bind` message. When that actor terminates the listen port will be
+@scala[`Bind` message]@java[`TcpMessage.bind` method]. When that actor terminates the listen port will be
 closed and all resources associated with it will be released; existing
 connections will not be terminated at this point.
 
 ## Closing connections
 
-A connection can be closed by sending one of the commands `Close`, `ConfirmedClose` or `Abort` to the connection
-actor.
+A connection can be closed by sending @scala[one of the commands `Close`, `ConfirmedClose` or `Abort`]
+@java[a message by one of the methods `TcpMessage.close`, `TcpMessage.confirmedClose` or `TcpMessage.abort`]
+to the connection actor.
 
-`Close` will close the connection by sending a `FIN` message, but without waiting for confirmation from
+@scala[`Close`]@java[`TcpMessage.close`] will close the connection by sending a `FIN` message, but without waiting for confirmation from
 the remote endpoint. Pending writes will be flushed. If the close is successful, the listener will be notified with
 `Closed`.
 
-`ConfirmedClose` will close the sending direction of the connection by sending a `FIN` message, but data 
+@scala[`ConfirmedClose`]@java[`TcpMessage.confirmedClose`] will close the sending direction of the connection by sending a `FIN` message, but data 
 will continue to be received until the remote endpoint closes the connection, too. Pending writes will be flushed. If the close is
 successful, the listener will be notified with `ConfirmedClosed`.
 
-`Abort` will immediately terminate the connection by sending a `RST` message to the remote endpoint. Pending
+@scala[`Abort`]@java[`TcpMessage.abort`] will immediately terminate the connection by sending a `RST` message to the remote endpoint. Pending
 writes will be not flushed. If the close is successful, the listener will be notified with `Aborted`.
 
 `PeerClosed` will be sent to the listener if the connection has been closed by the remote endpoint. Per default, the
 connection will then automatically be closed from this endpoint as well. To support half-closed connections set the
-`keepOpenOnPeerClosed` member of the `Register` message to `true` in which case the connection stays open until
+`keepOpenOnPeerClosed` member of the @scala[`Register` message]@java[`TcpMessage.register` method] to `true` in which case the connection stays open until
 it receives one of the above close commands.
 
 `ErrorClosed` will be sent to the listener whenever an error happened that forced the connection to be closed.
@@ -141,9 +162,9 @@ protocol.
  2. Because a `WriteCommand` is atomic you can be sure that no other actor can "inject" other writes into your
 series of writes if you combine them into one single `CompoundWrite`. In scenarios where several actors write
 to the same connection this can be an important feature which can be somewhat hard to achieve otherwise.
- 3. The "sub writes" of a `CompoundWrite` are regular `Write` or `WriteFile` commands that themselves can request
+ 3. The "sub writes" of a `CompoundWrite` are regular @scala[`Write` or `WriteFile` commands]@java[messages by `TcpMessage.write` or `TcpMessage.writeFile` methods] that themselves can request
 "ack" events. These ACKs are sent out as soon as the respective "sub write" has been completed. This allows you to
-attach more than one ACK to a `Write` or `WriteFile` (by combining it with an empty write that itself requests
+attach more than one ACK to a @scala[`Write` or `WriteFile`]@java[message by `TcpMessage.write` or `TcpMessage.writeFile`] (by combining it with an empty write that itself requests
 an ACK) or to have the connection actor acknowledge the progress of transmitting the `CompoundWrite` by sending
 out intermediate ACKs at arbitrary points.
 
@@ -168,10 +189,10 @@ the failed write. Just relying on this mechanism requires the implemented
 protocol to tolerate skipping writes (e.g. if each write is a valid message
 on its own and it is not required that all are delivered). This mode is
 enabled by setting the `useResumeWriting` flag to `false` within the
-`Register` message during connection activation.
+@scala[`Register` message]@java[message by the `TcpMessage.register` method] during connection activation.
  * *NACK-based with write suspending:* this mode is very similar to the
 NACK-based one, but once a single write has failed no further writes will
-succeed until a `ResumeWriting` message is received. This message will
+succeed until a @scala[`ResumeWriting` message]@java[message by the `TcpMessage.resumeWriting` method] is received. This message will
 be answered with a `WritingResumed` message once the last accepted
 write has completed. If the actor driving the connection implements buffering
 and resends the NACK’ed messages after having awaited the
@@ -180,14 +201,14 @@ to the network socket.
 
 These write back-pressure models (with the exception of the second which is rather specialised) are
 demonstrated in complete examples below. The full and contiguous source is
-available @extref[on GitHub](github:akka-docs/src/test/scala/docs/io/EchoServer.scala).
+available @scala[@extref[on GitHub](github:akka-docs/src/test/scala/docs/io/EchoServer.scala)]@java[@extref[on GitHub](github:akka-docs/rst/java/code/jdocs/io/japi)].
 
 For back-pressuring reads there are two modes of operation
 
  * *Push-reading:* in this mode the connection actor sends the registered reader actor
 incoming data as soon as available as `Received` events. Whenever the reader actor
-wants to signal back-pressure to the remote TCP endpoint it can send a `SuspendReading`
-message to the connection actor to indicate that it wants to suspend the
+wants to signal back-pressure to the remote TCP endpoint it can send a @scala[`SuspendReading` message]@java[message by the `TcpMessage.suspendReading` method] 
+to the connection actor to indicate that it wants to suspend the
 reception of new data. No `Received` events will arrive until a corresponding
 `ResumeReading` is sent indicating that the receiver actor is ready again.
  * *Pull-reading:* after sending a `Received` event the connection
@@ -209,20 +230,32 @@ For proper function of the following example it is important to configure the
 connection to remain half-open when the remote side closed its writing end:
 this allows the example `EchoHandler` to write all outstanding data back
 to the client before fully closing the connection. This is enabled using a flag
-upon connection activation (observe the `Register` message):
+upon connection activation (observe the @scala[`Register` message]@java[`TcpMessage.register` method]):
 
-@@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #echo-manager }
+Scala
+:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #echo-manager }
+
+Java
+:  @@snip [EchoManager.java]($code$/java/jdocs/io/japi/EchoManager.java) { #echo-manager }
 
 With this preparation let us dive into the handler itself:
 
-@@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #simple-echo-handler }
+Scala
+:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #simple-echo-handler }
+
+Java
+:  @@snip [SimpleEchoHandler.java]($code$/java/jdocs/io/japi/SimpleEchoHandler.java) { #simple-echo-handler }
 
 The principle is simple: when having written a chunk always wait for the
 `Ack` to come back before sending the next chunk. While waiting we switch
 behavior such that new incoming data are buffered. The helper functions used
 are a bit lengthy but not complicated:
 
-@@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #simple-helpers }
+Scala
+:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #simple-helpers }
+
+Java
+:  @@snip [SimpleEchoHandler.java]($code$/java/jdocs/io/japi/SimpleEchoHandler.java) { #simple-helpers }
 
 The most interesting part is probably the last: an `Ack` removes the oldest
 data chunk from the buffer, and if that was the last chunk then we either close
@@ -231,8 +264,8 @@ behavior; otherwise we just send the next buffered chunk and stay waiting for
 the next `Ack`.
 
 Back-pressure can be propagated also across the reading side back to the writer
-on the other end of the connection by sending the `SuspendReading`
-command to the connection actor. This will lead to no data being read from the
+on the other end of the connection by sending the @scala[`SuspendReading` command]@java[message by the `TcpMessage.suspendReading` method]
+to the connection actor. This will lead to no data being read from the
 socket anymore (although this does happen after a delay because it takes some
 time until the connection actor processes this command, hence appropriate
 head-room in the buffer should be present), which in turn will lead to the O/S
@@ -243,18 +276,26 @@ how end-to-end back-pressure is realized across a TCP connection.
 
 ## NACK-Based Write Back-Pressure with Suspending
 
-@@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #echo-handler }
+Scala
+:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #echo-handler }
+
+Java
+:  @@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #echo-handler }
 
 The principle here is to keep writing until a `CommandFailed` is
 received, using acknowledgements only to prune the resend buffer. When a such a
 failure was received, transition into a different state for handling and handle
 resending of all queued data:
 
-@@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #buffering }
+Scala
+:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #buffering }
+
+Java
+:  @@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #buffering }
 
 It should be noted that all writes which are currently buffered have also been
 sent to the connection actor upon entering this state, which means that the
-`ResumeWriting` message is enqueued after those writes, leading to the
+@scala[`ResumeWriting` message]@java[message by the `TcpMessage.resumeWriting` method] is enqueued after those writes, leading to the
 reception of all outstanding `CommandFailed` messages (which are ignored
 in this state) before receiving the `WritingResumed` signal. That latter
 message is sent by the connection actor only once the internally queued write
@@ -263,7 +304,11 @@ is exploited by the `EchoHandler` to switch to an ACK-based approach for
 the first ten writes after a failure before resuming the optimistic
 write-through behavior.
 
-@@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #closing }
+Scala
+:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #closing }
+
+Java
+:  @@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #closing }
 
 Closing the connection while still sending all data is a bit more involved than
 in the ACK-based approach: the idea is to always send all outstanding messages
@@ -272,7 +317,11 @@ behavior to await the `WritingResumed` event and start over.
 
 The helper functions are very similar to the ACK-based case:
 
-@@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #helpers }
+Scala
+:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #helpers }
+
+Java
+:  @@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #helpers }
 
 ## Read Back-Pressure with Pull Mode
 
@@ -284,28 +333,40 @@ since the rate of writing might be slower than the rate of the arrival of new da
 With the Pull mode this buffer can be completely eliminated as the following snippet
 demonstrates:
 
-@@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-reading-echo }
+Scala
+:  @@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-reading-echo }
+
+Java
+:  @@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-reading-echo }
 
 The idea here is that reading is not resumed until the previous write has been
 completely acknowledged by the connection actor. Every pull mode connection
 actor starts from suspended state. To start the flow of data we send a
-`ResumeReading` in the `preStart` method to tell the connection actor that
+@scala[`ResumeReading`]@java[message by the `TcpMessage.resumeReading` method] in the `preStart` method to tell the connection actor that
 we are ready to receive the first chunk of data. Since we only resume reading when
 the previous data chunk has been completely written there is no need for maintaining
 a buffer.
 
 To enable pull reading on an outbound connection the `pullMode` parameter of
-the `Connect` should be set to `true`:
+the @scala[`Connect`]@java[`TcpMessage.connect` method] should be set to `true`:
 
-@@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-mode-connect }
+Scala
+:  @@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-mode-connect }
+
+Java
+:  @@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-mode-connect }
 
 ### Pull Mode Reading for Inbound Connections
 
 The previous section demonstrated how to enable pull reading mode for outbound
 connections but it is possible to create a listener actor with this mode of reading
-by setting the `pullMode` parameter of the `Bind` command to `true`:
+by setting the `pullMode` parameter of the @scala[`Bind` command]@java[`TcpMessage.bind` method] to `true`:
 
-@@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-mode-bind }
+Scala
+:  @@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-mode-bind }
+
+Java
+:  @@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-mode-bind }
 
 One of the effects of this setting is that all connections accepted by this listener
 actor will use pull mode reading.
@@ -313,17 +374,19 @@ actor will use pull mode reading.
 Another effect of this setting is that in addition of setting all inbound connections to
 pull mode, accepting connections becomes pull based, too. This means that after handling
 one (or more) `Connected` events the listener actor has to be resumed by sending
-it a `ResumeAccepting` message.
+it a @scala[`ResumeAccepting` message]@java[message by the `TcpMessage.resumeAccepting` method].
 
 Listener actors with pull mode start suspended so to start accepting connections
-a `ResumeAccepting`  command has to be sent to the listener actor after binding was successful:
+a @scala[`ResumeAccepting` command]@java[message by the `TcpMessage.resumeAccepting` method] has to be sent to the listener actor after binding was successful:
 
-@@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-accepting }
+Scala
+:  @@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-accepting #pull-accepting-cont }
 
-After handling an incoming connection we need to resume accepting again:
+Java
+:  @@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-accepting }
 
-@@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-accepting-cont }
+As shown in the example, after handling an incoming connection we need to resume accepting again.
 
-The `ResumeAccepting` accepts a `batchSize` parameter that specifies how
+The @scala[`ResumeAccepting`]@java[`TcpMessage.resumeAccepting` method] accepts a `batchSize` parameter that specifies how
 many new connections are accepted before a next `ResumeAccepting` message
 is needed to resume handling of new connections.

@@ -28,7 +28,7 @@ private[akka] object OptionVal {
  *
  * Note that it can be used in pattern matching without allocations
  * because it has name based extractor using methods `isEmpty` and `get`.
- * See http://hseeberger.github.io/blog/2013/10/04/name-based-extractors-in-scala-2-dot-11/
+ * See https://hseeberger.wordpress.com/2013/10/04/name-based-extractors-in-scala-2-11/
  */
 private[akka] final class OptionVal[+A >: Null](val x: A) extends AnyVal {
 

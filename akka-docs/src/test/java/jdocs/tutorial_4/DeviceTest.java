@@ -3,8 +3,6 @@
  */
 package jdocs.tutorial_4;
 
-import java.util.Optional;
-
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.javadsl.TestKit;
@@ -15,6 +13,8 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 import org.scalatest.junit.JUnitSuite;
+
+import java.util.Optional;
 
 public class DeviceTest extends JUnitSuite {
 
@@ -31,6 +31,7 @@ public class DeviceTest extends JUnitSuite {
     system = null;
   }
 
+  //#device-registration-tests
   @Test
   public void testReplyToRegistrationRequests() {
     TestKit probe = new TestKit(system);
@@ -52,7 +53,9 @@ public class DeviceTest extends JUnitSuite {
     deviceActor.tell(new DeviceManager.RequestTrackDevice("group", "wrongDevice"), probe.getRef());
     probe.expectNoMsg();
   }
+  //#device-registration-tests
 
+  //#device-read-test
   @Test
   public void testReplyWithEmptyReadingIfNoTemperatureIsKnown() {
     TestKit probe = new TestKit(system);
@@ -62,7 +65,9 @@ public class DeviceTest extends JUnitSuite {
     assertEquals(42L, response.requestId);
     assertEquals(Optional.empty(), response.value);
   }
+  //#device-read-test
 
+  //#device-write-read-test
   @Test
   public void testReplyWithLatestTemperatureReading() {
     TestKit probe = new TestKit(system);
@@ -84,5 +89,6 @@ public class DeviceTest extends JUnitSuite {
     assertEquals(4L, response2.requestId);
     assertEquals(Optional.of(55.0), response2.value);
   }
+  //#device-write-read-test
 
 }

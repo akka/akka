@@ -31,29 +31,42 @@ in more depth.
 
 For the sake of demonstration let us consider the following strategy:
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #strategy }
+Scala
+:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #strategy }
 
-I have chosen a few well-known exception types in order to demonstrate the
+Java
+:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #strategy }
+
+We have chosen a few well-known exception types in order to demonstrate the
 application of the fault handling directives described in @ref:[supervision](general/supervision.md).
 First off, it is a one-for-one strategy, meaning that each child is treated
 separately (an all-for-one strategy works very similarly, the only difference
 is that any decision is applied to all children of the supervisor, not only the
-failing one). There are limits set on the restart frequency, namely maximum 10
-restarts per minute; each of these settings could be left out, which means
-that the respective limit does not apply, leaving the possibility to specify an
-absolute upper limit on the restarts or to make the restarts work infinitely.
-The child actor is stopped if the limit is exceeded.
+failing one). 
+In the above example, `10` and @scala[`1 minute`]@java[`Duration.create(1, TimeUnit.MINUTES)`] are passed to the `maxNrOfRetries`
+and `withinTimeRange` parameters respectively, which means that the strategy restarts a child up to 10 restarts per minute.
+The child actor is stopped if the restart count exceeds `maxNrOfRetries` during the `withinTimeRange` duration.
 
-The match statement which forms the bulk of the body is of type `Decider`,
-which is a `PartialFunction[Throwable, Directive]`. This
-is the piece which maps child failure types to their corresponding directives.
+Also, there are special values for these parameters. If you specify:
+
+* `-1` to `maxNrOfRetries`, and @scala[`Duration.inf`]@java[`Duration.Inf()`] to `withinTimeRange`
+    * then the child is always restarted without any limit
+* `-1` to `maxNrOfRetries`, and a non-infinite `Duration` to `withinTimeRange` 
+    * `maxNrOfRetries` is treated as `1`
+* a non-negative number to `maxNrOfRetries` and @scala[`Duration.inf`]@java[`Duration.Inf()`] to `withinTimeRange`
+    * `withinTimeRange` is treated as infinite duration (i.e.) no matter how long it takes, once the restart count exceeds `maxNrOfRetries`, the child actor is stopped  
+   
+The match statement which forms the bulk of the body   
+@scala[is of type `Decider` which is a `PartialFunction[Throwable, Directive]`.]
+@java[consists of `PFBuilder` returned by `DeciderBuilder`'s `match` method, where the builder is finished by the `build` method.]
+This is the piece which maps child failure types to their corresponding directives.
 
 @@@ note
 
 If the strategy is declared inside the supervising actor (as opposed to
-within a companion object) its decider has access to all internal state of
+@scala[within a companion object]@java[a separate class]) its decider has access to all internal state of
 the actor in a thread-safe fashion, including obtaining a reference to the
-currently failed child (available as the `sender` of the failure message).
+currently failed child (available as the @scala[`sender`]@java[`getSender()`] of the failure message).
 
 @@@
 
@@ -73,9 +86,13 @@ exceptions are handled by default:
 If the exception escalate all the way up to the root guardian it will handle it
 in the same way as the default strategy defined above.
 
+@@@ div { .group-scala }
+
 You can combine your own strategy with the default strategy:
 
 @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #default-strategy-fallback }
+
+@@@
 
 ### Stopping Supervisor Strategy
 
@@ -113,41 +130,74 @@ strategy.
 The following section shows the effects of the different directives in practice,
 where a test setup is needed. First off, we need a suitable supervisor:
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #supervisor }
+Scala
+:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #supervisor }
+
+Java
+:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #supervisor }
 
 This supervisor will be used to create a child, with which we can experiment:
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #child }
+Scala
+:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #child }
 
-The test is easier by using the utilities described in @ref:[Testing Actor Systems](testing.md).
+Java
+:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #child }
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #testkit }
+The test is easier by using the utilities described in @scala[@ref:[Testing Actor Systems](testing.md)]@java[@ref:[TestKit](testing.md)],
+where `TestProbe` provides an actor ref useful for receiving and inspecting replies.
+
+Scala
+:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #testkit }
+
+Java
+:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #testkit }
 
 Let us create actors:
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #create }
+Scala
+:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #create }
+
+Java
+:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #create }
 
 The first test shall demonstrate the `Resume` directive, so we try it out by
 setting some non-initial state in the actor and have it fail:
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #resume }
+Scala
+:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #resume }
+
+Java
+:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #resume }
 
 As you can see the value 42 survives the fault handling directive. Now, if we
 change the failure to a more serious `NullPointerException`, that will no
 longer be the case:
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #restart }
+Scala
+:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #restart }
+
+Java
+:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #restart }
 
 And finally in case of the fatal `IllegalArgumentException` the child will be
 terminated by the supervisor:
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #stop }
+Scala
+:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #stop }
+
+Java
+:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #stop }
 
 Up to now the supervisor was completely unaffected by the child’s failure,
 because the directives set did handle it. In case of an `Exception`, this is not
 true anymore and the supervisor escalates the failure.
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #escalate-kill }
+Scala
+:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #escalate-kill }
+
+Java
+:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #escalate-kill }
 
 The supervisor itself is supervised by the top-level actor provided by the
 `ActorSystem`, which has the default policy to restart in case of all
@@ -159,9 +209,17 @@ child not to survive this failure.
 In case this is not desired (which depends on the use case), we need to use a
 different supervisor which overrides this behavior.
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #supervisor2 }
+Scala
+:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #supervisor2 }
+
+Java
+:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #supervisor2 }
 
 With this parent, the child survives the escalated restart, as demonstrated in
 the last test:
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #escalate-restart }
+Scala
+:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #escalate-restart }
+
+Java
+:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #escalate-restart }

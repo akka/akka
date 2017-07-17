@@ -17,37 +17,70 @@ concepts and architecture of [eventsourced](https://github.com/eligosource/event
 
 Akka persistence is a separate jar file. Make sure that you have the following dependency in your project:
 
-@@@vars
-```
-"com.typesafe.akka" %% "akka-persistence" % "$akka.version$"
-```
-@@@
+Scala
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-persistence" % "$akka.version$"
+    ```
+    @@@
+
+Java
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-persistence_$scala.binary_version$</artifactId>
+      <version>$akka.version$</version>
+    </dependency>
+    ```
+    @@@
 
 The Akka persistence extension comes with few built-in persistence plugins, including
 in-memory heap based journal, local file-system based snapshot-store and LevelDB based journal.
 
 LevelDB based plugins will require the following additional dependency declaration:
 
-```
-"org.iq80.leveldb"            % "leveldb"          % "0.7"
-"org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
-```
+Scala
+:   @@@vars
+    ```
+    "org.iq80.leveldb"            % "leveldb"          % "0.7"
+    "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
+    ```
+    @@@
+
+Java
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>org.iq80.leveldb</groupId>
+      <artifactId>leveldb</artifactId>
+      <version>0.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.fusesource.leveldbjni</groupId>
+      <artifactId>leveldbjni-all</artifactId>
+      <version>1.8</version>
+    </dependency>
+    ```
+    @@@
 
 ## Architecture
 
- * *PersistentActor*: Is a persistent, stateful actor. It is able to persist events to a journal and can react to
+ * @scala[`PersistentActor`]@java[`AbstractPersistentActor`]: Is a persistent, stateful actor. It is able to persist events to a journal and can react to
 them in a thread-safe manner. It can be used to implement both *command* as well as *event sourced* actors.
 When a persistent actor is started or restarted, journaled messages are replayed to that actor so that it can
 recover internal state from these messages.
- * *AtLeastOnceDelivery*: To send messages with at-least-once delivery semantics to destinations, also in
+ * @scala[`AtLeastOnceDelivery`]@java[`AbstractPersistentActorAtLeastOnceDelivery`]: To send messages with at-least-once delivery semantics to destinations, also in
 case of sender and receiver JVM crashes.
- * *AsyncWriteJournal*: A journal stores the sequence of messages sent to a persistent actor. An application can control which messages
-are journaled and which are received by the persistent actor without being journaled. Journal maintains *highestSequenceNr* that is increased on each message.
+ * `AsyncWriteJournal`: A journal stores the sequence of messages sent to a persistent actor. An application can control which messages
+are journaled and which are received by the persistent actor without being journaled. Journal maintains `highestSequenceNr` that is increased on each message.
 The storage backend of a journal is pluggable. The persistence extension comes with a "leveldb" journal plugin, which writes to the local filesystem.
 Replicated journals are available as [Community plugins](http://akka.io/community/).
  * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's or a view's internal state. Snapshots are
 used for optimizing recovery times. The storage backend of a snapshot store is pluggable.
 The persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem.
+ * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
+development of event sourced applications (see section [Event sourcing](#event-sourcing))
 Replicated snapshot stores are available as [Community plugins](http://akka.io/community/).
 
 <a id="event-sourcing"></a>
@@ -62,17 +95,21 @@ needs to be recovered, only the persisted events are replayed of which we know t
 In other words, events cannot fail when being replayed to a persistent actor, in contrast to commands. Event sourced
 actors may of course also process commands that do not change application state such as query commands for example.
 
-Akka persistence supports event sourcing with the `PersistentActor` trait. An actor that extends this trait uses the
-`persist` method to persist and handle events. The behavior of a `PersistentActor`
-is defined by implementing `receiveRecover` and `receiveCommand`. This is demonstrated in the following example.
+Akka persistence supports event sourcing with the @scala[`PersistentActor` trait]@java[`AbstractPersistentActor` abstract class]. An actor that extends this @scala[trait]@java[class] uses the
+`persist` method to persist and handle events. The behavior of @scala[a `PersistentActor`]@java[an `AbstractPersistentActor`]
+is defined by implementing @scala[`receiveRecover`]@java[`createReceiveRecover`] and @scala[`receiveCommand`]@java[`createReceive`]. This is demonstrated in the following example.
 
-@@snip [PersistentActorExample.scala]($code$/scala/docs/persistence/PersistentActorExample.scala) { #persistent-actor-example }
+Scala
+:  @@snip [PersistentActorExample.scala]($code$/scala/docs/persistence/PersistentActorExample.scala) { #persistent-actor-example }
+
+Java
+:  @@snip [PersistentActorExample.java]($code$/java/jdocs/persistence/PersistentActorExample.java) { #persistent-actor-example }
 
 The example defines two data types, `Cmd` and `Evt` to represent commands and events, respectively. The
 `state` of the `ExamplePersistentActor` is a list of persisted event data contained in `ExampleState`.
 
-The persistent actor's `receiveRecover` method defines how `state` is updated during recovery by handling `Evt`
-and `SnapshotOffer` messages. The persistent actor's `receiveCommand` method is a command handler. In this example,
+The persistent actor's @scala[`receiveRecover`]@java[`createReceiveRecover`] method defines how `state` is updated during recovery by handling `Evt`
+and `SnapshotOffer` messages. The persistent actor's @scala[`receiveCommand`]@java[`createReceive`] method is a command handler. In this example,
 a command is handled by generating an event which is then persisted and handled. Events are persisted by calling
 `persist` with an event (or a sequence of events) as first argument and an event handler as second argument.
 
@@ -96,17 +133,18 @@ stored, e.g. due to serialization error, `onPersistRejected` will be invoked (lo
 by default) and the actor continues with the next message.
 
 The easiest way to run this example yourself is to download the ready to run
-@extref[Akka Persistence Sample with Scala](ecs:akka-samples-persistence-scala)
+@scala[@extref[Akka Persistence Sample with Scala](ecs:akka-samples-persistence-scala)]
+@java[@extref[Akka Persistence Sample with Java](ecs:akka-samples-persistence-java)]
 together with the tutorial. It contains instructions on how to run the `PersistentActorExample`.
-The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-persistence-scala).
+The source code of this sample can be found in the @scala[@extref[Akka Samples Repository](samples:akka-sample-persistence-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-persistence-java)].
 
 @@@ note
 
 It's also possible to switch between different command handlers during normal processing and recovery
-with `context.become()` and `context.unbecome()`. To get the actor into the same state after
+with @scala[`context.become()`]@java[`getContext().become()`] and @scala[`context.unbecome()`]@java[`getContext().unbecome()`]. To get the actor into the same state after
 recovery you need to take special care to perform the same state transitions with `become` and
-`unbecome` in the `receiveRecover` method as you would have done in the command handler.
-Note that when using `become` from `receiveRecover` it will still only use the `receiveRecover`
+`unbecome` in the @scala[`receiveRecover`]@java[`createReceiveRecover`] method as you would have done in the command handler.
+Note that when using `become` from @scala[`receiveRecover`]@java[`createReceiveRecover`] it will still only use the @scala[`receiveRecover`]@java[`createReceiveRecover`]
 behavior when replaying the events. When replay is completed it will use the new behavior.
 
 @@@
@@ -117,7 +155,11 @@ behavior when replaying the events. When replay is completed it will use the new
 A persistent actor must have an identifier that doesn't change across different actor incarnations.
 The identifier must be defined with the `persistenceId` method.
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #persistence-id-override }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #persistence-id-override }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #persistence-id-override }
 
 @@@ note
 
@@ -145,7 +187,7 @@ akka.persistence.max-concurrent-recoveries = 50
 
 @@@ note
 
-Accessing the `sender()` for replayed messages will always result in a `deadLetters` reference,
+Accessing the @scala[`sender()`]@java[sender with `getSender()] for replayed messages will always result in a `deadLetters` reference,
 as the original sender is presumed to be long gone. If you indeed have to notify an actor during
 recovery in the future, store its `ActorPath` explicitly in your persisted events.
 
@@ -155,13 +197,17 @@ recovery in the future, store its `ActorPath` explicitly in your persisted event
 #### Recovery customization
 
 Applications may also customise how recovery is performed by returning a customised `Recovery` object
-in the `recovery` method of a `PersistentActor`,
+in the `recovery` method of a @scala[`PersistentActor`]@java[`AbstractPersistentActor`],
 
-To skip loading snapshots and replay all events you can use `SnapshotSelectionCriteria.None`.
+To skip loading snapshots and replay all events you can use @scala[`SnapshotSelectionCriteria.None`]@java[`SnapshotSelectionCriteria.none()`].
 This can be useful if snapshot serialization format has changed in an incompatible way.
 It should typically not be used when events have been deleted.
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #recovery-no-snap }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #recovery-no-snap }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #recovery-no-snap }
 
 Another example, which can be fun for experiments but probably not in a real application, is setting an
 upper bound to the replay which allows the actor to be replayed to a certain point "in the past"
@@ -169,24 +215,40 @@ instead to its most up to date state. Note that after that it is a bad idea to p
 events because a later recovery will probably be confused by the new events that follow the
 events that were previously skipped.
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #recovery-custom }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #recovery-custom }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #recovery-custom }
 
 Recovery can be disabled by returning `Recovery.none()` in the `recovery` method of a `PersistentActor`:
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #recovery-disabled }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #recovery-disabled }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #recovery-disabled }
 
 #### Recovery status
 
 A persistent actor can query its own recovery status via the methods
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #recovery-status }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #recovery-status }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #recovery-status }
 
 Sometimes there is a need for performing additional initialization when the
 recovery has completed before processing any other message sent to the persistent actor.
 The persistent actor will receive a special `RecoveryCompleted` message right after recovery
 and before any other received messages.
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #recovery-completed }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #recovery-completed }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #recovery-completed }
 
 The actor will always receive a `RecoveryCompleted` message, even if there are no events
 in the journal and the snapshot store is empty, or if it's a new persistent actor with a previously
@@ -229,12 +291,22 @@ akka.persistence.internal-stash-overflow-strategy=
 The `DiscardToDeadLetterStrategy` strategy also has a pre-packaged companion configurator
 `akka.persistence.DiscardConfigurator`.
 
-You can also query the default strategy via the Akka persistence extension singleton:
+You can also query the default strategy via the Akka persistence extension singleton:    
 
-```
-Persistence(context.system).defaultInternalStashOverflowStrategy
-```
+Scala
+:   @@@vars
+    ```
+    Persistence(context.system).defaultInternalStashOverflowStrategy
+    ```
+    @@@
 
+Java
+:   @@@vars
+    ```
+    Persistence.get(getContext().getSystem()).defaultInternalStashOverflowStrategy();
+    ```
+    @@@
+    
 @@@ note
 
 The bounded mailbox should be avoided in the persistent actor, by which the messages come from storage backends may
@@ -258,11 +330,15 @@ stash incoming Commands while the Journal is still working on persisting and/or 
 In the below example, the event callbacks may be called "at any time", even after the next Command has been processed.
 The ordering between events is still guaranteed ("evt-b-1" will be sent after "evt-a-2", which will be sent after "evt-a-1" etc.).
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #persist-async }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #persist-async }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #persist-async }
 
 @@@ note
 
-In order to implement the pattern known as "*command sourcing*" simply call `persistAsync(cmd)(...)` right away on all incoming
+In order to implement the pattern known as "*command sourcing*" simply call @scala[persistAsync(cmd)(...)`]@java[`persistAsync`] right away on all incoming
 messages and handle them in the callback.
 
 @@@
@@ -285,18 +361,30 @@ use it for *read* operations, and actions which do not have corresponding events
 Using this method is very similar to the persist family of methods, yet it does **not** persist the passed in event.
 It will be kept in memory and used when invoking the handler.
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #defer }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #defer }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #defer }
 
 Notice that the `sender()` is **safe** to access in the handler callback, and will be pointing to the original sender
 of the command for which this `deferAsync` handler was called.
 
 The calling side will get the responses in this (guaranteed) order:
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #defer-caller }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #defer-caller }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #defer-caller }
 
 You can also call `deferAsync` with `persist`.
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #defer-with-persist }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #defer-with-persist }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #defer-with-persist }
 
 @@@ warning
 
@@ -309,18 +397,26 @@ The callback will not be invoked if the actor is restarted (or stopped) in betwe
 ### Nested persist calls
 
 It is possible to call `persist` and `persistAsync` inside their respective callback blocks and they will properly
-retain both the thread safety (including the right value of `sender()`) as well as stashing guarantees.
+retain both the thread safety (including the right value of @scala[`sender()`]@java[`getSender()`]) as well as stashing guarantees.
 
 In general it is encouraged to create command handlers which do not need to resort to nested event persisting,
 however there are situations where it may be useful. It is important to understand the ordering of callback execution in
 those situations, as well as their implication on the stashing behaviour (that `persist()` enforces). In the following
 example two persist calls are issued, and each of them issues another persist inside its callback:
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #nested-persist-persist }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #nested-persist-persist }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #nested-persist-persist }
 
 When sending two commands to this `PersistentActor`, the persist handlers will be executed in the following order:
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #nested-persist-persist-caller }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #nested-persist-persist-caller }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #nested-persist-persist-caller }
 
 First the "outer layer" of persist calls is issued and their callbacks are applied. After these have successfully completed,
 the inner callbacks will be invoked (once the events they are persisting have been confirmed to be persisted by the journal).
@@ -330,11 +426,19 @@ is extended until all nested `persist` callbacks have been handled.
 
 It is also possible to nest `persistAsync` calls, using the same pattern:
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #nested-persistAsync-persistAsync }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #nested-persistAsync-persistAsync }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #nested-persistAsync-persistAsync }
 
 In this case no stashing is happening, yet events are still persisted and callbacks are executed in the expected order:
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #nested-persistAsync-persistAsync-caller }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #nested-persistAsync-persistAsync-caller }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #nested-persistAsync-persistAsync-caller }
 
 While it is possible to nest mixed `persist` and `persistAsync` with keeping their respective semantics
 it is not a recommended practice, as it may lead to overly complex nesting.
@@ -361,7 +465,11 @@ will most likely fail anyway since the journal is probably unavailable. It is be
 actor and after a back-off timeout start it again. The `akka.pattern.BackoffSupervisor` actor
 is provided to support such restarts.
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #backoff }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #backoff }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #backoff }
 
 If persistence of an event is rejected before it is stored, e.g. due to serialization error,
 `onPersistRejected` will be invoked (logging a warning by default), and the actor continues with
@@ -476,11 +584,25 @@ Consider using explicit shut-down messages instead of `PoisonPill` when working 
 The example below highlights how messages arrive in the Actor's mailbox and how they interact with its internal stashing
 mechanism when `persist()` is used. Notice the early stop behaviour that occurs when `PoisonPill` is used:
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #safe-shutdown }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #safe-shutdown }
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #safe-shutdown-example-bad }
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #safe-shutdown }
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #safe-shutdown-example-good }
+
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #safe-shutdown-example-bad }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #safe-shutdown-example-bad }
+
+
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #safe-shutdown-example-good }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #safe-shutdown-example-good }
 
 <a id="replay-filter"></a>
 ### Replay Filter
@@ -523,7 +645,11 @@ in context of persistent actors but this is also applicable to persistent views.
 Persistent actors can save snapshots of internal state by calling the  `saveSnapshot` method. If saving of a snapshot
 succeeds, the persistent actor receives a `SaveSnapshotSuccess` message, otherwise a `SaveSnapshotFailure` message
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #save-snapshot }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #save-snapshot }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #save-snapshot }
 
 where `metadata` is of type `SnapshotMetadata`:
 
@@ -532,7 +658,11 @@ where `metadata` is of type `SnapshotMetadata`:
 During recovery, the persistent actor is offered a previously saved snapshot via a `SnapshotOffer` message from
 which it can initialize internal state.
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #snapshot-offer }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #snapshot-offer }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #snapshot-offer }
 
 The replayed messages that follow the `SnapshotOffer` message, if any, are younger than the offered snapshot.
 They finally recover the persistent actor to its current (i.e. latest) state.
@@ -540,16 +670,20 @@ They finally recover the persistent actor to its current (i.e. latest) state.
 In general, a persistent actor is only offered a snapshot if that persistent actor has previously saved one or more snapshots
 and at least one of these snapshots matches the `SnapshotSelectionCriteria` that can be specified for recovery.
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #snapshot-criteria }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #snapshot-criteria }
 
-If not specified, they default to `SnapshotSelectionCriteria.Latest` which selects the latest (= youngest) snapshot.
-To disable snapshot-based recovery, applications should use `SnapshotSelectionCriteria.None`. A recovery where no
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #snapshot-criteria }
+
+If not specified, they default to @scala[`SnapshotSelectionCriteria.Latest`]@java[`SnapshotSelectionCriteria.latest()`] which selects the latest (= youngest) snapshot.
+To disable snapshot-based recovery, applications should use @scala[`SnapshotSelectionCriteria.None`]@java[`SnapshotSelectionCriteria.none()`]. A recovery where no
 saved snapshot matches the specified `SnapshotSelectionCriteria` will replay all journaled messages.
 
 @@@ note
 
 In order to use snapshots, a default snapshot-store (`akka.persistence.snapshot-store.plugin`) must be configured,
-or the `PersistentActor` can pick a snapshot store explicitly by overriding `def snapshotPluginId: String`.
+or the @scala`PersistentActor`]@java[persistent actor] can pick a snapshot store explicitly by overriding @scala[`def snapshotPluginId: String`]@java[`String snapshotPluginId()`].
 
 Since it is acceptable for some applications to not use any snapshotting, it is legal to not configure a snapshot store.
 However, Akka will log a warning message when this situation is detected and then continue to operate until
@@ -585,13 +719,13 @@ an in memory representation of the snapshot, or in the case of failure to attemp
 <a id="at-least-once-delivery"></a>
 ## At-Least-Once Delivery
 
-To send messages with at-least-once delivery semantics to destinations you can mix-in `AtLeastOnceDelivery`
-trait to your `PersistentActor` on the sending side.  It takes care of re-sending messages when they
+To send messages with at-least-once delivery semantics to destinations you can @scala[mix-in `AtLeastOnceDelivery` trait to your `PersistentActor`]@java[extend the `AbstractPersistentActorWithAtLeastOnceDelivery` class instead of `AbstractPersistentActor`]
+on the sending side.  It takes care of re-sending messages when they
 have not been confirmed within a configurable timeout.
 
 The state of the sending actor, including which messages have been sent that have not been
 confirmed by the recipient must be persistent so that it can survive a crash of the sending actor
-or JVM. The `AtLeastOnceDelivery` trait does not persist anything by itself. It is your
+or JVM. The @scala[`AtLeastOnceDelivery` trait]@java[`AbstractPersistentActorWithAtLeastOnceDelivery` class] does not persist anything by itself. It is your
 responsibility to persist the intent that a message is sent and that a confirmation has been
 received.
 
@@ -636,7 +770,11 @@ between `deliver` and `confirmDelivery` is possible. The `deliveryId` must do th
 of the message, the destination actor will send the same``deliveryId`` wrapped in a confirmation message back to the sender.
 The sender will then use it to call `confirmDelivery` method to complete the delivery routine.
 
-@@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #at-least-once-example }
+Scala
+:  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #at-least-once-example }
+
+Java
+:  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #at-least-once-example }
 
 The `deliveryId` generated by the persistence module is a strictly monotonically increasing sequence number
 without gaps. The same sequence is used for all destinations of the actor, i.e. when sending to multiple
@@ -647,7 +785,7 @@ correlation id (passed into the message). You can do this by storing such mappin
 from which you can retrieve the `deliveryId` to be passed into the `confirmDelivery` method once the receiver
 of your message has replied with your custom correlation id.
 
-The `AtLeastOnceDelivery` trait has a state consisting of unconfirmed messages and a
+The @scala[`AtLeastOnceDelivery` trait]@java[`AbstractPersistentActorWithAtLeastOnceDelivery` class] has a state consisting of unconfirmed messages and a
 sequence number. It does not store this state itself. You must persist events corresponding to the
 `deliver` and `confirmDelivery` invocations from your `PersistentActor` so that the state can
 be restored by calling the same methods during the recovery phase of the `PersistentActor`. Sometimes
@@ -680,7 +818,7 @@ warning is defined by the `warnAfterNumberOfUnconfirmedAttempts` method. The def
 configured with the `akka.persistence.at-least-once-delivery.warn-after-number-of-unconfirmed-attempts`
 configuration key. The method can be overridden by implementation classes to return non-default values.
 
-The `AtLeastOnceDelivery` trait holds messages in memory until their successful delivery has been confirmed.
+The @scala[`AtLeastOnceDelivery` trait]@java[`AbstractPersistentActorWithAtLeastOnceDelivery` class] holds messages in memory until their successful delivery has been confirmed.
 The maximum number of unconfirmed messages that the actor is allowed to hold in memory
 is defined by the `maxUnconfirmedMessages` method. If this limit is exceed the `deliver` method will
 not accept more messages and it will throw `AtLeastOnceDelivery.MaxUnconfirmedMessagesExceededException`.
@@ -710,7 +848,11 @@ json instead of serializing the object to its binary representation.
 
 Implementing an EventAdapter is rather stright forward:
 
-@@snip [PersistenceEventAdapterDocSpec.scala]($code$/scala/docs/persistence/PersistenceEventAdapterDocSpec.scala) { #identity-event-adapter }
+Scala
+:  @@snip [PersistenceEventAdapterDocSpec.scala]($code$/scala/docs/persistence/PersistenceEventAdapterDocSpec.scala) { #identity-event-adapter }
+
+Java
+:  @@snip [PersistenceEventAdapterDocTest.java]($code$/java/jdocs/persistence/PersistenceEventAdapterDocTest.java) { #identity-event-adapter }
 
 Then in order for it to be used on events coming to and from the journal you must bind it using the below configuration syntax:
 
@@ -731,16 +873,20 @@ For more advanced schema evolution techniques refer to the @ref:[Persistence - S
 <a id="persistent-fsm"></a>
 ## Persistent FSM
 
-`PersistentFSM` handles the incoming messages in an FSM like fashion.
+@scala[`PersistentFSM`]@java[`AbstractPersistentFSM`] handles the incoming messages in an FSM like fashion.
 Its internal state is persisted as a sequence of changes, later referred to as domain events.
 Relationship between incoming messages, FSM's states and transitions, persistence of domain events is defined by a DSL.
 
 ### A Simple Example
 
-To demonstrate the features of the `PersistentFSM` trait, consider an actor which represents a Web store customer.
+To demonstrate the features of the @scala[`PersistentFSM` trait]@java[`AbstractPersistentFSM`], consider an actor which represents a Web store customer.
 The contract of our "WebStoreCustomerFSMActor" is that it accepts the following commands:
 
-@@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-commands }
+Scala
+:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-commands }
+
+Java
+:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-commands }
 
 `AddItem` sent when the customer adds an item to a shopping cart
 `Buy` - when the customer finishes the purchase
@@ -749,7 +895,11 @@ The contract of our "WebStoreCustomerFSMActor" is that it accepts the following 
 
 The customer can be in one of the following states:
 
-@@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-states }
+Scala
+:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-states }
+
+Java
+:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-states }
 
 `LookingAround` customer is browsing the site, but hasn't added anything to the shopping cart
 `Shopping` customer has recently added items to the shopping cart
@@ -758,8 +908,8 @@ The customer can be in one of the following states:
 
 @@@ note
 
-`PersistentFSM` states must inherit from trait `PersistentFSM.FSMState` and implement the
-`def identifier: String` method. This is required in order to simplify the serialization of FSM states.
+@scala[`PersistentFSM`]@java[`AbstractPersistentFSM`] states must @scala[inherit from trait]@java[implement interface] `PersistentFSM.FSMState` and implement the
+@scala[`def identifier: String`]@java[`String identifier()`] method. This is required in order to simplify the serialization of FSM states.
 String identifiers should be unique!
 
 @@@
@@ -767,15 +917,27 @@ String identifiers should be unique!
 Customer's actions are "recorded" as a sequence of "domain events" which are persisted. Those events are replayed on an actor's
 start in order to restore the latest customer's state:
 
-@@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-domain-events }
+Scala
+:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-domain-events }
+
+Java
+:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-domain-events }
 
 Customer state data represents the items in a customer's shopping cart:
 
-@@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-states-data }
+Scala
+:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-states-data }
+
+Java
+:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-states-data }
 
 Here is how everything is wired together:
 
-@@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-fsm-body }
+Scala
+:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-fsm-body }
+
+Java
+:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-fsm-body }
 
 @@@ note
 
@@ -784,16 +946,28 @@ Override the `applyEvent` method to define how state data is affected by domain 
 
 @@@
 
-@@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-apply-event }
+Scala
+:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-apply-event }
+
+Java
+:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-apply-event }
 
 `andThen` can be used to define actions which will be executed following event's persistence - convenient for "side effects" like sending a message or logging.
 Notice that actions defined in `andThen` block are not executed on recovery:
 
-@@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-andthen-example }
+Scala
+:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-andthen-example }
+
+Java
+:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-andthen-example }
 
 A snapshot of state data can be persisted by calling the `saveStateSnapshot()` method:
 
-@@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-snapshot-example }
+Scala
+:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-snapshot-example }
+
+Java
+:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-snapshot-example }
 
 On recovery state data is initialized according to the latest available snapshot, then the remaining domain events are replayed, triggering the
 `applyEvent` method.
@@ -843,7 +1017,11 @@ For an example of a snapshot store plugin which writes snapshots as individual f
 Applications can provide their own plugins by implementing a plugin API and activating them by configuration.
 Plugin development requires the following imports:
 
-@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #plugin-imports }
+Scala
+:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #plugin-imports }
+
+Java
+:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #plugin-imports }
 
 ### Eager initialization of persistence plugin
 
@@ -859,15 +1037,27 @@ A journal plugin extends `AsyncWriteJournal`.
 
 `AsyncWriteJournal` is an actor and the methods to be implemented are:
 
-@@snip [AsyncWriteJournal.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/journal/AsyncWriteJournal.scala) { #journal-plugin-api }
+Scala
+:  @@snip [AsyncWriteJournal.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/journal/AsyncWriteJournal.scala) { #journal-plugin-api }
+
+Java
+:  @@snip [AsyncWritePlugin.java]($akka$/akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncWritePlugin.java) { #async-write-plugin-api }
 
 If the storage backend API only supports synchronous, blocking writes, the methods should be implemented as:
 
-@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #sync-journal-plugin-api }
+Scala
+:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #sync-journal-plugin-api }
+
+Java
+:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #sync-journal-plugin-api }
 
 A journal plugin must also implement the methods defined in `AsyncRecovery` for replays and sequence number recovery:
 
-@@snip [AsyncRecovery.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/journal/AsyncRecovery.scala) { #journal-plugin-api }
+Scala
+:  @@snip [AsyncRecovery.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/journal/AsyncRecovery.scala) { #journal-plugin-api }
+
+Java
+:  @@snip [AsyncRecoveryPlugin.java]($akka$/akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncRecoveryPlugin.java) { #async-replay-plugin-api }
 
 A journal plugin can be activated with the following minimal configuration:
 
@@ -895,7 +1085,11 @@ Don't run journal tasks/futures on the system default dispatcher, since that mig
 
 A snapshot store plugin must extend the `SnapshotStore` actor and implement the following methods:
 
-@@snip [SnapshotStore.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/snapshot/SnapshotStore.scala) { #snapshot-store-plugin-api }
+Scala
+:  @@snip [SnapshotStore.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/snapshot/SnapshotStore.scala) { #snapshot-store-plugin-api }
+
+Java
+:  @@snip [SnapshotStorePlugin.java]($akka$/akka-persistence/src/main/java/akka/persistence/snapshot/japi/SnapshotStorePlugin.java) { #snapshot-store-plugin-api }
 
 A snapshot store plugin can be activated with the following minimal configuration:
 
@@ -923,33 +1117,53 @@ Don't run snapshot store tasks/futures on the system default dispatcher, since t
 
 In order to help developers build correct and high quality storage plugins, we provide a Technology Compatibility Kit ([TCK](http://en.wikipedia.org/wiki/Technology_Compatibility_Kit) for short).
 
-The TCK is usable from Java as well as Scala projects. For Scala you need to include the akka-persistence-tck dependency:
+The TCK is usable from Java as well as Scala projects. For @scala[Scala]@java[Java] you need to include the akka-persistence-tck dependency:
 
 ```
 "com.typesafe.akka" %% "akka-persistence-tck" % "$akka.version$" % "test"
 ```
+```
+<dependency>
+  <groupId>com.typesafe.akka</groupId>
+  <artifactId>akka-persistence-tck_${scala.version}</artifactId>
+  <version>$akka.version$</version>
+  <scope>test</scope>
+</dependency>
+```
 
-To include the Journal TCK tests in your test suite simply extend the provided `JournalSpec`:
+To include the Journal TCK tests in your test suite simply extend the provided @scala[`JournalSpec`]@java[`JavaJournalSpec`]:
 
-@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-tck-scala }
+Scala
+:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-tck-scala }
+
+Java
+:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #journal-tck-java }
 
 Please note that some of the tests are optional, and by overriding the `supports...` methods you give the
-TCK the needed information about which tests to run. You can implement these methods using boolean falues or the
+TCK the needed information about which tests to run. You can implement these methods using @scala[boolean falues or] the
 provided `CapabilityFlag.on` / `CapabilityFlag.off` values.
 
-We also provide a simple benchmarking class `JournalPerfSpec` which includes all the tests that `JournalSpec`
+We also provide a simple benchmarking class @scala[`JournalPerfSpec`]@java[`JavaJournalPerfSpec`] which includes all the tests that @scala[`JournalSpec`]@java[`JavaJournalSpec`]
 has, and also performs some longer operations on the Journal while printing its performance stats. While it is NOT aimed
 to provide a proper benchmarking environment it can be used to get a rough feel about your journal's performance in the most
 typical scenarios.
 
 In order to include the `SnapshotStore` TCK tests in your test suite simply extend the `SnapshotStoreSpec`:
 
-@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-store-tck-scala }
+Scala
+:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-store-tck-scala }
+
+Java
+:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #snapshot-store-tck-java }
 
 In case your plugin requires some setting up (starting a mock database, removing temporary files etc.) you can override the
 `beforeAll` and `afterAll` methods to hook into the tests lifecycle:
 
-@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-tck-before-after-scala }
+Scala
+:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-tck-before-after-scala }
+
+Java
+:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #journal-tck-before-after-java }
 
 We *highly recommend* including these specifications in your test suite, as they cover a broad range of cases you
 might have otherwise forgotten to test for when writing a plugin from scratch.
@@ -967,10 +1181,28 @@ instance. Enable this plugin by defining config property:
 
 LevelDB based plugins will also require the following additional dependency declaration:
 
-```
-"org.iq80.leveldb"            % "leveldb"          % "0.7"
-"org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
-```
+Scala
+:   @@@vars
+    ```
+    "org.iq80.leveldb"            % "leveldb"          % "0.7"
+    "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
+    ```
+    @@@
+    @@@vars
+     ```
+    <dependency>
+      <groupId>org.iq80.leveldb</groupId>
+      <artifactId>leveldb</artifactId>
+      <version>0.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.fusesource.leveldbjni</groupId>
+      <artifactId>leveldbjni-all</artifactId>
+      <version>1.8</version>
+    </dependency>
+    ```
+    @@@
+  
 
 The default location of LevelDB files is a directory named `journal` in the current working
 directory. This location can be changed by configuration where the specified path can be relative or absolute:
@@ -1001,7 +1233,11 @@ This plugin has been supplanted by [Persistence Plugin Proxy](#persistence-plugi
 
 A shared LevelDB instance is started by instantiating the `SharedLeveldbStore` actor.
 
-@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #shared-store-creation }
+Scala
+:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #shared-store-creation }
+
+Java
+:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #shared-store-creation }
 
 By default, the shared instance writes journaled messages to a local directory named `journal` in the current
 working directory. The storage location can be changed by configuration:
@@ -1016,7 +1252,11 @@ plugin.
 This plugin must be initialized by injecting the (remote) `SharedLeveldbStore` actor reference. Injection is
 done by calling the `SharedLeveldbJournal.setStore` method with the actor reference as argument.
 
-@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #shared-store-usage }
+Scala
+:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #shared-store-usage }
+
+Java
+:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #shared-store-usage }
 
 Internal journal commands (sent by persistent actors) are buffered until injection completes. Injection is idempotent
 i.e. only the first injection is used.
@@ -1129,12 +1369,20 @@ configured in the following sections of the `reference.conf` configuration resou
 
 Note that in this case the actor or view overrides only the `persistenceId` method:
 
-@@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #default-plugins }
+Scala
+:  @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #default-plugins }
+
+Java
+:  @@snip [PersistenceMultiDocTest.java]($code$/java/jdocs/persistence/PersistenceMultiDocTest.java) { #default-plugins }
 
 When the persistent actor or view overrides the `journalPluginId` and `snapshotPluginId` methods,
 the actor or view will be serviced by these specific persistence plugins instead of the defaults:
 
-@@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #override-plugins }
+Scala
+:  @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #override-plugins }
+
+Java
+:  @@snip [PersistenceMultiDocTest.java]($code$/java/jdocs/persistence/PersistenceMultiDocTest.java) { #override-plugins }
 
 Note that `journalPluginId` and `snapshotPluginId` must refer to properly configured `reference.conf`
 plugin entries with a standard `class` property as well as settings which are specific for those plugins, i.e.:

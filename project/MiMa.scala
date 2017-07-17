@@ -1170,8 +1170,6 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers_=")
       ),
       "2.4.18" -> Seq(
-      ),
-      "2.4.19" -> Seq(
       )
       // make sure that
       //  * this list ends with the latest released version number
@@ -1224,18 +1222,7 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.apply"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnRestartSupervisor.this"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.replyWhileStopped"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withReplyWhileStopped"),
-
-        // #22710 overloaded Flow.interleave()-related methods
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.interleaveGraph"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.interleaveMat"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.interleaveGraph"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.interleaveGraph"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph$default$3"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleave"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.interleaveGraph")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withReplyWhileStopped")
       ),
       "2.5.2" -> Seq(
         // #22881 Make sure connections are aborted correctly on Windows
@@ -1249,7 +1236,28 @@ object MiMa extends AutoPlugin {
 
         // #23023 added a new overload with implementation to trait, so old transport implementations compiled against
         // older versions will be missing the method. We accept that incompatibility for now.
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate")
+      ),
+      "2.5.3" -> Seq(
+
+        // #15733 Timers
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.fsm.PersistentFSM#Timer.apply"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.fsm.PersistentFSM#Timer.copy"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.fsm.PersistentFSM#Timer.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.copy"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.apply"),
+
+        // #22789 Source.maybe rewritten as a graph stage
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$MaybeSubscription"),
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.MaybeSource"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.newInstance"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.withAttributes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.attributes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.create"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.this"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$"),
 
         // #22710 overloaded Flow.interleave()-related methods
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.interleaveGraph"),

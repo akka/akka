@@ -1,9 +1,7 @@
-# Java 8 and Scala Compatibility
+# Java 8 Compatibility
 
 Akka requires that you have [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or
 later installed on your machine.
-
-## Java 8 types
 
 Starting with Akka 2.4.2 we have begun to introduce Java 8 types (most
 prominently `java.util.concurrent.CompletionStage` and
