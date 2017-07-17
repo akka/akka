@@ -109,19 +109,25 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
       enterBarrier("found-expectations")
     }
 
-    "be healthy" taggedAs LongRunningTest in {
+    "be healthy" taggedAs LongRunningTest in within(5.seconds) {
       implicit val sender = observer.ref
       runOn(expectedAlphaHeartbeaterRoles.toList: _*) {
-        selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
-        observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive](5.seconds)
+        awaitAssert {
+          selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
+          observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive]
+        }
       }
       runOn(expectedBetaHeartbeaterRoles.toList: _*) {
-        selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
-        observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive](5.seconds)
+        awaitAssert {
+          selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
+          observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive]
+        }
       }
       runOn(expectedNoActiveHeartbeatSenderRoles.toList: _*) {
-        selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
-        observer.expectMsgType[CrossDcHeartbeatSender.MonitoringDormant](5.seconds)
+        awaitAssert {
+          selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
+          observer.expectMsgType[CrossDcHeartbeatSender.MonitoringDormant]
+        }
       }
 
       enterBarrier("sunny-weather-done")
