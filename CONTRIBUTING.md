@@ -307,12 +307,16 @@ You can read up on remaining and friends in [TestKit.scala](https://github.com/a
 
 ## Continuous Integration
 
-Each project should be configured to use a continuous integration (CI) tool (i.e. a build server à la Jenkins). 
+akka-http currently uses a combination of jenkins and travis for Continuous
+Integration:
 
-Lightbend is sponsoring a [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster".
+* Jenkins [runs the tests for each PR](https://jenkins.akka.io:8498/view/PR%20Validators/job/pr-validator-akka-http/)
+* Jenkins [runs a nightly performance test suite](https://jenkins.akka.io:8498/view/Akka-http/) against master
+* Travis [checks dependency licenses for all PR's](https://travis-ci.org/akka/akka-http)
+* Travis [is used for publishing releases](https://github.com/akka/akka-http/blob/master/.travis.yml#L33)
+
+The [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster", is sponsored by Lightbend.
 The cluster is made out of real bare-metal boxes, and maintained by the Akka team (and other very helpful people at Lightbend).
-
-In addition to PR Validation the cluster is also used for nightly and performance test runs. 
 
 ## Related links
 
