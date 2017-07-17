@@ -1,0 +1,2 @@
+# #23224 TestKit expectNoMsg fix
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.expectNoMessage")
