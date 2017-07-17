@@ -17,13 +17,13 @@ transport layer itself.
 ## Configuring Client Transports
 
 A `ClientTransport` is configured slightly differently for the various layers of the HTTP client.
-Right now, configuration is only possible with code (and not through config files). There's currently no 
+Right now, configuration is only possible with code (and not through config files). There's currently no
 predefined way that would allow you to select different transports per target host (but you can easily define any kind
-of strategy by implementing `ClientTransport` yourself). 
+of strategy by implementing `ClientTransport` yourself).
 
 ### Connection Pool Usage
 
-The `ConnectionPoolSettings` class allows setting a custom transport for any of the pool methods. Use 
+The `ConnectionPoolSettings` class allows setting a custom transport for any of the pool methods. Use
 `ConnectionPoolSettings.withTransport` to configure a transport and pass those settings to one of the
 pool methods like `Http().singleRequest`, `Http().superPool`, or `Http().cachedHostConnectionPool`.
 
@@ -37,13 +37,16 @@ method.
 ### TCP
 
 The default transport is `ClientTransport.TCP` which simply opens a TCP connection to the target host.
- 
+
 ### HTTPS Proxy
 
-A transport that connects to target servers via an HTTPS proxy. An HTTPS proxy uses the HTTP `CONNECT` method (as 
-specified in [RFC 7231 Section 4.3.6](https://tools.ietf.org/html/rfc7231#section-4.3.6)) to create tunnels to target 
+A transport that connects to target servers via an HTTPS proxy. An HTTPS proxy uses the HTTP `CONNECT` method (as
+specified in [RFC 7231 Section 4.3.6](https://tools.ietf.org/html/rfc7231#section-4.3.6)) to create tunnels to target
 servers. The proxy itself should transparently forward data to the target servers so that end-to-end encryption should
 still work (if TLS breaks, then the proxy might be fussing with your data).
+
+This approach is commonly used to securely proxy requests to HTTPS endpoints. In theory it could also be used to proxy
+requests targeting HTTP endpoints, but we have not yet found a proxy that in fact allows this.
 
 Instantiate the HTTPS proxy transport using `ClientTransport.httpsProxy(proxyAddress)`.
 
@@ -58,6 +61,6 @@ Here are some ideas for custom (or future predefined) transports:
 
 ## Usage Examples
 
-### Use HTTPS Proxy with `Http().singleRequest` 
+### Use HTTPS Proxy with `Http().singleRequest`
 
 @@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #https-proxy-example-single-request }
