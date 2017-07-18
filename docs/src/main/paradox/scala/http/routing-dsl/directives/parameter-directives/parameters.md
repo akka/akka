@@ -35,27 +35,29 @@ as required, optional, or repeated, or to filter requests where a parameter has 
 : require value of parameter "color" to be `"blue"` and extract nothing
 
 `"amount".as[Int]`
-: extract value of parameter "amount" as `Int`, you need a matching `Deserializer` in scope for that to work
+: extract value of parameter "amount" as `Int`, you need a matching `Unmarshaller` in scope for that to work
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md#http-unmarshalling-scala))
 
 `"amount".as(deserializer)`
-: extract value of parameter "amount" with an explicit `Deserializer`
-
+: extract value of parameter "amount" with an explicit `Unmarshaller`
 `"distance".*`
 : extract multiple occurrences of parameter "distance" as `Iterable[String]`
 
 `"distance".as[Int].*`
-: extract multiple occurrences of parameter "distance" as `Iterable[Int]`, you need a matching `Deserializer` in scope for that to work
+: extract multiple occurrences of parameter "distance" as `Iterable[Int]`, you need a matching `Unmarshaller` in scope for that to work
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md#http-unmarshalling-scala))
 
 `"distance".as(deserializer).*`
-: extract multiple occurrences of parameter "distance" with an explicit `Deserializer`
-
+: extract multiple occurrences of parameter "distance" with an explicit `Unmarshaller`
 
 You can use @ref[Case Class Extraction](../../case-class-extraction.md#case-class-extraction) to group several extracted values together into a case-class
 instance.
 
-Requests missing a required parameter or parameter value will be rejected with an appropriate rejection.
+Requests missing a required parameter or parameter value will be rejected with an appropriate rejection. 
+
+If an unmarshaller throws an exception while extracting the value of a parameter, the request will be rejected with a `MissingQueryParameterRejection` 
+if the unmarshaller threw an `Unmarshaller.NoContentException` or a `MalformedQueryParamRejection` in all other cases.
+(see also @ref[Rejections](../../../routing-dsl/rejections.md))
 
 There's also a singular version, @ref[parameter](parameter.md#parameter). Form fields can be handled in a similar way, see `formFields`. If
 you want unified handling for both query parameters and form fields, see `anyParams`.
