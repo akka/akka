@@ -187,7 +187,7 @@ akka.persistence.max-concurrent-recoveries = 50
 
 @@@ note
 
-Accessing the @scala[`sender()`]@java[sender with `getSender()] for replayed messages will always result in a `deadLetters` reference,
+Accessing the @scala[`sender()`]@java[sender with `getSender()`] for replayed messages will always result in a `deadLetters` reference,
 as the original sender is presumed to be long gone. If you indeed have to notify an actor during
 recovery in the future, store its `ActorPath` explicitly in your persisted events.
 
@@ -338,7 +338,7 @@ Java
 
 @@@ note
 
-In order to implement the pattern known as "*command sourcing*" simply call @scala[persistAsync(cmd)(...)`]@java[`persistAsync`] right away on all incoming
+In order to implement the pattern known as "*command sourcing*" simply call @scala[`persistAsync(cmd)(...)`]@java[`persistAsync`] right away on all incoming
 messages and handle them in the callback.
 
 @@@
