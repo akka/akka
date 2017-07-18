@@ -1,20 +1,26 @@
+/**
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package docs.http.scaladsl
 
-import akka.NotUsed
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.{ Directives, Route, RoutingSpec }
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.scaladsl.Source
 import docs.CompileOnlySpec
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter.ISO_LOCAL_TIME
-import scala.concurrent.duration.DurationInt
 
 final class ServerSentEventsExampleSpec extends RoutingSpec with Directives with CompileOnlySpec {
 
-  compileOnlySpec {
+  "stream example" in compileOnlySpec {
     //#event-stream-marshalling-example
+    import akka.NotUsed
+    import akka.stream.scaladsl.Source
+
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.unmarshalling.Unmarshal
+    import akka.http.scaladsl.model.sse.ServerSentEvent
+    import scala.concurrent.duration._
+
+    import java.time.LocalTime
+    import java.time.format.DateTimeFormatter.ISO_LOCAL_TIME
+
     def route: Route = {
       import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 
