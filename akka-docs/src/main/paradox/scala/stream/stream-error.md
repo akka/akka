@@ -84,8 +84,12 @@ means it fails rather than applies supervision.
 The error handling strategies are inspired by actor supervision strategies, but the semantics 
 have been adapted to the domain of stream processing. The most important difference is that 
 supervision is not automatically applied to stream stages but instead something that each stage 
-has to implement explicitly. For many stages it may not even make sense to implement support for 
-supervision strategies.
+has to implement explicitly. 
+
+For many stages it may not even make sense to implement support for supervision strategies,
+this is especially true for stages connecting to external technologies where for example a
+failed connection will likely still fail if a new connection is tried immediately (see the
+Restart with back off for such scenarios). 
 
 For stages that do implement supervision, the strategies for how to handle exceptions from 
 processing stream elements can be selected when materializing the stream through use of an attribute. 
@@ -142,9 +146,10 @@ Scala
 Java
 :   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #restart-section }
 
-## Errors from mapAsync
+### Errors from mapAsync
 
-Stream supervision can also be applied to the futures of `mapAsync`.
+Stream supervision can also be applied to the futures of `mapAsync` and `mapAsyncUnordered` even if such
+failures happen in the future rather than inside the stage itself.
 
 Let's say that we use an external service to lookup email addresses and we would like to
 discard those that cannot be found.
