@@ -89,4 +89,30 @@ class FlowErrorDocSpec extends AkkaSpec {
     Await.result(result, 3.seconds) should be(Vector(0, 1, 4, 0, 5, 12))
   }
 
+  "demonstrate recover" in {
+    implicit val materializer = ActorMaterializer()
+    //#recover
+    Source(0 to 6).map(n =>
+      if (n < 5) n.toString
+      else throw new RuntimeException("Boom!")
+    ).recover {
+      case _: RuntimeException => "stream truncated"
+    }.runForeach(println)
+    //#recover
+  }
+
+  "demonstrate recoverWithRetries" in {
+    implicit val materializer = ActorMaterializer()
+    //#recoverWithRetries
+    val planB = Source(List("five", "six", "seven", "eight"))
+
+    Source(0 to 10).map(n =>
+      if (n < 5) n.toString
+      else throw new RuntimeException("Boom!")
+    ).recoverWithRetries(attempts = 1, {
+      case _: RuntimeException => planB
+    }).runForeach(println)
+    //#recoverWithRetries
+  }
+
 }

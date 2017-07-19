@@ -1,17 +1,94 @@
 # Error Handling
 
-Strategies for how to handle exceptions from processing stream elements can be defined when
-materializing the stream. The error handling strategies are inspired by actor supervision
-strategies, but the semantics have been adapted to the domain of stream processing.
+When a stage in a stream fails this will normally lead to the entire stream being torn down.
+Each of the stages downstream gets informed about the failure and each upstream stage sees a cancellation.
 
-@@@ warning
+In many cases you may want to avoid complete stream failure, this can be done in a few different ways:
 
-*ZipWith*, *GraphStage* junction, *ActorPublisher* source and *ActorSubscriber* sink
-components do not honour the supervision strategy attribute yet.
+ * `recover` to emit a final element then complete the stream normally on upstream failure 
+ * `recoverWithRetries` to create a new upstream and start consuming from that on failure
+ * Restarting sections of the stream after a backoff
+ * Using a supervision strategy for stages that support it
+ 
+In addition to these built in tools for error handling, a common pattern is to wrap the stream 
+inside an actor, and have the actor restart the entire stream on failure.
+ 
+## Recover
+
+`recover` allows you to emit a final element and then complete the stream on an upstream failure.
+Deciding which exceptions should be recovered is done through a `PartialFunction`. If an exception
+does not have a @scala[matching case] @java[match defined] the stream is failed. 
+
+Recovering can be useful if you want to gracefully complete a stream on failure while letting 
+downstream know that there was a failure.
+
+Scala
+:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #recover }
+
+Java
+:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #recover }
+
+This will output:
+
+```
+0
+1
+2
+3
+4
+stream truncated
+```
+
+## Recover with retries
+
+`recoverWithRetries` allows you to put a new upstream in place of the failed one, recovering 
+stream failures up to a specified maximum number of times. 
+
+Deciding which exceptions should be recovered is done through a `PartialFunction`. If an exception
+does not have a @scala[matching case] @java[match defined] the stream is failed.
+
+Scala
+:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #recoverWithRetries }
+
+Java
+:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #recoverWithRetries }
+
+This will output:
+
+```
+0
+1
+2
+3
+4
+five
+six
+seven
+eight
+```
+
+## Restart with back off
+
+TODO: Add when #23367 is merged
+
+## Supervision Strategies
+
+@@@ Note
+
+The stages that support supervision strategies are explicitly documented to do so, if there is
+nothing in the documentation of a stage saying that it adheres to the supervision strategy it
+means it fails rather than applies supervision.
 
 @@@
 
-## Supervision Strategies
+The error handling strategies are inspired by actor supervision strategies, but the semantics 
+have been adapted to the domain of stream processing. The most important difference is that 
+supervision is not automatically applied to stream stages but instead something that each stage 
+has to implement explicitly. For many stages it may not even make sense to implement support for 
+supervision strategies.
+
+For stages that do implement supervision, the strategies for how to handle exceptions from 
+processing stream elements can be selected when materializing the stream through use of an attribute. 
 
 There are three ways to handle exceptions from application code:
 
