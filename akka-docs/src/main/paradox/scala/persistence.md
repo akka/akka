@@ -209,9 +209,8 @@ Scala
 Java
 :  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #recovery-no-snap }
 
-Another example, which can be fun for experiments but probably not in a real application, is setting an
-upper bound to the replay which allows the actor to be replayed to a certain point "in the past"
-instead to its most up to date state. Note that after that it is a bad idea to persist new
+Another possible recovery customization, which can be useful for debugging, is setting an
+upper bound on the replay, causing the actor to be replayed only up to a certain point "in the past" (instead of being replayed to its most up to date state). Note that after that it is a bad idea to persist new
 events because a later recovery will probably be confused by the new events that follow the
 events that were previously skipped.
 
