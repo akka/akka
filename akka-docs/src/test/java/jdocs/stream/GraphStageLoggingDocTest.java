@@ -9,7 +9,13 @@ import akka.stream.Attributes;
 import akka.stream.Materializer;
 import akka.stream.Outlet;
 import akka.stream.SourceShape;
-import akka.stream.stage.*;
+//#stage-with-logging
+import akka.stream.stage.AbstractOutHandler;
+import akka.stream.stage.GraphStage;
+import akka.stream.stage.GraphStageLogic;
+import akka.stream.stage.GraphStageLogicWithLogging;
+
+//#stage-with-logging
 import jdocs.AbstractJavaTest;
 import org.junit.Test;
 
@@ -21,7 +27,7 @@ public class GraphStageLoggingDocTest extends AbstractJavaTest {
 
   @Test
   public void compileOnlyTestClass() throws Exception { }
-  
+
   //#stage-with-logging
   public class RandomLettersSource extends GraphStage<SourceShape<String>> {
     public final Outlet<String> out = Outlet.create("RandomLettersSource.in");
