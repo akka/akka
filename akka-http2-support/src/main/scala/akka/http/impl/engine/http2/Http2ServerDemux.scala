@@ -123,14 +123,14 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             case s: StreamFrameEvent                    ⇒ handleStreamEvent(s)
 
             case SettingsFrame(settings) ⇒
-              if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
+              if (settings.nonEmpty) log.debug("Got {} settings!", settings.length)
 
               var settingsAppliedOk = true
 
               settings.foreach {
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
                   if (value >= 0) {
-                    debug(s"Setting initial window to $value")
+                    log.debug("Setting initial window to {}", value)
                     multiplexer.updateDefaultWindow(value)
                   } else {
                     pushGOAWAY(FLOW_CONTROL_ERROR, s"Invalid value for SETTINGS_INITIAL_WINDOW_SIZE: $value")
@@ -139,9 +139,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
                   multiplexer.updateMaxFrameSize(value)
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) ⇒
-                  debug(s"Setting max concurrent streams to $value (not enforced)")
+                  log.debug("Setting max concurrent streams to {} (not enforced)", value)
                 case Setting(id, value) ⇒
-                  debug(s"Ignoring setting $id -> $value (in Demux)")
+                  log.debug("Ignoring setting {} -> {} (in Demux)", id, value)
               }
 
               if (settingsAppliedOk) {
@@ -154,7 +154,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
 
             case e ⇒
-              debug(s"Got unhandled event $e")
+              log.debug("Got unhandled event {}", e)
             // ignore unknown frames
           }
           pull(frameIn)
@@ -175,7 +175,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             case e: ParsingException ⇒
               e.getCause match {
                 case null  ⇒ super.onUpstreamFailure(e) // fail with the raw parsing exception
-                case cause ⇒ onUpstreamFailure(cause) // unwrap the cause, which should carry ComplianceException and recurse 
+                case cause ⇒ onUpstreamFailure(cause) // unwrap the cause, which should carry ComplianceException and recurse
               }
 
             // handle every unhandled exception
@@ -200,8 +200,6 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           multiplexer.registerSubStream(sub)
         }
       })
-
-      def debug(msg: String): Unit = println(msg)
     }
 
 }

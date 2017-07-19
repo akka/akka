@@ -8,7 +8,7 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging }
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.util.ByteString
 
@@ -25,7 +25,7 @@ private[http] class Http2FrameRendering extends GraphStage[FlowShape[FrameEvent,
 
   override val shape = FlowShape[FrameEvent, ByteString](frameIn, netOut)
 
-  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
     setHandlers(frameIn, netOut, this)
 
     private var _outMaxFrameSize: Int = Http2Protocol.InitialMaxFrameSize // default
@@ -60,7 +60,7 @@ private[http] class Http2FrameRendering extends GraphStage[FlowShape[FrameEvent,
     override def onPull(): Unit = pull(frameIn)
 
     private def splitByPayloadSize(d: DataFrame, size: Int): immutable.Seq[DataFrame] = {
-      debug(s"Splitting up too large data-frame into smaller frames due to exceeding max frame size. Length: ${d.payload.length}, max: ${size}")
+      log.debug("Splitting up too large data-frame into smaller frames due to exceeding max frame size. Length: {}, max: {}", d.payload.length, size)
       val parts = d.payload.grouped(size) // TODO optimise, splitAt would be better
 
       if (d.endStream) {
@@ -79,12 +79,9 @@ private[http] class Http2FrameRendering extends GraphStage[FlowShape[FrameEvent,
       s foreach {
         case Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
           updateMaxOutFrameSize(value)
-          debug(s"Set max outgoing frame size to: ${value}")
+          log.debug("Set max outgoing frame size to: {}", value)
         case _ ⇒ // ignore other settings, not applicable for this stage
       }
     }
   }
-
-  private def debug(s: String): Unit = println(s)
-
 }
