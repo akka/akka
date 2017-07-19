@@ -76,7 +76,7 @@ The returned layer forms a `BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Mes
 <a id="half-closed-client-websockets"></a>
 ## Half-Closed WebSockets
 
-The Akka HTTP WebSocket API does not support half-closed connections which means that if the either stream completes the
+The Akka HTTP WebSocket API does not support half-closed connections which means that if either stream completes the
 entire connection is closed (after a "Closing Handshake" has been exchanged or a timeout of 3 seconds has passed).
 This may lead to unexpected behavior, for example if we are trying to only consume messages coming from the server,
 like this:
