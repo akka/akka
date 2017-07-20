@@ -20,6 +20,7 @@ Akka HTTP API - @javadoc:[Javadoc](akka.http.javadsl.package-summary)
 * [client-side/index](client-side/index.md)
 * [server-side-https-support](server-side-https-support.md)
 * [migration-guides-java](migration-guide/index.md)
+* [Compatibility Guidelines](compatibility-guidelines.md)
 * [Release Notes](release-notes.md)
 
 @@@

@@ -21,6 +21,7 @@ Akka HTTP API - @scaladoc:[ScalaDoc](akka.http.scaladsl.index)
 * [server-side-https-support](server-side-https-support.md)
 * [handling-blocking-operations-in-akka-http-routes](handling-blocking-operations-in-akka-http-routes.md)
 * [migration-guides-scala](migration-guide/index.md)
+* [Compatibility Guidelines](compatibility-guidelines.md)
 * [Release Notes](release-notes.md)
 
 @@@

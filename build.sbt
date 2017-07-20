@@ -158,6 +158,7 @@ lazy val docs = project("docs")
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",
       "akka.version" -> Dependencies.akkaVersion.value,
+      "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scala.version" -> scalaVersion.value,
       "scaladoc.version" -> scalaVersion.value,
