@@ -1,6 +1,6 @@
 /**
-  * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
-  */
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -434,7 +434,7 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
       flowInProbe.request(1)
       val deadline = 100.millis.fromNow
       flowInProbe.expectNext(300.millis, "c")
-      deadline.isOverdue() should be (true)
+      deadline.isOverdue() should be(true)
 
       created.get() should ===(2)
     }
