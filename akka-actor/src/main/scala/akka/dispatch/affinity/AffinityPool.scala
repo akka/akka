@@ -71,15 +71,19 @@ private[affinity] object AffinityPool {
     private[this] var state: IdleState = Initial
     private[this] var turns = 0L
     private[this] var parkPeriodNs = 0L
+    @volatile private[this] var idling = false
 
     @inline private[this] final def transitionTo(newState: IdleState): Unit = {
       state = newState
       turns = 0
     }
 
-    def idle(): Unit = {
+    final def isIdling: Boolean = idling
+
+    final def idle(): Unit = {
       (state: @switch) match {
         case Initial ⇒
+          idling = true
           transitionTo(Spinning)
         case Spinning ⇒
           onSpinWaitMethodHandle match {
@@ -101,7 +105,10 @@ private[affinity] object AffinityPool {
       }
     }
 
-    final def reset(): Unit = transitionTo(Initial)
+    final def reset(): Unit = {
+      idling = false
+      transitionTo(Initial)
+    }
   }
 
   private final class BoundedAffinityTaskQueue(capacity: Int) extends AbstractBoundedNodeQueue[Runnable](capacity)
@@ -277,7 +284,6 @@ private[akka] class AffinityPool(
 
   private[this] final class AffinityPoolWorker( final val q: BoundedAffinityTaskQueue, final val idleStrategy: IdleStrategy) extends Runnable {
     final val thread: Thread = threadFactory.newThread(this)
-    @volatile private[this] var executing: Boolean = false
 
     final def start(): Unit =
       if (thread eq null) throw new IllegalStateException(s"Was not able to allocate worker thread for ${AffinityPool.this}")
@@ -287,18 +293,14 @@ private[akka] class AffinityPool(
       // Returns true if it executed something, false otherwise
       def executeNext(): Boolean = {
         val c = q.poll()
-        if (c ne null) {
-          executing = true
-          try
-            c.run()
-          finally
-            executing = false
+        val next = c ne null
+        if (next) {
+          c.run()
           idleStrategy.reset()
-          true
         } else {
           idleStrategy.idle() // if not wait for a bit
-          false
         }
+        next
       }
 
       /**
@@ -331,7 +333,7 @@ private[akka] class AffinityPool(
 
     def stop(): Unit = if (!thread.isInterrupted) thread.interrupt()
 
-    def stopIfIdle(): Unit = if (!executing) stop()
+    def stopIfIdle(): Unit = if (idleStrategy.isIdling) stop()
   }
 }
 
