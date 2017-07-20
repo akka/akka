@@ -275,7 +275,7 @@ object Source {
    * Streams the elements of an asynchronous source once its given `completion` stage completes.
    * If the `completion` fails the stream is failed with that exception.
    */
-  def fromSourceCompletionStage[T, M](completion: CompletionStage[Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
+  def fromSourceCompletionStage[T, M](completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
 
   /**
    * Elements are emitted periodically with the specified interval.
