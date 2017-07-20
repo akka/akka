@@ -26,6 +26,8 @@ object RestartSource {
    * This [[Source]] will never emit a complete or failure, since the completion or failure of the wrapped [[Source]]
    * is always handled by restarting it. The wrapped [[Source]] can however be cancelled by cancelling this [[Source]].
    * When that happens, the wrapped [[Source]], if currently running will be cancelled, and it will not be restarted.
+   * This can be triggered simply by the downstream cancelling, or externally by introducing a [[KillSwitch]] right
+   * after this [[Source]] in the graph.
    *
    * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
    *
@@ -91,7 +93,9 @@ object RestartSink {
    *
    * This [[Sink]] will never cancel, since cancellation by the wrapped [[Sink]] is always handled by restarting it.
    * The wrapped [[Sink]] can however be completed by feeding a completion or error into this [[Sink]]. When that
-   * happens, the [[Sink]], if currently running, will terminate and will not be restarted.
+   * happens, the [[Sink]], if currently running, will terminate and will not be restarted. This can be triggered
+   * simply by the upstream completing, or externally by introducing a [[KillSwitch]] right before this [[Sink]] in the
+   * graph.
    *
    * The restart process is inherently lossy, since there is no coordination between cancelling and the sending of
    * messages. When the wrapped [[Sink]] does cancel, this [[Sink]] will backpressure, however any elements already
@@ -254,7 +258,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   protected def backoff(): Unit
 
   protected final def createSubInlet[T](out: Outlet[T]): SubSinkInlet[T] = {
-    val sinkIn = new SubSinkInlet[T](s"RestartWithBackoff$name.subin")
+    val sinkIn = new SubSinkInlet[T](s"RestartWithBackoff$name.subIn")
 
     sinkIn.setHandler(new InHandler {
       override def onPush() = push(out, sinkIn.grab())
@@ -288,7 +292,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   }
 
   protected final def createSubOutlet[T](in: Inlet[T]): SubSourceOutlet[T] = {
-    val sourceOut = new SubSourceOutlet[T](s"RestartWithBackoff$name.subout")
+    val sourceOut = new SubSourceOutlet[T](s"RestartWithBackoff$name.subOut")
 
     sourceOut.setHandler(new OutHandler {
       override def onPull() = if (isAvailable(in)) {

@@ -4,7 +4,7 @@
 package docs.stream
 
 import akka.NotUsed
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, KillSwitches }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
@@ -27,12 +27,14 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
   }
   case class ServerSentEvent()
 
+  def doSomethingElse(): Unit = ()
+
   "Restart stages" should {
 
     "demonstrate a restart with backoff source" in compileOnlySpec {
 
       //#restart-with-backoff-source
-      val source = RestartSource.withBackoff(
+      val restartSource = RestartSource.withBackoff(
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
         randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
@@ -48,6 +50,18 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
         }
       }
       //#restart-with-backoff-source
+
+      //#with-kill-switch
+      val killSwitch = restartSource
+        .viaMat(KillSwitches.single)(Keep.right)
+        .toMat(Sink.foreach(event => println(s"Got event: $event")))(Keep.left)
+        .run()
+
+      doSomethingElse()
+
+      killSwitch.shutdown()
+      //#with-kill-switch
     }
+
   }
 }

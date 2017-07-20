@@ -5,9 +5,10 @@ package jdocs.stream;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.stream.KillSwitch;
+import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.javadsl.*;
-import org.junit.Test;
 import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.CompletableFuture;
@@ -45,8 +46,10 @@ public class RestartDocTest {
       return new CompletableFuture<>();
     }
   }
+  public void doSomethingElse() {
 
-  @Test
+  }
+
   public void recoverWithBackoffSource() {
     //#restart-with-backoff-source
     Source<ServerSentEvent, NotUsed> eventStream = RestartSource.withBackoff(
@@ -67,5 +70,17 @@ public class RestartDocTest {
             )
     );
     //#restart-with-backoff-source
+
+    //#with-kill-switch
+    KillSwitch killSwitch = eventStream
+        .viaMat(KillSwitches.single(), Keep.right())
+        .toMat(Sink.foreach(event -> System.out.println("Got event: " + event)), Keep.left())
+        .run(materializer);
+
+    doSomethingElse();
+
+    killSwitch.shutdown();
+    //#with-kill-switch
+
   }
 }
