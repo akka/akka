@@ -102,3 +102,48 @@ Java
 
 If we would not use `Resume` the default stopping strategy would complete the stream
 with failure on the first @scala[`Future`] @java[`CompletionStage`] that was completed @scala[with `Failure`]@java[exceptionally].
+
+## Delayed restarts with a backoff stage
+
+Just as Akka provides the @ref:[backoff supervision pattern for actors](../general/supervision.md#backoff-supervisor), Akka streams
+also provides a `RestartSource`, `RestartSink` and `RestartFlow` for implementing the so-called *exponential backoff 
+supervision strategy*, starting a stage again when it fails, each time with a growing time delay between restarts.
+
+This pattern is useful when the stage fails or completes because some external resource is not available
+and we need to give it some time to start-up again. One of the prime examples when this is useful is
+when a WebSocket connection fails due to the HTTP server it's running on going down, perhaps because it is overloaded. 
+By using an exponential backoff, we avoid going into a tight reconnect look, which both gives the HTTP server some time
+to recover, and it avoids using needless resources on the client side.
+
+The following snippet shows how to create a backoff supervisor using @scala[`akka.stream.scaladsl.RestartSource`] 
+@java[`akka.stream.javadsl.RestartSource`] which will supervise the given `Source`. The `Source` in this case is a 
+stream of Server Sent Events, produced by akka-http. If the stream fails or completes at any point, the request will
+be made again, in increasing intervals of 3, 6, 12, 24 and finally 30 seconds (at which point it will remain capped due
+to the `maxBackoff` parameter):
+
+Scala
+:   @@snip [RestartDocSpec.scala]($code$/scala/docs/stream/RestartDocSpec.scala) { #restart-with-backoff-source }
+
+Java
+:   @@snip [RestartDocTest.java]($code$/java/jdocs/stream/RestartDocTest.java) { #restart-with-backoff-source }
+
+Using a `randomFactor` to add a little bit of additional variance to the backoff intervals
+is highly recommended, in order to avoid multiple streams re-start at the exact same point in time,
+for example because they were stopped due to a shared resource such as the same server going down
+and re-starting after the same configured interval. By adding additional randomness to the
+re-start intervals the streams will start in slightly different points in time, thus avoiding
+large spikes of traffic hitting the recovering server or other resource that they all need to contact.
+
+The above `RestartSource` will never terminate unless the `Sink` it's fed into cancels. It will often be handy to use
+it in combination with a @ref:[`KillSwitch`](stream-dynamic.md#kill-switch), so that you can terminate it when needed:
+
+Scala
+:   @@snip [RestartDocSpec.scala]($code$/scala/docs/stream/RestartDocSpec.scala) { #with-kill-switch }
+
+Java
+:   @@snip [RestartDocTest.java]($code$/java/jdocs/stream/RestartDocTest.java) { #with-kill-switch }
+
+Sinks and flows can also be supervised, using @scala[`akka.stream.scaladsl.RestartSink` and `akka.stream.scaladsl.RestartFlow`] 
+@java[`akka.stream.scaladsl.RestartSink` and `akka.stream.scaladsl.RestartFlow`]. The `RestartSink` is restarted when 
+it cancels, while the `RestartFlow` is restarted when either the in port cancels, the out port completes, or the out
+ port sends an error.
