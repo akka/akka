@@ -61,11 +61,31 @@ object ByteString {
   def fromArray(array: Array[Byte]): ByteString = apply(array)
 
   /**
+   * Creates a ByteString without allocation.
+   *
+   * Use with caution:
+   * Since the ByteString is created without copying the byte array,
+   * this makes it unsafe if an array is passed in and mutated afterwards.
+   * DO NOT USE if you are not sure whether the passed-in array will be changed outside this method.
+   */
+  def fromArrayUnsafe(array: Array[Byte]): ByteString = ByteString1C(array)
+
+  /**
    * Creates a new ByteString by copying length bytes starting at offset from
    * an Array.
    */
   def fromArray(array: Array[Byte], offset: Int, length: Int): ByteString =
     CompactByteString.fromArray(array, offset, length)
+
+  /**
+   * Creates a ByteString without allocation, using length bytes starting at offset from an Array.
+   *
+   * Use with caution:
+   * Since the ByteString is created without copying the byte array,
+   * this makes it unsafe if an array is passed in and mutated afterwards.
+   * DO NOT USE if you are not sure whether the passed-in array will be changed outside this method.
+   */
+  def fromArrayUnsafe(array: Array[Byte], offset: Int, length: Int): ByteString = ByteString1(array, offset, length)
 
   /**
    * JAVA API
