@@ -196,6 +196,12 @@ class Http2ServerSpec extends AkkaSpec("""
 
         protected def sendRequest(): Unit =
           sendRequestHEADERS(TheStreamId, request, endStream = false)
+
+        def sendWindowFullOfData(): Int = {
+          val dataLength = remainingToServerWindowFor(TheStreamId)
+          sendDATA(TheStreamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
+          dataLength
+        }
       }
       "send data frames to entity stream" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
@@ -240,6 +246,15 @@ class Http2ServerSpec extends AkkaSpec("""
 
         entityDataIn.cancel()
         expectRST_STREAM(TheStreamId, ErrorCode.CANCEL)
+      }
+      "send out WINDOW_UPDATE frames when request data is read so that the stream doesn't stall" in new WaitingForRequestData {
+        (1 to 10).foreach { _ ⇒
+          val bytesSent = sendWindowFullOfData()
+          bytesSent should be > 0
+          entityDataIn.expectBytes(bytesSent)
+          pollForWindowUpdates(10.millis)
+          remainingToServerWindowFor(TheStreamId) should be > 0
+        }
       }
       "backpressure until request entity stream is read (don't send out unlimited WINDOW_UPDATE before)" in new WaitingForRequestData {
         pending
