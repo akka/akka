@@ -1,4 +1,4 @@
-# Error Handling
+# Error Handling in Streams
 
 When a stage in a stream fails this will normally lead to the entire stream being torn down.
 Each of the stages downstream gets informed about the failure and each upstream stage sees a cancellation.
@@ -30,14 +30,12 @@ Java
 
 This will output:
 
-```
-0
-1
-2
-3
-4
-stream truncated
-```
+Scala
+:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #recover-output }
+
+Java
+:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #recover-output }
+
 
 ## Recover with retries
 
@@ -55,17 +53,13 @@ Java
 
 This will output:
 
-```
-0
-1
-2
-3
-4
-five
-six
-seven
-eight
-```
+
+Scala
+:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #recoverWithRetries-output }
+
+Java
+:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #recoverWithRetries-output }
+
 
 ## Restart with back off
 

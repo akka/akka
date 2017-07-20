@@ -646,7 +646,7 @@ trait FlowOps[+Out, +Mat] {
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the mapping function returns an element
    *
@@ -689,7 +689,7 @@ trait FlowOps[+Out, +Mat] {
    * The returned `Iterable` MUST NOT contain `null` values,
    * as they are illegal as stream elements - according to the Reactive Streams specification.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the mapping function returns an element or there are still remaining elements
    * from the previously calculated collection
@@ -724,7 +724,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * The function `f` is always invoked on the elements in the order they arrive.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the Future returned by the provided function finishes for the next element in sequence
    *
@@ -758,7 +758,7 @@ trait FlowOps[+Out, +Mat] {
    * The function `f` is always invoked on the elements in the order they arrive (even though the result of the futures
    * returned by `f` might be emitted in a different order).
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' any of the Futures returned by the provided function complete
    *
@@ -775,7 +775,7 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Only pass on those elements that satisfy the given predicate.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the given predicate returns true for the element
    *
@@ -790,7 +790,7 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Only pass on those elements that NOT satisfy the given predicate.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the given predicate returns false for the element
    *
@@ -833,7 +833,7 @@ trait FlowOps[+Out, +Mat] {
    * The stream will be completed without producing any elements if predicate is false for
    * the first stream element.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the predicate is true
    *
@@ -851,7 +851,7 @@ trait FlowOps[+Out, +Mat] {
    * Discard elements at the beginning of the stream while predicate is true.
    * All elements will be taken after predicate returns false first time.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' predicate returned false and for all following stream elements
    *
@@ -868,7 +868,7 @@ trait FlowOps[+Out, +Mat] {
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the provided partial function is defined for the element
    *
@@ -929,7 +929,7 @@ trait FlowOps[+Out, +Mat] {
    * requested from upstream publishers that will then not be processed downstream
    * of this step.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' upstream emits and the accumulated cost has not reached max
    *
@@ -972,7 +972,7 @@ trait FlowOps[+Out, +Mat] {
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
    * the stream will continue.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the function scanning the element returns a new element
    *
@@ -1000,7 +1000,7 @@ trait FlowOps[+Out, +Mat] {
    * [[akka.stream.Supervision.Resume]] current value starts at the previous
    * current value, or zero when it doesn't have one, and the stream will continue.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the future returned by f` completes
    *
@@ -1023,7 +1023,7 @@ trait FlowOps[+Out, +Mat] {
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
    * the stream will continue.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' upstream completes
    *
@@ -1042,7 +1042,7 @@ trait FlowOps[+Out, +Mat] {
    * Applies the given function towards its current and next value,
    * yielding the next current value.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * If the function `f` returns a failure and the supervision decision is
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
@@ -1070,7 +1070,7 @@ trait FlowOps[+Out, +Mat] {
    * which is semantically in-line with that Scala's standard library collections
    * do in such situations.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' upstream completes
    *
@@ -1294,7 +1294,7 @@ trait FlowOps[+Out, +Mat] {
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' downstream stops backpressuring and there is a conflated element available
    *
@@ -1323,7 +1323,7 @@ trait FlowOps[+Out, +Mat] {
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' downstream stops backpressuring and there is a conflated element available
    *
@@ -1347,7 +1347,7 @@ trait FlowOps[+Out, +Mat] {
    * This only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' downstream stops backpressuring and there is an aggregated element available
    *
@@ -1499,7 +1499,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * Function `f`  MUST NOT return `null`. This will throw exception and trigger supervision decision mechanism.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' an element for which the grouping function returns a group that has not yet been created.
    * Emits the new group
@@ -1880,7 +1880,7 @@ trait FlowOps[+Out, +Mat] {
    * Uses implicit [[LoggingAdapter]] if available, otherwise uses an internally created one,
    * which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the mapping function returns an element
    *

@@ -99,6 +99,18 @@ class FlowErrorDocSpec extends AkkaSpec {
       case _: RuntimeException => "stream truncated"
     }.runForeach(println)
     //#recover
+
+    /*
+Output:
+//#recover-output
+0
+1
+2
+3
+4
+stream truncated
+//#recover-output
+*/
   }
 
   "demonstrate recoverWithRetries" in {
@@ -113,6 +125,21 @@ class FlowErrorDocSpec extends AkkaSpec {
       case _: RuntimeException => planB
     }).runForeach(println)
     //#recoverWithRetries
+
+/*
+Output:
+//#recoverWithRetries-output
+0
+1
+2
+3
+4
+five
+six
+seven
+eight
+//#recoverWithRetries-output
+ */
   }
 
 }

@@ -151,6 +151,18 @@ public class FlowErrorDocTest extends AbstractJavaTest {
         .build()
     ).runForeach(System.out::println, mat);
     //#recover
+
+/*
+Output:
+//#recover-output
+0
+1
+2
+3
+4
+stream truncated
+//#recover-output
+*/
   }
 
   @Test
@@ -169,6 +181,21 @@ public class FlowErrorDocTest extends AbstractJavaTest {
             .build()
     ).runForeach(System.out::println, mat);
     //#recoverWithRetries
+
+/*
+Output:
+//#recoverWithRetries-output
+0
+1
+2
+3
+4
+five
+six
+seven
+eight
+//#recoverWithRetries-output
+ */
   }
 
 

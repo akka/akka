@@ -272,7 +272,7 @@ object Sink {
    *
    * `fallback` will be executed when there was no elements and completed is received from upstream.
    *
-   * Adheres to the supervision strategy attribute.
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    */
   def lazyInit[T, M](sinkFactory: function.Function[T, CompletionStage[Sink[T, M]]], fallback: function.Creator[M]): Sink[T, CompletionStage[M]] =
     new Sink(scaladsl.Sink.lazyInit[T, M](
