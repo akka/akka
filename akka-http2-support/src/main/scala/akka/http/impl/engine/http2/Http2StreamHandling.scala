@@ -81,6 +81,11 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with GenericOut
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
       case d: DataFrame ⇒
         outlet.push(d.payload)
+
+        // FIXME: this completely removes backpressure, data will accumulate in the BufferedOutlet
+        multiplexer.pushControlFrame(WindowUpdateFrame(0, d.payload.size))
+        multiplexer.pushControlFrame(WindowUpdateFrame(d.streamId, d.payload.size))
+
         maybeFinishStream(d.endStream)
       case r: RstStreamFrame ⇒
         outlet.fail(new PeerClosedStreamException(r.streamId, r.errorCode))
