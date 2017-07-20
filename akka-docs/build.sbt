@@ -16,8 +16,8 @@ enablePlugins(AkkaParadoxPlugin)
 
 name in (Compile, paradox) := "Akka"
 
-val browseDocs = taskKey[Unit]("Open the docs in the default browser")
-browseDocs := {
+val paradoxBrowse = taskKey[Unit]("Open the docs in the default browser")
+paradoxBrowse := {
   import java.awt.Desktop
   val rootDocFile = (target in (Compile, paradox)).value / "index.html"
   val log = streams.value.log
