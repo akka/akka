@@ -94,7 +94,7 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
       val deadline = 100.millis.fromNow
       // But the delay shouldn't be more than 300ms.
       probe.expectNext(300.milliseconds, "a")
-      deadline.isOverdue() should be (true)
+      deadline.isOverdue() should be(true)
 
       created.get() should ===(2)
 
