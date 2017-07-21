@@ -188,7 +188,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         val random = new Random(0)
         val testBytes = new Array[Byte](bufferSize)
         random.nextBytes(testBytes)
-        val testData = ByteString(testBytes)
+        val testData = ByteString.fromArrayUnsafe(testBytes)
 
         val writer = TestProbe()
 
@@ -995,7 +995,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     final val TestSize = 10000 // compile-time constant
 
     def writeCmd(ack: Event) =
-      Write(ByteString(Array.fill[Byte](TestSize)(0)), ack)
+      Write(ByteString.fromArrayUnsafe(Array.fill[Byte](TestSize)(0)), ack)
 
     def closeServerSideAndWaitForClientReadable(fullClose: Boolean = true): Unit = {
       if (fullClose) serverSideChannel.close() else serverSideChannel.socket.shutdownOutput()

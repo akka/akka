@@ -153,7 +153,7 @@ class FramingSpec extends StreamSpec {
     val fieldOffsets = List(0, 1, 2, 3, 15, 16, 31, 32, 44, 107)
 
     def encode(payload: ByteString, fieldOffset: Int, fieldLength: Int, byteOrder: ByteOrder): ByteString = {
-      encodeComplexFrame(payload, fieldOffset, fieldLength, byteOrder, ByteString(new Array[Byte](fieldOffset)), ByteString.empty)
+      encodeComplexFrame(payload, fieldOffset, fieldLength, byteOrder, ByteString.fromArrayUnsafe(new Array[Byte](fieldOffset)), ByteString.empty)
     }
 
     def encodeComplexFrame(
@@ -217,7 +217,7 @@ class FramingSpec extends StreamSpec {
           val payload = referenceChunk.take(length)
           val offsetBytes = offset()
           val tailBytes = if (offsetBytes.length > 0) new Array[Byte](offsetBytes(0)) else Array.empty[Byte]
-          encodeComplexFrame(payload, fieldOffset, fieldLength, byteOrder, ByteString(offsetBytes), ByteString(tailBytes))
+          encodeComplexFrame(payload, fieldOffset, fieldLength, byteOrder, ByteString(offsetBytes), ByteString.fromArrayUnsafe(tailBytes))
         }
 
         Source(encodedFrames)

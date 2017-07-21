@@ -145,7 +145,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
 
       object Ack extends Event
 
-      serverHandler.send(serverConnection, Write(ByteString(Array.fill[Byte](100000)(0)), Ack))
+      serverHandler.send(serverConnection, Write(ByteString.fromArrayUnsafe(Array.fill[Byte](100000)(0)), Ack))
       serverHandler.expectMsg(Ack)
 
       expectReceivedData(clientHandler, 100000)

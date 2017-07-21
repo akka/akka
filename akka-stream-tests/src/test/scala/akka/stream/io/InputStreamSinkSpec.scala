@@ -35,7 +35,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
   def randomByteString(size: Int): ByteString = {
     val a = new Array[Byte](size)
     ThreadLocalRandom.current().nextBytes(a)
-    ByteString(a)
+    ByteString.fromArrayUnsafe(a)
   }
 
   val byteString = randomByteString(3)
@@ -75,7 +75,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       val arr = new Array[Byte](byteString.size + 1)
       inputStream.read(arr) should ===(arr.size - 1)
-      ByteString(arr) should ===(byteString :+ 0)
+      ByteString.fromArrayUnsafe(arr) should ===(byteString :+ 0)
 
       inputStream.close()
     }

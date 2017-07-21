@@ -28,7 +28,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     b ← Gen.containerOfN[Array, Byte](n, arbitrary[Byte])
     from ← Gen.choose(0, b.length)
     until ← Gen.choose(from, from max b.length)
-  } yield ByteString(b).slice(from, until)
+  } yield ByteString.fromArrayUnsafe(b).slice(from, until)
 
   implicit val arbitraryByteString: Arbitrary[ByteString] = Arbitrary {
     Gen.sized { s ⇒
@@ -760,7 +760,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
 
       "with a large concatenated bytestring" in {
         // coverage for #20901
-        val original = ByteString(Array.fill[Byte](1000)(1)) ++ ByteString(Array.fill[Byte](1000)(2))
+        val original = ByteString.fromArrayUnsafe(Array.fill[Byte](1000)(1)) ++ ByteString.fromArrayUnsafe(Array.fill[Byte](1000)(2))
 
         deserialize(serialize(original)) shouldEqual original
       }

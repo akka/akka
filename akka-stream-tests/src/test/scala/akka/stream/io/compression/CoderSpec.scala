@@ -112,7 +112,7 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
 
     "shouldn't produce huge ByteStrings for some input" in {
       val array = Array.fill(10)(1.toByte)
-      val compressed = streamEncode(ByteString(array))
+      val compressed = streamEncode(ByteString.fromArrayUnsafe((array)))
       val limit = 10000
       val resultBs =
         Source.single(compressed)
@@ -134,7 +134,7 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
       val random = ThreadLocalRandom.current()
       val sizes = Seq.fill(numElements)(random.nextInt(minLength, maxLength))
       def createByteString(size: Int): ByteString =
-        ByteString(Array.fill(size)(1.toByte))
+        ByteString.fromArrayUnsafe((Array.fill(size)(1.toByte))
 
       val sizesAfterRoundtrip =
         Source.fromIterator(() ⇒ sizes.toIterator.map(createByteString))
@@ -159,13 +159,13 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
   lazy val corruptContent = {
     val content = encode(largeText).toArray
     content(14) = 26.toByte
-    ByteString(content)
+    ByteString.fromArrayUnsafe((content))
   }
 
   def streamEncode(bytes: ByteString): ByteString = {
     val output = new ByteArrayOutputStream()
     val gos = newEncodedOutputStream(output); gos.write(bytes.toArray); gos.close()
-    ByteString(output.toByteArray)
+    ByteString.fromArrayUnsafe((output.toByteArray))
   }
 
   def streamDecode(bytes: ByteString): ByteString = {
@@ -182,7 +182,7 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
     }
 
     copy(input, output)
-    ByteString(output.toByteArray)
+    ByteString.fromArrayUnsafe(output.toByteArray)
   }
 
   def decodeChunks(input: Source[ByteString, NotUsed]): ByteString =

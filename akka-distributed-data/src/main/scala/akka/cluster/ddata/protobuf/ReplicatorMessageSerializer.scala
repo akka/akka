@@ -268,7 +268,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val status = dm.Status.parseFrom(bytes)
     Status(
       status.getEntriesList.asScala.map(e ⇒
-        e.getKey → AkkaByteString(e.getDigest.toByteArray()))(breakOut),
+        e.getKey → AkkaByteString.fromArrayUnsafe(e.getDigest.toByteArray()))(breakOut),
       status.getChunk, status.getTotChunks)
   }
 

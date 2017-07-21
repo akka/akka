@@ -112,7 +112,7 @@ class ByteStringSerializer(val system: ExtendedActorSystem) extends BaseSerializ
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = {
-    ByteString(bytes)
+    ByteString.fromArrayUnsafe(bytes)
   }
 
 }
