@@ -134,7 +134,7 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
       val random = ThreadLocalRandom.current()
       val sizes = Seq.fill(numElements)(random.nextInt(minLength, maxLength))
       def createByteString(size: Int): ByteString =
-        ByteString.fromArrayUnsafe((Array.fill(size)(1.toByte))
+        ByteString.fromArrayUnsafe(Array.fill(size)(1.toByte))
 
       val sizesAfterRoundtrip =
         Source.fromIterator(() ⇒ sizes.toIterator.map(createByteString))
