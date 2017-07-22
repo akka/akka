@@ -753,16 +753,16 @@ private[testkit] object StreamTestKit {
     override def cancel(): Unit = ()
   }
 
-  final case class PublisherProbeSubscription[I](subscriber: Subscriber[_ >: I], proxyProbe: TestProbe) extends Subscription {
-    def request(elements: Long): Unit = proxyProbe.ref ! RequestMore(this, elements)
-    def cancel(): Unit = proxyProbe.ref ! CancelSubscription(this)
+  final case class PublisherProbeSubscription[I](subscriber: Subscriber[_ >: I], publisherProbe: TestProbe) extends Subscription {
+    def request(elements: Long): Unit = publisherProbe.ref ! RequestMore(this, elements)
+    def cancel(): Unit = publisherProbe.ref ! CancelSubscription(this)
 
-    def expectRequest(n: Long): Unit = proxyProbe.expectMsg(RequestMore(this, n))
-    def expectRequest(): Long = proxyProbe.expectMsgPF() {
+    def expectRequest(n: Long): Unit = publisherProbe.expectMsg(RequestMore(this, n))
+    def expectRequest(): Long = publisherProbe.expectMsgPF() {
       case RequestMore(sub, n) if sub eq this ⇒ n
     }
 
-    def expectCancellation(): Unit = proxyProbe.fishForMessage() {
+    def expectCancellation(): Unit = publisherProbe.fishForMessage() {
       case CancelSubscription(sub) if sub eq this ⇒ true
       case RequestMore(sub, _) if sub eq this     ⇒ false
     }
