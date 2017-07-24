@@ -118,7 +118,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       val runnableGraph: RunnableGraph[Source[String, NotUsed]] =
         producer.toMat(PartitionHub.sink(
           (size, elem) => math.abs(elem.hashCode) % size,
-          startAfterNbrOfConsumers = 2, bufferSize = 256))(Keep.right)
+          startAfterNrOfConsumers = 2, bufferSize = 256))(Keep.right)
 
       // By running/materializing the producer, we get back a Source, which
       // gives us access to the elements published by the producer.
@@ -143,7 +143,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
 
         (info, elem) => {
           i += 1
-          info.consumerIds((i % info.size).toInt)
+          info.consumerIdByIdx((i % info.size).toInt)
         }
       }
 
@@ -154,7 +154,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       val runnableGraph: RunnableGraph[Source[String, NotUsed]] =
         producer.toMat(PartitionHub.statefulSink(
           () => roundRobin(),
-          startAfterNbrOfConsumers = 2, bufferSize = 256))(Keep.right)
+          startAfterNrOfConsumers = 2, bufferSize = 256))(Keep.right)
 
       // By running/materializing the producer, we get back a Source, which
       // gives us access to the elements published by the producer.
@@ -174,8 +174,8 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       // Note that this is a moving target since the elements are consumed concurrently.
       val runnableGraph: RunnableGraph[Source[Int, NotUsed]] =
         producer.toMat(PartitionHub.statefulSink(
-          () => (info, elem) ⇒ info.consumerIds.toVector.minBy(id ⇒ info.queueSize(id)),
-          startAfterNbrOfConsumers = 2, bufferSize = 16))(Keep.right)
+          () => (info, elem) ⇒ info.consumerIds.minBy(id ⇒ info.queueSize(id)),
+          startAfterNrOfConsumers = 2, bufferSize = 16))(Keep.right)
 
       val fromProducer: Source[Int, NotUsed] = runnableGraph.run()
 

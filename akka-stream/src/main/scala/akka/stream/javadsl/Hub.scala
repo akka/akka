@@ -4,8 +4,8 @@
 package akka.stream.javadsl
 
 import akka.NotUsed
-import java.util.function.Supplier
-import java.util.function.BiFunction
+import java.util.function.{ BiFunction, Supplier, ToLongBiFunction }
+
 import akka.annotation.DoNotInherit
 
 /**
@@ -130,26 +130,26 @@ object PartitionHub {
    *   identifiers and the second is the stream element. The function should return the selected consumer
    *   identifier for the given element. The function will never be called when there are no active consumers,
    *   i.e. there is always at least one element in the array of identifiers.
-   * @param startAfterNbrOfConsumers Elements are buffered until this number of consumers have been connected.
+   * @param startAfterNrOfConsumers Elements are buffered until this number of consumers have been connected.
    *   This is only used initially when the stage is starting up, i.e. it is not honored when consumers have
    *   been removed (canceled).
    * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
    *   is backpressured.
    */
-  def ofStateful[T](clazz: Class[T], partitioner: Supplier[BiFunction[ConsumerInfo, T, java.lang.Long]],
-                    startAfterNbrOfConsumers: Int, bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
+  def ofStateful[T](clazz: Class[T], partitioner: Supplier[ToLongBiFunction[ConsumerInfo, T]],
+                    startAfterNrOfConsumers: Int, bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
     val p: () ⇒ (akka.stream.scaladsl.PartitionHub.ConsumerInfo, T) ⇒ Long = () ⇒ {
       val f = partitioner.get()
-      (info, elem) ⇒ f.apply(info, elem)
+      (info, elem) ⇒ f.applyAsLong(info, elem)
     }
-    akka.stream.scaladsl.PartitionHub.statefulSink[T](p, startAfterNbrOfConsumers, bufferSize)
+    akka.stream.scaladsl.PartitionHub.statefulSink[T](p, startAfterNrOfConsumers, bufferSize)
       .mapMaterializedValue(_.asJava)
       .asJava
   }
 
-  def ofStateful[T](clazz: Class[T], partitioner: Supplier[BiFunction[ConsumerInfo, T, java.lang.Long]],
-                    startAfterNbrOfConsumers: Int): Sink[T, Source[T, NotUsed]] =
-    ofStateful(clazz, partitioner, startAfterNbrOfConsumers, akka.stream.scaladsl.PartitionHub.defaultBufferSize)
+  def ofStateful[T](clazz: Class[T], partitioner: Supplier[ToLongBiFunction[ConsumerInfo, T]],
+                    startAfterNrOfConsumers: Int): Sink[T, Source[T, NotUsed]] =
+    ofStateful(clazz, partitioner, startAfterNrOfConsumers, akka.stream.scaladsl.PartitionHub.defaultBufferSize)
 
   /**
    * Creates a [[Sink]] that receives elements from its upstream producer and routes them to a dynamic set
@@ -173,29 +173,36 @@ object PartitionHub {
    *   the first is the number of active consumers and the second is the stream element. The function should
    *   return the index of the selected consumer for the given element, i.e. int greater than or equal to 0
    *   and less than number of consumers. E.g. `(size, elem) -> Math.abs(elem.hashCode()) % size`.
-   * @param startAfterNbrOfConsumers Elements are buffered until this number of consumers have been connected.
+   * @param startAfterNrOfConsumers Elements are buffered until this number of consumers have been connected.
    *   This is only used initially when the stage is starting up, i.e. it is not honored when consumers have
    *   been removed (canceled).
    * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
    *   is backpressured.
    */
-  def of[T](clazz: Class[T], partitioner: BiFunction[Integer, T, Integer], startAfterNbrOfConsumers: Int,
+  def of[T](clazz: Class[T], partitioner: BiFunction[Integer, T, Integer], startAfterNrOfConsumers: Int,
             bufferSize: Int): Sink[T, Source[T, NotUsed]] =
     akka.stream.scaladsl.PartitionHub.sink[T](
       (size, elem) ⇒ partitioner.apply(size, elem),
-      startAfterNbrOfConsumers, bufferSize)
+      startAfterNrOfConsumers, bufferSize)
       .mapMaterializedValue(_.asJava)
       .asJava
 
-  def of[T](clazz: Class[T], partitioner: BiFunction[Integer, T, Integer], startAfterNbrOfConsumers: Int): Sink[T, Source[T, NotUsed]] =
-    of(clazz, partitioner, startAfterNbrOfConsumers, akka.stream.scaladsl.PartitionHub.defaultBufferSize)
+  def of[T](clazz: Class[T], partitioner: BiFunction[Integer, T, Integer], startAfterNrOfConsumers: Int): Sink[T, Source[T, NotUsed]] =
+    of(clazz, partitioner, startAfterNrOfConsumers, akka.stream.scaladsl.PartitionHub.defaultBufferSize)
 
   @DoNotInherit trait ConsumerInfo {
 
     /**
-     * Identifiers of current consumers
+     * Sequence of all identifiers of current consumers.
+     *
+     * Use this method only if you need to enumerate consumer existing ids.
+     * When selecting a specific consumerId by its index, prefer using the dedicated [[consumerIdByIdx]] method instead,
+     * which is optimised for this use case.
      */
-    def consumerIds: Array[Long]
+    def getConsumerIds: java.util.List[Long]
+
+    /** Obtain consumer identifier by index */
+    def consumerIdByIdx(idx: Int): Long
 
     /**
      * Approximate number of buffered elements for a consumer.

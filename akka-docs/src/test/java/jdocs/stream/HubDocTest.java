@@ -24,10 +24,12 @@ import org.junit.Test;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.function.ToLongBiFunction;
 
 public class HubDocTest extends AbstractJavaTest {
 
@@ -183,14 +185,14 @@ public class HubDocTest extends AbstractJavaTest {
   //#partition-hub-stateful-function
   // Using a class since variable must otherwise be final.
   // New instance is created for each materialization of the PartitionHub.
-  static class RoundRobin<T> implements BiFunction<PartitionHub.ConsumerInfo, T, Long> {
+  static class RoundRobin<T> implements ToLongBiFunction<ConsumerInfo, T> {
 
     private long i = -1;
     
     @Override
-    public Long apply(ConsumerInfo info, T elem) {
+    public long applyAsLong(ConsumerInfo info, T elem) {
       i++;
-      return info.consumerIds()[(int) (i % info.size())];
+      return info.consumerIdByIdx((int) (i % info.size()));
     }
   }
   //#partition-hub-stateful-function
@@ -249,14 +251,14 @@ public class HubDocTest extends AbstractJavaTest {
         PartitionHub.ofStateful(
           Integer.class,
           () -> (info, elem) -> {
-            long[] ids = info.consumerIds();
+            final List<Object> ids = info.getConsumerIds();
             int minValue = info.queueSize(0);
-            long fastest = info.consumerIds()[0];
-            for (int i = 1; i < ids.length; i++) {
+            long fastest = info.consumerIdByIdx(0);
+            for (int i = 1; i < ids.size(); i++) {
               int value = info.queueSize(i);
               if (value < minValue) {
                   minValue = value;
-                  fastest = info.consumerIds()[i];
+                  fastest = info.consumerIdByIdx(i);
               }
             }
             return fastest;
