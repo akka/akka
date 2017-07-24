@@ -83,8 +83,8 @@ also typed as such. This is why we can access the `whom` and `replyTo`
 members without needing to use a pattern match.
 
 On the last line we see the `HelloWorld` Actor send a message to another
-Actor, which is done using the @scala[`tell` method (represented by the `!` operator)]@java[`!` operator (pronounced “tell”)].
-Since the `replyTo` address is declared to be of type @scala[`ActorRef[Greeted]`]@java[`ActorRef<Greeted>`] the
+Actor, which is done using the @scala[`!` operator (pronounced “tell”).]@java[`tell` method.]
+Since the `replyTo` address is declared to be of type @scala[`ActorRef[Greeted]`]@java[`ActorRef<Greeted>`], the
 compiler will only permit us to send messages of this type, other usage will
 not be accepted.
 
@@ -109,7 +109,7 @@ As Carl Hewitt said, one Actor is no Actor—it would be quite lonely with
 nobody to talk to. In this sense the example is a little cruel because we only
 give the `HelloWorld` Actor a fake person to talk to—the “ask” pattern
 (represented by the `?` operator) can be used to send a message such that the
-reply fulfills a @scala[Promise to which we get back the corresponding Future]@java[`CompletionStage`].
+reply fulfills a @scala[`Promise` to which we get back the corresponding `Future`]@java[`CompletionStage`].
 
 @@@ div {.group-scala}
 
