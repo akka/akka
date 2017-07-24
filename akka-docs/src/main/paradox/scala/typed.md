@@ -83,8 +83,8 @@ also typed as such. This is why we can access the `whom` and `replyTo`
 members without needing to use a pattern match.
 
 On the last line we see the `HelloWorld` Actor send a message to another
-Actor, which is done using the `tell` method (represented by the `!` operator). 
-Since the `replyTo` address is declared to be of type `ActorRef[Greeted]` the
+Actor, which is done using the @scala[`!` operator (pronounced “tell”).]@java[`tell` method.]
+Since the `replyTo` address is declared to be of type @scala[`ActorRef[Greeted]`]@java[`ActorRef<Greeted>`], the
 compiler will only permit us to send messages of this type, other usage will
 not be accepted.
 
@@ -92,7 +92,7 @@ The accepted message types of an Actor together with all reply types defines
 the protocol spoken by this Actor; in this case it is a simple request–reply
 protocol but Actors can model arbitrarily complex protocols when needed. The
 protocol is bundled together with the behavior that implements it in a nicely
-wrapped scope—the `HelloWorld` object.
+wrapped scope—the `HelloWorld` @scala[object]@java[class].
 
 Now we want to try out this Actor, so we must start an ActorSystem to host it:
 
@@ -103,13 +103,15 @@ Java
 :  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
 
 After importing the Actor’s protocol definition we start an Actor system from
-the defined behavior.
+the defined `greeter` behavior.
 
 As Carl Hewitt said, one Actor is no Actor—it would be quite lonely with
 nobody to talk to. In this sense the example is a little cruel because we only
 give the `HelloWorld` Actor a fake person to talk to—the “ask” pattern
 (represented by the `?` operator) can be used to send a message such that the
-reply fulfills a Promise to which we get back the corresponding Future.
+reply fulfills a @scala[`Promise` to which we get back the corresponding `Future`]@java[`CompletionStage`].
+
+@@@ div {.group-scala}
 
 Note that the `Future` that is returned by the “ask” operation is
 properly typed already, no type checks or casts needed. This is possible due to
@@ -120,14 +122,34 @@ parameter which we fill in is of type `ActorRef[Greeted]`, which
 means that the value that fulfills the `Promise` can only be of type
 `Greeted`.
 
+@@@
+
+@@@ div {.group-java}
+
+Note that the `CompletionStage` that is returned by the “ask” operation is
+properly typed already, no type checks or casts needed. This is possible due to
+the type information that is part of the message protocol: the `ask` operator
+takes as argument a function that pass an `ActorRef<U>`, which is the
+`replyTo` parameter of the  `Greet` message, which means that when sending
+the reply message to that `ActorRef` the message that fulfills the
+`CompletionStage` can only be of type `Greeted`.
+
+@@@
+
 We use this here to send the `Greet` command to the Actor and when the
 reply comes back we will print it out and tell the actor system to shut down.
 Once that is done as well we print the `"system terminated"` messages and the
-program ends. The `recovery` combinator on the original `Future` is
+program ends.
+
+@@@ div {.group-scala}
+
+The `recovery` combinator on the original `Future` is
 needed in order to ensure proper system shutdown even in case something went
 wrong; the `flatMap` and `map` combinators that the `for` expression gets
 turned into care only about the “happy path” and if the `future` failed with
 a timeout then no `greeting` would be extracted and nothing would happen.
+
+@@@
 
 This shows that there are aspects of Actor messaging that can be type-checked
 by the compiler, but this ability is not unlimited, there are bounds to what we
@@ -202,7 +224,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-protocol }
 
-Initially the client Actors only get access to an `ActorRef[GetSession]`
+Initially the client Actors only get access to an @scala[`ActorRef[GetSession]`]@java[`ActorRef<GetSession>`]
 which allows them to make the first step. Once a client’s session has been
 established it gets a `SessionGranted` message that contains a `handle` to
 unlock the next protocol step, posting messages. The `PostMessage`
@@ -248,15 +270,15 @@ has `private` visibility and can't be created outside the actor.
 
 If we did not care about securing the correspondence between a session and a
 screen name then we could change the protocol such that `PostMessage` is
-removed and all clients just get an `ActorRef[PostSessionMessage]` to
+removed and all clients just get an @scala[`ActorRef[PostSessionMessage]`]@java[`ActorRef<PostSessionMessage>`] to
 send to. In this case no wrapper would be needed and we could just use
-`ctx.self`. The type-checks work out in that case because
-`ActorRef[-T]` is contravariant in its type parameter, meaning that we
-can use a `ActorRef[Command]` wherever an
-`ActorRef[PostSessionMessage]` is needed—this makes sense because the
+@scala[`ctx.self`]@java[`ctx.getSelf()`]. The type-checks work out in that case because
+@scala[`ActorRef[-T]`]@java[`ActorRef<T>`] is contravariant in its type parameter, meaning that we
+can use a @scala[`ActorRef[Command]`]@java[`ActorRef<Command>`] wherever an
+@scala[`ActorRef[PostSessionMessage]`]@java[`ActorRef<PostSessionMessage>`] is needed—this makes sense because the
 former simply speaks more languages than the latter. The opposite would be
-problematic, so passing an `ActorRef[PostSessionMessage]` where
-`ActorRef[Command]` is required will lead to a type error.
+problematic, so passing an @scala[`ActorRef[PostSessionMessage]`]@java[`ActorRef<PostSessionMessage>`] where
+@scala[`ActorRef[Command]`]@java[`ActorRef<Command>`] is required will lead to a type error.
 
 ### Trying it out
 
@@ -273,10 +295,15 @@ post a message, wait to see it published, and then terminate. The last step
 requires the ability to change behavior, we need to transition from the normal
 running behavior into the terminated state. This is why here we do not return
 `same`, as above, but another special value `stopped`.
+
+@@@ div {.group-scala}
+
 Since `SessionEvent` is a sealed trait the Scala compiler will warn us
 if we forget to handle one of the subtypes; in this case it reminded us that
 alternatively to `SessionGranted` we may also receive a
 `SessionDenied` event.
+
+@@@
 
 Now to try things out we must start both a chat room and a gabbler and of
 course we do this inside an Actor system. Since there can be only one guardian
@@ -294,7 +321,7 @@ Java
 In good tradition we call the `main` Actor what it is, it directly
 corresponds to the `main` method in a traditional Java application. This
 Actor will perform its job on its own accord, we do not need to send messages
-from the outside, so we declare it to be of type `NotUsed`. Actors receive not
+from the outside, so we declare it to be of type @scala[`NotUsed`]@java[`Void`]. Actors receive not
 only external messages, they also are notified of certain system events,
 so-called Signals. In order to get access to those we choose to implement this
 particular one using the `immutable` behavior decorator. The
@@ -346,5 +373,5 @@ A side-effect of this is that behaviors can now be tested in isolation without
 having to be packaged into an Actor, tests can run fully synchronously without
 having to worry about timeouts and spurious failures. Another side-effect is
 that behaviors can nicely be composed and decorated, see `tap`, or
-`widen` combinators; nothing about these is special or internal, new 
+@scala[`widen`]@java[`widened`] combinators; nothing about these is special or internal, new
 combinators can be written as external libraries or tailor-made for each project.
