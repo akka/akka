@@ -34,12 +34,12 @@ class SharedMutableStateDocSpec {
 
     def expensiveCalculation(actorRef: ActorRef): String = {
       // this is a very costly operation
-      "Meaning of live is 42"
+      "Meaning of life is 42"
     }
 
     def expensiveCalculation(): String = {
       // this is a very costly operation
-      "Meaning of live is 42"
+      "Meaning of life is 42"
     }
 
     def receive = {
