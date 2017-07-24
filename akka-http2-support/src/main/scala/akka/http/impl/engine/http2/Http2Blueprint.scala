@@ -13,7 +13,7 @@ import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, ServerSettings }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
@@ -33,7 +33,7 @@ object Http2Blueprint {
   // format: OFF
   def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
-      demux() atop
+      demux(settings.http2Settings) atop
       // FrameLogger.bidi atop // enable for debugging
       hpackCoding() atop
       // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
@@ -63,8 +63,8 @@ object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
-    BidiFlow.fromGraph(new Http2ServerDemux)
+  def demux(settings: Http2ServerSettings): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+    BidiFlow.fromGraph(new Http2ServerDemux(settings))
 
   /**
    * Translation between substream frames and Http messages (both directions)

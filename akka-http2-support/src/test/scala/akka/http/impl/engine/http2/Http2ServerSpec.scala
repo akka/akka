@@ -244,6 +244,8 @@ class Http2ServerSpec extends AkkaSpec("""
         sendDATA(TheStreamId, endStream = false, data1)
         entityDataIn.expectBytes(data1)
 
+        pollForWindowUpdates(10.millis)
+
         entityDataIn.cancel()
         expectRST_STREAM(TheStreamId, ErrorCode.CANCEL)
       }
@@ -257,20 +259,12 @@ class Http2ServerSpec extends AkkaSpec("""
         }
       }
       "backpressure until request entity stream is read (don't send out unlimited WINDOW_UPDATE before)" in new WaitingForRequestData {
-        pending
         var totallySentBytes = 0
-
-        def sendWindowFullOfData(): Unit = {
-          val dataLength = remainingToServerWindowFor(TheStreamId)
-          sendDATA(TheStreamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
-          totallySentBytes += dataLength
-        }
-
         // send data until we don't receive any window updates from the implementation any more
         eventually(Timeout(1.second.dilated)) {
-          sendWindowFullOfData()
+          totallySentBytes += sendWindowFullOfData()
           // the implementation may choose to send a few window update until internal buffers are filled
-          pollForWindowUpdates(100.millis.dilated)
+          pollForWindowUpdates(10.millis)
           remainingToServerWindowFor(TheStreamId) shouldBe 0
         }
 
@@ -278,6 +272,7 @@ class Http2ServerSpec extends AkkaSpec("""
         entityDataIn.expectBytes(totallySentBytes)
 
         eventually(Timeout(1.second.dilated)) {
+          pollForWindowUpdates(10.millis)
           remainingToServerWindowFor(TheStreamId) should be > 0
         }
       }
@@ -885,18 +880,21 @@ class Http2ServerSpec extends AkkaSpec("""
       updateFromServerWindows(streamId, _ + windowSizeIncrement)
     }
 
-    final def pollForWindowUpdates(duration: FiniteDuration): Unit =
-      try toNet.within(duration)(expectFrameFlagsStreamIdAndPayload(FrameType.WINDOW_UPDATE)) match {
+    def expectWindowUpdate(): Unit =
+      expectFrameFlagsStreamIdAndPayload(FrameType.WINDOW_UPDATE) match {
         case (flags, streamId, payload) ⇒
           // TODO: DRY up with autoFrameHandler
           val windowSizeIncrement = new ByteReader(payload).readIntBE()
 
           if (streamId == 0) updateToServerWindowForConnection(_ + windowSizeIncrement)
           else updateToServerWindows(streamId, _ + windowSizeIncrement)
-
-          pollForWindowUpdates(duration)
       }
-      catch {
+    final def pollForWindowUpdates(duration: FiniteDuration): Unit =
+      try {
+        toNet.within(duration)(expectWindowUpdate())
+
+        pollForWindowUpdates(duration)
+      } catch {
         case e: AssertionError if e.getMessage contains "Expected OnNext(_), yet no element signaled during" ⇒
         // timeout, that's expected
       }
