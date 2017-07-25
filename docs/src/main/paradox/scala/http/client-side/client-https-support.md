@@ -1,15 +1,19 @@
-<a id="clientsidehttps"></a>
 # Client-Side HTTPS Support
 
-Akka HTTP supports TLS encryption on the client-side as well as on the @ref[server-side](../server-side-https-support.md#serversidehttps-scala).
+Akka HTTP supports TLS encryption on the client-side as well as on the @ref[server-side](../server-side-https-support.md).
 
 The central vehicle for configuring encryption is the `HttpsConnectionContext`, which can be created using
 the static method `ConnectionContext.https` which is defined like this:
 
-@@snip [ConnectionContext.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
+Scala
+:  @@snip[ConnectionContext.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
+
+Java
+:  @@snip [ConnectionContext.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
 
 In addition to the `outgoingConnection`, `newHostConnectionPool` and `cachedHostConnectionPool` methods the
-@scaladoc[akka.http.scaladsl.Http](akka.http.scaladsl.Http$) extension also defines `outgoingConnectionHttps`, `newHostConnectionPoolHttps` and
+@scala[@scaladoc[akka.http.scaladsl.Http](akka.http.scaladsl.Http$)]@java[@javadoc[akka.http.javadsl.Http](akka.http.javadsl.Http)]
+extension also defines `outgoingConnectionHttps`, `newHostConnectionPoolHttps` and
 `cachedHostConnectionPoolHttps`. These methods work identically to their counterparts without the `-Https` suffix,
 with the exception that all connections will always be encrypted.
 
@@ -27,7 +31,8 @@ takes precedence over any potentially set default client-side `HttpsContext`).
 extension the default system configuration is used.
 
 Usually the process is, if the default system TLS configuration is not good enough for your application's needs,
-that you configure a custom `HttpsContext` instance and set it via `Http().setDefaultClientHttpsContext`.
+that you configure a custom `HttpsContext` instance and set it via
+@scala[`Http().setDefaultClientHttpsContext`]@java[`Http.get(system).setDefaultClientHttpsContext`].
 Afterwards you simply use `outgoingConnectionHttps`, `newHostConnectionPoolHttps`, `cachedHostConnectionPoolHttps`,
 `superPool` or `singleRequest` without a specific `httpsContext` argument, which causes encrypted connections
 to rely on the configured default client-side `HttpsContext`.
@@ -60,6 +65,7 @@ very useful, for example to easily trust a self-signed certificate that applicat
 @@@
 
 @@@ warning
+
 While it is possible to disable certain checks using the so called "loose" settings in SSL Config, we **strongly recommend**
 to instead attempt to solve these issues by properly configuring TLS–for example by adding trusted keys to the keystore.
 
@@ -67,6 +73,7 @@ If however certain checks really need to be disabled because of misconfigured (o
 application has to speak to, instead of disabling the checks globally (i.e. in `application.conf`) we suggest
 configuring the loose settings for *specific connections* that are known to need them disabled (and trusted for some other reason).
 The pattern of doing so is documented in the following sub-sections.
+
 @@@
 
 ### Hostname verification
@@ -96,7 +103,8 @@ It is specified as part of [RFC 6066](https://tools.ietf.org/html/rfc6066#page-6
 It is highly discouraged to disable any of the security features of TLS, however do acknowledge that workarounds may sometimes be needed.
 
 Before disabling any of the features one should consider if they may be solvable *within* the TLS world,
-for example by [trusting a certificate](http://typesafehub.github.io/ssl-config/WSQuickStart.html), or [configuring the trusted cipher suites](http://typesafehub.github.io/ssl-config/CipherSuites.html) etc.
+for example by [trusting a certificate](https://typesafehub.github.io/ssl-config/WSQuickStart.html), or [configuring the trusted cipher suites](https://typesafehub.github.io/ssl-config/CipherSuites.html).
+There's also a very important section in the ssl-config docs titled [LooseSSL - Please read this before turning anything off!](https://typesafehub.github.io/ssl-config/LooseSSL.html#please-read-this-before-turning-anything-off).
 
 If disabling features is indeed desired, we recommend doing so for *specific connections*,
 instead of globally configuring it via `application.conf`.
@@ -105,7 +113,11 @@ instead of globally configuring it via `application.conf`.
 
 The following shows an example of disabling SNI for a given connection:
 
-@@snip [HttpsExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpsExamplesSpec.scala) { #disable-sni-connection }
+Scala
+:  @@snip [HttpsExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpsExamplesSpec.scala) { #disable-sni-connection }
+
+Java
+:  @@snip [HttpsExamplesDocTest.java](../../../../../test/java/docs/http/javadsl/HttpsExamplesDocTest.java) { #disable-sni-connection }
 
 The `badSslConfig` is a copy of the default `AkkaSSLConfig` with with the slightly changed configuration to disable SNI.
 This value can be cached and used for connections which should indeed not use this feature.

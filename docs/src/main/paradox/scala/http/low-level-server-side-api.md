@@ -34,7 +34,7 @@ Depending on your needs you can either use the low-level API directly or rely on
 easier.
 
 @@@ note
-It is recommended to read the @ref[Implications of the streaming nature of Request/Response Entities](implications-of-streaming-http-entity.md#implications-of-streaming-http-entities) section,
+It is recommended to read the @ref[Implications of the streaming nature of Request/Response Entities](implications-of-streaming-http-entity.md) section,
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Servers.
 @@@
@@ -125,7 +125,7 @@ explicitly drained by attaching it to `Sink.ignore`.
 
 ## Configuring Server-side HTTPS
 
-For detailed documentation about configuring and using HTTPS on the server-side refer to @ref[Server-Side HTTPS Support](server-side-https-support.md#serversidehttps-scala).
+For detailed documentation about configuring and using HTTPS on the server-side refer to @ref[Server-Side HTTPS Support](server-side-https-support.md).
 
 <a id="http-server-layer-scala"></a>
 ## Stand-Alone HTTP Layer Usage

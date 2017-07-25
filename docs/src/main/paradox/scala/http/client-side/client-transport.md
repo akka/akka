@@ -1,9 +1,14 @@
 # Pluggable Client Transports / HTTPS Proxy Support
 
 The client side infrastructure has (unstable) support to plug different transport mechanisms underneath. A client side
-transport is represented by an instance of @scaladoc[akka.http.scaladsl.ClientTransport](akka.http.scaladsl.ClientTransport):
+transport is represented by an instance of
+@scala[@scaladoc[akka.http.scaladsl.ClientTransport](akka.http.scaladsl.ClientTransport)]@java[@javadoc[akka.http.javadsl.ClientTransport](akka.http.javadsl.ClientTransport)]:
 
-@@snip [ClientTransport.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/ClientTransport.scala) { #client-transport-definition }
+Scala
+:  @@snip [ClientTransport.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/ClientTransport.scala) { #client-transport-definition }
+
+Java
+:  @@snip [ClientTransport.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/javadsl/ClientTransport.scala) { #client-transport-definition }
 
 A transport implementation defines how the client infrastructure should communicate with a given host.
 
@@ -25,7 +30,9 @@ of strategy by implementing `ClientTransport` yourself).
 
 The `ConnectionPoolSettings` class allows setting a custom transport for any of the pool methods. Use
 `ConnectionPoolSettings.withTransport` to configure a transport and pass those settings to one of the
-pool methods like `Http().singleRequest`, `Http().superPool`, or `Http().cachedHostConnectionPool`.
+pool methods like
+@scala[`Http().singleRequest`, `Http().superPool`, or `Http().cachedHostConnectionPool`]
+@java[`Http.get(...).singleRequest`, `Http.get(...).superPool`, or `Http.get(...).cachedHostConnectionPool`].
 
 ### Single Connection Usage
 
@@ -61,6 +68,10 @@ Here are some ideas for custom (or future predefined) transports:
 
 ## Usage Examples
 
-### Use HTTPS Proxy with `Http().singleRequest`
+### Use HTTPS Proxy with @scala[`Http().singleRequest`]@java[`Http.get(...).singleRequest`]
 
-@@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #https-proxy-example-single-request }
+Scala
+:  @@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #https-proxy-example-single-request }
+
+Java
+:  @@snip [HttpClientExampleDocTest.java](../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #https-proxy-example-single-request }

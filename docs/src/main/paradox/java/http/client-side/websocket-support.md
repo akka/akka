@@ -72,7 +72,7 @@ Simple example sending a message and printing any incoming message:
 
 ## webSocketClientLayer
 
-Just like the @ref[Stand-Alone HTTP Layer Usage](connection-level.md#http-client-layer-java) for regular HTTP requests, the WebSocket layer can be used fully detached from the
+Just like the @ref[Stand-Alone HTTP Layer Usage](connection-level.md#http-client-layer) for regular HTTP requests, the WebSocket layer can be used fully detached from the
 underlying TCP interface. The same scenarios as described for regular HTTP requests apply here.
 
 The returned layer forms a `BidiFlow<Message, SslTlsOutbound, SslTlsInbound, Message, CompletionStage<WebSocketUpgradeResponse>>`.

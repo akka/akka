@@ -1,4 +1,3 @@
-<a id="implications-of-streaming-http-entities"></a>
 # Implications of the streaming nature of Request/Response Entities
 
 Akka HTTP is streaming *all the way through*, which means that the back-pressure mechanisms enabled by Akka Streams

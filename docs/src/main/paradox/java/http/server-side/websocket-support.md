@@ -94,7 +94,7 @@ and then responds with another text message that contains a greeting:
 @@snip [WebSocketCoreExample.java](../../../../../test/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-handler }
 
 @@@ note
-Inactive WebSocket connections will be dropped according to the @ref[idle-timeout settings](../common/timeouts.md#idle-timeouts-java).
+Inactive WebSocket connections will be dropped according to the @ref[idle-timeout settings](../common/timeouts.md#idle-timeouts).
 In case you need to keep inactive connections alive, you can either tweak your idle-timeout or inject
 'keep-alive' messages regularly.
 @@@

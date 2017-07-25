@@ -1,4 +1,3 @@
-<a id="connection-level-api"></a>
 # Connection-Level Client-Side API
 
 The connection-level API is the lowest-level client-side API Akka HTTP provides. It gives you full control over when
@@ -6,7 +5,7 @@ HTTP connections are opened and closed and how requests are to be send across wh
 highest flexibility at the cost of providing the least convenience.
 
 @@@ note
-It is recommended to first read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md#implications-of-streaming-http-entities) section,
+It is recommended to first read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md) section,
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Clients.
 @@@
@@ -14,12 +13,17 @@ from a background with non-"streaming first" HTTP Clients.
 ## Opening HTTP Connections
 
 With the connection-level API you open a new HTTP connection to a target endpoint by materializing a `Flow`
-returned by the `Http().outgoingConnection(...)` method. Here is an example:
+returned by the @scala[`Http().outgoingConnection(...)`]@java[`Http.get(system).outgoingConnection(...)`] method.
+Here is an example:
 
-@@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #outgoing-connection-example }
+Scala
+:  @@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #outgoing-connection-example }
 
-Apart from the host name and port the `Http().outgoingConnection(...)` method also allows you to specify socket options
-and a number of configuration settings for the connection.
+Java
+:  @@snip [HttpClientExampleDocTest.java](../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #outgoing-connection-example }
+
+Apart from the host name and port the @scala[`Http().outgoingConnection(...)`]@java[`Http.get(system).outgoingConnection(...)`]
+method also allows you to specify socket options and a number of configuration settings for the connection.
 
 Note that no connection is attempted until the returned flow is actually materialized! If the flow is materialized
 several times then several independent connections will be opened (one per materialization).
@@ -50,9 +54,9 @@ The connection can also be closed by the server.
 An application can actively trigger the closing of the connection by completing the request stream. In this case the
 underlying TCP connection will be closed when the last pending response has been received.
 
-The connection will also be closed if the response entity is cancelled (e.g. by attaching it to `Sink.cancelled`)
+The connection will also be closed if the response entity is cancelled (e.g. by attaching it to `Sink.cancelled()`)
 or consumed only partially (e.g. by using `take` combinator). In order to prevent this behaviour the entity should be
-explicitly drained by attaching it to `Sink.ignore`.
+explicitly drained by attaching it to `Sink.ignore()`.
 
 ## Timeouts
 
@@ -61,9 +65,9 @@ as a more general purpose streaming infrastructure feature.
 
 It should be noted that Akka Streams provide various timeout functionality so any API that uses streams can benefit
 from the stream stages such as `idleTimeout`, `backpressureTimeout`, `completionTimeout`, `initialTimeout`
-and `throttle`. To learn more about these refer to their documentation in Akka Streams (and Scala Doc).
+and `throttle`. To learn more about these refer to their documentation in Akka Streams.
 
-For more details about timeout support in Akka HTTP in general refer to @ref[Akka HTTP Timeouts](../common/timeouts.md#http-timeouts-scala).
+For more details about timeout support in Akka HTTP in general refer to @ref[Akka HTTP Timeouts](../common/timeouts.md).
 
 <a id="http-client-layer"></a>
 ## Stand-Alone HTTP Layer Usage
@@ -74,9 +78,18 @@ to "run" the HTTP layer (and, potentially, higher-layers) against data that do n
 some other source. Potential scenarios where this might be useful include tests, debugging or low-level event-sourcing
 (e.g by replaying network traffic).
 
-On the client-side the stand-alone HTTP layer forms a `BidiStage` that is defined like this:
+On the client-side the stand-alone HTTP layer forms a `BidiStage` stage that "upgrades" a potentially encrypted raw connection to the HTTP level.
+It is defined like this:
 
+@@@ div { .group-scala }
 @@snip [Http.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala) { #client-layer }
+@@@
+@@@ div { .group-java }
+```java
+BidiFlow<HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, NotUsed>
+```
+@@@
 
-You create an instance of `Http.ClientLayer` by calling one of the two overloads of the `Http().clientLayer` method,
+You create an instance of @scala[`Http.ClientLayer`]@java[the layer] by calling one of the two overloads
+of the @scala[`Http().clientLayer`]@java[`Http.get(system).clientLayer`] method,
 which also allows for varying degrees of configuration.

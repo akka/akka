@@ -1,4 +1,3 @@
-<a id="serversidehttps-java"></a>
 # Server-Side HTTPS Support
 
 Akka HTTP supports TLS encryption on the server-side as well as on the @ref[client-side](client-side/client-https-support.md).
@@ -13,7 +12,7 @@ optional `httpsContext` parameter, which can receive the HTTPS configuration in 
 instance.
 If defined encryption is enabled on all accepted connections. Otherwise it is disabled (which is the default).
 
-For detailed documentation for client-side HTTPS support refer to @ref[Client-Side HTTPS Support](client-side/client-https-support.md#clientsidehttps).
+For detailed documentation for client-side HTTPS support refer to @ref[Client-Side HTTPS Support](client-side/client-https-support.md).
 
 <a id="ssl-config-java"></a>
 ## SSL-Config

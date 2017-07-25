@@ -4,7 +4,7 @@
 All client-side functionality of Akka HTTP, for consuming HTTP-based services offered by other endpoints, is currently
 provided by the `akka-http-core` module.
 
-It is recommended to first read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md#implications-of-streaming-http-entities) section,
+It is recommended to first read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md) section,
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Clients.
 

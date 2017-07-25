@@ -7,7 +7,7 @@
 
 ## Description
 
-Allows customising the `HttpResponse` that will be sent to clients in case of a @ref[Request timeout](../../../common/timeouts.md#request-timeout-scala).
+Allows customising the `HttpResponse` that will be sent to clients in case of a @ref[Request timeout](../../../common/timeouts.md#request-timeout).
 
 See also @ref[withRequestTimeout](withRequestTimeout.md#withrequesttimeout) or @ref[withoutRequestTimeout](withoutRequestTimeout.md#withoutrequesttimeout) if interested in dynamically changing the timeout
 for a given route instead.
@@ -23,7 +23,7 @@ of request timeouts being measured in seconds it shouldn't be a problem in reali
 
 @@@
 
-To learn more about various timeouts in Akka HTTP and how to configure them see @ref[Akka HTTP Timeouts](../../../common/timeouts.md#http-timeouts-scala).
+To learn more about various timeouts in Akka HTTP and how to configure them see @ref[Akka HTTP Timeouts](../../../common/timeouts.md).
 
 ## Example
 

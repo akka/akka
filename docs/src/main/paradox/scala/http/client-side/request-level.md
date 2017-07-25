@@ -6,7 +6,7 @@ The request-level API is the recommended and most convenient way of using Akka H
 Depending on your preference you can pick the flow-based or the future-based variant.
 
 @@@ note
-It is recommended to first read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md#implications-of-streaming-http-entities) section,
+It is recommended to first read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md) section,
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Clients.
 @@@

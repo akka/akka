@@ -1,4 +1,3 @@
-<a id="http-timeouts-scala"></a>
 # Akka HTTP Timeouts
 
 Akka HTTP comes with a variety of built-in timeout mechanisms to protect your servers from malicious attacks or
@@ -7,7 +6,7 @@ are left to the streaming APIs and are easily implementable as patterns in user-
 
 ## Common timeouts
 
-<a id="idle-timeouts-scala"></a>
+<a id="idle-timeouts"></a>
 ### Idle timeouts
 
 The `idle-timeout` is a global setting which sets the maximum inactivity time of a given connection.
@@ -30,7 +29,7 @@ For the client side connection pool, the idle period is counted only when the po
 
 ## Server timeouts
 
-<a id="request-timeout-scala"></a>
+<a id="request-timeout"></a>
 ### Request timeout
 
 Request timeouts are a mechanism that limits the maximum time it may take to produce an `HttpResponse` from a route.
