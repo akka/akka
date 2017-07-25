@@ -986,6 +986,7 @@ Scala
 Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-gracefulStop #gracefulStop }
 
+
 Scala
 :  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop-actor }
 
