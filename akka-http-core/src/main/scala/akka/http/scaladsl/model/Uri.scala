@@ -574,9 +574,25 @@ object Uri {
         if (q.isEmpty) map else append(map.updated(q.key, q.value), q.tail)
       append(Map.empty, this)
     }
+
+    /**
+     * Returns this query as a map where keys can have multiple values. The parameter order is
+     * preserved, so that the following query:
+     *
+     * {{{
+     *   a=1&a=2&a=3&a=4&b=1
+     * }}}
+     *
+     * Will return a map like:
+     *
+     * {{{
+     *   "a" -> List(1, 2, 3, 4),
+     *   "b" -> List(1)
+     * }}}
+     */
     def toMultiMap: Map[String, List[String]] = {
       @tailrec def append(map: Map[String, List[String]], q: Query): Map[String, List[String]] =
-        if (q.isEmpty) map else append(map.updated(q.key, q.value :: map.getOrElse(q.key, Nil)), q.tail)
+        if (q.isEmpty) map else append(map.updated(q.key, map.getOrElse(q.key, Nil) :+ q.value), q.tail)
       append(Map.empty, this)
     }
     override def newBuilder: mutable.Builder[(String, String), Query] = Query.newBuilder

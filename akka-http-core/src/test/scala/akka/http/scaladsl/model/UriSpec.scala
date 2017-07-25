@@ -405,9 +405,13 @@ class UriSpec extends WordSpec with Matchers {
       query.getAll("b") shouldEqual List("", "4", "2")
       query.getAll("d") shouldEqual Nil
       query.toMap shouldEqual Map("a" → "1", "b" → "", "c" → "3")
-      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("", "4", "2"), "c" → List("3"))
+      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("2", "4", ""), "c" → List("3"))
       query.toList shouldEqual List("a" → "1", "b" → "2", "c" → "3", "b" → "4", "b" → "")
       query.toSeq shouldEqual Seq("a" → "1", "b" → "2", "c" → "3", "b" → "4", "b" → "")
+    }
+    "preserve the order of repeated parameters when retrieving as a multimap" in {
+      val query = Query("a=1&b=1&b=2&b=3&b=4&c=1")
+      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("1", "2", "3", "4"), "c" → List("1"))
     }
     "support conversion from list of name/value pairs" in {
       import Query._
