@@ -76,7 +76,7 @@ case of sender and receiver JVM crashes.
 are journaled and which are received by the persistent actor without being journaled. Journal maintains `highestSequenceNr` that is increased on each message.
 The storage backend of a journal is pluggable. The persistence extension comes with a "leveldb" journal plugin, which writes to the local filesystem.
 Replicated journals are available as [Community plugins](http://akka.io/community/).
- * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's or a view's internal state. Snapshots are
+ * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's internal state. Snapshots are
 used for optimizing recovery times. The storage backend of a snapshot store is pluggable.
 The persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem.
  * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
@@ -638,8 +638,7 @@ akka.persistence.journal.leveldb.replay-filter {
 <a id="snapshots"></a>
 ## Snapshots
 
-Snapshots can dramatically reduce recovery times of persistent actors and views. The following discusses snapshots
-in context of persistent actors but this is also applicable to persistent views.
+Snapshots can dramatically reduce recovery times of persistent actors.
 
 Persistent actors can save snapshots of internal state by calling the  `saveSnapshot` method. If saving of a snapshot
 succeeds, the persistent actor receives a `SaveSnapshotSuccess` message, otherwise a `SaveSnapshotFailure` message
@@ -998,10 +997,10 @@ Storage backends for journals and snapshot stores are pluggable in the Akka pers
 
 A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](http://akka.io/community/)
 
-Plugins can be selected either by "default" for all persistent actors and views,
-or "individually", when a persistent actor or view defines its own set of plugins.
+Plugins can be selected either by "default" for all persistent actors,
+or "individually", when a persistent actor defines its own set of plugins.
 
-When a persistent actor or view does NOT override the `journalPluginId` and `snapshotPluginId` methods,
+When a persistent actor does NOT override the `journalPluginId` and `snapshotPluginId` methods,
 the persistence extension will use the "default" journal and snapshot-store plugins configured in `reference.conf`:
 
 ```
@@ -1361,12 +1360,12 @@ to the @ref:[reference configuration](general/configuration.md#config-akka-persi
 
 ## Multiple persistence plugin configurations
 
-By default, a persistent actor or view will use the "default" journal and snapshot store plugins
+By default, a persistent actor will use the "default" journal and snapshot store plugins
 configured in the following sections of the `reference.conf` configuration resource:
 
 @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #default-config }
 
-Note that in this case the actor or view overrides only the `persistenceId` method:
+Note that in this case the actor overrides only the `persistenceId` method:
 
 Scala
 :  @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #default-plugins }
@@ -1374,8 +1373,8 @@ Scala
 Java
 :  @@snip [PersistenceMultiDocTest.java]($code$/java/jdocs/persistence/PersistenceMultiDocTest.java) { #default-plugins }
 
-When the persistent actor or view overrides the `journalPluginId` and `snapshotPluginId` methods,
-the actor or view will be serviced by these specific persistence plugins instead of the defaults:
+When the persistent actor overrides the `journalPluginId` and `snapshotPluginId` methods,
+the actor will be serviced by these specific persistence plugins instead of the defaults:
 
 Scala
 :  @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #override-plugins }
