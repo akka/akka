@@ -292,5 +292,5 @@ executor/dispatcher for long-running or blocking computations, such as IO operat
 See also:
 
  * [CompletionStage](https://docs.oracle.com/javase/8/jdocs/api/java/util/concurrent/CompletionStage.html)
- * [CompletableFuture](https://docs.oracle.com/javase/8/jdocs/api/java/util/concurrent/CompletableFuture.html)
+ * [CompletableFuture](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html)
  * [scala-java8-compat](https://github.com/scala/scala-java8-compat)
