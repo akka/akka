@@ -82,6 +82,26 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
     "start providing an ActorSystem" in withMinimal { (minimal, host, port) ⇒
 
       val server = Future {
+        minimal.startServer(host, port, system)
+      }
+
+      minimal.bindingPromise.get(5, TimeUnit.SECONDS)
+
+      // Checking server is up and running
+      callAndVerify(host, port, "foo")
+
+      // Requesting the server to shutdown
+      minimal.shutdown()
+
+      Await.ready(server, Duration(1, TimeUnit.SECONDS))
+      server.isCompleted should ===(true)
+      system.whenTerminated.isCompleted should ===(false)
+
+    }
+
+    "start providing an ActorSystem and Settings" in withMinimal { (minimal, host, port) ⇒
+
+      val server = Future {
         minimal.startServer(host, port, ServerSettings.create(system), system)
       }
 

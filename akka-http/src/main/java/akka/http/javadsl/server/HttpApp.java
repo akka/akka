@@ -44,7 +44,17 @@ public abstract class HttpApp extends AllDirectives {
   }
 
   /**
-   * Start a server on the specified host and port, using provided settings.
+   * Start a server on the specified host and port, using the provided [[ActorSystem]]
+   * Note that this method is blocking.
+   * 
+   * @param system ActorSystem to use for starting the app, if null is passed in a new default ActorSystem will be created instead
+   */
+  public void startServer(String host, int port, ActorSystem system) throws ExecutionException, InterruptedException {
+    startServer(host, port, ServerSettings.create(system), Optional.ofNullable(system));
+  }
+
+  /**
+   * Start a server on the specified host and port, using the provided settings.
    * Note that this method is blocking.
    */
   public void startServer(String host, int port, ServerSettings settings) throws ExecutionException, InterruptedException {
@@ -52,18 +62,22 @@ public abstract class HttpApp extends AllDirectives {
   }
 
   /**
-   * Start a server on the specified host and port, using provided settings and [[ActorSystem]].
+   * Start a server on the specified host and port, using the provided settings and [[ActorSystem]].
    * Note that this method is blocking.
+   * 
+   * @param system ActorSystem to use for starting the app, if null is passed in a new default ActorSystem will be created instead
    */
   public void startServer(String host, int port, ServerSettings settings, ActorSystem system) throws ExecutionException, InterruptedException {
-    startServer(host, port, settings, Optional.of(system));
+    startServer(host, port, settings, Optional.ofNullable(system));
   }
 
   /**
-   * Start a server on the specified host and port, using provided settings and [[ActorSystem]] if present.
+   * Start a server on the specified host and port, using the provided settings and [[ActorSystem]] if present.
    * Note that this method is blocking.
    * This method may throw an {@link ExecutionException} or {@link InterruptedException} if the future that signals that
-   * the server should shutdown is interrupted or cancelled.
+   * the server should shutdown is interrupted or cancelled.   
+   * 
+   * @param system ActorSystem to use for starting the app, if an empty Optional is passed in a new default ActorSystem will be created instead
    */
   public void startServer(String host, int port, ServerSettings settings, Optional<ActorSystem> system) throws ExecutionException, InterruptedException {
 

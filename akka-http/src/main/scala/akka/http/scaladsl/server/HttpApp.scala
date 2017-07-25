@@ -44,7 +44,17 @@ abstract class HttpApp extends Directives {
   }
 
   /**
-   * Start a server on the specified host and port, using provided settings.
+   * Start a server on the specified host and port, using the provided [[ActorSystem]].
+   * Note that this method is blocking
+   *
+   * @param system ActorSystem to use for starting the app, if `null` is passed in a new default ActorSystem will be created instead
+   */
+  def startServer(host: String, port: Int, system: ActorSystem): Unit = {
+    startServer(host, port, ServerSettings(system), Option(system))
+  }
+
+  /**
+   * Start a server on the specified host and port, using the provided settings.
    * Note that this method is blocking.
    */
   def startServer(host: String, port: Int, settings: ServerSettings): Unit = {
@@ -52,16 +62,20 @@ abstract class HttpApp extends Directives {
   }
 
   /**
-   * Start a server on the specified host and port, using provided settings and [[ActorSystem]].
+   * Start a server on the specified host and port, using the provided settings and [[ActorSystem]].
    * Note that this method is blocking.
+   *
+   * @param system ActorSystem to use for starting the app, if `null` is passed in a new default ActorSystem will be created instead
    */
   def startServer(host: String, port: Int, settings: ServerSettings, system: ActorSystem): Unit = {
-    startServer(host, port, settings, Some(system))
+    startServer(host, port, settings, Option(system))
   }
 
   /**
-   * Start a server on the specified host and port, using provided settings and [[ActorSystem]] if present.
+   * Start a server on the specified host and port, using the provided settings and [[ActorSystem]] if present.
    * Note that this method is blocking.
+   *
+   * @param system ActorSystem to use for starting the app, if `None` is passed in a new default ActorSystem will be created instead
    */
   def startServer(host: String, port: Int, settings: ServerSettings, system: Option[ActorSystem]): Unit = {
     implicit val theSystem = system.getOrElse(ActorSystem(Logging.simpleName(this).replaceAll("\\$", "")))

@@ -65,7 +65,19 @@ Scala
 :   @@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #with-actor-system }
 
 Java
-:   @@snip [HttpAppExampleTest.java](../../../../../test/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #ownActorSystem }
+:   @@snip [HttpAppExampleTest.java](../../../../../test/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #minimal-imports #ownActorSystem }
+
+## Providing your own Actor System and Settings
+
+`HttpApp` offers another overloaded `startServer` method where you can pass, on top of the `host` and `port`,
+your previously created `ActorSystem` and your custom `ServerSettings`.
+You can see an example in the following code snippet:
+
+Scala
+:   @@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #with-actor-system-settings }
+
+Java
+:   @@snip [HttpAppExampleTest.java](../../../../../test/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #ownActorSystemAndSettings }
 
 ## Overriding Termination Signal
 
