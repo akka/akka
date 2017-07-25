@@ -28,6 +28,7 @@ private[parser] trait CacheControlHeader { this: Parser with CommonRules with Co
       | "must-revalidate" ~ push(`must-revalidate`)
       | "proxy-revalidate" ~ push(`proxy-revalidate`)
       | "s-maxage=" ~ `delta-seconds` ~> (`s-maxage`(_))
+      | "immutable" ~ push(immutableDirective)
       | token ~ optional(ws('=') ~ word) ~> (CacheDirective.custom(_, _)))
 
   def `field-names` = rule { `quoted-tokens` | token ~> (Seq(_)) }

@@ -42,4 +42,5 @@ public final class CacheDirectives {
     public static CacheDirective S_MAXAGE(long deltaSeconds) {
         return new akka.http.scaladsl.model.headers.CacheDirectives.s$minusmaxage(deltaSeconds);
     }
+    public static final CacheDirective IMMUTABLE = akka.http.scaladsl.model.headers.CacheDirectives.getImmutable();
 }

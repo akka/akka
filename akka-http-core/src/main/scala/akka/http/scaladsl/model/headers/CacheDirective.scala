@@ -4,7 +4,9 @@
 
 package akka.http.scaladsl.model.headers
 
-import scala.annotation.{ varargs, tailrec }
+import akka.annotation.ApiMayChange
+
+import scala.annotation.{ tailrec, varargs }
 import scala.collection.immutable
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
@@ -110,4 +112,14 @@ object CacheDirectives {
   final case class `s-maxage`(deltaSeconds: Long) extends ResponseDirective with ValueRenderable {
     def render[R <: Rendering](r: R): r.type = r ~~ productPrefix ~~ '=' ~~ deltaSeconds
   }
+
+  /** https://tools.ietf.org/wg/httpbis/draft-ietf-httpbis-immutable */
+  @ApiMayChange
+  case object immutableDirective extends SingletonValueRenderable with ResponseDirective {
+    private val valueBytes = "immutable".asciiBytes
+    override def render[R <: Rendering](r: R): r.type = r ~~ valueBytes
+  }
+
+  /** Java API */
+  def getImmutable: ResponseDirective = immutableDirective
 }

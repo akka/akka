@@ -175,6 +175,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `Cache-Control`(`no-cache`("Set-Cookie")).renderedTo("no-cache=\"Set-Cookie\"")
       "Cache-Control: private=\"a,b\", no-cache" =!=
         `Cache-Control`(`private`("a", "b"), `no-cache`)
+      "Cache-Control: private, immutable" =!=
+        `Cache-Control`(`private`(), immutableDirective)
     }
 
     "Connection" in {
