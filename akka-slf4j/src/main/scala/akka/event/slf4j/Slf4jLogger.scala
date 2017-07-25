@@ -110,7 +110,7 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
     event match {
       case m: LogEventWithMarker ⇒
         m.marker match {
-          case slf4jMarker: Slf4jLogMarker ⇒ slf4jMarker.getMarker
+          case slf4jMarker: Slf4jLogMarker ⇒ slf4jMarker.marker
           case marker                      ⇒ MarkerFactory.getMarker(marker.name)
         }
       case _ ⇒ null
@@ -144,10 +144,8 @@ class Slf4jLoggingFilter(settings: ActorSystem.Settings, eventStream: EventStrea
 }
 
 /** Wraps [[org.slf4j.Marker]] */
-final class Slf4jLogMarker(marker: org.slf4j.Marker) extends LogMarker(name = marker.getName) {
-  /** Java API: get underlying [[org.slf4j.Marker]] */
-  def getMarker = marker
-}
+final class Slf4jLogMarker(val marker: org.slf4j.Marker) extends LogMarker(name = marker.getName)
+
 /** Factory for creating [[LogMarker]] that wraps [[org.slf4j.Marker]] */
 object Slf4jLogMarker {
   def apply(marker: org.slf4j.Marker): Slf4jLogMarker = new Slf4jLogMarker(marker)
