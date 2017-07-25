@@ -84,3 +84,19 @@ However, it is impossible to unit test this Route directly using testkit, since 
 empty HTTP request. To test this type of route, embed it in a synthetic route in your test, for example:
 
 @@snip [TestKitFragmentTest.java](../../../../../test/java/docs/http/javadsl/server/testkit/TestKitFragmentTest.java) { #source-quote }
+
+
+## Accounting for Slow Test Systems
+
+The timeouts you consciously defined on your lightning fast development environment might be too tight for your, most
+probably, high-loaded Continuous Integration server, invariably causing spurious failures. To account for such
+situations, timeout durations can be scaled by a given factor on such environments. Check the
+@extref[Akka Docs](akka-docs:java/testing.html#accounting-for-slow-test-systems) for further information.
+
+
+## Increase Timeout
+
+The default timeout when testing your routes using the testkit is 3 seconds. Sometimes, though, this might not be enough.
+In order to extend this default timeout, to say 5 seconds, just override the following method:
+
+@@snip [WithTimeoutTest.java](../../../../../test/java/docs/http/javadsl/server/testkit/WithTimeoutTest.java) { #timeout-setting }
