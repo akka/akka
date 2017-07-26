@@ -31,7 +31,7 @@ object TestPublisher {
   final case class CancelSubscription(subscription: Subscription) extends PublisherEvent
   final case class RequestMore(subscription: Subscription, elements: Long) extends PublisherEvent
 
-  final object SubscriptionDone
+  final object SubscriptionDone extends NoSerializationVerificationNeeded
 
   /**
    * Publisher that signals complete to subscribers, after handing a void subscription.
