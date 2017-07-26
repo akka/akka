@@ -5,7 +5,7 @@ package akka.typed.testkit
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
-import akka.typed.{ ActorContext, ActorRef, ActorSystem, Behavior, EmptyProps, PostStop, Props, Signal }
+import akka.typed.{ ActorContext, ActorRef, ActorSystem, Behavior, PostStop, Props, Signal }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -20,7 +20,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 abstract class Effect
 
 object Effect {
-  @SerialVersionUID(1L) final case class Spawned(childName: String) extends Effect
+  @SerialVersionUID(1L) final case class Spawned(childName: String, props: Option[Props]) extends Effect
   @SerialVersionUID(1L) final case class Stopped(childName: String) extends Effect
   @SerialVersionUID(1L) final case class Watched[T](other: ActorRef[T]) extends Effect
   @SerialVersionUID(1L) final case class Unwatched[T](other: ActorRef[T]) extends Effect
@@ -79,16 +79,21 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
     val ref = super.spawnAnonymous(behavior, props)
-    effectQueue.offer(Spawned(ref.path.name))
+    effectQueue.offer(Spawned(ref.path.name, Option(props)))
     ref
   }
-  override def spawnAdapter[U](f: U ⇒ T, name: String = ""): ActorRef[U] = {
+
+  override def spawnAdapter[U](f: U ⇒ T): ActorRef[U] = {
+    spawnAdapter(f, "")
+  }
+
+  override def spawnAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
     val ref = super.spawnAdapter(f, name)
-    effectQueue.offer(Spawned(ref.path.name))
+    effectQueue.offer(Spawned(ref.path.name, None))
     ref
   }
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
-    effectQueue.offer(Spawned(name))
+    effectQueue.offer(Spawned(name, Option(props)))
     super.spawn(behavior, name, props)
   }
   override def stop[U](child: ActorRef[U]): Boolean = {
