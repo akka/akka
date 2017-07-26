@@ -550,6 +550,20 @@ import scala.util.control.NonFatal
     try {
       logic.postStop()
       logic.afterPostStop()
+
+      // clear references
+      logics(logic.stageId) = null
+      logic.portToConn.indices.foreach { i ⇒
+        val conn = logic.portToConn(i)
+        if ((conn.portState & (InClosed | OutClosed)) == (InClosed | OutClosed))
+          connections(conn.id) = null
+
+        logic.portToConn(i) = null
+      }
+      logic.hasShutdown = true
+      logic.interpreter = null
+      if (activeStage == logic)
+        activeStage = null
     } catch {
       case NonFatal(e) ⇒
         log.error(e, s"Error during postStop in [{}]: {}", logic.originalStage.getOrElse(logic), e.getMessage)

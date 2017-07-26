@@ -277,6 +277,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   // Using common array to reduce overhead for small port counts
   private[stream] val portToConn = new Array[Connection](handlers.length)
 
+  private[stream] var hasShutdown: Boolean = false
+
   /**
    * INTERNAL API
    */
@@ -957,7 +959,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final def getAsyncCallback[T](handler: T ⇒ Unit): AsyncCallback[T] = {
     new AsyncCallback[T] {
       override def invoke(event: T): Unit =
-        interpreter.onAsyncInput(GraphStageLogic.this, event, handler.asInstanceOf[Any ⇒ Unit])
+        if (!hasShutdown)
+          interpreter.onAsyncInput(GraphStageLogic.this, event, handler.asInstanceOf[Any ⇒ Unit])
+      // FIXME: else log something?
     }
   }
 
