@@ -47,7 +47,7 @@ not be able to operate at full capacity <a id="^1" href="#1">[1]</a>.
 @@@ note
 
 Asynchronous stream processing stages have internal buffers to make communication between them more efficient.
-For more details about the behavior of these and how to add additional buffers refer to @ref[Buffers and working with rate](stream-rate.md).
+For more details about the behavior of these and how to add additional buffers refer to @ref:[Buffers and working with rate](stream-rate.md).
 
 @@@
 
@@ -72,7 +72,7 @@ One drawback of the example code above that it does not preserve the ordering of
 if children like to track their "own" pancakes. In those cases the `Balance` and `Merge` stages should be replaced
 by strict-round robing balancing and merging stages that put in and take out pancakes in a strict order.
 
-A more detailed example of creating a worker pool can be found in the cookbook: @ref[Balancing jobs to a fixed pool of workers](stream-cookbook.md#cookbook-balance)
+A more detailed example of creating a worker pool can be found in the cookbook: @ref:[Balancing jobs to a fixed pool of workers](stream-cookbook.md#cookbook-balance)
 
 ## Combining pipelining and parallel processing
 
