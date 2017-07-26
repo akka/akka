@@ -406,6 +406,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the mapping function returns an element
    *
    * '''Backpressures when''' downstream backpressures
@@ -454,6 +456,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * The returned `Iterable` MUST NOT contain `null` values,
    * as they are illegal as stream elements - according to the Reactive Streams specification.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the mapping function returns an element or there are still remaining elements
    * from the previously calculated collection
@@ -522,6 +526,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * The function `f` is always invoked on the elements in the order they arrive (even though the result of the futures
    * returned by `f` might be emitted in a different order).
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' any of the CompletionStages returned by the provided function complete
    *
    * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
@@ -538,6 +544,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * Only pass on those elements that satisfy the given predicate.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the given predicate returns true for the element
    *
    * '''Backpressures when''' the given predicate returns true for the element and downstream backpressures
@@ -552,6 +560,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
 
   /**
    * Only pass on those elements that NOT satisfy the given predicate.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the given predicate returns false for the element
    *
@@ -568,6 +578,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the provided partial function is defined for the element
    *
@@ -636,6 +648,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * The stream will be completed without producing any elements if `n` is zero
    * or negative.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the specified number of elements to take has not yet been reached
    *
    * '''Backpressures when''' downstream backpressures
@@ -680,6 +694,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * [[akka.stream.Supervision#restart]] current value starts at `zero` again
    * the stream will continue.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the function scanning the element returns a new element
    *
    * '''Backpressures when''' downstream backpressures
@@ -705,6 +721,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * [[akka.stream.Supervision.Resume]] current value starts at the previous
    * current value, or zero when it doesn't have one, and the stream will continue.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the future returned by f` completes
    *
    * '''Backpressures when''' downstream backpressures
@@ -722,6 +740,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Similar to `scan` but only emits its result when the upstream completes,
    * after which it also completes. Applies the given function `f` towards its current and next value,
    * yielding the next current value.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * If the function `f` throws an exception and the supervision decision is
    * [[akka.stream.Supervision#restart]] current value starts at `zero` again
@@ -742,6 +762,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Similar to `fold` but with an asynchronous function.
    * Applies the given function towards its current and next value,
    * yielding the next current value.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * If the function `f` returns a failure and the supervision decision is
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
@@ -766,6 +788,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * the reduce stage will fail its downstream with a [[NoSuchElementException]],
    * which is semantically in-line with that Scala's standard library collections
    * do in such situations.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' upstream completes
    *
@@ -945,6 +969,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * The stream will be completed without producing any elements if predicate is false for
    * the first stream element.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the predicate is true
    *
    * '''Backpressures when''' downstream backpressures
@@ -981,6 +1007,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * Discard elements at the beginning of the stream while predicate is true.
    * All elements will be taken after predicate returns false first time.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' predicate returned false and for all following stream elements
    *
@@ -1140,6 +1168,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' downstream stops backpressuring and there is a conflated element available
    *
    * '''Backpressures when''' never
@@ -1168,6 +1198,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' downstream stops backpressuring and there is a conflated element available
    *
    * '''Backpressures when''' never
@@ -1191,6 +1223,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' downstream stops backpressuring and there is an aggregated element available
    *
@@ -2116,6 +2150,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * of a complex object flowing through this element.
    *
    * Uses the given [[LoggingAdapter]] for logging.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the mapping function returns an element
    *

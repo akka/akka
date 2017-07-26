@@ -1,7 +1,7 @@
 # Working with streaming IO
 
 Akka Streams provides a way of handling File IO and TCP connections with Streams.
-While the general approach is very similar to the @ref[Actor based TCP handling](../io-tcp.md) using Akka IO,
+While the general approach is very similar to the @ref:[Actor based TCP handling](../io-tcp.md) using Akka IO,
 by using Akka Streams you are freed of having to manually react to back-pressure signals,
 as the library does it transparently for you.
 
@@ -86,7 +86,7 @@ When writing such end-to-end back-pressured systems you may sometimes end up in 
 in which *either side is waiting for the other one to start the conversation*. One does not need to look far
 to find examples of such back-pressure loops. In the two examples shown previously, we always assumed that the side we
 are connecting to would start the conversation, which effectively means both sides are back-pressured and can not get
-the conversation started. There are multiple ways of dealing with this which are explained in depth in @ref[Graph cycles, liveness and deadlocks](stream-graphs.md#graph-cycles),
+the conversation started. There are multiple ways of dealing with this which are explained in depth in @ref:[Graph cycles, liveness and deadlocks](stream-graphs.md#graph-cycles),
 however in client-server scenarios it is often the simplest to make either side simply send an initial message.
 
 @@@ note

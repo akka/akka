@@ -921,7 +921,7 @@ e.g. scheduled tick messages.
 
 ## Timers, scheduled messages
 
-Messages can be scheduled to be sent at a later point by using the @ref[Scheduler](scheduler.md) directly,
+Messages can be scheduled to be sent at a later point by using the @ref:[Scheduler](scheduler.md) directly,
 but when scheduling periodic or single messages in an actor to itself it's more convenient and safe
 to use the support for named timers. The lifecycle of scheduled messages can be difficult to manage
 when the actor is restarted and that is taken care of by the timers.
