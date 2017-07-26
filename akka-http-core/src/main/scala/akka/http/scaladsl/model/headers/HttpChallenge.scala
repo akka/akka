@@ -14,8 +14,14 @@ final case class HttpChallenge(scheme: String, realm: String,
 
   def render[R <: Rendering](r: R): r.type = {
     r ~~ scheme
+
     if (realm != null) r ~~ " realm=" ~~#! realm
-    if (params.nonEmpty) params.foreach { case (k, v) ⇒ r ~~ ',' ~~ k ~~ '=' ~~# v }
+    if (params.nonEmpty) {
+      if (realm == null) r ~~ ' ' else r ~~ ','
+      r ~~ params.head._1 ~~ '=' ~~# params.head._2
+      params.tail.foreach { case (k, v) ⇒ r ~~ ',' ~~ k ~~ '=' ~~# v }
+    }
+
     r
   }
 

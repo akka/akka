@@ -585,6 +585,10 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
           "Digest realm=\"testrealm@host.com\",qop=\"auth,auth-int\",nonce=dcd98b7102dd2f0e8b11d0f600bfb0c093,opaque=5ccc069c403ebaf9f0171e9517f40e41")
       "WWW-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
         `WWW-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" → "val>ue")), HttpChallenge("Fancy", Some("yeah")))
+      "WWW-Authenticate: Basic attr=value,another=\"val>ue\"" =!=
+        `WWW-Authenticate`(HttpChallenge("Basic", None, Map("attr" → "value", "another" → "val>ue")))
+      "WWW-Authenticate: Basic attr=value" =!=
+        `WWW-Authenticate`(HttpChallenge("Basic", None, Map("attr" → "value")))
       """WWW-Authenticate: Fancy realm="Secure Area",nonce=42""" =!=
         `WWW-Authenticate`(HttpChallenge("Fancy", Some("Secure Area"), Map("nonce" → "42")))
     }
