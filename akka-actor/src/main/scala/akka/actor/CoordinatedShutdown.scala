@@ -142,7 +142,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
           system.terminate().map { _ ⇒
             if (exitJvm && !runningJvmHook) System.exit(0)
             else {
-              if (!runningJvmHook) coord.removeJvmTerminationHooks()
+              coord.removeJvmTerminationHooks()
             }
             Done
           }(ExecutionContexts.sameThreadExecutionContext)
@@ -150,7 +150,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
           System.exit(0)
           Future.successful(Done)
         } else {
-          if (!runningJvmHook) coord.removeJvmTerminationHooks()
+          coord.removeJvmTerminationHooks()
           Future.successful(Done)
         }
       }
@@ -254,6 +254,7 @@ final class CoordinatedShutdown private[akka] (
   private val tasks = new ConcurrentHashMap[String, Vector[(String, () ⇒ Future[Done])]]
   private val runStarted = new AtomicBoolean(false)
   private val runPromise = Promise[Done]()
+  @volatile private var jvmHooksRunning = false
 
   private var _jvmHooksLatch = new AtomicReference[CountDownLatch](new CountDownLatch(0))
 
@@ -460,6 +461,7 @@ final class CoordinatedShutdown private[akka] (
         try {
           val thread = new Thread {
             override def run(): Unit = {
+              jvmHooksRunning = true
               try hook finally _jvmHooksLatch.get.countDown()
             }
           }
@@ -486,7 +488,11 @@ final class CoordinatedShutdown private[akka] (
     addJvmShutdownHook(hook.run())
 
   private def removeJvmTerminationHooks(): Unit = {
-    registeredHooks.reverseIterator.foreach(t ⇒ Runtime.getRuntime.removeShutdownHook(t))
+    // important that we do not remove the hooks if we are running the hooks
+    // as that could be triggered in any order and could lead to other hooks not actually being run
+    if (!jvmHooksRunning) {
+      registeredHooks.reverseIterator.foreach(t ⇒ Runtime.getRuntime.removeShutdownHook(t))
+    }
   }
 
 }
