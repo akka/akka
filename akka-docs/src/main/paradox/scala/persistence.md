@@ -638,8 +638,7 @@ akka.persistence.journal.leveldb.replay-filter {
 <a id="snapshots"></a>
 ## Snapshots
 
-Some actors in your app may be bound to have extremely long event logs. In that case,  you can use snapshots to reduce recovery times drastically. The following discusses snapshots
-in context of persistent actors but this is also applicable to persistent views.
+Some actors in your app may be bound to have extremely long event logs. In that case, you can use snapshots to reduce recovery times drastically.
 
 Persistent actors can save snapshots of internal state by calling the  `saveSnapshot` method. If saving of a snapshot
 succeeds, the persistent actor receives a `SaveSnapshotSuccess` message, otherwise a `SaveSnapshotFailure` message
