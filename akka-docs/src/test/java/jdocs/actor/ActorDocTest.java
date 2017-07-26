@@ -822,9 +822,9 @@ public class ActorDocTest extends AbstractJavaTest {
     //#coordinated-shutdown-addTask
 
     //#coordinated-shutdown-jvm-hook
-    CoordinatedShutdown.get(system).addJvmShutdownHook(() -> {
+    CoordinatedShutdown.get(system).addJvmShutdownHook(() ->
       System.out.println("custom JVM shutdown hook...")
-    }, system);
+    );
     //#coordinated-shutdown-jvm-hook
 
     // don't run this
