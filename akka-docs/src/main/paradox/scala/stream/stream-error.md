@@ -61,6 +61,8 @@ Java
 :   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #recoverWithRetries-output }
 
 
+<a id="restart-with-backoff"></a>
+
 ## Delayed restarts with a backoff stage
 
 Just as Akka provides the @ref:[backoff supervision pattern for actors](../general/supervision.md#backoff-supervisor), Akka streams
@@ -123,8 +125,8 @@ has to implement explicitly.
 
 For many stages it may not even make sense to implement support for supervision strategies,
 this is especially true for stages connecting to external technologies where for example a
-failed connection will likely still fail if a new connection is tried immediately (see the
-Restart with back off for such scenarios). 
+failed connection will likely still fail if a new connection is tried immediately (see 
+@ref:[Restart with back off](#restart-with-backoff) for such scenarios). 
 
 For stages that do implement supervision, the strategies for how to handle exceptions from 
 processing stream elements can be selected when materializing the stream through use of an attribute. 
