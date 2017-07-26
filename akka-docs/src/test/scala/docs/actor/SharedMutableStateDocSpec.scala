@@ -44,12 +44,10 @@ class SharedMutableStateDocSpec {
 
     def receive = {
       case _ =>
-      
         implicit val ec = context.dispatcher
         implicit val timeout = Timeout(5 seconds) // needed for `?` below
 
         // Example of incorrect approach
-      
         // Very bad: shared mutable state will cause your
         // application to break in weird ways
         Future { state = "This will race" }
@@ -66,7 +64,6 @@ class SharedMutableStateDocSpec {
         Future { expensiveCalculation(sender()) }
 
         // Example of correct approach
-
         // Completely safe: "self" is OK to close over
         // and it's an ActorRef, which is thread-safe
         Future { expensiveCalculation() } foreach { self ! _ }
