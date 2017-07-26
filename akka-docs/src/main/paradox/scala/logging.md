@@ -559,6 +559,16 @@ A more advanced (including most Akka added information) example pattern would be
 <pattern>%date{ISO8601} level=[%level] marker=[%marker] logger=[%logger] akkaSource=[%X{akkaSource}] sourceActorSystem=[%X{sourceActorSystem}] sourceThread=[%X{sourceThread}] mdc=[ticket-#%X{ticketNumber}: %X{ticketDesc}] - msg=[%msg]%n----%n</pattern>
 ```
 
+#### Using SLF4J's Markers
+
+It is also possible to use the `org.slf4j.Marker` with the `LoggingAdapter` when using slf4j.
+
+Since the akka-actor library avoids depending on any specific logging library, the support for this is included in `akka-slf4j`,
+which provides the `Slf4jLogMarker` type which can be passed in as first argument instead of the logging framework agnostic LogMarker 
+type from `akka-actor`. The most notable difference between the two is that slf4j's Markers can have child markers, so one can
+rely more information using them rather than just a single string.
+
+
 <a id="jul"></a>
 ## java.util.logging
 
