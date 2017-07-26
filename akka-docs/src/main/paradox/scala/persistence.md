@@ -177,7 +177,7 @@ By default, a persistent actor is automatically recovered on start and on restar
 New messages sent to a persistent actor during recovery do not interfere with replayed messages.
 They are stashed and received by a persistent actor after recovery phase completes.
 
-The number of concurrent recoveries of recoveries that can be in progress at the same time is limited 
+The number of concurrent recoveries that can be in progress at the same time is limited 
 to not overload the system and the backend data store. When exceeding the limit the actors will wait 
 until other recoveries have been completed. This is configured by:
 
