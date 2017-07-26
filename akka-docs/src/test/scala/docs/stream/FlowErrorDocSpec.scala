@@ -126,7 +126,7 @@ stream truncated
     }).runForeach(println)
     //#recoverWithRetries
 
-/*
+    /*
 Output:
 //#recoverWithRetries-output
 0
