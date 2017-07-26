@@ -551,8 +551,17 @@ object MiMa extends AutoPlugin {
       // #22374 introduce fishForSpecificMessage in TestKit
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage$default$1"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage$default$2")
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage$default$2"),
 
+      // #22710 overloaded Flow.interleave()-related methods
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.interleaveGraph"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.interleaveMat"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.interleaveGraph"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.interleaveGraph"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph$default$3"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleave")
 
       // NOTE: filters that will be backported to 2.4 should go to the latest 2.4 version below
     )
@@ -1218,7 +1227,7 @@ object MiMa extends AutoPlugin {
       "2.5.2" -> Seq(
         // #22881 Make sure connections are aborted correctly on Windows
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancel"),
-        
+
         // #23144 recoverWithRetries cleanup
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.RecoverWith.InfiniteRetries"),
 
@@ -1237,8 +1246,8 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.fsm.PersistentFSM#Timer.this"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.copy"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.this"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.apply"),  
-          
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.apply"),
+
         // #22789 Source.maybe rewritten as a graph stage
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$MaybeSubscription"),
@@ -1248,7 +1257,18 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.attributes"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.create"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.this"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$")
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$"),
+
+        // #22710 overloaded Flow.interleave()-related methods
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.interleaveGraph"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.interleaveMat"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.interleaveGraph"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.interleaveGraph"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph$default$3"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleave"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.interleaveGraph")
       )
     )
 
