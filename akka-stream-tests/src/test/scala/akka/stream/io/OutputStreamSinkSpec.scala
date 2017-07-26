@@ -28,7 +28,7 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       val completion = Source(datas)
         .runWith(StreamConverters.fromOutputStream(() ⇒ new OutputStream {
           override def write(i: Int): Unit = ()
-          override def write(bytes: Array[Byte]): Unit = p.ref ! ByteString(bytes).utf8String
+          override def write(bytes: Array[Byte]): Unit = p.ref ! ByteString.fromArrayUnsafe(bytes).utf8String
         }))
 
       p.expectMsg(datas(0).utf8String)
@@ -53,7 +53,7 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       Source.empty
         .runWith(StreamConverters.fromOutputStream(() ⇒ new OutputStream {
           override def write(i: Int): Unit = ()
-          override def write(bytes: Array[Byte]): Unit = p.ref ! ByteString(bytes).utf8String
+          override def write(bytes: Array[Byte]): Unit = p.ref ! ByteString.fromArrayUnsafe(bytes).utf8String
           override def close() = p.ref ! "closed"
         }))
 

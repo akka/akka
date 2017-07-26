@@ -50,7 +50,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
     "be able to write a sequence of ByteStrings" in {
       val server = new Server()
       val testInput = (0 to 255).map(ByteString(_))
-      val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
+      val expectedOutput = ByteString.fromArrayUnsafe(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
       Source(testInput).via(Tcp().outgoingConnection(server.address)).to(Sink.ignore).run()
 
@@ -62,7 +62,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
     "be able to read a sequence of ByteStrings" in {
       val server = new Server()
       val testInput = (0 to 255).map(ByteString(_))
-      val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
+      val expectedOutput = ByteString.fromArrayUnsafe(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
       val idle = new TcpWriteProbe() // Just register an idle upstream
       val resultFuture =
@@ -447,7 +447,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       val binding = bindingFuture.futureValue
 
       val testInput = (0 to 255).map(ByteString(_))
-      val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
+      val expectedOutput = ByteString.fromArrayUnsafe(Array.tabulate(256)(_.asInstanceOf[Byte]))
       val resultFuture =
         Source(testInput).via(Tcp().outgoingConnection(serverAddress)).runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
 
@@ -470,7 +470,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       val echoConnection = Tcp().outgoingConnection(serverAddress)
 
       val testInput = (0 to 255).map(ByteString(_))
-      val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
+      val expectedOutput = ByteString.fromArrayUnsafe(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
       val resultFuture =
         Source(testInput)

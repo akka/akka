@@ -50,7 +50,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
     val array1 = new Array[Byte](buffer.remaining())
     buffer.get(array1)
     val array2 = serializer.toBinary(msg)
-    ByteString(array1) should ===(ByteString(array2))
+    ByteString.fromArrayUnsafe(array1) should ===(ByteString.fromArrayUnsafe(array2))
 
     buffer.rewind()
     serializer.fromBinary(buffer, "") should ===(msg)

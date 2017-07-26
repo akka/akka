@@ -81,7 +81,7 @@ class FlowGroupBySpec extends StreamSpec {
   def randomByteString(size: Int): ByteString = {
     val a = new Array[Byte](size)
     ThreadLocalRandom.current().nextBytes(a)
-    ByteString(a)
+    ByteString.fromArrayUnsafe(a)
   }
 
   "groupBy" must {
