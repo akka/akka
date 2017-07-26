@@ -55,7 +55,7 @@ to `application`—may be overridden using the `config.resource` property
 
 @@@ note
 
-If you are writing an Akka application, keep you configuration in
+If you are writing an Akka application, keep your configuration in
 `application.conf` at the root of the class path. If you are writing an
 Akka-based library, keep its configuration in `reference.conf` at the root
 of the JAR file.
