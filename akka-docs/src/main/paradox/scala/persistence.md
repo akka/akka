@@ -682,7 +682,7 @@ saved snapshot matches the specified `SnapshotSelectionCriteria` will replay all
 @@@ note
 
 In order to use snapshots, a default snapshot-store (`akka.persistence.snapshot-store.plugin`) must be configured,
-or the @scala`PersistentActor`]@java[persistent actor] can pick a snapshot store explicitly by overriding @scala[`def snapshotPluginId: String`]@java[`String snapshotPluginId()`].
+or the @scala[`PersistentActor`]@java[persistent actor] can pick a snapshot store explicitly by overriding @scala[`def snapshotPluginId: String`]@java[`String snapshotPluginId()`].
 
 Since it is acceptable for some applications to not use any snapshotting, it is legal to not configure a snapshot store.
 However, Akka will log a warning message when this situation is detected and then continue to operate until
