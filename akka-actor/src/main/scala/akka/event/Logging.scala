@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem.Settings
 import akka.actor._
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
 import akka.util.ReentrantGuard
@@ -1403,7 +1404,9 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
   def clearMDC(): Unit = mdc(emptyMDC)
 }
 
-final class LogMarker(val name: String)
+/** DO NOT INHERIT: Class is open only for use by akka-slf4j*/
+@DoNotInherit
+class LogMarker(val name: String)
 object LogMarker {
   /** The Marker is internally transferred via MDC using using this key */
   private[akka] final val MDCKey = "marker"
