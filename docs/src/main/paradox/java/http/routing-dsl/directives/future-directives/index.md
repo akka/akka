@@ -1,4 +1,3 @@
-<a id="futuredirectives-java"></a>
 # FuturesDirectives
 
 Future directives can be used to run inner routes once the provided `CompletionStage<T>` has been completed.

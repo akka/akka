@@ -1,4 +1,3 @@
-<a id="requestencodedwith"></a>
 # requestEncodedWith
 
 ## Signature

@@ -1,4 +1,3 @@
-<a id="withrequesttimeout-java"></a>
 # withRequestTimeout
 
 ## Description
@@ -16,7 +15,7 @@ to be dropped. This is by-design, as the request timeout feature serves as a "sa
 
 Optionally, a timeout handler may be provided in which is called when a time-out is triggered and must produce an
 `HttpResponse` that will be sent back to the client instead of the "too late" response (in case it'd ever arrive).
-See also @ref[withRequestTimeoutResponse](withRequestTimeoutResponse.md#withrequesttimeoutresponse-java) if only looking to customise the timeout response without changing the timeout itself.
+See also @ref[withRequestTimeoutResponse](withRequestTimeoutResponse.md) if only looking to customise the timeout response without changing the timeout itself.
 
 @@@ warning
 

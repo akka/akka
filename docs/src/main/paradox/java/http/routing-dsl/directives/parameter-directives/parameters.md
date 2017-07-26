@@ -1,4 +1,3 @@
-<a id="parameters-java"></a>
 # parameters
 
 Extracts multiple *query* parameter values from the request.

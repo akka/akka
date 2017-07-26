@@ -1,4 +1,3 @@
-<a id="json-support-java"></a>
 # Json Support
 
 akka-http provides support to convert application-domain objects from and to JSON using [jackson](https://github.com/FasterXML/jackson) in an

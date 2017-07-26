@@ -1,4 +1,3 @@
-<a id="websocketdirectives-java"></a>
 # WebSocketDirectives
 
 @@toc { depth=1 }

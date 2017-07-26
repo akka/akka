@@ -1,4 +1,3 @@
-<a id="pass-java"></a>
 # pass
 
 ## Description

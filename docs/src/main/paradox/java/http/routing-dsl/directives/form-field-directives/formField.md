@@ -1,4 +1,3 @@
-<a id="formfield-java"></a>
 # formField
 
 ## Description

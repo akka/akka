@@ -1,4 +1,3 @@
-<a id="http-client-side"></a>
 # Consuming HTTP-based Services (Client-Side)
 
 All client-side functionality of Akka HTTP, for consuming HTTP-based services offered by other endpoints, is currently
@@ -10,10 +9,10 @@ from a background with non-"streaming first" HTTP Clients.
 
 Depending on your application's specific needs you can choose from three different API levels:
 
-@ref[Request-Level Client-Side API](request-level.md#request-level-api)
+@ref[Request-Level Client-Side API](request-level.md)
 : for letting Akka HTTP perform all connection management. Recommended for most usages.
 
-@ref[Host-Level Client-Side API](host-level.md#host-level-api)
+@ref[Host-Level Client-Side API](host-level.md)
 : for letting Akka HTTP manage a connection-pool to *one specific* host/port endpoint. Recommended when
   the user can supply a ``Source[HttpRequest, NotUsed]`` with requests to run against a single host
   over multiple pooled connections.

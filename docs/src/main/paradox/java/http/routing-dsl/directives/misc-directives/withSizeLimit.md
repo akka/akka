@@ -1,4 +1,3 @@
-<a id="withsizelimit-java"></a>
 # withSizeLimit
 
 ## Description
@@ -10,7 +9,7 @@ The whole mechanism of entity size checking is intended to prevent certain Denia
 So suggested setup is to have `akka.http.parsing.max-content-length` relatively low and use `withSizeLimit`
 directive for endpoints which expects bigger entities.
 
-See also @ref[withoutSizeLimit](withoutSizeLimit.md#withoutsizelimit-java) for skipping request entity size check.
+See also @ref[withoutSizeLimit](withoutSizeLimit.md) for skipping request entity size check.
 
 ## Example
 

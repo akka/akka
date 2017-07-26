@@ -1,4 +1,3 @@
-<a id="extractcredentials-java"></a>
 # extractCredentials
 
 ## Description

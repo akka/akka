@@ -1,4 +1,3 @@
-<a id="maprouteresultpf"></a>
 # mapRouteResultPF
 
 ## Signature
@@ -7,12 +6,12 @@
 
 ## Description
 
-*Partial Function* version of @ref[mapRouteResult](mapRouteResult.md#maprouteresult).
+*Partial Function* version of @ref[mapRouteResult](mapRouteResult.md).
 
 Changes the message the inner route sends to the responder.
 
-The `mapRouteResult` directive is used as a building block for @ref[Custom Directives](../custom-directives.md#custom-directives) to transform the
-@ref[RouteResult](../../routes.md#routeresult) coming back from the inner route. It's similar to the @ref[mapRouteResult](mapRouteResult.md#maprouteresult) directive but allows to
+The `mapRouteResult` directive is used as a building block for @ref[Custom Directives](../custom-directives.md) to transform the
+@ref[RouteResult](../../routes.md#routeresult) coming back from the inner route. It's similar to the @ref[mapRouteResult](mapRouteResult.md) directive but allows to
 specify a partial function that doesn't have to handle all potential `RouteResult` instances.
 
 See @ref[Result Transformation Directives](index.md#result-transformation-directives) for similar directives.

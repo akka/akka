@@ -1,4 +1,3 @@
-<a id="http-model-java"></a>
 # HTTP Model
 
 Akka HTTP model contains a deeply structured, fully immutable, case-class based model of all the major HTTP data
@@ -295,7 +294,7 @@ Which allows the this modeled custom header to be used and created in the follow
 
 @@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #conversion-creation-custom-header }
 
-Including usage within the header directives like in the following @ref[headerValuePF](../routing-dsl/directives/header-directives/headerValuePF.md#headervaluepf) example:
+Including usage within the header directives like in the following @ref[headerValuePF](../routing-dsl/directives/header-directives/headerValuePF.md) example:
 
 @@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #header-value-pf }
 

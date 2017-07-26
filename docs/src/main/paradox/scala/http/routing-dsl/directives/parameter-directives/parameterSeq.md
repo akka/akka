@@ -1,4 +1,3 @@
-<a id="parameterseq"></a>
 # parameterSeq
 
 ## Signature

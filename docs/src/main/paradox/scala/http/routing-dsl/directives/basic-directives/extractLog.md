@@ -1,4 +1,3 @@
-<a id="extractlog"></a>
 # extractLog
 
 ## Signature
@@ -12,7 +11,7 @@ Extracts a `LoggingAdapter` from the request context which can be used for loggi
 The `extractLog` directive is used for providing logging to routes, such that they don't have to depend on
 closing over a logger provided in the class body.
 
-See @ref[extract](extract.md#extract) and @ref[Providing Values to Inner Routes](index.md#providedirectives) for an overview of similar directives.
+See @ref[extract](extract.md) and @ref[Providing Values to Inner Routes](index.md#providedirectives) for an overview of similar directives.
 
 ## Example
 

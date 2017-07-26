@@ -1,4 +1,3 @@
-<a id="extracturi"></a>
 # extractUri
 
 ## Signature
@@ -9,7 +8,7 @@
 
 Access the full URI of the request.
 
-Use @ref[SchemeDirectives](../scheme-directives/index.md#schemedirectives), @ref[HostDirectives](../host-directives/index.md#hostdirectives), @ref[PathDirectives](../path-directives/index.md#pathdirectives),  and @ref[ParameterDirectives](../parameter-directives/index.md#parameterdirectives) for more
+Use @ref[SchemeDirectives](../scheme-directives/index.md), @ref[HostDirectives](../host-directives/index.md), @ref[PathDirectives](../path-directives/index.md),  and @ref[ParameterDirectives](../parameter-directives/index.md) for more
 targeted access to parts of the URI.
 
 ## Example

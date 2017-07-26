@@ -1,4 +1,3 @@
-<a id="authenticatebasic-java"></a>
 # authenticateBasic
 
 Wraps the inner route with Http Basic authentication support using a given `Authenticator<T>`.
@@ -11,7 +10,7 @@ Given a function returning an `Optional<T>` with a value upon successful authent
 respectively applies the inner route or rejects the request with a `AuthenticationFailedRejection` rejection,
 which by default is mapped to an `401 Unauthorized` response.
 
-Longer-running authentication tasks (like looking up credentials in a database) should use the @ref[authenticateBasicAsync](authenticateBasicAsync.md#authenticatebasicasync-java)
+Longer-running authentication tasks (like looking up credentials in a database) should use the @ref[authenticateBasicAsync](authenticateBasicAsync.md)
 variant of this directive which allows it to run without blocking routing layer of Akka HTTP, freeing it for other requests.
 
 Standard HTTP-based authentication which uses the `WWW-Authenticate` header containing challenge data and

@@ -1,4 +1,3 @@
-<a id="rangedirectives"></a>
 # RangeDirectives
 
 @@toc { depth=1 }

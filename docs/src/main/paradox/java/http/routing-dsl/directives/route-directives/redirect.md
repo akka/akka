@@ -1,4 +1,3 @@
-<a id="redirect-java"></a>
 # redirect
 
 ## Description

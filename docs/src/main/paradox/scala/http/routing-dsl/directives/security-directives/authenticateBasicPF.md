@@ -1,4 +1,3 @@
-<a id="authenticatebasicpf"></a>
 # authenticateBasicPF
 
 ## Signature
@@ -13,13 +12,13 @@ Wraps the inner route with Http Basic authentication support using a given `Auth
 
 Provides support for handling [HTTP Basic Authentication](https://en.wikipedia.org/wiki/Basic_auth).
 
-Refer to @ref[authenticateBasic](authenticateBasic.md#authenticatebasic) for a detailed description of this directive.
+Refer to @ref[authenticateBasic](authenticateBasic.md) for a detailed description of this directive.
 
 Its semantics are equivalent to `authenticateBasicPF` 's, where not handling a case in the Partial Function (PF)
 leaves the request to be rejected with a `AuthenticationFailedRejection` rejection.
 
-Longer-running authentication tasks (like looking up credentials in a database) should use @ref[authenticateBasicAsync](authenticateBasicAsync.md#authenticatebasicasync)
-or @ref[authenticateBasicPFAsync](authenticateBasicPFAsync.md#authenticatebasicpfasync) if you prefer to use the `PartialFunction` syntax.
+Longer-running authentication tasks (like looking up credentials in a database) should use @ref[authenticateBasicAsync](authenticateBasicAsync.md)
+or @ref[authenticateBasicPFAsync](authenticateBasicPFAsync.md) if you prefer to use the `PartialFunction` syntax.
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-scala) for details about verifying the secret.
 

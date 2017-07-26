@@ -1,4 +1,3 @@
-<a id="validate-java"></a>
 # validate
 
 Allows validating a precondition before handling a route.

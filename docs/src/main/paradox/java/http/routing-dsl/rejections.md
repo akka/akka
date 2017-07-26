@@ -1,12 +1,11 @@
-<a id="rejections-java"></a>
 # Rejections
 
-In the chapter about constructing @ref[Routes](routes.md#routes-java) the `RouteDirectives.route()` method was introduced, which connects two or more routes in a way
+In the chapter about constructing @ref[Routes](routes.md) the `RouteDirectives.route()` method was introduced, which connects two or more routes in a way
 that allows the next specified route to get a go at a request if the first route "rejected" it. The concept of "rejections" is
 used by Akka HTTP for maintaining a more functional overall architecture and in order to be able to properly
 handle all kinds of error scenarios.
 
-When a filtering directive, like the @ref[get](directives/method-directives/get.md#get-java) directive, cannot let the request pass through to its inner route because
+When a filtering directive, like the @ref[get](directives/method-directives/get.md) directive, cannot let the request pass through to its inner route because
 the filter condition is not satisfied (e.g. because the incoming request is not a GET request) the directive doesn't
 immediately complete the request with an error response. Doing so would make it impossible for other routes chained in
 after the failing filter to get a chance to handle the request.
@@ -15,30 +14,30 @@ Rather, failing filters "reject" the request in the same way as by explicitly ca
 After having been rejected by a route the request will continue to flow through the routing structure and possibly find
 another route that can complete it. If there are more rejections all of them will be picked up and collected.
 
-If the request cannot be completed by (a branch of) the route structure an enclosing @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections-java) directive
+If the request cannot be completed by (a branch of) the route structure an enclosing @ref[handleRejections](directives/execution-directives/handleRejections.md) directive
 can be used to convert a set of rejections into an `HttpResponse` (which, in most cases, will be an error response).
-`Route.seal()` internally wraps its argument route with the @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections-java) directive in order to "catch"
+`Route.seal()` internally wraps its argument route with the @ref[handleRejections](directives/execution-directives/handleRejections.md) directive in order to "catch"
 and handle any rejection.
 
 ## Predefined Rejections
 
 A rejection encapsulates a specific reason why a route was not able to handle a request. It is modeled as an object of
 type `Rejection`. Akka HTTP comes with a set of @javadoc[predefined rejections](akka.http.javadsl.server.Rejections), which are used by the many
-@ref[predefined directives](directives/alphabetically.md#predefined-directives-java).
+@ref[predefined directives](directives/alphabetically.md).
 
 Rejections are gathered up over the course of a Route evaluation and finally converted to `HttpResponse` replies by
-the @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections-java) directive if there was no way for the request to be completed.
+the @ref[handleRejections](directives/execution-directives/handleRejections.md) directive if there was no way for the request to be completed.
 
 <a id="the-rejectionhandler-java"></a>
 ## The RejectionHandler
 
-The @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections-java) directive delegates the actual job of converting a list of rejections to its argument, a
+The @ref[handleRejections](directives/execution-directives/handleRejections.md) directive delegates the actual job of converting a list of rejections to its argument, a
 @javadoc[RejectionHandler](akka.http.javadsl.server.RejectionHandler), which is a partial function,
 so it can choose whether it would like to handle the current set of rejections or not.
 Unhandled rejections will simply continue to flow through the route structure.
 
 The default `RejectionHandler` applied by the top-level glue code that turns a `Route` into a
-`Flow` or async handler function for the @ref[low-level API](../server-side/low-level-server-side-api.md#http-low-level-server-side-api-java) will handle *all* rejections that reach it.
+`Flow` or async handler function for the @ref[low-level API](../server-side/low-level-server-side-api.md) will handle *all* rejections that reach it.
 
 ## Rejection Cancellation
 
@@ -51,13 +50,13 @@ Take this route structure for example:
 
 For uncompressed POST requests this route structure would initially yield two rejections:
 
- * a `MethodRejection` produced by the @ref[get](directives/method-directives/get.md#get-java) directive (which rejected because the request is not a GET request)
- * an `UnsupportedRequestEncodingRejection` produced by the @ref[decodeRequestWith](directives/coding-directives/decodeRequestWith.md#decoderequestwith-java) directive (which only accepts
+ * a `MethodRejection` produced by the @ref[get](directives/method-directives/get.md) directive (which rejected because the request is not a GET request)
+ * an `UnsupportedRequestEncodingRejection` produced by the @ref[decodeRequestWith](directives/coding-directives/decodeRequestWith.md) directive (which only accepts
 gzip-compressed requests here)
 
-In reality the route even generates one more rejection, a `TransformationRejection` produced by the @ref[post](directives/method-directives/post.md#post-java)
+In reality the route even generates one more rejection, a `TransformationRejection` produced by the @ref[post](directives/method-directives/post.md)
 directive. It "cancels" all other potentially existing *MethodRejections*, since they are invalid after the
-@ref[post](directives/method-directives/post.md#post) directive allowed the request to pass (after all, the route structure *can* deal with POST requests).
+@ref[post](directives/method-directives/post.md) directive allowed the request to pass (after all, the route structure *can* deal with POST requests).
 These types of rejection cancellations are resolved *before* a `RejectionHandler` is called with any rejection.
 So, for the example above the `RejectionHandler` will be presented with only one single rejection, the `UnsupportedRequestEncodingRejection`.
 
@@ -69,8 +68,8 @@ an empty rejection list are. In fact, empty rejection lists have well defined se
 not handled because the respective resource could not be found. Akka HTTP reserves the special status of "empty
 rejection" to this most common failure a service is likely to produce.
 
-So, for example, if the @ref[path](directives/path-directives/path.md#path-java) directive rejects a request it does so with an empty rejection list. The
-@ref[host](directives/host-directives/host.md#host-java) directive behaves in the same way.
+So, for example, if the @ref[path](directives/path-directives/path.md) directive rejects a request it does so with an empty rejection list. The
+@ref[host](directives/host-directives/host.md) directive behaves in the same way.
 
 ## Customizing Rejection Handling
 
@@ -105,7 +104,7 @@ This way the priority between rejections is properly defined via the order of yo
 Once you have defined your custom `RejectionHandler` you have two options for "activating" it:
 
  1. Pass it to the `seal()` method of the `Route` class
- 2. Supply it as an argument to the @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections-java) directive 
+ 2. Supply it as an argument to the @ref[handleRejections](directives/execution-directives/handleRejections.md) directive 
 
 In the first case your handler will be "sealed" (which means that it will receive the default handler as a fallback for
 all cases your handler doesn't handle itself) and used for all rejections that are not handled within the route structure

@@ -1,4 +1,3 @@
-<a id="cacheconditiondirectives"></a>
 # CacheConditionDirectives
 
 @@toc { depth=1 }

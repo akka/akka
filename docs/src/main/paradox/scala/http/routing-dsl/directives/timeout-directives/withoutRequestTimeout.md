@@ -1,4 +1,3 @@
-<a id="withoutrequesttimeout"></a>
 # withoutRequestTimeout
 
 ## Signature

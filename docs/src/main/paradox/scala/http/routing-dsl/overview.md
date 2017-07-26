@@ -1,6 +1,6 @@
 # Routing DSL Overview
 
-The Akka HTTP @ref[Low-Level Server-Side API](../low-level-server-side-api.md#http-low-level-server-side-api) provides a `Flow`- or `Function`-level interface that allows
+The Akka HTTP @ref[Low-Level Server-Side API](../low-level-server-side-api.md) provides a `Flow`- or `Function`-level interface that allows
 an application to respond to incoming HTTP requests by simply mapping requests to responses:
 
 @@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }
@@ -11,7 +11,7 @@ unwieldy for larger services due to the amount of syntax "ceremony" required. Al
 service definition as [DRY](http://en.wikipedia.org/wiki/Don%27t_repeat_yourself) as you might like.
 
 As an alternative Akka HTTP provides a flexible DSL for expressing your service behavior as a structure of
-composable elements (called @ref[Directives](directives/index.md#directives)) in a concise and readable way. Directives are assembled into a so called
+composable elements (called @ref[Directives](directives/index.md)) in a concise and readable way. Directives are assembled into a so called
 *route structure* which, at its top-level, forms a handler `Flow` (or, alternatively, an async handler function) that
 can be directly supplied to a `bind` call. The conversion from `Route` to flow can either be invoked explicitly
 using `Route.handlerFlow` or, otherwise, the conversion is also provided implicitly by
@@ -37,7 +37,7 @@ The very short example shown here is certainly not the best for illustrating the
 in conciseness and readability that the Routing DSL promises. The @ref[Long Example](index.md#long-example) might do a better job in this
 regard.
 
-For learning how to work with the Routing DSL you should first understand the concept of @ref[Routes](routes.md#routes).
+For learning how to work with the Routing DSL you should first understand the concept of @ref[Routes](routes.md).
 
 > <a id="1" href="#^1">[1]</a> To be picked up automatically, the implicit conversion needs to be provided in the companion object of the source
 type. However, as `Route` is just a type alias for `RequestContext => Future[RouteResult]`, there's no

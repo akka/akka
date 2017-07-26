@@ -1,4 +1,3 @@
-<a id="cookiedirectives"></a>
 # CookieDirectives
 
 @@toc { depth=1 }

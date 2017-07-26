@@ -1,4 +1,3 @@
-<a id="server-side-websocket-support-scala"></a>
 # Server-Side WebSocket Support
 
 WebSocket is a protocol that provides a bi-directional channel between browser and webserver usually run over an
@@ -93,7 +92,7 @@ In case you need to keep inactive connections alive, you can either tweak your i
 
 ## Routing support
 
-The routing DSL provides the @ref[handleWebSocketMessages](routing-dsl/directives/websocket-directives/handleWebSocketMessages.md#handlewebsocketmessages) directive to install a WebSocket handler if the request
+The routing DSL provides the @ref[handleWebSocketMessages](routing-dsl/directives/websocket-directives/handleWebSocketMessages.md) directive to install a WebSocket handler if the request
 was a WebSocket request. Otherwise, the directive rejects the request.
 
 Here's the above simple request handler rewritten as a route:

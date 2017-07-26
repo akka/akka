@@ -1,4 +1,3 @@
-<a id="miscdirectives"></a>
 # MiscDirectives
 
 @@toc { depth=1 }

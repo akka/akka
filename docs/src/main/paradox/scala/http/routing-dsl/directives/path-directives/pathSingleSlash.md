@@ -1,4 +1,3 @@
-<a id="pathsingleslash"></a>
 # pathSingleSlash
 
 ## Signature

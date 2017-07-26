@@ -1,4 +1,3 @@
-<a id="checksameorigin-java"></a>
 # checkSameOrigin
 
 ## Description

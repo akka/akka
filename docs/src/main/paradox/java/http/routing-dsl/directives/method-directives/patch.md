@@ -1,4 +1,3 @@
-<a id="patch-java"></a>
 # patch
 
 Matches requests with HTTP method `PATCH`.

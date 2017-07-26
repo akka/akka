@@ -1,4 +1,3 @@
-<a id="extractexecutioncontext"></a>
 # extractExecutionContext
 
 ## Signature
@@ -9,9 +8,9 @@
 
 Extracts the `ExecutionContext` from the `RequestContext`.
 
-See @ref[withExecutionContext](withExecutionContext.md#withexecutioncontext) to see how to customise the execution context provided for an inner route.
+See @ref[withExecutionContext](withExecutionContext.md) to see how to customise the execution context provided for an inner route.
 
-See @ref[extract](extract.md#extract) to learn more about how extractions work.
+See @ref[extract](extract.md) to learn more about how extractions work.
 
 ## Example
 

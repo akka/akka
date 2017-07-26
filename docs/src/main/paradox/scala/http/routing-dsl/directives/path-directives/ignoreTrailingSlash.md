@@ -1,4 +1,3 @@
-<a id="ignoreTrailingSlash"></a>
 # ignoreTrailingSlash
 
 ## Signature
@@ -18,7 +17,7 @@ Please note that enclosing routes with this directive might cause double evaluat
 This may be expensive when enclosing big route trees. Use with care.
 @@@
 
-See also @ref[redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPresent.md#redirecttonotrailingslashifpresent) and @ref[redirectToTrailingSlashIfMissing](redirectToTrailingSlashIfMissing.md#redirecttotrailingslashifmissing) for other ways to accomplish a similar thing. 
+See also @ref[redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPresent.md) and @ref[redirectToTrailingSlashIfMissing](redirectToTrailingSlashIfMissing.md) for other ways to accomplish a similar thing. 
 
 ## Example
 

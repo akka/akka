@@ -1,4 +1,3 @@
-<a id="authenticateorrejectwithchallenge-java"></a>
 # authenticateOrRejectWithChallenge
 
 Lifts an authenticator function into a directive.

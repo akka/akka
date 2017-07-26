@@ -1,4 +1,3 @@
-<a id="head"></a>
 # head
 
 ## Signature

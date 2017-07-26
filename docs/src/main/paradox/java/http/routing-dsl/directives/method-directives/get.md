@@ -1,4 +1,3 @@
-<a id="get-java"></a>
 # get
 
 Matches requests with HTTP method `GET`.

@@ -1,4 +1,3 @@
-<a id="encoderesponsewith"></a>
 # encodeResponseWith
 
 ## Signature

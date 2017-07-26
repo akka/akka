@@ -1,4 +1,3 @@
-<a id="post"></a>
 # post
 
 ## Signature

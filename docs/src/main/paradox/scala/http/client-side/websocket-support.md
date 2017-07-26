@@ -1,4 +1,3 @@
-<a id="client-side-websocket-support"></a>
 # Client-Side WebSocket Support
 
 Client side WebSocket support is available through `Http.singleWebSocketRequest` ,

@@ -1,4 +1,3 @@
-<a id="responseencodingaccepted-java"></a>
 # responseEncodingAccepted
 
 ## Description

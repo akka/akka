@@ -1,4 +1,3 @@
-<a id="securitydirectives-java"></a>
 # SecurityDirectives
 
 @@toc { depth=1 }

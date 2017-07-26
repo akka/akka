@@ -1,4 +1,3 @@
-<a id="formfieldmultimap"></a>
 # formFieldMultiMap
 
 ## Signature
@@ -14,12 +13,12 @@ This directive can be used if form fields can occur several times.
 
 The order of values is *not* specified.
 
-See @ref[formFields](formFields.md#formfields) for an in-depth description.
+See @ref[formFields](formFields.md) for an in-depth description.
 
 ## Warning
 
 Use of this directive can result in performance degradation or even in `OutOfMemoryError` s.
-See @ref[formFieldSeq](formFieldSeq.md#formfieldseq) for details.
+See @ref[formFieldSeq](formFieldSeq.md) for details.
 
 ## Example
 

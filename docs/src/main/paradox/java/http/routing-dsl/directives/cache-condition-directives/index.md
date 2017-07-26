@@ -1,4 +1,3 @@
-<a id="cacheconditiondirectives-java"></a>
 # CacheConditionDirectives
 
 @@toc { depth=1 }

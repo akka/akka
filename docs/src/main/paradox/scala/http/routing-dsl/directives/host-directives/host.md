@@ -1,4 +1,3 @@
-<a id="host"></a>
 # host
 
 ## Signature

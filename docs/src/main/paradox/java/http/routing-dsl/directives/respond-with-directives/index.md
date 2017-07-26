@@ -1,4 +1,3 @@
-<a id="respondwithdirectives-java"></a>
 # RespondWithDirectives
 
 @@toc { depth=1 }

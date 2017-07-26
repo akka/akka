@@ -1,4 +1,3 @@
-<a id="parametermap"></a>
 # parameterMap
 
 ## Signature

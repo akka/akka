@@ -1,4 +1,3 @@
-<a id="http-java"></a>
 # Akka HTTP
 
 Akka HTTP API - @javadoc:[Javadoc](akka.http.javadsl.package-summary)

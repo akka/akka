@@ -1,4 +1,3 @@
-<a id="extractdatabytes"></a>
 # extractDataBytes
 
 ## Signature

@@ -1,4 +1,3 @@
-<a id="method-java"></a>
 # method
 
 Matches HTTP requests based on their method.

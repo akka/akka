@@ -1,4 +1,3 @@
-<a id="options"></a>
 # options
 
 ## Signature

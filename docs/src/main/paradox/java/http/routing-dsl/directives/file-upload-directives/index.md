@@ -1,4 +1,3 @@
-<a id="fileuploaddirectives-java"></a>
 # FileUploadDirectives
 
 @@toc { depth=1 }

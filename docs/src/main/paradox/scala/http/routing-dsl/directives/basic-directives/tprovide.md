@@ -1,4 +1,3 @@
-<a id="tprovide"></a>
 # tprovide
 
 ## Signature
@@ -9,13 +8,13 @@
 
 Provides a tuple of values to the inner route.
 
-The `tprovide` directive is used as a building block for @ref[Custom Directives](../custom-directives.md#custom-directives) to provide data to the inner route.
-To provide just one value use the @ref[provide](provide.md#provide) directive. If you want to provide values calculated from the
-`RequestContext` use the @ref[textract](textract.md#textract) directive instead.
+The `tprovide` directive is used as a building block for @ref[Custom Directives](../custom-directives.md) to provide data to the inner route.
+To provide just one value use the @ref[provide](provide.md) directive. If you want to provide values calculated from the
+`RequestContext` use the @ref[textract](textract.md) directive instead.
 
 See @ref[Providing Values to Inner Routes](index.md#providedirectives) for an overview of similar directives.
 
-See also @ref[provide](provide.md#provide) for providing a single value.
+See also @ref[provide](provide.md) for providing a single value.
 
 ## Example
 

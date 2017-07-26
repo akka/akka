@@ -1,4 +1,3 @@
-<a id="pathdirectives-java"></a>
 # PathDirectives
 
 @@toc { depth=1 }

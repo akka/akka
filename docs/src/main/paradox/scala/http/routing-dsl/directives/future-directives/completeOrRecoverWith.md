@@ -1,4 +1,3 @@
-<a id="completeorrecoverwith"></a>
 # completeOrRecoverWith
 
 ## Signature
@@ -12,7 +11,7 @@ requires a marshaller for the future's parameter type to be implicitly available
 route passed to this directive is only executed if the given future completed with a failure,
 exposing the reason of failure as an extraction of type `Throwable`.
 
-To handle the successful case manually as well, use the @ref[onComplete](onComplete.md#oncomplete) directive, instead.
+To handle the successful case manually as well, use the @ref[onComplete](onComplete.md) directive, instead.
 
 ## Example
 

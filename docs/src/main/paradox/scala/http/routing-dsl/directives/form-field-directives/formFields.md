@@ -1,4 +1,3 @@
-<a id="formfields"></a>
 # formFields
 
 ## Signature
@@ -36,7 +35,7 @@ as required, optional, or repeated, or to filter requests where a form field has
 
 `"amount".as[Int]`
 : extract value of field "amount" as `Int`, you need a matching implicit `Unmarshaller` in scope for that to work
-(see also @ref[Unmarshalling](../../../common/unmarshalling.md#http-unmarshalling-scala))
+(see also @ref[Unmarshalling](../../../common/unmarshalling.md))
 
 `"amount".as(unmarshaller)`
 : extract value of field "amount" with an explicit `Unmarshaller`
@@ -46,20 +45,20 @@ as required, optional, or repeated, or to filter requests where a form field has
 
 `"distance".as[Int].*`
 : extract multiple occurrences of field "distance" as `Iterable[Int]`, you need a matching implicit `Unmarshaller` in scope for that to work
-(see also @ref[Unmarshalling](../../../common/unmarshalling.md#http-unmarshalling-scala))
+(see also @ref[Unmarshalling](../../../common/unmarshalling.md))
 
 `"distance".as(unmarshaller).*`
 : extract multiple occurrences of field "distance" with an explicit `Unmarshaller`
 
 
-You can use @ref[Case Class Extraction](../../case-class-extraction.md#case-class-extraction) to group several extracted values together into a case-class
+You can use @ref[Case Class Extraction](../../case-class-extraction.md) to group several extracted values together into a case-class
 instance.
 
 Requests missing a required field or field value will be rejected with an appropriate rejection.
 
-There's also a singular version, @ref[formField](formField.md#formfield-scala).
+There's also a singular version, @ref[formField](formField.md).
 
-Query parameters can be handled in a similar way, see @ref[parameters](../parameter-directives/parameters.md#parameters-scala).
+Query parameters can be handled in a similar way, see @ref[parameters](../parameter-directives/parameters.md).
 
 ## Unmarshalling
 

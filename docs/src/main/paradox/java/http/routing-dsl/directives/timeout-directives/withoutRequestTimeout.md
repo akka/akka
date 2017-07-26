@@ -1,4 +1,3 @@
-<a id="withoutrequesttimeout-java"></a>
 # withoutRequestTimeout
 
 ## Description

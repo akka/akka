@@ -1,4 +1,3 @@
-<a id="http-unmarshalling-java"></a>
 # Unmarshalling
 
 TODO overhaul for Java
@@ -18,7 +17,7 @@ Akka HTTP also predefines a number of helpful aliases for the types of unmarshal
 @@snip [package.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/package.scala) { #unmarshaller-aliases }
 
 At its core an `Unmarshaller[A, B]` is very similar to a `Function<A, CompletionStage<B>>` and as such quite a bit simpler
-than its @ref[marshalling](marshalling.md#http-marshalling-java) counterpart. The process of unmarshalling does not have to support
+than its @ref[marshalling](marshalling.md) counterpart. The process of unmarshalling does not have to support
 content negotiation which saves two additional layers of indirection that are required on the marshalling side.
 
 ## Predefined Unmarshallers
@@ -88,8 +87,8 @@ The method signatures should make their semantics relatively clear.
 
 ## Using Unmarshallers
 
-In many places throughput Akka HTTP unmarshallers are used implicitly, e.g. when you want to access the @ref[entity](../routing-dsl/directives/marshalling-directives/entity.md#entity-java)
-of a request using the @ref[Routing DSL](../routing-dsl/index.md#http-high-level-server-side-api-java).
+In many places throughput Akka HTTP unmarshallers are used implicitly, e.g. when you want to access the @ref[entity](../routing-dsl/directives/marshalling-directives/entity.md)
+of a request using the @ref[Routing DSL](../routing-dsl/index.md).
 
 However, you can also use the unmarshalling infrastructure directly if you wish, which can be useful for example in tests.
 The best entry point for this is the `akka.http.scaladsl.unmarshalling.Unmarshal` object, which you can use like this:

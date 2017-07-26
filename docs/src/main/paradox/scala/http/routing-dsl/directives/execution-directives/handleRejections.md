@@ -1,4 +1,3 @@
-<a id="handlerejections"></a>
 # handleRejections
 
 ## Signature
@@ -10,7 +9,7 @@
 Using this directive is an alternative to using a global implicitly defined `RejectionHandler` that
 applies to the complete route.
 
-See @ref[Rejections](../../rejections.md#rejections-scala) for general information about options for handling rejections.
+See @ref[Rejections](../../rejections.md) for general information about options for handling rejections.
 
 ## Example
 

@@ -1,4 +1,3 @@
-<a id="formfield-scala"></a>
 # formField
 
 ## Signature
@@ -9,7 +8,7 @@
 
 Allows extracting a single Form field sent in the request.
 
-See @ref[formFields](formFields.md#formfields) for an in-depth description.
+See @ref[formFields](formFields.md) for an in-depth description.
 
 ## Example
 

@@ -1,4 +1,3 @@
-<a id="redirect"></a>
 # redirect
 
 ## Signature

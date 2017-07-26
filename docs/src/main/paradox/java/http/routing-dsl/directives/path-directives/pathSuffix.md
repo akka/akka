@@ -1,4 +1,3 @@
-<a id="pathsuffix-java"></a>
 # pathSuffix
 
 ## Description
@@ -8,9 +7,9 @@ potentially extracts one or more values (depending on the type of the argument).
 
 This directive filters incoming requests based on the part of their URI that hasn't been matched yet by other
 potentially existing path matching directives on higher levels of the routing structure.
-Its one parameter is usually an expression evaluating to a `PathMatcher` instance (see also: @ref[The PathMatcher DSL](../../../../../scala/http/routing-dsl/path-matchers.md#pathmatcher-dsl)).
+Its one parameter is usually an expression evaluating to a `PathMatcher` instance (see also: @ref[The PathMatcher DSL](../../../../../scala/http/routing-dsl/path-matchers.md)).
 
-As opposed to @ref[pathPrefix](pathPrefix.md#pathprefix-java) this directive matches and consumes the unmatched path from the right, i.e. the end.
+As opposed to @ref[pathPrefix](pathPrefix.md) this directive matches and consumes the unmatched path from the right, i.e. the end.
 
 @@@ warning { title="Caution" }
 For efficiency reasons, the given `PathMatcher` must match the desired suffix in reversed-segment

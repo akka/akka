@@ -1,4 +1,3 @@
-<a id="http-testkit-java"></a>
 # Route Testkit
 
 akka-http has a testkit that provides a convenient way of testing your routes with JUnit. It allows
@@ -67,9 +66,9 @@ to write assertions using the assertion methods defined on `TestResponse`.
 
 The section above describes how to test a "regular" branch of your route structure, which reacts to incoming requests
 with HTTP response parts or rejections. Sometimes, however, you will want to verify that your service also translates
-@ref[Rejections](rejections.md#rejections-java) to HTTP responses in the way you expect.
+@ref[Rejections](rejections.md) to HTTP responses in the way you expect.
 
-You do this by calling the `seal()` method of the `Route` class. The `seal()` method applies the logic of @ref[ExceptionHandler](exception-handling.md#exception-handling-java) and
+You do this by calling the `seal()` method of the `Route` class. The `seal()` method applies the logic of @ref[ExceptionHandler](exception-handling.md) and
 @ref[RejectionHandler](rejections.md#the-rejectionhandler) passed as method arguments to all exceptions and rejections coming back from the route,
 and translates them to the respective `HttpResponse`.
 

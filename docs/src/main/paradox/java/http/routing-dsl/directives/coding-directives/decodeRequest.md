@@ -1,4 +1,3 @@
-<a id="decoderequest-java"></a>
 # decodeRequest
 
 ## Description

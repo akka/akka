@@ -1,13 +1,12 @@
-<a id="logrequestresult-java"></a>
 # logRequestResult
 
 ## Description
 
 Logs both, the request and the response.
 
-This directive is a combination of @ref[logRequest](logRequest.md#logrequest-java) and @ref[logResult](logResult.md#logresult-java).
+This directive is a combination of @ref[logRequest](logRequest.md) and @ref[logResult](logResult.md).
 
-See @ref[logRequest](logRequest.md#logrequest-java) for the general description how these directives work.
+See @ref[logRequest](logRequest.md) for the general description how these directives work.
 
 ## Example
 

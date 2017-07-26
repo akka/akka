@@ -64,7 +64,7 @@ This means that you can `complete` a request with any kind of object as long as 
 available in scope.
 
 Default marshallers are provided for simple objects like String or ByteString, and you can define your own for example
-for JSON. An additional module provides JSON serialization using the spray-json library (see @ref[JSON Support](common/json-support.md#akka-http-spray-json)
+for JSON. An additional module provides JSON serialization using the spray-json library (see @ref[JSON Support](common/json-support.md)
 for details).
 
 The `Route` created using the Route DSL is then "bound" to a port to start serving HTTP requests:
@@ -79,7 +79,7 @@ saves it to the database and replies with an OK when done.
 @@snip [SprayJsonExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/SprayJsonExampleSpec.scala) { #second-spray-json-example }
 
 The logic for the marshalling and unmarshalling JSON in this example is provided by the "spray-json" library
-(details on how to use that here: @ref[JSON Support](common/json-support.md#akka-http-spray-json)).
+(details on how to use that here: @ref[JSON Support](common/json-support.md)).
 
 One of the strengths of Akka HTTP is that streaming data is at its heart meaning that both request and response bodies
 can be streamed through the server achieving constant memory usage even for very large requests or responses. Streaming
@@ -102,9 +102,9 @@ as json and returned when the response arrives from the actor.
 @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #actor-interaction }
 
 Again the logic for the marshalling and unmarshalling JSON in this example is provided by the "spray-json" library
-(details on how to use that here: @ref[JSON Support](common/json-support.md#akka-http-spray-json))
+(details on how to use that here: @ref[JSON Support](common/json-support.md))
 
-Read more about the details of the high level APIs in the section @ref[High-level Server-Side API](routing-dsl/index.md#http-high-level-server-side-api).
+Read more about the details of the high level APIs in the section @ref[High-level Server-Side API](routing-dsl/index.md).
 
 ## Low-level HTTP server APIs
 
@@ -114,7 +114,7 @@ APIs for handling such request-responses as function calls and as a `Flow[HttpRe
 
 @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }
 
-Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](low-level-server-side-api.md#http-low-level-server-side-api).
+Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](low-level-server-side-api.md).
 
 ## HTTP client API
 
@@ -126,7 +126,7 @@ Example simple request:
 
 @@snip [HttpClientExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-example }
 
-Read more about the details of the client APIs in the section @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md#http-client-side).
+Read more about the details of the client APIs in the section @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md).
 
 ## The modules that make up Akka HTTP
 
@@ -135,19 +135,19 @@ Akka HTTP is structured into several modules:
 akka-http
 : Higher-level functionality, like (un)marshalling, (de)compression as well as a powerful DSL
 for defining HTTP-based APIs on the server-side, this is the recommended way to write HTTP servers
-with Akka HTTP. Details can be found in the section @ref[High-level Server-Side API](routing-dsl/index.md#http-high-level-server-side-api)
+with Akka HTTP. Details can be found in the section @ref[High-level Server-Side API](routing-dsl/index.md)
 
 akka-http-core
 : A complete, mostly low-level, server- and client-side implementation of HTTP (incl. WebSockets)
-Details can be found in sections @ref[Low-Level Server-Side API](low-level-server-side-api.md#http-low-level-server-side-api) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md#http-client-side)
+Details can be found in sections @ref[Low-Level Server-Side API](low-level-server-side-api.md) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md)
 
 akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations
 
 akka-http-spray-json
 : Predefined glue-code for (de)serializing custom types from/to JSON with [spray-json](https://github.com/spray/spray-json)
-Details can be found here: @ref[JSON Support](common/json-support.md#akka-http-spray-json)
+Details can be found here: @ref[JSON Support](common/json-support.md)
 
 akka-http-xml
 : Predefined glue-code for (de)serializing custom types from/to XML with [scala-xml](https://github.com/scala/scala-xml)
-Details can be found here: @ref[XML Support](common/xml-support.md#akka-http-xml-marshalling)
+Details can be found here: @ref[XML Support](common/xml-support.md)

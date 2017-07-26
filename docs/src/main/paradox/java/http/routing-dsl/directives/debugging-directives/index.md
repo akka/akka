@@ -1,4 +1,3 @@
-<a id="debuggingdirectives-java"></a>
 # DebuggingDirectives
 
 @@toc { depth=1 }

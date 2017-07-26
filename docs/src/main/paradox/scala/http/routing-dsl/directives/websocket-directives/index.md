@@ -1,4 +1,3 @@
-<a id="websocketdirectives"></a>
 # WebSocketDirectives
 
 @@toc { depth=1 }

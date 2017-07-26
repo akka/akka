@@ -1,7 +1,6 @@
-<a id="directives"></a>
 # Directives
 
-A "Directive" is a small building block used for creating arbitrarily complex @ref[route structures](../routes.md#routes).
+A "Directive" is a small building block used for creating arbitrarily complex @ref[route structures](../routes.md).
 Akka HTTP already pre-defines a large number of directives and you can easily construct your own:
 
 @@toc { depth=1 }
@@ -16,7 +15,7 @@ Akka HTTP already pre-defines a large number of directives and you can easily co
 
 ## Basics
 
-Directives create @ref[Routes](../routes.md#routes). To understand how directives work it is helpful to contrast them with the "primitive"
+Directives create @ref[Routes](../routes.md). To understand how directives work it is helpful to contrast them with the "primitive"
 way of creating routes.
 
 Since `Route` is just a type alias for a function type `Route` instances can be written in any way in which function
@@ -32,7 +31,7 @@ or shorter:
 val route: Route = _.complete("yeah")
 ```
 
-With the @ref[complete](route-directives/complete.md#complete) directive this becomes even shorter:
+With the @ref[complete](route-directives/complete.md) directive this becomes even shorter:
 
 ```scala
 val route = complete("yeah")
@@ -60,7 +59,7 @@ The difference between `a` and `b` is when the `println` statement is executed.
 In the case of `a` it is executed *once*, when the route is constructed, whereas in the case of `b` it is executed
 every time the route is *run*.
 
-Using the @ref[complete](route-directives/complete.md#complete) directive the same effects are achieved like this:
+Using the @ref[complete](route-directives/complete.md) directive the same effects are achieved like this:
 
 ```scala
 val a = {
@@ -74,7 +73,7 @@ val b = complete {
 }
 ```
 
-This works because the argument to the @ref[complete](route-directives/complete.md#complete) directive is evaluated *by-name*, i.e. it is re-evaluated
+This works because the argument to the @ref[complete](route-directives/complete.md) directive is evaluated *by-name*, i.e. it is re-evaluated
 every time the produced route is run.
 
 Let's take things one step further:
@@ -88,7 +87,7 @@ val route: Route = { ctx =>
 }
 ```
 
-Using the @ref[get](method-directives/get.md#get) and @ref[complete](route-directives/complete.md#complete) directives we can write this route like this:
+Using the @ref[get](method-directives/get.md) and @ref[complete](route-directives/complete.md) directives we can write this route like this:
 
 ```scala
 val route =
@@ -110,7 +109,7 @@ val route =
   complete("Received something else")
 ```
 
-Here, the inner route of the @ref[get](method-directives/get.md#get) directive is written as an explicit function literal.
+Here, the inner route of the @ref[get](method-directives/get.md) directive is written as an explicit function literal.
 
 However, as you can see from these examples, building routes with directives rather than "manually" results in code that
 is a lot more concise and as such more readable and maintainable. In addition it provides for better composability (as
@@ -127,7 +126,7 @@ name(arguments) { extractions =>
 }
 ```
 
-It has a name, zero or more arguments and optionally an inner route (The @ref[RouteDirectives](route-directives/index.md#routedirectives) are special in that they
+It has a name, zero or more arguments and optionally an inner route (The @ref[RouteDirectives](route-directives/index.md) are special in that they
 are always used at the leaf-level and as such cannot have inner routes).
 Additionally directives can "extract" a number of values and make them available to their inner routes as function
 arguments. When seen "from the outside" a directive with its inner route form an expression of type `Route`.
@@ -237,8 +236,8 @@ val route =
 ```
 
 Directives offer a great way of constructing your web service logic from small building blocks in a plug and play
-fashion while maintaining DRYness and full type-safety. If the large range of @ref[Predefined Directives](alphabetically.md#predefined-directives) does not
-fully satisfy your needs you can also easily create @ref[Custom Directives](custom-directives.md#custom-directives).
+fashion while maintaining DRYness and full type-safety. If the large range of @ref[Predefined Directives](alphabetically.md) does not
+fully satisfy your needs you can also easily create @ref[Custom Directives](custom-directives.md).
 
 ## Automatic Tuple extraction (flattening)
 

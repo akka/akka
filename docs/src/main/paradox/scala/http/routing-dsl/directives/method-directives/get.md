@@ -1,4 +1,3 @@
-<a id="get"></a>
 # get
 
 ## Signature

@@ -1,4 +1,3 @@
-<a id="fileuploaddirectives"></a>
 # FileUploadDirectives
 
 @@toc { depth=1 }

@@ -1,4 +1,3 @@
-<a id="marshalling-java"></a>
 # Marshalling & Unmarshalling
 
 "Marshalling" is the process of converting a higher-level (object) structure into some kind of lower-level

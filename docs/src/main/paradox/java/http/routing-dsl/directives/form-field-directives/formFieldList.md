@@ -1,4 +1,3 @@
-<a id="formfieldlist-java"></a>
 # formFieldList
 
 ## Description

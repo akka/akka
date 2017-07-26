@@ -1,4 +1,3 @@
-<a id="extracthost-java"></a>
 # extractHostName
 
 Extract the hostname part of the `Host` request header and expose it as a `String` extraction

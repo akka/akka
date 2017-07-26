@@ -1,4 +1,3 @@
-<a id="setcookie"></a>
 # setCookie
 
 ## Signature
@@ -9,7 +8,7 @@
 
 Adds a header to the response to request the update of the cookie with the given name on the client.
 
-Use the @ref[deleteCookie](deleteCookie.md#deletecookie) directive to delete a cookie.
+Use the @ref[deleteCookie](deleteCookie.md) directive to delete a cookie.
 
 ## Example
 

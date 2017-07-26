@@ -1,7 +1,6 @@
-<a id="http-low-level-server-side-api"></a>
 # Low-Level Server-Side API
 
-Apart from the @ref[HTTP Client](client-side/index.md#http-client-side) Akka HTTP also provides an embedded,
+Apart from the @ref[HTTP Client](client-side/index.md) Akka HTTP also provides an embedded,
 [Reactive-Streams](http://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of @extref[Streams](akka-docs:scala/stream/index.html).
 
 It sports the following features:
@@ -30,7 +29,7 @@ Apart from general focus this design keeps the server core small and light-weigh
 maintain.
 
 Depending on your needs you can either use the low-level API directly or rely on the high-level
-@ref[Routing DSL](routing-dsl/index.md#http-high-level-server-side-api) which can make the definition of more complex service logic much
+@ref[Routing DSL](routing-dsl/index.md) which can make the definition of more complex service logic much
 easier.
 
 @@@ note
@@ -51,7 +50,7 @@ source and, for each of them, provides a `Flow[HttpRequest, HttpResponse, _]` to
 Apart from regarding a socket bound on the server-side as a `Source[IncomingConnection]` and each connection as a
 `Source[HttpRequest]` with a `Sink[HttpResponse]` the stream abstraction is also present inside a single HTTP
 message: The entities of HTTP requests and responses are generally modeled as a `Source[ByteString]`. See also
-the @ref[HTTP Model](common/http-model.md#http-model-scala) for more information on how HTTP messages are represented in Akka HTTP.
+the @ref[HTTP Model](common/http-model.md) for more information on how HTTP messages are represented in Akka HTTP.
 
 ## Starting and Stopping
 
@@ -108,7 +107,7 @@ Streaming of HTTP message entities is supported through subclasses of `HttpEntit
 to deal with streamed entities when receiving a request as well as, in many cases, when constructing responses.
 See @ref[HttpEntity](common/http-model.md#httpentity-scala) for a description of the alternatives.
 
-If you rely on the @ref[Marshalling](common/marshalling.md#http-marshalling-scala) and/or @ref[Unmarshalling](common/unmarshalling.md#http-unmarshalling-scala) facilities provided by
+If you rely on the @ref[Marshalling](common/marshalling.md) and/or @ref[Unmarshalling](common/unmarshalling.md) facilities provided by
 Akka HTTP then the conversion of custom types to and from streamed entities can be quite convenient.
 
 <a id="http-closing-connection-low-level"></a>
@@ -220,5 +219,5 @@ Most of the time you won't need to dive into those very deeply, as Akka will sim
 anyway, which is a reasonable default for such problems.
 
 In order to learn more about handling exceptions in the actual routing layer, which is where your application code
-comes into the picture, refer to @ref[Exception Handling](routing-dsl/exception-handling.md#exception-handling-scala) which focuses explicitly on explaining how exceptions
+comes into the picture, refer to @ref[Exception Handling](routing-dsl/exception-handling.md) which focuses explicitly on explaining how exceptions
 thrown in routes can be handled and transformed into `HttpResponse` s with appropriate error codes and human-readable failure descriptions.

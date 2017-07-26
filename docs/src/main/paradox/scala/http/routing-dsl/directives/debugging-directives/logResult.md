@@ -1,4 +1,3 @@
-<a id="logresult"></a>
 # logResult
 
 ## Signature
@@ -19,7 +18,7 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 Logs the response.
 
-See @ref[logRequest](logRequest.md#logrequest) for the general description how these directives work. This directive is different
+See @ref[logRequest](logRequest.md) for the general description how these directives work. This directive is different
 as it requires a `LoggingMagnet[RouteResult => Unit]`. Instead of just logging `HttpResponses`, `logResult` is able to
 log any @ref[RouteResult](../../routes.md#routeresult) coming back from the inner route.
 

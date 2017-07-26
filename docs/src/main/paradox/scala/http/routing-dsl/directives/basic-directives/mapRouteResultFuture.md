@@ -1,4 +1,3 @@
-<a id="maprouteresultfuture"></a>
 # mapRouteResultFuture
 
 ## Signature
@@ -7,9 +6,9 @@
 
 ## Description
 
-Asynchronous version of @ref[mapRouteResult](mapRouteResult.md#maprouteresult).
+Asynchronous version of @ref[mapRouteResult](mapRouteResult.md).
 
-It's similar to @ref[mapRouteResultWith](mapRouteResultWith.md#maprouteresultwith), however it's `Future[RouteResult] ⇒ Future[RouteResult]`
+It's similar to @ref[mapRouteResultWith](mapRouteResultWith.md), however it's `Future[RouteResult] ⇒ Future[RouteResult]`
 instead of `RouteResult ⇒ Future[RouteResult]` which may be useful when combining multiple transformations
 and / or wanting to `recover` from a failed route result.
 

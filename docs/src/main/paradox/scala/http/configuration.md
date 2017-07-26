@@ -1,4 +1,3 @@
-<a id="akka-http-configuration"></a>
 # Configuration
 
 Just like any other Akka module Akka HTTP is configured via [Typesafe Config](https://github.com/typesafehub/config).

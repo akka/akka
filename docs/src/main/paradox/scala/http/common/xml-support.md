@@ -1,7 +1,6 @@
-<a id="akka-http-xml-marshalling"></a>
 # XML Support
 
-Akka HTTP's @ref[marshalling](marshalling.md#http-marshalling-scala) and @ref[unmarshalling](unmarshalling.md#http-unmarshalling-scala)
+Akka HTTP's @ref[marshalling](marshalling.md) and @ref[unmarshalling](unmarshalling.md)
 infrastructure makes it rather easy to seamlessly support specific wire representations of your data objects, like JSON,
 XML or even binary encodings.
 

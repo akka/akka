@@ -1,4 +1,3 @@
-<a id="getfromdirectory"></a>
 # getFromDirectory
 
 ## Signature
@@ -9,12 +8,12 @@
 
 Allows exposing a directory's files for GET requests for its contents.
 
-The `unmatchedPath` (see @ref[extractUnmatchedPath](../basic-directives/extractUnmatchedPath.md#extractunmatchedpath)) of the `RequestContext` is first transformed by
+The `unmatchedPath` (see @ref[extractUnmatchedPath](../basic-directives/extractUnmatchedPath.md)) of the `RequestContext` is first transformed by
 the given `pathRewriter` function, before being appended to the given directory name to build the final file name.
 
-To serve a single file use @ref[getFromFile](getFromFile.md#getfromfile).
-To serve browsable directory listings use @ref[getFromBrowseableDirectories](getFromBrowseableDirectories.md#getfrombrowseabledirectories).
-To serve files from a classpath directory use @ref[getFromResourceDirectory](getFromResourceDirectory.md#getfromresourcedirectory) instead.
+To serve a single file use @ref[getFromFile](getFromFile.md).
+To serve browsable directory listings use @ref[getFromBrowseableDirectories](getFromBrowseableDirectories.md).
+To serve files from a classpath directory use @ref[getFromResourceDirectory](getFromResourceDirectory.md) instead.
 
 Note that it's not required to wrap this directive with `get` as this directive will only respond to `GET` requests.
 

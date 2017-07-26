@@ -1,4 +1,3 @@
-<a id="routes"></a>
 # Routes
 
 The "Route" is the central concept of Akka HTTP's Routing DSL. All the structures you build with the DSL, no matter
@@ -13,8 +12,8 @@ It's a simple alias for a function turning a `RequestContext` into a `Future[Rou
 Generally when a route receives a request (or rather a `RequestContext` for it) it can do one of these things:
 
  * Complete the request by returning the value of `requestContext.complete(...)`
- * Reject the request by returning the value of `requestContext.reject(...)` (see @ref[Rejections](rejections.md#rejections-scala))
- * Fail the request by returning the value of `requestContext.fail(...)` or by just throwing an exception (see @ref[Exception Handling](exception-handling.md#exception-handling-scala))
+ * Reject the request by returning the value of `requestContext.reject(...)` (see @ref[Rejections](rejections.md))
+ * Fail the request by returning the value of `requestContext.fail(...)` or by just throwing an exception (see @ref[Exception Handling](exception-handling.md))
  * Do any kind of asynchronous processing and instantly return a `Future[RouteResult]` to be eventually completed later
 
 The first case is pretty clear, by calling `complete` a given response is sent to the client as reaction to the
@@ -27,7 +26,7 @@ instances to convert rejections and exceptions into appropriate HTTP responses f
 
 
 Using `Route.handlerFlow` or `Route.asyncHandler` a `Route` can be lifted into a handler `Flow` or async handler
-function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../low-level-server-side-api.md#http-low-level-server-side-api).
+function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../low-level-server-side-api.md).
 
 Note: There is also an implicit conversion from `Route` to `Flow[HttpRequest, HttpResponse, Unit]` defined in the
 `RouteResult` companion, which relies on `Route.handlerFlow`.
@@ -38,7 +37,7 @@ Note: There is also an implicit conversion from `Route` to `Flow[HttpRequest, Ht
 The request context wraps an `HttpRequest` instance to enrich it with additional information that are typically
 required by the routing logic, like an `ExecutionContext`, `Materializer`, `LoggingAdapter` and the configured
 `RoutingSettings`. It also contains the `unmatchedPath`, a value that describes how much of the request URI has not
-yet been matched by a @ref[Path Directive](directives/path-directives/index.md#pathdirectives).
+yet been matched by a @ref[Path Directive](directives/path-directives/index.md).
 
 The `RequestContext` itself is immutable but contains several helper methods which allow for convenient creation of
 modified copies.
@@ -58,8 +57,8 @@ object RouteResult {
 }
 ```
 
-Usually you don't create any `RouteResult` instances yourself, but rather rely on the pre-defined @ref[RouteDirectives](directives/route-directives/index.md#routedirectives)
-(like @ref[complete](directives/route-directives/complete.md#complete), @ref[reject](directives/route-directives/reject.md#reject) or @ref[redirect](directives/route-directives/redirect.md#redirect)) or the respective methods on the [RequestContext](#requestcontext)
+Usually you don't create any `RouteResult` instances yourself, but rather rely on the pre-defined @ref[RouteDirectives](directives/route-directives/index.md)
+(like @ref[complete](directives/route-directives/complete.md), @ref[reject](directives/route-directives/reject.md) or @ref[redirect](directives/route-directives/redirect.md)) or the respective methods on the [RequestContext](#requestcontext)
 instead.
 
 ## Composing Routes
@@ -73,9 +72,9 @@ of either the incoming request, the outgoing response or both
 
 The last point is achieved with the concatenation operator `~`, which is an extension method that becomes available
 when you `import akka.http.scaladsl.server.Directives._`.
-The first two points are provided by so-called @ref[Directives](directives/index.md#directives) of which a large number is already predefined by Akka
+The first two points are provided by so-called @ref[Directives](directives/index.md) of which a large number is already predefined by Akka
 HTTP and which you can also easily create yourself.
-@ref[Directives](directives/index.md#directives) deliver most of Akka HTTP's power and flexibility.
+@ref[Directives](directives/index.md) deliver most of Akka HTTP's power and flexibility.
 
 <a id="the-routing-tree"></a>
 ## The Routing Tree
@@ -116,11 +115,11 @@ specific cases up front and the most general cases in the back.
 
 ## Sealing a Route
 
-As described in @ref[Rejections](rejections.md#rejections-scala) and @ref[Exception Handling](exception-handling.md#exception-handling-scala),
+As described in @ref[Rejections](rejections.md) and @ref[Exception Handling](exception-handling.md),
 there are generally two ways to handle rejections and exceptions.
 
  * Bring rejection/exception handlers into implicit scope at the top-level
- * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directives 
+ * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md) directives 
 
 In the first case your handlers will be "sealed", (which means that it will receive the default handler as a fallback for all cases your handler doesn't handle itself) 
 and used for all rejections/exceptions that are not handled within the route structure itself.

@@ -1,4 +1,3 @@
-<a id="authenticateorrejectwithchallenge"></a>
 # authenticateOrRejectWithChallenge
 
 ## Signature

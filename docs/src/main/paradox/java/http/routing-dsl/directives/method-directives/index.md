@@ -1,4 +1,3 @@
-<a id="methoddirectives-java"></a>
 # MethodDirectives
 
 @@toc { depth=1 }

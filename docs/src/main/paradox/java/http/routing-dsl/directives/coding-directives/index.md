@@ -1,4 +1,3 @@
-<a id="codingdirectives-java"></a>
 # CodingDirectives
 
 @@toc { depth=1 }

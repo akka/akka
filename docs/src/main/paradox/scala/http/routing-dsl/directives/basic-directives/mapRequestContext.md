@@ -1,4 +1,3 @@
-<a id="maprequestcontext"></a>
 # mapRequestContext
 
 ## Signature
@@ -9,9 +8,9 @@
 
 Transforms the `RequestContext` before it is passed to the inner route.
 
-The `mapRequestContext` directive is used as a building block for @ref[Custom Directives](../custom-directives.md#custom-directives) to transform
+The `mapRequestContext` directive is used as a building block for @ref[Custom Directives](../custom-directives.md) to transform
 the request context before it is passed to the inner route. To change only the request value itself the
-@ref[mapRequest](mapRequest.md#maprequest) directive can be used instead.
+@ref[mapRequest](mapRequest.md) directive can be used instead.
 
 See @ref[Request Transforming Directives](index.md#request-transforming-directives) for an overview of similar directives.
 

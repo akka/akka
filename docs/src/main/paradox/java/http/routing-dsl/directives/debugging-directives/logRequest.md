@@ -1,4 +1,3 @@
-<a id="logrequest-java"></a>
 # logRequest
 
 ## Description

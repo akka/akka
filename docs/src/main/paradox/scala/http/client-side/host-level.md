@@ -1,4 +1,3 @@
-<a id="host-level-api"></a>
 # Host-Level Client-Side API
 
 As opposed to the @ref[Connection-Level Client-Side API](connection-level.md#connection-level-api) the host-level API relieves you from manually managing individual HTTP
@@ -32,7 +31,7 @@ first connection to the target endpoint until the first request has arrived.
 
 Apart from the connection-level config settings and socket options there are a number of settings that allow you to
 influence the behavior of the connection pool logic itself.
-Check out the `akka.http.host-connection-pool` section of the Akka HTTP @ref[Configuration](../configuration.md#akka-http-configuration) for
+Check out the `akka.http.host-connection-pool` section of the Akka HTTP @ref[Configuration](../configuration.md) for
 more information about which settings are available and what they mean.
 
 Note that, if you request pools with different configurations for the same target host you will get *independent* pools.

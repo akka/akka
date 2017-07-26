@@ -5,70 +5,70 @@ All predefined directives are organized into traits that form one part of the ov
 <a id="request-directives"></a>
 ## Directives filtering or extracting from the request
 
-@ref[MethodDirectives](method-directives/index.md#methoddirectives)
+@ref[MethodDirectives](method-directives/index.md)
 :   Filter and extract based on the request method.
 
-@ref[HeaderDirectives](header-directives/index.md#headerdirectives)
+@ref[HeaderDirectives](header-directives/index.md)
 :   Filter and extract based on request headers.
 
-@ref[PathDirectives](path-directives/index.md#pathdirectives)
+@ref[PathDirectives](path-directives/index.md)
 :   Filter and extract from the request URI path.
 
-@ref[HostDirectives](host-directives/index.md#hostdirectives)
+@ref[HostDirectives](host-directives/index.md)
 :   Filter and extract based on the target host.
 
-@ref[ParameterDirectives](parameter-directives/index.md#parameterdirectives), @ref[FormFieldDirectives](form-field-directives/index.md#formfielddirectives)
+@ref[ParameterDirectives](parameter-directives/index.md), @ref[FormFieldDirectives](form-field-directives/index.md)
 :   Filter and extract based on query parameters or form fields.
 
-@ref[CodingDirectives](coding-directives/index.md#codingdirectives)
+@ref[CodingDirectives](coding-directives/index.md)
 :   Filter and decode compressed request content.
 
-@ref[Marshalling Directives](marshalling-directives/index.md#marshallingdirectives)
+@ref[Marshalling Directives](marshalling-directives/index.md)
 :   Extract the request entity.
 
-@ref[SchemeDirectives](scheme-directives/index.md#schemedirectives)
+@ref[SchemeDirectives](scheme-directives/index.md)
 :   Filter and extract based on the request scheme.
 
-@ref[SecurityDirectives](security-directives/index.md#securitydirectives)
+@ref[SecurityDirectives](security-directives/index.md)
 :   Handle authentication data from the request.
 
-@ref[CookieDirectives](cookie-directives/index.md#cookiedirectives)
+@ref[CookieDirectives](cookie-directives/index.md)
 :   Filter and extract cookies.
 
-@ref[BasicDirectives](basic-directives/index.md#basicdirectives) and @ref[MiscDirectives](misc-directives/index.md#miscdirectives)
+@ref[BasicDirectives](basic-directives/index.md) and @ref[MiscDirectives](misc-directives/index.md)
 :   Directives handling request properties.
 
-@ref[FileUploadDirectives](file-upload-directives/index.md#fileuploaddirectives)
+@ref[FileUploadDirectives](file-upload-directives/index.md)
 :   Handle file uploads.
 
 <a id="response-directives"></a>
 ## Directives creating or transforming the response
 
-@ref[CacheConditionDirectives](cache-condition-directives/index.md#cacheconditiondirectives)
+@ref[CacheConditionDirectives](cache-condition-directives/index.md)
 :   Support for conditional requests (`304 Not Modified` responses).
 
-@ref[CookieDirectives](cookie-directives/index.md#cookiedirectives)
+@ref[CookieDirectives](cookie-directives/index.md)
 :   Set, modify, or delete cookies.
 
-@ref[CodingDirectives](coding-directives/index.md#codingdirectives)
+@ref[CodingDirectives](coding-directives/index.md)
 :   Compress responses.
 
-@ref[FileAndResourceDirectives](file-and-resource-directives/index.md#fileandresourcedirectives)
+@ref[FileAndResourceDirectives](file-and-resource-directives/index.md)
 :   Deliver responses from files and resources.
 
-@ref[RangeDirectives](range-directives/index.md#rangedirectives)
+@ref[RangeDirectives](range-directives/index.md)
 :   Support for range requests (`206 Partial Content` responses).
 
-@ref[RespondWithDirectives](respond-with-directives/index.md#respondwithdirectives)
+@ref[RespondWithDirectives](respond-with-directives/index.md)
 :   Change response properties.
 
-@ref[RouteDirectives](route-directives/index.md#routedirectives)
+@ref[RouteDirectives](route-directives/index.md)
 :   Complete or reject a request with a response.
 
-@ref[BasicDirectives](basic-directives/index.md#basicdirectives) and @ref[MiscDirectives](misc-directives/index.md#miscdirectives)
+@ref[BasicDirectives](basic-directives/index.md) and @ref[MiscDirectives](misc-directives/index.md)
 :   Directives handling or transforming response properties.
 
-@ref[TimeoutDirectives](timeout-directives/index.md#timeoutdirectives)
+@ref[TimeoutDirectives](timeout-directives/index.md)
 :   Configure request timeouts and automatic timeout responses.
 
 ## List of predefined directives by trait

@@ -1,4 +1,3 @@
-<a id="formfielddirectives-java"></a>
 # FormFieldDirectives
 
 @@toc { depth=1 }

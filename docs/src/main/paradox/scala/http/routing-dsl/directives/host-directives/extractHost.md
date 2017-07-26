@@ -1,4 +1,3 @@
-<a id="extracthost"></a>
 # extractHost
 
 ## Signature

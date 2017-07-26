@@ -1,11 +1,10 @@
-<a id="setcookie-java"></a>
 # setCookie
 
 ## Description
 
 Adds a header to the response to request the update of the cookie with the given name on the client.
 
-Use the @ref[deleteCookie](deleteCookie.md#deletecookie-java) directive to delete a cookie.
+Use the @ref[deleteCookie](deleteCookie.md) directive to delete a cookie.
 
 ## Example
 

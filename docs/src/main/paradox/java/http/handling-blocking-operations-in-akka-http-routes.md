@@ -1,4 +1,3 @@
-<a id="handling-blocking-in-http-routes-java"></a>
 # Handling blocking operations in Akka HTTP
 
 Sometimes it is difficult to avoid performing the blocking operations and there

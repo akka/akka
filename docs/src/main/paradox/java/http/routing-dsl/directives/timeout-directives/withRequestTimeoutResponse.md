@@ -1,11 +1,10 @@
-<a id="withrequesttimeoutresponse-java"></a>
 # withRequestTimeoutResponse
 
 ## Description
 
 Allows customising the `HttpResponse` that will be sent to clients in case of a @ref[Request timeout](../../../common/timeouts.md#request-timeout).
 
-See also @ref[withRequestTimeout](withRequestTimeout.md#withrequesttimeout-java) or @ref[withoutRequestTimeout](withoutRequestTimeout.md#withoutrequesttimeout-java) if interested in dynamically changing the timeout
+See also @ref[withRequestTimeout](withRequestTimeout.md) or @ref[withoutRequestTimeout](withoutRequestTimeout.md) if interested in dynamically changing the timeout
 for a given route instead.
 
 @@@ warning

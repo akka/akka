@@ -1,4 +1,3 @@
-<a id="extractcredentials"></a>
 # extractCredentials
 
 ## Signature

@@ -1,4 +1,3 @@
-<a id="extractclientip"></a>
 # extractClientIP
 
 ## Signature

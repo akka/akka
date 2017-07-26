@@ -1,4 +1,3 @@
-<a id="custom-directives-java"></a>
 # Custom Directives
 
 Part of the power of akka-http directives comes from the ease with which it’s possible to define
@@ -25,6 +24,6 @@ Multiple directives can be nested to produce a single directive out of multiple 
 
 @@snip [CustomDirectivesExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #composition-1 #composition-2 }
 
-Another example is the @ref[MethodDirectives](method-directives/index.md#methoddirectives-java) which are simply instances of a preconfigured @ref[method](method-directives/method.md#method-java) directive.
+Another example is the @ref[MethodDirectives](method-directives/index.md) which are simply instances of a preconfigured @ref[method](method-directives/method.md) directive.
 The low-level directives that most often form the basis of higher-level “named configuration” directives are grouped
-together in the @ref[BasicDirectives](basic-directives/index.md#basicdirectives-java) trait.
+together in the @ref[BasicDirectives](basic-directives/index.md) trait.

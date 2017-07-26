@@ -1,4 +1,3 @@
-<a id="withrangesupport-java"></a>
 # withRangeSupport
 
 ## Description

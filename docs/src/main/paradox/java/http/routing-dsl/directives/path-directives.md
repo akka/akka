@@ -1,4 +1,3 @@
-<a id="path-directives-java"></a>
 # PathDirectives
 
 Path directives are the most basic building blocks for routing requests depending on the URI path.

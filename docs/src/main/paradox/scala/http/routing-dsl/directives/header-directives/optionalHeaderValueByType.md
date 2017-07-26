@@ -1,4 +1,3 @@
-<a id="optionalheadervaluebytype"></a>
 # optionalHeaderValueByType
 
 ## Signature
@@ -15,7 +14,7 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 Optionally extracts the value of the HTTP request header of the given type.
 
-The `optionalHeaderValueByType` directive is similar to the @ref[headerValueByType](headerValueByType.md#headervaluebytype) directive but always extracts
+The `optionalHeaderValueByType` directive is similar to the @ref[headerValueByType](headerValueByType.md) directive but always extracts
 an `Option` value instead of rejecting the request if no matching header could be found.
 
 @@@ note

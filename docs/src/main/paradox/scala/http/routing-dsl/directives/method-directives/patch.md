@@ -1,4 +1,3 @@
-<a id="patch"></a>
 # patch
 
 ## Signature

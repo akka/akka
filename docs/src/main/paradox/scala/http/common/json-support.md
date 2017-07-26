@@ -1,7 +1,6 @@
-<a id="akka-http-spray-json"></a>
 # JSON Support
 
-Akka HTTP's @ref[marshalling](marshalling.md#http-marshalling-scala) and @ref[unmarshalling](unmarshalling.md#http-unmarshalling-scala) infrastructure makes it rather easy to seamlessly support specific wire representations of your data objects, like JSON, XML or even binary encodings.
+Akka HTTP's @ref[marshalling](marshalling.md) and @ref[unmarshalling](unmarshalling.md) infrastructure makes it rather easy to seamlessly support specific wire representations of your data objects, like JSON, XML or even binary encodings.
 
 For JSON Akka HTTP currently provides support for [spray-json] right out of the box through its `akka-http-spray-json` module.
 

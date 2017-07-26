@@ -1,4 +1,3 @@
-<a id="getfrombrowseabledirectory"></a>
 # getFromBrowseableDirectory
 
 ## Signature
@@ -16,7 +15,7 @@ Use `getFromBrowseableDirectory` to serve only one directory.
 
 Use `getFromDirectory` if directory browsing isn't required.
 
-For more details refer to [getFromBrowseableDirectory](#getfrombrowseabledirectory).
+For more details refer to [getFromBrowseableDirectory]().
 
 ## Example
 

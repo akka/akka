@@ -1,4 +1,3 @@
-<a id="delete-java"></a>
 # delete
 
 Matches requests with HTTP method `DELETE`.

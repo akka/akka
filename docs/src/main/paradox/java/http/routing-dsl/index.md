@@ -1,7 +1,6 @@
-<a id="http-high-level-server-side-api-java"></a>
 # High-level Server-Side API
 
-In addition to the @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md#http-low-level-server-side-api-java) Akka HTTP provides a very flexible "Routing DSL" for elegantly
+In addition to the @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md) Akka HTTP provides a very flexible "Routing DSL" for elegantly
 defining RESTful web services. It picks up where the low-level API leaves off and offers much of the higher-level
 functionality of typical web servers or frameworks, like deconstruction of URIs, content negotiation or
 static content serving.
@@ -68,12 +67,12 @@ refer to the @ref[Handling HTTP Server failures in the Low-Level API](../server-
 ### Failures and exceptions inside the Routing DSL
 
 Exception handling within the Routing DSL is done by providing `ExceptionHandler` s which are documented in-depth
-in the @ref[Exception Handling](exception-handling.md#exception-handling-java) section of the documentation. You can use them to transform exceptions into
+in the @ref[Exception Handling](exception-handling.md) section of the documentation. You can use them to transform exceptions into
 `HttpResponse` s with appropriate error codes and human-readable failure descriptions.
 
 ### File uploads
 
-For high level directives to handle uploads see the @ref[FileUploadDirectives](directives/file-upload-directives/index.md#fileuploaddirectives-java).
+For high level directives to handle uploads see the @ref[FileUploadDirectives](directives/file-upload-directives/index.md).
 
 Handling a simple file upload from for example a browser form with a *file* input can be done
 by accepting a *Multipart.FormData* entity, note that the body parts are *Source* rather than

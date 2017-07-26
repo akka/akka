@@ -1,4 +1,3 @@
-<a id="delete"></a>
 # delete
 
 ## Signature

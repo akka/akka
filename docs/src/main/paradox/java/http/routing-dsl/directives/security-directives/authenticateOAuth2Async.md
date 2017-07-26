@@ -1,4 +1,3 @@
-<a id="authenticateoauth2async-java"></a>
 # authenticateOAuth2Async
 
 Wraps the inner route with OAuth Bearer Token authentication support using a given `AsyncAuthenticator<T>`.
@@ -17,7 +16,7 @@ Given a function returning a non empty `Optional<T>` upon successful authenticat
 respectively applies the inner route or rejects the request with a `AuthenticationFailedRejection` rejection,
 which by default is mapped to an `401 Unauthorized` response.
 
-See also @ref[authenticateOAuth2](authenticateOAuth2.md#authenticateoauth2-java) if the authorization operation is rather quick, and does not have to execute asynchronously.
+See also @ref[authenticateOAuth2](authenticateOAuth2.md) if the authorization operation is rather quick, and does not have to execute asynchronously.
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-java) for details about verifying the secret.
 
@@ -25,5 +24,5 @@ For more information on how OAuth2 works see [RFC 6750](https://tools.ietf.org/h
 
 ## Example
 
-Usage in code is exactly the same as @ref[authenticateBasicAsync](authenticateBasicAsync.md#authenticatebasicasync-java),
+Usage in code is exactly the same as @ref[authenticateBasicAsync](authenticateBasicAsync.md),
 with the difference that one must validate the token as OAuth2 dictates (which is currently not part of Akka HTTP itself).

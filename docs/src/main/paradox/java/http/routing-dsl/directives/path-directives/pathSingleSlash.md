@@ -1,4 +1,3 @@
-<a id="pathsingleslash-java"></a>
 # pathSingleSlash
 
 ## Description

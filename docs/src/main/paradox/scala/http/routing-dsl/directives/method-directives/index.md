@@ -1,4 +1,3 @@
-<a id="methoddirectives"></a>
 # MethodDirectives
 
 @@toc { depth=1 }

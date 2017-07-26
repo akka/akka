@@ -1,4 +1,3 @@
-<a id="withoutsizelimit"></a>
 # withoutSizeLimit
 
 ## Signature
@@ -19,7 +18,7 @@ encourage using `withSizeLimit` instead, providing it with a value high enough t
 route in need of big entities.
 @@@
 
-See also @ref[withSizeLimit](withSizeLimit.md#withsizelimit) for setting request entity size limit.
+See also @ref[withSizeLimit](withSizeLimit.md) for setting request entity size limit.
 
 ## Example
 

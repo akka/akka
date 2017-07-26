@@ -1,4 +1,3 @@
-<a id="extractmethod"></a>
 # extractMethod
 
 ## Signature

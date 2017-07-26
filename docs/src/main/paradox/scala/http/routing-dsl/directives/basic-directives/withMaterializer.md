@@ -1,4 +1,3 @@
-<a id="withmaterializer"></a>
 # withMaterializer
 
 ## Signature
@@ -9,7 +8,7 @@
 
 Allows running an inner route using an alternative `Materializer` in place of the default one.
 
-The materializer can be extracted in an inner route using @ref[extractMaterializer](extractMaterializer.md#extractmaterializer) directly,
+The materializer can be extracted in an inner route using @ref[extractMaterializer](extractMaterializer.md) directly,
 or used by directives which internally extract the materializer without surfacing this fact in the API
 (e.g. responding with a Chunked entity).
 

@@ -1,4 +1,3 @@
-<a id="selectpreferredlanguage"></a>
 # selectPreferredLanguage
 
 ## Signature

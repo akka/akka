@@ -1,4 +1,3 @@
-<a id="formfieldmap-java"></a>
 # formFieldMap
 
 ## Description
@@ -10,7 +9,7 @@ If form data contain a field value several times, the map will contain the last 
 ## Warning
 
 Use of this directive can result in performance degradation or even in `OutOfMemoryError` s.
-See @ref[formFieldList](formFieldList.md#formfieldlist-java) for details.
+See @ref[formFieldList](formFieldList.md) for details.
 
 ## Example
 

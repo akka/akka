@@ -1,4 +1,3 @@
-<a id="debuggingdirectives"></a>
 # DebuggingDirectives
 
 @@toc { depth=1 }

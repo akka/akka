@@ -1,4 +1,3 @@
-<a id="directory-traversal-in-filedirectives"></a>
 # Directory Traversal in FileDirectives
 
 ## Date

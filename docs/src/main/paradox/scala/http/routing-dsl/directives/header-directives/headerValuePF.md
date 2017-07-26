@@ -1,4 +1,3 @@
-<a id="headervaluepf"></a>
 # headerValuePF
 
 ## Signature
@@ -10,7 +9,7 @@
 Calls the specified partial function with the first request header the function is `isDefinedAt` and extracts the
 result of calling the function.
 
-The `headerValuePF` directive is an alternative syntax version of @ref[headerValue](headerValue.md#headervalue).
+The `headerValuePF` directive is an alternative syntax version of @ref[headerValue](headerValue.md).
 
 If the function throws an exception the request is rejected with a `MalformedHeaderRejection`.
 

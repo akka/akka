@@ -1,4 +1,3 @@
-<a id="pass"></a>
 # pass
 
 ## Signature

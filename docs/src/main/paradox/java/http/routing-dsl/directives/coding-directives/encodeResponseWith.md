@@ -1,4 +1,3 @@
-<a id="encoderesponsewith-java"></a>
 # encodeResponseWith
 
 ## Description

@@ -1,4 +1,3 @@
-<a id="put-java"></a>
 # put
 
 Matches requests with HTTP method `PUT`.

@@ -1,4 +1,3 @@
-<a id="responseencodingaccepted"></a>
 # responseEncodingAccepted
 
 ## Signature

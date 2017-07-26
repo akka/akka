@@ -1,4 +1,3 @@
-<a id="method"></a>
 # method
 
 ## Signature

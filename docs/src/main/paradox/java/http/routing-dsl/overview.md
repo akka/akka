@@ -1,7 +1,6 @@
-<a id="http-routing-java"></a>
 # Routing DSL Overview
 
-The Akka HTTP @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md#http-low-level-server-side-api-java) provides a `Flow`- or `Function`-level interface that allows
+The Akka HTTP @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md) provides a `Flow`- or `Function`-level interface that allows
 an application to respond to incoming HTTP requests by simply mapping requests to responses
 (excerpt from @ref[Low-level server side example](../server-side/low-level-server-side-api.md#http-low-level-server-side-example-java)):
 
@@ -12,7 +11,7 @@ While it'd be perfectly possible to define a complete REST API service purely by
 required. Also, it doesn't help in keeping your service definition as [DRY](http://en.wikipedia.org/wiki/Don%27t_repeat_yourself) as you might like.
 
 As an alternative Akka HTTP provides a flexible DSL for expressing your service behavior as a structure of
-composable elements (called @ref[Directives](directives/index.md#directives-java)) in a concise and readable way. Directives are assembled into a so called
+composable elements (called @ref[Directives](directives/index.md)) in a concise and readable way. Directives are assembled into a so called
 *route structure* which, at its top-level, can be used to create a handler `Flow` (or, alternatively, an
 async handler function) that can be directly supplied to a `bind` call.
 

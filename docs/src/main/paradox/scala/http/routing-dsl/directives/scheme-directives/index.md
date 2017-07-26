@@ -1,4 +1,3 @@
-<a id="schemedirectives"></a>
 # SchemeDirectives
 
 Scheme directives can be used to extract the Uri scheme (i.e. "http", "https", etc.)

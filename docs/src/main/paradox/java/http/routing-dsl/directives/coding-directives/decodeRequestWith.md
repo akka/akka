@@ -1,4 +1,3 @@
-<a id="decoderequestwith-java"></a>
 # decodeRequestWith
 
 ## Description

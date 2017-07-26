@@ -1,4 +1,3 @@
-<a id="options-java"></a>
 # options
 
 Matches requests with HTTP method `OPTIONS`.

@@ -1,4 +1,3 @@
-<a id="selectpreferredlanguage-java"></a>
 # selectPreferredLanguage
 
 ## Description

@@ -1,4 +1,3 @@
-<a id="decoderequestwith"></a>
 # decodeRequestWith
 
 ## Signature

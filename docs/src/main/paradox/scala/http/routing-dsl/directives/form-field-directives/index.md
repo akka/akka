@@ -1,4 +1,3 @@
-<a id="formfielddirectives"></a>
 # FormFieldDirectives
 
 @@toc { depth=1 }

@@ -1,11 +1,10 @@
-<a id="mapsettings-java"></a>
 # mapSettings
 
 ## Description
 
 Transforms the `RoutingSettings` with a `Function<RoutingSettings, RoutingSettings>`.
 
-See also @ref[withSettings](withSettings.md#withsettings-java) or @ref[extractSettings](extractSettings.md#extractsettings-java).
+See also @ref[withSettings](withSettings.md) or @ref[extractSettings](extractSettings.md).
 
 ## Example
 

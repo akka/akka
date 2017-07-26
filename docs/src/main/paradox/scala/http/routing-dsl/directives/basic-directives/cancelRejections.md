@@ -1,4 +1,3 @@
-<a id="cancelrejections"></a>
 # cancelRejections
 
 ## Signature
@@ -10,11 +9,11 @@
 Adds a `TransformationRejection` cancelling all rejections created by the inner route for which
 the condition argument function returns `true`.
 
-See also @ref[cancelRejection](cancelRejection.md#cancelrejection), for canceling a specific rejection.
+See also @ref[cancelRejection](cancelRejection.md), for canceling a specific rejection.
 
-Read @ref[Rejections](../../rejections.md#rejections-scala) to learn more about rejections.
+Read @ref[Rejections](../../rejections.md) to learn more about rejections.
 
-For more advanced handling of rejections refer to the @ref[handleRejections](../execution-directives/handleRejections.md#handlerejections) directive
+For more advanced handling of rejections refer to the @ref[handleRejections](../execution-directives/handleRejections.md) directive
 which provides a nicer DSL for building rejection handlers.
 
 ## Example

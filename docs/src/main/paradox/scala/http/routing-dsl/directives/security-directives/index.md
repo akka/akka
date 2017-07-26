@@ -1,4 +1,3 @@
-<a id="securitydirectives"></a>
 # SecurityDirectives
 
 @@toc { depth=1 }

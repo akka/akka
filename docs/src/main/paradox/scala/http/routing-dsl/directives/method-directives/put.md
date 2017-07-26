@@ -1,4 +1,3 @@
-<a id="put"></a>
 # put
 
 ## Signature

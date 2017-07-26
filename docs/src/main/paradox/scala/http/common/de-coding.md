@@ -10,7 +10,7 @@ The core logic for this lives in the @scaladoc[akka.http.scaladsl.coding](akka.h
 ## Server side
 
 The support is not enabled automatically, but must be explicitly requested.
-For enabling message encoding/decoding with @ref[Routing DSL](../routing-dsl/index.md#http-high-level-server-side-api) see the @ref[CodingDirectives](../routing-dsl/directives/coding-directives/index.md#codingdirectives).
+For enabling message encoding/decoding with @ref[Routing DSL](../routing-dsl/index.md) see the @ref[CodingDirectives](../routing-dsl/directives/coding-directives/index.md).
 
 ## Client side
 

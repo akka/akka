@@ -1,4 +1,3 @@
-<a id="extractclientip-java"></a>
 # extractClientIP
 
 ## Description

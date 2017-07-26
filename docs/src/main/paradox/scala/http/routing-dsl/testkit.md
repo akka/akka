@@ -35,7 +35,7 @@ In most cases your test will, in one way or another, extend from `RouteTest` whi
 `akka.http.scaladsl.client.RequestBuilding` trait, which gives you a concise and convenient way of constructing
 test requests. <a id="^1" href="#1">[1]</a>
 
-*ROUTE* is an expression evaluating to a @ref[Route](routes.md#routes). You can specify one inline or simply refer to the
+*ROUTE* is an expression evaluating to a @ref[Route](routes.md). You can specify one inline or simply refer to the
 route structure defined in your service.
 
 The final element of the `~>` chain is a `check` call, which takes a block of assertions as parameter. In this block
@@ -81,9 +81,9 @@ the request. You can customize this behavior by bringing a custom instance of `D
 
 The section above describes how to test a "regular" branch of your route structure, which reacts to incoming requests
 with HTTP response parts or rejections. Sometimes, however, you will want to verify that your service also translates
-@ref[Rejections](rejections.md#rejections-scala) to HTTP responses in the way you expect.
+@ref[Rejections](rejections.md) to HTTP responses in the way you expect.
 
-You do this by wrapping your route with the `akka.http.scaladsl.server.Route.seal`. The `seal` wrapper applies the logic of the in-scope @ref[ExceptionHandler](exception-handling.md#exception-handling-scala) and
+You do this by wrapping your route with the `akka.http.scaladsl.server.Route.seal`. The `seal` wrapper applies the logic of the in-scope @ref[ExceptionHandler](exception-handling.md) and
 @ref[RejectionHandler](rejections.md#the-rejectionhandler) to all exceptions and rejections coming back from the route,
 and translates them to the respective `HttpResponse`.
 

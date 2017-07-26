@@ -1,4 +1,3 @@
-<a id="head-java"></a>
 # head
 
 Matches requests with HTTP method `HEAD`.

@@ -1,4 +1,3 @@
-<a id="parametermap-java"></a>
 # parameterMap
 
 Extracts all parameters at once as a `Map<String, String>` mapping parameter names to parameter values.

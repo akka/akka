@@ -104,7 +104,7 @@ as json and returned when the response arrives from the actor.
 Again the logic for the marshalling and unmarshalling JSON in this example is provided by the "Jackson" library
 (details on how to use that here: @ref[JSON Support](common/json-support.md#json-support-via-jackson))
 
-Read more about the details of the high level APIs in the section @ref[High-level Server-Side API](routing-dsl/index.md#http-high-level-server-side-api).
+Read more about the details of the high level APIs in the section @ref[High-level Server-Side API](routing-dsl/index.md).
 
 ## Low-level HTTP server APIs
 
@@ -114,7 +114,7 @@ APIs for handling such request-responses as function calls and as a `Flow<HttpRe
 
 @@snip [HttpServerLowLevelExample.java](../../../../test/java/docs/http/javadsl/HttpServerLowLevelExample.java) { #low-level-server-example }
 
-Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md#http-low-level-server-side-api).
+Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md).
 
 ## HTTP client API
 
@@ -126,7 +126,7 @@ Example simple request:
 
 @@snip [ClientSingleRequestExample.java](../../../../test/java/docs/http/javadsl/ClientSingleRequestExample.java) { #single-request-example }
 
-Read more about the details of the client APIs in the section @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md#http-client-side).
+Read more about the details of the client APIs in the section @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md).
 
 ## The modules that make up Akka HTTP
 
@@ -135,11 +135,11 @@ Akka HTTP is structured into several modules:
 akka-http
 : Higher-level functionality, like (un)marshalling, (de)compression as well as a powerful DSL
 for defining HTTP-based APIs on the server-side, this is the recommended way to write HTTP servers
-with Akka HTTP. Details can be found in the section @ref[High-level Server-Side API](routing-dsl/index.md#http-high-level-server-side-api)
+with Akka HTTP. Details can be found in the section @ref[High-level Server-Side API](routing-dsl/index.md)
 
 akka-http-core
 : A complete, mostly low-level, server- and client-side implementation of HTTP (incl. WebSockets)
-Details can be found in sections @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md#http-low-level-server-side-api) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md#http-client-side)
+Details can be found in sections @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md)
 
 akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations

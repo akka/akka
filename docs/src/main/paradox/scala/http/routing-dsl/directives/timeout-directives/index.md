@@ -1,4 +1,3 @@
-<a id="timeoutdirectives"></a>
 # TimeoutDirectives
 
 @@toc { depth=1 }

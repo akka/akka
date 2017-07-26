@@ -1,4 +1,3 @@
-<a id="custom-directives"></a>
 # Custom Directives
 
 Part of the power of akka-http directives comes from the ease with which it’s possible to define
@@ -21,9 +20,9 @@ The basic technique is explained in the chapter about Composing Directives, wher
 
 @@snip [CustomDirectivesExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #labeling }
 
-Another example is the @ref[MethodDirectives](method-directives/index.md#methoddirectives) which are simply instances of a preconfigured @ref[method](method-directives/method.md#method) directive.
+Another example is the @ref[MethodDirectives](method-directives/index.md) which are simply instances of a preconfigured @ref[method](method-directives/method.md) directive.
 The low-level directives that most often form the basis of higher-level “named configuration” directives are grouped
-together in the @ref[BasicDirectives](basic-directives/index.md#basicdirectives) trait.
+together in the @ref[BasicDirectives](basic-directives/index.md) trait.
 
 ## Transforming Directives
 

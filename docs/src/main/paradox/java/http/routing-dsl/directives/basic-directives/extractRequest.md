@@ -1,4 +1,3 @@
-<a id="extractrequest-java"></a>
 # extractRequest
 
 ## Description

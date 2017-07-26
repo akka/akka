@@ -1,4 +1,3 @@
-<a id="futuredirectives"></a>
 # FuturesDirectives
 
 Future directives can be used to run inner routes once the provided `Future[T]` has been completed.

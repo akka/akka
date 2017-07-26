@@ -1,4 +1,3 @@
-<a id="requestencodedwith-java"></a>
 # requestEncodedWith
 
 ## Description

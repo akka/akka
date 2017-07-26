@@ -1,4 +1,3 @@
-<a id="extractactorsystem-java"></a>
 # extractActorSystem
 
 ## Description

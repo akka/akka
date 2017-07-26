@@ -1,4 +1,3 @@
-<a id="extractrequest"></a>
 # extractRequest
 
 ## Signature

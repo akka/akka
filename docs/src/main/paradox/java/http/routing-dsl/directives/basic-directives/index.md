@@ -1,7 +1,6 @@
-<a id="basicdirectives-java"></a>
 # BasicDirectives
 
-Basic directives are building blocks for building @ref[Custom Directives](../custom-directives.md#custom-directives). As such they
+Basic directives are building blocks for building @ref[Custom Directives](../custom-directives.md). As such they
 usually aren't used in a route directly but rather in the definition of new directives.
 
 <a id="providedirectives-java"></a>
@@ -12,36 +11,36 @@ on two axes: a) provide a constant value or extract a value from the `RequestCon
 a single value or a tuple of values.
 
 >
- * @ref[extract](extract.md#extract-java)
- * @ref[extractActorSystem](extractActorSystem.md#extractactorsystem-java)
- * @ref[extractDataBytes](extractDataBytes.md#extractdatabytes-java)
- * @ref[extractExecutionContext](extractExecutionContext.md#extractexecutioncontext-java)
- * @ref[extractLog](extractLog.md#extractlog-java)
- * @ref[extractMatchedPath](extractMatchedPath.md#extractmatchedpath-java)
- * @ref[extractMaterializer](extractMaterializer.md#extractmaterializer-java)
+ * @ref[extract](extract.md)
+ * @ref[extractActorSystem](extractActorSystem.md)
+ * @ref[extractDataBytes](extractDataBytes.md)
+ * @ref[extractExecutionContext](extractExecutionContext.md)
+ * @ref[extractLog](extractLog.md)
+ * @ref[extractMatchedPath](extractMatchedPath.md)
+ * @ref[extractMaterializer](extractMaterializer.md)
  * @ref[extractParserSettings](extractParserSettings.md)
- * @ref[extractRequestContext](extractRequestContext.md#extractrequestcontext-java)
- * @ref[extractRequestEntity](extractRequestEntity.md#extractrequestentity-java)
- * @ref[extractRequest](extractRequest.md#extractrequest-java)
- * @ref[extractSettings](extractSettings.md#extractsettings-java)
- * @ref[extractStrictEntity](extractStrictEntity.md#extractstrictentity-java)
- * @ref[extractUnmatchedPath](extractUnmatchedPath.md#extractunmatchedpath-java)
- * @ref[extractUri](extractUri.md#extracturi-java)
- * @ref[provide](provide.md#provide-java)
+ * @ref[extractRequestContext](extractRequestContext.md)
+ * @ref[extractRequestEntity](extractRequestEntity.md)
+ * @ref[extractRequest](extractRequest.md)
+ * @ref[extractSettings](extractSettings.md)
+ * @ref[extractStrictEntity](extractStrictEntity.md)
+ * @ref[extractUnmatchedPath](extractUnmatchedPath.md)
+ * @ref[extractUri](extractUri.md)
+ * @ref[provide](provide.md)
 
 <a id="request-transforming-directives-java"></a>
 ## Transforming the Request(Context)
 
 >
- * @ref[mapRequest](mapRequest.md#maprequest-java)
- * @ref[mapRequestContext](mapRequestContext.md#maprequestcontext-java)
- * @ref[mapSettings](mapSettings.md#mapsettings-java)
- * @ref[mapUnmatchedPath](mapUnmatchedPath.md#mapunmatchedpath-java)
- * @ref[withExecutionContext](withExecutionContext.md#withexecutioncontext-java)
- * @ref[withLog](withLog.md#withlog-java)
- * @ref[withMaterializer](withMaterializer.md#withmaterializer-java)
- * @ref[withSettings](withSettings.md#withsettings-java)
- * @ref[toStrictEntity](toStrictEntity.md#tostrictentity-java)
+ * @ref[mapRequest](mapRequest.md)
+ * @ref[mapRequestContext](mapRequestContext.md)
+ * @ref[mapSettings](mapSettings.md)
+ * @ref[mapUnmatchedPath](mapUnmatchedPath.md)
+ * @ref[withExecutionContext](withExecutionContext.md)
+ * @ref[withLog](withLog.md)
+ * @ref[withMaterializer](withMaterializer.md)
+ * @ref[withSettings](withSettings.md)
+ * @ref[toStrictEntity](toStrictEntity.md)
 
 <a id="response-transforming-directives-java"></a>
 ## Transforming the Response
@@ -50,9 +49,9 @@ These directives allow to hook into the response path and transform the complete
 the parts of a response or the list of rejections:
 
 >
- * @ref[mapResponse](mapResponse.md#mapresponse-java)
- * @ref[mapResponseEntity](mapResponseEntity.md#mapresponseentity-java)
- * @ref[mapResponseHeaders](mapResponseHeaders.md#mapresponseheaders-java)
+ * @ref[mapResponse](mapResponse.md)
+ * @ref[mapResponseEntity](mapResponseEntity.md)
+ * @ref[mapResponseHeaders](mapResponseHeaders.md)
 
 <a id="result-transformation-directives-java"></a>
 ## Transforming the RouteResult
@@ -60,22 +59,22 @@ the parts of a response or the list of rejections:
 These directives allow to transform the RouteResult of the inner route.
 
 >
- * @ref[cancelRejection](cancelRejection.md#cancelrejection-java)
- * @ref[cancelRejections](cancelRejections.md#cancelrejections-java)
- * @ref[mapRejections](mapRejections.md#maprejections-java)
- * @ref[mapRouteResult](mapRouteResult.md#maprouteresult-java)
- * @ref[mapRouteResultFuture](mapRouteResultFuture.md#maprouteresultfuture-java)
- * @ref[mapRouteResultPF](mapRouteResultPF.md#maprouteresultpf-java)
- * @ref[mapRouteResultWith](mapRouteResultWith.md#maprouteresultwith-java)
- * @ref[mapRouteResultWithPF](mapRouteResultWithPF.md#maprouteresultwithpf-java)
- * @ref[recoverRejections](recoverRejections.md#recoverrejections-java)
- * @ref[recoverRejectionsWith](recoverRejectionsWith.md#recoverrejectionswith-java)
+ * @ref[cancelRejection](cancelRejection.md)
+ * @ref[cancelRejections](cancelRejections.md)
+ * @ref[mapRejections](mapRejections.md)
+ * @ref[mapRouteResult](mapRouteResult.md)
+ * @ref[mapRouteResultFuture](mapRouteResultFuture.md)
+ * @ref[mapRouteResultPF](mapRouteResultPF.md)
+ * @ref[mapRouteResultWith](mapRouteResultWith.md)
+ * @ref[mapRouteResultWithPF](mapRouteResultWithPF.md)
+ * @ref[recoverRejections](recoverRejections.md)
+ * @ref[recoverRejectionsWith](recoverRejectionsWith.md)
 
 ## Other
 
 >
- * @ref[mapInnerRoute](mapInnerRoute.md#mapinnerroute-java)
- * @ref[pass](pass.md#pass-java)
+ * @ref[mapInnerRoute](mapInnerRoute.md)
+ * @ref[pass](pass.md)
 
 ## Alphabetically
 

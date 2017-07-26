@@ -50,7 +50,7 @@ using the same connection and the `n-th` request triggers a request timeout the 
 and close the connection, leaving the `(n+1)-th` (and subsequent requests on the same connection) unhandled.
 @@@
 
-The request timeout can be configured at run-time for a given route using the any of the @ref[TimeoutDirectives](../routing-dsl/directives/timeout-directives/index.md#timeoutdirectives).
+The request timeout can be configured at run-time for a given route using the any of the @ref[TimeoutDirectives](../routing-dsl/directives/timeout-directives/index.md).
 
 ### Bind timeout
 

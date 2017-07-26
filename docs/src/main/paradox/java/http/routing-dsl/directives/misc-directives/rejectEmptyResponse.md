@@ -1,4 +1,3 @@
-<a id="rejectemptyresponse-java"></a>
 # rejectEmptyResponse
 
 ## Description

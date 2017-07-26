@@ -1,4 +1,3 @@
-<a id="authorize"></a>
 # authorize
 
 ## Signature
@@ -18,9 +17,9 @@ If the check returns `true` the request is passed on to the inner route unchange
 (the same as in the case of an `AuthenticationFailedRejection`).
 
 In a common use-case you would check if a user (e.g. supplied by any of the `authenticate*` family of directives,
-e.g. @ref[authenticateBasic](authenticateBasic.md#authenticatebasic)) is allowed to access the inner routes, e.g. by checking if the user has the needed permissions.
+e.g. @ref[authenticateBasic](authenticateBasic.md)) is allowed to access the inner routes, e.g. by checking if the user has the needed permissions.
 
-See also @ref[authorizeAsync](authorizeAsync.md#authorizeasync) for the asynchronous version of this directive.
+See also @ref[authorizeAsync](authorizeAsync.md) for the asynchronous version of this directive.
 
 @@@ note
 See also @ref[Authentication vs. Authorization](index.md#authentication-vs-authorization-scala) to understand the differences between those.

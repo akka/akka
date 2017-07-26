@@ -1,4 +1,3 @@
-<a id="timeoutdirectives-java"></a>
 # TimeoutDirectives
 
 @@toc { depth=1 }

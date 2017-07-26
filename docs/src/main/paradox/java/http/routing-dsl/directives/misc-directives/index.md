@@ -1,4 +1,3 @@
-<a id="miscdirectives-java"></a>
 # MiscDirectives
 
 @@toc { depth=1 }

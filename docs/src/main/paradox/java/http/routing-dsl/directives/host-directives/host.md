@@ -1,4 +1,3 @@
-<a id="host-java"></a>
 # host
 
 Filter requests matching conditions against the hostname part of the Host header value

@@ -1,11 +1,10 @@
-<a id="optionalheadervaluebytype-java"></a>
 # optionalHeaderValueByType
 
 ## Description
 
 Optionally extracts the value of the HTTP request header of the given type.
 
-The `optionalHeaderValueByType` directive is similar to the @ref[headerValueByType](headerValueByType.md#headervaluebytype-java) directive but always extracts
+The `optionalHeaderValueByType` directive is similar to the @ref[headerValueByType](headerValueByType.md) directive but always extracts
 an `Optional` value instead of rejecting the request if no matching header could be found.
 
 @@@ note

@@ -1,4 +1,3 @@
-<a id="fileupload"></a>
 # fileUpload
 
 ## Signature

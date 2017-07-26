@@ -1,4 +1,3 @@
-<a id="pathdirectives"></a>
 # PathDirectives
 
 @@toc { depth=1 }

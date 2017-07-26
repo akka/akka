@@ -1,4 +1,3 @@
-<a id="withrangesupport"></a>
 # withRangeSupport
 
 ## Signature

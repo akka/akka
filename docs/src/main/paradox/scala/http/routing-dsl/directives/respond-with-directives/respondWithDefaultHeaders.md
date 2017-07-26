@@ -1,4 +1,3 @@
-<a id="respondwithdefaultheaders"></a>
 # respondWithDefaultHeaders
 
 ## Signature
@@ -15,7 +14,7 @@ potentially adding the given `HttpHeader` instances to the headers list.
 A header is only added if there is no header instance with the same name (case insensitively) already present in the
 response.
 
-See also @ref[respondWithDefaultHeader](respondWithDefaultHeader.md#respondwithdefaultheader) if you'd like to add only a single header.
+See also @ref[respondWithDefaultHeader](respondWithDefaultHeader.md) if you'd like to add only a single header.
 
 ## Example
 
@@ -32,4 +31,4 @@ The semantics remain the same however, as explained by the following example:
 
 @@snip [RespondWithDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #respondWithDefaultHeader-0 }
 
-See the @ref[respondWithDefaultHeader](respondWithDefaultHeader.md#respondwithdefaultheader) directive for an example with only one header.
+See the @ref[respondWithDefaultHeader](respondWithDefaultHeader.md) directive for an example with only one header.

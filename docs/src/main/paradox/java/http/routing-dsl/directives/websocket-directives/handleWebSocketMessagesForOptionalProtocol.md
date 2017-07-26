@@ -14,4 +14,4 @@ To support several subprotocols you may chain several `handleWebSocketMessagesFo
 
 The `handleWebSocketMessagesForOptionalProtocol` directive is used as a building block for @ref[WebSocket Directives](index.md) to handle websocket messages.
 
-For more information about the WebSocket support, see @ref[Server-Side WebSocket Support](../../../server-side/websocket-support.md#server-side-websocket-support-java).
+For more information about the WebSocket support, see @ref[Server-Side WebSocket Support](../../../server-side/websocket-support.md).

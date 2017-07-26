@@ -1,4 +1,3 @@
-<a id="extractmethod-java"></a>
 # extractMethod
 
 ## Description

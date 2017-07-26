@@ -1,4 +1,3 @@
-<a id="extractactorsystem"></a>
 # extractActorSystem
 
 ## Signature

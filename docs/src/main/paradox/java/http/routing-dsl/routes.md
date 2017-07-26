@@ -1,4 +1,3 @@
-<a id="routes-java"></a>
 # Routes
 
 The "Route" is the central concept of Akka HTTP's Routing DSL. All the structures you build with the DSL, no matter
@@ -13,8 +12,8 @@ and `akka.stream.Materializer`, so that these don't have to be passed around man
 Generally when a route receives a request (or rather a `RequestContext` for it) it can do one of these things:
 
  * Complete the request by returning the value of `requestContext.complete(...)`
- * Reject the request by returning the value of `requestContext.reject(...)` (see @ref[Rejections](rejections.md#rejections-java))
- * Fail the request by returning the value of `requestContext.fail(...)` or by just throwing an exception (see @ref[Exception Handling](exception-handling.md#exception-handling-java))
+ * Reject the request by returning the value of `requestContext.reject(...)` (see @ref[Rejections](rejections.md))
+ * Fail the request by returning the value of `requestContext.fail(...)` or by just throwing an exception (see @ref[Exception Handling](exception-handling.md))
  * Do any kind of asynchronous processing and instantly return a `CompletionStage<RouteResult>` to be eventually completed later
 
 The first case is pretty clear, by calling `complete` a given response is sent to the client as reaction to the
@@ -25,7 +24,7 @@ A `Route` can be "sealed" using `Route.seal`, which relies on the in-scope `Reje
 instances to convert rejections and exceptions into appropriate HTTP responses for the client.
 
 Using `Route.handlerFlow` or `Route.asyncHandler` a `Route` can be lifted into a handler `Flow` or async handler
-function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md#http-low-level-server-side-api-java).
+function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md).
 
 <a id="request-context-java"></a>
 ## RequestContext
@@ -109,11 +108,11 @@ specific cases up front and the most general cases in the back.
 
 ## Sealing a Route
 
-As described in @ref[Rejections](rejections.md#rejections-java) and @ref[Exception Handling](exception-handling.md#exception-handling-java),
+As described in @ref[Rejections](rejections.md) and @ref[Exception Handling](exception-handling.md),
 there are generally two ways to handle rejections and exceptions.
 
  * Pass rejection/exception handlers to the `seal()` method of the `Route`
- * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directives 
+ * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md) directives 
 
 In the first case your handlers will be "sealed", (which means that it will receive the default handler as a fallback for all cases your handler doesn't handle itself) 
 and used for all rejections/exceptions that are not handled within the route structure itself.

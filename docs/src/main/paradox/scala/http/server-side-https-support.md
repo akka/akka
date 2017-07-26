@@ -1,4 +1,3 @@
-<a id="serversidehttps-scala"></a>
 # Server-Side HTTPS Support
 
 Akka HTTP supports TLS encryption on the server-side as well as on the @ref[client-side](client-side/client-https-support.md).

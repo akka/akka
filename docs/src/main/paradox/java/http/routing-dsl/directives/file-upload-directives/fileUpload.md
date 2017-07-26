@@ -1,4 +1,3 @@
-<a id="fileupload-java"></a>
 # fileUpload
 
 ## Description

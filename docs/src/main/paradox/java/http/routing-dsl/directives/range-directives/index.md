@@ -1,4 +1,3 @@
-<a id="rangedirectives-java"></a>
 # RangeDirectives
 
 @@toc { depth=1 }

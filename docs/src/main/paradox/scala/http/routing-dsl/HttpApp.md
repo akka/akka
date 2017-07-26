@@ -1,4 +1,3 @@
-<a id="http-app"></a>
 # HttpApp Bootstrap
 
 @@@ warning { title="API may change" }

@@ -1,8 +1,7 @@
-<a id="request-level-api-java"></a>
 # Request-Level Client-Side API
 
 The request-level API is the recommended and most convenient way of using Akka HTTP's client-side functionality. It internally builds upon the
-@ref[Host-Level Client-Side API](host-level.md#host-level-api-java) to provide you with a simple and easy-to-use way of retrieving HTTP responses from remote servers.
+@ref[Host-Level Client-Side API](host-level.md) to provide you with a simple and easy-to-use way of retrieving HTTP responses from remote servers.
 Depending on your preference you can pick the flow-based or the future-based variant.
 
 @@@ note
@@ -74,7 +73,7 @@ The flow-based variant of the request-level client-side API is presented by the 
 It creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
 depending on their respective effective URIs.
 
-The `Flow` returned by `Http().superPool(...)` is very similar to the one from the @ref[Host-Level Client-Side API](host-level.md#host-level-api-java), so the
+The `Flow` returned by `Http().superPool(...)` is very similar to the one from the @ref[Host-Level Client-Side API](host-level.md), so the
 @ref[Using a Host Connection Pool](host-level.md#using-a-host-connection-pool-java) section also applies here.
 
 However, there is one notable difference between a "host connection pool client flow" for the host-level API and a

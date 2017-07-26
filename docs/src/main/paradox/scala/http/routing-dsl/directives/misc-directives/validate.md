@@ -1,4 +1,3 @@
-<a id="validate"></a>
 # validate
 
 ## Signature

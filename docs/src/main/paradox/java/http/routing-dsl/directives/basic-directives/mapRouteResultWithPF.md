@@ -1,13 +1,12 @@
-<a id="maprouteresultwithpf-java"></a>
 # mapRouteResultWithPF
 
 ## Description
 
-Asynchronous variant of @ref[mapRouteResultPF](mapRouteResultPF.md#maprouteresultpf-java).
+Asynchronous variant of @ref[mapRouteResultPF](mapRouteResultPF.md).
 
 Changes the message the inner route sends to the responder.
 
-The `mapRouteResult` directive is used as a building block for @ref[Custom Directives](../custom-directives.md#custom-directives-java) to transform the
+The `mapRouteResult` directive is used as a building block for @ref[Custom Directives](../custom-directives.md) to transform the
 `RouteResult` coming back from the inner route.
 
 See @ref[Result Transformation Directives](index.md#result-transformation-directives-java) for similar directives.

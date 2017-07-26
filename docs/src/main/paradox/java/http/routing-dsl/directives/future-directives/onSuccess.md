@@ -1,4 +1,3 @@
-<a id="onsuccess-java"></a>
 # onSuccess
 
 ## Description
@@ -8,7 +7,7 @@ extracts its result as a value of type `T` and passes it to the inner route.
 
 If the future fails its failure throwable is bubbled up to the nearest `ExceptionHandler`.
 
-To handle the `Failure` case manually as well, use @ref[onComplete](onComplete.md#oncomplete-java), instead.
+To handle the `Failure` case manually as well, use @ref[onComplete](onComplete.md), instead.
 
 ## Example
 

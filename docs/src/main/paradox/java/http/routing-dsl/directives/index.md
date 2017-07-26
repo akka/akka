@@ -1,7 +1,6 @@
-<a id="directives-java"></a>
 # Directives
 
-A "Directive" is a small building block used for creating arbitrarily complex @ref[route structures](../routes.md#routes).
+A "Directive" is a small building block used for creating arbitrarily complex @ref[route structures](../routes.md).
 Akka HTTP already pre-defines a large number of directives and you can easily construct your own:
 
 @@toc { depth=1 }
@@ -16,10 +15,10 @@ Akka HTTP already pre-defines a large number of directives and you can easily co
 
 ## Basics
 
-@ref[Routes](../routes.md#routes-java) effectively are simply highly specialised functions that take a `RequestContext` and eventually `complete` it, 
+@ref[Routes](../routes.md) effectively are simply highly specialised functions that take a `RequestContext` and eventually `complete` it, 
 which could (and often should) happen asynchronously.
 
-With the @ref[complete](route-directives/complete.md#complete-java) directive this becomes even shorter:
+With the @ref[complete](route-directives/complete.md) directive this becomes even shorter:
 
 ```java
 Route route = complete("yeah");
@@ -38,7 +37,7 @@ Route routes = route(
 ```
 
 You could also simply define a "catch all" completion by providing it as the last route to attempt to match.
-In the example below we use the `get()` (one of the @ref[MethodDirectives](method-directives/index.md#methoddirectives-java)) to match all incoming `GET`
+In the example below we use the `get()` (one of the @ref[MethodDirectives](method-directives/index.md)) to match all incoming `GET`
 requests for that route, and all other requests will be routed towards the other "catch all" route, that completes the route:
 
 ```java
@@ -62,7 +61,7 @@ directiveName(arguments [, ...], (extractions [, ...]) -> {
 })
 ```
 
-It has a name, zero or more arguments and optionally an inner route (The @ref[RouteDirectives](route-directives/index.md#routedirectives-java) are special in that they
+It has a name, zero or more arguments and optionally an inner route (The @ref[RouteDirectives](route-directives/index.md) are special in that they
 are always used at the leaf-level and as such cannot have inner routes).
 
 Additionally directives can "extract" a number of values and make them available to their inner routes as function
@@ -166,5 +165,5 @@ allOf(this::extractScheme, this::extractMethod, (scheme, method) -> ...)
 ```
 
 Directives offer a great way of constructing your web service logic from small building blocks in a plug and play
-fashion while maintaining DRYness and full type-safety. If the large range of @ref[Predefined Directives](alphabetically.md#predefined-directives) does not
-fully satisfy your needs you can also easily create @ref[Custom Directives](custom-directives.md#custom-directives).
+fashion while maintaining DRYness and full type-safety. If the large range of @ref[Predefined Directives](alphabetically.md) does not
+fully satisfy your needs you can also easily create @ref[Custom Directives](custom-directives.md).

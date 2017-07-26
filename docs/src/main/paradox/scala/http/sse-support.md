@@ -1,4 +1,3 @@
-<a id="sse-support-scala"></a>
 # Server-Sent Events Support
 
 Server-Sent Events (SSE) is a lightweight and [standardized](http://www.w3.org/TR/eventsource)

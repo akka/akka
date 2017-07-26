@@ -1,4 +1,3 @@
-<a id="respondwithdirectives"></a>
 # RespondWithDirectives
 
 @@toc { depth=1 }

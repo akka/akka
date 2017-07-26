@@ -1,4 +1,3 @@
-<a id="http-model-scala"></a>
 # HTTP Model
 
 Akka HTTP model contains a deeply structured, fully immutable, case-class based model of all the major HTTP data
@@ -301,7 +300,7 @@ Which allows the this CustomHeader to be used in the following scenarios:
 
 @@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-examples }
 
-Including usage within the header directives like in the following @ref[headerValuePF](../routing-dsl/directives/header-directives/headerValuePF.md#headervaluepf) example:
+Including usage within the header directives like in the following @ref[headerValuePF](../routing-dsl/directives/header-directives/headerValuePF.md) example:
 
 @@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-in-routes }
 

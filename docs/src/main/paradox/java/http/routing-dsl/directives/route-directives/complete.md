@@ -1,4 +1,3 @@
-<a id="complete-java"></a>
 # complete
 
 ## Description

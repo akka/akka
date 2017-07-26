@@ -1,8 +1,7 @@
-<a id="headerdirectives-java"></a>
 # HeaderDirectives
 
 Header directives can be used to extract header values from the request. To change
-response headers use one of the @ref[RespondWithDirectives](../respond-with-directives/index.md#respondwithdirectives-java).
+response headers use one of the @ref[RespondWithDirectives](../respond-with-directives/index.md).
 
 @@toc { depth=1 }
 

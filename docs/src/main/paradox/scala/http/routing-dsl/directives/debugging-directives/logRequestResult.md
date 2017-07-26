@@ -1,4 +1,3 @@
-<a id="logrequestresult"></a>
 # logRequestResult
 
 ## Signature
@@ -17,9 +16,9 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 Logs both, the request and the response.
 
-This directive is a combination of @ref[logRequest](logRequest.md#logrequest) and @ref[logResult](logResult.md#logresult).
+This directive is a combination of @ref[logRequest](logRequest.md) and @ref[logResult](logResult.md).
 
-See @ref[logRequest](logRequest.md#logrequest) for the general description how these directives work.
+See @ref[logRequest](logRequest.md) for the general description how these directives work.
 
 ## Example
 

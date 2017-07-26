@@ -1,4 +1,3 @@
-<a id="headervaluebyname"></a>
 # headerValueByName
 
 ## Signature
@@ -13,7 +12,7 @@ The name can be given as a `String` or as a `Symbol`. If no header with a matchi
 is rejected with a `MissingHeaderRejection`.
 
 If the header is expected to be missing in some cases or to customize
-handling when the header is missing use the @ref[optionalHeaderValueByName](optionalHeaderValueByName.md#optionalheadervaluebyname) directive instead.
+handling when the header is missing use the @ref[optionalHeaderValueByName](optionalHeaderValueByName.md) directive instead.
 
 ## Example
 

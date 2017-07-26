@@ -1,4 +1,3 @@
-<a id="maprouteresult"></a>
 # mapRouteResult
 
 ## Signature
@@ -9,7 +8,7 @@
 
 Changes the message the inner route sends to the responder.
 
-The `mapRouteResult` directive is used as a building block for @ref[Custom Directives](../custom-directives.md#custom-directives) to transform the
+The `mapRouteResult` directive is used as a building block for @ref[Custom Directives](../custom-directives.md) to transform the
 @ref[RouteResult](../../routes.md#routeresult) coming back from the inner route.
 
 See @ref[Result Transformation Directives](index.md#result-transformation-directives) for similar directives.

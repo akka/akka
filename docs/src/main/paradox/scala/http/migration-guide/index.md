@@ -1,4 +1,3 @@
-<a id="migration-guides-scala"></a>
 # Migration Guides
 
 @@toc { depth=3 }

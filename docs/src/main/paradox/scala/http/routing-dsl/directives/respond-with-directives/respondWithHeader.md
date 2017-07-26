@@ -1,4 +1,3 @@
-<a id="respondwithheader"></a>
 # respondWithHeader
 
 ## Signature
@@ -12,7 +11,7 @@ Adds a given HTTP header to all responses coming back from its inner route.
 This directive transforms `HttpResponse` and `ChunkedResponseStart` messages coming back from its inner route by
 adding the given `HttpHeader` instance to the headers list.
 
-See also @ref[respondWithHeaders](respondWithHeaders.md#respondwithheaders) if you'd like to add more than one header.
+See also @ref[respondWithHeaders](respondWithHeaders.md) if you'd like to add more than one header.
 
 ## Example
 

@@ -1,4 +1,3 @@
-<a id="pathendorsingleslash"></a>
 # pathEndOrSingleSlash
 
 ## Signature

@@ -1,4 +1,3 @@
-<a id="mapsettings"></a>
 # mapSettings
 
 ## Signature
@@ -9,7 +8,7 @@
 
 Transforms the `RoutingSettings` with a `RoutingSettings ⇒ RoutingSettings` function.
 
-See also @ref[withSettings](withSettings.md#withsettings) or @ref[extractSettings](extractSettings.md#extractsettings).
+See also @ref[withSettings](withSettings.md) or @ref[extractSettings](extractSettings.md).
 
 ## Example
 

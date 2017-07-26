@@ -1,4 +1,3 @@
-<a id="checksameorigin"></a>
 # checkSameOrigin
 
 ## Signature

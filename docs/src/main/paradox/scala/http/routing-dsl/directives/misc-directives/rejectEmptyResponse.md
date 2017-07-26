@@ -1,4 +1,3 @@
-<a id="rejectemptyresponse"></a>
 # rejectEmptyResponse
 
 ## Signature

@@ -1,4 +1,3 @@
-<a id="logrequest"></a>
 # logRequest
 
 ## Signature

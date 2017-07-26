@@ -1,4 +1,3 @@
-<a id="hostdirectives"></a>
 # HostDirectives
 
 HostDirectives allow you to filter requests based on the hostname part of the `Host` header
