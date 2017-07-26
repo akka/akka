@@ -834,10 +834,10 @@ You can build such behavior with a builder named `ReceiveBuilder`. Here is an ex
 
 @@@
 
-@Scala
+Scala
 :  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #imports1 #my-actor }
 
-@Java
+Java
 :  @@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #imports #my-actor }
 
 @@@ div { .group-java }
@@ -1020,6 +1020,7 @@ Scala
 
 Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-gracefulStop #gracefulStop }
+
 
 
 Scala
