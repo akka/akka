@@ -35,7 +35,7 @@ class MyActor extends Actor with akka.actor.ActorLogging {
 The first parameter to @scala[`Logging`] @java[`Logging.getLogger`] could also be any
 `LoggingBus`, specifically @scala[`system.eventStream`] @scala[`system.eventStream()`]; in the demonstrated
 case, the actor system's address is included in the `akkaSource`
-representation of the log source (see @ref[Logging Thread, Akka Source and Actor System in MDC](#logging-thread-akka-source-and-actor-system-in-mdc))
+representation of the log source (see @ref:[Logging Thread, Akka Source and Actor System in MDC](#logging-thread-akka-source-and-actor-system-in-mdc))
 while in the second case this is not automatically done.
 The second parameter to @scala[`Logging`] @java[`Logging.getLogger`] is the source of this logging channel.
 The source object is translated to a String according to the following rules:
@@ -235,7 +235,7 @@ akka {
 }
 ```
 
-Also see the @ref[logging options for TestKit](testing.md#actor-logging).
+Also see the @ref:[logging options for TestKit](testing.md#actor-logging).
 
 @@@ div { .group-scala }
 
@@ -297,7 +297,7 @@ using an async logging backend though. (See [Using the SLF4J API directly](#slf4
 @@@
 
 You can configure which event handlers are created at system start-up and listen to logging events. That is done using the
-`loggers` element in the @ref[configuration](general/configuration.md).
+`loggers` element in the @ref:[configuration](general/configuration.md).
 Here you can also define the log level. More fine grained filtering based on the log source
 can be implemented in a custom `LoggingFilter`, which can be defined in the `logging-filter`
 configuration property.
@@ -313,7 +313,7 @@ akka {
 ```
 
 The default one logs to STDOUT and is registered by default. It is not intended
-to be used for production. There is also an @ref[SLF4J](#slf4j)
+to be used for production. There is also an @ref:[SLF4J](#slf4j)
 logger available in the 'akka-slf4j' module.
 
 Example of creating a listener:
@@ -575,7 +575,7 @@ rely more information using them rather than just a single string.
 Akka includes a logger for [java.util.logging](https://docs.oracle.com/javase/8/docs/api/java/util/logging/package-summary.html#package.description).
 
 You need to enable the `akka.event.jul.JavaLogger` in the `loggers` element in
-the @ref[configuration](general/configuration.md). Here you can also define the log level of the event bus.
+the @ref:[configuration](general/configuration.md). Here you can also define the log level of the event bus.
 More fine grained log levels can be defined in the configuration of the logging backend.
 You should also define `akka.event.jul.JavaLoggingFilter` in
 the `logging-filter` configuration property. It will filter the log events using the backend

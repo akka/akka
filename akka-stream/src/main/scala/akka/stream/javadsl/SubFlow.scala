@@ -106,6 +106,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the mapping function returns an element
    *
    * '''Backpressures when''' downstream backpressures
@@ -155,6 +157,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * The returned `Iterable` MUST NOT contain `null` values,
    * as they are illegal as stream elements - according to the Reactive Streams specification.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the mapping function returns an element or there are still remaining elements
    * from the previously calculated collection
    *
@@ -189,6 +193,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * The function `f` is always invoked on the elements in the order they arrive.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the CompletionStage returned by the provided function finishes for the next element in sequence
    *
    * '''Backpressures when''' the number of CompletionStages reaches the configured parallelism and the downstream
@@ -222,6 +228,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * The function `f` is always invoked on the elements in the order they arrive (even though the result of the CompletionStages
    * returned by `f` might be emitted in a different order).
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' any of the CompletionStages returned by the provided function complete
    *
    * '''Backpressures when''' the number of CompletionStages reaches the configured parallelism and the downstream backpressures
@@ -238,6 +246,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
   /**
    * Only pass on those elements that satisfy the given predicate.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the given predicate returns true for the element
    *
    * '''Backpressures when''' the given predicate returns true for the element and downstream backpressures
@@ -252,6 +262,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
 
   /**
    * Only pass on those elements that NOT satisfy the given predicate.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the given predicate returns false for the element
    *
@@ -268,6 +280,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the provided partial function is defined for the element
    *
@@ -334,6 +348,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * The stream will be completed without producing any elements if `n` is zero
    * or negative.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the specified number of elements to take has not yet been reached
    *
    * '''Backpressures when''' downstream backpressures
@@ -377,6 +393,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * [[akka.stream.Supervision#restart]] current value starts at `zero` again
    * the stream will continue.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the function scanning the element returns a new element
    *
    * '''Backpressures when''' downstream backpressures
@@ -402,6 +420,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * [[akka.stream.Supervision.Resume]] current value starts at the previous
    * current value, or zero when it doesn't have one, and the stream will continue.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the future returned by f` completes
    *
    * '''Backpressures when''' downstream backpressures
@@ -419,6 +439,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * Similar to `scan` but only emits its result when the upstream completes,
    * after which it also completes. Applies the given function `f` towards its current and next value,
    * yielding the next current value.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * If the function `f` throws an exception and the supervision decision is
    * [[akka.stream.Supervision#restart]] current value starts at `zero` again
@@ -440,6 +462,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * Applies the given function towards its current and next value,
    * yielding the next current value.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * If the function `f` returns a failure and the supervision decision is
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
    * the stream will continue.
@@ -458,6 +482,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * Similar to `fold` but uses first element as zero element.
    * Applies the given function towards its current and next value,
    * yielding the next current value.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' upstream completes
    *
@@ -656,6 +682,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * The stream will be completed without producing any elements if predicate is false for
    * the first stream element.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the predicate is true
    *
    * '''Backpressures when''' downstream backpressures
@@ -670,6 +698,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
   /**
    * Discard elements at the beginning of the stream while predicate is true.
    * All elements will be taken after predicate returns false first time.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' predicate returned false and for all following stream elements
    *
@@ -824,6 +854,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' downstream stops backpressuring and there is a conflated element available
    *
    * '''Backpressures when''' never
@@ -852,6 +884,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' downstream stops backpressuring and there is a conflated element available
    *
    * '''Backpressures when''' never
@@ -875,6 +909,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' downstream stops backpressuring and there is an aggregated element available
    *
@@ -1433,6 +1469,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * of a complex object flowing through this element.
    *
    * Uses the given [[LoggingAdapter]] for logging.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the mapping function returns an element
    *

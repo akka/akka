@@ -92,7 +92,7 @@ first stopped
 When we stopped actor `first`, it stopped its child actor, `second`, before stopping itself. This ordering is strict, _all_ `postStop()` hooks of the children are called before the `postStop()` hook of the parent
 is called.
 
-The @ref[Actor Lifecycle](../actors.md#actor-lifecycle) section of the Akka reference manual provides details on the full set of lifecyle hooks.
+The @ref:[Actor Lifecycle](../actors.md#actor-lifecycle) section of the Akka reference manual provides details on the full set of lifecyle hooks.
 
 ### Failure handling
 
@@ -143,7 +143,7 @@ We see that after failure the supervised actor is stopped and immediately restar
 which are the default to be called after and before restarts, so we cannot distinguish from inside the actor whether it was started for the first time or restarted. This is usually the right thing to do, the purpose of the restart is to set the actor in a known-good state, which usually means a clean starting stage. **What actually happens though is
 that the `preRestart()` and `postRestart()` methods are called which, if not overridden, by default delegate to `postStop()` and `preStart()` respectively**. You can experiment with overriding these additional methods and see how the output changes.
 
-For the impatient, we also recommend looking into the @ref[supervision reference page](../general/supervision.md) for more in-depth
+For the impatient, we also recommend looking into the @ref:[supervision reference page](../general/supervision.md) for more in-depth
 details.
 
 # Summary

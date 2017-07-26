@@ -307,7 +307,7 @@ sent to the parent of the entity actor, otherwise the entity will be automatical
 restarted after the entity restart backoff specified in the configuration.
 
 When [Distributed Data mode](#cluster-sharding-mode) is used the identifiers of the entities are
-stored in @ref[Durable Storage](distributed-data.md#ddata-durable) of Distributed Data. You may want to change the
+stored in @ref:[Durable Storage](distributed-data.md#ddata-durable) of Distributed Data. You may want to change the
 configuration of the `akka.cluster.sharding.distributed-data.durable.lmdb.dir`, since
 the default directory contains the remote port of the actor system. If using a dynamically
 assigned port (0) it will be different each time and the previously stored data will not
@@ -319,7 +319,7 @@ for that entity has been received in the `Shard`. Entities will not be restarted
 using a `Passivate`.
 
 Note that the state of the entities themselves will not be restored unless they have been made persistent,
-e.g. with @ref[Persistence](persistence.md).
+e.g. with @ref:[Persistence](persistence.md).
 
 The performance cost of `rememberEntities` is rather high when starting/stopping entities and when
 shards are rebalanced. This cost increases with number of entities per shard and we currently don't

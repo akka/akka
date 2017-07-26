@@ -103,7 +103,7 @@ This means that, for Akka messages:
 
 These guarantees strike a good balance: having messages from one actor arrive in-order is convenient for building systems that can be easily reasoned about, while on the other hand allowing messages from different actors to arrive interleaved provides sufficient freedom for an efficient implementation of the actor system.
 
-For the full details on delivery guarantees please refer to the @ref[reference page](../general/message-delivery-reliability.md).
+For the full details on delivery guarantees please refer to the @ref:[reference page](../general/message-delivery-reliability.md).
 
 ## Adding flexibility to device messages
 
