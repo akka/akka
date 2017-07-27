@@ -74,12 +74,15 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
     val serverBidiFlow =
       settings.idleTimeout match {
-        case t: FiniteDuration ⇒ httpLayer atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
-        case _                 ⇒ httpLayer atop tlsStage
+        case t: FiniteDuration ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
+        case _                 ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage
       }
 
     serverBidiFlow
   }
+
+  private def delayCancellationStage(settings: ServerSettings): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
+    BidiFlow.fromFlows(Flow[SslTlsOutbound], StreamUtils.delayCancellation(settings.lingerTimeout))
 
   private def fuseServerFlow(
     baseFlow: ServerLayerBidiFlow,
@@ -98,7 +101,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       )
     )
 
-  private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] = {
+  private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
     Tcp()
       .bind(
         interface,
@@ -108,15 +111,6 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
         halfClose = false,
         idleTimeout = Duration.Inf // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
       )
-      .map { incoming ⇒
-        val newFlow =
-          incoming.flow
-            // Prevent cancellation from the Http implementation to reach the TCP streams to prevent
-            // completion / cancellation race towards TCP streams. See #459.
-            .via(StreamUtils.delayCancellation(settings.lingerTimeout))
-        incoming.copy(flow = newFlow)
-      }
-  }
 
   private def choosePort(port: Int, connectionContext: ConnectionContext) = if (port >= 0) port else connectionContext.defaultPort
 
