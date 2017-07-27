@@ -37,7 +37,9 @@ class ConnectionPoolSpec extends AkkaSpec("""
     akka.loglevel = OFF
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off
-    akka.test.single-expect-default = 5000""") { // timeout for checks, adjust as necessary, set here to 5s
+    akka.test.single-expect-default = 5000 # timeout for checks, adjust as necessary, set here to 5s
+    akka.scheduler.tick-duration = 1ms     # to make race conditions in Pool idle-timeout more likely
+                                          """) {
   implicit val materializer = ActorMaterializer()
 
   // FIXME: Extract into proper util class to be reusable
@@ -285,6 +287,23 @@ class ConnectionPoolSpec extends AkkaSpec("""
       responseOutSub.request(1)
       acceptIncomingConnection()
       val (Success(_), 42) = responseOut.expectNext()
+    }
+
+    "don't drop requests during idle-timeout shutdown" in new TestSetup(autoAccept = true) {
+      val (requestIn, responseOut, responseOutSub, hcp) =
+        cachedHostConnectionPool[Int](
+          idleTimeout = 1.millisecond, // trigger as many idle-timeouts as possible
+          maxConnections = 1,
+          pipeliningLimit = 1,
+          minConnections = 0)
+
+      (1 to 100).foreach { i ⇒
+        responseOutSub.request(1)
+        requestIn.sendNext(HttpRequest(uri = s"/$i") → i)
+        responseOut.expectNext()
+        // more than the 1 millisescond idle-timeout but it seemed to trigger the bug quite reliably
+        Thread.sleep(2)
+      }
     }
 
     "never close hot connections when minConnections key is given and >0 (minConnections = 1)" in new TestSetup() {
