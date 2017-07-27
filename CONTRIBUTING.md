@@ -181,7 +181,7 @@ an error like this:
 [error]    filter with: ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync")
 ```
 
-In such situations it's good to consult with a core team member if the violation can be safely ignored (by adding the above snippet to `project/MiMa.scala`), or if it would indeed break binary compatibility.
+In such situations it's good to consult with a core team member if the violation can be safely ignored (by adding the above snippet to `<module>/src/main/mima-filters/<last-version>.backwards.excludes`), or if it would indeed break binary compatibility.
 
 Situations when it may be fine to ignore a MiMa issued warning include:
 
