@@ -1,0 +1,4 @@
+# #15733 Timers
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.apply")
