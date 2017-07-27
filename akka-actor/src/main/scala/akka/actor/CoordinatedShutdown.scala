@@ -12,17 +12,19 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
-
 import akka.Done
 import com.typesafe.config.Config
+
 import scala.concurrent.duration.FiniteDuration
 import scala.annotation.tailrec
 import com.typesafe.config.ConfigFactory
 import akka.pattern.after
 import java.util.concurrent.TimeoutException
+
 import scala.util.control.NonFatal
 import akka.event.Logging
 import akka.dispatch.ExecutionContexts
+
 import scala.util.Try
 import scala.concurrent.Await
 import java.util.concurrent.CountDownLatch
@@ -30,6 +32,8 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
 import java.util.concurrent.CompletionStage
 import java.util.Optional
+
+import akka.annotation.InternalApi
 
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
   /**
@@ -137,13 +141,18 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
         if (terminateActorSystem) {
           system.terminate().map { _ ⇒
             if (exitJvm && !runningJvmHook) System.exit(0)
+            else {
+              coord.removeJvmTerminationHooks()
+            }
             Done
           }(ExecutionContexts.sameThreadExecutionContext)
         } else if (exitJvm) {
           System.exit(0)
           Future.successful(Done)
-        } else
+        } else {
+          coord.removeJvmTerminationHooks()
           Future.successful(Done)
+        }
       }
     }
   }
@@ -245,13 +254,14 @@ final class CoordinatedShutdown private[akka] (
   private val tasks = new ConcurrentHashMap[String, Vector[(String, () ⇒ Future[Done])]]
   private val runStarted = new AtomicBoolean(false)
   private val runPromise = Promise[Done]()
+  @volatile private var jvmHooksRunning = false
 
   private var _jvmHooksLatch = new AtomicReference[CountDownLatch](new CountDownLatch(0))
 
   /**
    * INTERNAL API
    */
-  private[akka] def jvmHooksLatch: CountDownLatch = _jvmHooksLatch.get
+  @InternalApi private[akka] def jvmHooksLatch: CountDownLatch = _jvmHooksLatch.get
 
   /**
    * Scala API: Add a task to a phase. It doesn't remove previously added tasks.
@@ -431,6 +441,13 @@ final class CoordinatedShutdown private[akka] (
   }
 
   /**
+   * Keep track of the registered jvm shutdown hooks, so that we can remove them
+   * if the actor system terminates gracefully. Protected by the _jvmHooksLatch
+   * when mutated below so volatile is enough.
+   */
+  @volatile private var registeredHooks: List[Thread] = Nil
+
+  /**
    * Scala API: Add a JVM shutdown hook that will be run when the JVM process
    * begins its shutdown sequence. Added hooks may run in any order
    * concurrently, but they are running before Akka internal shutdown
@@ -441,11 +458,16 @@ final class CoordinatedShutdown private[akka] (
       val currentLatch = _jvmHooksLatch.get
       val newLatch = new CountDownLatch(currentLatch.getCount.toInt + 1)
       if (_jvmHooksLatch.compareAndSet(currentLatch, newLatch)) {
-        try Runtime.getRuntime.addShutdownHook(new Thread {
-          override def run(): Unit = {
-            try hook finally _jvmHooksLatch.get.countDown()
+        try {
+          val thread = new Thread {
+            override def run(): Unit = {
+              jvmHooksRunning = true
+              try hook finally _jvmHooksLatch.get.countDown()
+            }
           }
-        }) catch {
+          Runtime.getRuntime.addShutdownHook(thread)
+          registeredHooks = thread :: registeredHooks
+        } catch {
           case e: IllegalStateException ⇒
             // Shutdown in progress, if CoordinatedShutdown is created via a JVM shutdown hook (Artery)
             log.warning("Could not addJvmShutdownHook, due to: {}", e.getMessage)
@@ -464,5 +486,13 @@ final class CoordinatedShutdown private[akka] (
    */
   def addJvmShutdownHook(hook: Runnable): Unit =
     addJvmShutdownHook(hook.run())
+
+  private def removeJvmTerminationHooks(): Unit = {
+    // important that we do not remove the hooks if we are running the hooks
+    // as that could be triggered in any order and could lead to other hooks not actually being run
+    if (!jvmHooksRunning) {
+      registeredHooks.reverseIterator.foreach(t ⇒ Runtime.getRuntime.removeShutdownHook(t))
+    }
+  }
 
 }
