@@ -1138,7 +1138,7 @@ Java
 :  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #journal-tck-java }
 
 Please note that some of the tests are optional, and by overriding the `supports...` methods you give the
-TCK the needed information about which tests to run. You can implement these methods using @scala[boolean falues or] the
+TCK the needed information about which tests to run. You can implement these methods using @scala[boolean values or] the
 provided `CapabilityFlag.on` / `CapabilityFlag.off` values.
 
 We also provide a simple benchmarking class @scala[`JournalPerfSpec`]@java[`JavaJournalPerfSpec`] which includes all the tests that @scala[`JournalSpec`]@java[`JavaJournalSpec`]
@@ -1186,8 +1186,10 @@ Scala
     "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
     ```
     @@@
-    @@@vars
-     ```
+
+Java
+:   @@@vars
+    ```
     <dependency>
       <groupId>org.iq80.leveldb</groupId>
       <artifactId>leveldb</artifactId>
@@ -1201,7 +1203,6 @@ Scala
     ```
     @@@
   
-
 The default location of LevelDB files is a directory named `journal` in the current working
 directory. This location can be changed by configuration where the specified path can be relative or absolute:
 
