@@ -687,7 +687,7 @@ Since it is acceptable for some applications to not use any snapshotting, it is 
 However, Akka will log a warning message when this situation is detected and then continue to operate until
 an actor tries to store a snapshot, at which point the operation will fail (by replying with an `SaveSnapshotFailure` for example).
 
-Note that @ref:[Cluster Sharding](cluster-sharding.md) is using snapshots, so if you use Cluster Sharding you need to define a snapshot store plugin.
+Note that the "persistence mode" of @ref:[Cluster Sharding](cluster-sharding.md) makes use of snapshots. If you use that mode, you'll need to define a snapshot store plugin.
 
 @@@
 
