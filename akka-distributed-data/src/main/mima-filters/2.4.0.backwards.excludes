@@ -1,0 +1,2 @@
+# #18328 optimize VersionVector for size 1
+ProblemFilters.exclude[Problem]("akka.cluster.ddata.VersionVector*")
