@@ -5,7 +5,7 @@
 package akka.typed.testkit
 
 import akka.typed.scaladsl.Actor
-import akka.typed.testkit.Effect.Spawned
+import akka.typed.testkit.Effect.{ Spawned, SpawnedAdapter, SpawnedAnonymous }
 import akka.typed.testkit.EffectfulActorContextSpec.Father
 import akka.typed.testkit.EffectfulActorContextSpec.Father._
 import akka.typed.{ ActorSystem, Behavior, Props }
@@ -80,7 +80,7 @@ object EffectfulActorContextSpec {
 
 class EffectfulActorContextSpec extends FlatSpec with Matchers {
 
-  val props = Props.empty.withMailboxCapacity(10)
+  private val props = Props.empty.withMailboxCapacity(10)
 
   "EffectfulActorContext's spawn" should "create children when no props specified" in {
     val system = ActorSystem.create(Father.init(), "father-system")
@@ -88,7 +88,7 @@ class EffectfulActorContextSpec extends FlatSpec with Matchers {
 
     ctx.run(SpawnChildren(2))
     val effects = ctx.getAllEffects()
-    effects should contain only (Spawned("child0", Some(Props.empty)), Spawned("child1", Some(Props.empty)))
+    effects should contain only (Spawned("child0", Props.empty), Spawned("child1", Props.empty))
   }
 
   it should "create children when props specified and record effects" in {
@@ -97,7 +97,7 @@ class EffectfulActorContextSpec extends FlatSpec with Matchers {
 
     ctx.run(SpawnChildrenWithProps(2, props))
     val effects = ctx.getAllEffects()
-    effects should contain only (Spawned("child0", Some(props)), Spawned("child1", Some(props)))
+    effects should contain only (Spawned("child0", props), Spawned("child1", props))
   }
 
   "EffectfulActorContext's spawnAnonymous" should "create children when no props specified and record effects" in {
@@ -106,11 +106,7 @@ class EffectfulActorContextSpec extends FlatSpec with Matchers {
 
     ctx.run(SpawnAnonymous(2))
     val effects = ctx.getAllEffects()
-    effects.size shouldBe 2
-    effects.foreach { eff ⇒
-      eff shouldBe a[Spawned]
-      eff.asInstanceOf[Spawned].props shouldBe Some(Props.empty)
-    }
+    effects shouldBe Seq(SpawnedAnonymous(Props.empty), SpawnedAnonymous(Props.empty))
   }
 
   it should "create children when props specified and record effects" in {
@@ -119,11 +115,7 @@ class EffectfulActorContextSpec extends FlatSpec with Matchers {
 
     ctx.run(SpawnAnonymousWithProps(2, props))
     val effects = ctx.getAllEffects()
-    effects.size shouldBe 2
-    effects.foreach { eff ⇒
-      eff shouldBe a[Spawned]
-      eff.asInstanceOf[Spawned].props shouldBe Some(props)
-    }
+    effects shouldBe Seq(SpawnedAnonymous(props), SpawnedAnonymous(props))
   }
 
   "EffectfulActorContext's spawnAdapter" should "create adapters without name and record effects" in {
@@ -132,11 +124,7 @@ class EffectfulActorContextSpec extends FlatSpec with Matchers {
 
     ctx.run(SpawnAdapter)
     val effects = ctx.getAllEffects()
-    effects.size shouldBe 1
-    effects.foreach { eff ⇒
-      eff shouldBe a[Spawned]
-      eff.asInstanceOf[Spawned].props shouldBe None
-    }
+    effects shouldBe Seq(SpawnedAdapter)
   }
 
   it should "create adapters with name and record effects" in {
@@ -145,10 +133,6 @@ class EffectfulActorContextSpec extends FlatSpec with Matchers {
 
     ctx.run(SpawnAdapterWithName("adapter"))
     val effects = ctx.getAllEffects()
-    effects.size shouldBe 1
-    effects.foreach { eff ⇒
-      eff shouldBe a[Spawned]
-      eff.asInstanceOf[Spawned].props shouldBe None
-    }
+    effects shouldBe Seq(SpawnedAdapter)
   }
 }
