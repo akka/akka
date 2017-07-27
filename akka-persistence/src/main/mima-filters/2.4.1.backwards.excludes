@@ -1,0 +1,5 @@
+# #19008
+ProblemFilters.exclude[Problem]("akka.persistence.journal.inmem.InmemJournal*")
+ProblemFilters.exclude[Problem]("akka.persistence.journal.inmem.InmemStore*")
+
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.PersistenceStash.internalStashOverflowStrategy")
