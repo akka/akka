@@ -1186,8 +1186,10 @@ Scala
     "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
     ```
     @@@
-    @@@vars
-     ```
+
+Java
+:   @@@vars
+    ```
     <dependency>
       <groupId>org.iq80.leveldb</groupId>
       <artifactId>leveldb</artifactId>
@@ -1201,7 +1203,6 @@ Scala
     ```
     @@@
   
-
 The default location of LevelDB files is a directory named `journal` in the current working
 directory. This location can be changed by configuration where the specified path can be relative or absolute:
 
