@@ -17,14 +17,14 @@ concepts and architecture of [eventsourced](https://github.com/eligosource/event
 
 Akka persistence is a separate jar file. Make sure that you have the following dependency in your project:
 
-Scala
+sbt
 :   @@@vars
     ```
     "com.typesafe.akka" %% "akka-persistence" % "$akka.version$"
     ```
     @@@
 
-Java
+Maven
 :   @@@vars
     ```
     <dependency>
@@ -40,7 +40,7 @@ in-memory heap based journal, local file-system based snapshot-store and LevelDB
 
 LevelDB based plugins will require the following additional dependency declaration:
 
-Scala
+sbt
 :   @@@vars
     ```
     "org.iq80.leveldb"            % "leveldb"          % "0.7"
@@ -48,7 +48,7 @@ Scala
     ```
     @@@
 
-Java
+Maven
 :   @@@vars
     ```
     <dependency>
@@ -1179,7 +1179,7 @@ instance. Enable this plugin by defining config property:
 
 LevelDB based plugins will also require the following additional dependency declaration:
 
-Scala
+sbt
 :   @@@vars
     ```
     "org.iq80.leveldb"            % "leveldb"          % "0.7"
@@ -1187,7 +1187,7 @@ Scala
     ```
     @@@
 
-Java
+Maven
 :   @@@vars
     ```
     <dependency>
