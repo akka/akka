@@ -1132,17 +1132,31 @@ In order to help developers build correct and high quality storage plugins, we p
 
 The TCK is usable from Java as well as Scala projects. For @scala[Scala]@java[Java] you need to include the akka-persistence-tck dependency:
 
-```
-"com.typesafe.akka" %% "akka-persistence-tck" % "$akka.version$" % "test"
-```
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-persistence-tck_${scala.version}</artifactId>
-  <version>$akka.version$</version>
-  <scope>test</scope>
-</dependency>
-```
+sbt
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-persistence-tck" % "$akka.version$" % "test"
+    ```
+    @@@
+
+gradle
+:   @@@vars
+    ```
+    testCompile group: 'com.typesafe.akka', name: 'akka-persistence-tck_$scala.binary_version$', version: '$akka.version$'
+    ```
+    @@@
+
+maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-persistence-tck_${scala.version}</artifactId>
+      <version>$akka.version$</version>
+      <scope>test</scope>
+    </dependency>
+    ```
+    @@@
 
 To include the Journal TCK tests in your test suite simply extend the provided @scala[`JournalSpec`]@java[`JavaJournalSpec`]:
 
