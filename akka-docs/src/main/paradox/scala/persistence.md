@@ -1151,7 +1151,7 @@ maven
     ```
     <dependency>
       <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-persistence-tck_${scala.version}</artifactId>
+      <artifactId>akka-persistence-tck_$scala.binary_version$</artifactId>
       <version>$akka.version$</version>
       <scope>test</scope>
     </dependency>
