@@ -27,7 +27,7 @@ sbt
 gradle
 :   @@@vars
     ``` 
-    compile group: 'com.typesafe.akka', name: 'akka-persistence_2.12', version: '2.5.3'
+    compile group: 'com.typesafe.akka', name: 'akka-persistence_$scala.binary_version$', version: '$akka.version$'
     ```
     @@@
 
