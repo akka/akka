@@ -24,7 +24,14 @@ sbt
     ```
     @@@
 
-Maven
+gradle
+:   @@@vars
+    ``` 
+    compile group: 'com.typesafe.akka', name: 'akka-persistence_2.12', version: '2.5.3'
+    ```
+    @@@
+
+maven
 :   @@@vars
     ```
     <dependency>
@@ -48,7 +55,15 @@ sbt
     ```
     @@@
 
-Maven
+gradle
+:   @@@vars
+    ```
+    compile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.7'
+    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
+    ```
+    @@@
+
+maven
 :   @@@vars
     ```
     <dependency>
@@ -1187,7 +1202,15 @@ sbt
     ```
     @@@
 
-Maven
+gradle
+:   @@@vars
+    ```
+    compile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.7'
+    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
+    ```
+    @@@
+
+maven
 :   @@@vars
     ```
     <dependency>
