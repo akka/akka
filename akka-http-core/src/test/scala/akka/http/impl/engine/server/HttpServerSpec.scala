@@ -1267,6 +1267,29 @@ class HttpServerSpec extends AkkaSpec(
         expectRequest().mapEntity(nameDataSource("foo")).expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
       }
     }
+
+    "reject CONNECT requests gracefully" in assertAllStagesStopped(new TestSetup {
+      send("""CONNECT www.example.com:80 HTTP/1.1
+             |Host: www.example.com:80
+             |
+             |""")
+
+      requests.request(1)
+
+      expectResponseWithWipedDate(
+        """|HTTP/1.1 400 Bad Request
+           |Server: akka-http/test
+           |Date: XXXX
+           |Connection: close
+           |Content-Type: text/plain; charset=UTF-8
+           |Content-Length: 34
+           |
+           |CONNECT requests are not supported""")
+
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
   }
   class TestSetup(maxContentLength: Int = -1) extends HttpServerTestSetupBase {
     implicit def system = spec.system

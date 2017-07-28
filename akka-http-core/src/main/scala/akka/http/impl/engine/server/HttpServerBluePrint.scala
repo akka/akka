@@ -211,6 +211,8 @@ private[http] object HttpServerBluePrint {
     val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader, HttpHeaderParser(parserSettings, log))
 
     def establishAbsoluteUri(requestOutput: RequestOutput): RequestOutput = requestOutput match {
+      case connect: RequestStart if connect.method == HttpMethods.CONNECT ⇒
+        MessageStartError(StatusCodes.BadRequest, ErrorInfo(s"CONNECT requests are not supported", s"Rejecting CONNECT request to '${connect.uri}'"))
       case start: RequestStart ⇒
         try {
           val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, isSecureConnection, defaultHostHeader)
