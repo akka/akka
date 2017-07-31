@@ -45,7 +45,7 @@ the below hand drawn graph into Akka Streams:
 Such graph is simple to translate to the Graph DSL since each linear element corresponds to a `Flow`,
 and each circle corresponds to either a `Junction` or a `Source` or `Sink` if it is beginning
 or ending a `Flow`. @scala[Junctions must always be created with defined type parameters, as otherwise the `Nothing` type
-will be inferred]@java[ ].
+will be inferred.]
 
 Scala
 :   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #simple-graph-dsl }
@@ -61,10 +61,10 @@ refers to the same location in the resulting graph).
 @@@
 
 @scala[Notice the `import GraphDSL.Implicits._` which brings into scope the `~>` operator (read as "edge", "via" or "to")
-and its inverted counterpart `<~` (for noting down flows in the opposite direction where appropriate).]@java[ ]
+and its inverted counterpart `<~` (for noting down flows in the opposite direction where appropriate).]
 
 By looking at the snippets above, it should be apparent that the @scala[`GraphDSL.Builder`]@java[`builder`] object is *mutable*.
-@scala[It is used (implicitly) by the `~>` operator, also making it a mutable operation as well.]@java[ ]
+@scala[It is used (implicitly) by the `~>` operator, also making it a mutable operation as well.]
 The reason for this design choice is to enable simpler creation of complex graphs, which may even contain cycles.
 Once the GraphDSL has been constructed though, the @scala[`GraphDSL`]@java[`RunnableGraph`] instance *is immutable, thread-safe, and freely shareable*.
 The same is true of all graph pieces—sources, sinks, and flows—once they are constructed.
