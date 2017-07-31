@@ -1,15 +1,17 @@
 # Release Notes
 
-## 10.0.9
-
-This release fixes a regression in 10.0.8 that occurred when using media ranges and connecting to a HTTP server that fails to specify the charset in the `ContentType` [#1222](https://github.com/akka/akka-http/issues/1222).
-
-Additionally, support for HTTP status code 418 has been introduced [#1206](https://github.com/akka/akka-http/issues/1206)
+## 10.0.10
 
 ### Support for HTTP(S) proxies with Authorization
 
 It is now possible to connect to @scala[@ref[HTTP(S) Proxies](client-side/client-transport.md)]@java[@ref[HTTP(S) Proxies](client-side/client-transport.md)]
 that require an authorization via an `Proxy-Authorization` header. This can be set up directly on the `ClientTransport` object when configuring the proxy.
+
+## 10.0.9
+
+This release fixes a regression in 10.0.8 that occurred when using media ranges and connecting to a HTTP server that fails to specify the charset in the `ContentType` [#1222](https://github.com/akka/akka-http/issues/1222).
+
+Additionally, support for HTTP status code 418 has been introduced [#1206](https://github.com/akka/akka-http/issues/1206)
 
 ## 10.0.8
 
