@@ -17,14 +17,21 @@ concepts and architecture of [eventsourced](https://github.com/eligosource/event
 
 Akka persistence is a separate jar file. Make sure that you have the following dependency in your project:
 
-Scala
+sbt
 :   @@@vars
     ```
     "com.typesafe.akka" %% "akka-persistence" % "$akka.version$"
     ```
     @@@
 
-Java
+gradle
+:   @@@vars
+    ``` 
+    compile group: 'com.typesafe.akka', name: 'akka-persistence_$scala.binary_version$', version: '$akka.version$'
+    ```
+    @@@
+
+maven
 :   @@@vars
     ```
     <dependency>
@@ -40,7 +47,7 @@ in-memory heap based journal, local file-system based snapshot-store and LevelDB
 
 LevelDB based plugins will require the following additional dependency declaration:
 
-Scala
+sbt
 :   @@@vars
     ```
     "org.iq80.leveldb"            % "leveldb"          % "0.7"
@@ -48,7 +55,15 @@ Scala
     ```
     @@@
 
-Java
+gradle
+:   @@@vars
+    ```
+    compile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.7'
+    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
+    ```
+    @@@
+
+maven
 :   @@@vars
     ```
     <dependency>
@@ -1115,19 +1130,33 @@ Don't run snapshot store tasks/futures on the system default dispatcher, since t
 
 In order to help developers build correct and high quality storage plugins, we provide a Technology Compatibility Kit ([TCK](http://en.wikipedia.org/wiki/Technology_Compatibility_Kit) for short).
 
-The TCK is usable from Java as well as Scala projects. For @scala[Scala]@java[Java] you need to include the akka-persistence-tck dependency:
+The TCK is usable from Java as well as Scala projects. To test your implementation (independently of language) you need to include the akka-persistence-tck dependency:
 
-```
-"com.typesafe.akka" %% "akka-persistence-tck" % "$akka.version$" % "test"
-```
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-persistence-tck_${scala.version}</artifactId>
-  <version>$akka.version$</version>
-  <scope>test</scope>
-</dependency>
-```
+sbt
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-persistence-tck" % "$akka.version$" % "test"
+    ```
+    @@@
+
+gradle
+:   @@@vars
+    ```
+    testCompile group: 'com.typesafe.akka', name: 'akka-persistence-tck_$scala.binary_version$', version: '$akka.version$'
+    ```
+    @@@
+
+maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-persistence-tck_$scala.binary_version$</artifactId>
+      <version>$akka.version$</version>
+      <scope>test</scope>
+    </dependency>
+    ```
+    @@@
 
 To include the Journal TCK tests in your test suite simply extend the provided @scala[`JournalSpec`]@java[`JavaJournalSpec`]:
 
@@ -1179,7 +1208,7 @@ instance. Enable this plugin by defining config property:
 
 LevelDB based plugins will also require the following additional dependency declaration:
 
-Scala
+sbt
 :   @@@vars
     ```
     "org.iq80.leveldb"            % "leveldb"          % "0.7"
@@ -1187,7 +1216,15 @@ Scala
     ```
     @@@
 
-Java
+gradle
+:   @@@vars
+    ```
+    compile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.7'
+    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
+    ```
+    @@@
+
+maven
 :   @@@vars
     ```
     <dependency>
