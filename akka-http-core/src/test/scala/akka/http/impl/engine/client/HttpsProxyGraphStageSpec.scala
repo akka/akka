@@ -28,7 +28,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
         connectMsg.utf8String should startWith(s"CONNECT $targetHostName:$targetPort HTTP/1.1")
         flowOutProbe.sendNext(ByteString("HTTP/1.0 200 Connection established\r\n\r\n"))
 
-        // we deliberately wait here some time to see if ProxyGraphStage properly handles slow demand from Https Proxy
+        // we deliberately wait here some time to see if ProxyGraphStage properly handles slow demand from HTTP(S) proxy
         flowInProbe.expectNoMsg(300.millis)
 
         source.sendNext(ByteString("something"))
@@ -60,7 +60,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
             |""").stripMarginWithNewline("\r\n"))
         flowOutProbe.sendNext(ByteString("HTTP/1.0 200 Connection established\r\n\r\n"))
 
-        // we deliberately wait here some time to see if ProxyGraphStage properly handles slow demand from Https Proxy
+        // we deliberately wait here some time to see if ProxyGraphStage properly handles slow demand from HTTP(S) proxy
         flowInProbe.expectNoMsg(300.millis)
 
         source.sendNext(ByteString("something"))

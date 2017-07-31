@@ -46,33 +46,34 @@ object ClientTransport {
   }
 
   /**
-   * Returns a [[ClientTransport]] that runs all connection through the given HTTPS proxy using the
+   * Returns a [[ClientTransport]] that runs all connection through the given HTTP(S) proxy using the
    * HTTP CONNECT method.
    *
-   * An HTTPS proxy is a proxy that will create one TCP connection to the HTTPS proxy for each target connection. The
+   * An HTTP(S) proxy is a proxy that will create one TCP connection to the HTTP(S) proxy for each target connection. The
    * proxy transparently forwards the TCP connection to the target host.
    *
    * For more information about HTTP CONNECT tunnelling see https://tools.ietf.org/html/rfc7231#section-4.3.6.
    */
-  def httpsProxy(proxyAddress: InetSocketAddress): ClientTransport = new HttpsProxyTransport(proxyAddress)
+  def httpsProxy(proxyAddress: InetSocketAddress): ClientTransport =
+    HttpsProxyTransport(proxyAddress)
 
   /**
-   * Returns a [[ClientTransport]] that runs all connection through the given HTTPS proxy using the
-   * HTTP CONNECT method. This call also takes [[HttpCredentials]] to base proxy credentials along with
-   * the request.
+   * Returns a [[ClientTransport]] that runs all connection through the given HTTP(S) proxy using the
+   * HTTP CONNECT method. This method also takes [[HttpCredentials]] in order to pass along to the proxy.
    *
-   * An HTTPS proxy is a proxy that will create one TCP connection to the HTTPS proxy for each target connection. The
+   * An HTTP(S) proxy is a proxy that will create one TCP connection to the HTTP(S) proxy for each target connection. The
    * proxy transparently forwards the TCP connection to the target host.
    *
    * For more information about HTTP CONNECT tunnelling see https://tools.ietf.org/html/rfc7231#section-4.3.6.
    */
-  def httpsProxy(proxyAddress: InetSocketAddress, proxyAuth: HttpCredentials): ClientTransport = new HttpsProxyTransport(proxyAddress, proxyAuth = Some(proxyAuth))
+  def httpsProxy(proxyAddress: InetSocketAddress, proxyCredentials: HttpCredentials): ClientTransport =
+    HttpsProxyTransport(proxyAddress, proxyCredentials = Some(proxyCredentials))
 
-  private case class HttpsProxyTransport(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport = TCP, proxyAuth: Option[HttpCredentials] = None) extends ClientTransport {
+  private case class HttpsProxyTransport(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport = TCP, proxyCredentials: Option[HttpCredentials] = None) extends ClientTransport {
     def this(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport) = this(proxyAddress, underlyingTransport, None)
 
     def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-      HttpsProxyGraphStage(host, port, settings, proxyAuth)
+      HttpsProxyGraphStage(host, port, settings, proxyCredentials)
         .joinMat(underlyingTransport.connectTo(proxyAddress.getHostString, proxyAddress.getPort, settings))(Keep.right)
         // on the HTTP level we want to see the final remote address in the `OutgoingConnection`
         .mapMaterializedValue(_.map(_.copy(remoteAddress = InetSocketAddress.createUnresolved(host, port)))(system.dispatcher))

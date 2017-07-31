@@ -340,4 +340,30 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     //#https-proxy-example-single-request
   }
 
+  "https-proxy-example-single-request with auth" in compileOnlySpec {
+    import java.net.InetSocketAddress
+
+    import akka.actor.ActorSystem
+    import akka.stream.ActorMaterializer
+    import akka.http.scaladsl.{ ClientTransport, Http }
+
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+
+    val proxyHost = "localhost"
+    val proxyPort = 8888
+
+    //#auth-https-proxy-example-single-request
+    import akka.http.scaladsl.model.headers
+
+    val proxyAddress = InetSocketAddress.createUnresolved(proxyHost, proxyPort)
+    val auth = headers.BasicHttpCredentials("proxy-user", "secret-proxy-pass-dont-tell-anyone")
+
+    val httpsProxyTransport = ClientTransport.httpsProxy(proxyAddress, auth)
+
+    val settings = ConnectionPoolSettings(system).withTransport(httpsProxyTransport)
+    Http().singleRequest(HttpRequest(uri = "http://akka.io"), settings = settings)
+    //#auth-https-proxy-example-single-request
+  }
+
 }

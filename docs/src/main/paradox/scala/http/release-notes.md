@@ -6,11 +6,16 @@ This release fixes a regression in 10.0.8 that occurred when using media ranges 
 
 Additionally, support for HTTP status code 418 has been introduced [#1206](https://github.com/akka/akka-http/issues/1206)
 
+### Support for HTTP(S) proxies with Authorization
+
+It is now possible to connect to @scala[@ref[HTTP(S) Proxies](client-side/client-transport.md)]@java[@ref[HTTP(S) Proxies](client-side/client-transport.md)]
+that require an authorization via an `Proxy-Authorization` header. This can be set up directly on the `ClientTransport` object when configuring the proxy.
+
 ## 10.0.8
 
-### Https Proxy Support
+### HTTP(S) Proxy Support
 
-Long awaited support for configuring an @scala[@ref[HTTPS CONNECT Proxy](client-side/client-transport.md#use-https-proxy-with-http-singlerequest)]@java[@ref[HTTPS CONNECT Proxy](client-side/client-transport.md#use-https-proxy-with-http-get-singlerequest)]
+Long awaited support for configuring an @scala[@ref[HTTP(S) CONNECT Proxy](client-side/client-transport.md#use-https-proxy-with-http-singlerequest)]@java[@ref[HTTP(S) CONNECT Proxy](client-side/client-transport.md#use-https-proxy-with-http-get-singlerequest)]
 for the client has arrived. Thanks a lot, [Michal Sitko (@note)](https://github.com/note), who implemented the feature.
 
 Support for proxies that require authentication is yet to be implemented and is tracked by the ticket [#1213](https://github.com/akka/akka-http/issues/1213)
@@ -44,7 +49,7 @@ Support for Server-Sent events was added by merging akka-sse project by [@hseebe
 
 ##### akka-http-core
 
-* HTTPS proxy support ([#192](https://github.com/akka/akka-http/issues/192))
+* HTTP(S) proxy support ([#192](https://github.com/akka/akka-http/issues/192))
 * Allow '=' in query param values in relaxed mode ([#1120](https://github.com/akka/akka-http/issues/1120))
 
 ##### akka-http
@@ -58,7 +63,7 @@ Support for Server-Sent events was added by merging akka-sse project by [@hseebe
 
 ##### Documentation
 
-* Document pluggable client transport infrastructure and HTTPS proxy support ([#192](https://github.com/akka/akka-http/issues/192))
+* Document pluggable client transport infrastructure and HTTP(S) proxy support ([#192](https://github.com/akka/akka-http/issues/192))
 * Reference security announcements and release notes in ToC ([#1199](https://github.com/akka/akka-http/issues/1199))
 
 #### Bug Fixes
