@@ -61,7 +61,8 @@ private final class HttpsProxyGraphStage(
     ByteString(
       s"CONNECT $targetHostName:$targetPort HTTP/1.1\r\n" +
       s"Host: $targetHostName\r\n") ++
-      renderedProxyAuth
+      renderedProxyAuth ++ 
+      ByteString("\r\n")
     // format: ON
   }
 
