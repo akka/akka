@@ -57,12 +57,12 @@ private[akka] final case class Remove(node: RoleName) extends CommandOp
 
 private[akka] class MsgEncoder extends OneToOneEncoder {
 
-  implicit def address2proto(addr: Address): TCP.Address =
+  implicit def address2proto(address: Address): TCP.Address =
     TCP.Address.newBuilder
-      .setProtocol(addr.protocol)
-      .setSystem(addr.system)
-      .setHost(addr.host.get)
-      .setPort(addr.port.get)
+      .setProtocol(address.protocol)
+      .setSystem(address.system)
+      .setHost(address.host.get)
+      .setPort(address.port.get)
       .build
 
   implicit def direction2proto(dir: Direction): TCP.Direction = dir match {
@@ -75,8 +75,8 @@ private[akka] class MsgEncoder extends OneToOneEncoder {
     case x: NetworkOp ⇒
       val w = TCP.Wrapper.newBuilder
       x match {
-        case Hello(name, addr) ⇒
-          w.setHello(TCP.Hello.newBuilder.setName(name).setAddress(addr))
+        case Hello(name, address) ⇒
+          w.setHello(TCP.Hello.newBuilder.setName(name).setAddress(address))
         case EnterBarrier(name, timeout) ⇒
           val barrier = TCP.EnterBarrier.newBuilder.setName(name)
           timeout foreach (t ⇒ barrier.setTimeout(t.toNanos))
@@ -101,8 +101,8 @@ private[akka] class MsgEncoder extends OneToOneEncoder {
           w.setFailure(TCP.InjectFailure.newBuilder.setFailure(TCP.FailType.ShutdownAbrupt))
         case GetAddress(node) ⇒
           w.setAddr(TCP.AddressRequest.newBuilder.setNode(node.name))
-        case AddressReply(node, addr) ⇒
-          w.setAddr(TCP.AddressRequest.newBuilder.setNode(node.name).setAddr(addr))
+        case AddressReply(node, address) ⇒
+          w.setAddr(TCP.AddressRequest.newBuilder.setNode(node.name).setAddr(address))
         case _: Done ⇒
           w.setDone("")
       }
@@ -113,8 +113,8 @@ private[akka] class MsgEncoder extends OneToOneEncoder {
 
 private[akka] class MsgDecoder extends OneToOneDecoder {
 
-  implicit def address2scala(addr: TCP.Address): Address =
-    Address(addr.getProtocol, addr.getSystem, addr.getHost, addr.getPort)
+  implicit def address2scala(address: TCP.Address): Address =
+    Address(address.getProtocol, address.getSystem, address.getHost, address.getPort)
 
   implicit def direction2scala(dir: TCP.Direction): Direction = dir match {
     case TCP.Direction.Send    ⇒ Direction.Send

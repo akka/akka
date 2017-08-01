@@ -174,7 +174,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
   var remainingServerRoleNames = Set(first, second, third, fourth)
 
-  def roleName(addr: Address): Option[RoleName] = remainingServerRoleNames.find(node(_).address == addr)
+  def roleName(roleAddress: Address): Option[RoleName] = remainingServerRoleNames.find(node(_).address == roleAddress)
 
   def initialContacts = (remainingServerRoleNames - first - fourth).map { r ⇒
     node(r) / "system" / "receptionist"
