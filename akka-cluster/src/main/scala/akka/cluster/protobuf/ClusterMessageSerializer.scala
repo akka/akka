@@ -386,7 +386,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       totalInstances = crps.getTotalInstances,
       maxInstancesPerNode = crps.getMaxInstancesPerNode,
       allowLocalRoutees = crps.getAllowLocalRoutees,
-      useRoles = Option(crps.getUseRole).toSet ++ crps.getUseRolesList.asScala
+      useRoles = if (crps.hasUseRole) { crps.getUseRolesList.asScala.toSet + crps.getUseRole } else { crps.getUseRolesList.asScala.toSet }
     )
   }
 
