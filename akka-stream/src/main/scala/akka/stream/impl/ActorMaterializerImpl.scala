@@ -17,7 +17,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, ExecutionContextExecutor }
 
 /**
- * ExtendedActorMaterializer used by subtypes which materializer using GraphInterpreterShell
+ * ExtendedActorMaterializer used by subtypes which delegates in-island wiring to [[akka.stream.impl.PhaseIsland]]s
  */
 @DoNotInherit private[akka] abstract class ExtendedActorMaterializer extends ActorMaterializer {
 
