@@ -745,7 +745,7 @@ is available in the `akka.pattern.PatternsCS` object.
 
 @@@ warning
 
-To complete the future with an exception you need send an `akka.actor.Status.Failure` message to the sender.
+To complete the future with an exception you need to send an `akka.actor.Status.Failure` message to the sender.
 This is *not done automatically* when an actor throws an exception while processing a message. 
 
 Please note that Scala's `Try` sub types `scala.util.Failure` and `scala.util.Success` are not treated 
