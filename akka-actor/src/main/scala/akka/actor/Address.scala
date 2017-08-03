@@ -113,9 +113,9 @@ private[akka] trait PathUtils {
  *  * "/user/hello/world"
  */
 object RelativeActorPath extends PathUtils {
-  def unapply(address: String): Option[immutable.Seq[String]] = {
+  def unapply(addr: String): Option[immutable.Seq[String]] = {
     try {
-      val uri = new URI(address)
+      val uri = new URI(addr)
       if (uri.isAbsolute) None
       else Some(split(uri.getRawPath, uri.getRawFragment))
     } catch {
@@ -128,7 +128,7 @@ object RelativeActorPath extends PathUtils {
  * This object serves as extractor for Scala and as address parser for Java.
  */
 object AddressFromURIString {
-  def unapply(address: String): Option[Address] = try unapply(new URI(address)) catch { case _: URISyntaxException ⇒ None }
+  def unapply(addr: String): Option[Address] = try unapply(new URI(addr)) catch { case _: URISyntaxException ⇒ None }
 
   def unapply(uri: URI): Option[Address] =
     if (uri eq null) None
@@ -146,24 +146,24 @@ object AddressFromURIString {
   /**
    * Try to construct an Address from the given String or throw a java.net.MalformedURLException.
    */
-  def apply(applyAddress: String): Address = applyAddress match {
-    case AddressFromURIString(unapplyAddress) ⇒ unapplyAddress
-    case _                                    ⇒ throw new MalformedURLException(applyAddress)
+  def apply(addr: String): Address = addr match {
+    case AddressFromURIString(address) ⇒ address
+    case _                             ⇒ throw new MalformedURLException(addr)
   }
 
   /**
    * Java API: Try to construct an Address from the given String or throw a java.net.MalformedURLException.
    */
-  def parse(address: String): Address = apply(address)
+  def parse(addr: String): Address = apply(addr)
 }
 
 /**
  * Given an ActorPath it returns the Address and the path elements if the path is well-formed
  */
 object ActorPathExtractor extends PathUtils {
-  def unapply(address: String): Option[(Address, immutable.Iterable[String])] =
+  def unapply(addr: String): Option[(Address, immutable.Iterable[String])] =
     try {
-      val uri = new URI(address)
+      val uri = new URI(addr)
       uri.getRawPath match {
         case null ⇒ None
         case path ⇒ AddressFromURIString.unapply(uri).map((_, split(path, uri.getRawFragment).drop(1)))

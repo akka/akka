@@ -173,7 +173,7 @@ trait ActorRefProvider {
    * reached from this system (i.e. no means of communication known; no
    * attempt is made to verify actual reachability).
    */
-  def getExternalAddressFor(address: Address): Option[Address]
+  def getExternalAddressFor(addr: Address): Option[Address]
 
   /**
    * Obtain the external address of the default transport.
@@ -786,7 +786,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     }
   }
 
-  def getExternalAddressFor(address: Address): Option[Address] = if (address == rootPath.address) Some(address) else None
+  def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
 
   def getDefaultAddress: Address = rootPath.address
 }

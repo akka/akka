@@ -272,11 +272,11 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
 
   override val toSerializationFormat: String = toString
 
-  override def toStringWithAddress(newAddress: Address): String =
+  override def toStringWithAddress(addr: Address): String =
     if (address.host.isDefined) address + name
-    else newAddress + name
+    else addr + name
 
-  override def toSerializationFormatWithAddress(address: Address): String = toStringWithAddress(address)
+  override def toSerializationFormatWithAddress(addr: Address): String = toStringWithAddress(addr)
 
   override def compareTo(other: ActorPath): Int = other match {
     case r: RootActorPath  ⇒ toString compareTo r.toString // FIXME make this cheaper by comparing address and name in isolation
@@ -354,16 +354,16 @@ final class ChildActorPath private[akka] (val parent: ActorPath, val name: Strin
     case c: ChildActorPath ⇒ c.toStringLength + 1
   }
 
-  override def toStringWithAddress(address: Address): String = {
-    val diff = addressStringLengthDiff(address)
+  override def toStringWithAddress(addr: Address): String = {
+    val diff = addressStringLengthDiff(addr)
     val length = toStringLength + diff
-    buildToString(new JStringBuilder(length), length, diff, _.toStringWithAddress(address)).toString
+    buildToString(new JStringBuilder(length), length, diff, _.toStringWithAddress(addr)).toString
   }
 
-  override def toSerializationFormatWithAddress(address: Address): String = {
-    val diff = addressStringLengthDiff(address)
+  override def toSerializationFormatWithAddress(addr: Address): String = {
+    val diff = addressStringLengthDiff(addr)
     val length = toStringLength + diff
-    val sb = buildToString(new JStringBuilder(length + 12), length, diff, _.toStringWithAddress(address))
+    val sb = buildToString(new JStringBuilder(length + 12), length, diff, _.toStringWithAddress(addr))
     appendUidFragment(sb).toString
   }
 
