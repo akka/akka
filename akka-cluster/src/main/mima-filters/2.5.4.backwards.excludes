@@ -1,0 +1,3 @@
+# #23257 replace ClusterRouterGroup/Pool "use-role" with "use-roles"
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.routing.ClusterRouterSettingsBase.useRole")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.routing.ClusterRouterSettingsBase.useRoles")
