@@ -39,13 +39,13 @@ object ClusterRouterGroupSettings {
   def apply(totalInstances: Int, routeesPaths: immutable.Seq[String], allowLocalRoutees: Boolean, useRoles: String*): ClusterRouterGroupSettings =
     ClusterRouterGroupSettings(totalInstances, routeesPaths, allowLocalRoutees, useRoles.toSet)
 
-  // For backwards compatibility, useRoles is the combination of use-role and use-roles
+  // For backwards compatibility, useRoles is the combination of use-roles and use-role
   def fromConfig(config: Config): ClusterRouterGroupSettings =
     ClusterRouterGroupSettings(
       totalInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
       routeesPaths = immutableSeq(config.getStringList("routees.paths")),
       allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
-      useRoles = Option(config.getString("cluster.use-role")).toSet ++ config.getStringList("cluster.use-roles").asScala)
+      useRoles = config.getStringList("cluster.use-roles").asScala.toSet ++ ClusterRouterSettingsBase.useRoleOption(config.getString("cluster.use-role")))
 }
 
 /**
@@ -114,13 +114,13 @@ object ClusterRouterPoolSettings {
   def apply(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean, useRoles: String*): ClusterRouterPoolSettings =
     ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode, allowLocalRoutees, useRoles.toSet)
 
-  // For backwards compatibility, useRoles is the combination of use-role and use-roles
+  // For backwards compatibility, useRoles is the combination of use-roles and use-role
   def fromConfig(config: Config): ClusterRouterPoolSettings =
     ClusterRouterPoolSettings(
       totalInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
       maxInstancesPerNode = config.getInt("cluster.max-nr-of-instances-per-node"),
       allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
-      useRoles = Option(config.getString("cluster.use-role")).toSet ++ config.getStringList("cluster.use-roles").asScala)
+      useRoles = config.getStringList("cluster.use-roles").asScala.toSet ++ ClusterRouterSettingsBase.useRoleOption(config.getString("cluster.use-role")))
 }
 
 /**
@@ -178,6 +178,11 @@ final case class ClusterRouterPoolSettings(
  * INTERNAL API
  */
 private[akka] object ClusterRouterSettingsBase {
+  def useRoleOption(role: String): Option[String] = role match {
+    case null | "" ⇒ None
+    case _         ⇒ Some(role)
+  }
+
   /**
    * For backwards compatibility reasons, nr-of-instances
    * has the same purpose as max-total-nr-of-instances for cluster
