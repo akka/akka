@@ -1,9 +1,9 @@
 # Marshalling
 
-"Marshalling" is the process of converting a higher-level (object) structure into some kind of lower-level
-representation, often a "wire format". Other popular names for it are "Serialization" or "Pickling".
+Marshalling is the process of converting a higher-level (object) structure into some kind of lower-level
+representation, often a "wire format". Other popular names for marshalling are "serialization" or "pickling".
 
-In Akka HTTP "Marshalling" means the conversion of an object of type `T` into a lower-level target type,
+In Akka HTTP, marshalling means the conversion of an object of type `T` into a lower-level target type,
 e.g. a `MessageEntity` (which forms the "entity body" of an HTTP request or response) or a full `HttpRequest` or
 `HttpResponse`.
 
@@ -16,11 +16,11 @@ Akka HTTP also predefines a number of helpful aliases for the types of marshalle
 
 Contrary to what you might initially expect `Marshaller[A, B]` is not a plain function `A => B` but rather
 essentially a function `A => Future[List[Marshalling[B]]]`.
-Let's dissect this rather complicated looking signature piece by piece to understand what marshallers are designed this
+Let's dissect this rather complicated looking signature piece by piece to understand why marshallers are designed this
 way.
-Given an instance of type `A` a `Marshaller[A, B]` produces:
+Given an instance of type `A`, a `Marshaller[A, B]` produces:
 
-1. A `Future`: This is probably quite clear. Marshallers are not required to synchronously produce a result, so instead
+1. A `Future`: Marshallers are not required to synchronously produce a result, so instead
 they return a future, which allows for asynchronicity in the marshalling process.
 
 2. of `List`: Rather than only a single target representation for `A` marshallers can offer several ones. Which
@@ -124,10 +124,10 @@ depend on one being available implicitly at the usage site.
 
 ## Using Marshallers
 
-In many places throughput Akka HTTP marshallers are used implicitly, e.g. when you define how to @ref[complete](../routing-dsl/directives/route-directives/complete.md) a
+In many places through Akka HTTP, marshallers are used implicitly, e.g. when you define how to @ref[complete](../routing-dsl/directives/route-directives/complete.md) a
 request using the @ref[Routing DSL](../routing-dsl/index.md).
 
-However, you can also use the marshalling infrastructure directly if you wish, which can be useful for example in tests.
+However, you can also use the marshalling infrastructure directly if you wish, which can be useful in tests, for example.
 The best entry point for this is the `akka.http.scaladsl.marshalling.Marshal` object, which you can use like this:
 
 @@snip [MarshalSpec.scala](../../../../../test/scala/docs/http/scaladsl/MarshalSpec.scala) { #use-marshal }
