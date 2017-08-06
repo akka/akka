@@ -219,7 +219,7 @@ way which is described in the documentation of the individual Camel
 components. Another option is to configure timeouts on the level of consumer actors.
 
 Two-way communications between a Camel endpoint and an actor are
-initiated by sending the request message to the actor with the @scala[@extref[ask](github:akka-actor/src/main/scala/akka/pattern/AskSupport.scala)]@java[@extref[ask](github:akka-actor/src/main/scala/akka/pattern/Patterns.scala] pattern
+initiated by sending the request message to the actor with the @scala[@extref[ask](github:akka-actor/src/main/scala/akka/pattern/AskSupport.scala)]@java[@extref[ask](github:akka-actor/src/main/scala/akka/pattern/Patterns.scala)] pattern
 and the actor replies to the endpoint when the response is ready. The ask request to the actor can timeout, which will
 result in the [Exchange](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java) failing with a TimeoutException set on the failure of the [Exchange](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java).
 The timeout on the consumer actor can be overridden with the `replyTimeout`, as shown below.
