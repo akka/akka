@@ -9,6 +9,7 @@ import com.typesafe.sbt.osgi.SbtOsgi._
 import com.typesafe.sbt.osgi.SbtOsgi.autoImport._
 import sbt._
 import sbt.Keys._
+import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin
 
 object OSGi {
 
@@ -16,7 +17,7 @@ object OSGi {
   // in the .../bundles directory which makes testing locally published artifacts
   // a pain. Create bundles but publish them to the normal .../jars directory.
   def osgiSettings = defaultOsgiSettings ++ Seq(
-    Compile / packageBin := OsgiKeys.bundle.value,
+    Compile / packageBin := ReproducibleBuildsPlugin.postProcessJar(OsgiKeys.bundle.value),
     // This will fail the build instead of accidentally removing classes from the resulting artifact.
     // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
     OsgiKeys.failOnUndecidedPackage := true,
