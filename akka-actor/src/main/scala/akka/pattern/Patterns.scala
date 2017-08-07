@@ -3,18 +3,28 @@
  */
 package akka.pattern
 
-import akka.actor.{ ActorSelection, Scheduler }
-import java.util.concurrent.{ Callable, TimeUnit }
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.FiniteDuration
-import java.util.concurrent.CompletionStage
-import scala.compat.java8.FutureConverters._
+import java.util.concurrent.{ Callable, CompletionStage, TimeUnit }
 
+import akka.actor.{ ActorSelection, Scheduler }
+
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.ExecutionContext
+
+/**
+ * "Pre Java 8" Java API for Akka patterns such as `ask`, `pipe` and others.
+ *
+ * These methods are possible to call from Java however work with the Scala [[scala.concurrent.Future]],
+ * due to the lack of non-blocking reactive Future implementation before Java 8.
+ *
+ * For Java applications developed with Java 8 and later, you might want to use [[akka.pattern.PatternsCS]] instead,
+ * which provide alternatives for these patterns which work with [[java.util.concurrent.CompletionStage]].
+ */
 object Patterns {
+  import akka.actor.ActorRef
   import akka.japi
-  import akka.actor.{ ActorRef }
-  import akka.pattern.{ ask ⇒ scalaAsk, pipe ⇒ scalaPipe, gracefulStop ⇒ scalaGracefulStop, after ⇒ scalaAfter }
+  import akka.pattern.{ after ⇒ scalaAfter, ask ⇒ scalaAsk, gracefulStop ⇒ scalaGracefulStop, pipe ⇒ scalaPipe }
   import akka.util.Timeout
+
   import scala.concurrent.Future
   import scala.concurrent.duration._
 
@@ -259,11 +269,17 @@ object Patterns {
     scalaAfter(duration, scheduler)(value)(context)
 }
 
+/**
+ * Java 8+ API for Akka patterns such as `ask`, `pipe` and others which work with [[java.util.concurrent.CompletionStage]].
+ *
+ * For working with Scala [[scala.concurrent.Future]] from Java you may want to use [[akka.pattern.Patterns]] instead.
+ */
 object PatternsCS {
+  import akka.actor.ActorRef
   import akka.japi
-  import akka.actor.{ ActorRef }
   import akka.pattern.{ ask ⇒ scalaAsk, gracefulStop ⇒ scalaGracefulStop }
   import akka.util.Timeout
+
   import scala.concurrent.duration._
 
   /**
