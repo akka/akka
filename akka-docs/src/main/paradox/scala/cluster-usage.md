@@ -6,14 +6,21 @@ For introduction to the Akka Cluster concepts please see @ref:[Cluster Specifica
 
 The Akka cluster is a separate jar file. Make sure that you have the following dependency in your project:
 
-Scala
+sbt
 :   @@@vars
     ```
     "com.typesafe.akka" %% "akka-cluster" % "$akka.version$"
     ```
     @@@
    
-Java
+gradle
+:   @@@vars
+    ```
+     compile group: 'com.typesafe.akka', name: 'akka-cluster_$scala.binary_version$', version: '$akka.version$'
+    ```
+    @@@
+
+maven
 :   @@@vars
     ```
     <dependency>
