@@ -26,7 +26,7 @@ import akka.remote.artery.MaxThroughputSpec._
 
 object FanInThroughputSpec extends MultiNodeConfig {
   val totalNumberOfNodes =
-    System.getProperty("MultiJvm.akka.test.FanInThroughputSpec.nrOfNodes") match {
+    System.getProperty("akka.test.FanInThroughputSpec.nrOfNodes") match {
       case null  ⇒ 20
       case value ⇒ value.toInt
     }
