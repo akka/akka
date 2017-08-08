@@ -226,9 +226,9 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
               log.warning("did not expect {}", op)
           }
           stay using d.copy(runningOp = None)
-        case AddressReply(node, addr) ⇒
+        case AddressReply(node, address) ⇒
           runningOp match {
-            case Some((_, requester)) ⇒ requester ! addr
+            case Some((_, requester)) ⇒ requester ! address
             case None                 ⇒ log.warning("did not expect {}", op)
           }
           stay using d.copy(runningOp = None)
