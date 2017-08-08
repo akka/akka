@@ -107,7 +107,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
     //#getFromResourceDirectory-examples
     val route =
       pathPrefix("examples") {
-        getFromResourceDirectory("/examples")
+        getFromResourceDirectory("examples")
       }
 
     // tests:
