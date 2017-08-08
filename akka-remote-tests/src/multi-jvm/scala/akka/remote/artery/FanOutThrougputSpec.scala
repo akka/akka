@@ -32,7 +32,7 @@ object FanOutThroughputSpec extends MultiNodeConfig {
 
   val totalNumberOfNodes =
     System.getProperty("MultiJvm.akka.test.FanOutThroughputSpec.nrOfNodes") match {
-      case null  ⇒ 10
+      case null  ⇒ 20
       case value ⇒ value.toInt
     }
   val senderReceiverPairs = totalNumberOfNodes - 1
