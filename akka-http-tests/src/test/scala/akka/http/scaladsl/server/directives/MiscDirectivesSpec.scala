@@ -100,6 +100,28 @@ class MiscDirectivesSpec extends RoutingSpec {
       }
     }
 
+    "apply if form data is fully consumed into a map" in {
+      val route =
+        withSizeLimit(64) {
+          formFieldMap { _ ⇒
+            completeOk
+          }
+        }
+
+      Post("/abc", formDataOfSize(32)) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+
+      Post("/abc", formDataOfSize(128)) ~> Route.seal(route) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        responseAs[String] shouldEqual "The request content was malformed:\n" +
+          "EntityStreamSizeException: actual entity size (Some(134)) " +
+          "exceeded content length limit (64 bytes)! " +
+          "You can configure this by setting `akka.http.[server|client].parsing.max-content-length` " +
+          "or calling `HttpEntity.withSizeLimit` before materializing the dataBytes stream."
+      }
+    }
+
     "properly handle nested directives by applying innermost `withSizeLimit` directive" in {
       val route =
         withSizeLimit(500) {
@@ -179,4 +201,6 @@ class MiscDirectivesSpec extends RoutingSpec {
   def remoteAddress(ip: String) = RemoteAddress(InetAddress.getByName(ip))
 
   private def entityOfSize(size: Int) = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "0" * size)
+
+  private def formDataOfSize(size: Int) = FormData(Map("field" → ("0" * size)))
 }
