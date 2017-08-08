@@ -1435,6 +1435,7 @@ private[stream] object Collect {
     private var groupEmitted = true
     private var finished = false
     private var totalWeight = 0L
+    private var hasElements = false
 
     override def preStart() = {
       schedulePeriodically(GroupedWeightedWithin.groupedWeightedWithinTimer, interval)
@@ -1444,8 +1445,9 @@ private[stream] object Collect {
     private def nextElement(elem: T): Unit = {
       groupEmitted = false
       val cost = costFn(elem)
-      if (cost < 0) failStage(new IllegalArgumentException(s"Negative weight [$cost] for element [$elem] is not allowed"))
+      if (cost < 0L) failStage(new IllegalArgumentException(s"Negative weight [$cost] for element [$elem] is not allowed"))
       else {
+        hasElements = true
         if (totalWeight + cost <= maxWeight) {
           buf += elem
           totalWeight += cost
@@ -1466,6 +1468,7 @@ private[stream] object Collect {
             }
           }
         } else {
+          //we have a single heavy element that weighs more than the limit
           if (totalWeight == 0L) {
             buf += elem
             totalWeight += cost
@@ -1502,7 +1505,8 @@ private[stream] object Collect {
         pending = null.asInstanceOf[T]
         groupEmitted = false
       } else {
-        totalWeight = 0
+        totalWeight = 0L
+        hasElements = false
       }
       pushEagerly = false
       if (isAvailable(in)) nextElement(grab(in))
@@ -1521,7 +1525,7 @@ private[stream] object Collect {
       else tryCloseGroup()
     }
 
-    override protected def onTimer(timerKey: Any) = if (totalWeight > 0) {
+    override protected def onTimer(timerKey: Any) = if (hasElements) {
       if (isAvailable(out)) emitGroup()
       else pushEagerly = true
     }
