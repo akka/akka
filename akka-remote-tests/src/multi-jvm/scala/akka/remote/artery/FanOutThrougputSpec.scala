@@ -27,7 +27,7 @@ import akka.remote.artery.MaxThroughputSpec._
 object FanOutThroughputSpec extends MultiNodeConfig {
   val totalNumberOfNodes =
     System.getProperty("MultiJvm.akka.test.FanOutThroughputSpec.nrOfNodes") match {
-      case null  ⇒ 4
+      case null  ⇒ 5
       case value ⇒ value.toInt
     }
   val senderReceiverPairs = totalNumberOfNodes - 1
@@ -52,7 +52,7 @@ class FanOutThroughputSpecMultiJvmNode1 extends FanOutThroughputSpec
 class FanOutThroughputSpecMultiJvmNode2 extends FanOutThroughputSpec
 class FanOutThroughputSpecMultiJvmNode3 extends FanOutThroughputSpec
 class FanOutThroughputSpecMultiJvmNode4 extends FanOutThroughputSpec
-//class FanOutThroughputSpecMultiJvmNode5 extends FanOutThroughputSpec
+class FanOutThroughputSpecMultiJvmNode5 extends FanOutThroughputSpec
 //class FanOutThroughputSpecMultiJvmNode6 extends FanOutThroughputSpec
 //class FanOutThroughputSpecMultiJvmNode7 extends FanOutThroughputSpec
 
