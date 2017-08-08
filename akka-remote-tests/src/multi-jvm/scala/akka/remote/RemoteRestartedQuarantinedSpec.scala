@@ -97,7 +97,7 @@ abstract class RemoteRestartedQuarantinedSpec
       }
 
       runOn(second) {
-        val addr = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+        val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         val firstAddress = node(first).address
         system.eventStream.subscribe(testActor, classOf[ThisActorSystemQuarantinedEvent])
 
@@ -125,8 +125,8 @@ abstract class RemoteRestartedQuarantinedSpec
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
                     akka.remote.retry-gate-closed-for = 0.5 s
                     akka.remote.netty.tcp {
-                      hostname = ${addr.host.get}
-                      port = ${addr.port.get}
+                      hostname = ${address.host.get}
+                      port = ${address.port.get}
                     }
                     """).withFallback(system.settings.config))
 

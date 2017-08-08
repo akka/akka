@@ -238,9 +238,9 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     runOn(first) {
 
       val sys1 = ActorSystem("AdditionalSys", system.settings.config)
-      val addr = Cluster(sys1).selfAddress
+      val address = Cluster(sys1).selfAddress
       try {
-        Cluster(sys1).join(addr)
+        Cluster(sys1).join(address)
         new TestKit(sys1) with ImplicitSender {
 
           val r = newReplicator(sys1)
@@ -276,11 +276,11 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         "AdditionalSys",
         // use the same port
         ConfigFactory.parseString(s"""
-            akka.remote.artery.canonical.port = ${addr.port.get}
-            akka.remote.netty.tcp.port = ${addr.port.get}
+            akka.remote.artery.canonical.port = ${address.port.get}
+            akka.remote.netty.tcp.port = ${address.port.get}
             """).withFallback(system.settings.config))
       try {
-        Cluster(sys2).join(addr)
+        Cluster(sys2).join(address)
         new TestKit(sys2) with ImplicitSender {
 
           val r2: ActorRef = newReplicator(sys2)
