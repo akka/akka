@@ -27,7 +27,7 @@ import akka.remote.artery.MaxThroughputSpec._
 object FanInThroughputSpec extends MultiNodeConfig {
   val totalNumberOfNodes =
     System.getProperty("MultiJvm.akka.test.FanInThroughputSpec.nrOfNodes") match {
-      case null  ⇒ 4
+      case null  ⇒ 20
       case value ⇒ value.toInt
     }
   val senderReceiverPairs = totalNumberOfNodes - 1
@@ -52,9 +52,22 @@ class FanInThroughputSpecMultiJvmNode1 extends FanInThroughputSpec
 class FanInThroughputSpecMultiJvmNode2 extends FanInThroughputSpec
 class FanInThroughputSpecMultiJvmNode3 extends FanInThroughputSpec
 class FanInThroughputSpecMultiJvmNode4 extends FanInThroughputSpec
-//class FanInThroughputSpecMultiJvmNode5 extends FanInThroughputSpec
-//class FanInThroughputSpecMultiJvmNode6 extends FanInThroughputSpec
-//class FanInThroughputSpecMultiJvmNode7 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode5 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode6 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode7 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode8 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode9 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode10 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode11 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode12 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode13 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode14 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode15 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode16 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode17 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode18 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode19 extends FanInThroughputSpec
+class FanInThroughputSpecMultiJvmNode20 extends FanInThroughputSpec
 
 abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughputSpec) with PerfFlamesSupport {
 
