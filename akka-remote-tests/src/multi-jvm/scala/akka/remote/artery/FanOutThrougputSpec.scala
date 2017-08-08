@@ -25,6 +25,11 @@ import akka.remote.artery.compress.CompressionProtocol.Events.ReceivedActorRefCo
 import akka.remote.artery.MaxThroughputSpec._
 
 object FanOutThroughputSpec extends MultiNodeConfig {
+  val testName = System.getProperty("test") match {
+    case null => ""
+    case value => "-" + value
+  }
+
   val totalNumberOfNodes =
     System.getProperty("MultiJvm.akka.test.FanOutThroughputSpec.nrOfNodes") match {
       case null  ⇒ 10
@@ -101,28 +106,28 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
   val burstSize = 2000 / senderReceiverPairs
   val scenarios = List(
     TestSettings(
-      testName = "warmup",
+      testName = "warmup" + testName,
       totalMessages = adjustedTotalMessages(20000),
       burstSize = burstSize,
       payloadSize = 100,
       senderReceiverPairs = senderReceiverPairs,
       realMessage),
     TestSettings(
-      testName = "size-100",
+      testName = "size-100" + testName,
       totalMessages = adjustedTotalMessages(50000),
       burstSize = burstSize,
       payloadSize = 100,
       senderReceiverPairs = senderReceiverPairs,
       realMessage),
     TestSettings(
-      testName = "size-1k",
+      testName = "size-1k" + testName,
       totalMessages = adjustedTotalMessages(10000),
       burstSize = burstSize,
       payloadSize = 1000,
       senderReceiverPairs = senderReceiverPairs,
       realMessage),
     TestSettings(
-      testName = "size-10k",
+      testName = "size-10k" + testName,
       totalMessages = adjustedTotalMessages(2000),
       burstSize = burstSize,
       payloadSize = 10000,
