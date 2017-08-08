@@ -4,13 +4,15 @@ Exceptions thrown during route execution bubble up through the route structure t
 @ref[handleExceptions](directives/execution-directives/handleExceptions.md) directive or the top of your route structure.
 
 Similarly to the way that @ref[Rejections](rejections.md) are handled the @ref[handleExceptions](directives/execution-directives/handleExceptions.md) directive delegates the actual job
-of converting an exception to its argument, an @scaladoc[ExceptionHandler](akka.http.scaladsl.server.ExceptionHandler), which is defined like this:
+of converting an exception to its argument, an @scala[@scaladoc[ExceptionHandler](akka.http.scaladsl.server.ExceptionHandler)]@java[@javadoc[ExceptionHandler](akka.http.javadsl.server.ExceptionHandler)]@scala[, which is defined like this:]@java[.]
 
+@@@ div { .group-scala }
 ```scala
 trait ExceptionHandler extends PartialFunction[Throwable, Route]
 ```
+@@@
 
-Since an `ExceptionHandler` is a partial function it can choose, which exceptions it would like to handle and
+Since an `ExceptionHandler` is a partial function, it can choose which exceptions it would like to handle and
 which not. Unhandled exceptions will simply continue to bubble up in the route structure.
 At the root of the route tree any still unhandled exception will be dealt with by the top-level handler which always
 handles *all* exceptions.
@@ -21,7 +23,7 @@ handle any exception.
 So, if you'd like to customize the way certain exceptions are handled you need to write a custom `ExceptionHandler`.
 Once you have defined your custom `ExceptionHandler` you have two options for "activating" it:
 
- 1. Bring it into implicit scope at the top-level.
+ 1. @scala[Bring it into implicit scope at the top-level.]@java[Pass it to the `seal()` method of the `Route` class.]
  2. Supply it as argument to the @ref[handleExceptions](directives/execution-directives/handleExceptions.md) directive.
 
 In the first case your handler will be "sealed" (which means that it will receive the default handler as a fallback for
@@ -32,11 +34,17 @@ The second case allows you to restrict the applicability of your handler to cert
 
 Here is an example for wiring up a custom handler via @ref[handleExceptions](directives/execution-directives/handleExceptions.md):
 
-@@snip [ExceptionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #explicit-handler-example }
+Scala
+:   @@snip [ExceptionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #explicit-handler-example }
 
+Java
+:   @@snip [ExceptionHandlerExamplesTest.java](../../../../../test/java/docs/http/javadsl/ExceptionHandlerExample.java) { #explicit-handler-example }
+
+@@@ div { .group-scala }
 And this is how to do it implicitly:
 
 @@snip [ExceptionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #implicit-handler-example }
+@@@
 
 ## Default Exception Handler
 
