@@ -130,13 +130,13 @@ abstract class RemoteRestartedQuarantinedSpec
                     }
                     """).withFallback(system.settings.config))
 
+        // retry because it's possible to loose the initial message here, see issue #17314
         val probe = TestProbe()(freshSystem)
-
-        freshSystem.actorSelection(RootActorPath(firstAddress) / "user" / "subject").tell(Identify("subject"), probe.ref)
-        // TODO sometimes it takes long time until the new connection is established,
-        //      It seems like there must first be a transport failure detector timeout, that triggers
-        //      "No response from remote. Handshake timed out or transport failure detector triggered".
-        probe.expectMsgType[ActorIdentity](30.second).ref should not be (None)
+        probe.awaitAssert({
+          println(s"# --") // FIXME
+          freshSystem.actorSelection(RootActorPath(firstAddress) / "user" / "subject").tell(Identify("subject"), probe.ref)
+          probe.expectMsgType[ActorIdentity](1.second).ref should not be (None)
+        }, 30.seconds)
 
         // Now the other system will be able to pass, too
         freshSystem.actorOf(Props[Subject], "subject")
