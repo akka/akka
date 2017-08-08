@@ -96,11 +96,11 @@ private[akka] object TaskRunner {
     else if (idleCpuLevel == 10)
       new BusySpinIdleStrategy
     else {
-      // spin between 100 to 10000 depending on idleCpuLevel
+      // spin between 1200 to 8900 depending on idleCpuLevel
       val spinning = 1100 * idleCpuLevel - 1000
       val yielding = 5 * idleCpuLevel
       val minParkNanos = 1
-      // park between 250 and 10 micros depending on idleCpuLevel
+      // park between 220 and 10 micros depending on idleCpuLevel
       val maxParkNanos = MICROSECONDS.toNanos(280 - 30 * idleCpuLevel)
       new BackoffIdleStrategy(spinning, yielding, minParkNanos, maxParkNanos)
     }
