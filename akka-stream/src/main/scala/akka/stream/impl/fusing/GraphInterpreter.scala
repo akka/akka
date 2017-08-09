@@ -641,7 +641,7 @@ import scala.util.control.NonFatal
       }
 
       val logicIndexes = logics.zipWithIndex.map { case (stage, idx) ⇒ stage → idx }.toMap
-      for (connection ← connections) {
+      for (connection ← connections if connection != null) {
         val inName = "N" + logicIndexes(connection.inOwner)
         val outName = "N" + logicIndexes(connection.outOwner)
 
