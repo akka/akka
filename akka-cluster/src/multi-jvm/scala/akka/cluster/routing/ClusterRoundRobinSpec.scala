@@ -85,7 +85,7 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
             router = round-robin-pool
             cluster {
               enabled = on
-              use-role = a
+              use-roles = ["a"]
               max-total-nr-of-instances = 10
             }
           }
@@ -115,7 +115,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
   lazy val router2 = system.actorOf(
     ClusterRouterPool(
       RoundRobinPool(nrOfInstances = 0),
-      ClusterRouterPoolSettings(totalInstances = 3, maxInstancesPerNode = 1, allowLocalRoutees = true, useRole = None)).
+      ClusterRouterPoolSettings(totalInstances = 3, maxInstancesPerNode = 1, allowLocalRoutees = true)).
       props(Props[SomeActor]),
     "router2")
   lazy val router3 = system.actorOf(FromConfig.props(Props[SomeActor]), "router3")
