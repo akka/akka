@@ -9,7 +9,7 @@ libraryDependencies ++= Seq(
   "org.apache.camel" % "camel-jetty" % "2.17.7",
   "org.apache.camel" % "camel-quartz" % "2.17.7",
   "org.slf4j" % "slf4j-api" % "1.7.16",
-  "ch.qos.logback" % "logback-classic" % "1.1.3"
+  "ch.qos.logback" % "logback-classic" % "1.2.3"
 )
 
 licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))

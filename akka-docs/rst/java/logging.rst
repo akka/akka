@@ -286,7 +286,7 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
      <dependency>
        <groupId>ch.qos.logback</groupId>
        <artifactId>logback-classic</artifactId>
-       <version>1.1.3</version>
+       <version>1.2.3</version>
      </dependency>
 
 You need to enable the Slf4jLogger in the ``loggers`` element in
