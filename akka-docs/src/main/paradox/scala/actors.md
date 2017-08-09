@@ -749,7 +749,7 @@ To complete the future with an exception you need to send an `akka.actor.Status.
 This is *not done automatically* when an actor throws an exception while processing a message. 
 
 Please note that Scala's `Try` sub types `scala.util.Failure` and `scala.util.Success` are not treated 
-specially, and would complete the ask Future with given value - only the `akka.actor.Status` messages 
+specially, and would complete the ask Future with the given value - only the `akka.actor.Status` messages 
 are treated specially by the ask pattern.
 
 @@@
