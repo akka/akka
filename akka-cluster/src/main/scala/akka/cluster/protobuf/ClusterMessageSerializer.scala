@@ -13,8 +13,8 @@ import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWi
 import akka.protobuf.{ ByteString, MessageLite }
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.Deadline
 import java.io.NotSerializableException
 
@@ -166,8 +166,11 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     builder.setAllowLocalRoutees(settings.allowLocalRoutees)
       .setMaxInstancesPerNode(settings.maxInstancesPerNode)
       .setTotalInstances(settings.totalInstances)
+      .addAllUseRoles(settings.useRoles.asJava)
 
+    // for backwards compatibility
     settings.useRole.foreach(builder.setUseRole)
+
     builder.build()
   }
 
@@ -378,11 +381,12 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
   }
 
   private def clusterRouterPoolSettingsFromProto(crps: cm.ClusterRouterPoolSettings): ClusterRouterPoolSettings = {
+    // For backwards compatibility, useRoles is the combination of getUseRole and getUseRolesList
     ClusterRouterPoolSettings(
       totalInstances = crps.getTotalInstances,
       maxInstancesPerNode = crps.getMaxInstancesPerNode,
       allowLocalRoutees = crps.getAllowLocalRoutees,
-      useRole = if (crps.hasUseRole) Some(crps.getUseRole) else None
+      useRoles = if (crps.hasUseRole) { crps.getUseRolesList.asScala.toSet + crps.getUseRole } else { crps.getUseRolesList.asScala.toSet }
     )
   }
 

@@ -420,6 +420,14 @@ and here is a summary of things to consider.
  * [mig25_weaklyup](#mig25-weaklyup)
  * [mig25_sharding_store](#mig25-sharding-store)
  * [mig25_mutual](#mig25-mutual)
+ 
+#### Limit lookup of routees to nodes tagged with multiple roles
+
+Starting with 2.5.4, cluster routing supports delivering messages to routees tagged with all specified roles
+using `use-roles` (instead of `use-role` in previous versions). When doing rolling upgrades and using this new feature,
+it is important to first upgrade the existing nodes to the latest version of Akka
+and then start using multiple roles in a separate rolling upgrade. Otherwise, if a new node sends a message 
+with the restriction `use-roles = ["a", "b"]`, that will only require the "a" role on old nodes.
 
 ### Coordinated Shutdown
 
