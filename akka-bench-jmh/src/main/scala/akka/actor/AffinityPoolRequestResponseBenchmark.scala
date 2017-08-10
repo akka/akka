@@ -78,7 +78,7 @@ class AffinityPoolRequestResponseBenchmark {
           |         parallelism-max = $numThreads
           |         task-queue-size = 512
           |         idle-cpu-level = 5
-          |         fair-work-distribution-threshold = 2048
+          |         fair-work-distribution.threshold = 2048
           |     }
           |       throughput = $throughPut
           |     }

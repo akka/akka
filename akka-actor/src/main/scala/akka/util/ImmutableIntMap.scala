@@ -21,6 +21,12 @@ import scala.annotation.tailrec
  */
 @InternalApi private[akka] final class ImmutableIntMap private (private final val kvs: Array[Int], final val size: Int) {
 
+  private final def this(key: Int, value: Int) = {
+    this(new Array[Int](2), 1)
+    kvs(0) = key
+    kvs(1) = value
+  }
+
   private[this] final def indexForKey(key: Int): Int = {
     // Custom implementation of binary search since we encode key + value in consecutive indicies.
     // We do the binary search on half the size of the array then project to the full size.
@@ -70,7 +76,7 @@ import scala.annotation.tailrec
       val i = indexForKey(key)
       if (i >= 0) this
       else insert(key, value, i)
-    } else new ImmutableIntMap(Array(key, value), 1)
+    } else new ImmutableIntMap(key, value)
 
   /**
    * Worst case `O(n)`, creates new `ImmutableIntMap`
@@ -81,15 +87,13 @@ import scala.annotation.tailrec
       val i = indexForKey(key)
       if (i >= 0) {
         val valueIndex = i + 1
-        if (kvs(valueIndex) != value)
-          update(value, valueIndex)
-        else
-          this // If no change no need to copy anything
+        if (kvs(valueIndex) != value) update(value, valueIndex)
+        else this // If no change no need to copy anything
       } else insert(key, value, i)
-    } else new ImmutableIntMap(Array(key, value), 1)
+    } else new ImmutableIntMap(key, value)
 
   private[this] final def update(value: Int, valueIndex: Int): ImmutableIntMap = {
-    val newKvs = kvs.clone()
+    val newKvs = kvs.clone() // clone() can in theory be faster since it could do a malloc + memcpy iso. calloc etc
     newKvs(valueIndex) = value
     new ImmutableIntMap(newKvs, size)
   }
@@ -112,9 +116,10 @@ import scala.annotation.tailrec
     val i = indexForKey(key)
     if (i >= 0) {
       if (size > 1) {
-        val newKvs = new Array[Int](kvs.length - 2)
+        val newSz = kvs.length - 2
+        val newKvs = new Array[Int](newSz)
         System.arraycopy(kvs, 0, newKvs, 0, i)
-        System.arraycopy(kvs, i + 2, newKvs, i, kvs.length - i - 2)
+        System.arraycopy(kvs, i + 2, newKvs, i, newSz - i)
         new ImmutableIntMap(newKvs, size - 1)
       } else ImmutableIntMap.empty
     } else this
@@ -134,7 +139,7 @@ import scala.annotation.tailrec
   override final def hashCode: Int = Arrays.hashCode(kvs)
 
   override final def equals(obj: Any): Boolean = obj match {
-    case other: ImmutableIntMap ⇒ Arrays.equals(kvs, other.kvs)
+    case other: ImmutableIntMap ⇒ Arrays.equals(kvs, other.kvs) // No need to test `this eq obj` since this is done for the kvs arrays anyway
     case _                      ⇒ false
   }
 }
