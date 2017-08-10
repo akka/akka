@@ -34,3 +34,4 @@ Fixed Security Vulnerabilities
    :maxdepth: 1
 
    2017-02-10-java-serialization
+   2017-08-09-camel
