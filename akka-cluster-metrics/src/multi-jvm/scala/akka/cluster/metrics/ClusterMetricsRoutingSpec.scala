@@ -138,7 +138,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
     val router = system.actorOf(
       ClusterRouterPool(
         local = AdaptiveLoadBalancingPool(HeapMetricsSelector),
-        settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 1, allowLocalRoutees = true, useRole = None)).
+        settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 1, allowLocalRoutees = true)).
         props(Props[Echo]),
       name)
     // it may take some time until router receives cluster member events
