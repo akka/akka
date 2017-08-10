@@ -395,7 +395,7 @@ either not rely on messages being the same instance or turn the setting off.
 ### Wire Protocol Compatibility
 
 It is possible to use Akka Remoting between nodes running Akka 2.4.16 and 2.5-M1, but some settings have changed so you might need
-to adjust some configuration as described in [mig25_rolling](#mig25-rolling).
+to adjust some configuration as described in [Rolling Update](#mig25-rolling).
 
 Note however that if using Java serialization it will not be possible to mix nodes using Scala 2.11 and 2.12.
 
@@ -416,10 +416,10 @@ Some settings have changed default value in 2.5-M1 and therefore you need to rev
 before doing a rolling update to 2.5-M1. Such settings are mentioned elsewhere in this migration guide
 and here is a summary of things to consider.
 
- * [mig25_addser](#mig25-addser)
- * [mig25_weaklyup](#mig25-weaklyup)
- * [mig25_sharding_store](#mig25-sharding-store)
- * [mig25_mutual](#mig25-mutual)
+ * [additional-serialization-bindings](#mig25-addser)
+ * [WeaklyUp](#mig25-weaklyup)
+ * [Cluster Sharding state-store-mode](#mig25-sharding-store)
+ * [Mutual TLS authentication](#mig25-mutual)
  
 #### Limit lookup of routees to nodes tagged with multiple roles
 
