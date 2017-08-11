@@ -23,7 +23,7 @@ Java
 Next, we simply handle *each* incoming connection using a `Flow` which will be used as the processing stage
 to handle and emit `ByteString` s from and to the TCP Socket. Since one `ByteString` does not have to necessarily
 correspond to exactly one line of text (the client might be sending the line in chunks) we use the @scala[`Framing.delimiter`]@java[`delimiter`]
-helper Flow @scala[]@java[from `akka.stream.javadsl.Framing`] to chunk the inputs up into actual lines of text. The last boolean
+helper Flow @java[from `akka.stream.javadsl.Framing`] to chunk the inputs up into actual lines of text. The last boolean
 argument indicates that we require an explicit line ending even for the last message before the connection is closed.
 In this example we simply add exclamation marks to each incoming text message and push it through the flow:
 
@@ -45,17 +45,10 @@ It is also possible to shut down the server's socket by cancelling the `Incoming
 
 We can then test the TCP server by sending data to the TCP Socket using `netcat`:
 
-@scala[
 ```
 $ echo -n "Hello World" | netcat 127.0.0.1 8888
 Hello World!!!
 ```
-]@java[
-```
-$ echo -n "Hello World" | netcat 127.0.0.1 8889
-Hello World!!!
-```
-]
 
 ### Connecting: REPL Client
 
