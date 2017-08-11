@@ -353,7 +353,7 @@ import akka.util.OptionVal
       }
 
       override def postStop(): Unit = stopCallback {
-        case Pull(promise) ⇒ promise.failure(new IllegalStateException("Stream is terminated. QueueSink is detached"))
+        case Pull(promise) ⇒ promise.failure(new StreamDetachedException())
         case _             ⇒ //do nothing
       }
 
