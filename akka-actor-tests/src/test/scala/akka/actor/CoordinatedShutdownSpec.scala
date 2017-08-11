@@ -10,7 +10,7 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import akka.Done
 import akka.testkit.{ AkkaSpec, TestKit }
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.CoordinatedShutdown.Phase
 
 import scala.collection.JavaConverters._
@@ -295,81 +295,89 @@ class CoordinatedShutdownSpec extends AkkaSpec {
       system.whenTerminated.isCompleted should ===(true)
     }
 
-    // exercising all the code paths through the terminate shotdown phase
-    "add and remove user JVM hooks 1" in {
-      val systemName = s"CoordinatedShutdownSpec-JvmHooks-1-${System.currentTimeMillis()}"
-      val initialHookCount = trixyTrixCountJvmHooks(systemName)
-      initialHookCount should ===(0)
-
-      val newSystem = ActorSystem(
-        systemName,
-        ConfigFactory.parseString(
-          """
+    "add and remove user JVM hooks with run-by-jvm-shutdown-hook = off, terminate-actor-system = off" in new JvmHookTest {
+      lazy val systemName = s"CoordinatedShutdownSpec-JvmHooks-1-${System.currentTimeMillis()}"
+      lazy val systemConfig = ConfigFactory.parseString(
+        """
           akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
           akka.coordinated-shutdown.terminate-actor-system = off
-        """))
-      CoordinatedShutdown(newSystem).addJvmShutdownHook(
-        println(s"User JVM hook from ${system.name}")
-      )
-      trixyTrixCountJvmHooks(systemName) should ===(1) // one user hook
+        """)
 
-      TestKit.shutdownActorSystem(newSystem)
-
-      trixyTrixCountJvmHooks(systemName) should ===(0)
+      override def withSystemRunning(newSystem: ActorSystem): Unit = {
+        CoordinatedShutdown(newSystem).addJvmShutdownHook(
+          println(s"User JVM hook from ${newSystem.name}")
+        )
+      }
     }
 
-    "add and remove user JVM hooks 2" in {
-      val systemName = s"CoordinatedShutdownSpec-JvmHooks-2-${System.currentTimeMillis()}"
-      val initialHookCount = trixyTrixCountJvmHooks(systemName)
-      initialHookCount should ===(0)
-
-      val newSystem = ActorSystem(
-        systemName,
-        ConfigFactory.parseString(
-          """
+    "add and remove user JVM hooks with run-by-jvm-shutdown-hook = on, terminate-actor-system = off" in new JvmHookTest {
+      lazy val systemName = s"CoordinatedShutdownSpec-JvmHooks-2-${System.currentTimeMillis()}"
+      lazy val systemConfig = ConfigFactory.parseString(
+        """
           akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
           akka.coordinated-shutdown.terminate-actor-system = off
-        """))
-      CoordinatedShutdown(newSystem).addJvmShutdownHook(
-        println(s"User JVM hook from ${system.name}")
-      )
-      trixyTrixCountJvmHooks(systemName) should ===(initialHookCount + 2) // one user, one from actor system
+        """)
 
-      TestKit.shutdownActorSystem(newSystem)
-
-      trixyTrixCountJvmHooks(systemName) should ===(initialHookCount)
+      override def withSystemRunning(newSystem: ActorSystem): Unit = {
+        CoordinatedShutdown(newSystem).addJvmShutdownHook(
+          println(s"User JVM hook from ${newSystem.name}")
+        )
+        myHooksCount should ===(2) // one user, one from system
+      }
     }
 
-    "add and remove user JVM hooks 3" in {
-      val systemName = s"CoordinatedShutdownSpec-JvmHooks-3-${System.currentTimeMillis()}"
-      val initialHookCount = trixyTrixCountJvmHooks(systemName)
-      initialHookCount should ===(0)
+    "add and remove user JVM hooks with run-by-jvm-shutdown-hook = on, terminate-actor-system = on" in new JvmHookTest {
+      lazy val systemName = s"CoordinatedShutdownSpec-JvmHooks-3-${System.currentTimeMillis()}"
+      lazy val systemConfig = ConfigFactory.parseString(
+        """
+          akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
+          akka.coordinated-shutdown.terminate-actor-system = on
+        """)
 
-      val newSystem = ActorSystem(
-        systemName,
-        ConfigFactory.parseString(
-          """
+      def withSystemRunning(newSystem: ActorSystem): Unit = {
+        CoordinatedShutdown(newSystem).addJvmShutdownHook(
+          println(s"User JVM hook from ${newSystem.name}")
+        )
+        myHooksCount should ===(2) // one user, one from actor system
+      }
+
+    }
+  }
+
+  abstract class JvmHookTest {
+
+    private val initialHookCount = trixyTrixCountJvmHooks(systemName)
+    initialHookCount should ===(0)
+
+    def systemName: String
+    def systemConfig: Config
+    def withSystemRunning(system: ActorSystem): Unit
+
+    val newSystem = ActorSystem(
+      systemName,
+      ConfigFactory.parseString(
+        """
           akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
           akka.coordinated-shutdown.terminate-actor-system = on
         """))
-      CoordinatedShutdown(newSystem).addJvmShutdownHook(
-        println(s"User JVM hook from ${system.name}")
-      )
-      trixyTrixCountJvmHooks(systemName) should ===(2) // one user, one from actor system
 
-      TestKit.shutdownActorSystem(newSystem)
+    withSystemRunning(newSystem)
 
-      trixyTrixCountJvmHooks(systemName) should ===(0)
+    TestKit.shutdownActorSystem(newSystem)
+
+    trixyTrixCountJvmHooks(systemName) should ===(0)
+
+    protected def myHooksCount: Int = trixyTrixCountJvmHooks(systemName)
+
+    private def trixyTrixCountJvmHooks(systemName: String): Int = {
+      val clazz = Class.forName("java.lang.ApplicationShutdownHooks")
+      val field = clazz.getDeclaredField("hooks")
+      field.setAccessible(true)
+      clazz.synchronized {
+        val hooks = field.get(null).asInstanceOf[util.IdentityHashMap[Thread, Thread]]
+        hooks.values().asScala.count(_.getName.startsWith(systemName))
+      }
     }
   }
 
-  def trixyTrixCountJvmHooks(systemName: String): Int = {
-    val clazz = Class.forName("java.lang.ApplicationShutdownHooks")
-    val field = clazz.getDeclaredField("hooks")
-    field.setAccessible(true)
-    clazz.synchronized {
-      val hooks = field.get(null).asInstanceOf[util.IdentityHashMap[Thread, Thread]]
-      hooks.values().asScala.count(_.getName.startsWith(systemName))
-    }
-  }
 }
