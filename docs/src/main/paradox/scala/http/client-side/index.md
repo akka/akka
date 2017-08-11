@@ -14,11 +14,11 @@ Depending on your application's specific needs you can choose from three differe
 
 @ref[Host-Level Client-Side API](host-level.md)
 : for letting Akka HTTP manage a connection-pool to *one specific* host/port endpoint. Recommended when
-  the user can supply a ``Source[HttpRequest, NotUsed]`` with requests to run against a single host
+  the user can supply a @scala[`Source[HttpRequest, NotUsed]`]@java[`Source<HttpRequest, NotUsed>`] with requests to run against a single host
   over multiple pooled connections.
 
-@ref[Connection-Level Client-Side API](connection-level.md#connection-level-api)
-: for full-control over when HTTP connections are opened/closed and how requests are scheduled across them. Only
+@ref[Connection-Level Client-Side API](connection-level.md)
+: for full control over when HTTP connections are opened/closed and how requests are scheduled across them. Only
   recommended for particular use cases.
 
 You can interact with different API levels at the same time and, independently of which API level you choose,
