@@ -26,11 +26,13 @@ object Publish extends AutoPlugin {
   )
 
   def akkaPomExtra = {
-    <inceptionYear>2009</inceptionYear>
+    /* The scm info is automatic from the sbt-git plugin
     <scm>
       <url>git://github.com/akka/akka.git</url>
       <connection>scm:git:git@github.com:akka/akka.git</connection>
     </scm>
+    */
+    <inceptionYear>2009</inceptionYear>
     <developers>
       <developer>
         <id>akka-contributors</id>
