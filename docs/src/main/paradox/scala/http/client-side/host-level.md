@@ -1,6 +1,6 @@
 # Host-Level Client-Side API
 
-As opposed to the @ref[Connection-Level Client-Side API](connection-level.md#connection-level-api) the host-level API relieves you from manually managing individual HTTP
+As opposed to the @ref[Connection-Level Client-Side API](connection-level.md) the host-level API relieves you from manually managing individual HTTP
 connections. It autonomously manages a configurable pool of connections to *one particular target endpoint* (i.e.
 host/port combination).
 
@@ -12,7 +12,7 @@ from a background with non-"streaming first" HTTP Clients.
 
 ## Requesting a Host Connection Pool
 
-The best way to get a hold of a connection pool to a given target endpoint is the `Http().cachedHostConnectionPool(...)`
+The best way to get a hold of a connection pool to a given target endpoint is the @scala[`Http().cachedHostConnectionPool(...)`]@java[`Http.get(system).cachedHostConnectionPool(...)`]
 method, which returns a `Flow` that can be "baked" into an application-level stream setup. This flow is also called
 a "pool client flow".
 
@@ -23,7 +23,7 @@ Also, the HTTP layer transparently manages idle shutdown and restarting of conne
 The client flow instances therefore remain valid throughout the lifetime of the application, i.e. they can be
 materialized as often as required and the time between individual materialization is of no importance.
 
-When you request a pool client flow with `Http().cachedHostConnectionPool(...)` Akka HTTP will immediately start
+When you request a pool client flow with @scala[`Http().cachedHostConnectionPool(...)`]@java[`Http.get(system).cachedHostConnectionPool(...)`], Akka HTTP will immediately start
 the pool, even before the first client flow materialization. However, this running pool will not actually open the
 first connection to the target endpoint until the first request has arrived.
 
@@ -40,7 +40,8 @@ of the individual pool's `max-connections` settings allow!
 
 There is one setting that likely deserves a bit deeper explanation: `max-open-requests`.
 This setting limits the maximum number of requests that can be in-flight at any time for a single connection pool.
-If an application calls `Http().cachedHostConnectionPool(...)` 3 times (with the same endpoint and settings) it will get
+If an application calls @scala[`Http().cachedHostConnectionPool(...)`]@java[`Http.get(system).cachedHostConnectionPool(...)`]
+3 times (with the same endpoint and settings) it will get
 back `3` different client flow instances for the same pool. If each of these client flows is then materialized `4` times
 (concurrently) the application will have 12 concurrently running client flow materializations.
 All of these share the resources of the single pool.
@@ -56,13 +57,20 @@ the same pooled connections.
 <a id="using-a-host-connection-pool"></a>
 ## Using a Host Connection Pool
 
-The "pool client flow" returned by `Http().cachedHostConnectionPool(...)` has the following type:
+The "pool client flow" returned by @scala[`Http().cachedHostConnectionPool(...)`]@java[`Http.get(system).cachedHostConnectionPool(...)`] has the following type:
 
+@@@ div { .group-scala }
 ```scala
 Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool]
 ```
+@@@
+@@@ div { .group-java }
+```java
+Flow<Pair<HttpRequest, T>, Pair<Try<HttpResponse>, T>, HostConnectionPool>
+```
+@@@
 
-This means it consumes tuples of type `(HttpRequest, T)` and produces tuples of type `(Try[HttpResponse], T)`
+This means it consumes pairs of type @scala[`(HttpRequest, T)`]@java[`Pair<HttpRequest, T>`] and produces pairs of type @scala[`(Try[HttpResponse], T)`]@java[`Pair<Try<HttpResponse>, T>`]
 which might appear more complicated than necessary on first sight.
 The reason why the pool API includes objects of custom type `T` on both ends lies in the fact that the underlying
 transport usually comprises more than a single connection and as such the pool client flow often generates responses in
@@ -82,7 +90,7 @@ particular application scenario.
 
 A consequence of using a pool is that long-running requests block a connection while running and may starve other
 requests. Make sure not to use a connection pool for long-running requests like long-polling GET requests.
-Use the @ref[Connection-Level Client-Side API](connection-level.md#connection-level-api) instead.
+Use the @ref[Connection-Level Client-Side API](connection-level.md) instead.
 
 @@@
 
@@ -125,31 +133,34 @@ Completing a pool client flow will simply detach the flow from the pool. The con
 as it may be serving other client flows concurrently or in the future. Only after the configured `idle-timeout` for
 the pool has expired will Akka HTTP automatically terminate the pool and free all its resources.
 
-If a new client flow is requested with `Http().cachedHostConnectionPool(...)` or if an already existing client flow is
+If a new client flow is requested with @scala[`Http().cachedHostConnectionPool(...)`]@java[`Http.get(system).cachedHostConnectionPool(...)`] or if an already existing client flow is
 re-materialized the respective pool is automatically and transparently restarted.
 
 In addition to the automatic shutdown via the configured idle timeouts it's also possible to trigger the immediate
 shutdown of a specific pool by calling `shutdown()` on the `HostConnectionPool` instance that the pool client
-flow materializes into. This `shutdown()` call produces a `Future[Unit]` which is fulfilled when the pool
+flow materializes into. This `shutdown()` call produces a @scala[`Future[Unit]`]@java[`CompletionStage<Done>`] which is fulfilled when the pool
 termination has been completed.
 
 It's also possible to trigger the immediate termination of *all* connection pools in the `ActorSystem` at the same
-time by calling `Http().shutdownAllConnectionPools()`. This call too produces a `Future[Unit]` which is fulfilled when
-all pools have terminated.
+time by calling @scala[`Http().shutdownAllConnectionPools()`]@java[`Http.get(system).shutdownAllConnectionPools()`].
+This call too produces a @scala[`Future[Unit]`]@java[`CompletionStage<Done>`] which is fulfilled when all pools have terminated.
 
 @@@ note
 When encountering unexpected `akka.stream.AbruptTerminationException` exceptions during `ActorSystem` **shutdown**
 please make sure that active connections are shut down before shutting down the entire system, this can be done by
-calling the `Http().shutdownAllConnectionPools()` method, and only once its Future completes, shutting down the actor system.
+calling the @scala[`Http().shutdownAllConnectionPools()`]@java[`Http.get(system).shutdownAllConnectionPools()`] method,
+and only once its @scala[`Future`]@java[`CompletionStage`] completes, shutting down the actor system.
 @@@
 
 ## Examples
 
-@@@ note
+@@@ note { .group-scala }
 At this place we previously showed an example that used the `Source.single(request).via(pool).runWith(Sink.head)`. In
 fact, this is an anti-pattern that doesn't perform well. Please either supply requests using a queue or in a streamed fashion as
 shown below.
 @@@
+
+@@@ div { .group-scala }
 
 ### Using the host-level API with a queue
 
@@ -177,3 +188,9 @@ generated "on-the-fly" while streaming the requests. You supply the requests as 
 the pool will "pull out" single requests when capacity is available on one of the connections to the host.
 
 @@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #host-level-streamed-example }
+@@@
+
+@@@ div { .group-java }
+For now, please see the Scala examples in @ref[Scala Host-Level Client API](../../../scala/http/client-side/host-level.md#examples).
+If you want to help with converting the examples see issue [#836](https://github.com/akka/akka-http/issues/836).
+@@@
