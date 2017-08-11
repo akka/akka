@@ -6,29 +6,28 @@ package akka.actor
 import scala.concurrent.duration._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
-
 import akka.Done
 import com.typesafe.config.Config
+
 import scala.concurrent.duration.FiniteDuration
 import scala.annotation.tailrec
 import com.typesafe.config.ConfigFactory
 import akka.pattern.after
-import java.util.concurrent.TimeoutException
+
 import scala.util.control.NonFatal
 import akka.event.Logging
 import akka.dispatch.ExecutionContexts
+
 import scala.util.Try
 import scala.concurrent.Await
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
-import java.util.concurrent.CompletionStage
 import java.util.Optional
 
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
@@ -110,6 +109,9 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     val coord = new CoordinatedShutdown(system, phases)
     initPhaseActorSystemTerminate(system, conf, coord)
     initJvmHook(system, conf, coord)
+    system.registerOnTermination {
+      if (!runningJvmHook) coord.removeJvmShutdownHooks()
+    }
     coord
   }
 
@@ -247,6 +249,7 @@ final class CoordinatedShutdown private[akka] (
   private val runPromise = Promise[Done]()
 
   private var _jvmHooksLatch = new AtomicReference[CountDownLatch](new CountDownLatch(0))
+  private val registeredJvmHooks = new CopyOnWriteArrayList[Thread]()
 
   /**
    * INTERNAL API
@@ -435,17 +438,24 @@ final class CoordinatedShutdown private[akka] (
    * begins its shutdown sequence. Added hooks may run in any order
    * concurrently, but they are running before Akka internal shutdown
    * hooks, e.g. those shutting down Artery.
+   *
+   * The hooks are removed if the actor system is terminated.
    */
   @tailrec def addJvmShutdownHook[T](hook: ⇒ T): Unit = {
     if (!runStarted.get) {
       val currentLatch = _jvmHooksLatch.get
       val newLatch = new CountDownLatch(currentLatch.getCount.toInt + 1)
       if (_jvmHooksLatch.compareAndSet(currentLatch, newLatch)) {
-        try Runtime.getRuntime.addShutdownHook(new Thread {
+        val thread = new Thread {
           override def run(): Unit = {
             try hook finally _jvmHooksLatch.get.countDown()
           }
-        }) catch {
+        }
+        thread.setName(s"${system.name}-shutdown-hook-${newLatch.getCount}")
+        try {
+          Runtime.getRuntime.addShutdownHook(thread)
+          registeredJvmHooks.add(thread)
+        } catch {
           case e: IllegalStateException ⇒
             // Shutdown in progress, if CoordinatedShutdown is created via a JVM shutdown hook (Artery)
             log.warning("Could not addJvmShutdownHook, due to: {}", e.getMessage)
@@ -453,6 +463,16 @@ final class CoordinatedShutdown private[akka] (
         }
       } else
         addJvmShutdownHook(hook) // lost CAS, retry
+    }
+  }
+
+  /**
+   * Internal API
+   */
+  private[akka] def removeJvmShutdownHooks(): Unit = {
+    val iter = registeredJvmHooks.iterator()
+    while (iter.hasNext) {
+      Runtime.getRuntime.removeShutdownHook(iter.next())
     }
   }
 

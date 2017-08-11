@@ -420,7 +420,9 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
     private def onEvent(ev: HubEvent): Unit = {
       ev match {
         case RegistrationPending ⇒
+          println(s"registration pending")
           state.getAndSet(noRegistrationsState).asInstanceOf[Open].registrations foreach { consumer ⇒
+            println("adding registration")
             val startFrom = head
             activeConsumers += 1
             addConsumer(consumer, startFrom)
@@ -428,8 +430,9 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
           }
 
         case UnRegister(id, previousOffset, finalOffset) ⇒
+          println(s"unregister($id, $previousOffset)")
           activeConsumers -= 1
-          val consumer = findAndRemoveConsumer(id, previousOffset)
+          findAndRemoveConsumer(id, previousOffset)
           if (activeConsumers == 0) {
             if (isClosed(in)) completeStage()
             else if (head != finalOffset) {
@@ -444,6 +447,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
             }
           } else checkUnblock(previousOffset)
         case Advance(id, previousOffset) ⇒
+          println(s"advance($id, $previousOffset)")
           val newOffset = previousOffset + DemandThreshold
           // Move the consumer from its last known offest to its new one. Check if we are unblocked.
           val consumer = findAndRemoveConsumer(id, previousOffset)
@@ -451,8 +455,10 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
           checkUnblock(previousOffset)
         case NeedWakeup(id, previousOffset, currentOffset) ⇒
           // Move the consumer from its last known offest to its new one. Check if we are unblocked.
+          println(s"need wakeup($id, $previousOffset, $currentOffset)")
           val consumer = findAndRemoveConsumer(id, previousOffset)
           addConsumer(consumer, currentOffset)
+          println(s" consumer updated: $consumer")
 
           // Also check if the consumer is now unblocked since we published an element since it went asleep.
           if (currentOffset != tail) consumer.callback.invoke(Wakeup)
@@ -490,7 +496,6 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
       // TODO: Try to eliminate modulo division somehow...
       val wheelSlot = offset & WheelMask
       var consumersInSlot = consumerWheel(wheelSlot)
-      //debug(s"consumers before removal $consumersInSlot")
       var remainingConsumersInSlot: List[Consumer] = Nil
       var removedConsumer: Consumer = null
 
