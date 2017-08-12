@@ -111,7 +111,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val any: String = expectMsgAnyOf("hello", "world")
     val all: immutable.Seq[String] = expectMsgAllOf("hello", "world")
     val i: Int = expectMsgType[Int]
-    expectNoMsg()
+    expectNoMsg(200.millis)
     //#test-expect
     testActor.tell("receveN-1", ActorRef.noSender)
     testActor.tell("receveN-2", ActorRef.noSender)
