@@ -100,8 +100,8 @@ object Dependencies {
       val jimfs        = "com.google.jimfs"            % "jimfs"                        % "1.1"              % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
-      val metricsJvm      = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.2"            % "test" // ApacheV2
+      val metrics         = "io.dropwizard.metrics"        % "metrics-core"                 % "3.2.4"            % "test" // ApacheV2
+      val metricsJvm      = "io.dropwizard.metrics"        % "metrics-jvm"                  % "3.2.4"            % "test" // ApacheV2
       val latencyUtils    = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
       val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
       val metricsAll      = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
