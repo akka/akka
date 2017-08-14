@@ -714,6 +714,8 @@ final ActorRef throttler =
     .run(materializer);
 ```
 
+Note, that when using `Sink.actorRef` the sender of the original message sent to the `thottler` ActorRef will be lost and messages will arrive at the `target` with the sender set to `ActorRef.noSender`. Using this construct it is currently impossible to keep the original sender. Alternatively, you can manually specify a static sender by replacing `Sink.actorRef` with @java[`Sink.foreach(msg -> target.tell(msg, whateverSender))`]@scala[`Sink.foreach(msg => target.tell(msg, whateverSender))`]. You could also calculate a sender by inspecting the `msg`. Be cautious not to use `target.tell(msg, sender())` inside of `Sink.foreach` because the result of `sender()` is undefined or will fail when executed from within a stream.
+
 ## Akka Typed
 
 With the new term @ref:[may change](../common/may-change.md) we will no longer have a different artifact for modules that are not
