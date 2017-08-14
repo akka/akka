@@ -1,6 +1,6 @@
 # Routing DSL Overview
 
-The Akka HTTP @ref[Low-Level Server-Side API](../low-level-server-side-api.md) provides a `Flow`- or `Function`-level interface that allows
+The Akka HTTP @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md) provides a `Flow`- or `Function`-level interface that allows
 an application to respond to incoming HTTP requests by simply mapping requests to responses:
 
 @@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }

@@ -2,7 +2,7 @@
 
 The Akka HTTP @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md) provides a `Flow`- or `Function`-level interface that allows
 an application to respond to incoming HTTP requests by simply mapping requests to responses
-(excerpt from @ref[Low-level server side example](../server-side/low-level-server-side-api.md#http-low-level-server-side-example-java)):
+(excerpt from @ref[Low-level server side example](../server-side/low-level-server-side-api.md#http-low-level-server-side-example)):
 
 @@snip [HttpServerExampleDocTest.java](../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #request-handler }
 

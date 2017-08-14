@@ -61,7 +61,7 @@ In this case the "binding future" will fail immediately, and we can react to it 
 
 @@@ note
 For a more low-level overview of the kinds of failures that can happen and also more fine-grained control over them
-refer to the @ref[Handling HTTP Server failures in the Low-Level API](../server-side/low-level-server-side-api.md#handling-http-server-failures-low-level-java) documentation.
+refer to the @ref[Handling HTTP Server failures in the Low-Level API](../server-side/low-level-server-side-api.md#handling-http-server-failures-low-level) documentation.
 @@@
 
 ### Failures and exceptions inside the Routing DSL

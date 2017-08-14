@@ -27,11 +27,30 @@ On the other hand, if you prefer to build your applications with the guidance of
 
 Akka HTTP is provided in a separate jar file, to use it make sure to include the following dependency:
 
-@@@vars
-```sbt
-"com.typesafe.akka" %% "akka-http" % "$project.version$" $crossString$
-```
-@@@
+sbt
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-http" % "$project.version$" $crossString$
+    ```
+    @@@
+
+Gradle
+:   @@@vars
+    ```
+    compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$', version: '$project.version$'
+    ```
+    @@@
+
+Maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-http_$scala.binary_version$</artifactId>
+      <version>$project.version$</version>
+    </dependency>
+    ```
+    @@@
 
 Dependency declarations for other build tools (like Gradle or Maven) can be found [here](http://akka.io/docs/#akka-http).
 
@@ -41,11 +60,22 @@ solely on the low-level API; make sure the Scala version is a recent release of 
 
 Alternatively, you can bootstrap a new sbt project with Akka HTTP already
 configured using the [Giter8](http://www.foundweekends.org/giter8/) template:
+
+@@@ div { .group-scala }
 ```sh
 sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-scala-seed.g8
 ```
-More instructions can be found on the [template
-project](https://github.com/akka/akka-http-scala-seed.g8). Note, requires
+@@@
+@@@ div { .group-java }
+```sh
+sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-java-seed.g8
+```
+From there on the prepared project can be built using Gradle or Maven.
+@@@
+
+More instructions can be found on the @scala[[template
+project](https://github.com/akka/akka-http-scala-seed.g8)]@java[[template
+project](https://github.com/akka/akka-http-java-seed.g8)]. Note, requires
 sbt version 0.13.13 or newer.
 
 ## Routing DSL for HTTP servers
@@ -63,23 +93,37 @@ done separately from the route declarations, in marshallers, which are pulled in
 This means that you can `complete` a request with any kind of object as long as there is an implicit marshaller
 available in scope.
 
+@@@ div { .group-scala }
 Default marshallers are provided for simple objects like String or ByteString, and you can define your own for example
 for JSON. An additional module provides JSON serialization using the spray-json library (see @ref[JSON Support](common/json-support.md)
 for details).
+@@@
+@@@ div { .group-java }
+JSON support is possible in `akka-http` by the use of Jackson, an external artifact (see @ref[JSON Support](common/json-support.md#json-jackson-support-java)
+for details).
+@@@
 
 The `Route` created using the Route DSL is then "bound" to a port to start serving HTTP requests:
 
-@@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #minimal-routing-example }
+Scala
+:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #minimal-routing-example }
+
+Java
+:   @@snip [HttpServerMinimalExampleTest.java](../../../../test/java/docs/http/javadsl/HttpServerMinimalExampleTest.java) { #minimal-routing-example }
 
 A common use case is to reply to a request using a model object having the marshaller transform it into JSON. In
 this case shown by two separate routes. The first route queries an asynchronous database and marshalls the
-`Future[Option[Item]]` result into a JSON response. The second unmarshalls an `Order` from the incoming request
+@scala[`Future[Option[Item]]`]@java[`CompletionStage<Optional<Item>>`] result into a JSON response. The second unmarshalls an `Order` from the incoming request
 saves it to the database and replies with an OK when done.
 
-@@snip [SprayJsonExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/SprayJsonExampleSpec.scala) { #second-spray-json-example }
+Scala
+:   @@snip [SprayJsonExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/SprayJsonExampleSpec.scala) { #second-spray-json-example }
 
-The logic for the marshalling and unmarshalling JSON in this example is provided by the "spray-json" library
-(details on how to use that here: @ref[JSON Support](common/json-support.md)).
+Java
+:   @@snip [JacksonExampleTest.java](../../../../test/java/docs/http/javadsl/JacksonExampleTest.java) { #second-jackson-example }
+
+The logic for the marshalling and unmarshalling JSON in this example is provided by the @scala["spray-json"]@java["Jackson"] library
+(details on how to use that here: @scala[@ref[JSON Support](common/json-support.md))]@java[@ref[JSON Support](common/json-support.md#json-jackson-support-java))].
 
 One of the strengths of Akka HTTP is that streaming data is at its heart meaning that both request and response bodies
 can be streamed through the server achieving constant memory usage even for very large requests or responses. Streaming
@@ -89,7 +133,11 @@ body.
 
 Example that streams random numbers as long as the client accepts them:
 
-@@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #stream-random-numbers }
+Scala
+:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #stream-random-numbers }
+
+Java
+:   @@snip [HttpServerStreamRandomNumbersTest.java](../../../../test/java/docs/http/javadsl/HttpServerStreamRandomNumbersTest.java) { #stream-random-numbers }
 
 Connecting to this service with a slow HTTP client would backpressure so that the next random number is produced on
 demand with constant memory usage on the server. This can be seen using curl and limiting the rate
@@ -99,10 +147,13 @@ Akka HTTP routes easily interacts with actors. In this example one route allows 
 style while the second route contains a request-response interaction with an actor. The resulting response is rendered
 as json and returned when the response arrives from the actor.
 
-@@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #actor-interaction }
+Scala
+:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #actor-interaction }
 
-Again the logic for the marshalling and unmarshalling JSON in this example is provided by the "spray-json" library
-(details on how to use that here: @ref[JSON Support](common/json-support.md))
+Java
+:   @@snip [HttpServerActorInteractionExample.java](../../../../test/java/docs/http/javadsl/HttpServerActorInteractionExample.java) { #actor-interaction }
+
+More details on how JSON marshalling and unmarshalling works can be found in the @ref[JSON Support section](common/json-support.md). 
 
 Read more about the details of the high level APIs in the section @ref[High-level Server-Side API](routing-dsl/index.md).
 
@@ -110,11 +161,15 @@ Read more about the details of the high level APIs in the section @ref[High-leve
 
 The low-level Akka HTTP server APIs allows for handling connections or individual requests by accepting
 `HttpRequest` s and answering them by producing `HttpResponse` s. This is provided by the `akka-http-core` module.
-APIs for handling such request-responses as function calls and as a `Flow[HttpRequest, HttpResponse, _]` are available.
+APIs for handling such request-responses as function calls and as a @scala[`Flow[HttpRequest, HttpResponse, _]`]@java[`Flow<HttpRequest, HttpResponse, NotUsed>`] are available.
 
-@@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }
+Scala
+:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }
 
-Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](low-level-server-side-api.md).
+Java
+:   @@snip [HttpServerLowLevelExample.java](../../../../test/java/docs/http/javadsl/HttpServerLowLevelExample.java) { #low-level-server-example }
+
+Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md).
 
 ## HTTP client API
 
@@ -124,7 +179,11 @@ handled more performantly by re-using TCP connections to the server.
 
 Example simple request:
 
-@@snip [HttpClientExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-example }
+Scala
+:   @@snip [HttpClientExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-example }
+
+Java
+:   @@snip [ClientSingleRequestExample.java](../../../../test/java/docs/http/javadsl/ClientSingleRequestExample.java) { #single-request-example }
 
 Read more about the details of the client APIs in the section @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md).
 
@@ -139,15 +198,24 @@ with Akka HTTP. Details can be found in the section @ref[High-level Server-Side 
 
 akka-http-core
 : A complete, mostly low-level, server- and client-side implementation of HTTP (incl. WebSockets)
-Details can be found in sections @ref[Low-Level Server-Side API](low-level-server-side-api.md) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md)
+Details can be found in sections @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md)
 
 akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations
 
+
+@@@ div { .group-scala }
 akka-http-spray-json
 : Predefined glue-code for (de)serializing custom types from/to JSON with [spray-json](https://github.com/spray/spray-json)
 Details can be found here: @ref[JSON Support](common/json-support.md)
+@@@
 
+@@@ div { .group-scala }
 akka-http-xml
 : Predefined glue-code for (de)serializing custom types from/to XML with [scala-xml](https://github.com/scala/scala-xml)
 Details can be found here: @ref[XML Support](common/xml-support.md)
+@@@
+@@@ div { .group-java }
+akka-http-jackson
+: Predefined glue-code for (de)serializing custom types from/to JSON with [jackson](https://github.com/FasterXML/jackson)
+@@@

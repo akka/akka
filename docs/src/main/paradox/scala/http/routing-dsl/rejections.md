@@ -42,7 +42,7 @@ Since a `RejectionHandler` returns an `Option[Route]` it can choose whether it w
 of rejections or not. If it returns `None` the rejections will simply continue to flow through the route structure.
 
 The default `RejectionHandler` applied by the top-level glue code that turns a `Route` into a
-`Flow` or async handler function for the @ref[low-level API](../low-level-server-side-api.md) (via
+`Flow` or async handler function for the @ref[low-level API](../server-side/low-level-server-side-api.md) (via
 `Route.handlerFlow` or `Route.asyncHandler`) will handle *all* rejections that reach it.
 
 ## Rejection Cancellation
