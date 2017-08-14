@@ -610,7 +610,7 @@ You can also acquire an `ActorRef` for an `ActorSelection` with
 the `resolveOne` method of the `ActorSelection`. It returns a `Future`
 of the matching `ActorRef` if such an actor exists. @java[(see also
 @ref:[Java 8 Compatibility](java8-compat.md) for Java compatibility).] It is completed with
-failure [[akka.actor.ActorNotFound]] if no such actor exists or the identification
+failure `akka.actor.ActorNotFound` if no such actor exists or the identification
 didn't complete within the supplied `timeout`.
 
 Remote actor addresses may also be looked up, if @ref:[remoting](remoting.md) is enabled:
