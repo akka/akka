@@ -6,7 +6,7 @@ lead to problems. It is important to handle the blocking operations correctly.
 
 ## Problem
 
-Using `context.dispatcher` as the dispatcher on which the blocking Future
+Using @scala[`context.dispatcher`]@java[`context.dispatcher()`] as the dispatcher on which the blocking Future
 executes can be a problem - the same dispatcher is used by the routing
 infrastructure to actually handle the incoming requests. 
 
@@ -39,7 +39,11 @@ has this feature (including the free and bundled with the Oracle JDK VisualVM, a
 
 ### Problem example: blocking the default dispatcher
 
-@@snip [BlockingInHttpExamplesSpec.scala](../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-default-dispatcher }
+Scala
+:   @@snip [BlockingInHttpExamplesSpec.scala](../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-default-dispatcher }
+
+Java
+:   @@snip [BlockingInHttpExamples.java](../../../../test/java/docs/http/javadsl/server/BlockingInHttpExamples.java) { #blocking-example-in-default-dispatcher }
 
 Here the app is exposed to a load of continuous GET requests and large numbers
 of akka.actor.default-dispatcher threads are handling requests. The orange
@@ -48,19 +52,28 @@ they're ready to accept new work. However, large amounts of Turquoise (sleeping)
 
 ![DispatcherBehaviourOnBadCode.png](DispatcherBehaviourOnBadCode.png)
 
+@@@ div { .group-scala }
 After some time, the app is exposed to the load of POST requests,
-which will block these threads. For example "`default-akka.default-dispatcher2,3,4`"
-are going into the blocking state, after having been idle. It can be observed
-that the number of new threads increases, "`default-akka.actor.default-dispatcher 18,19,20,...`" 
-however they go to sleep state immediately, thus wasting the
-resources.
+which will block these threads.
+@@@
+@@@ div { .group-java }
+Since we're using the Java `CompletableFuture` in this example, the blocking will happen on its
+default pool which is the _global_ `ForkJoinPool.commonPool()`. With Scala Futures the in-scope 
+provided dispatcher would be used. Both these dispatchers are ForkJoin pools by default, and are 
+not best suited for blocking operations.
+@@@
+For example, the above screenshot shows an Akka FJP dispatchers threads,
+named "`default-akka.default-dispatcher2,3,4`" going into the blocking state, after having been idle. 
+It can be observed that the number of new threads increases, "`default-akka.actor.default-dispatcher 18,19,20,...`" 
+however they go to sleep state immediately, thus wasting the resources.
+@java[The same happens to the global `ForkJoinPool` when using Java Futures.]
 
 The number of such new threads depends on the default dispatcher configuration,
 but it will likely not exceed 50. Since many POST requests are being processed, the entire
 thread pool is starved. The blocking operations dominate such that the routing
 infra has no thread available to handle the other requests.
 
-In essence, the `Thread.sleep` operation has dominated all threads and caused anything 
+In essence, the @scala[`Thread.sleep`]@java[`Thread.sleep()`] operation has dominated all threads and caused anything 
 executing on the default dispatcher to starve for resources (including any Actors
 that you have not configured an explicit dispatcher for).
 
@@ -90,7 +103,11 @@ functionality and the number of cores the server has.
 Whenever blocking has to be done, use the above configured dispatcher
 instead of the default one:
 
-@@snip [BlockingInHttpExamplesSpec.scala](../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-dedicated-dispatcher }
+Scala
+:   @@snip [BlockingInHttpExamplesSpec.scala](../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-dedicated-dispatcher }
+
+Java
+:   @@snip [BlockingInHttpExamples.java](../../../../test/java/docs/http/javadsl/server/BlockingInHttpExamples.java) { #blocking-example-in-dedicated-dispatcher }
 
 This forces the app to use the same load, initially normal requests and then
 the blocking requests. The thread pool behaviour is shown in the figure.
