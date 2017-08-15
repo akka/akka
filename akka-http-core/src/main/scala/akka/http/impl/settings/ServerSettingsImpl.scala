@@ -7,7 +7,7 @@ package akka.http.impl.settings
 import java.util.Random
 
 import akka.http.impl.engine.ws.Randoms
-import akka.http.scaladsl.settings.{ ParserSettings, PreviewServerSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, PreviewServerSettings, ServerSettings }
 import com.typesafe.config.Config
 
 import scala.language.implicitConversions
@@ -40,7 +40,8 @@ private[akka] final case class ServerSettingsImpl(
   socketOptions:              immutable.Seq[SocketOption],
   defaultHostHeader:          Host,
   websocketRandomFactory:     () ⇒ Random,
-  parserSettings:             ParserSettings) extends ServerSettings {
+  parserSettings:             ParserSettings,
+  http2Settings:              Http2ServerSettings) extends ServerSettings {
 
   require(0 < maxConnections, "max-connections must be > 0")
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
@@ -92,5 +93,6 @@ private[http] object ServerSettingsImpl extends SettingsCompanion[ServerSettings
           throw new ConfigurationException(info.formatPretty)
       },
     Randoms.SecureRandomInstances, // can currently only be overridden from code
-    ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")))
+    ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
+    Http2ServerSettings.Http2ServerSettingsImpl.fromSubConfig(root, c.getConfig("http2")))
 }

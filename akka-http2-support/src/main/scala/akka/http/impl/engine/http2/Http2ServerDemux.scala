@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FLOW_CONTROL_ERROR, FRAME_SIZE_ERROR }
 import akka.http.scaladsl.model.http2.{ Http2Exception, PeerClosedStreamException }
+import akka.http.scaladsl.settings.Http2ServerSettings
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
@@ -67,7 +68,7 @@ import scala.util.control.NonFatal
  * not work because the sending decision relies on dynamic window size and settings information that will be
  * only available in this stage.
  */
-class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+class Http2ServerDemux(http2Settings: Http2ServerSettings) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
@@ -80,6 +81,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging {
       logic ⇒
+
+      def settings: Http2ServerSettings = http2Settings
 
       override protected def logSource: Class[_] = classOf[Http2ServerDemux]
 
@@ -185,6 +188,10 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         }
       })
 
+      // FIXME: What if user handler doesn't pull in new substreams? Should we reject them
+      //        after a while or buffer only a limited amount? We should also be able to
+      //        keep the buffer limited to the number of concurrent streams as negotiated
+      //        with the other side.
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
       def dispatchSubstream(sub: Http2SubStream): Unit = bufferedSubStreamOutput.push(sub)
 

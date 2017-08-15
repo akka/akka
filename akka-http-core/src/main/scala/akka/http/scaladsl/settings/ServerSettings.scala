@@ -43,6 +43,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def websocketRandomFactory: () ⇒ Random
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
+  def http2Settings: Http2ServerSettings
 
   /* Java APIs */
 

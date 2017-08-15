@@ -10,6 +10,7 @@ import akka.actor.ActorSystem
 import akka.http.impl.util.ExampleHttpContexts
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream._
 import akka.stream.scaladsl.FileIO
 import com.typesafe.config.Config
@@ -56,8 +57,20 @@ object Http2ServerTest extends App {
     case _: HttpRequest                                ⇒ HttpResponse(404, entity = "Unknown resource!")
   }
 
-  val asyncHandler: HttpRequest ⇒ Future[HttpResponse] =
-    req ⇒ Future.successful(syncHandler(req))
+  val asyncHandler: HttpRequest ⇒ Future[HttpResponse] = {
+    case HttpRequest(POST, Uri.Path("/upload"), _, entity, _) ⇒
+      Unmarshal(entity).to[Multipart.FormData]
+        .flatMap { formData ⇒
+          formData.parts.runFoldAsync("") { (msg, part) ⇒
+            part.entity.dataBytes.runFold(0)(_ + _.size)
+              .map(dataSize ⇒ msg + s"${part.name} ${part.filename} $dataSize ${part.entity.contentType} ${part.additionalDispositionParams}\n")
+          }
+        }
+        .map { msg ⇒
+          HttpResponse(entity = s"Got upload: $msg")
+        }
+    case req ⇒ Future.successful(syncHandler(req))
+  }
 
   try {
     val bindings =
@@ -89,6 +102,12 @@ object Http2ServerTest extends App {
         |      <li><a href="/image-page">/image-page</a></li>
         |      <li><a href="/crash">/crash</a></li>
         |    </ul>
+        |    <div>
+        |      <form method="post" enctype="multipart/form-data" action="upload">
+        |        <label for="file">File</label><input type="file" name="file" multiple="true"/><br/>
+        |        <input type="submit" />
+        |      </form>
+        |    </div>
         |  </body>
         |</html>""".stripMargin))
 
