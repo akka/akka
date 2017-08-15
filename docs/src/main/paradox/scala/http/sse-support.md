@@ -19,37 +19,42 @@ id: 42
 data: another event
 ```
 
-Clients can optionally signal the last seen event to the server via the `Last-Event-ID` header, e.g.
+Clients can optionally signal the last seen event to the server via the @scala[`Last-Event-ID`]@java[`LastEventId`] header, e.g.
 after a reconnect.
 
 ## Model
 
-Akka HTTP represents event streams as `Source[ServerSentEvent, _]` where `ServerSentEvent` is a
-case class with the following fields:
+Akka HTTP represents event streams as @scala[`Source[ServerSentEvent, NotUsed]`]@java[`Source<ServerSentEvent, NotUsed>`] where `ServerSentEvent` is a
+@scala[case] class with the following read-only properties:
 
-- `data: String` – the actual payload, may span multiple lines
-- `eventType: Option[String]` – optional qualifier, e.g. "added", "removed", etc.
-- `id: Option[String]` – optional identifier
-- `retry: Option[Int]` – optional reconnection delay in milliseconds
+- @scala[`data: String`]@java[`String data`] – the actual payload, may span multiple lines
+- @scala[`eventType: Option[String]`]@java[`Optional<String> type`] – optional qualifier, e.g. "added", "removed", etc.
+- @scala[`id: Option[String]`]@java[`Optional<String> id`] – optional identifier
+- @scala[`retry: Option[Int]`]@java[`OptionalInt retry`] – optional reconnection delay in milliseconds
 
-In accordance to the SSE specification Akka HTTP also provides the `Last-Event-ID` header and the
-`text/event-stream` media type.
+In accordance to the SSE specification Akka HTTP also provides the @scala[`Last-Event-ID`]@java[`LastEventId`] header and the
+@scala[`text/event-stream`]@java[`TEXT_EVENT_STREAM`] media type.
 
 ## Server-side usage: marshalling
 
-In order to respond to a HTTP request with an event stream, one has to bring the implicit
-`ToResponseMarshaller[Source[ServerSentEvent, Any]]` defined by `EventStreamMarshalling` into the
-scope defining the respective route:
+In order to respond to a HTTP request with an event stream, you have to
+@scala[bring the implicit `ToResponseMarshaller[Source[ServerSentEvent, Any]]` defined by `EventStreamMarshalling` into the scope defining the respective route]@java[use the `EventStreamMarshalling.toEventStream` marshaller]:
 
-@@snip [ServerSentEventsExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-marshalling-example }
+Scala
+:  @@snip [ServerSentEventsExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-marshalling-example }
+
+Java
+:  @@snip [EventStreamMarshallingTest.java](../../../../../../akka-http-tests/src/test/java/akka/http/javadsl/marshalling/sse/EventStreamMarshallingTest.java) { #event-stream-marshalling-example }
 
 ## Client-side usage: unmarshalling
 
-In order to unmarshal an event stream as `Source[ServerSentEvent, NotUsed]`, you have to bring
-the implicit `FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]]` defined by
-`EventStreamUnmarshalling` into scope:
+In order to unmarshal an event stream as @scala[`Source[ServerSentEvent, NotUsed]`]@java[`Source<ServerSentEvent, NotUsed>`], you have to @scala[bring the implicit `FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]]` defined by `EventStreamUnmarshalling` into scope]@java[use the `EventStreamUnmarshalling.fromEventStream` unmarshaller]:
 
-@@snip [ServerSentEventsExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-marshalling-example }
+Scala
+:  @@snip [ServerSentEventsExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-marshalling-example }
+
+Java
+:  @@snip [EventStreamMarshallingTest.java](../../../../../../akka-http-tests/src/test/java/akka/http/javadsl/unmarshalling/sse/EventStreamUnmarshallingTest.java) { #event-stream-unmarshalling-example }
 
 Notice that if you are looking for a resilient way to permanently subscribe to an event stream,
 Alpakka provides the [EventSource](http://developer.lightbend.com/docs/alpakka/current/sse.html)
