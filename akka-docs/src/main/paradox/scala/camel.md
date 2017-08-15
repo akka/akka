@@ -270,21 +270,13 @@ response processing by overriding the @scala[`routeResponse`]@java[`onRouteRespo
 message is forwarded to a target actor instead of being replied to the original
 sender.
 
-@@@ div { .group-scala }
+Scala
+:   @@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #RouteResponse }
 
-@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #RouteResponse }
-
-@@@ 
-
-@@@ div { .group-java }
-
-@@snip [ResponseReceiver.java]($code$/java/jdocs/camel/ResponseReceiver.java) { #RouteResponse }
-
-@@snip [Forwarder.java]($code$/java/jdocs/camel/Forwarder.java) { #RouteResponse }
-
-@@snip [OnRouteResponseTestBase.java]($code$/java/jdocs/camel/OnRouteResponseTestBase.java) { #RouteResponse }
-
-@@@
+Java
+:   @@snip [ResponseReceiver.java]($code$/java/jdocs/camel/ResponseReceiver.java) { #RouteResponse }
+    @@snip [Forwarder.java]($code$/java/jdocs/camel/Forwarder.java) { #RouteResponse }
+    @@snip [OnRouteResponseTestBase.java]($code$/java/jdocs/camel/OnRouteResponseTestBase.java) { #RouteResponse }
 
 Before producing messages to endpoints, producer actors can pre-process them by
 overriding the @scala[@extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala).transformOutgoingMessage]
@@ -439,25 +431,17 @@ akka://some-system/user/myconsumer?autoAck=false&replyTimeout=100+millis
 In the following example, a custom route to an actor is created, using the
 actor's path. 
 
-@@@ div { .group-scala }
-
 The Akka camel package contains an implicit `toActorRouteDefinition` that allows for a route to
 reference an `ActorRef` directly as shown in the below example, The route starts from a [Jetty](http://www.eclipse.org/jetty/) endpoint and
 ends at the target actor.
 
-@@snip [CustomRoute.scala]($code$/scala/docs/camel/CustomRoute.scala) { #CustomRoute }
+Scala
+:   @@snip [CustomRoute.scala]($code$/scala/docs/camel/CustomRoute.scala) { #CustomRoute }
 
-@@@
-
-@@@ div { .group-java }
-
-@@snip [Responder.java]($code$/java/jdocs/camel/Responder.java) { #CustomRoute }
-
-@@snip [CustomRouteBuilder.java]($code$/java/jdocs/camel/CustomRouteBuilder.java) { #CustomRoute }
-
-@@snip [CustomRouteTestBase.java]($code$/java/jdocs/camel/CustomRouteTestBase.java) { #CustomRoute }
-
-@@@
+Java
+:   @@snip [Responder.java]($code$/java/jdocs/camel/Responder.java) { #CustomRoute }
+    @@snip [CustomRouteBuilder.java]($code$/java/jdocs/camel/CustomRouteBuilder.java) { #CustomRoute }
+    @@snip [CustomRouteTestBase.java]($code$/java/jdocs/camel/CustomRouteTestBase.java) { #CustomRoute }
 
 @java[The `CamelPath.toCamelUri` converts the `ActorRef` to the Camel actor component URI format which points to the actor endpoint as described above.]
 When a message is received on the jetty endpoint, it is routed to the `Responder` actor, which in return replies back to the client of
