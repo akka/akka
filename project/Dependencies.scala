@@ -41,7 +41,7 @@ object Dependencies {
   object Compile {
     // Compile
 
-    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.15.6" exclude("org.slf4j", "slf4j-api") // ApacheV2
+    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.17.7" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config        = "com.typesafe"                % "config"                       % "1.3.1"       // ApacheV2
@@ -60,7 +60,7 @@ object Dependencies {
     val sigar         = "org.fusesource"              % "sigar"                        % "1.6.4"       // ApacheV2
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.0" // CC0 // TODO update to 1.0.1 once it's released, we don't want to ship artifacts depending on RCs
+    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.1" // CC0
 
     // ssl-config
     val sslConfigCore = "com.typesafe"                %% "ssl-config-core"             % sslConfigVersion // ApacheV2
@@ -111,7 +111,7 @@ object Dependencies {
       val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % slf4jVersion    % "test"    // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.1-RC2" % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.1" % "test" // CC0
     }
 
     object Provided {

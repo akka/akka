@@ -139,18 +139,18 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
   val ser = SerializationExtension(system)
   import ser._
 
-  val addr = Address("120", "Monroe Street", "Santa Clara", "95050")
+  val address = Address("120", "Monroe Street", "Santa Clara", "95050")
   val person = Person("debasish ghosh", 25, Address("120", "Monroe Street", "Santa Clara", "95050"))
 
   "Serialization" must {
 
     "have correct bindings" in {
-      ser.bindings.collectFirst { case (c, s) if c == addr.getClass ⇒ s.getClass } should ===(Some(classOf[JavaSerializer]))
+      ser.bindings.collectFirst { case (c, s) if c == address.getClass ⇒ s.getClass } should ===(Some(classOf[JavaSerializer]))
       ser.bindings.collectFirst { case (c, s) if c == classOf[PlainMessage] ⇒ s.getClass } should ===(Some(classOf[NoopSerializer]))
     }
 
     "serialize Address" in {
-      assert(deserialize(serialize(addr).get, classOf[Address]).get === addr)
+      assert(deserialize(serialize(address).get, classOf[Address]).get === address)
     }
 
     "serialize Person" in {

@@ -161,7 +161,7 @@ private[akka] class OutputStreamAdapter(
 
   var isActive = true
   var isPublisherAlive = true
-  val publisherClosedException = new IOException("Reactive stream is terminated, no writes are possible")
+  def publisherClosedException = new IOException("Reactive stream is terminated, no writes are possible")
 
   @scala.throws(classOf[IOException])
   private[this] def send(sendAction: () ⇒ Unit): Unit = {

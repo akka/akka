@@ -745,8 +745,12 @@ is available in the `akka.pattern.PatternsCS` object.
 
 @@@ warning
 
-To complete the future with an exception you need send a Failure message to the sender.
-This is *not done automatically* when an actor throws an exception while processing a message.
+To complete the future with an exception you need to send an `akka.actor.Status.Failure` message to the sender.
+This is *not done automatically* when an actor throws an exception while processing a message. 
+
+Please note that Scala's `Try` sub types `scala.util.Failure` and `scala.util.Success` are not treated 
+specially, and would complete the ask Future with the given value - only the `akka.actor.Status` messages 
+are treated specially by the ask pattern.
 
 @@@
 
@@ -1016,18 +1020,10 @@ Java
 termination of several actors:
 
 Scala
-:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop }
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop}
 
 Java
-:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-gracefulStop #gracefulStop }
-
-
-
-Scala
-:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop-actor }
-
-Java
-:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop-actor }
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop}
 
 When `gracefulStop()` returns successfully, the actor’s `postStop()` hook
 will have been executed: there exists a happens-before edge between the end of

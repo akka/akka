@@ -78,7 +78,7 @@ abstract class FactorialFrontend2 extends Actor {
       AdaptiveLoadBalancingGroup(HeapMetricsSelector),
       ClusterRouterGroupSettings(
         totalInstances = 100, routeesPaths = List("/user/factorialBackend"),
-        allowLocalRoutees = true, useRole = Some("backend"))).props(),
+        allowLocalRoutees = true, useRoles = Set("backend"))).props(),
     name = "factorialBackendRouter2")
 
   //#router-lookup-in-code
@@ -96,7 +96,7 @@ abstract class FactorialFrontend3 extends Actor {
     ClusterRouterPool(AdaptiveLoadBalancingPool(
       SystemLoadAverageMetricsSelector), ClusterRouterPoolSettings(
       totalInstances = 100, maxInstancesPerNode = 3,
-      allowLocalRoutees = false, useRole = Some("backend"))).props(Props[FactorialBackend]),
+      allowLocalRoutees = false, useRoles = Set("backend"))).props(Props[FactorialBackend]),
     name = "factorialBackendRouter3")
   //#router-deploy-in-code
 }

@@ -324,9 +324,9 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
   }
 
   when(Initial, stateTimeout = 10 seconds) {
-    case Event(Hello(name, addr), _) ⇒
+    case Event(Hello(name, address), _) ⇒
       roleName = RoleName(name)
-      controller ! NodeInfo(roleName, addr, self)
+      controller ! NodeInfo(roleName, address, self)
       goto(Ready)
     case Event(x: NetworkOp, _) ⇒
       log.warning("client {} sent no Hello in first message (instead {}), disconnecting", getAddrString(channel), x)
@@ -426,7 +426,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
       val (ip, port) = channel.getRemoteAddress match { case s: InetSocketAddress ⇒ (s.getAddress.getHostAddress, s.getPort) }
       val name = ip + ":" + port + "-server" + generation.next
       sender() ! context.actorOf(Props(classOf[ServerFSM], self, channel).withDeploy(Deploy.local), name)
-    case c @ NodeInfo(name, addr, fsm) ⇒
+    case c @ NodeInfo(name, address, fsm) ⇒
       barrier forward c
       if (nodes contains name) {
         if (initialParticipants > 0) {
@@ -442,7 +442,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
           initialParticipants = 0
         }
         if (addrInterest contains name) {
-          addrInterest(name) foreach (_ ! ToClient(AddressReply(name, addr)))
+          addrInterest(name) foreach (_ ! ToClient(AddressReply(name, address)))
           addrInterest -= name
         }
       }

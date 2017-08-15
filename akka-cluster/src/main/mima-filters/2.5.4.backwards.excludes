@@ -1,0 +1,7 @@
+# #23257 replace ClusterRouterGroup/Pool "use-role" with "use-roles"
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#ClusterRouterPoolSettingsOrBuilder.getUseRoles")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#ClusterRouterPoolSettingsOrBuilder.getUseRolesBytes")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#ClusterRouterPoolSettingsOrBuilder.getUseRolesCount")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#ClusterRouterPoolSettingsOrBuilder.getUseRolesList")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.routing.ClusterRouterSettingsBase.useRole")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.routing.ClusterRouterSettingsBase.useRoles")

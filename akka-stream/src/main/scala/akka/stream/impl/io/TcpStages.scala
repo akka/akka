@@ -378,8 +378,8 @@ private[stream] object ConnectionSourceStage {
 @InternalApi private[akka] object TcpIdleTimeout {
   def apply(idleTimeout: FiniteDuration, remoteAddress: Option[InetSocketAddress]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
     val connectionToString = remoteAddress match {
-      case Some(addr) ⇒ s" on connection to [$addr]"
-      case _          ⇒ ""
+      case Some(address) ⇒ s" on connection to [$address]"
+      case _             ⇒ ""
     }
 
     val toNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
