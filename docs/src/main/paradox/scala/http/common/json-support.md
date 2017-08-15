@@ -1,10 +1,11 @@
 # JSON Support
 
-Akka HTTP's @ref[marshalling](marshalling.md) and @ref[unmarshalling](unmarshalling.md) infrastructure makes it rather easy to seamlessly support specific wire representations of your data objects, like JSON, XML or even binary encodings.
+Akka HTTP's @ref[marshalling](marshalling.md) and @ref[unmarshalling](unmarshalling.md) infrastructure makes it rather easy to seamlessly convert application-domain objects from and to JSON.
+Integration with @scala[[spray-json]]@java[[Jackson]] is provided out of the box through the @scala[`akka-http-spray-json`]@java[`akka-http-jackson`] module.
+Integration with other JSON libraries are supported by the community.
+See [the list of current community extensions for Akka HTTP](http://akka.io/community/#extensions-to-akka-http).
 
-For JSON Akka HTTP currently provides support for [spray-json] right out of the box through its `akka-http-spray-json` module.
-
-Other JSON libraries are supported by the community. See [the list of current community extensions for Akka HTTP](http://akka.io/community/#extensions-to-akka-http).
+@@@ div { .group-scala }
 
 ## spray-json Support
 
@@ -13,11 +14,30 @@ that an implicit `spray.json.RootJsonReader` and/or `spray.json.RootJsonWriter` 
 
 To enable automatic support for (un)marshalling from and to JSON with [spray-json], add a library dependency onto:
 
-@@@vars
-```sbt
-"com.typesafe.akka" %% "akka-http-spray-json" % "$project.version$"
-```
-@@@
+sbt
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-http-spray-json" % "$project.version$" $crossString$
+    ```
+    @@@
+
+Gradle
+:   @@@vars
+    ```
+    compile group: 'com.typesafe.akka', name: 'akka-http-spray-json_$scala.binary_version$', version: '$project.version$'
+    ```
+    @@@
+
+Maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-http-spray-json_$scala.binary_version$</artifactId>
+      <version>$project.version$</version>
+    </dependency>
+    ```
+    @@@
 
 Next, provide a `RootJsonFormat[T]` for your type and bring it into scope. Check out the [spray-json] documentation for more info on how to do this.
 
@@ -39,4 +59,53 @@ Alternatively to marshal your types to pretty printed JSON, bring a `PrettyPrint
 
 To learn more about how spray-json works please refer to its [documentation][spray-json].
 
+@@@
+
+@@@ div { .group-java }
+
+<a id="json-jackson-support-java"></a>
+## Jackson Support
+
+To make use of the support module for (un)marshalling from and to JSON with [Jackson], add a library dependency onto:
+
+sbt
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-http-jackson" % "$project.version$" $crossString$
+    ```
+    @@@
+
+Gradle
+:   @@@vars
+    ```
+    compile group: 'com.typesafe.akka', name: 'akka-http-jackson_$scala.binary_version$', version: '$project.version$'
+    ```
+    @@@
+
+Maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-http-jackson_$scala.binary_version$</artifactId>
+      <version>$project.version$</version>
+    </dependency>
+    ```
+    @@@
+
+Use `akka.http.javadsl.marshallers.jackson.Jackson.unmarshaller(T.class)` to create an `Unmarshaller<HttpEntity,T>` which expects the request
+body (HttpEntity) to be of type `application/json` and converts it to `T` using Jackson.
+
+@@snip [PetStoreExample.java](../../../../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #unmarshall }
+
+Use `akka.http.javadsl.marshallers.jackson.Jackson.marshaller(T.class)` to create a `Marshaller<T,RequestEntity>` which can be used with
+`RequestContext.complete` or `RouteDirectives.complete` to convert a POJO to an HttpResponse.
+
+@@snip [PetStoreExample.java](../../../../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #marshall }
+
+Refer to @github[this file](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) in the sources for the complete example.
+
+@@@
+
 [spray-json]: https://github.com/spray/spray-json
+[jackson]: https://github.com/FasterXML/jackson

@@ -7,33 +7,43 @@ package akka.http.javadsl.server.examples.petstore;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
+//#imports
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.StatusCodes;
+//#imports
 import akka.http.javadsl.server.Route;
 import akka.stream.ActorMaterializer;
 
 import java.io.IOException;
+//#imports
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+//#imports
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+//#imports
 import static akka.http.javadsl.server.Directives.*;
 import static akka.http.javadsl.unmarshalling.StringUnmarshallers.INTEGER;
 
+//#imports
+
 public class PetStoreExample {
 
+  //#marshall
   private static Route putPetHandler(Map<Integer, Pet> pets, Pet thePet) {
       pets.put(thePet.getId(), thePet);
       return complete(StatusCodes.OK, thePet, Jackson.<Pet>marshaller());
   }
-  
+
   private static Route alternativeFuturePutPetHandler(Map<Integer, Pet> pets, Pet thePet) {
       pets.put(thePet.getId(), thePet);
     CompletableFuture<Pet> futurePet = CompletableFuture.supplyAsync(() -> thePet);
       return completeOKWithFuture(futurePet, Jackson.<Pet>marshaller());
   }
-    
+  //#marshall
+
+  //#unmarshall
   public static Route appRoute(final Map<Integer, Pet> pets) {
     PetStoreController controller = new PetStoreController(pets);
 
@@ -42,7 +52,7 @@ public class PetStoreExample {
         Pet pet = pets.get(petId);
         return (pet == null) ? reject() : complete(StatusCodes.OK, pet, Jackson.<Pet>marshaller());
     };
-      
+
     // The directives here are statically imported, but you can also inherit from AllDirectives.
     return
       route(
@@ -70,13 +80,14 @@ public class PetStoreExample {
                 )
               )              
             ),
-            
+
             // 3. calling a method of a controller instance
             delete(() -> controller.deletePet(petId))
           ))
         )
       );
   }
+  //#unmarshall
 
   public static void main(String[] args) throws IOException {
     Map<Integer, Pet> pets = new ConcurrentHashMap<>();
