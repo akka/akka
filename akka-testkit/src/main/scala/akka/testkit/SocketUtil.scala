@@ -4,6 +4,7 @@
 package akka.testkit
 
 import scala.collection.immutable
+import scala.util.Random
 import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.nio.channels.DatagramChannel
@@ -25,21 +26,28 @@ object SocketUtil {
     def getLocalPort(): Int
   }
 
-  def temporaryServerAddress(address: String = "127.0.0.1", udp: Boolean = false): InetSocketAddress =
+  val RANDOM_LOOPBACK_ADDRESS = "RANDOM_LOOPBACK_ADDRESS"
+
+  def temporaryServerAddress(address: String = RANDOM_LOOPBACK_ADDRESS, udp: Boolean = false): InetSocketAddress =
     temporaryServerAddresses(1, address, udp).head
 
-  def temporaryServerAddresses(numberOfAddresses: Int, hostname: String = "127.0.0.1", udp: Boolean = false): immutable.IndexedSeq[InetSocketAddress] = {
+  def temporaryServerAddresses(numberOfAddresses: Int, hostname: String = RANDOM_LOOPBACK_ADDRESS, udp: Boolean = false): immutable.IndexedSeq[InetSocketAddress] = {
     Vector.fill(numberOfAddresses) {
       val serverSocket: GeneralSocket =
         if (udp) DatagramChannel.open().socket()
         else ServerSocketChannel.open().socket()
 
-      serverSocket.bind(new InetSocketAddress(hostname, 0))
-      (serverSocket, new InetSocketAddress(hostname, serverSocket.getLocalPort))
+      val address = hostname match {
+        case RANDOM_LOOPBACK_ADDRESS ⇒ s"127.20.${Random.nextInt(256)}.${Random.nextInt(256)}"
+        case other                   ⇒ other
+      }
+
+      serverSocket.bind(new InetSocketAddress(address, 0))
+      (serverSocket, new InetSocketAddress(address, serverSocket.getLocalPort))
     } collect { case (socket, address) ⇒ socket.close(); address }
   }
 
-  def temporaryServerHostnameAndPort(interface: String = "127.0.0.1"): (String, Int) = {
+  def temporaryServerHostnameAndPort(interface: String = RANDOM_LOOPBACK_ADDRESS): (String, Int) = {
     val socketAddress = temporaryServerAddress(interface)
     socketAddress.getHostString → socketAddress.getPort
   }
