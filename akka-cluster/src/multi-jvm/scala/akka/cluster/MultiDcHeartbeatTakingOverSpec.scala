@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 
 object MultiDcHeartbeatTakingOverSpecMultiJvmSpec extends MultiNodeConfig {
   val first = role("first") //   alpha
-  val second = role("second") // alpha 
+  val second = role("second") // alpha
   val third = role("third") //   alpha
 
   val fourth = role("fourth") // beta
@@ -40,15 +40,15 @@ object MultiDcHeartbeatTakingOverSpecMultiJvmSpec extends MultiNodeConfig {
     """
     akka {
       actor.provider = cluster
-      
+
       loggers = ["akka.testkit.TestEventListener"]
       loglevel = INFO
-      
+
       remote.log-remote-lifecycle-events = off
-      
+
       cluster {
         debug.verbose-heartbeat-logging = off
-       
+
         multi-data-center {
           cross-data-center-connections = 2
         }
@@ -136,7 +136,7 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
     "other node must become oldest when current DC-oldest Leaves" taggedAs LongRunningTest in {
       val observer = TestProbe("alpha-observer-prime")
 
-      // we leave one of the current oldest nodes of the `alpha` DC, 
+      // we leave one of the current oldest nodes of the `alpha` DC,
       // since it has 3 members the "not yet oldest" one becomes oldest and should start monitoring across datacenter
       val preLeaveOldestAlphaRole = expectedAlphaHeartbeaterRoles.head
       val preLeaveOldestAlphaAddress = expectedAlphaHeartbeaterNodes.find(_.address.port.get == preLeaveOldestAlphaRole.port.get).get.address
@@ -182,13 +182,12 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
    */
   private def membersByAge(): immutable.SortedSet[Member] =
     SortedSet.empty(Member.ageOrdering)
-      .union(cluster.state.members.filter(m ⇒ m.status != MemberStatus.WeaklyUp && m.status != MemberStatus.WeaklyUp))
+      .union(cluster.state.members.filter(m ⇒ m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
 
   /** INTERNAL API */
   @InternalApi
   private[cluster] def takeNOldestMembers(memberFilter: Member ⇒ Boolean, n: Int): immutable.SortedSet[Member] =
     membersByAge()
-      .filter(m ⇒ m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp)
       .filter(memberFilter)
       .take(n)
 
