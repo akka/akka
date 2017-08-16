@@ -83,7 +83,7 @@ public class TcpTest extends StreamTest {
         Source.from(testInput)
             .via(
                 Tcp.get(system)
-                    .outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()))
+                    .connect(serverAddress.getHostString(), serverAddress.getPort()))
             .runFold(
                 ByteString.empty(),
                 new Function2<ByteString, ByteString, ByteString>() {
@@ -148,7 +148,7 @@ public class TcpTest extends StreamTest {
         Source.from(testInput)
             .viaMat(
                 Tcp.get(system)
-                    .outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()),
+                    .connect(serverAddress.getHostString(), serverAddress.getPort()),
                 Keep.right())
             .to(Sink.<ByteString>ignore())
             .run(materializer)

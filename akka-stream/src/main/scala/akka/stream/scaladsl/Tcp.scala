@@ -173,22 +173,22 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       .run()
   }
 
-  @deprecated("Specify the keepOpenOnPeerClosed parameter", "2.6.0")
+  @deprecated(message = "use 'connect' instead", since = "2.6.0")
   def outgoingConnection(
     remoteAddress:  InetSocketAddress,
-    localAddress:   Option[InetSocketAddress],
-    options:        immutable.Traversable[SocketOption],
-    halfClose:      Boolean,
-    connectTimeout: Duration,
-    idleTimeout:    Duration): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-    outgoingConnection(
+    localAddress:   Option[InetSocketAddress]           = None,
+    options:        immutable.Traversable[SocketOption] = Nil,
+    halfClose:      Boolean                             = true,
+    connectTimeout: Duration                            = Duration.Inf,
+    idleTimeout:    Duration                            = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+    connect(
       remoteAddress,
       localAddress,
       options,
       halfClose,
       connectTimeout,
       idleTimeout,
-      keepOpenOnPeerClosed = false
+      keepOpenOnPeerClosed = true
     )
 
   /**
@@ -210,8 +210,11 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  therefore it is the default setting.
    *                  If set to false, the connection will immediately closed once the client closes its write side,
    *                  independently whether the server is still attempting to write.
+   * @param keepOpenOnPeerClosed
+   *                  When the remote side has closed the incoming side of the connection, keep the outgoing side
+   *                  open to keep sending data until finished.
    */
-  def outgoingConnection(
+  def connect(
       remoteAddress: InetSocketAddress,
       localAddress: Option[InetSocketAddress] = None,
       @silent // Traversable deprecated in 2.13
@@ -249,8 +252,9 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * to achieve application level chunks you have to introduce explicit framing in your streams,
    * for example using the [[Framing]] operators.
    */
+  @deprecated("use 'connect'", since = "2.6.0")
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-    outgoingConnection(InetSocketAddress.createUnresolved(host, port))
+    connect(host, port)
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] with TLS.
@@ -293,7 +297,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       connectTimeout: Duration = Duration.Inf,
       idleTimeout: Duration = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
-    val connection = outgoingConnection(remoteAddress, localAddress, options, halfClose = true, connectTimeout, idleTimeout, keepOpenOnPeerClosed = false)
+    val connection = connect(remoteAddress, localAddress, options, halfClose = true, connectTimeout, idleTimeout, keepOpenOnPeerClosed = false)
     val tls = TLS(sslContext, negotiateNewSession, TLSRole.client)
     connection.join(tlsWrapping.atop(tls).reversed)
   }
@@ -312,7 +316,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       verifySession: SSLSession => Try[Unit],
       closing: TLSClosing = IgnoreComplete): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
-    val connection = outgoingConnection(remoteAddress, localAddress, options, halfClose = true, connectTimeout, idleTimeout, keepOpenOnPeerClosed = false)
+    val connection = connect(remoteAddress, localAddress, options, halfClose = true, connectTimeout, idleTimeout, keepOpenOnPeerClosed = false)
     val tls = TLS(createSSLEngine, verifySession, closing)
     connection.join(tlsWrapping.atop(tls).reversed)
   }
@@ -393,6 +397,19 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       .run()
   }
 
+  /**
+   * Creates an [[Tcp.OutgoingConnection]] without specifying options.
+   * It represents a prospective TCP client connection to the given endpoint.
+   */
+  def connect(address: InetSocketAddress): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+    connect(address, localAddress = None, options = Nil, halfClose = true, connectTimeout = Duration.Inf, idleTimeout = Duration.Inf, keepOpenOnPeerClosed = false)
+
+  /**
+   * Creates an [[Tcp.OutgoingConnection]] without specifying options.
+   * It represents a prospective TCP client connection to the given endpoint.
+   */
+  def connect(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+    connect(InetSocketAddress.createUnresolved(host, port))
 }
 
 final class TcpIdleTimeoutException(msg: String, @unused timeout: Duration)

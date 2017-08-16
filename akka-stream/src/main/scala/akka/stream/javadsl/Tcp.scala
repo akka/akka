@@ -177,7 +177,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       halfClose: Boolean,
       connectTimeout: Duration,
       idleTimeout: Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
-      outgoingConnection(remoteAddress, localAddress, options, halfClose, connectTimeout, idleTimeout, keepOpenOnPeerClosed = false)
+      connect(remoteAddress, localAddress, options, halfClose, connectTimeout, idleTimeout, keepOpenOnPeerClosed = false)
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
@@ -198,8 +198,11 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  therefore it is the default setting.
    *                  If set to false, the connection will immediately closed once the client closes its write side,
    *                  independently whether the server is still attempting to write.
+   * @param keepOpenOnPeerClosed
+   *                  When the remote side has closed the incoming side of the connection, keep the outgoing side
+   *                  open to keep sending data until finished.
    */
-  def outgoingConnection(
+  def connect(
       remoteAddress: InetSocketAddress,
       localAddress: Optional[InetSocketAddress],
       options: JIterable[SocketOption],
@@ -209,7 +212,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       keepOpenOnPeerClosed: Boolean): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
     Flow.fromGraph(
       delegate
-        .outgoingConnection(
+        .connect(
           remoteAddress,
           localAddress.asScala,
           immutableSeq(options),
@@ -219,6 +222,11 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
           keepOpenOnPeerClosed)
         .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
 
+  @Deprecated
+  def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+    Flow.fromGraph(delegate.connect(host, port)
+      .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
+
   /**
    * Creates an [[Tcp.OutgoingConnection]] without specifying options.
    * It represents a prospective TCP client connection to the given endpoint.
@@ -227,11 +235,9 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * to achieve application level chunks you have to introduce explicit framing in your streams,
    * for example using the [[Framing]] operators.
    */
-  def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
-    Flow.fromGraph(
-      delegate
-        .outgoingConnection(new InetSocketAddress(host, port))
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
+  def connect(host: String, port: Int): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+    Flow.fromGraph(delegate.connect(host, port)
+      .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
 
   /**
    * Creates an [[Tcp.OutgoingConnection]] with TLS.

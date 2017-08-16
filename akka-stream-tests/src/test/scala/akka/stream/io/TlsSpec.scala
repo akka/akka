@@ -163,7 +163,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
           rightClosing: TLSClosing,
           rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
         binding = server(serverTls(rightClosing).reversed.join(rhs))
-        clientTls(leftClosing).join(Tcp().outgoingConnection(binding.localAddress))
+        clientTls(leftClosing).join(Tcp().connect(binding.localAddress))
       }
       override def cleanup(): Unit = binding.unbind()
     }
@@ -175,7 +175,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
           rightClosing: TLSClosing,
           rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
         binding = server(clientTls(rightClosing).reversed.join(rhs))
-        serverTls(leftClosing).join(Tcp().outgoingConnection(binding.localAddress))
+        serverTls(leftClosing).join(Tcp().connect(binding.localAddress))
       }
       override def cleanup(): Unit = binding.unbind()
     }
@@ -406,7 +406,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
 
       val clientErr = simple
         .join(badClientTls(IgnoreBoth))
-        .join(Tcp().outgoingConnection(Await.result(server, 1.second).localAddress))
+        .join(Tcp().connect(Await.result(server, 1.second).localAddress))
         .run()
 
       Await.result(serverErr, 1.second).getMessage should include("certificate_unknown")

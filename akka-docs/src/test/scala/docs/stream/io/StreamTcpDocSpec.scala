@@ -112,12 +112,12 @@ class StreamTcpDocSpec extends AkkaSpec {
     {
       // just for docs, never actually used
       //#repl-client
-      val connection = Tcp().outgoingConnection("127.0.0.1", 8888)
+      val connection = Tcp().connect("127.0.0.1", 8888)
       //#repl-client
     }
 
     {
-      val connection = Tcp().outgoingConnection(localhost)
+      val connection = Tcp().connect(localhost, localAddress = None, options = Nil, halfClose = true, connectTimeout = Duration.Inf, idleTimeout = Duration.Inf, keepOpenOnPeerClosed = false)
       //#repl-client
 
       val replParser =

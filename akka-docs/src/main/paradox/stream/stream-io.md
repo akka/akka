@@ -67,7 +67,7 @@ Hello World!!!
 In this example we implement a rather naive Read Evaluate Print Loop client over TCP.
 Let's say we know a server has exposed a simple command line interface over TCP,
 and would like to interact with it using Akka Streams over TCP. To open an outgoing connection socket we use
-the `outgoingConnection` method:
+the `connect` method:
 
 Scala
 :   @@snip [StreamTcpDocSpec.scala](/akka-docs/src/test/scala/docs/stream/io/StreamTcpDocSpec.scala) { #repl-client }
