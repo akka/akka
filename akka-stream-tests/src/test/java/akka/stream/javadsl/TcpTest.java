@@ -57,7 +57,7 @@ public class TcpTest extends StreamTest {
 
   @Test
   public void mustWorkInHappyCase() throws Exception {
-    final InetSocketAddress serverAddress = SocketUtil.temporaryServerAddress("127.0.0.1", false);
+    final InetSocketAddress serverAddress = SocketUtil.temporaryServerAddress(SocketUtil.RANDOM_LOOPBACK_ADDRESS(), false);
     final Source<IncomingConnection, CompletionStage<ServerBinding>> binding = Tcp.get(system)
         .bind(serverAddress.getHostString(), serverAddress.getPort());
 
@@ -83,7 +83,7 @@ public class TcpTest extends StreamTest {
 
   @Test
   public void mustReportServerBindFailure() throws Exception {
-    final InetSocketAddress serverAddress = SocketUtil.temporaryServerAddress("127.0.0.1", false);
+    final InetSocketAddress serverAddress = SocketUtil.temporaryServerAddress(SocketUtil.RANDOM_LOOPBACK_ADDRESS(), false);
     final Source<IncomingConnection, CompletionStage<ServerBinding>> binding = Tcp.get(system)
         .bind(serverAddress.getHostString(), serverAddress.getPort());
 

@@ -19,7 +19,7 @@ import scala.concurrent.duration._
 
 object HandshakeShouldDropCompressionTableSpec {
   // need the port before systemB is started
-  val portB = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
+  val portB = SocketUtil.temporaryLocalPort(udp = true)
 
   val commonConfig = ConfigFactory.parseString(s"""
      akka {

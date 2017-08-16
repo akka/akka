@@ -828,8 +828,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     "report abort before handler is registered (reproducer from #15033)" in {
       // This test needs the OP_CONNECT workaround on Windows, see original report #15033 and parent ticket #15766
 
-      val port = SocketUtil.temporaryServerAddress().getPort
-      val bindAddress = new InetSocketAddress(port)
+      val bindAddress = SocketUtil.temporaryServerAddress()
       val serverSocket = new ServerSocket(bindAddress.getPort, 100, bindAddress.getAddress)
       val connectionProbe = TestProbe()
 
