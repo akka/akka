@@ -1,6 +1,6 @@
 # Remoting
 
-For an introduction of remoting capabilities of Akka please see @ref[Location Transparency](general/remoting.md).
+For an introduction of remoting capabilities of Akka please see @ref:[Location Transparency](general/remoting.md).
 
 @@@ note
 
@@ -596,7 +596,7 @@ the other (the "server").
 Note that if TLS is enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate
 by compromising any node with certificates issued by the same internal PKI tree.
 
-See also a description of the settings in the @ref[Remote Configuration](remoting.md#remote-configuration) section.
+See also a description of the settings in the @ref:[Remote Configuration](remoting.md#remote-configuration) section.
 
 @@@ note
 

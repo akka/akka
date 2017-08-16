@@ -4,6 +4,7 @@
 package akka.typed
 package scaladsl
 
+import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.typed.internal.adapter._
 
@@ -40,7 +41,7 @@ package object adapter {
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] =
       ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props), name))
 
-    def toTyped: ActorSystem[Nothing] = ActorSystemAdapter(sys)
+    def toTyped: ActorSystem[Nothing] = AdapterExtension(sys).adapter
   }
 
   /**

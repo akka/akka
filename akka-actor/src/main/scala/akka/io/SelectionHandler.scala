@@ -68,6 +68,12 @@ private[io] trait ChannelRegistration extends NoSerializationVerificationNeeded 
 }
 
 private[io] object SelectionHandler {
+  // Let select return every MaxSelectMillis which will automatically cleanup stale entries in the selection set.
+  // Otherwise, an idle Selector might block for a long time keeping a reference to the dead connection actor's ActorRef
+  // which might keep other stuff in memory.
+  // See https://github.com/akka/akka/issues/23437
+  // As this is basic house-keeping functionality it doesn't seem useful to make the value configurable.
+  val MaxSelectMillis = 10000 // wake up once in 10 seconds
 
   trait HasFailureMessage {
     def failureMessage: Any
@@ -119,7 +125,7 @@ private[io] object SelectionHandler {
 
     private[this] val select = new Task {
       def tryRun(): Unit = {
-        if (selector.select() > 0) { // This assumes select return value == selectedKeys.size
+        if (selector.select(MaxSelectMillis) > 0) { // This assumes select return value == selectedKeys.size
           val keys = selector.selectedKeys
           val iterator = keys.iterator()
           while (iterator.hasNext) {

@@ -124,7 +124,7 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
         val router2 = system.actorOf(
           ClusterRouterPool(
             local = ConsistentHashingPool(nrOfInstances = 0),
-            settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 2, allowLocalRoutees = true, useRole = None)).
+            settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 2, allowLocalRoutees = true)).
             props(Props[Echo]),
           "router2")
         // it may take some time until router receives cluster member events
@@ -159,7 +159,7 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
         val router4 = system.actorOf(
           ClusterRouterPool(
             local = ConsistentHashingPool(nrOfInstances = 0, hashMapping = hashMapping),
-            settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 1, allowLocalRoutees = true, useRole = None)).
+            settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 1, allowLocalRoutees = true)).
             props(Props[Echo]),
           "router4")
 

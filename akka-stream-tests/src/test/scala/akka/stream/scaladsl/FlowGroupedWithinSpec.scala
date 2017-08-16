@@ -6,12 +6,14 @@ package akka.stream.scaladsl
 import scala.collection.immutable
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
+
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ThrottleMode }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 
 import scala.concurrent.Await
 import akka.testkit.TimingTest
+import akka.util.ConstantFun
 
 class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
 
@@ -250,6 +252,27 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       וupstream.sendNext(11)
       downstream.expectNext(Vector(11): immutable.Seq[Long])
       וupstream.sendComplete()
+      downstream.expectComplete()
+    }
+
+    "handle zero cost function to get only timed based grouping without limit" taggedAs TimingTest in {
+      val upstream = TestPublisher.probe[String]()
+      val downstream = TestSubscriber.probe[immutable.Seq[String]]()
+      Source
+        .fromPublisher(upstream)
+        .groupedWeightedWithin(1, 100.millis)(ConstantFun.zeroLong)
+        .to(Sink.fromSubscriber(downstream))
+        .run()
+
+      downstream.ensureSubscription()
+      downstream.request(1)
+      upstream.sendNext("333")
+      upstream.sendNext("22")
+      upstream.sendNext("333")
+      upstream.sendNext("22")
+      downstream.expectNoMsg(50.millis)
+      downstream.expectNext(Vector("333", "22", "333", "22"): immutable.Seq[String])
+      upstream.sendComplete()
       downstream.expectComplete()
     }
   }

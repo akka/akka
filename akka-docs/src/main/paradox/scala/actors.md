@@ -745,8 +745,12 @@ is available in the `akka.pattern.PatternsCS` object.
 
 @@@ warning
 
-To complete the future with an exception you need send a Failure message to the sender.
-This is *not done automatically* when an actor throws an exception while processing a message.
+To complete the future with an exception you need to send an `akka.actor.Status.Failure` message to the sender.
+This is *not done automatically* when an actor throws an exception while processing a message. 
+
+Please note that Scala's `Try` sub types `scala.util.Failure` and `scala.util.Success` are not treated 
+specially, and would complete the ask Future with the given value - only the `akka.actor.Status` messages 
+are treated specially by the ask pattern.
 
 @@@
 
@@ -834,10 +838,10 @@ You can build such behavior with a builder named `ReceiveBuilder`. Here is an ex
 
 @@@
 
-@Scala
+Scala
 :  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #imports1 #my-actor }
 
-@Java
+Java
 :  @@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #imports #my-actor }
 
 @@@ div { .group-java }
@@ -921,7 +925,7 @@ e.g. scheduled tick messages.
 
 ## Timers, scheduled messages
 
-Messages can be scheduled to be sent at a later point by using the @ref[Scheduler](scheduler.md) directly,
+Messages can be scheduled to be sent at a later point by using the @ref:[Scheduler](scheduler.md) directly,
 but when scheduling periodic or single messages in an actor to itself it's more convenient and safe
 to use the support for named timers. The lifecycle of scheduled messages can be difficult to manage
 when the actor is restarted and that is taken care of by the timers.
@@ -1016,16 +1020,10 @@ Java
 termination of several actors:
 
 Scala
-:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop }
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop}
 
 Java
-:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-gracefulStop #gracefulStop }
-
-Scala
-:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop-actor }
-
-Java
-:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop-actor }
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop}
 
 When `gracefulStop()` returns successfully, the actor’s `postStop()` hook
 will have been executed: there exists a happens-before edge between the end of

@@ -1,0 +1,2 @@
+# #21894 Programmatic configuration of the ActorSystem
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.this")

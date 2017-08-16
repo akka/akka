@@ -395,7 +395,7 @@ either not rely on messages being the same instance or turn the setting off.
 ### Wire Protocol Compatibility
 
 It is possible to use Akka Remoting between nodes running Akka 2.4.16 and 2.5-M1, but some settings have changed so you might need
-to adjust some configuration as described in [mig25_rolling](#mig25-rolling).
+to adjust some configuration as described in [Rolling Update](#mig25-rolling).
 
 Note however that if using Java serialization it will not be possible to mix nodes using Scala 2.11 and 2.12.
 
@@ -420,6 +420,14 @@ and here is a summary of things to consider.
  * [akka.cluster.allow-weakly-up-members](#mig25-weaklyup)
  * [akka.cluster.sharding.state-store-mode](#mig25-sharding-store)
  * [akka.remote.netty.ssl.require-mutual-authentication](#mig25-mutual)
+ 
+#### Limit lookup of routees to nodes tagged with multiple roles
+
+Starting with 2.5.4, cluster routing supports delivering messages to routees tagged with all specified roles
+using `use-roles` (instead of `use-role` in previous versions). When doing rolling upgrades and using this new feature,
+it is important to first upgrade the existing nodes to the latest version of Akka
+and then start using multiple roles in a separate rolling upgrade. Otherwise, if a new node sends a message 
+with the restriction `use-roles = ["a", "b"]`, that will only require the "a" role on old nodes.
 
 ### Coordinated Shutdown
 

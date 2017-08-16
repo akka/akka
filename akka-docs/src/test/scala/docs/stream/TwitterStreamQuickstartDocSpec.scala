@@ -29,8 +29,9 @@ object TwitterStreamQuickstartDocSpec {
   final case class Hashtag(name: String)
 
   final case class Tweet(author: Author, timestamp: Long, body: String) {
-    def hashtags: Set[Hashtag] =
-      body.split(" ").collect { case t if t.startsWith("#") => Hashtag(t) }.toSet
+    def hashtags: Set[Hashtag] = body.split(" ").collect {
+      case t if t.startsWith("#") => Hashtag(t.replaceAll("[^#\\w]", ""))
+    }.toSet
   }
 
   val akkaTag = Hashtag("#akka")
@@ -150,10 +151,12 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
     //#fiddle_code
     tweets
-      .filterNot(_.hashtags.contains(akkaTag))
-      .mapConcat(_.hashtags)
-      .map(_.name.toUpperCase)
-      .runWith(Sink.foreach(println))
+      .filterNot(_.hashtags.contains(akkaTag)) // Remove all tweets containing #akka hashtag
+      .map(_.hashtags) // Get all sets of hashtags ...
+      .reduce(_ ++ _) // ... and reduce them to a single set, removing duplicates across all tweets
+      .mapConcat(identity) // Flatten the stream of tweets to a stream of hashtags
+      .map(_.name.toUpperCase) // Convert all hashtags to upper case
+      .runWith(Sink.foreach(println)) // Attach the Flow to a Sink that will finally print the hashtags
 
       // $FiddleDependency org.akka-js %%% akkajsactorstream % 1.2.5.1
       //#fiddle_code

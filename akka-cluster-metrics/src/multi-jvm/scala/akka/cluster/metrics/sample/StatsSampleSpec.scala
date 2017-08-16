@@ -45,7 +45,7 @@ object StatsSampleSpecConfig extends MultiNodeConfig {
           cluster {
             enabled = on
             allow-local-routees = on
-            use-role = compute
+            use-roles = ["compute"]
           }
         }
     }

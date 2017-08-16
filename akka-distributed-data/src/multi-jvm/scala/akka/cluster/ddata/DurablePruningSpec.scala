@@ -140,10 +140,10 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
       enterBarrier("pruned")
 
       runOn(first) {
-        val addr = cluster2.selfAddress
+        val address = cluster2.selfAddress
         val sys3 = ActorSystem(system.name, ConfigFactory.parseString(s"""
-                  akka.remote.artery.canonical.port = ${addr.port.get}
-                  akka.remote.netty.tcp.port = ${addr.port.get}
+                  akka.remote.artery.canonical.port = ${address.port.get}
+                  akka.remote.netty.tcp.port = ${address.port.get}
                   """).withFallback(system.settings.config))
         val cluster3 = Cluster(sys3)
         val replicator3 = startReplicator(sys3)

@@ -1,0 +1,2 @@
+# #23144 recoverWithRetries cleanup
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.RecoverWith.InfiniteRetries")

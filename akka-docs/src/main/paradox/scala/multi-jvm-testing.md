@@ -117,8 +117,8 @@ You can change the name of the multi-JVM test source directory by adding the fol
 configuration to your project:
 
 ```none
-unmanagedSourceDirectories in MultiJvm <<=
-   Seq(baseDirectory(_ / "src/some_directory_here")).join
+unmanagedSourceDirectories in MultiJvm :=
+   Seq(baseDirectory(_ / "src/some_directory_here")).join.value
 ```
 
 You can change what the `MultiJvm` identifier is. For example, to change it to

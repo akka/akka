@@ -4,9 +4,7 @@
 package akka.stream.impl
 
 import akka.annotation.InternalApi
-import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes._
-import akka.stream.Supervision.Decider
 import akka.stream._
 
 /**

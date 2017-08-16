@@ -30,8 +30,8 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
 
     @throws[UnknownHostException]
     def addr: InetAddress = addrOption match {
-      case Some(addr) ⇒ addr
-      case None       ⇒ throw new UnknownHostException(name)
+      case Some(ipAddress) ⇒ ipAddress
+      case None            ⇒ throw new UnknownHostException(name)
     }
   }
 

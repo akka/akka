@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.Future
+import scala.concurrent.{ Await, Future }
 
 class DummyExtension1 extends Extension
 object DummyExtension1 extends ExtensionId[DummyExtension1] {
@@ -151,6 +151,23 @@ class ExtensionsSpec extends TypedSpecSetup {
 
         instance1 should be theSameInstanceAs instance2
       }
+
+    def `10 not create an extension multiple times when using the ActorSystemAdapter`(): Unit = {
+      import akka.typed.scaladsl.adapter._
+      val untypedSystem = akka.actor.ActorSystem()
+      try {
+
+        val before = InstanceCountingExtension.createCount.get()
+        InstanceCountingExtension(untypedSystem.toTyped)
+        val ext = InstanceCountingExtension(untypedSystem.toTyped)
+        val after = InstanceCountingExtension.createCount.get()
+
+        (after - before) should ===(1)
+
+      } finally {
+        untypedSystem.terminate().futureValue
+      }
+    }
 
     def withEmptyActorSystem[T](name: String, config: Option[Config] = None)(f: ActorSystem[_] ⇒ T): T = {
       val system = ActorSystem[Any](Behavior.EmptyBehavior, name, config = config)

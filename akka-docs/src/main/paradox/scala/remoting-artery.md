@@ -327,7 +327,7 @@ so if network security is not considered as enough protection the classic remoti
 
 Best practice is that Akka remoting nodes should only be accessible from the adjacent network.
 
-It is also security best practice to @ref[disable the Java serializer](#disabling-the-java-serializer) because of
+It is also security best practice to @ref:[disable the Java serializer](#disabling-the-java-serializer) because of
 its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
 
 ### Untrusted Mode
@@ -354,7 +354,7 @@ as a marker trait to user-defined messages.
 
 Untrusted mode does not give full protection against attacks by itself.
 It makes it slightly harder to perform malicious or unintended actions but
-it should be complemented with @ref[disabled Java serializer](#disabling-the-java-serializer)
+it should be complemented with @ref:[disabled Java serializer](#disabling-the-java-serializer)
 Additional protection can be achieved when running in an untrusted network by
 network security (e.g. firewalls).
 

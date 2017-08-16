@@ -462,9 +462,14 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         timeoutCancellable.cancel()
         sso.foreach {
           case SelectedSnapshot(metadata, snapshot) ⇒
-            setLastSequenceNr(metadata.sequenceNr)
-            // Since we are recovering we can ignore the receive behavior from the stack
-            Eventsourced.super.aroundReceive(recoveryBehavior, SnapshotOffer(metadata, snapshot))
+            val offer = SnapshotOffer(metadata, snapshot)
+            if (recoveryBehavior.isDefinedAt(offer)) {
+              setLastSequenceNr(metadata.sequenceNr)
+              // Since we are recovering we can ignore the receive behavior from the stack
+              Eventsourced.super.aroundReceive(recoveryBehavior, offer)
+            } else {
+              unhandled(offer)
+            }
         }
         changeState(recovering(recoveryBehavior, timeout))
         journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
