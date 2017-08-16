@@ -894,7 +894,7 @@ the actor system for a specific role. This can also be used to grab the `akka.ac
 ## How to Test
 
 Currently testing with the `sbt-multi-jvm` plugin is only documented for Scala. 
-Go to the corresponding @ref:[Scala page](../scala/cluster-usage.md#how-to-test) for details.
+Go to the corresponding Scala version of this page for details.
 
 @@@ 
 
