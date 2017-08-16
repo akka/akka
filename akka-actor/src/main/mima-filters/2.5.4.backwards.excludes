@@ -1,0 +1,2 @@
+# #22163 Expose keepOpenOnPeerClosed for outgoing TCP streams
+ProblemFilters.excludePackage("akka.stream.impl")

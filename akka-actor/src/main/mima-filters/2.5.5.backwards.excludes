@@ -1,7 +1,0 @@
-# #22163 Expose keepOpenOnPeerClosed for outgoing TCP streams
-# https://github.com/typesafehub/migration-manager/issues/160 would be so nice :)
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Outbound.copy")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Outbound.this")
-ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.TcpConnectionStage$Outbound$")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Outbound.apply")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.OutgoingConnectionStage.this")
