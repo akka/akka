@@ -24,30 +24,56 @@ APIs. The [camel-extra](http://code.google.com/p/camel-extra/) project provides 
 
 ### Consumer
 
-Usage of Camel's integration components in Akka is essentially a
-one-liner. Here's an example.
+Here's an example of using Camel's integration components in Akka.
 
-@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #Consumer-mina }
+Scala
+:  @@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #Consumer-mina }
+
+Java
+:  @@snip [MyEndpoint.java]($code$/java/jdocs/camel/MyEndpoint.java) { #Consumer-mina }
 
 The above example exposes an actor over a TCP endpoint via Apache
-Camel's [Mina component](http://camel.apache.org/mina2.html). The actor implements the endpointUri method to define
+Camel's [Mina component](http://camel.apache.org/mina2.html). The actor implements the @scala[`endpointUri`]@java[`getEndpointUri`] method to define
 an endpoint from which it can receive messages. After starting the actor, TCP
 clients can immediately send messages to and receive responses from that
 actor. If the message exchange should go over HTTP (via Camel's Jetty
-component, only the actor's endpointUri method must be changed.
+component), the actor's @scala[`endpointUri`]@java[`getEndpointUri`] method should return a different URI, for instance `jetty:http://localhost:8877/example`.
+
+@@@ div { .group-scala }
 
 @@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #Consumer }
+
+@@@ 
+
+@@@ div { .group-java } 
+
+In the above case an extra constructor is added that can set the endpoint URI, which would result in
+the `getEndpointUri` returning the URI that was set using this constructor.
+
+@@@
 
 ### Producer
 
 Actors can also trigger message exchanges with external systems i.e. produce to
 Camel endpoints.
 
-@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #imports #Producer }
+Scala
+:  @@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #imports #Producer }
+
+Java
+:  @@snip [Orders.java]($code$/java/jdocs/camel/Orders.java) { #Producer }
 
 In the above example, any message sent to this actor will be sent to
-the JMS queue `orders`. Producer actors may choose from the same set of Camel
+the JMS queue @scala[`orders`]@java[`Orders`]. Producer actors may choose from the same set of Camel
 components as Consumer actors do.
+
+@@@ div { .group-java } 
+
+Below an example of how to send a message to the `Orders` producer.
+
+@@snip [ProducerTestBase.java]($code$/java/jdocs/camel/ProducerTestBase.java) { #TellProducer }
+
+@@@
 
 ### CamelMessage
 
@@ -69,68 +95,93 @@ You can also create a CamelMessage yourself with the appropriate body and header
 
 The akka-camel module is implemented as an Akka Extension, the `CamelExtension` object.
 Extensions will only be loaded once per `ActorSystem`, which will be managed by Akka.
-The `CamelExtension` object provides access to the @extref[Camel](github:akka-camel/src/main/scala/akka/camel/Camel.scala) trait.
-The @extref[Camel](github:akka-camel/src/main/scala/akka/camel/Camel.scala) trait in turn provides access to two important Apache Camel objects, the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) and the `ProducerTemplate`.
+The `CamelExtension` object provides access to the @extref[Camel](github:akka-camel/src/main/scala/akka/camel/Camel.scala) @scala[trait]@java[interface].
+The @extref[Camel](github:akka-camel/src/main/scala/akka/camel/Camel.scala) @scala[trait]@java[interface] in turn provides access to two important Apache Camel objects, the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) and the `ProducerTemplate`.
 Below you can see how you can get access to these Apache Camel objects.
 
-@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelExtension }
+Scala
+:  @@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelExtension }
+
+Java
+:  @@snip [CamelExtensionTest.java]($code$/java/jdocs/camel/CamelExtensionTest.java) { #CamelExtension }
 
 One `CamelExtension` is only loaded once for every one `ActorSystem`, which makes it safe to call the `CamelExtension` at any point in your code to get to the
 Apache Camel objects associated with it. There is one [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) and one `ProducerTemplate` for every one `ActorSystem` that uses a `CamelExtension`.
 By Default, a new [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) is created when the `CamelExtension` starts. If you want to inject your own context instead,
-you can extend the @extref[ContextProvider](github:akka-camel/src/main/scala/akka/camel/ContextProvider.scala) trait and add the FQCN of your implementation in the config, as the value of the "akka.camel.context-provider".
-This interface define a single method `getContext` used to load the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java).
+you can @scala[extend]@java[implement] the @extref[ContextProvider](github:akka-camel/src/main/scala/akka/camel/ContextProvider.scala) @scala[trait]@java[interface] and add the FQCN of your implementation in the config, as the value of the "akka.camel.context-provider".
+This interface define a single method `getContext()` used to load the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java).
 
 Below an example on how to add the ActiveMQ component to the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java), which is required when you would like to use the ActiveMQ component.
 
-@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelExtensionAddComponent }
+Scala
+:  @@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelExtensionAddComponent }
+
+Java
+:  @@snip [CamelExtensionTest.java]($code$/java/jdocs/camel/CamelExtensionTest.java) { #CamelExtensionAddComponent }
 
 The [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) joins the lifecycle of the `ActorSystem` and `CamelExtension` it is associated with; the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) is started when
 the `CamelExtension` is created, and it is shut down when the associated `ActorSystem` is shut down. The same is true for the `ProducerTemplate`.
 
-The `CamelExtension` is used by both *Producer* and *Consumer* actors to interact with Apache Camel internally.
-You can access the `CamelExtension` inside a *Producer* or a *Consumer* using the `camel` definition, or get straight at the *CamelContext* using the `camelContext` definition.
-Actors are created and started asynchronously. When a *Consumer* actor is created, the *Consumer* is published at its Camel endpoint (more precisely, the route is added to the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) from the [Endpoint](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Endpoint.java) to the actor).
-When a *Producer* actor is created, a [SendProcessor](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/processor/SendProcessor.java) and [Endpoint](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Endpoint.java) are created so that the Producer can send messages to it.
+The `CamelExtension` is used by both `Producer` and `Consumer` actors to interact with Apache Camel internally.
+You can access the `CamelExtension` inside a `Producer` or a `Consumer` using the `camel` @scala[definition]@java[method], or get straight at the `CamelContext` 
+using the @scala[`camelContext` definition]@java[`getCamelContext` method or to the `ProducerTemplate` using the `getProducerTemplate` method].
+Actors are created and started asynchronously. When a `Consumer` actor is created, the `Consumer` is published at its Camel endpoint (more precisely, the route is added to the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) from the [Endpoint](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Endpoint.java) to the actor).
+When a `Producer` actor is created, a [SendProcessor](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/processor/SendProcessor.java) and [Endpoint](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Endpoint.java) are created so that the Producer can send messages to it.
 Publication is done asynchronously; setting up an endpoint may still be in progress after you have
 requested the actor to be created. Some Camel components can take a while to startup, and in some cases you might want to know when the endpoints are activated and ready to be used.
-The @extref[Camel](github:akka-camel/src/main/scala/akka/camel/Camel.scala) trait allows you to find out when the endpoint is activated or deactivated.
+The @extref[Camel](github:akka-camel/src/main/scala/akka/camel/Camel.scala) @scala[trait]@java[interface] allows you to find out when the endpoint is activated or deactivated.
 
-@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelActivation }
+Scala
+:  @@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelActivation }
+
+Java
+:  @@snip [ActivationTestBase.java]($code$/java/jdocs/camel/ActivationTestBase.java) { #CamelActivation }
 
 The above code shows that you can get a `Future` to the activation of the route from the endpoint to the actor, or you can wait in a blocking fashion on the activation of the route.
 An `ActivationTimeoutException` is thrown if the endpoint could not be activated within the specified timeout. Deactivation works in a similar fashion:
 
-@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelDeactivation }
+Scala
+:  @@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelDeactivation }
+
+Java
+:  @@snip [ActivationTestBase.java]($code$/java/jdocs/camel/ActivationTestBase.java) { #CamelDeactivation }
 
 Deactivation of a Consumer or a Producer actor happens when the actor is terminated. For a Consumer, the route to the actor is stopped. For a Producer, the [SendProcessor](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/processor/SendProcessor.java) is stopped.
 A `DeActivationTimeoutException` is thrown if the associated camel objects could not be deactivated within the specified timeout.
 
 ## Consumer Actors
 
-For objects to receive messages, they must mixin the @extref[Consumer](github:akka-camel/src/main/scala/akka/camel/Consumer.scala)
-trait. For example, the following actor class (Consumer1) implements the
-endpointUri method, which is declared in the Consumer trait, in order to receive
+For objects to receive messages, they must @scala[mixin the @extref[Consumer](github:akka-camel/src/main/scala/akka/camel/Consumer.scala) trait]@java[inherit from the @extref[UntypedConsumerActor](github:akka-camel/src/main/scala/akka/camel/javaapi/UntypedConsumer.scala) class]. 
+For example, the following actor class (Consumer1) implements the
+@scala[`endpointUri`]@java[`getEndpointUri`] method, which is declared in the @scala[`Consumer` trait]@java[@extref[UntypedConsumerActor](github:akka-camel/src/main/scala/akka/camel/javaapi/UntypedConsumer.scala) class], in order to receive
 messages from the `file:data/input/actor` Camel endpoint.
 
-@@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer1 }
+Scala
+:  @@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer1 }
+
+Java
+:  @@snip [Consumer1.java]($code$/java/jdocs/camel/Consumer1.java) { #Consumer1 }
 
 Whenever a file is put into the data/input/actor directory, its content is
 picked up by the Camel [file component](http://camel.apache.org/file2.html) and sent as message to the
 actor. Messages consumed by actors from Camel endpoints are of type
-@extref[CamelMessage](github:akka-camel/src/main/scala/akka/camel/CamelMessage.scala). These are immutable representations of Camel messages.
+[CamelMessage](#camelmessage). These are immutable representations of Camel messages.
 
 Here's another example that sets the endpointUri to
 `jetty:http://localhost:8877/camel/default`. It causes Camel's Jetty
 component to start an embedded [Jetty](http://www.eclipse.org/jetty/) server, accepting HTTP connections
 from localhost on port 8877.
 
-@@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer2 }
+Scala
+:  @@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer2 }
+
+Java
+:  @@snip [Consumer2.java]($code$/java/jdocs/camel/Consumer2.java) { #Consumer2 }
 
 After starting the actor, clients can send messages to that actor by POSTing to
 `http://localhost:8877/camel/default`. The actor sends a response by using the
-sender *!* method. For returning a message body and headers to the HTTP
-client the response type should be @extref[CamelMessage](github:akka-camel/src/main/scala/akka/camel/CamelMessage.scala). For any other response type, a
+sender @scala[`!`]@java[`getSender().tell`] method. For returning a message body and headers to the HTTP
+client the response type should be [CamelMessage](#camelmessage). For any other response type, a
 new CamelMessage object is created by akka-camel with the actor response as message
 body.
 
@@ -152,7 +203,11 @@ In this case, consumer actors must reply either with a
 special akka.camel.Ack message (positive acknowledgement) or a akka.actor.Status.Failure (negative
 acknowledgement).
 
-@@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer3 }
+Scala
+:  @@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer3 }
+
+Java
+:  @@snip [Consumer3.java]($code$/java/jdocs/camel/Consumer3.java) { #Consumer3 }
 
 <a id="camel-timeout"></a>
 ### Consumer timeout
@@ -164,78 +219,119 @@ way which is described in the documentation of the individual Camel
 components. Another option is to configure timeouts on the level of consumer actors.
 
 Two-way communications between a Camel endpoint and an actor are
-initiated by sending the request message to the actor with the @extref[ask](github:akka-actor/src/main/scala/akka/pattern/AskSupport.scala) pattern
+initiated by sending the request message to the actor with the @scala[@extref[ask](github:akka-actor/src/main/scala/akka/pattern/AskSupport.scala)]@java[@extref[ask](github:akka-actor/src/main/scala/akka/pattern/Patterns.scala)] pattern
 and the actor replies to the endpoint when the response is ready. The ask request to the actor can timeout, which will
 result in the [Exchange](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java) failing with a TimeoutException set on the failure of the [Exchange](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java).
 The timeout on the consumer actor can be overridden with the `replyTimeout`, as shown below.
 
-@@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer4 }
+Scala
+:  @@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer4 }
+
+Java
+:  @@snip [Consumer4.java]($code$/java/jdocs/camel/Consumer4.java) { #Consumer4 }
 
 ## Producer Actors
 
-For sending messages to Camel endpoints, actors need to mixin the @extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala) trait and implement the endpointUri method.
+For sending messages to Camel endpoints, actors need to @scala[mixin the @extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala) trait]
+@java[inherit from the @extref[UntypedProducerActor](github:akka-camel/src/main/scala/akka/camel/javaapi/UntypedProducerActor.scala) class] and implement the `getEndpointUri` method.
 
-@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #Producer1 }
+Scala
+:  @@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #Producer1 }
 
-Producer1 inherits a default implementation of the receive method from the
-Producer trait. To customize a producer actor's default behavior you must override the @extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala).transformResponse and
-@extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala).transformOutgoingMessage methods. This is explained later in more detail.
-Producer Actors cannot override the default @extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala).receive method.
+Java
+:  @@snip [Producer1.java]($code$/java/jdocs/camel/Producer1.java) { #Producer1 }
 
-Any message sent to a @extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala) actor will be sent to
+Producer1 inherits a default implementation of the @scala[`receive`]@java[`onReceive`] method from the
+@scala[Producer trait]@java[@extref[UntypedProducerActor](github:akka-camel/src/main/scala/akka/camel/javaapi/UntypedProducerActor.scala)] class. To customize a producer actor's default behavior you must override the 
+@scala[@extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala).transformResponse]@java[@extref[UntypedProducerActor](github:akka-camel/src/main/scala/akka/camel/javaapi/UntypedProducerActor.scala).onTransformResponse] and
+@scala[@extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala).transformOutgoingMessage methods]@java[@extref[UntypedProducerActor](github:akka-camel/src/main/scala/akka/camel/javaapi/UntypedProducerActor.scala).onTransformOutgoingMessage methods]. This is explained later in more detail.
+Producer Actors cannot override the @scala[default @extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala).receive]@java[@extref[UntypedProducerActor](github:akka-camel/src/main/scala/akka/camel/javaapi/UntypedProducerActor.scala).onReceive] method.
+
+Any message sent to a @scala[@extref[`Producer`](github:akka-camel/src/main/scala/akka/camel/Producer.scala)]@java[Producer] actor will be sent to
 the associated Camel endpoint, in the above example to
-`http://localhost:8080/news`. The @extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala) always sends messages asynchronously. Response messages (if supported by the
+`http://localhost:8080/news`. The @scala[@extref[`Producer`](github:akka-camel/src/main/scala/akka/camel/Producer.scala)]@java[@extref[`UntypedProducerActor`](github:akka-camel/src/main/scala/akka/camel/javaapi/UntypedProducerActor.scala)] always sends messages asynchronously. Response messages (if supported by the
 configured endpoint) will, by default, be returned to the original sender. The
 following example uses the ask pattern to send a message to a
 Producer actor and waits for a response.
 
-@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #AskProducer }
+Scala
+:  @@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #AskProducer }
 
-The future contains the response CamelMessage, or an `AkkaCamelException` when an error occurred, which contains the headers of the response.
+Java
+:  @@snip [ProducerTestBase.java]($code$/java/jdocs/camel/ProducerTestBase.java) { #AskProducer }
+
+The future contains the response `CamelMessage`, or an `AkkaCamelException` when an error occurred, which contains the headers of the response.
 
 <a id="camel-custom-processing"></a>
 ### Custom Processing
 
 Instead of replying to the initial sender, producer actors can implement custom
-response processing by overriding the routeResponse method. In the following example, the response
+response processing by overriding the @scala[`routeResponse`]@java[`onRouteResponse`] method. In the following example, the response
 message is forwarded to a target actor instead of being replied to the original
 sender.
 
-@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #RouteResponse }
+Scala
+:   @@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #RouteResponse }
+
+Java
+:   @@snip [ResponseReceiver.java]($code$/java/jdocs/camel/ResponseReceiver.java) { #RouteResponse }
+    @@snip [Forwarder.java]($code$/java/jdocs/camel/Forwarder.java) { #RouteResponse }
+    @@snip [OnRouteResponseTestBase.java]($code$/java/jdocs/camel/OnRouteResponseTestBase.java) { #RouteResponse }
 
 Before producing messages to endpoints, producer actors can pre-process them by
-overriding the @extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala).transformOutgoingMessage method.
+overriding the @scala[@extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala).transformOutgoingMessage]
+@java[@extref[UntypedProducerActor](github:akka-camel/src/main/scala/akka/camel/javaapi/UntypedProducerActor.scala).onTransformOutgoingMessag] method.
 
-@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #TransformOutgoingMessage }
+Scala
+:  @@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #TransformOutgoingMessage }
+
+Java
+:  @@snip [Transformer.java]($code$/java/jdocs/camel/Transformer.java) { #TransformOutgoingMessage }
 
 ### Producer configuration options
 
 The interaction of producer actors with Camel endpoints can be configured to be
 one-way or two-way (by initiating in-only or in-out message exchanges,
 respectively). By default, the producer initiates an in-out message exchange
-with the endpoint. For initiating an in-only exchange, producer actors have to override the oneway method to return true.
+with the endpoint. For initiating an in-only exchange, producer actors have to override the @scala[`oneway`]@java[`isOneway`] method to return true.
 
-@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #Oneway }
+Scala
+:  @@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #Oneway }
+
+Java
+:  @@snip [OnewaySender.java]($code$/java/jdocs/camel/OnewaySender.java) { #Oneway }
 
 ### Message correlation
 
 To correlate request with response messages, applications can set the
-*Message.MessageExchangeId* message header.
+`Message.MessageExchangeId` message header.
 
-@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #Correlate }
+Scala
+:  @@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #Correlate }
+
+Java
+:  @@snip [ProducerTestBase.java]($code$/java/jdocs/camel/ProducerTestBase.java) { #Correlate }
 
 ### ProducerTemplate
 
-The @extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala) trait is a very
+The @scala[@extref[Producer](github:akka-camel/src/main/scala/akka/camel/Producer.scala) trait]@java[@extref[UntypedProducerActor](github:akka-camel/src/main/scala/akka/camel/javaapi/UntypedProducerActor.scala) class] is a very
 convenient way for actors to produce messages to Camel endpoints. Actors may also use a Camel 
 `ProducerTemplate` for producing messages to endpoints.
 
-@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #ProducerTemplate }
+Scala
+:  @@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #ProducerTemplate }
+
+Java
+:  @@snip [MyActor.java]($code$/java/jdocs/camel/MyActor.java) { #ProducerTemplate }
 
 For initiating a two-way message exchange, one of the
 `ProducerTemplate.request*` methods must be used.
 
-@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #RequestProducerTemplate }
+Scala
+:  @@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #RequestProducerTemplate }
+
+Java
+:  @@snip [RequestBodyActor.java]($code$/java/jdocs/camel/RequestBodyActor.java) { #RequestProducerTemplate }
 
 <a id="camel-asynchronous-routing"></a>
 ## Asynchronous routing
@@ -244,14 +340,14 @@ In-out message exchanges between endpoints and actors are
 designed to be asynchronous. This is the case for both, consumer and producer
 actors.
 
- * A consumer endpoint sends request messages to its consumer actor using the `!`
-(tell) operator and the actor returns responses with `sender !` once they are
+ * A consumer endpoint sends request messages to its consumer actor using the @scala[`!` (tell) operator ]@java[`tell` method]
+and the actor returns responses with @scala[`sender !`]@java[`getSender().tell`] once they are
 ready.
  * A producer actor sends request messages to its endpoint using Camel's
 asynchronous routing engine. Asynchronous responses are wrapped and added to the
 producer actor's mailbox for later processing. By default, response messages are
 returned to the initial sender but this can be overridden by Producer
-implementations (see also description of the `routeResponse` method
+implementations (see also description of the @scala[`routeResponse`]@java[`onRouteResponse`] method
 in [Custom Processing](#camel-custom-processing)).
 
 However, asynchronous two-way message exchanges, without allocating a thread for
@@ -291,13 +387,13 @@ most use cases, some applications may require more specialized routes to actors.
 The akka-camel module provides two mechanisms for customizing routes to actors,
 which will be explained in this section. These are:
 
- * Usage of [camel components](#camel-components-2) to access actors.
+ * Usage of [Akka Camel components](#camel-components) to access actors.
 Any Camel route can use these components to access Akka actors.
  * [Intercepting route construction](#camel-intercepting-route-construction) to actors.
 This option gives you the ability to change routes that have already been added to Camel.
 Consumer actors have a hook into the route definition process which can be used to change the route.
 
-<a id="camel-components-2"></a>
+<a id="camel-components"></a>
 ### Akka Camel components
 
 Akka actors can be accessed from Camel routes using the actor Camel component. This component can be used to
@@ -333,13 +429,22 @@ akka://some-system/user/myconsumer?autoAck=false&replyTimeout=100+millis
 ```
 
 In the following example, a custom route to an actor is created, using the
-actor's path. the Akka camel package contains an implicit `toActorRouteDefinition` that allows for a route to
+actor's path. 
+
+The Akka camel package contains an implicit `toActorRouteDefinition` that allows for a route to
 reference an `ActorRef` directly as shown in the below example, The route starts from a [Jetty](http://www.eclipse.org/jetty/) endpoint and
 ends at the target actor.
 
-@@snip [CustomRoute.scala]($code$/scala/docs/camel/CustomRoute.scala) { #CustomRoute }
+Scala
+:   @@snip [CustomRoute.scala]($code$/scala/docs/camel/CustomRoute.scala) { #CustomRoute }
 
-When a message is received on the jetty endpoint, it is routed to the Responder actor, which in return replies back to the client of
+Java
+:   @@snip [Responder.java]($code$/java/jdocs/camel/Responder.java) { #CustomRoute }
+    @@snip [CustomRouteBuilder.java]($code$/java/jdocs/camel/CustomRouteBuilder.java) { #CustomRoute }
+    @@snip [CustomRouteTestBase.java]($code$/java/jdocs/camel/CustomRouteTestBase.java) { #CustomRoute }
+
+@java[The `CamelPath.toCamelUri` converts the `ActorRef` to the Camel actor component URI format which points to the actor endpoint as described above.]
+When a message is received on the jetty endpoint, it is routed to the `Responder` actor, which in return replies back to the client of
 the HTTP request.
 
 <a id="camel-intercepting-route-construction"></a>
@@ -354,7 +459,11 @@ For example, an extension could be a custom error handler that redelivers messag
 The following examples demonstrate how to extend a route to a consumer actor for
 handling exceptions thrown by that actor.
 
-@@snip [CustomRoute.scala]($code$/scala/docs/camel/CustomRoute.scala) { #ErrorThrowingConsumer }
+Scala
+:  @@snip [CustomRoute.scala]($code$/scala/docs/camel/CustomRoute.scala) { #ErrorThrowingConsumer }
+
+Java
+:  @@snip [ErrorThrowingConsumer.java]($code$/java/jdocs/camel/ErrorThrowingConsumer.java) { #ErrorThrowingConsumer }
 
 The above ErrorThrowingConsumer sends the Failure back to the sender in preRestart
 because the Exception that is thrown in the actor would
@@ -369,7 +478,7 @@ returned by the end method. See the [org.apache.camel.model](https://svn.apache.
 details). After executing the route definition handler, akka-camel finally calls
 a to(targetActorUri) on the returned ProcessorDefinition to complete the
 route to the consumer actor (where targetActorUri is the actor component URI as described in [Access to actors](#access-to-actors)).
-If the actor cannot be found, a *ActorNotRegisteredException* is thrown.
+If the actor cannot be found, a `ActorNotRegisteredException` is thrown.
 
 *) Before passing the RouteDefinition instance to the route definition handler,
 akka-camel may make some further modifications to it.
@@ -377,7 +486,7 @@ akka-camel may make some further modifications to it.
 <a id="camel-examples"></a>
 ## Examples
 
-The sample named @extref[Akka Camel Samples with Scala](ecs:akka-samples-camel-scala) (@extref[source code](samples:akka-sample-camel-scala))
+The sample named @scala[@extref[Akka Camel Samples with Scala](ecs:akka-samples-camel-scala)(@extref[source code](samples:akka-sample-camel-scala))]@java[@extref[Akka Camel Samples with Java](ecs:akka-samples-camel-java)(@extref[source code](samples:akka-sample-camel-java))]
 contains 3 samples:
 
  * Asynchronous routing and transformation - This example demonstrates how to implement consumer and
