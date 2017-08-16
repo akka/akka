@@ -416,10 +416,10 @@ Some settings have changed default value in 2.5-M1 and therefore you need to rev
 before doing a rolling update to 2.5-M1. Such settings are mentioned elsewhere in this migration guide
 and here is a summary of things to consider.
 
- * [additional-serialization-bindings](#mig25-addser)
- * [WeaklyUp](#mig25-weaklyup)
- * [Cluster Sharding state-store-mode](#mig25-sharding-store)
- * [Mutual TLS authentication](#mig25-mutual)
+ * [akka.actor.additional-serialization-bindings](#mig25-addser)
+ * [akka.cluster.allow-weakly-up-members](#mig25-weaklyup)
+ * [akka.cluster.sharding.state-store-mode](#mig25-sharding-store)
+ * [akka.remote.netty.ssl.require-mutual-authentication](#mig25-mutual)
  
 #### Limit lookup of routees to nodes tagged with multiple roles
 
@@ -472,7 +472,7 @@ you might need to enable/disable it in configuration when performing rolling upg
 <a id="mig25-sharding-store"></a>
 ### Cluster Sharding state-store-mode
 
-Distributed Data mode is now the default `state-store-mode` for Cluster Sharding. The persistence mode
+Distributed Data mode, which was still experimental in 2.4.x, is now the default `state-store-mode` for Cluster Sharding. The persistence mode
 is also supported. Read more in the @ref:[documentation](../cluster-sharding.md#cluster-sharding-mode).
 
 It's important to use the same mode on all nodes in the cluster, i.e. if you perform a rolling upgrade
@@ -486,6 +486,9 @@ akka.cluster.sharding.state-store-mode = persistence
 Note that the stored @ref:[Remembering Entities](../cluster-sharding.md#cluster-sharding-remembering) data with `persistence` mode cannot
 be migrated to the `data` mode. Such entities must be started again in some other way when using
 `ddata` mode.
+
+Rolling upgrades from clusters that already used the (then-experimental) `ddata`
+mode are not supported.
 
 ### Cluster Sharding remember entities
 
