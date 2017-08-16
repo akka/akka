@@ -6,9 +6,6 @@ resolvers += Resolver.sonatypeRepo("releases") // to more quickly obtain paradox
 // which is used by plugin "org.kohsuke" % "github-api" % "1.68"
 resolvers += Resolver.jcenterRepo
 
-// for sbt-bintray for resolving credentials from env vars
-resolvers += Resolver.bintrayIvyRepo("2m", "sbt-plugin-releases")
-
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.8")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.14")
@@ -21,7 +18,7 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.27")
 addSbtPlugin("pl.project13.sbt" % "sbt-jol" % "0.1.1")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2") // for advanced PR validation features
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
-addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0-8-g6d0c3f8")
+addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.1")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.2")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.1")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.2")
