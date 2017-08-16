@@ -6,6 +6,9 @@ package docs.stream.io
 
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.Future
+
 import akka.stream._
 import akka.stream.scaladsl.Tcp._
 import akka.stream.scaladsl._
@@ -13,7 +16,6 @@ import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.ByteString
 
-import scala.concurrent.Future
 import akka.testkit.SocketUtil
 
 class StreamTcpDocSpec extends AkkaSpec {
