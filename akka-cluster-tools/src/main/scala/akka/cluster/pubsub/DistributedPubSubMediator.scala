@@ -399,8 +399,8 @@ object DistributedPubSubMediator {
      */
     def wrapIfNeeded: Any ⇒ Any = {
       case msg: RouterEnvelope ⇒ MediatorRouterEnvelope(msg)
-      case msg: Any            ⇒ msg
       case null                ⇒ throw InvalidMessageException("Message must not be null")
+      case msg: Any            ⇒ msg
     }
   }
 }
