@@ -7,13 +7,15 @@ import akka.stream.OverflowStrategies._
 import akka.stream._
 import akka.stream.stage._
 import akka.stream.scaladsl.SourceQueueWithComplete
-
 import akka.Done
 import java.util.concurrent.CompletionStage
+import java.util.concurrent.atomic.AtomicBoolean
+
 import akka.annotation.InternalApi
 
 import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.FutureConverters._
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -170,16 +172,24 @@ import scala.compat.java8.FutureConverters._
     }
 
     (stageLogic, new SourceQueueWithComplete[T] {
+      @volatile
+      private var completed = false
       override def watchCompletion() = completion.future
       override def offer(element: T): Future[QueueOfferResult] = {
-        val p = Promise[QueueOfferResult]
-        stageLogic.invoke(Offer(element, p))
-        p.future
+        if (!completed) {
+          val p = Promise[QueueOfferResult]
+          stageLogic.invoke(Offer(element, p))
+          p.future
+        } else {
+          Future.successful(QueueOfferResult.QueueClosed)
+        }
       }
       override def complete(): Unit = {
+        completed = true
         stageLogic.invoke(Completion)
       }
       override def fail(ex: Throwable): Unit = {
+        completed = true
         stageLogic.invoke(Failure(ex))
       }
     })

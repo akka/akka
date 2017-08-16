@@ -33,6 +33,22 @@ class QueueSourceSpec extends StreamSpec {
 
   "A QueueSource" must {
 
+    "return a QueueClosed event if queue is completed" in {
+      val source = Source.queue[String](0, OverflowStrategy.backpressure)
+      val q1 = source.to(Sink.ignore).run()
+      q1.complete()
+      Await.ready(q1.watchCompletion(), pause)
+      q1.offer("hello ktoso").futureValue should ===(QueueOfferResult.QueueClosed)
+    }
+
+    "return a QueueClosed event if queue is failed" in {
+      val source = Source.queue[String](0, OverflowStrategy.backpressure)
+      val q1 = source.to(Sink.ignore).run()
+      q1.fail(new Exception("big application error"))
+      Await.ready(q1.watchCompletion(), pause)
+      q1.offer("hello ktoso").futureValue should ===(QueueOfferResult.QueueClosed)
+    }
+
     "emit received messages to the stream" in {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(10, OverflowStrategy.fail).to(Sink.fromSubscriber(s)).run()
