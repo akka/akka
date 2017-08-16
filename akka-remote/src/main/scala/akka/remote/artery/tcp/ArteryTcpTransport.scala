@@ -12,6 +12,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration.Duration
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -127,10 +128,14 @@ private[remote] class ArteryTcpTransport(
           connectTimeout = settings.Advanced.ConnectionTimeout,
           verifySession = session => optionToTry(sslProvider.verifyClientSession(host, session)))
       } else {
-        Tcp().outgoingConnection(
+        Tcp().connect(
           remoteAddress,
+          localAddress = None,
+          options = Nil,
           halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
-          connectTimeout = settings.Advanced.ConnectionTimeout)
+          connectTimeout = settings.Advanced.ConnectionTimeout,
+          idleTimeout = Duration.Inf,
+          keepOpenOnPeerClosed = false)
       }
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {

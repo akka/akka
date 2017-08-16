@@ -422,15 +422,15 @@ private[stream] object ConnectionSourceStage {
  * INTERNAL API
  */
 @InternalApi private[stream] class OutgoingConnectionStage(
-    manager: ActorRef,
-    remoteAddress: InetSocketAddress,
-    localAddress: Option[InetSocketAddress] = None,
-    options: immutable.Iterable[SocketOption] = Nil,
-    halfClose: Boolean = true,
-    keepOpenOnPeerClosed: Boolean = false,
-    connectTimeout: Duration = Duration.Inf,
-    ioSettings: IOSettings)
-    extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {
+  manager: ActorRef,
+  remoteAddress: InetSocketAddress,
+  localAddress: Option[InetSocketAddress] = None,
+  options: immutable.Iterable[SocketOption] = Nil,
+  halfClose: Boolean = true,
+  connectTimeout: Duration = Duration.Inf,
+  keepOpenOnPeerClosed: Boolean = false,
+  ioSettings: IOSettings)
+  extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {
   import TcpConnectionStage._
 
   val bytesIn: Inlet[ByteString] = Inlet("OutgoingTCP.in")

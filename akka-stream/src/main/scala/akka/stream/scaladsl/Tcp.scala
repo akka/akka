@@ -215,14 +215,14 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  open to keep sending data until finished.
    */
   def connect(
-      remoteAddress: InetSocketAddress,
-      localAddress: Option[InetSocketAddress] = None,
-      @silent // Traversable deprecated in 2.13
-      options: immutable.Traversable[SocketOption] = Nil,
-      halfClose: Boolean = true,
-      connectTimeout: Duration = Duration.Inf,
-      idleTimeout: Duration = Duration.Inf,
-      keepOpenOnPeerClosed: Boolean = true): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+    remoteAddress: InetSocketAddress,
+    localAddress: Option[InetSocketAddress],
+    @silent // Traversable deprecated in 2.13
+    options: immutable.Traversable[SocketOption],
+    halfClose: Boolean,
+    connectTimeout: Duration,
+    idleTimeout: Duration,
+    keepOpenOnPeerClosed: Boolean): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
     val tcpFlow = Flow
       .fromGraph(
@@ -232,8 +232,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
           localAddress,
           options.toList,
           halfClose,
-          keepOpenOnPeerClosed,
           connectTimeout,
+          keepOpenOnPeerClosed,
           settings.ioSettings))
       .via(detacher[ByteString]) // must read ahead for proper completions
 
