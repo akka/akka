@@ -4,6 +4,8 @@ import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams)
 disablePlugins(Unidoc, MimaPlugin)
 
+whitesourceIgnore := true
+
 AkkaBuild.defaultSettings
 
 AkkaBuild.dontPublishSettings
