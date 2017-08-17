@@ -6,7 +6,6 @@ package akka.stream.scaladsl
 import java.util.SplittableRandom
 
 import akka.NotUsed
-import akka.dispatch.forkjoin.ThreadLocalRandom
 import akka.stream._
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages

@@ -706,6 +706,18 @@ depending on being backpressured by downstream or not.
 
 ---------------------------------------------------------------
 
+### alsoTo
+
+Attaches the given `Sink` to this `Flow`, meaning that elements that passes through will also be sent to the `Sink`.
+
+**emits** when an element is available and demand exists both from the Sink and the downstream
+
+**backpressures** when downstream or Sink backpressures
+
+**completes** when upstream completes
+
+---------------------------------------------------------------
+
 ### map
 
 Transform each element in the stream by calling a mapping function with it and passing the returned value downstream.
