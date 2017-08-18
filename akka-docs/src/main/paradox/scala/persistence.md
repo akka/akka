@@ -1039,9 +1039,33 @@ Java
 ### Eager initialization of persistence plugin
 
 By default, persistence plugins are started on-demand, as they are used. In some case, however, it might be beneficial
-to start a certain plugin eagerly. In order to do that, you should first add the `akka.persistence.Persistence`
+to start a certain plugin eagerly. In order to do that, you should first add `akka.persistence.Persistence`
 under the `akka.extensions` key. Then, specify the IDs of plugins you wish to start automatically under
 `akka.persistence.journal.auto-start-journals` and `akka.persistence.snapshot-store.auto-start-snapshot-stores`.
+
+For example, if you want eager initialization for the leveldb journal plugin and the local snapshot store plugin, your configuration should look like this:  
+
+```
+akka {
+
+  extensions = [akka.persistence.Persistence]
+
+  persistence {
+
+    journal {
+      plugin = "akka.persistence.journal.leveldb"
+      auto-start-journals = ["akka.persistence.journal.leveldb"]
+    }
+
+    snapshot-store {
+      plugin = "akka.persistence.snapshot-store.local"
+      auto-start-snapshot-stores = ["akka.persistence.snapshot-store.local"]
+    }
+  
+  }
+
+}
+```
 
 <a id="journal-plugin-api"></a>
 ### Journal plugin API
@@ -1078,7 +1102,7 @@ A journal plugin can be activated with the following minimal configuration:
 
 The journal plugin instance is an actor so the methods corresponding to requests from persistent actors
 are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
-actors to achive parallelism.
+actors to achieve parallelism.
 
 The journal plugin class must have a constructor with one of these signatures:
 
@@ -1319,7 +1343,7 @@ you don't have to configure it.
 A persistence plugin proxy allows sharing of journals and snapshot stores across multiple actor systems (on the same or
 on different nodes). This, for example, allows persistent actors to failover to a backup node and continue using the
 shared journal instance from the backup node. The proxy works by forwarding all the journal/snapshot store messages to a
-single, shared, persistence plugin instance, and therefor supports any use case supported by the proxied plugin.
+single, shared, persistence plugin instance, and therefore supports any use case supported by the proxied plugin.
 
 @@@ warning
 
