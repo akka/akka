@@ -254,7 +254,9 @@ loggers, which are based upon the originating object’s class name as log
 category. The override of `getClazz` is only included for demonstration
 purposes as it contains exactly the default behavior.
 
-@@@ note
+@@@
+
+@@@ note { .group-scala }
 
 You may also create the string representation up front and pass that in as
 the log source, but be aware that then the `Class[_]` which will be
@@ -267,7 +269,6 @@ might want to do this also in case you implement your own logging adapter.
 
 @@@
 
-@@@
 
 ### Turn Off Logging
 
