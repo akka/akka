@@ -1048,9 +1048,7 @@ For example, if you want eager initialization for the leveldb journal plugin and
 ```
 akka {
 
-  extensions = [
-    akka.persistence.Persistence
-  ]
+  extensions = [akka.persistence.Persistence]
 
   persistence {
 
