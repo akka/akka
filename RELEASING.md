@@ -4,7 +4,7 @@
 `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule.
 3. Once the release notes have been merged, create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description including notable changes mentioning external contributors.
 4. Travis CI will start a [CI build](https://travis-ci.org/akka/akka-http/builds) for the new tag and publish artifacts to Bintray and will sync them to Maven Central.
-5. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.2 deployRsync repo.akka.io"` to deploy API and reference documentation.
+5. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.2 deployRsync akkarepo@repo.akka.io"` to deploy API and reference documentation.
 6. Go to https://bintray.com/akka/maven/com.typesafe.akka:akka-http_2.11 and select the just released version
 7. Go to the Maven Central tab and sync with Sonatype
    - (Optional, should happen automatically if selected in Bintray) Log in to Sonatype to Close the staging repository
@@ -14,7 +14,7 @@
 9. Create a news item on https://github.com/akka/akka.github.com, using the milestones and `scripts/authors.scala previousVersion thisVersion`
 10. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
 11. Send a release notification to akka-user and tweet using the akka account (or ask someone to) about the new release
-12. Log into repo.akka.io and update the `current` links on repo.akka.io to point to the latest version with `ln -nsf <latestversion> www/docs/akka-http/current; ln -nsf <latestversion> www/api/akka-http/current; ln -nsf <latestversion> www/japi/akka-http/current`.
+12. Log into repo.akka.io as akkarepo and update the `current` links on repo.akka.io to point to the latest version with `ln -nsf <latestversion> www/docs/akka-http/current; ln -nsf <latestversion> www/api/akka-http/current; ln -nsf <latestversion> www/japi/akka-http/current`.
 
 ### Follow up steps
 
