@@ -85,7 +85,7 @@ There are other ways to create a materializer, e.g. from an
 thing that makes streams run—you don’t need to worry about any of the details
 just now apart from that you need one for calling any of the `run` methods on
 a `Source`. @scala[The materializer is picked up implicitly if it is omitted
-from the `run` method call arguments, which we will do in the following.]@java[]
+from the `run` method call arguments, which we will do in the following.]
 
 The nice thing about Akka Streams is that the `Source` is just a
 description of what you want to run, and like an architect’s blueprint it can
@@ -271,7 +271,7 @@ Java
 
 Finally in order to @ref:[materialize](stream-flows-and-basics.md#stream-materialization) and run the stream computation we need to attach
 the Flow to a @scala[`Sink`]@java[`Sink<T, M>`] that will get the Flow running. The simplest way to do this is to call
-`runWith(sink)` on a @scala[`Source`]@java[`Source<Out, M>`]. For convenience a number of common Sinks are predefined and collected as @scala[]@java[static] methods on
+`runWith(sink)` on a @scala[`Source`]@java[`Source<Out, M>`]. For convenience a number of common Sinks are predefined and collected as @java[static] methods on
 the @scala[`Sink` companion object]@java[`Sink class`].
 For now let's simply print each author:
 
@@ -421,7 +421,7 @@ has also a type parameter of @scala[`Future[Int]`]@java[`CompletionStage<Integer
 
 This step does *not* yet materialize the
 processing pipeline, it merely prepares the description of the Flow, which is now connected to a Sink, and therefore can
-be `run()`, as indicated by its type: @scala[`RunnableGraph[Future[Int]]`]@java[`RunnableGraph<CompletionStage<Integer>>`]. Next we call `run()` which uses the @scala[implicit]@java[] `ActorMaterializer`
+be `run()`, as indicated by its type: @scala[`RunnableGraph[Future[Int]]`]@java[`RunnableGraph<CompletionStage<Integer>>`]. Next we call `run()` which uses the @scala[implicit] `ActorMaterializer`
 to materialize and run the Flow. The value returned by calling `run()` on a @scala[`RunnableGraph[T]`]@java[`RunnableGraph<T>`] is of type `T`.
 In our case this type is @scala[`Future[Int]`]@java[`CompletionStage<Integer>`] which, when completed, will contain the total length of our `tweets` stream.
 In case of the stream failing, this future would complete with a Failure.
