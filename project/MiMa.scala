@@ -46,7 +46,7 @@ object MiMa extends AutoPlugin {
             else Seq.empty
           } ++ akka24StreamVersions ++ akka24WithScala212 ++ akka25Versions
 
-        case "2.12" =>
+        case _ =>
           akka24WithScala212 ++ akka25Versions
       }
     }
