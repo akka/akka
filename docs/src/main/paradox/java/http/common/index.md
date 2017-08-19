@@ -14,7 +14,7 @@ which are specific to one side only.
 * [uri-model](uri-model.md)
 * [marshalling](marshalling.md)
 * [unmarshalling](unmarshalling.md)
-* [de-coding](de-coding.md)
+* [encoding](encoding.md)
 * [json-support](json-support.md)
 * [timeouts](timeouts.md)
 

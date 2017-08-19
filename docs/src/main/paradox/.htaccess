@@ -1,2 +1,3 @@
 # Since 10.0.9
 RedirectMatch 301 ^(.*)/low-level-server-side-api.html$ $1/server-side/low-level-api.html
+RedirectMatch 301 ^(.*)/common/de-coding.html$ $1/common/encoding.html
