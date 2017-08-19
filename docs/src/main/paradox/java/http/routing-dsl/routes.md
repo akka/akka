@@ -24,7 +24,7 @@ A `Route` can be "sealed" using `Route.seal`, which relies on the in-scope `Reje
 instances to convert rejections and exceptions into appropriate HTTP responses for the client.
 
 Using `Route.handlerFlow` or `Route.asyncHandler` a `Route` can be lifted into a handler `Flow` or async handler
-function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md).
+function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../server-side/low-level-api.md).
 
 <a id="request-context-java"></a>
 ## RequestContext

@@ -98,7 +98,7 @@ effectively hard-aborting the incoming request:
 
 @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #discard-close-connections }
 
-Closing connections is also explained in depth in the @ref[Closing a connection](server-side/low-level-server-side-api.md) section of the docs.
+Closing connections is also explained in depth in the @ref[Closing a connection](server-side/low-level-api.md) section of the docs.
 
 ### Pending: Automatic discarding of not used entities
 

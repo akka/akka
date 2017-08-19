@@ -98,7 +98,7 @@ effectively hard-aborting the incoming request:
 
 @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #discard-close-connections }
 
-Closing connections is also explained in depth in the @ref[Closing a connection](server-side/low-level-server-side-api.md#http-closing-connection-low-level) section of the docs.
+Closing connections is also explained in depth in the @ref[Closing a connection](server-side/low-level-api.md#http-closing-connection-low-level) section of the docs.
 
 ### Pending: Automatic discarding of not used entities
 

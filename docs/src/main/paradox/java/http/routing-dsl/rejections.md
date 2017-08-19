@@ -37,7 +37,7 @@ so it can choose whether it would like to handle the current set of rejections o
 Unhandled rejections will simply continue to flow through the route structure.
 
 The default `RejectionHandler` applied by the top-level glue code that turns a `Route` into a
-`Flow` or async handler function for the @ref[low-level API](../server-side/low-level-server-side-api.md) will handle *all* rejections that reach it.
+`Flow` or async handler function for the @ref[low-level API](../server-side/low-level-api.md) will handle *all* rejections that reach it.
 
 ## Rejection Cancellation
 
