@@ -29,6 +29,8 @@ import akka.stream._
 import akka.testkit._
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.Eventually.eventually
@@ -534,6 +536,37 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       try {
         (1 to 10).foreach(_ ⇒ runOnce())
       } finally server.foreach(_.unbind())
+    }
+
+    "complete a request/response over https when request has `Connection: close` set" in Utils.assertAllStagesStopped {
+      // akka/akka-http#1219
+      val serverToClientNetworkBufferSize = 1000
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val request = HttpRequest(uri = s"https://$hostname:$port", headers = headers.Connection("close") :: Nil)
+
+      // settings adapting network buffer sizes
+      val serverSettings = ServerSettings(system).withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
+      val clientSettings = ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
+
+      val serverConnectionContext = ExampleHttpContexts.exampleServerContext
+      // Disable hostname verification as ExampleHttpContexts.exampleClientContext sets hostname as akka.example.org
+      val sslConfigSettings = SSLConfigSettings().withLoose(SSLLooseConfig().withDisableHostnameVerification(true))
+      val sslConfig = AkkaSSLConfig().withSettings(sslConfigSettings)
+      val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext, Some(sslConfig))
+
+      val entity = Array.fill[Char](999999)('0').mkString + "x"
+      val routes: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ ⇒ HttpResponse(entity = entity) }
+      val serverBinding =
+        Http()
+          .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
+          .futureValue
+
+      Http()
+        .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
+        .futureValue
+        .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
+
+      serverBinding.unbind()
     }
 
     "be able to deal with eager closing of the request stream on the client side" in Utils.assertAllStagesStopped {
