@@ -116,7 +116,7 @@ Scala
 Java
 :   @@snip [DeviceGroupQuery.java]($code$/java/jdocs/tutorial_5/DeviceGroupQuery.java) { #query-state }
 
-It is not yet clear how we will "mutate" the `answersSoFar` and `stillWaiting` data structures. One important thing to note is that the function `waitingForReplies` **does not handle the messages directly. It returns a `Receive` function that will handle the messages**. This means that if we call `waitingForReplies` again, with different parameters,
+It is not yet clear how we will "mutate" the `repliesSoFar` and `stillWaiting` data structures. One important thing to note is that the function `waitingForReplies` **does not handle the messages directly. It returns a `Receive` function that will handle the messages**. This means that if we call `waitingForReplies` again, with different parameters,
 then it returns a brand new `Receive` that will use those new parameters.
 
 We have seen how we
