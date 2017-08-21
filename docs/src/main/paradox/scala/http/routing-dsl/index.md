@@ -107,4 +107,4 @@ and split each line before we send it to an actor for further processing:
 
 ## Configuring Server-side HTTPS
 
-For detailed documentation about configuring and using HTTPS on the server-side refer to @ref[Server-Side HTTPS Support](../server-side-https-support.md).
+For detailed documentation about configuring and using HTTPS on the server-side refer to @ref[Server-Side HTTPS Support](../server-side/server-https-support.md).

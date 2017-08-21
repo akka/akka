@@ -135,7 +135,7 @@ explicitly drained by attaching it to `Sink.ignore()`.
 
 ## Configuring Server-side HTTPS
 
-For detailed documentation about configuring and using HTTPS on the server-side refer to @ref[Server-Side HTTPS Support](../server-side-https-support.md).
+For detailed documentation about configuring and using HTTPS on the server-side refer to @ref[Server-Side HTTPS Support](server-https-support.md).
 
 <a id="http-server-layer"></a>
 ## Stand-Alone HTTP Layer Usage

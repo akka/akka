@@ -180,6 +180,7 @@ All documentation must abide by the following maxims:
 - Version should be **programmatically** specifiable to the build.
 - Generation should be **completely automated** and available for scripting.
 - Artifacts that must be included in the Lightbend stack should be published to a maven “documentation” repository as documentation artifacts.
+- When renaming Markdown files, add a rewrite rule to the `.htaccess` file to not break external links.
 
 All documentation is preferred to be in Lightbend's standard documentation format [Paradox](https://github.com/lightbend/paradox).
 The language used by Paradox is a super-set or Markdown which supports most Github Flavored Markdown extensions as well as additional directives to facilitate writing documentation for software projects.

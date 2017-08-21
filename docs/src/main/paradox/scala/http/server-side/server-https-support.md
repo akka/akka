@@ -1,20 +1,24 @@
 # Server-Side HTTPS Support
 
-Akka HTTP supports TLS encryption on the server-side as well as on the @ref[client-side](client-side/client-https-support.md).
+Akka HTTP supports TLS encryption on the server-side as well as on the @ref[client-side](../client-side/client-https-support.md).
 
 The central vehicle for configuring encryption is the `HttpsConnectionContext`, which can be created using
 the static method `ConnectionContext.https` which is defined like this:
 
-@@snip [ConnectionContext.scala](../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
+Scala
+:  @@snip [ConnectionContext.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
 
-On the server-side the `bind`, and `bindAndHandleXXX` methods of the [akka.http.scaladsl.Http](https://github.com/akka/akka-http/blob/master/akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala) extension define an
+Java
+:  @@snip [ConnectionContext.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
+
+On the server-side the `bind`, and `bindAndHandleXXX` methods of the @scala[@scaladoc[akka.http.scaladsl.Http](akka.http.scaladsl.Http$)]@java[@javadoc[akka.http.javadsl.Http](akka.http.javadsl.Http)] extension define an
 optional `httpsContext` parameter, which can receive the HTTPS configuration in the form of an `HttpsContext`
 instance.
 If defined encryption is enabled on all accepted connections. Otherwise it is disabled (which is the default).
 
-For detailed documentation for client-side HTTPS support refer to @ref[Client-Side HTTPS Support](client-side/client-https-support.md).
+For detailed documentation for client-side HTTPS support refer to @ref[Client-Side HTTPS Support](../client-side/client-https-support.md).
 
-<a id="ssl-config-scala"></a>
+<a id="ssl-config"></a>
 ## SSL-Config
 
 Akka HTTP heavily relies on, and delegates most configuration of any SSL/TLS related options to
@@ -28,7 +32,11 @@ SSL Config settings used by Akka HTTP (as well as Streaming TCP) are located und
 In order to use SSL-Config in Akka so it logs to the right ActorSystem-wise logger etc., the
 `AkkaSSLConfig` extension is provided. Obtaining it is as simple as:
 
-@@snip [HttpsServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #akka-ssl-config }
+Scala
+:  @@snip [HttpsServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #akka-ssl-config }
+
+Java
+:  @@snip [HttpsServerExampleTest.java](../../../../../test/java/docs/http/javadsl/server/HttpsServerExampleTest.java) { #akka-ssl-config }
 
 While typical usage, for example for configuring http client settings would be applied globally by configuring
 ssl-config in `application.conf`, it's possible to obtain the extension and `copy` it while modifying any
@@ -47,39 +55,63 @@ keystores using the JDK keytool utility can be found [here](https://docs.oracle.
 SSL-Config provides a more targeted guide on generating certificates, so we recommend you start with the guide
 titled [Generating X.509 Certificates](http://typesafehub.github.io/ssl-config/CertificateGeneration.html).
 
-<a id="using-https-scala"></a>
+<a id="using-https"></a>
 ## Using HTTPS
 
 Once you have obtained the server certificate, using it is as simple as preparing an `HttpsConnectionContext`
 and either setting it as the default one to be used by all servers started by the given `Http` extension
-or passing it in explicitly when binding the server:
+or passing it in explicitly when binding the server.
 
-@@snip [HttpsServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #imports }
+The below example shows how setting up HTTPS works.
+First, you create and configure an instance of `HttpsConnectionContext` :
 
-@@snip [HttpsServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #low-level-default }
+Scala
+:  @@snip [HttpsServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #imports #low-level-default }
 
-Once you configured the HTTPS context, you can set it as default:
+Java
+:  @@snip [SimpleServerApp.java](../../../../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-config }
 
-@@snip [HttpsServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #set-low-level-context-default }
+@scala[Once you configured the HTTPS context, you can set it as default:]
+@java[Then pass it to the `akka.http.javadsl.Http` class's `setDefaultServerHttpContext` method, like in the below `main` method.]
+
+Scala
+:  @@snip [HttpsServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #set-low-level-context-default }
+
+Java
+: @@snip [SimpleServerApp.java](../../../../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-app }
+
+@@@ div { .group-scala }
 
 It is also possible to pass in the context to specific `bind...` (or client) calls, like displayed below:
 
-@@snip [HttpsServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #bind-low-level-context }
+@@snip [HttpsServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #bind-low-level-context }
+
+@@@
 
 ## Running both HTTP and HTTPS
 
 If you want to run HTTP and HTTPS servers in a single application, you can call `bind...` methods twice,
 one for HTTPS, and the other for HTTP.
 
-When configuring HTTPS, you can do it up like explained in the above [Using HTTPS](#using-https-scala) section,
+When configuring HTTPS, you can do it up like explained in the above [Using HTTPS](#using-https) section,
 
-@@snip [HttpsServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #low-level-default }
+Scala
+:  @@snip [HttpsServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #low-level-default }
 
-or via [SSL-Config](#ssl-config-scala) (not explained here though).
+Java
+:  @@snip [SimpleServerApp.java](../../../../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-config }
 
-Then, call `bind...` methods twice like below. The passed `https` context is from the above code snippet.
+or via [SSL-Config](#ssl-config) (not explained here though).
 
-@@snip [HttpsServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #both-https-and-http }
+Then, call `bind...` methods twice like below.
+@scala[The passed `https` context is from the above code snippet.]
+@java[`SimpleServerApp.useHttps(system)` is calling the above defined `public static HttpsConnectionContext useHttps(ActorSystem system)` method.]
+
+Scala
+:  @@snip [HttpsServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #both-https-and-http }
+
+Java
+:  @@snip [SimpleServerHttpHttpsApp.java](../../../../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerHttpHttpsApp.java) { #both-https-and-http }
 
 ## Further reading
 
