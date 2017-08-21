@@ -23,7 +23,7 @@ Custom headers will only be matched by this directive if they extend `ModeledCus
 and provide a companion extending `ModeledCustomHeaderCompanion`, otherwise the routing
 infrastructure does now know where to search for the needed companion and header name.
 
-To learn more about defining custom headers, read: @ref[Custom Headers](../../../common/http-model.md#custom-headers-scala).
+To learn more about defining custom headers, read: @ref[Custom Headers](../../../common/http-model.md#custom-headers).
 
 @@@
 

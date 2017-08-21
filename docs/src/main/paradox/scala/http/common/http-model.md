@@ -9,7 +9,11 @@ It lives in the *akka-http-core* module and forms the basis for most of Akka HTT
 Since akka-http-core provides the central HTTP data structures you will find the following import in quite a
 few places around the code base (and probably your own code as well):
 
-@@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #import-model }
+Scala
+:   @@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #import-model }
+
+Java
+:   @@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #import-model }
 
 This brings all of the most relevant types in scope, mainly:
 
@@ -23,16 +27,16 @@ the type plus a trailing plural 's'.
 
 For example:
 
- * Defined `HttpMethod` instances live in the `HttpMethods` object.
- * Defined `HttpCharset` instances live in the `HttpCharsets` object.
- * Defined `HttpEncoding` instances live in the `HttpEncodings` object.
- * Defined `HttpProtocol` instances live in the `HttpProtocols` object.
- * Defined `MediaType` instances live in the `MediaTypes` object.
- * Defined `StatusCode` instances live in the `StatusCodes` object.
+ * Defined `HttpMethod` instances @scala[live in]@java[are defined as static fields of] the `HttpMethods` @scala[object]@java[class].
+ * Defined `HttpCharset` instances @scala[live in]@java[are defined as static fields of] the `HttpCharsets` @scala[object]@java[class].
+ * Defined `HttpEncoding` instances @scala[live in]@java[are defined as static fields of] the `HttpEncodings` @scala[object]@java[class].
+ * Defined `HttpProtocol` instances @scala[live in]@java[are defined as static fields of] the `HttpProtocols` @scala[object]@java[class].
+ * Defined `MediaType` instances @scala[live in]@java[are defined as static fields of] the `MediaTypes` @scala[object]@java[class].
+ * Defined `StatusCode` instances @scala[live in]@java[are defined as static fields of] the `StatusCodes` @scala[object]@java[class].
 
 ## HttpRequest
 
-`HttpRequest` and `HttpResponse` are the basic case classes representing HTTP messages.
+`HttpRequest` and `HttpResponse` are the basic @scala[case]@java[immutable] classes representing HTTP messages.
 
 An `HttpRequest` consists of
 
@@ -44,13 +48,26 @@ An `HttpRequest` consists of
 
 Here are some examples how to construct an `HttpRequest`:
 
-@@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-request }
+Scala
+:   @@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-request }
 
+Java
+:   @@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #construct-request }
+
+@@@ div { .group-scala }
 All parameters of `HttpRequest.apply` have default values set, so `headers` for example don't need to be specified
 if there are none. Many of the parameters types (like `HttpEntity` and `Uri`) define implicit conversions
 for common use cases to simplify the creation of request and response instances.
+@@@
+@@@ div { .group-java }
+In its basic form `HttpRequest.create` creates an empty default GET request without headers which can then be
+transformed using one of the `withX` methods, `addHeader`, or `addHeaders`. Each of those will create a
+new immutable instance, so instances can be shared freely. There exist some overloads for `HttpRequest.create` that
+simplify creating requests for common cases. Also, to aid readability, there are predefined alternatives for `create`
+named after HTTP methods to create a request with a given method and URI directly.
+@@@
 
-<a id="synthetic-headers-scala"></a>
+<a id="synthetic-headers"></a>
 ### Synthetic Headers
 
 In some cases it may be necessary to deviate from fully RFC-Compliant behavior. For instance, Amazon S3 treats 
@@ -64,25 +81,32 @@ but are instead consumed by the request engine and used to override default beha
 For instance, in order to provide a raw request uri, bypassing the default url normalization, you could do the
 following:
 
-@@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #synthetic-header-s3 }
+Scala
+:   @@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #synthetic-header-s3 }
+
+Java
+:   @@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #synthetic-header-s3 }
 
 ## HttpResponse
 
 An `HttpResponse` consists of
 
->
  * a status code
- * a seq of headers
+ * a @scala[`Seq`]@java[list] of headers
  * an entity (body data)
  * a protocol
 
 Here are some examples how to construct an `HttpResponse`:
 
-@@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-response }
+Scala
+:   @@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-response }
 
-In addition to the simple `HttpEntity` constructors which create an entity from a fixed `String` or `ByteString`
+Java
+:   @@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #construct-response }
+
+In addition to the simple @scala[`HttpEntity` constructors]@java[`HttpEntities.create` methods] which create an entity from a fixed `String` or `ByteString`
 as shown here the Akka HTTP model defines a number of subclasses of `HttpEntity` which allow body data to be specified as a
-stream of bytes.
+stream of bytes. @java[All of these types can be created using the method on `HttpEntites`.]
 
 <a id="httpentity"></a>
 ## HttpEntity
@@ -91,60 +115,61 @@ An `HttpEntity` carries the data bytes of a message together with its Content-Ty
 In Akka HTTP there are five different kinds of entities which model the various ways that message content can be
 received or sent:
 
-HttpEntity.Strict
+@scala[HttpEntity.Strict]@java[HttpEntityStrict]
 : The simplest entity, which is used when all the entity are already available in memory.
 It wraps a plain `ByteString` and  represents a standard, unchunked entity with a known `Content-Length`.
 
-HttpEntity.Default
+@scala[HttpEntity.Default]@java[HttpEntityDefault]
 : The general, unchunked HTTP/1.1 message entity.
-It has a known length and presents its data as a `Source[ByteString]` which can be only materialized once.
+It has a known length and presents its data as a @scala[`Source[ByteString]`]@java[`Source<ByteString, ?>`] which can be only materialized once.
 It is an error if the provided source doesn't produce exactly as many bytes as specified.
-The distinction of `Strict` and `Default` is an API-only one. On the wire, both kinds of entities look the same.
+The distinction of @scala[`Strict`]@java[`HttpEntityStrict`] and @scala[`Default`]@java[`HttpEntityDefault`] is an API-only one. On the wire, 
+both kinds of entities look the same.
 
-HttpEntity.Chunked
+@scala[HttpEntity.Chunked]@java[HttpEntityChunked]
 : The model for HTTP/1.1 [chunked content](http://tools.ietf.org/html/rfc7230#section-4.1) (i.e. sent with `Transfer-Encoding: chunked`).
-The content length is unknown and the individual chunks are presented as a `Source[HttpEntity.ChunkStreamPart]`.
-A `ChunkStreamPart` is either a non-empty `Chunk` or a `LastChunk` containing optional trailer headers.
-The stream consists of zero or more `Chunked` parts and can be terminated by an optional `LastChunk` part.
+The content length is unknown and the individual chunks are presented as a @scala[`Source[HttpEntity.ChunkStreamPart]`]@java[`Source<ChunkStreamPart, ?>`].
+A `ChunkStreamPart` is either a non-empty @scala[`Chunk`]@java[chunk] or @scala[a `LastChunk`]@java[the empty last chunk] containing optional trailer headers.
+The stream consists of zero or more @scala[`Chunked`]@java[non-empty chunks] parts and can be terminated by an optional @scala[`LastChunk` part]@java[last chunk].
 
-HttpEntity.CloseDelimited
+@scala[HttpEntity.CloseDelimited]@java[HttpEntityCloseDelimited]
 : An unchunked entity of unknown length that is implicitly delimited by closing the connection (`Connection: close`).
-The content data are presented as a `Source[ByteString]`.
+The content data are presented as a @scala[`Source[ByteString]`]@java[`Source<ByteString, ?>`].
 Since the connection must be closed after sending an entity of this type it can only be used on the server-side for
 sending a response.
 Also, the main purpose of `CloseDelimited` entities is compatibility with HTTP/1.0 peers, which do not support
 chunked transfer encoding. If you are building a new application and are not constrained by legacy requirements you
 shouldn't rely on `CloseDelimited` entities, since implicit terminate-by-connection-close is not a robust way of
 signaling response end, especially in the presence of proxies. Additionally this type of entity prevents connection
-reuse which can seriously degrade performance. Use `HttpEntity.Chunked` instead!
+reuse which can seriously degrade performance. Use @scala[`HttpEntity.Chunked`]@java[`HttpEntityChunked`] instead!
 
-HttpEntity.IndefiniteLength
+@scala[HttpEntity.IndefiniteLength]@java[HttpEntityIndefiniteLength]
 : A streaming entity of unspecified length for use in a `Multipart.BodyPart`.
 
 
-Entity types `Strict`, `Default`, and `Chunked` are a subtype of `HttpEntity.Regular` which allows to use them
-for requests and responses. In contrast, `HttpEntity.CloseDelimited` can only be used for responses.
+Entity types @scala[`Strict`]@java[`HttpEntityStrict`], @scala[`Default`]@java[`HttpEntityDefault`], and @scala[`Chunked`]@java[`HttpEntityChunked`] are a subtype of @scala[`HttpEntity.Regular`]@java[`RequestEntity`]
+which allows to use them for requests and responses. In contrast, @scala[`HttpEntity.CloseDelimited`]@java[`HttpEntityCloseDelimited`] can only be used for responses.
 
-Streaming entity types (i.e. all but `Strict`) cannot be shared or serialized. To create a strict, shareable copy of an
-entity or message use `HttpEntity.toStrict` or `HttpMessage.toStrict` which returns a `Future` of the object with
+Streaming entity types (i.e. all but @scala[`Strict`]@java[`HttpEntityStrict`]) cannot be shared or serialized. To create a strict, shareable copy of an
+entity or message use `HttpEntity.toStrict` or `HttpMessage.toStrict` which returns a @scala[`Future`]@java[`CompletionStage`] of the object with
 the body data collected into a `ByteString`.
 
-The `HttpEntity` companion object contains several helper constructors to create entities from common types easily.
+The @scala[`HttpEntity` companion object]@java[class `HttpEntities`] contains @scala[several helper constructors]@java[static methods] to create entities from common types easily.
 
-You can pattern match over the subtypes of `HttpEntity` if you want to provide special handling for each of the
-subtypes. However, in many cases a recipient of an `HttpEntity` doesn't care about of which subtype an entity is
-(and how data is transported exactly on the HTTP layer). Therefore, the general method `HttpEntity.dataBytes` is
-provided which returns a `Source[ByteString, Any]` that allows access to the data of an entity regardless of its
-concrete subtype.
+You can @scala[pattern match over]@java[use] the @scala[subtypes]@java[`isX` methods] of `HttpEntity` @java[to find out of which subclass an entity is] if you want to provide
+special handling for each of the subtypes. However, in many cases a recipient of an `HttpEntity` doesn't care about
+of which subtype an entity is (and how data is transported exactly on the HTTP layer). Therefore, the general method
+@scala[`HttpEntity.dataBytes`]@java[`HttpEntity.getDataBytes()`] is provided which returns a @scala[`Source[ByteString, Any]`]@java[`Source<ByteString, ?>`] that allows access to the data of an
+entity regardless of its concrete subtype.
 
 @@@ note { title='When to use which subtype?' }
 
- * Use `Strict` if the amount of data is "small" and already available in memory (e.g. as a `String` or `ByteString`)
- * Use `Default` if the data is generated by a streaming data source and the size of the data is known
- * Use `Chunked` for an entity of unknown length
- * Use `CloseDelimited` for a response as a legacy alternative to `Chunked` if the client doesn't support
-chunked transfer encoding. Otherwise use `Chunked`!
- * In a `Multipart.Bodypart` use `IndefiniteLength` for content of unknown length.
+ * Use @scala[`Strict`]@java[`HttpEntityStrict`] if the amount of data is "small" and already available in memory (e.g. as a `String` or `ByteString`)
+ * Use @scala[`Default`]@java[`HttpEntityDefault`] if the data is generated by a streaming data source and the size of the data is known
+ * Use @scala[`Chunked`]@java[`HttpEntityChunked`] for an entity of unknown length
+ * Use @scala[`CloseDelimited`]@java[`HttpEntityCloseDelimited`] for a response as a legacy alternative to @scala[`Chunked`]@java[`HttpEntityChunked`] if the client
+doesn't support chunked transfer encoding. Otherwise use @scala[`Chunked`]@java[`HttpEntityChunked`]!
+ * In a `Multipart.Bodypart` use @scala[`IndefiniteLength`]@java[`HttpEntityIndefiniteLength`] for content of unknown length.
 
 @@@
 
@@ -208,14 +233,14 @@ header fields, regardless of the header fields present in the
 message, and thus cannot contain a message body.
 
 Responses to HEAD requests introduce the complexity that *Content-Length* or *Transfer-Encoding* headers
-can be present but the entity is empty. This is modeled by allowing *HttpEntity.Default* and *HttpEntity.Chunked*
+can be present but the entity is empty. This is modeled by allowing @scala[*HttpEntity.Default*]@java[*HttpEntityDefault*] and @scala[*HttpEntity.Chunked*]@java[*HttpEntityChunked*]
 to be used for HEAD responses with an empty data stream.
 
-Also, when a HEAD response has an *HttpEntity.CloseDelimited* entity the Akka HTTP implementation will *not* close the
+Also, when a HEAD response has an @scala[*HttpEntity.CloseDelimited*]@java[*HttpEntityCloseDelimited*] entity the Akka HTTP implementation will *not* close the
 connection after the response has been sent. This allows the sending of HEAD responses without *Content-Length*
 header across persistent HTTP connections.
 
-<a id="header-model-scala"></a>
+<a id="header-model"></a>
 ## Header Model
 
 Akka HTTP contains a rich model of the most common HTTP headers. Parsing and rendering is done automatically so that
@@ -224,7 +249,11 @@ as a `RawHeader` (which is essentially a String/String name/value pair).
 
 See these examples of how to deal with headers:
 
-@@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #headers }
+Scala
+:   @@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #headers }
+
+Java
+:   @@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #headers }
 
 ## HTTP Headers
 
@@ -243,9 +272,9 @@ Also, a `Content-Type` header instance that is explicitly added to the `headers`
 not be rendered onto the wire and trigger a warning being logged instead!
 
 Transfer-Encoding
-: Messages with `Transfer-Encoding: chunked` are represented via the `HttpEntity.Chunked` entity.
+: Messages with `Transfer-Encoding: chunked` are represented @scala[via the `HttpEntity.Chunked`]@java[as a `HttpEntityChunked`] entity.
 As such chunked messages that do not have another deeper nested transfer encoding will not have a `Transfer-Encoding`
-header in their `headers` sequence.
+header in their `headers` @scala[sequence]@java[list].
 Similarly, a `Transfer-Encoding` header instance that is explicitly added to the `headers` of a request or
 response will not be rendered onto the wire and trigger a warning being logged instead!
 
@@ -284,31 +313,43 @@ whether the connection should be secure. HSTS addresses this problem by informin
 site should always use TLS/SSL. See also [RFC 6797](http://tools.ietf.org/html/rfc6797).
 
 
-<a id="custom-headers-scala"></a>
+<a id="custom-headers"></a>
 ## Custom Headers
 
 Sometimes you may need to model a custom header type which is not part of HTTP and still be able to use it
 as convenient as is possible with the built-in types.
 
-Because of the number of ways one may interact with headers (i.e. try to match a `CustomHeader` against a `RawHeader`
-or the other way around etc), a helper trait for custom Header types and their companions classes are provided by Akka HTTP.
-Thanks to extending `ModeledCustomHeader` instead of the plain `CustomHeader` such header can be matched
+Because of the number of ways one may interact with headers (i.e. try to @scala[match]@java[convert] a `CustomHeader` @scala[against]@java[to] a `RawHeader`
+or the other way around etc), a helper @scala[trait]@java[classes] for custom Header types @scala[and their companions classes ]are provided by Akka HTTP.
+Thanks to extending `ModeledCustomHeader` instead of the plain `CustomHeader` @scala[such header can be matched]@java[the following methods are at your disposal]:
 
-@@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #modeled-api-key-custom-header }
+Scala
+:   @@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #modeled-api-key-custom-header }
 
-Which allows the this CustomHeader to be used in the following scenarios:
+Java
+:   @@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #modeled-api-key-custom-header }
 
-@@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-examples }
+Which allows this @scala[CustomHeader]@java[modeled custom header] to be used in the following scenarios:
+
+Scala
+:   @@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-examples }
+
+Java
+:   @@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #conversion-creation-custom-header }
 
 Including usage within the header directives like in the following @ref[headerValuePF](../routing-dsl/directives/header-directives/headerValuePF.md) example:
 
-@@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-in-routes }
+Scala
+:   @@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-in-routes }
+
+Java
+:   @@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #header-value-pf }
 
 One can also directly extend `CustomHeader` which requires less boilerplate, however that has the downside of
-matching against `RawHeader` instances not working out-of-the-box, thus limiting its usefulness in the routing layer
-of Akka HTTP. For only rendering such header however it would be enough.
+@scala[matching against `RawHeader`]@java[having to deal with converting `HttpHeader`] instances scala[not working out-of-the-box, thus limiting its usefulness in the routing layer
+of Akka HTTP]@java[to your custom one]. For only rendering such header however it would be enough.
 
-@@@ note
+@@@ note { .group-scala }
 When defining custom headers, prefer to extend `ModeledCustomHeader` instead of `CustomHeader` directly
 as it will automatically make your header abide all the expected pattern matching semantics one is accustomed to
 when using built-in types (such as matching a custom header against a `RawHeader` as is often the case in routing
@@ -332,19 +373,23 @@ In this case both `client` and `host-connection-pool` APIs will see the setting 
 
 In the case of `akka.http.host-connection-pool.client` settings, they default to settings set in `akka.http.client`,
 and can override them if needed. This is useful, since both `client` and `host-connection-pool` APIs,
-such as the Client API `Http().outgoingConnection` or the Host Connection Pool APIs `Http().singleRequest` or `Http().superPool`,
-usually need the same settings, however the `server` most likely has a very different set of settings.
+such as the Client API @scala[`Http().outgoingConnection`]@java[`Http.get(sys).outgoingConnection`] or the Host Connection Pool APIs @scala[`Http().singleRequest`]@java[`Http.get(sys).singleRequest`]
+or @scala[`Http().superPool`]@java[`Http.get(sys).superPool`], usually need the same settings, however the `server` most likely has a very different set of settings.
 @@@
 
 <a id="registeringcustommediatypes"></a>
 ## Registering Custom Media Types
 
-Akka HTTP @scaladoc[predefines](akka.http.scaladsl.model.MediaTypes$) most commonly encountered media types and emits them in their well-typed form while parsing http messages.
+Akka HTTP @scala[@scaladoc[predefines](akka.http.scaladsl.model.MediaTypes$)]@java[@javadoc[predefines](akka.http.javadsl.model.MediaTypes)] most commonly encountered media types and emits them in their well-typed form while parsing http messages.
 Sometimes you may want to define a custom media type and inform the parser infrastructure about how to handle these custom
 media types, e.g. that `application/custom` is to be treated as `NonBinary` with `WithFixedCharset`. To achieve this you
 need to register the custom media type in the server's settings by configuring `ParserSettings` like this:
 
-@@snip [CustomMediaTypesSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomMediaTypesSpec.scala) { #application-custom }
+Scala
+:   @@snip [CustomMediaTypesSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomMediaTypesSpec.scala) { #application-custom }
+
+Java
+:   @@snip [CustomMediaTypesExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomMediaTypesExampleTest.java) { #application-custom-java }
 
 You may also want to read about MediaType [Registration trees](https://en.wikipedia.org/wiki/Media_type#Registration_trees), in order to register your vendor specific media types
 in the right style / place.
@@ -352,16 +397,24 @@ in the right style / place.
 <a id="registeringcustomstatuscodes"></a>
 ## Registering Custom Status Codes
 
-Similarly to media types, Akka HTTP @scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)
+Similarly to media types, Akka HTTP @scala[@scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)]@java[@javadoc:[predefines](akka.http.javaadsl.model.StatusCodes)]
 well-known status codes, however sometimes you may need to use a custom one (or are forced to use an API which returns custom status codes).
 Similarily to the media types registration, you can register custom status codes by configuring `ParserSettings` like this:
 
-@@snip [CustomStatusCodesSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }
+Scala
+:   @@snip [CustomStatusCodesSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }
+
+Java
+:   @@snip [CustomStatusCodesExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomStatusCodesExampleTest.java) { #application-custom-java }
 
 <a id="registeringcustommethod"></a>
 ## Registering Custom HTTP Method
 
-Akka HTTP also allows you to define custome HTTP methods, other than the well-known methods @scaladoc[predefined](akka.http.scaladsl.model.HttpMethods$) in Akka HTTP.
+Akka HTTP also allows you to define custom HTTP methods, other than the well-known methods @scala[@scaladoc[predefined](akka.http.scaladsl.model.HttpMethods$)]@java[@javadoc[predefined](akka.http.javadsl.model.HttpMethods)] in Akka HTTP.
 To use a custom HTTP method, you need to define it, and then add it to parser settings like below:
 
-@@snip [CustomHttpMethodSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
+Scala
+:   @@snip [CustomHttpMethodSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
+
+Java
+:   @@snip [CustomHttpMethodsExampleTest.java](../../../../../test/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }
