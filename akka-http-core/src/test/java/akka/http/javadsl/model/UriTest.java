@@ -9,6 +9,7 @@ import akka.japi.Pair;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import static akka.http.javadsl.model.Uri.RELAXED;
@@ -56,6 +57,16 @@ public class UriTest extends JUnitSuite {
     assertEquals("urn", uri8.getScheme());
     assertEquals("oasis:names:specification:docbook:dtd:xml:4.1.2", uri8.getPathString());
     //#valid-uri-examples
+  }
+
+  @Test
+  public void testPercentEscape() {
+    //#dont-double-decode
+    Uri uri1 = Uri.create("http://foo.com?foo=%2520");
+    assertEquals(Optional.of("%20"), uri1.query().get("foo"));
+    Uri uri2 = Uri.create("http://foo.com?foo=%2F%5C");
+    assertEquals(Optional.of("/\\"), uri2.query().get("foo"));
+    //#dont-double-decode
   }
 
   //#illegal-scheme
