@@ -63,9 +63,6 @@ akka {
   }
 }
 
-# Disable legacy metrics in akka-cluster.
-akka.cluster.metrics.enabled=off
-
 # Enable metrics extension in akka-cluster-metrics.
 akka.extensions=["akka.cluster.metrics.ClusterMetricsExtension"]
 
@@ -111,8 +108,11 @@ The source code of this sample can be found in the
 ## Joining to Seed Nodes
 
 You may decide if joining to the cluster should be done manually or automatically
-to configured initial contact points, so-called seed nodes. When a new node is started
-it sends a message to all seed nodes and then sends join command to the one that
+to configured initial contact points, so-called seed nodes. After the joining process
+the seed nodes are not special and they participate in the cluster in exactly the same
+way as other nodes.
+
+When a new node is started it sends a message to all seed nodes and then sends join command to the one that
 answers first. If no one of the seed nodes replied (might not be started yet)
 it retries this procedure until successful or shutdown.
 
@@ -131,6 +131,12 @@ This can also be defined as Java system properties when starting the JVM using t
 -Dakka.cluster.seed-nodes.1=akka.tcp://ClusterSystem@host2:2552
 ```
 
+Such configuration is typically created dynamically by external tools, see for example:
+
+* [Deploying clustered Akka applications on Kubernetes](http://developer.lightbend.com/guides/k8-akka-cluster/)
+* [ConductR](https://conductr.lightbend.com/docs/2.1.x/AkkaAndPlay#Akka-Clustering)
+* [ConstructR](https://github.com/hseeberger/constructr)
+
 The seed nodes can be started in any order and it is not necessary to have all
 seed nodes running, but the node configured as the first element in the `seed-nodes`
 configuration list must be started when initially starting a cluster, otherwise the
@@ -143,23 +149,16 @@ can join.
 
 Once more than two seed nodes have been started it is no problem to shut down the first
 seed node. If the first seed node is restarted, it will first try to join the other
-seed nodes in the existing cluster.
-
-If you don't configure seed nodes you need to join the cluster programmatically or manually.
-
-Manual joining can be performed by using [JMX](#cluster-jmx) or [HTTP](#cluster-http).
-Joining programmatically can be performed with @scala[`Cluster(system).join`]@java[`Cluster.get(system).join`]. Unsuccessful join attempts are
-automatically retried after the time period defined in configuration property `retry-unsuccessful-join-after`.
-Retries can be disabled by setting the property to `off`.
-
-You can join to any node in the cluster. It does not have to be configured as a seed node.
-Note that you can only join to an existing cluster member, which means that for bootstrapping some
-node must join itself,and then the following nodes could join them to make up a cluster.
+seed nodes in the existing cluster. Note that if you stop all seed nodes at the same time
+and restart them with the same `seed-nodes` configuration they will join themselves and
+form a new cluster instead of joining remaining nodes of the existing cluster. That is
+likely not desired and should be avoided by listing several nodes as seed nodes for redundancy
+and don't stop all of them at the same time. 
 
 You may also use @scala[`Cluster(system).joinSeedNodes`]@java[`Cluster.get(system).joinSeedNodes`] to join programmatically,
 which is attractive when dynamically discovering other nodes at startup by using some external tool or API.
 When using `joinSeedNodes` you should not include the node itself except for the node that is
-supposed to be the first seed node, and that should be placed first in parameter to
+supposed to be the first seed node, and that should be placed first in the parameter to
 `joinSeedNodes`.
 
 Unsuccessful attempts to contact seed nodes are automatically retried after the time period defined in
@@ -168,6 +167,25 @@ automatically retried after the configured `retry-unsuccessful-join-after`. Retr
 tries to contact all seed nodes and then joins the node that answers first. The first node in the list
 of seed nodes will join itself if it cannot contact any of the other seed nodes within the
 configured `seed-node-timeout`.
+
+The joining of given seed nodes will by default be retried indefinitely until
+a successful join. That process can be aborted if unsuccessful by configuring a
+timeout. When aborted it will run @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown),
+which by default will terminated the ActorSystem. CoordinatedShutdown can also be configured to exit
+the JVM. It is useful to define this timeout if the `seed-nodes` are assembled
+dynamically and a restart with new seed-nodes should be tried after unsuccessful
+attempts.
+
+```
+akka.cluster.shutdown-after-unsuccessful-join-seed-nodes = 20s
+akka.coordinated-shutdown.terminate-actor-system = on
+```
+
+If you don't configure seed nodes or use `joinSeedNodes` you need to join the cluster manually, which can be performed by using [JMX](#cluster-jmx) or [HTTP](#cluster-http).
+
+You can join to any node in the cluster. It does not have to be configured as a seed node.
+Note that you can only join to an existing cluster member, which means that for bootstrapping some
+node must join itself,and then the following nodes could join them to make up a cluster.
 
 An actor system can only join a cluster once. Additional attempts will be ignored.
 When it has successfully joined it must be restarted to be able to join another
