@@ -281,7 +281,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   import MembershipState._
 
   val cluster = Cluster(context.system)
-  import cluster.{ selfAddress, selfRoles, scheduler, failureDetector }
+  import cluster.{ selfAddress, selfRoles, scheduler, failureDetector, crossDcFailureDetector }
   import cluster.settings._
   import cluster.InfoLogger._
 
@@ -606,6 +606,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         case None ⇒
           // remove the node from the failure detector
           failureDetector.remove(joiningNode.address)
+          crossDcFailureDetector.remove(joiningNode.address)
 
           // add joining node as Joining
           // add self in case someone else joins before self has joined (Set discards duplicates)
@@ -859,7 +860,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
       // for all new joining nodes we remove them from the failure detector
       latestGossip.members foreach {
-        node ⇒ if (node.status == Joining && !localGossip.members(node)) failureDetector.remove(node.address)
+        node ⇒
+          if (node.status == Joining && !localGossip.members(node)) {
+            failureDetector.remove(node.address)
+            crossDcFailureDetector.remove(node.address)
+          }
       }
 
       log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
@@ -1133,15 +1138,20 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       val localOverview = localGossip.overview
       val localMembers = localGossip.members
 
+      def isAvailable(member: Member): Boolean = {
+        if (member.dataCenter == SelfDataCenter) failureDetector.isAvailable(member.address)
+        else crossDcFailureDetector.isAvailable(member.address)
+      }
+
       val newlyDetectedUnreachableMembers = localMembers filterNot { member ⇒
         member.uniqueAddress == selfUniqueAddress ||
           localOverview.reachability.status(selfUniqueAddress, member.uniqueAddress) == Reachability.Unreachable ||
           localOverview.reachability.status(selfUniqueAddress, member.uniqueAddress) == Reachability.Terminated ||
-          failureDetector.isAvailable(member.address)
+          isAvailable(member)
       }
 
       val newlyDetectedReachableMembers = localOverview.reachability.allUnreachableFrom(selfUniqueAddress) collect {
-        case node if node != selfUniqueAddress && failureDetector.isAvailable(node.address) ⇒
+        case node if node != selfUniqueAddress && isAvailable(localGossip.member(node)) ⇒
           localGossip.member(node)
       }
 

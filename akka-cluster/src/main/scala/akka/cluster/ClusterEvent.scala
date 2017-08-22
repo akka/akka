@@ -73,8 +73,7 @@ object ClusterEvent {
         cs.unreachable,
         cs.seenBy,
         cs.leader,
-        cs.roleLeaderMap
-      ))
+        cs.roleLeaderMap))
 
   }
 
@@ -116,6 +115,12 @@ object ClusterEvent {
      */
     def getUnreachable: java.util.Set[Member] =
       scala.collection.JavaConverters.setAsJavaSetConverter(unreachable).asJava
+
+    /**
+     * Java API: All data centers in the cluster
+     */
+    def getUnreachableDataCenters: java.util.Set[String] =
+      scala.collection.JavaConverters.setAsJavaSetConverter(unreachableDataCenters).asJava
 
     /**
      * Java API: get current “seen-by” set.
@@ -556,8 +561,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       leader = membershipState.leader.map(_.address),
       roleLeaderMap = membershipState.latestGossip.allRoles.map(r ⇒
         r → membershipState.roleLeader(r).map(_.address))(collection.breakOut),
-      unreachableDataCenters
-    )
+      unreachableDataCenters)
     receiver ! state
   }
 
