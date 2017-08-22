@@ -1,0 +1,3 @@
+#23504 compression tables
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.compress.InboundCompression$State$")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.compress.InboundCompression$State")
