@@ -32,12 +32,12 @@ import akka.annotation.InternalApi
 
   def receive = {
     case OnNext(elem) ⇒
-      ref ! elem
+      ref.tell(elem, ActorRef.noSender)
     case OnError(cause) ⇒
-      ref ! Status.Failure(cause)
+      ref.tell(Status.Failure(cause), ActorRef.noSender)
       context.stop(self)
     case OnComplete ⇒
-      ref ! onCompleteMessage
+      ref.tell(onCompleteMessage, ActorRef.noSender)
       context.stop(self)
     case Terminated(`ref`) ⇒
       context.stop(self) // will cancel upstream
