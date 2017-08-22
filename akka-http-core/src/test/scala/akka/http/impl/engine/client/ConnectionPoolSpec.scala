@@ -311,36 +311,37 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       // for lower bound of one connection
       val minConnection = 1
-      val (requestIn, requestOut, responseOutSub, hcpMinConnection) =
+      val (requestIn, responseOut, responseOutSub, hcpMinConnection) =
         cachedHostConnectionPool[Int](idleTimeout = 100.millis, minConnections = minConnection)
       val gatewayConnection = hcpMinConnection.gateway
 
       acceptIncomingConnection()
       requestIn.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) → 42)
       responseOutSub.request(1)
-      requestOut.expectNextN(1)
+      responseOut.expectNextN(1)
 
       condHolds(500.millis.dilated) { () ⇒
         Await.result(gatewayConnection.poolStatus(), 100.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       }
     }
 
-    "never close hot connections when minConnections key is given and >0 (minConnections = 5)" in new TestSetup() {
+    "never close hot connections when minConnections key is given and >0 (minConnections = 5)" in new TestSetup(autoAccept = true) {
       val close: HttpHeader = Connection("close")
 
       // for lower bound of five connections
       val minConnections = 5
-      val (requestIn, requestOut, responseOutSub, hcpMinConnection) = cachedHostConnectionPool[Int](
+      val (requestIn, responseOut, responseOutSub, hcpMinConnection) = cachedHostConnectionPool[Int](
         idleTimeout = 100.millis,
         minConnections = minConnections,
         maxConnections = minConnections + 10)
 
-      (0 until minConnections) foreach { _ ⇒ acceptIncomingConnection() }
-      (0 until minConnections) foreach { i ⇒
-        requestIn.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) → 42)
+      (1 to 30) foreach { _ ⇒ // run a few requests
+        (0 until minConnections) foreach { i ⇒
+          requestIn.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) → 42)
+        }
+        responseOutSub.request(minConnections)
+        responseOut.expectNextN(minConnections)
       }
-      responseOutSub.request(minConnections)
-      requestOut.expectNextN(minConnections)
 
       val gatewayConnections = hcpMinConnection.gateway
       condHolds(1000.millis.dilated) { () ⇒
