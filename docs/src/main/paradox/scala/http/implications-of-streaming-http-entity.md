@@ -30,13 +30,21 @@ It is encouraged to use various streaming techniques to utilise the underlying i
 for example by framing the incoming chunks, parsing them line-by-line and then connecting the flow into another
 destination Sink, such as a File or other Akka Streams connector:
 
-@@snip [HttpClientExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #manual-entity-consume-example-1 }
+Scala
+:   @@snip [HttpClientExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #manual-entity-consume-example-1 }
+
+Java
+:   @@snip [HttpClientExampleDocTest.java](../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #manual-entity-consume-example-1 }
 
 however sometimes the need may arise to consume the entire entity as `Strict` entity (which means that it is
-completely loaded into memory). Akka HTTP provides a special `toStrict(timeout)` method which can be used to
+completely loaded into memory). Akka HTTP provides a special @scala[`toStrict(timeout)`]@java[`toStrict(timeout, materializer)`] method which can be used to
 eagerly consume the entity and make it available in memory:
 
-@@snip [HttpClientExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #manual-entity-consume-example-2 }
+Scala
+:   @@snip [HttpClientExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #manual-entity-consume-example-2 }
+
+Java
+:   @@snip [HttpClientExampleDocTest.java](../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #manual-entity-consume-example-2 }
 
 ### Discarding the HTTP Response Entity (Client)
 
@@ -49,11 +57,19 @@ It does so by piping the incoming bytes directly into an `Sink.ignore`.
 
 The two snippets below are equivalent, and work the same way on the server-side for incoming HTTP Requests:
 
-@@snip [HttpClientExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #manual-entity-discard-example-1 }
+Scala
+:   @@snip [HttpClientExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #manual-entity-discard-example-1 }
+
+Java
+:   @@snip [HttpClientExampleDocTest.java](../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #manual-entity-discard-example-1 }
 
 Or the equivalent low-level code achieving the same result:
 
-@@snip [HttpClientExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #manual-entity-discard-example-2 }
+Scala
+:   @@snip [HttpClientExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #manual-entity-discard-example-2 }
+
+Java
+:   @@snip [HttpClientExampleDocTest.java](../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #manual-entity-discard-example-2 }
 
 ## Server-Side handling of streaming HTTP Entities
 
@@ -61,19 +77,27 @@ Similarly as with the Client-side, HTTP Entities are directly linked to Streams 
 TCP connection. Thus, if request entities remain not consumed, the server will back-pressure the connection, expecting
 that the user-code will eventually decide what to do with the incoming data.
 
-Note that some directives force an implicit `toStrict` operation, such as `entity(as[String])` and similar ones.
+Note that some directives force an implicit `toStrict` operation, such as @scala[`entity(as[String])`]@java[`entity(exampleUnmarshaller, example -> {})`] and similar ones.
 
 ### Consuming the HTTP Request Entity (Server)
 
 The simplest way of consuming the incoming request entity is to simply transform it into an actual domain object,
 for example by using the @ref[entity](routing-dsl/directives/marshalling-directives/entity.md) directive:
 
-@@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #consume-entity-directive }
+Scala
+:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #consume-entity-directive }
+
+Java
+:   @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #consume-entity-directive }
 
 Of course you can access the raw dataBytes as well and run the underlying stream, for example piping it into an
-FileIO Sink, that signals completion via a `Future[IoResult]` once all the data has been written into the file:
+FileIO Sink, that signals completion via a @scala[`Future[IoResult]`]@java[`CompletionStage<IoResult>`] once all the data has been written into the file:
 
-@@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #consume-raw-dataBytes }
+Scala
+:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #consume-raw-dataBytes }
+
+Java
+:   @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #consume-raw-dataBytes }
 
 ### Discarding the HTTP Request Entity (Server)
 
@@ -87,18 +111,27 @@ pending on the same connection still.
 
 In order to discard the databytes explicitly you can invoke the `discardEntityBytes` bytes of the incoming `HTTPRequest`:
 
-@@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #discard-discardEntityBytes }
+Scala
+:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #discard-discardEntityBytes }
 
-A related concept is *cancelling* the incoming `entity.dataBytes` stream, which results in Akka HTTP
+Java
+:   @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #discard-discardEntityBytes }
+
+A related concept is *cancelling* the incoming @scala[`entity.dataBytes`]@java[`entity.getDataBytes()`] stream, which results in Akka HTTP
 *abruptly closing the connection from the Client*. This may be useful when you detect that the given user should not be allowed to make any
 uploads at all, and you want to drop the connection (instead of reading and ignoring the incoming data).
-This can be done by attaching the incoming `entity.dataBytes` to a `Sink.cancelled` which will cancel
+This can be done by attaching the incoming @scala[`entity.dataBytes`]@java[`entity.getDataBytes()`] to a `Sink.cancelled()` which will cancel
 the entity stream, which in turn will cause the underlying connection to be shut-down by the server –
 effectively hard-aborting the incoming request:
 
-@@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #discard-close-connections }
+Scala
+:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #discard-close-connections }
 
-Closing connections is also explained in depth in the @ref[Closing a connection](server-side/low-level-api.md#http-closing-connection-low-level) section of the docs.
+Java
+:   @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #discard-close-connections }
+
+Closing connections is also explained in depth in the @ref[Closing a connection](server-side/low-level-api.md#http-closing-connection-low-level)
+section of the docs.
 
 ### Pending: Automatic discarding of not used entities
 
