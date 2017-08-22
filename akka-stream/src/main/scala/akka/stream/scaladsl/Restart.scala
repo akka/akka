@@ -298,7 +298,9 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
       override def onPull() = if (isAvailable(in)) {
         sourceOut.push(grab(in))
       } else {
-        pull(in)
+        if (!hasBeenPulled(in)) {
+          pull(in)
+        }
       }
       override def onDownstreamFinish() = {
         if (finishing) {
