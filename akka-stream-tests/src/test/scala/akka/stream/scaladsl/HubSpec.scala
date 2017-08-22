@@ -602,6 +602,15 @@ class HubSpec extends StreamSpec {
       }
     }
 
+    "drop elements with negative index" in assertAllStagesStopped {
+      val source = Source(0 until 10).runWith(PartitionHub.sink(
+        (size, elem) ⇒ if (elem == 3 || elem == 4) -1 else elem % size, startAfterNrOfConsumers = 2, bufferSize = 8))
+      val result1 = source.runWith(Sink.seq)
+      val result2 = source.runWith(Sink.seq)
+      result1.futureValue should ===((0 to 8 by 2).filterNot(_ == 4))
+      result2.futureValue should ===((1 to 9 by 2).filterNot(_ == 3))
+    }
+
   }
 
 }
