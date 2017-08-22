@@ -38,15 +38,15 @@ object MultiDcSunnyWeatherMultiJvmSpec extends MultiNodeConfig {
     """
     akka {
       actor.provider = cluster
-      
+
       loggers = ["akka.testkit.TestEventListener"]
       loglevel = INFO
-      
+
       remote.log-remote-lifecycle-events = off
-      
+
       cluster {
         debug.verbose-heartbeat-logging = off
-       
+
         multi-data-center {
           cross-data-center-connections = 2
         }
@@ -149,13 +149,12 @@ abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeather
    */
   private def membersByAge(): immutable.SortedSet[Member] =
     SortedSet.empty(Member.ageOrdering)
-      .union(cluster.state.members.filter(m ⇒ m.status != MemberStatus.WeaklyUp && m.status != MemberStatus.WeaklyUp))
+      .union(cluster.state.members.filter(m ⇒ m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
 
   /** INTERNAL API */
   @InternalApi
   private[cluster] def takeNOldestMembers(memberFilter: Member ⇒ Boolean, n: Int): immutable.SortedSet[Member] =
     membersByAge()
-      .filter(m ⇒ m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp)
       .filter(memberFilter)
       .take(n)
 
