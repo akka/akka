@@ -613,13 +613,14 @@ private[remote] class Association(
       val (queueValues, compressionAccessValues, laneCompletedValues) = values.unzip3
 
       import transport.system.dispatcher
-      val completed = Future.sequence(laneCompletedValues).flatMap(_ ⇒ aeronSinkCompleted)
 
       // tear down all parts if one part fails or completes
-      completed.failed.foreach {
-        reason ⇒ streamKillSwitch.abort(reason)
+      Future.firstCompletedOf(laneCompletedValues).failed.foreach { reason ⇒
+        streamKillSwitch.abort(reason)
       }
       (laneCompletedValues :+ aeronSinkCompleted).foreach(_.foreach { _ ⇒ streamKillSwitch.shutdown() })
+
+      val allCompleted = Future.sequence(laneCompletedValues).flatMap(_ ⇒ aeronSinkCompleted)
 
       queueValues.zip(wrappers).zipWithIndex.foreach {
         case ((q, w), i) ⇒
@@ -631,7 +632,7 @@ private[remote] class Association(
       outboundCompressionAccess = compressionAccessValues
 
       attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
-        completed, () ⇒ runOutboundOrdinaryMessagesStream())
+        allCompleted, () ⇒ runOutboundOrdinaryMessagesStream())
     }
   }
 

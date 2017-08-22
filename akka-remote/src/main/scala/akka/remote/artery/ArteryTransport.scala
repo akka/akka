@@ -819,13 +819,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           }(collection.breakOut)
 
         import system.dispatcher
-        val completed = Future.sequence(completedValues).map(_ ⇒ Done)
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
-        completed.failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
+        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
 
-        (resourceLife, compressionAccess, completed)
+        val allCompleted = Future.sequence(completedValues).map(_ ⇒ Done)
+
+        (resourceLife, compressionAccess, allCompleted)
       }
 
     _inboundCompressionAccess = OptionVal(inboundCompressionAccesses)
