@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 
 class Http2BindingViaConfigSpec extends AkkaSpec("""
     akka.http.server.preview.enable-http2 = on
-    
+
     akka.loglevel = DEBUG
     akka.log-dead-letters = off
   """) {
@@ -30,7 +30,7 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
     _ ⇒ Future(HttpResponse(entity = "Hello!"))
 
   "akka.http.server.enable-http2" should {
-    "bind using plain JTT{ when provided ConnectionContext is HTTP (not HTTPS)" in {
+    "bind using plain HTTP when provided ConnectionContext is HTTP (not HTTPS)" in {
       // since we're in akka-http core here, the http2 support is not available on classpath,
       // so the setting + binding should fail
 
@@ -66,7 +66,7 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
   "Http2Shadow" should {
     "have ShadowHttp2Ext type aligned with real Http2Ext" in {
       val ext: Http2Ext = Http2()
-      // the Shadow is a structural type, so this assignment only works 
+      // the Shadow is a structural type, so this assignment only works
       // if all the methods it requires exist on the real class
       val shadow: akka.http.impl.engine.Http2Shadow.ShadowHttp2Ext = ext
     }
