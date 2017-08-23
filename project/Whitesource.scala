@@ -12,6 +12,7 @@ object Whitesource extends AutoPlugin {
   override lazy val projectSettings = Seq(
     // do not change the value of whitesourceProduct
     whitesourceProduct := "Lightbend Reactive Platform",
+    whitesourceFailOnError := true,
     whitesourceAggregateProjectName := {
       val projectName = (moduleName in LocalRootProject).value.replace("-root", "")
       projectName + "-" + (
