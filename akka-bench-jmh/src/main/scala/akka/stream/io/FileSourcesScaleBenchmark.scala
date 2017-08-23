@@ -25,10 +25,10 @@ import scala.concurrent.{ Await, Future, Promise }
 @Measurement(iterations = 10, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 class FileSourcesScaleBenchmark {
   /**
-    * Benchmark                               (bufSize)  Mode  Cnt  Score   Error  Units
-    * FileSourcesScaleBenchmark.flatMapMerge       2048  avgt   10  1.587 ± 0.118   s/op
-    * FileSourcesScaleBenchmark.mapAsync           2048  avgt   10  0.899 ± 0.103   s/op
-    */
+   * Benchmark                               (bufSize)  Mode  Cnt  Score   Error  Units
+   * FileSourcesScaleBenchmark.flatMapMerge       2048  avgt   10  1.587 ± 0.118   s/op
+   * FileSourcesScaleBenchmark.mapAsync           2048  avgt   10  0.899 ± 0.103   s/op
+   */
   implicit val system = ActorSystem("file-sources-benchmark")
   implicit val materializer = ActorMaterializer()
   val FILES_NUMBER = 40
