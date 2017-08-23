@@ -160,7 +160,7 @@ Our device group actor needs to include functionality that:
  1. Starts watching new device actors when they are created.
  2. Removes a device actor from the @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`] &#8212; which maps devices to device actors &#8212; when the notification indicates it has stopped.
 
-Unfortunately, the `Terminated` message only contains the `ActorRef` of the child actor. We need the actor's ID to remove it from the map of existing device to device actor mappings. To be able to do this removal, we need to introduce another placeholder, @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`], that allow us to find out the device ID corresponding to a given `ActorRef`.
+Unfortunately, the `Terminated` message only contains the `ActorRef` of the child actor. We need the actor's ID to remove it from the map of existing device to device actor mappings. To be able to do this removal, we need to introduce another placeholder, @scala[`Map[ActorRef, String]`] @java[`Map<ActorRef, String>`], that allow us to find out the device ID corresponding to a given `ActorRef`.
 
 Adding the functionality to identify the actor results in this:
 
