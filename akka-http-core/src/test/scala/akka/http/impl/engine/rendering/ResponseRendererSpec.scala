@@ -21,8 +21,6 @@ import akka.stream.ActorMaterializer
 import HttpEntity._
 import akka.testkit._
 
-import scala.util.control.NonFatal
-
 class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
@@ -606,33 +604,20 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
 
     def renderToImpl(expected: String, checkClose: Option[Boolean]): Matcher[ResponseRenderingContext] =
       equal(expected.stripMarginWithNewline("\r\n") → checkClose).matcher[(String, Option[Boolean])] compose { ctx ⇒
-        val (wasCompletedFuture, resultFuture) =
-          (Source.single(ctx) ++ Source.maybe[ResponseRenderingContext]) // never send upstream completion
-            .via(renderer.named("renderer"))
-            .map {
-              case ResponseRenderingOutput.HttpData(bytes)      ⇒ bytes
-              case _: ResponseRenderingOutput.SwitchToWebSocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
-            }
-            .groupedWithin(1000, 200.millis.dilated)
-            .watchTermination()(Keep.right)
-            .toMat(Sink.head)(Keep.both).run()
+        val resultFuture =
+          // depends on renderer being completed fused and synchronous and finished in less steps than the configured event horizon
+          CollectorStage.resultAfterSourceElements(
+            Source.single(ctx),
+            renderer.named("renderer")
+              .map {
+                case ResponseRenderingOutput.HttpData(bytes)      ⇒ bytes
+                case _: ResponseRenderingOutput.SwitchToWebSocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
+              }
+          )
 
-        val wasCompleted: Option[Boolean] = checkClose match {
-          case None ⇒ None
-          case Some(close) ⇒
-            // we try to find out if the renderer has already flagged completion even without the upstream being completed
-            try {
-              // note how this relates to the groupedWithin timeout above which will always
-              // close the stream, so only streams closed before that was _actually_ closed
-              // by the server blueprint
-              Await.ready(wasCompletedFuture, 150.millis.dilated)
-              Some(true)
-            } catch {
-              case NonFatal(_) ⇒ Some(false)
-            }
+        Await.result(resultFuture, awaitAtMost) match {
+          case (result, completed) ⇒ result.reduceLeft(_ ++ _).utf8String → checkClose.map(_ ⇒ completed)
         }
-
-        Await.result(resultFuture, awaitAtMost).reduceLeft(_ ++ _).utf8String → wasCompleted
       }
 
     override def currentTimeMillis() = DateTime(2011, 8, 25, 9, 10, 29).clicks // provide a stable date for testing
