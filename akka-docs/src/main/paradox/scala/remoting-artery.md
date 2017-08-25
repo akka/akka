@@ -688,7 +688,7 @@ The needed classpath:
 Agrona-0.5.4.jar:aeron-driver-1.0.1.jar:aeron-client-1.0.1.jar
 ```
 
-You find those jar files on [maven central](http://search.maven.org/), or you can create a
+You find those jar files on [Maven Central](http://search.maven.org/), or you can create a
 package with your preferred build tool.
 
 You can pass [Aeron properties](https://github.com/real-logic/Aeron/wiki/Configuration-Options) as

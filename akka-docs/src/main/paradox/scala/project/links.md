@@ -62,9 +62,9 @@ libraryDependencies += "com.typesafe.akka" % "akka-remote_$scala.binary_version$
 ```
 @@@
 
-### maven definition of snapshot repository
+### Maven definition of snapshot repository
 
-Make sure that you add the repository to the maven repositories in pom.xml:
+Make sure that you add the repository to the Maven repositories in pom.xml:
 
 ```
 <repositories>

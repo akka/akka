@@ -21,7 +21,7 @@ sbt
     ```
     @@@
 
-gradle
+Gradle
 :   @@@vars
     ```
     dependencies {
@@ -30,7 +30,7 @@ gradle
     ```
     @@@
 
-maven
+Maven
 :   @@@vars
     ```
     <dependency>
