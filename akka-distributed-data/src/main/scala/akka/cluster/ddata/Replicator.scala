@@ -490,7 +490,8 @@ object Replicator {
     /** Java API */
     def getRequest: Optional[Any] = Optional.ofNullable(request.orNull)
   }
-  final case class UpdateSuccess[A <: ReplicatedData](key: Key[A], request: Option[Any]) extends UpdateResponse[A]
+  final case class UpdateSuccess[A <: ReplicatedData](key: Key[A], request: Option[Any])
+    extends UpdateResponse[A] with DeadLetterSuppression
   sealed abstract class UpdateFailure[A <: ReplicatedData] extends UpdateResponse[A]
 
   /**
