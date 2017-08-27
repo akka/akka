@@ -351,7 +351,7 @@ they were still served on the default dispatcher.
 This is the recommended way of dealing with any kind of blocking in reactive
 applications.
 
-For a similar discussion specific about Akka HTTP refer to, @extref:[Handling blocking operations in Akka HTTP](akka.http:java/http/handling-blocking-operations-in-akka-http-routes.html#solution-dedicated-dispatcher-for-blocking-operations).
+For a similar discussion specific about Akka HTTP refer to, @scala[@extref[Handling blocking operations in Akka HTTP](akka.http:scala/http/handling-blocking-operations-in-akka-http-routes.html#handling-blocking-operations-in-akka-http)]@java[@extref[Handling blocking operations in Akka HTTP](akka.http:java/http/handling-blocking-operations-in-akka-http-routes.html#handling-blocking-operations-in-akka-http)].
 
 ### Available solutions to blocking operations
 

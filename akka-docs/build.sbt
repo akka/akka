@@ -29,7 +29,7 @@ paradoxBrowse := {
 paradoxProperties ++= Map(
   "akka.canonical.base_url" -> "http://doc.akka.io/docs/akka/current",
   "github.base_url" -> GitHub.url(version.value), // for links like this: @github[#1](#1) or @github[83986f9](83986f9)
-  "extref.akka.http.base_url" -> "http://doc.akka.io/docs/akka-http/current",
+  "extref.akka.http.base_url" -> "http://doc.akka.io/docs/akka-http/current/%s",
   "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
   "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
   "extref.samples.base_url" -> "https://github.com/akka/akka-samples/tree/2.5/%s",
