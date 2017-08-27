@@ -105,6 +105,18 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       c.expectComplete()
     }
 
+    "complete future even when abrupt termination happened" in {
+      val chunkSize = 512
+      val mat = ActorMaterializer()
+      val (future, p) = FileIO.fromPath(testFile, chunkSize)
+        .addAttributes(Attributes.inputBuffer(1, 2))
+        .toMat(TestSink.probe)(Keep.both).run()(mat)
+      p.request(1)
+      p.expectNext().utf8String should ===(TestText.splitAt(chunkSize)._1)
+      mat.shutdown()
+      Await.result(future, 3.seconds) === createSuccessful(chunkSize)
+    }
+
     "read partial contents from a file" in assertAllStagesStopped {
       val chunkSize = 512
       val startPosition = 1000
@@ -140,7 +152,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       p.request(1)
       p.expectNext().utf8String should ===(TestText.splitAt(chunkSize)._1)
       p.cancel()
-      Await.result(future, 3.seconds) === (createSuccessful(chunkSize))
+      Await.result(future, 3.seconds) === createSuccessful(chunkSize)
     }
 
     "complete only when all contents of a file have been signalled" in assertAllStagesStopped {

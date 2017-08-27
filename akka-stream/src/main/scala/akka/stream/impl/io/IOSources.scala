@@ -129,6 +129,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
       override def onDownstreamFinish(): Unit = success()
 
       override def postStop(): Unit = {
+        ioResultPromise.trySuccess(IOResult(position, Success(Done)))
         if ((channel ne null) && channel.isOpen) channel.close()
       }
     }
