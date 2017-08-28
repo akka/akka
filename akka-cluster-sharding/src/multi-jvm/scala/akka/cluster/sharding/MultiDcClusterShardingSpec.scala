@@ -55,7 +55,9 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = INFO
+    # DEBUG because of failing test, issue #23582
+    akka.loglevel = DEBUG
+    akka.cluster.debug.verbose-heartbeat-logging = on
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
