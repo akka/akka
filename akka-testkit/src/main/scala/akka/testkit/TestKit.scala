@@ -363,6 +363,11 @@ trait TestKitBase {
   def expectMsg[T](obj: T): T = expectMsg_internal(remainingOrDefault, obj)
 
   /**
+    * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
+    */
+  def expectMsg[T](obj: T, hint: String): T = expectMsg_internal(remainingOrDefault, obj, Some(hint))
+
+  /**
    * Receive one message from the test actor and assert that it equals the
    * given object. Wait time is bounded by the given duration, with an
    * AssertionFailure being thrown in case of timeout.
