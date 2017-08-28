@@ -222,6 +222,11 @@ class TestKit(system: ActorSystem) {
   def expectMsg[T](obj: T): T = tp.expectMsg(obj)
 
   /**
+   * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
+   */
+  def expectMsg[T](obj: T, hint: String): T = tp.expectMsg(remainingOrDefault, hint, obj)
+
+  /**
    * Receive one message from the test actor and assert that it equals the
    * given object. Wait time is bounded by the given duration, with an
    * AssertionFailure being thrown in case of timeout.
