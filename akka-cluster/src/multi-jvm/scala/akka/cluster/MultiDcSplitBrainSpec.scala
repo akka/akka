@@ -20,7 +20,10 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString(
     """
-      akka.loglevel = INFO
+      akka.loglevel = DEBUG
+      akka.cluster.debug.verbose-heartbeat-logging = on
+      akka.remote.netty.tcp.connection-timeout = 5 s # speedup in case of connection issue
+      akka.remote.retry-gate-closed-for = 1 s
       akka.cluster.multi-data-center {
         failure-detector {
           acceptable-heartbeat-pause = 4s
@@ -99,7 +102,7 @@ abstract class MultiDcSplitBrainSpec
     val memberNodes = (dc1 ++ dc2).filterNot(notMembers)
     val probe = TestProbe()
     runOn(memberNodes: _*) {
-      cluster.subscribe(probe.ref, classOf[DataCenterReachabilityEvent])
+      cluster.subscribe(probe.ref, classOf[ReachableDataCenter])
       probe.expectMsgType[CurrentClusterState]
     }
     enterBarrier(s"unsplit-$barrierCounter")
@@ -115,7 +118,7 @@ abstract class MultiDcSplitBrainSpec
     barrierCounter += 1
 
     runOn(memberNodes: _*) {
-      probe.expectMsgType[ReachableDataCenter](15.seconds)
+      probe.expectMsgType[ReachableDataCenter](25.seconds)
       cluster.unsubscribe(probe.ref)
       awaitAssert {
         cluster.state.unreachableDataCenters should ===(Set.empty)
