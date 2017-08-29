@@ -2,3 +2,5 @@
 RedirectMatch 301 ^(.*)/common/de-coding.html$ $1/common/encoding.html
 RedirectMatch 301 ^(.*)/low-level-server-side-api.html$ $1/server-side/low-level-api.html
 RedirectMatch 301 ^(.*)/server-side-https-support.html$ $1/server-side/https-support.html
+# Root at (java|scala)/http to avoid loops.
+RedirectMatch 301 ^(.*)/http/websocket-support.html$ $1/http/server-side/websocket-support.html
