@@ -26,5 +26,5 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
 
 // for advanced PR validation features
 // version with sbt 1.0 support is in snapshots for now
-resolvers += Resolver.sonatypeRepo("snapshots")
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.3-SNAPSHOT")
+//resolvers += Resolver.sonatypeRepo("snapshots")
+//addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.3-SNAPSHOT")
