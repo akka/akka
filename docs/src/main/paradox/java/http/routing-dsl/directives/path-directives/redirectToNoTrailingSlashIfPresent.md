@@ -19,4 +19,4 @@ See also @ref[redirectToTrailingSlashIfMissing](redirectToTrailingSlashIfMissing
 
 ## Example
 
-@@snip [PathDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #redirect-notrailing-slash-present }
+@@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #redirect-notrailing-slash-present }

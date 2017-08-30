@@ -11,4 +11,4 @@ See @ref[extract](extract.md) and @ref[Providing Values to Inner Routes](index.m
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractLog }
+@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractLog }

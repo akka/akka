@@ -12,7 +12,7 @@ into an instance of type `T`.
 Unmarshalling of instances of type `A` into instances of type `B` is performed by an `Unmarshaller[A, B]`.
 Akka HTTP also predefines a number of helpful aliases for the types of unmarshallers that you'll likely work with most:
 
-@@snip [package.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/package.scala) { #unmarshaller-aliases }
+@@snip [package.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/package.scala) { #unmarshaller-aliases }
 
 At its core an `Unmarshaller[A, B]` is very similar to a function `A => Future[B]` and as such quite a bit simpler
 than its @ref[marshalling](marshalling.md) counterpart. The process of unmarshalling does not have to support
@@ -58,7 +58,7 @@ Usually you won't have to "manually" implement the `Unmarshaller` trait directly
 Rather, it should be possible to use one of the convenience construction helpers defined on the `Unmarshaller`
 companion:
 
-@@snip [Unmarshaller.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/Unmarshaller.scala) { #unmarshaller-creation }
+@@snip [Unmarshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/Unmarshaller.scala) { #unmarshaller-creation }
 
 ## Deriving Unmarshallers
 
@@ -88,4 +88,4 @@ of a request using the @ref[Routing DSL](../routing-dsl/index.md).
 However, you can also use the unmarshalling infrastructure directly if you wish, which can be useful for example in tests.
 The best entry point for this is the `akka.http.scaladsl.unmarshalling.Unmarshal` object, which you can use like this:
 
-@@snip [UnmarshalSpec.scala](../../../../../test/scala/docs/http/scaladsl/UnmarshalSpec.scala) { #use-unmarshal }
+@@snip [UnmarshalSpec.scala]($test$/scala/docs/http/scaladsl/UnmarshalSpec.scala) { #use-unmarshal }

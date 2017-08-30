@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [HostDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala) { #host }
+@@signature [HostDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala) { #host }
 
 ## Description
 
@@ -26,18 +26,18 @@ inner route following this rules:
 
 Matching a list of hosts:
 
-@@snip [HostDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #list-of-hosts }
+@@snip [HostDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #list-of-hosts }
 
 Making sure the host satisfies the given predicate
 
-@@snip [HostDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #predicate }
+@@snip [HostDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #predicate }
 
 Using a regular expressions:
 
-@@snip [HostDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #using-regex }
+@@snip [HostDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #using-regex }
 
 Beware that in the case of introducing multiple capturing groups in the regex such as in the case bellow, the
 directive will fail at runtime, at the moment the route tree is evaluated for the first time. This might cause
 your http handler actor to enter in a fail/restart loop depending on your supervision strategy.
 
-@@snip [HostDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #failing-regex }
+@@snip [HostDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #failing-regex }

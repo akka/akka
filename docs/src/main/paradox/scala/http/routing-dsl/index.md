@@ -32,7 +32,7 @@ from a background with non-"streaming first" HTTP Servers.
 
 This is a complete, very basic Akka HTTP application relying on the Routing DSL:
 
-@@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #minimal-routing-example }
+@@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #minimal-routing-example }
 
 It starts an HTTP Server on localhost and replies to GET requests to `/hello` with a simple response.
 
@@ -45,7 +45,7 @@ in the Akka documentation.
 To help start a server Akka HTTP provides an experimental helper class called `HttpApp`.
 This is the same example as before rewritten using `HttpApp`:
 
-@@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #minimal-routing-example }
+@@snip [HttpAppExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #minimal-routing-example }
 
 See @ref[HttpApp Bootstrap](HttpApp.md) for more details about setting up a server using this approach.
 
@@ -56,7 +56,7 @@ The following is an Akka HTTP route definition that tries to show off a few feat
 not really do anything useful but its definition should give you a feel for what an actual API definition with
 the Routing DSL will look like:
 
-@@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #long-routing-example }
+@@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #long-routing-example }
 
 <a id="handling-http-server-failures-high-level-scala"></a>
 ## Handling HTTP Server failures in the High-Level API
@@ -72,7 +72,7 @@ For example the server might be unable to bind to the given port. For example wh
 is already taken by another application, or if the port is privileged (i.e. only usable by `root`).
 In this case the "binding future" will fail immediately, and we can react to it by listening on the Future's completion:
 
-@@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-failure-high-level-example }
+@@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-failure-high-level-example }
 
 @@@ note
 For a more low-level overview of the kinds of failures that can happen and also more fine-grained control over them
@@ -97,13 +97,13 @@ those streams both for the file and for the form fields.
 Here is a simple example which just dumps the uploaded file into a temporary file on disk, collects
 some form fields and saves an entry to a fictive database:
 
-@@snip [FileUploadExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/FileUploadExamplesSpec.scala) { #simple-upload }
+@@snip [FileUploadExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/FileUploadExamplesSpec.scala) { #simple-upload }
 
 You can transform the uploaded files as they arrive rather than storing them in a temporary file as
 in the previous example. In this example we accept any number of `.csv` files, parse those into lines
 and split each line before we send it to an actor for further processing:
 
-@@snip [FileUploadExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/FileUploadExamplesSpec.scala) { #stream-csv-upload }
+@@snip [FileUploadExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/FileUploadExamplesSpec.scala) { #stream-csv-upload }
 
 ## Configuring Server-side HTTPS
 

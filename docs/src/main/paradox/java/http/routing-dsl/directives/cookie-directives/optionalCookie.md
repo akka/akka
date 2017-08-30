@@ -8,4 +8,4 @@ Use the @ref[cookie](cookie.md) directive instead if the inner route does not ha
 
 ## Example
 
-@@snip [CookieDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java) { #optionalCookie }
+@@snip [CookieDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java) { #optionalCookie }

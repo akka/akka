@@ -10,4 +10,4 @@ More details about challenge-response authentication are available in the [RFC 2
 
 ## Example
 
-@@snip [SecurityDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java) { #authenticateOrRejectWithChallenge }
+@@snip [SecurityDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java) { #authenticateOrRejectWithChallenge }

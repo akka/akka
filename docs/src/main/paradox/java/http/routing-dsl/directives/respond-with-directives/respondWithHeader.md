@@ -11,4 +11,4 @@ See also @ref[respondWithHeaders](respondWithHeaders.md) if you'd like to add mo
 
 ## Example
 
-@@snip [RespondWithDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java) { #respondWithHeader }
+@@snip [RespondWithDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java) { #respondWithHeader }

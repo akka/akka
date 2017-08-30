@@ -25,6 +25,6 @@ respondWithDefaultHeaders(
 
 The semantics remain the same however, as explained by the following example:
 
-@@snip [RespondWithDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java) { #respondWithDefaultHeaders }
+@@snip [RespondWithDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java) { #respondWithDefaultHeaders }
 
 See the @ref[respondWithDefaultHeader](respondWithDefaultHeader.md) directive for an example with only one header.

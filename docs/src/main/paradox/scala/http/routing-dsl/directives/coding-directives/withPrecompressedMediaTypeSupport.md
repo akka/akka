@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [CodingDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala) { #withPrecompressedMediaTypeSupport }
+@@signature [CodingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala) { #withPrecompressedMediaTypeSupport }
 
 ## Description
 
@@ -11,4 +11,4 @@ the entity's media-type is precompressed with gzip and no `Content-Encoding` hea
 
 ## Example
 
-@@snip [CodingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala) { #withPrecompressedMediaTypeSupport }
+@@snip [CodingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala) { #withPrecompressedMediaTypeSupport }

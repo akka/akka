@@ -87,4 +87,4 @@ potentially nested directives.
 
 Here's a collection of path matching examples:
 
-@@snip [PathDirectiveExampleTest.java](../../../../../../test/java/docs/http/javadsl/server/PathDirectiveExampleTest.java) { #path-examples }
+@@snip [PathDirectiveExampleTest.java]($test$/java/docs/http/javadsl/server/PathDirectiveExampleTest.java) { #path-examples }

@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [MarshallingDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #handleWith }
+@@signature [MarshallingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #handleWith }
 
 ## Description
 
@@ -29,10 +29,10 @@ on marshalling entities with akka-http.
 
 The following example uses an `updatePerson` function with a `Person` case class as an input and output.  We plug this function into our route using `handleWith`.
 
-@@snip [MarshallingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-case-class }
+@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-case-class }
 
-@@snip [MarshallingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #example-handleWith-with-json }
+@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #example-handleWith-with-json }
 
 The PersonJsonSupport object handles both marshalling and unmarshalling of the Person case class.
 
-@@snip [MarshallingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-json-support }
+@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-json-support }

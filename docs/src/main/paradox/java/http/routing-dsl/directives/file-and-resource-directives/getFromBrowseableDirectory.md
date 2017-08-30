@@ -15,7 +15,7 @@ For more details refer to [getFromBrowseableDirectory-java]().
 
 ## Example
 
-@@snip [FileAndResourceDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java) { #getFromBrowseableDirectory }
+@@snip [FileAndResourceDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java) { #getFromBrowseableDirectory }
 
 ### Default file listing page example
 

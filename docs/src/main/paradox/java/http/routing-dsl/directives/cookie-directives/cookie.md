@@ -9,4 +9,4 @@ Use the @ref[optionalCookie](optionalCookie.md) directive instead if you want to
 
 ## Example
 
-@@snip [CookieDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java) { #cookie }
+@@snip [CookieDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java) { #cookie }

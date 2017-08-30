@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authorizeAsync }
+@@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authorizeAsync }
 
 ## Description
 
@@ -27,4 +27,4 @@ See also @ref[Authentication vs. Authorization](index.md#authentication-vs-autho
 
 ## Example
 
-@@snip [SecurityDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala) { #authorizeAsync0 }
+@@snip [SecurityDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala) { #authorizeAsync0 }

@@ -10,4 +10,4 @@ See @ref[extract](extract.md) to learn more about how extractions work.
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractExecutionContext }
+@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractExecutionContext }

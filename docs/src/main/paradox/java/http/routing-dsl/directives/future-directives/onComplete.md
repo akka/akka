@@ -12,4 +12,4 @@ To complete with a successful result automatically and just handle the failure r
 
 ## Example
 
-@@snip [FutureDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onComplete }
+@@snip [FutureDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onComplete }

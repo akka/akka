@@ -15,4 +15,4 @@ Use of this directive can result in performance degradation or even in `OutOfMem
 
 ## Example
 
-@@snip [FormFieldDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java) { #formFieldMultiMap }
+@@snip [FormFieldDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java) { #formFieldMultiMap }

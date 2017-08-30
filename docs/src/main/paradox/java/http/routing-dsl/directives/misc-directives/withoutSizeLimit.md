@@ -18,4 +18,4 @@ See also @ref[withSizeLimit](withSizeLimit.md) for setting request entity size l
 
 ## Example
 
-@@snip [MiscDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #withSizeLimitExample }
+@@snip [MiscDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #withSizeLimitExample }

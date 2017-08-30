@@ -26,7 +26,7 @@ defines a matcher which only extracts a single value of type `T`.
 
 Here is an example of a more complex `PathMatcher` expression:
 
-@@snip [PathDirectivesExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-matcher }
+@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-matcher }
 
 This will match paths like `foo/bar/X42/edit` or `foo/bar/X/create`.
 
@@ -181,4 +181,4 @@ how to use them.
 
 ## Examples
 
-@@snip [PathDirectivesExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-dsl }
+@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-dsl }

@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [MiscDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala) { #withSizeLimit }
+@@signature [MiscDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala) { #withSizeLimit }
 
 ## Description
 
@@ -17,15 +17,15 @@ See also @ref[withoutSizeLimit](withoutSizeLimit.md) for skipping request entity
 
 ## Examples
 
-@@snip [MiscDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #withSizeLimit-example }
+@@snip [MiscDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #withSizeLimit-example }
 
 Beware that request entity size check is executed when entity is consumed. Therefore in the following example
 even request with entity greater than argument to `withSizeLimit` will succeed (because this route
 does not consume entity):
 
-@@snip [MiscDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #withSizeLimit-execution-moment-example }
+@@snip [MiscDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #withSizeLimit-execution-moment-example }
 
 Directive `withSizeLimit` is implemented in terms of `HttpEntity.withSizeLimit` which means that in case of
 nested `withSizeLimit` directives the innermost is applied:
 
-@@snip [MiscDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #withSizeLimit-nested-example }
+@@snip [MiscDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #withSizeLimit-nested-example }

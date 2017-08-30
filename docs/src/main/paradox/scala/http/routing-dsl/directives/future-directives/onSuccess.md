@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [FutureDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala) { #onSuccess }
+@@signature [FutureDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala) { #onSuccess }
 
 ## Description
 
@@ -15,4 +15,4 @@ To handle the `Failure` case manually as well, use @ref[onComplete](onComplete.m
 
 ## Example
 
-@@snip [FutureDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onSuccess }
+@@snip [FutureDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onSuccess }

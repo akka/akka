@@ -9,4 +9,4 @@ or used by directives which internally extract the materializer without surfacin
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #withSettings }
+@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #withSettings }

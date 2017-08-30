@@ -22,11 +22,11 @@ See @ref[logRequest](logRequest.md) for the general description how these direct
 
 ## Example
 
-@@snip [DebuggingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResult }
+@@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResult }
 
 ## Building Advanced Directives
 
 This example will showcase the advanced logging using the `DebuggingDirectives`.
 The built *logResponseTime* directive will log the request time (or rejection reason):
 
-@@snip [DebuggingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResultWithResponseTime }
+@@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResultWithResponseTime }

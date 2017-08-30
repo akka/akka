@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [CookieDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala) { #setCookie }
+@@signature [CookieDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala) { #setCookie }
 
 ## Description
 
@@ -12,4 +12,4 @@ Use the @ref[deleteCookie](deleteCookie.md) directive to delete a cookie.
 
 ## Example
 
-@@snip [CookieDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala) { #setCookie }
+@@snip [CookieDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala) { #setCookie }

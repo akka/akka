@@ -12,7 +12,7 @@ e.g. a `MessageEntity` (which forms the "entity body" of an HTTP request or resp
 Marshalling of instances of type `A` into instances of type `B` is performed by a `Marshaller[A, B]`.
 Akka HTTP also predefines a number of helpful aliases for the types of marshallers that you'll likely work with most:
 
-@@snip [package.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/package.scala) { #marshaller-aliases }
+@@snip [package.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/package.scala) { #marshaller-aliases }
 
 Contrary to what you might initially expect `Marshaller[A, B]` is not a plain function `A => B` but rather
 essentially a function `A => Future[List[Marshalling[B]]]`.
@@ -36,7 +36,7 @@ delaying the actual construction of the marshalling target instance to the very 
 
 This is how `Marshalling` is defined:
 
-@@snip [Marshaller.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshalling }
+@@snip [Marshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshalling }
 
 ## Predefined Marshallers
 
@@ -97,7 +97,7 @@ For writing your own marshallers you won't have to "manually" implement the `Mar
 Rather, it should be possible to use one of the convenience construction helpers defined on the `Marshaller`
 companion:
 
-@@snip [Marshaller.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshaller-creation }
+@@snip [Marshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshaller-creation }
 
 ## Deriving Marshallers
 
@@ -130,4 +130,4 @@ request using the @ref[Routing DSL](../routing-dsl/index.md).
 However, you can also use the marshalling infrastructure directly if you wish, which can be useful in tests, for example.
 The best entry point for this is the `akka.http.scaladsl.marshalling.Marshal` object, which you can use like this:
 
-@@snip [MarshalSpec.scala](../../../../../test/scala/docs/http/scaladsl/MarshalSpec.scala) { #use-marshal }
+@@snip [MarshalSpec.scala]($test$/scala/docs/http/scaladsl/MarshalSpec.scala) { #use-marshal }

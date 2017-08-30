@@ -10,7 +10,7 @@ with the same name, the first one will be used and the subsequent ones ignored.
 
 ## Example
 
-@@snip [FileUploadDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/FileUploadDirectivesExamplesTest.java) { #fileUpload }
+@@snip [FileUploadDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FileUploadDirectivesExamplesTest.java) { #fileUpload }
 
 ```
 curl --form "csv=@uploadFile.txt" http://<host>:<port>

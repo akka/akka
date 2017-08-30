@@ -154,34 +154,34 @@ Scala code that compiles but does not work as expected. What would be intended a
 As you have seen from the examples presented so far the "normal" way of composing directives is nesting.
 Let's take a look at this concrete example:
 
-@@snip [DirectiveExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-1 }
+@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-1 }
 
 Here the `get` and `put` directives are chained together with the `~` operator to form a higher-level route that
 serves as the inner route of the `path` directive. To make this structure more explicit you could also write the whole
 thing like this:
 
-@@snip [DirectiveExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-2 }
+@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-2 }
 
 What you can't see from this snippet is that directives are not implemented as simple methods but rather as stand-alone
 objects of type `Directive`. This gives you more flexibility when composing directives. For example you can
 also use the `|` operator on directives. Here is yet another way to write the example:
 
-@@snip [DirectiveExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-3 }
+@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-3 }
 
 Or better (without dropping down to writing an explicit `Route` function manually):
 
-@@snip [DirectiveExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-4 }
+@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-4 }
 
 If you have a larger route structure where the `(get | put)` snippet appears several times you could also factor it
 out like this:
 
-@@snip [DirectiveExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-5 }
+@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-5 }
 
 Note that, because `getOrPut` doesn't take any parameters, it can be a `val` here.
 
 As an alternative to nesting you can also use the *&* operator:
 
-@@snip [DirectiveExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-6 }
+@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-6 }
 
 Here you can see that, when directives producing extractions are combined with `&`, the resulting "super-directive"
 simply extracts the concatenation of its sub-extractions.
@@ -189,7 +189,7 @@ simply extracts the concatenation of its sub-extractions.
 And once again, you can factor things out if you want, thereby pushing the "factoring out" of directive configurations
 to its extreme:
 
-@@snip [DirectiveExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-7 }
+@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-7 }
 
 This type of combining directives with the `|` and `&` operators as well as "saving" more complex directive
 configurations as a `val` works across the board, with all directives taking inner routes.
@@ -205,7 +205,7 @@ use their power to define your web service behavior at the level of abstraction 
 
 Alternatively we can combine directives using `concat` combinator where we pass each directive as an argument to the combinator function instead of chaining them with `~` . Let's take a look at the usage of this combinator:
 
-@@snip [DirectiveExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-8 }
+@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-8 }
 
 ## Type Safety of Directives
 

@@ -13,4 +13,4 @@ See @ref[formFieldList](formFieldList.md) for details.
 
 ## Example
 
-@@snip [FormFieldDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java) { #formFieldMap }
+@@snip [FormFieldDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java) { #formFieldMap }

@@ -22,18 +22,18 @@ inner route following this rules:
 
 Matching a list of hosts:
 
-@@snip [HostDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #host1 }
+@@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #host1 }
 
 Making sure the host satisfies the given predicate
 
-@@snip [HostDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #host2 }
+@@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #host2 }
 
 Using a regular expressions:
 
-@@snip [HostDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #matchAndExtractHost }
+@@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #matchAndExtractHost }
 
 Beware that in the case of introducing multiple capturing groups in the regex such as in the case bellow, the
 directive will fail at runtime, at the moment the route tree is evaluated for the first time. This might cause
 your http handler actor to enter in a fail/restart loop depending on your supervision strategy.
 
-@@snip [HostDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #failing-matchAndExtractHost }
+@@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #failing-matchAndExtractHost }

@@ -11,4 +11,4 @@ To handle the `Failure` case manually as well, use @ref[onComplete](onComplete.m
 
 ## Example
 
-@@snip [FutureDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onSuccess }
+@@snip [FutureDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onSuccess }

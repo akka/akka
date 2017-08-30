@@ -5,4 +5,4 @@ to its inner route.
 
 ## Example
 
-@@snip [HostDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #extractHostname }
+@@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #extractHostname }

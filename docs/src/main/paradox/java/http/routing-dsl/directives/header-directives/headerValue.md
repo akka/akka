@@ -15,10 +15,10 @@ See also @ref[headerValuePF](headerValuePF.md) for a nicer syntactic alternative
 
 ## Example
 
-@@snip [HeaderDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java) { #headerValue }
+@@snip [HeaderDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java) { #headerValue }
 
 ### Get headerValue or return a default value
 
 Using @ref[provide](../basic-directives/provide.md) and @ref[composing directives](../index.md#composing-directives) one can build a pattern where a headerValue is extracted if available or a default is returned. 
 
-@@snip [HeaderDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java) { #headerValue-with-default }
+@@snip [HeaderDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java) { #headerValue-with-default }

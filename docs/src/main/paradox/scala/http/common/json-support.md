@@ -45,17 +45,17 @@ Finally, import the `FromEntityUnmarshaller[T]` and `ToEntityMarshaller[T]` impl
 
 Once you have done this (un)marshalling between JSON and your type `T` should work nicely and transparently.
 
-@@snip [SprayJsonExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/SprayJsonExampleSpec.scala) { #minimal-spray-json-example }
+@@snip [SprayJsonExampleSpec.scala]($test$/scala/docs/http/scaladsl/SprayJsonExampleSpec.scala) { #minimal-spray-json-example }
 
 ### Pretty printing
 
 By default, spray-json marshals your types to compact printed JSON by implicit conversion using `CompactPrinter`, as defined in:
 
-@@snip [SprayJsonSupport.scala](../../../../../../../akka-http-marshallers-scala/akka-http-spray-json/src/main/scala/akka/http/scaladsl/marshallers/sprayjson/SprayJsonSupport.scala) { #sprayJsonMarshallerConverter }
+@@snip [SprayJsonSupport.scala]($akka-http$/akka-http-marshallers-scala/akka-http-spray-json/src/main/scala/akka/http/scaladsl/marshallers/sprayjson/SprayJsonSupport.scala) { #sprayJsonMarshallerConverter }
 
 Alternatively to marshal your types to pretty printed JSON, bring a `PrettyPrinter` in scope to perform implicit conversion.
 
-@@snip [SprayJsonPrettyMarshalSpec.scala](../../../../../test/scala/docs/http/scaladsl/SprayJsonPrettyMarshalSpec.scala) { #example }
+@@snip [SprayJsonPrettyMarshalSpec.scala]($test$/scala/docs/http/scaladsl/SprayJsonPrettyMarshalSpec.scala) { #example }
 
 To learn more about how spray-json works please refer to its [documentation][spray-json].
 
@@ -96,12 +96,12 @@ Maven
 Use `akka.http.javadsl.marshallers.jackson.Jackson.unmarshaller(T.class)` to create an `Unmarshaller<HttpEntity,T>` which expects the request
 body (HttpEntity) to be of type `application/json` and converts it to `T` using Jackson.
 
-@@snip [PetStoreExample.java](../../../../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #unmarshall }
+@@snip [PetStoreExample.java]($akka-http$/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #unmarshall }
 
 Use `akka.http.javadsl.marshallers.jackson.Jackson.marshaller(T.class)` to create a `Marshaller<T,RequestEntity>` which can be used with
 `RequestContext.complete` or `RouteDirectives.complete` to convert a POJO to an HttpResponse.
 
-@@snip [PetStoreExample.java](../../../../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #marshall }
+@@snip [PetStoreExample.java]($akka-http$/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #marshall }
 
 Refer to @github[this file](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) in the sources for the complete example.
 

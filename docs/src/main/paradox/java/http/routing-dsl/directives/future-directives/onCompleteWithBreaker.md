@@ -13,4 +13,4 @@ Otherwise, the same behaviour provided by @ref[onComplete](onComplete.md) is to 
 
 ## Example
 
-@@snip [FutureDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onCompleteWithBreaker }
+@@snip [FutureDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onCompleteWithBreaker }

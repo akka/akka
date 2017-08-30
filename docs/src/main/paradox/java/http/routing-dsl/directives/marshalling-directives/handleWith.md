@@ -25,10 +25,10 @@ on marshalling entities with akka-http.
 
 The following example uses an `updatePerson` function with a `Person` class as an input and output. We plug this function into our route using `handleWith`.
 
-@@snip [MarshallingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
+@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
 
-@@snip [MarshallingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-handleWith-with-json }
+@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-handleWith-with-json }
 
 The following example uses also @ref[Json Support via Jackson](../../../common/json-support.md#json-jackson-support-java) to handle both marshalling and unmarshalling of the Person class.
 
-@@snip [MarshallingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
+@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }

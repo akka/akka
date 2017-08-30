@@ -10,10 +10,10 @@ See @ref[logRequest](logRequest.md) for the general description how these direct
 
 ## Example
 
-@@snip [DebuggingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResult }
+@@snip [DebuggingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResult }
 
 ## Longer Example
 
 This example shows how to log the response time of the request using the Debugging Directive
 
-@@snip [DebuggingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResultWithResponseTime }
+@@snip [DebuggingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResultWithResponseTime }

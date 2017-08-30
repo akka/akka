@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [TimeoutDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala) { #withRequestTimeoutResponse }
+@@signature [TimeoutDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala) { #withRequestTimeoutResponse }
 
 ## Description
 
@@ -26,4 +26,4 @@ To learn more about various timeouts in Akka HTTP and how to configure them see 
 
 ## Example
 
-@@snip [TimeoutDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/TimeoutDirectivesExamplesSpec.scala) { #withRequestTimeoutResponse }
+@@snip [TimeoutDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/TimeoutDirectivesExamplesSpec.scala) { #withRequestTimeoutResponse }

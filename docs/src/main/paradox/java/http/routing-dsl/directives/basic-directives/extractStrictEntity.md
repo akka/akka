@@ -16,4 +16,4 @@ overridden by wrapping with @ref[withSizeLimit](../misc-directives/withSizeLimit
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractStrictEntity }
+@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractStrictEntity }

@@ -179,7 +179,7 @@ this explicit queue overflows. This example shows how to do this. (Thanks go to 
 You can tweak the `QueueSize` setting according to your memory constraints. In any case, you need to think about a strategy
 about what to do when requests fail because the queue overflowed (e.g. try again later or just fail).
 
-@@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #host-level-queue-example }
+@@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #host-level-queue-example }
 
 ### Using the host-level API in a streaming fashion
 
@@ -187,7 +187,7 @@ Even better is it to use the streaming API directly. This will mostly prevent in
 generated "on-the-fly" while streaming the requests. You supply the requests as a stream, i.e. as a `Source[(HttpRequest, ...)]`, and
 the pool will "pull out" single requests when capacity is available on one of the connections to the host.
 
-@@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #host-level-streamed-example }
+@@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #host-level-streamed-example }
 @@@
 
 @@@ div { .group-java }

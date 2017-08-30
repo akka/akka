@@ -13,4 +13,4 @@ Use `logResult` for logging the response, or `logRequestResult` for logging both
 
 ## Example
 
-@@snip [DebuggingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequest }
+@@snip [DebuggingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequest }

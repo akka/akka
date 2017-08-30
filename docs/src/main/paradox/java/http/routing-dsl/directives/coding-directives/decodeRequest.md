@@ -6,4 +6,4 @@ Decompresses the incoming request if it is `gzip` or `deflate` compressed. Uncom
 
 ## Example
 
-@@snip [CodingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java) { #decodeRequest }
+@@snip [CodingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java) { #decodeRequest }

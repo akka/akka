@@ -14,4 +14,4 @@ See also @ref[extractMatchedPath](extractMatchedPath.md) to see similar directiv
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractUnmatchedPath }
+@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractUnmatchedPath }

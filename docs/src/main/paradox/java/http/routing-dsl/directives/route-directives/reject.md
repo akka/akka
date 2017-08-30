@@ -15,4 +15,4 @@ modifier for "filtering out" certain cases.
 
 ## Example
 
-@@snip [RouteDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #reject }
+@@snip [RouteDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #reject }

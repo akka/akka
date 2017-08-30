@@ -26,6 +26,6 @@ are mapped to rejections:
 
 The following example uses @ref[Json Support via Jackson](../../../common/json-support.md#json-jackson-support-java) to unmarshall a json request into a simple `Person`  
 
-@@snip [MarshallingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
+@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
 
-@@snip [MarshallingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-entity-with-json }
+@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-entity-with-json }

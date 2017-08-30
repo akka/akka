@@ -26,4 +26,4 @@ Use `logRequest` for logging the request, or `logRequestResult` for logging both
 
 ## Example
 
-@@snip [DebuggingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logResult }
+@@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logResult }

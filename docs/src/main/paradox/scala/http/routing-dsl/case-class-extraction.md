@@ -4,7 +4,7 @@ The value extraction performed by @ref[Directives](directives/index.md) is a nic
 properties, all with proper type-safety and error handling. However, in some case you might want even more.
 Consider this example:
 
-@@snip [CaseClassExtractionExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala) { #example-1 }
+@@snip [CaseClassExtractionExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala) { #example-1 }
 
 Here the @ref[parameters](directives/parameter-directives/parameters.md) directives is employed to extract three `Int` values, which are then used to construct an
 instance of the `Color` case class. So far so good. However, if the model classes we'd like to work with have more
@@ -14,7 +14,7 @@ model class constructor directly afterwards can somewhat clutter up your route d
 If your model classes are case classes, as in our example, Akka HTTP supports an even shorter and more concise
 syntax. You can also write the example above like this:
 
-@@snip [CaseClassExtractionExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala) { #example-2 }
+@@snip [CaseClassExtractionExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala) { #example-2 }
 
 You can postfix any directive with extractions with an `as(...)` call. By simply passing the companion object of your
 model case class to the `as` modifier method the underlying directive is transformed into an equivalent one, which
@@ -25,7 +25,7 @@ call to produces the right number of extractions, with the right types and in th
 If you'd like to construct a case class instance from extractions produced by *several* directives you can first join
 the directives with the `&` operator before using the `as` call:
 
-@@snip [CaseClassExtractionExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala) { #example-3 }
+@@snip [CaseClassExtractionExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala) { #example-3 }
 
 Here the `Color` class has gotten another member, `name`, which is supplied not as a parameter but as a path
 element. By joining the `path` and `parameters` directives with `&` you create a directive extracting 4 values,
@@ -52,7 +52,7 @@ read.
 If you use case class extraction you can put the verification logic into the constructor of your case class, where it
 should be:
 
-@@snip [CaseClassExtractionExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala) { #example-4 }
+@@snip [CaseClassExtractionExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala) { #example-4 }
 
 If you write your validations like this Akka HTTP's case class extraction logic will properly pick up all error
 messages and generate a `ValidationRejection` if something goes wrong. By default, `ValidationRejections` are

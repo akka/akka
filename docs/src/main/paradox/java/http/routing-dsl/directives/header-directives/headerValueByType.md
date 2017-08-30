@@ -17,4 +17,4 @@ from the Scala DSL and there is currently no API for the Java DSL (Ticket #20415
 
 ## Example
 
-@@snip [HeaderDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java) { #headerValueByType }
+@@snip [HeaderDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java) { #headerValueByType }

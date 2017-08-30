@@ -34,4 +34,4 @@ See also: [RFC 7233](https://tools.ietf.org/html/rfc7233)
 
 ## Example
 
-@@snip [RangeDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/RangeDirectivesExamplesSpec.scala) { #withRangeSupport }
+@@snip [RangeDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RangeDirectivesExamplesSpec.scala) { #withRangeSupport }

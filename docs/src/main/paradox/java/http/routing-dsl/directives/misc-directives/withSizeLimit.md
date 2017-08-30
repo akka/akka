@@ -13,4 +13,4 @@ See also @ref[withoutSizeLimit](withoutSizeLimit.md) for skipping request entity
 
 ## Example
 
-@@snip [MiscDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #withSizeLimitExample }
+@@snip [MiscDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #withSizeLimitExample }

@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [PathDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #ignoreTrailingSlash }
+@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #ignoreTrailingSlash }
 
 ## Description
 
@@ -21,4 +21,4 @@ See also @ref[redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPre
 
 ## Example
 
-@@snip [PathDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #ignoreTrailingSlash }
+@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #ignoreTrailingSlash }

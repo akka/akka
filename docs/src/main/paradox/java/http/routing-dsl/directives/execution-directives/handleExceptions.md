@@ -11,4 +11,4 @@ See @ref[Exception Handling](../../exception-handling.md) for general informatio
 
 ## Example
 
-@@snip [ExecutionDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java) { #handleExceptions }
+@@snip [ExecutionDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java) { #handleExceptions }

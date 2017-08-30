@@ -10,4 +10,4 @@ inner-level to discriminate "path already fully matched" from other alternatives
 
 ## Example
 
-@@snip [PathDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-end }
+@@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-end }

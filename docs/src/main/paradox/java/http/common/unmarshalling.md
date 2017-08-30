@@ -14,7 +14,7 @@ into an instance of type `T`.
 Unmarshalling of instances of type `A` into instances of type `B` is performed by an `Unmarshaller[A, B]`.
 Akka HTTP also predefines a number of helpful aliases for the types of unmarshallers that you'll likely work with most:
 
-@@snip [package.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/package.scala) { #unmarshaller-aliases }
+@@snip [package.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/package.scala) { #unmarshaller-aliases }
 
 At its core an `Unmarshaller[A, B]` is very similar to a `Function<A, CompletionStage<B>>` and as such quite a bit simpler
 than its @ref[marshalling](marshalling.md) counterpart. The process of unmarshalling does not have to support
@@ -63,7 +63,7 @@ companion:
 TODO rewrite sample for Java
 <!--  -->
 
-@@snip [Unmarshaller.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/Unmarshaller.scala) { #unmarshaller-creation }
+@@snip [Unmarshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/Unmarshaller.scala) { #unmarshaller-creation }
 
 ## Deriving Unmarshallers
 

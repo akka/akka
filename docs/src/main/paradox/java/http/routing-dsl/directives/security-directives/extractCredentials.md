@@ -9,4 +9,4 @@ See @ref[Credentials and password timing attacks](index.md#credentials-and-timin
 
 ## Example
 
-@@snip [SecurityDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java) { #extractCredentials }
+@@snip [SecurityDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java) { #extractCredentials }

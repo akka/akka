@@ -4,7 +4,7 @@ The Akka HTTP @ref[Low-Level Server-Side API](../server-side/low-level-api.md) p
 an application to respond to incoming HTTP requests by simply mapping requests to responses
 (excerpt from @ref[Low-level server side example](../server-side/low-level-api.md#http-low-level-server-side-example)):
 
-@@snip [HttpServerExampleDocTest.java](../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #request-handler }
+@@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #request-handler }
 
 While it'd be perfectly possible to define a complete REST API service purely by inspecting the incoming
 `HttpRequest` this approach becomes somewhat unwieldy for larger services due to the amount of syntax "ceremony"
@@ -17,7 +17,7 @@ async handler function) that can be directly supplied to a `bind` call.
 
 Here's the complete example rewritten using the composable high-level API:
 
-@@snip [HighLevelServerExample.java](../../../../../test/java/docs/http/javadsl/server/HighLevelServerExample.java) { #high-level-server-example }
+@@snip [HighLevelServerExample.java]($test$/java/docs/http/javadsl/server/HighLevelServerExample.java) { #high-level-server-example }
 
 The core of the Routing DSL becomes available with a single import:
 

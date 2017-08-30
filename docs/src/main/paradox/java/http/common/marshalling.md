@@ -14,7 +14,7 @@ e.g. a `MessageEntity` (which forms the "entity body" of an HTTP request or resp
 Marshalling of instances of type `A` into instances of type `B` is performed by a `Marshaller[A, B]`.
 Akka HTTP also predefines a number of helpful aliases for the types of marshallers that you'll likely work with most:
 
-@@snip [package.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/package.scala) { #marshaller-aliases }
+@@snip [package.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/package.scala) { #marshaller-aliases }
 
 Contrary to what you might initially expect `Marshaller[A, B]` is not a plain function `A => B` but rather
 essentially a function `A => Future[List[Marshalling[B]]]`.
@@ -38,7 +38,7 @@ delaying the actual construction of the marshalling target instance to the very 
 
 This is how `Marshalling` is defined:
 
-@@snip [Marshaller.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshalling }
+@@snip [Marshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshalling }
 
 ## Predefined Marshallers
 
@@ -99,7 +99,7 @@ For writing your own marshallers you won't have to "manually" implement the `Mar
 Rather, it should be possible to use one of the convenience construction helpers defined on the `Marshaller`
 companion:
 
-@@snip [Marshaller.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshaller-creation }
+@@snip [Marshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshaller-creation }
 
 ## Deriving Marshallers
 

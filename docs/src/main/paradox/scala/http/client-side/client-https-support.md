@@ -6,10 +6,10 @@ The central vehicle for configuring encryption is the `HttpsConnectionContext`, 
 the static method `ConnectionContext.https` which is defined like this:
 
 Scala
-:  @@snip[ConnectionContext.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
+:  @@snip[ConnectionContext.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
 
 Java
-:  @@snip [ConnectionContext.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
+:  @@snip [ConnectionContext.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
 
 In addition to the `outgoingConnection`, `newHostConnectionPool` and `cachedHostConnectionPool` methods the
 @scala[@scaladoc[akka.http.scaladsl.Http](akka.http.scaladsl.Http$)]@java[@javadoc[akka.http.javadsl.Http](akka.http.javadsl.Http)]
@@ -114,10 +114,10 @@ instead of globally configuring it via `application.conf`.
 The following shows an example of disabling SNI for a given connection:
 
 Scala
-:  @@snip [HttpsExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpsExamplesSpec.scala) { #disable-sni-connection }
+:  @@snip [HttpsExamplesSpec.scala]($test$/scala/docs/http/scaladsl/HttpsExamplesSpec.scala) { #disable-sni-connection }
 
 Java
-:  @@snip [HttpsExamplesDocTest.java](../../../../../test/java/docs/http/javadsl/HttpsExamplesDocTest.java) { #disable-sni-connection }
+:  @@snip [HttpsExamplesDocTest.java]($test$/java/docs/http/javadsl/HttpsExamplesDocTest.java) { #disable-sni-connection }
 
 The `badSslConfig` is a copy of the default `AkkaSSLConfig` with with the slightly changed configuration to disable SNI.
 This value can be cached and used for connections which should indeed not use this feature.

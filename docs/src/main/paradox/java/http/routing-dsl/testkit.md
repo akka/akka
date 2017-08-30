@@ -17,14 +17,14 @@ a `TestResponse`
 
 To see the testkit in action consider the following simple calculator app service:
 
-@@snip [MyAppService.java](../../../../../test/java/docs/http/javadsl/server/testkit/MyAppService.java) { #simple-app }
+@@snip [MyAppService.java]($test$/java/docs/http/javadsl/server/testkit/MyAppService.java) { #simple-app }
 
 `MyAppService` extends from `AllDirectives` which brings all of the directives into scope. We define a method called `createRoute`
 that provides the routes to serve to `bindAndHandle`.
 
 Here's how you would test that service:
 
-@@snip [TestkitExampleTest.java](../../../../../test/java/docs/http/javadsl/server/testkit/TestkitExampleTest.java) { #simple-app-testing }
+@@snip [TestkitExampleTest.java]($test$/java/docs/http/javadsl/server/testkit/TestkitExampleTest.java) { #simple-app-testing }
 
 ## Writing Asserting against the HttpResponse
 
@@ -77,12 +77,12 @@ and translates them to the respective `HttpResponse`.
 Since the testkit is request-based, you cannot test requests that are illegal or impossible in HTTP. One
 such instance is testing a route that begins with the `pathEnd` directive, such as this:
 
-@@snip [MyAppFragment.java](../../../../../test/java/docs/http/javadsl/server/testkit/MyAppFragment.java) { #source-quote }
+@@snip [MyAppFragment.java]($test$/java/docs/http/javadsl/server/testkit/MyAppFragment.java) { #source-quote }
 
 However, it is impossible to unit test this Route directly using testkit, since it is impossible to create an
 empty HTTP request. To test this type of route, embed it in a synthetic route in your test, for example:
 
-@@snip [TestKitFragmentTest.java](../../../../../test/java/docs/http/javadsl/server/testkit/TestKitFragmentTest.java) { #source-quote }
+@@snip [TestKitFragmentTest.java]($test$/java/docs/http/javadsl/server/testkit/TestKitFragmentTest.java) { #source-quote }
 
 
 ## Accounting for Slow Test Systems
@@ -98,4 +98,4 @@ situations, timeout durations can be scaled by a given factor on such environmen
 The default timeout when testing your routes using the testkit is 3 seconds. Sometimes, though, this might not be enough.
 In order to extend this default timeout, to say 5 seconds, just override the following method:
 
-@@snip [WithTimeoutTest.java](../../../../../test/java/docs/http/javadsl/server/testkit/WithTimeoutTest.java) { #timeout-setting }
+@@snip [WithTimeoutTest.java]($test$/java/docs/http/javadsl/server/testkit/WithTimeoutTest.java) { #timeout-setting }

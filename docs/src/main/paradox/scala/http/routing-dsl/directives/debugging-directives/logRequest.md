@@ -34,4 +34,4 @@ Use `logResult` for logging the response, or `logRequestResult` for logging both
 
 ## Example
 
-@@snip [DebuggingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequest-0 }
+@@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequest-0 }

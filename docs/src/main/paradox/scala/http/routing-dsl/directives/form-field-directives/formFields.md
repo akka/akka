@@ -99,6 +99,6 @@ to provide a `FromStrictFormFieldUnmarshaller[T]`.
 
 ## Example
 
-@@snip [FormFieldDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFields }
+@@snip [FormFieldDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFields }
 
 For more examples about the way how fields can specified see the examples for the `parameters` directive.

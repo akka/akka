@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [RouteDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala) { #failWith }
+@@signature [RouteDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala) { #failWith }
 
 ## Description
 
@@ -24,4 +24,4 @@ exception.
 
 ## Example
 
-@@snip [RouteDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #failwith-examples }
+@@snip [RouteDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #failwith-examples }

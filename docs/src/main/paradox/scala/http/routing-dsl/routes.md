@@ -133,4 +133,4 @@ However, you can use `Route.seal()` to perform modification on HttpResponse from
 For example, if you want to add a special header, but still use the default rejection handler, then you can do the following.
 In the below case, the special header is added to rejected responses which did not match the route, as well as successful responses which matched the route.
 
-@@snip [RouteSealExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/RouteSealExampleSpec.scala) { #route-seal-example }
+@@snip [RouteSealExampleSpec.scala]($test$/scala/docs/http/scaladsl/RouteSealExampleSpec.scala) { #route-seal-example }

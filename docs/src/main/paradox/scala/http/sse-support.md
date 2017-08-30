@@ -41,20 +41,20 @@ In order to respond to a HTTP request with an event stream, you have to
 @scala[bring the implicit `ToResponseMarshaller[Source[ServerSentEvent, Any]]` defined by `EventStreamMarshalling` into the scope defining the respective route]@java[use the `EventStreamMarshalling.toEventStream` marshaller]:
 
 Scala
-:  @@snip [ServerSentEventsExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-marshalling-example }
+:  @@snip [ServerSentEventsExampleSpec.scala]($test$/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-marshalling-example }
 
 Java
-:  @@snip [EventStreamMarshallingTest.java](../../../../../../akka-http-tests/src/test/java/akka/http/javadsl/marshalling/sse/EventStreamMarshallingTest.java) { #event-stream-marshalling-example }
+:  @@snip [EventStreamMarshallingTest.java]($akka-http$/akka-http-tests/src/test/java/akka/http/javadsl/marshalling/sse/EventStreamMarshallingTest.java) { #event-stream-marshalling-example }
 
 ## Client-side usage: unmarshalling
 
 In order to unmarshal an event stream as @scala[`Source[ServerSentEvent, NotUsed]`]@java[`Source<ServerSentEvent, NotUsed>`], you have to @scala[bring the implicit `FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]]` defined by `EventStreamUnmarshalling` into scope]@java[use the `EventStreamUnmarshalling.fromEventStream` unmarshaller]:
 
 Scala
-:  @@snip [ServerSentEventsExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-marshalling-example }
+:  @@snip [ServerSentEventsExampleSpec.scala]($test$/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-marshalling-example }
 
 Java
-:  @@snip [EventStreamMarshallingTest.java](../../../../../../akka-http-tests/src/test/java/akka/http/javadsl/unmarshalling/sse/EventStreamUnmarshallingTest.java) { #event-stream-unmarshalling-example }
+:  @@snip [EventStreamMarshallingTest.java]($akka-http$/akka-http-tests/src/test/java/akka/http/javadsl/unmarshalling/sse/EventStreamUnmarshallingTest.java) { #event-stream-unmarshalling-example }
 
 Notice that if you are looking for a resilient way to permanently subscribe to an event stream,
 Alpakka provides the [EventSource](http://developer.lightbend.com/docs/alpakka/current/sse.html)

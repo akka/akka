@@ -19,7 +19,7 @@ There is currently no high-level or automatic support for decoding responses on 
 The following example shows how to decode responses manually based on the `Content-Encoding` header:
 
 Scala
-:   @@snip [HttpClientDecodingExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientDecodingExampleSpec.scala) { #single-request-decoding-example }
+:   @@snip [HttpClientDecodingExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientDecodingExampleSpec.scala) { #single-request-decoding-example }
 
 Java
-:   @@snip [HttpClientDecodingExampleTest.java](../../../../../test/java/docs/http/javadsl/HttpClientDecodingExampleTest.java) { #single-request-decoding-example }
+:   @@snip [HttpClientDecodingExampleTest.java]($test$/java/docs/http/javadsl/HttpClientDecodingExampleTest.java) { #single-request-decoding-example }

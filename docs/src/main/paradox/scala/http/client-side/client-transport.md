@@ -5,10 +5,10 @@ transport is represented by an instance of
 @scala[@scaladoc[akka.http.scaladsl.ClientTransport](akka.http.scaladsl.ClientTransport)]@java[@javadoc[akka.http.javadsl.ClientTransport](akka.http.javadsl.ClientTransport)]:
 
 Scala
-:  @@snip [ClientTransport.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/ClientTransport.scala) { #client-transport-definition }
+:  @@snip [ClientTransport.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/scaladsl/ClientTransport.scala) { #client-transport-definition }
 
 Java
-:  @@snip [ClientTransport.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/javadsl/ClientTransport.scala) { #client-transport-definition }
+:  @@snip [ClientTransport.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/javadsl/ClientTransport.scala) { #client-transport-definition }
 
 A transport implementation defines how the client infrastructure should communicate with a given host.
 
@@ -63,10 +63,10 @@ To make use of an HTTP proxy when using the `singleRequest` API you simply need 
 the apropriate settings object when calling the single request method.
 
 Scala
-:  @@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #https-proxy-example-single-request }
+:  @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #https-proxy-example-single-request }
 
 Java
-:  @@snip [HttpClientExampleDocTest.java](../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #https-proxy-example-single-request }
+:  @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #https-proxy-example-single-request }
 
 ### Use HTTP(S) proxy that requires authentication
 
@@ -75,10 +75,10 @@ when making the CONNECT request to the proxy:
 
 
 Scala
-:  @@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #auth-https-proxy-example-single-request }
+:  @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #auth-https-proxy-example-single-request }
 
 Java
-:  @@snip [HttpClientExampleDocTest.java](../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #auth-https-proxy-example-single-request }
+:  @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #auth-https-proxy-example-single-request }
 
 ## Implementing Custom Transports
 

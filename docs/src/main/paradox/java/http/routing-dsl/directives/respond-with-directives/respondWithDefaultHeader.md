@@ -14,4 +14,4 @@ See also @ref[respondWithDefaultHeaders](respondWithDefaultHeaders.md)  if you'd
 
 ## Example
 
-@@snip [RespondWithDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java) { #respondWithDefaultHeader }
+@@snip [RespondWithDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java) { #respondWithDefaultHeader }

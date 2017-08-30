@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [MarshallingDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #entity }
+@@signature [MarshallingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #entity }
 
 ## Description
 
@@ -31,13 +31,13 @@ are mapped to rejections:
 The following example uses `spray-json` to unmarshall a json request into a simple `Person` 
 class.  It utilizes `SprayJsonSupport` via the `PersonJsonSupport` object as the in-scope unmarshaller.
 
-@@snip [MarshallingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-case-class }
+@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-case-class }
 
-@@snip [MarshallingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-json-support }
+@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-json-support }
 
-@@snip [MarshallingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #example-entity-with-json }
+@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #example-entity-with-json }
 
 It is also possible to use the `entity` directive to obtain raw `JsValue` ( [spray-json](https://github.com/spray/spray-json) ) objects, by simply using
 `as[JsValue]`, or any other JSON type for which you have marshallers in-scope.
 
-@@snip [MarshallingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #example-entity-with-raw-json }
+@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #example-entity-with-raw-json }

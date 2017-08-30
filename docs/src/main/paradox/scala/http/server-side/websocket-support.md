@@ -18,10 +18,10 @@ In the data model the two kinds of messages, binary and text messages, are repre
 Take the API of `TextMessage` as an example (`BinaryMessage` is very similar with `String` replaced by `ByteString`):
 
 Scala
-:  @@snip [Message.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala) { #message-model }
+:  @@snip [Message.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala) { #message-model }
 
 Java
-:  @@snip [Message.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/javadsl/model/ws/Message.scala) { #message-model }
+:  @@snip [Message.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/javadsl/model/ws/Message.scala) { #message-model }
 
 The data of a message is provided as a stream because WebSocket messages do not have a predefined size and could
 (in theory) be infinitely long. However, only one message can be open per direction of the WebSocket connection,
@@ -83,10 +83,10 @@ WebSocket requests come in like any other requests. In the example, requests to 
 WebSocket requests:
 
 Scala
-:  @@snip [WebSocketExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-request-handling }
+:  @@snip [WebSocketExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-request-handling }
 
 Java
-:  @@snip [WebSocketCoreExample.java](../../../../../test/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-handling }
+:  @@snip [WebSocketCoreExample.java]($test$/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-handling }
 
 @@@ div { .group-scala }
 It uses pattern matching on the path and then inspects the request to query for the `UpgradeToWebSocket` header. If
@@ -105,10 +105,10 @@ In the example, the passed handler expects text messages where each message is e
 and then responds with another text message that contains a greeting:
 
 Scala
-:  @@snip [WebSocketExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-handler }
+:  @@snip [WebSocketExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-handler }
 
 Java
-:  @@snip [WebSocketCoreExample.java](../../../../../test/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-handler }
+:  @@snip [WebSocketCoreExample.java]($test$/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-handler }
 
 @@@ note
 Inactive WebSocket connections will be dropped according to the @ref[idle-timeout settings](../common/timeouts.md#idle-timeouts).
@@ -127,10 +127,10 @@ Instead of writing the request handler manually, the routing behavior of the app
 uses the `handleWebSocketRequests` directive in place of the `WebSocket.handleWebSocketRequestWith`:
 
 Scala
-:  @@snip [WebSocketDirectivesExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #greeter-service }
+:  @@snip [WebSocketDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #greeter-service }
 
 Java
-:  @@snip [WebSocketRoutingExample.java](../../../../../test/java/docs/http/javadsl/server/WebSocketRoutingExample.java) { #websocket-route }
+:  @@snip [WebSocketRoutingExample.java]($test$/java/docs/http/javadsl/server/WebSocketRoutingExample.java) { #websocket-route }
 
 The handling code itself will be the same as with using the low-level API.
 

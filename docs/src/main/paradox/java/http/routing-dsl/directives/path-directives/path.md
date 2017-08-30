@@ -29,4 +29,4 @@ and (`/whatever`) will fail. The @ref[pathPrefix](pathPrefix.md) provides more l
 
 ## Example
 
-@@snip [PathDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-dsl }
+@@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-dsl }

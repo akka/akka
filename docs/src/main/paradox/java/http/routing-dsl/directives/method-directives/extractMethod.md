@@ -10,11 +10,11 @@ In the below example our route first matches all `GET` requests, and if an incom
 the matching continues and the extractMethod route will be applied which we can use to programatically
 print what type of request it was - independent of what actual HttpMethod it was:
 
-@@snip [MethodDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #extractMethod }
+@@snip [MethodDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #extractMethod }
 
 ## Custom Http Method
 
 When you define a custom HttpMethod, you can define a route using extractMethod.
 
 >
-@@snip [CustomHttpMethodExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }
+@@snip [CustomHttpMethodExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }

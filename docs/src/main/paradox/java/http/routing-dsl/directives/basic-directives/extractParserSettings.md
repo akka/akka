@@ -6,4 +6,4 @@ Extracts the request's underlying @javadoc:[ParserSettings](akka.http.javadsl.se
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractParserSettings }
+@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractParserSettings }

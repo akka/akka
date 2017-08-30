@@ -32,10 +32,10 @@ Just like in the case of the super-pool flow described above the request must ha
 ### Example
 
 Scala
-:   @@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-example }
+:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-example }
 
 Java
-:   @@snip [HttpClientExampleDocTest.java](../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #single-request-example }
+:   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #single-request-example }
 
 ### Using the Future-Based API in Actors
 
@@ -45,7 +45,7 @@ with the futures completion. For example you should not access the actor's state
 to the actor as a message:
 
 Scala
-:   @@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-in-actor-example }
+:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-in-actor-example }
 
 Java
 :   

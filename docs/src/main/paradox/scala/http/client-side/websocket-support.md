@@ -47,18 +47,18 @@ HTTP response, or fail if the connection fails with an exception.
 Simple example sending a message and printing any incoming message:
 
 Scala
-:   @@snip [WebSocketClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #single-WebSocket-request }
+:   @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #single-WebSocket-request }
 
 Java
-:   @@snip [WebSocketClientExampleTest.java](../../../../../test/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #single-WebSocket-request }
+:   @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #single-WebSocket-request }
 
 The websocket request may also include additional headers, like in this example, HTTP Basic Auth:
 
 Scala
-:   @@snip [WebSocketClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #authorized-single-WebSocket-request }
+:   @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #authorized-single-WebSocket-request }
 
 Java
-:   @@snip [WebSocketClientExampleTest.java](../../../../../test/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #authorized-single-WebSocket-request }
+:   @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #authorized-single-WebSocket-request }
 
 ## webSocketClientFlow
 
@@ -75,10 +75,10 @@ flow must be acquired by calling the method again.
 Simple example sending a message and printing any incoming message:
 
 Scala
-:   @@snip [WebSocketClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #WebSocket-client-flow }
+:   @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #WebSocket-client-flow }
 
 Java
-:   @@snip [WebSocketClientExampleTest.java](../../../../../test/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #WebSocket-client-flow }
+:   @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #WebSocket-client-flow }
 
 ## webSocketClientLayer
 
@@ -96,20 +96,20 @@ This may lead to unexpected behavior, for example if we are trying to only consu
 like this:
 
 Scala
-:   @@snip [WebSocketClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #half-closed-WebSocket-closing-example }
+:   @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #half-closed-WebSocket-closing-example }
 
 Java
-:   @@snip [WebSocketClientExampleTest.java](../../../../../test/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #half-closed-WebSocket-closing }
+:   @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #half-closed-WebSocket-closing }
 
 This will in fact quickly close the connection because of the @scala[`Source.empty`]@java[`Source.empty()`] being completed immediately when the
 stream is materialized. To solve this you can make sure to not complete the outgoing source by using for example
 @scala[`Source.maybe`]@java[`Source.maybe()`] like this:
 
 Scala
-:   @@snip [WebSocketClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #half-closed-WebSocket-working-example }
+:   @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #half-closed-WebSocket-working-example }
 
 Java
-:   @@snip [WebSocketClientExampleTest.java](../../../../../test/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #half-closed-WebSocket-working }
+:   @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #half-closed-WebSocket-working }
 
 This will keep the outgoing source from completing, but without emitting any elements until the @scala[`Promise`]@java[`CompletableFuture`] is manually
 completed which makes the `Source` complete and the connection to close.
@@ -118,10 +118,10 @@ The same problem holds true if emitting a finite number of elements, as soon as 
 will close and cause the connection to close. To avoid that you can concatenate @scala[`Source.maybe`]@java[`Source.maybe()`] to the finite stream:
 
 Scala
-:   @@snip [WebSocketClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #half-closed-WebSocket-finite-working-example }
+:   @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #half-closed-WebSocket-finite-working-example }
 
 Java
-:   @@snip [WebSocketClientExampleTest.java](../../../../../test/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #half-closed-WebSocket-finite }
+:   @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #half-closed-WebSocket-finite }
 
 Scenarios that exist with the two streams in a WebSocket and possible ways to deal with it:
 

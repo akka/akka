@@ -17,4 +17,4 @@ For more information about various timeouts in Akka HTTP see @ref[Akka HTTP Time
 
 ## Example
 
-@@snip [TimeoutDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java) { #withoutRequestTimeout-1 }
+@@snip [TimeoutDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java) { #withoutRequestTimeout-1 }

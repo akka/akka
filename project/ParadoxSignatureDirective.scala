@@ -16,18 +16,25 @@ import scala.io.{Codec, Source}
 object ParadoxSupport {
   val paradoxWithSignatureDirective = Seq(
     paradoxDirectives += { context: Writer.Context =>
-      new SignatureDirective(context.location.tree.label, msg => streams.value.log.warn(msg))
+      new SignatureDirective(context.location.tree.label, context.properties, msg => streams.value.log.warn(msg))
     }
   )
 
-  class SignatureDirective(page: Page, logWarn: String => Unit) extends LeafBlockDirective("signature") {
+  class SignatureDirective(page: Page, variables: Map[String, String], logWarn: String => Unit) extends LeafBlockDirective("signature") {
     def render(node: DirectiveNode, visitor: Visitor, printer: Printer): Unit =
       try {
         val labels = node.attributes.values("identifier").asScala.map(_.toLowerCase())
-        val file = node.source match {
-          case direct: DirectiveNode.Source.Direct => new File(page.file.getParentFile, direct.value)
+        val source = node.source match {
+          case direct: DirectiveNode.Source.Direct => direct.value
           case _                                   => sys.error("Source references are not supported")
         }
+        val file =
+          if (source startsWith "$") {
+            val baseKey = source.drop(1).takeWhile(_ != '$')
+            val base = new File(PropertyUrl(s"signature.$baseKey.base_dir", variables.get).base.trim)
+            val effectiveBase = if (base.isAbsolute) base else new File(page.file.getParentFile, base.toString)
+            new File(effectiveBase, source.drop(baseKey.length + 2))
+          } else new File(page.file.getParentFile, source)
 
         val Signature = """\s*((def|val|type) (\w+)(?=[:(\[]).*)(\s+\=.*)""".r // stupid approximation to match a signature
         //println(s"Looking for signature regex '$Signature'")

@@ -22,4 +22,4 @@ To learn more about various timeouts in Akka HTTP and how to configure them see 
 
 ## Example
 
-@@snip [TimeoutDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java) { #withRequestTimeoutResponse }
+@@snip [TimeoutDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java) { #withRequestTimeoutResponse }

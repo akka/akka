@@ -11,4 +11,4 @@ Note that it's not required to wrap this directive with `get` as this directive 
 
 ## Example
 
-@@snip [FileAndResourceDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java) { #getFromResourceDirectory }
+@@snip [FileAndResourceDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java) { #getFromResourceDirectory }

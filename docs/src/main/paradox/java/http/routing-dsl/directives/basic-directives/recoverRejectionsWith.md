@@ -17,4 +17,4 @@ To learn more about how and why rejections work read the @ref[Rejections](../../
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #recoverRejectionsWith }
+@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #recoverRejectionsWith }

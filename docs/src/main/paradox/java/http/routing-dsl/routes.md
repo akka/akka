@@ -123,5 +123,5 @@ You can use `Route` class's `seal()` method to perform modification on HttpRespo
 For example, if you want to add a special header, but still use the default rejection handler, then you can do the following.
 In the below case, the special header is added to rejected responses which did not match the route, as well as successful responses which matched the route.
 
-@@snip [RouteSealExample.java](../../../../../test/java/docs/http/javadsl/RouteSealExample.java) { #route-seal-example }
+@@snip [RouteSealExample.java]($test$/java/docs/http/javadsl/RouteSealExample.java) { #route-seal-example }
                                

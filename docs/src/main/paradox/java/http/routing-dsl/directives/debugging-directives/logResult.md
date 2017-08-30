@@ -10,4 +10,4 @@ Use `logRequest` for logging the request, or `logRequestResult` for logging both
 
 ## Example
 
-@@snip [DebuggingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logResult }
+@@snip [DebuggingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logResult }

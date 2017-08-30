@@ -24,4 +24,4 @@ Make sure to use basic authentication only over SSL/TLS because credentials are 
 
 ## Example
 
-@@snip [SecurityDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java) { #authenticateBasic }
+@@snip [SecurityDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java) { #authenticateBasic }

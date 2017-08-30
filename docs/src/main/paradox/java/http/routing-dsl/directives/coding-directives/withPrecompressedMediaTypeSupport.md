@@ -7,4 +7,4 @@ the entity's media-type is precompressed with gzip and no `Content-Encoding` hea
 
 ## Example
 
-@@snip [CodingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java) { #withPrecompressedMediaTypeSupport }
+@@snip [CodingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java) { #withPrecompressedMediaTypeSupport }

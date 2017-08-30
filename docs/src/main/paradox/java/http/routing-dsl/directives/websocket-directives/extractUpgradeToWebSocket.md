@@ -8,4 +8,4 @@ The `extractUpgradeToWebSocket` directive is used as a building block for @ref[C
 
 ## Example
 
-@@snip [WebSocketDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/WebSocketDirectivesExamplesTest.java) { #extractUpgradeToWebSocket }
+@@snip [WebSocketDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/WebSocketDirectivesExamplesTest.java) { #extractUpgradeToWebSocket }

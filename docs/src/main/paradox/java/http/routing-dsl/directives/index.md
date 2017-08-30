@@ -86,40 +86,40 @@ transformations, both (or either) on the request and on the response side.
 As you have seen from the examples presented so far the "normal" way of composing directives is nesting.
 Let's take a look at this concrete example:
 
-@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #example1 }
+@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #example1 }
 
 Here the `get` and `put` routes are chained together with using the `orElse` method to form a higher-level route that
 serves as the inner route of the `path` directive. Let's rewrite it in the following way:
 
-@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #getOrPut }
+@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #getOrPut }
 
 In this previous example, we combined the `get` and `put` directives into one composed directive and extracted it to its own method, which could be reused anywhere else in our code.
 
 Instead of extracting the composed directives to its own method, we can also use the available `anyOf` combinator. The following code is equivalent to the previous one:
 
-@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #getOrPutUsingAnyOf }
+@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #getOrPutUsingAnyOf }
 
 The previous example, tries to complete the route first with a `GET` or with a `PUT` if the first one was rejected. 
 
 In case you are constantly nesting the same directives several times in you code, you could factor them out in their own method and use it everywhere:
 
-@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #composeNesting }
+@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #composeNesting }
 
 Here we simple created our own combined directive that accepts `GET` requests, then extracts the method and completes it with an inner route that takes this HTTP method as a parameter.
 
 Again, instead of extracting own combined directives to its own method, we can make use of the `allOf` combinator. The following code is equivalent to the previous one:
 
-@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #composeNestingAllOf }
+@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #composeNestingAllOf }
 
 In this previous example, the the inner route function provided to `allOf` will be called when the request is a `GET` and with the extracted client IP obtained from the second directive.
 
 As you have already seen in the previous section, you can also use the `route` method defined in `RouteDirectives` as an alternative to `orElse` chaining. Here you can see the first example again, rewritten using `route`:
 
-@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingRoute }
+@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingRoute }
 
 The `route` combinator comes handy when you want to avoid nesting. Here you can see an illustrative example:
  
-@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingRouteBig }
+@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingRouteBig }
 
 Notice how you could adjust the indentation in these last two examples to have a more readable code.
 

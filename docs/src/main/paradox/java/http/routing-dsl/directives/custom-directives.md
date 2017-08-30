@@ -18,11 +18,11 @@ named configurations of more low-level directives.
 The basic technique is explained in the chapter about Composing Directives, where, for example, a new directive
 `getOrPut` is defined like this:
 
-@@snip [CustomDirectivesExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #labeling-1 #labeling-2 }
+@@snip [CustomDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #labeling-1 #labeling-2 }
 
 Multiple directives can be nested to produce a single directive out of multiple like this:
 
-@@snip [CustomDirectivesExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #composition-1 #composition-2 }
+@@snip [CustomDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #composition-1 #composition-2 }
 
 Another example is the @ref[MethodDirectives](method-directives/index.md) which are simply instances of a preconfigured @ref[method](method-directives/method.md) directive.
 The low-level directives that most often form the basis of higher-level “named configuration” directives are grouped

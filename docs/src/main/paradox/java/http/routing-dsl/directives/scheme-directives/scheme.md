@@ -15,4 +15,4 @@ For simply extracting the scheme name, see the @ref[extractScheme](extractScheme
 
 ## Example
 
-@@snip [SchemeDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java) { #scheme }
+@@snip [SchemeDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java) { #scheme }

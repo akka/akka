@@ -10,4 +10,4 @@ See also @ref[When to use which parameter directive?](index.md#which-parameter-d
 
 ## Example
 
-@@snip [ParameterDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java) { #parameterMap }
+@@snip [ParameterDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java) { #parameterMap }

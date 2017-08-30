@@ -23,4 +23,4 @@ See also @ref[Authentication vs. Authorization](index.md#authentication-vs-autho
 
 ## Example
 
-@@snip [SecurityDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java) { #authorize }
+@@snip [SecurityDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java) { #authorize }

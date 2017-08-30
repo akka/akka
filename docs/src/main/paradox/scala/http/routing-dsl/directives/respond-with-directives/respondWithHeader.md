@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [RespondWithDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala) { #respondWithHeader }
+@@signature [RespondWithDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala) { #respondWithHeader }
 
 ## Description
 
@@ -15,4 +15,4 @@ See also @ref[respondWithHeaders](respondWithHeaders.md) if you'd like to add mo
 
 ## Example
 
-@@snip [RespondWithDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #respondWithHeader-0 }
+@@snip [RespondWithDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #respondWithHeader-0 }

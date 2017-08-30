@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [MethodDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #patch }
+@@signature [MethodDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #patch }
 
 ## Description
 
@@ -15,4 +15,4 @@ by the default @ref[RejectionHandler](../../rejections.md#the-rejectionhandler).
 
 ## Example
 
-@@snip [MethodDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala) { #patch-method }
+@@snip [MethodDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala) { #patch-method }

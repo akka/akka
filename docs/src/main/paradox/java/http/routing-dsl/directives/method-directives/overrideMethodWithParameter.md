@@ -14,4 +14,4 @@ This directive is useful for:
 
 ## Example
 
-@@snip [MethodDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #overrideMethodWithParameter }
+@@snip [MethodDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #overrideMethodWithParameter }

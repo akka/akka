@@ -17,10 +17,10 @@ Here is an example of what a simple test with the routing testkit might look lik
 [scalatest](http://www.scalatest.org) and [specs2](http://etorreborre.github.io/specs2/):
 
 ScalaTest
-:  @@snip [FullTestKitExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/FullTestKitExampleSpec.scala) { #source-quote }
+:  @@snip [FullTestKitExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/FullTestKitExampleSpec.scala) { #source-quote }
 
 specs2
-:  @@snip [FullSpecs2TestKitExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/FullSpecs2TestKitExampleSpec.scala) { #source-quote }
+:  @@snip [FullSpecs2TestKitExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/FullSpecs2TestKitExampleSpec.scala) { #source-quote }
 
 The basic structure of a test built with the testkit is this (expression placeholder in all-caps):
 
@@ -96,18 +96,18 @@ implicit rejection and exception handlers in scope.
 Since the testkit is request-based, you cannot test requests that are illegal or impossible in HTTP. One
 such instance is testing a route that begins with the `pathEnd` directive, such as `routeFragment` here:
 
-@@snip [TestKitFragmentSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #fragment }
+@@snip [TestKitFragmentSpec.scala]($test$/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #fragment }
 
 You might create a route such as this to be able to compose it into another route such as:
 
-@@snip [FragmentExample.scala](../../../../../test/scala/docs/http/scaladsl/server/FragmentExample.scala) { #source-quote }
+@@snip [FragmentExample.scala]($test$/scala/docs/http/scaladsl/server/FragmentExample.scala) { #source-quote }
 
 However, it is impossible to unit test this Route directly using testkit, since it is impossible to create an
 empty HTTP request. To test this type of route, embed it in a synthetic route in your test, such as `testRoute` in the example above.
 
 This is what the full working test looks like:
 
-@@snip [TestKitFragmentSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #source-quote }
+@@snip [TestKitFragmentSpec.scala]($test$/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #source-quote }
 
 
 ## Accounting for Slow Test Systems
@@ -123,7 +123,7 @@ situations, timeout durations can be scaled by a given factor on such environmen
 The default timeout when testing your routes using the testkit is 1 second. Sometimes, though, this might not be enough.
 In order to extend this default timeout, to say 5 seconds, just add the following implicit in scope:
 
-@@snip [TestKitFragmentSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #timeout-setting }
+@@snip [TestKitFragmentSpec.scala]($test$/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #timeout-setting }
 
 Remember to configure the timeout using `dilated` if you want to account for slow test systems.
 

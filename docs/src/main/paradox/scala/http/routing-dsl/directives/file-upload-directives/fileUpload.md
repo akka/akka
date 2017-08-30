@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [FileUploadDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala) { #fileUpload }
+@@signature [FileUploadDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala) { #fileUpload }
 
 ## Description
 
@@ -14,7 +14,7 @@ with the same name, the first one will be used and the subsequent ones ignored.
 
 ## Example
 
-@@snip [FileUploadDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FileUploadDirectivesExamplesSpec.scala) { #fileUpload }
+@@snip [FileUploadDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FileUploadDirectivesExamplesSpec.scala) { #fileUpload }
 
 ```
 curl --form "csv=@uploadFile.txt" http://<host>:<port>

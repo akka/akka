@@ -48,10 +48,10 @@ them. This is because some route structure produce several "reasons" why a reque
 Take this route structure for example:
 
 Scala
-:  @@snip [RejectionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #example-1 }
+:  @@snip [RejectionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #example-1 }
 
 Java
-:  @@snip [RejectionHandlerExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/RejectionHandlerExamplesTest.java) { #example1 }
+:  @@snip [RejectionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/server/RejectionHandlerExamplesTest.java) { #example1 }
 
 For uncompressed POST requests this route structure would initially yield two rejections:
 
@@ -82,10 +82,10 @@ If you'd like to customize the way certain rejections are handled you'll have to
 [RejectionHandler](#the-rejectionhandler). Here is an example:
 
 Scala
-:  @@snip [RejectionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #custom-handler-example }
+:  @@snip [RejectionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #custom-handler-example }
 
 Java
-:  @@snip [RejectionHandlerExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/RejectionHandlerExamplesTest.java) { #custom-handler-example-java }
+:  @@snip [RejectionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/server/RejectionHandlerExamplesTest.java) { #custom-handler-example-java }
 
 The easiest way to construct a `RejectionHandler` is with `RejectionHandler.newBuilder()` that Akka HTTP provides.
 After having created a new `Builder` instance
@@ -134,10 +134,10 @@ In order to customise the HTTP Responses of an existing handler you can call the
 `mapRejectionResponse` method on such handler as shown in the example below:
 
 Scala
-:  @@snip [RejectionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #example-json }
+:  @@snip [RejectionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #example-json }
 
 Java
-:  @@snip [RejectionHandlerExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/RejectionHandlerExamplesTest.java) { #example-json }
+:  @@snip [RejectionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/server/RejectionHandlerExamplesTest.java) { #example-json }
 
 #### Adding the unmatched route in handleNotFound
 
@@ -146,9 +146,9 @@ For example you may want to include the path which was not found in the response
 using the `extractUnmatchedPath` and completing the route with it.
 
 Scala
-:  @@snip [RejectionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #not-found-with-path }
+:  @@snip [RejectionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #not-found-with-path }
 
 Java
-:  @@snip [ExecutionDirectivesExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java) { #handleNotFoundWithDefails }
+:  @@snip [ExecutionDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java) { #handleNotFoundWithDefails }
 
 If you want to add even more information you can obtain the full request by using `extractRequest` as well.

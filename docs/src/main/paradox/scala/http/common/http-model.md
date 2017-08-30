@@ -10,10 +10,10 @@ Since akka-http-core provides the central HTTP data structures you will find the
 few places around the code base (and probably your own code as well):
 
 Scala
-:   @@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #import-model }
+:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #import-model }
 
 Java
-:   @@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #import-model }
+:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #import-model }
 
 This brings all of the most relevant types in scope, mainly:
 
@@ -49,10 +49,10 @@ An `HttpRequest` consists of
 Here are some examples how to construct an `HttpRequest`:
 
 Scala
-:   @@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-request }
+:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-request }
 
 Java
-:   @@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #construct-request }
+:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #construct-request }
 
 @@@ div { .group-scala }
 All parameters of `HttpRequest.apply` have default values set, so `headers` for example don't need to be specified
@@ -82,10 +82,10 @@ For instance, in order to provide a raw request uri, bypassing the default url n
 following:
 
 Scala
-:   @@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #synthetic-header-s3 }
+:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #synthetic-header-s3 }
 
 Java
-:   @@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #synthetic-header-s3 }
+:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #synthetic-header-s3 }
 
 ## HttpResponse
 
@@ -99,10 +99,10 @@ An `HttpResponse` consists of
 Here are some examples how to construct an `HttpResponse`:
 
 Scala
-:   @@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-response }
+:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-response }
 
 Java
-:   @@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #construct-response }
+:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #construct-response }
 
 In addition to the simple @scala[`HttpEntity` constructors]@java[`HttpEntities.create` methods] which create an entity from a fixed `String` or `ByteString`
 as shown here the Akka HTTP model defines a number of subclasses of `HttpEntity` which allow body data to be specified as a
@@ -250,10 +250,10 @@ as a `RawHeader` (which is essentially a String/String name/value pair).
 See these examples of how to deal with headers:
 
 Scala
-:   @@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #headers }
+:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #headers }
 
 Java
-:   @@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #headers }
+:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #headers }
 
 ## HTTP Headers
 
@@ -324,26 +324,26 @@ or the other way around etc), a helper @scala[trait]@java[classes] for custom He
 Thanks to extending `ModeledCustomHeader` instead of the plain `CustomHeader` @scala[such header can be matched]@java[the following methods are at your disposal]:
 
 Scala
-:   @@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #modeled-api-key-custom-header }
+:   @@snip [ModeledCustomHeaderSpec.scala]($akka-http$/akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #modeled-api-key-custom-header }
 
 Java
-:   @@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #modeled-api-key-custom-header }
+:   @@snip [CustomHeaderExampleTest.java]($test$/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #modeled-api-key-custom-header }
 
 Which allows this @scala[CustomHeader]@java[modeled custom header] to be used in the following scenarios:
 
 Scala
-:   @@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-examples }
+:   @@snip [ModeledCustomHeaderSpec.scala]($akka-http$/akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-examples }
 
 Java
-:   @@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #conversion-creation-custom-header }
+:   @@snip [CustomHeaderExampleTest.java]($test$/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #conversion-creation-custom-header }
 
 Including usage within the header directives like in the following @ref[headerValuePF](../routing-dsl/directives/header-directives/headerValuePF.md) example:
 
 Scala
-:   @@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-in-routes }
+:   @@snip [ModeledCustomHeaderSpec.scala]($akka-http$/akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-in-routes }
 
 Java
-:   @@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #header-value-pf }
+:   @@snip [CustomHeaderExampleTest.java]($test$/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #header-value-pf }
 
 One can also directly extend `CustomHeader` which requires less boilerplate, however that has the downside of
 @scala[matching against `RawHeader`]@java[having to deal with converting `HttpHeader`] instances scala[not working out-of-the-box, thus limiting its usefulness in the routing layer
@@ -386,10 +386,10 @@ media types, e.g. that `application/custom` is to be treated as `NonBinary` with
 need to register the custom media type in the server's settings by configuring `ParserSettings` like this:
 
 Scala
-:   @@snip [CustomMediaTypesSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomMediaTypesSpec.scala) { #application-custom }
+:   @@snip [CustomMediaTypesSpec.scala]($akka-http$/akka-http-tests/src/test/scala/akka/http/scaladsl/CustomMediaTypesSpec.scala) { #application-custom }
 
 Java
-:   @@snip [CustomMediaTypesExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomMediaTypesExampleTest.java) { #application-custom-java }
+:   @@snip [CustomMediaTypesExampleTest.java]($test$/java/docs/http/javadsl/CustomMediaTypesExampleTest.java) { #application-custom-java }
 
 You may also want to read about MediaType [Registration trees](https://en.wikipedia.org/wiki/Media_type#Registration_trees), in order to register your vendor specific media types
 in the right style / place.
@@ -402,10 +402,10 @@ well-known status codes, however sometimes you may need to use a custom one (or 
 Similarily to the media types registration, you can register custom status codes by configuring `ParserSettings` like this:
 
 Scala
-:   @@snip [CustomStatusCodesSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }
+:   @@snip [CustomStatusCodesSpec.scala]($akka-http$/akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }
 
 Java
-:   @@snip [CustomStatusCodesExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomStatusCodesExampleTest.java) { #application-custom-java }
+:   @@snip [CustomStatusCodesExampleTest.java]($test$/java/docs/http/javadsl/CustomStatusCodesExampleTest.java) { #application-custom-java }
 
 <a id="registeringcustommethod"></a>
 ## Registering Custom HTTP Method
@@ -414,7 +414,7 @@ Akka HTTP also allows you to define custom HTTP methods, other than the well-kno
 To use a custom HTTP method, you need to define it, and then add it to parser settings like below:
 
 Scala
-:   @@snip [CustomHttpMethodSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
+:   @@snip [CustomHttpMethodSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
 
 Java
-:   @@snip [CustomHttpMethodsExampleTest.java](../../../../../test/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }
+:   @@snip [CustomHttpMethodsExampleTest.java]($test$/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }

@@ -40,10 +40,10 @@ has this feature (including the free and bundled with the Oracle JDK VisualVM, a
 ### Problem example: blocking the default dispatcher
 
 Scala
-:   @@snip [BlockingInHttpExamplesSpec.scala](../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-default-dispatcher }
+:   @@snip [BlockingInHttpExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-default-dispatcher }
 
 Java
-:   @@snip [BlockingInHttpExamples.java](../../../../test/java/docs/http/javadsl/server/BlockingInHttpExamples.java) { #blocking-example-in-default-dispatcher }
+:   @@snip [BlockingInHttpExamples.java]($test$/java/docs/http/javadsl/server/BlockingInHttpExamples.java) { #blocking-example-in-default-dispatcher }
 
 Here the app is exposed to a load of continuous GET requests and large numbers
 of akka.actor.default-dispatcher threads are handling requests. The orange
@@ -104,10 +104,10 @@ Whenever blocking has to be done, use the above configured dispatcher
 instead of the default one:
 
 Scala
-:   @@snip [BlockingInHttpExamplesSpec.scala](../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-dedicated-dispatcher }
+:   @@snip [BlockingInHttpExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-dedicated-dispatcher }
 
 Java
-:   @@snip [BlockingInHttpExamples.java](../../../../test/java/docs/http/javadsl/server/BlockingInHttpExamples.java) { #blocking-example-in-dedicated-dispatcher }
+:   @@snip [BlockingInHttpExamples.java]($test$/java/docs/http/javadsl/server/BlockingInHttpExamples.java) { #blocking-example-in-dedicated-dispatcher }
 
 This forces the app to use the same load, initially normal requests and then
 the blocking requests. The thread pool behaviour is shown in the figure.

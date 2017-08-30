@@ -35,15 +35,15 @@ The second case allows you to restrict the applicability of your handler to cert
 Here is an example for wiring up a custom handler via @ref[handleExceptions](directives/execution-directives/handleExceptions.md):
 
 Scala
-:   @@snip [ExceptionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #explicit-handler-example }
+:   @@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #explicit-handler-example }
 
 Java
-:   @@snip [ExceptionHandlerExamplesTest.java](../../../../../test/java/docs/http/javadsl/ExceptionHandlerExample.java) { #explicit-handler-example }
+:   @@snip [ExceptionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/ExceptionHandlerExample.java) { #explicit-handler-example }
 
 @@@ div { .group-scala }
 And this is how to do it implicitly:
 
-@@snip [ExceptionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #implicit-handler-example }
+@@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #implicit-handler-example }
 @@@
 
 ## Default Exception Handler

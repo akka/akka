@@ -8,4 +8,4 @@ Use the @ref[deleteCookie](deleteCookie.md) directive to delete a cookie.
 
 ## Example
 
-@@snip [CookieDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java) { #setCookie }
+@@snip [CookieDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java) { #setCookie }

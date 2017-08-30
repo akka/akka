@@ -8,4 +8,4 @@ For rejecting a request if it doesn't match a specified scheme name, see the @re
 
 ## Example
 
-@@snip [SchemeDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java) { #extractScheme }
+@@snip [SchemeDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java) { #extractScheme }

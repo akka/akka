@@ -51,10 +51,10 @@ Only secure HTTP/2 (also known as "over HTTPS" or "with TLS") connections are su
 You can use @scala[@scaladoc[Http().bindAndHandleAsync](akka.http.scaladsl.HttpExt)]@java[@javadoc[Http().get(system).bindAndHandleAsync()](akka.http.javadsl.HttpExt)] as long as you followed the above steps:
 
 Scala
-:   @@snip[Http2Spec.scala](../../../../../test/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleAsync }
+:   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleAsync }
 
 Java
-:   @@snip[Http2Test.java](../../../../../test/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleAsync }
+:   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleAsync }
 
 Note that `bindAndHandle` currently does not support HTTP/2, you must use `bindAndHandleAsync`.
 

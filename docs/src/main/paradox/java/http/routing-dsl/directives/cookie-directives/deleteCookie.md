@@ -8,4 +8,4 @@ Use the @ref[setCookie](setCookie.md) directive to update a cookie.
 
 ## Example
 
-@@snip [CookieDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java) { #deleteCookie }
+@@snip [CookieDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java) { #deleteCookie }

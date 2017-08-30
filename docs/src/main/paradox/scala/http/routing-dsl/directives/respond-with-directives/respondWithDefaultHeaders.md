@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [RespondWithDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala) { #respondWithDefaultHeaders }
+@@signature [RespondWithDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala) { #respondWithDefaultHeaders }
 
 ## Description
 
@@ -29,6 +29,6 @@ respondWithDefaultHeaders(
 
 The semantics remain the same however, as explained by the following example:
 
-@@snip [RespondWithDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #respondWithDefaultHeader-0 }
+@@snip [RespondWithDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #respondWithDefaultHeader-0 }
 
 See the @ref[respondWithDefaultHeader](respondWithDefaultHeader.md) directive for an example with only one header.

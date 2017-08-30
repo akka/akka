@@ -17,10 +17,10 @@ returned by the @scala[`Http().outgoingConnection(...)`]@java[`Http.get(system).
 Here is an example:
 
 Scala
-:  @@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #outgoing-connection-example }
+:  @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #outgoing-connection-example }
 
 Java
-:  @@snip [HttpClientExampleDocTest.java](../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #outgoing-connection-example }
+:  @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #outgoing-connection-example }
 
 Apart from the host name and port the @scala[`Http().outgoingConnection(...)`]@java[`Http.get(system).outgoingConnection(...)`]
 method also allows you to specify socket options and a number of configuration settings for the connection.
@@ -82,7 +82,7 @@ On the client-side the stand-alone HTTP layer forms a `BidiStage` stage that "up
 It is defined like this:
 
 @@@ div { .group-scala }
-@@snip [Http.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala) { #client-layer }
+@@snip [Http.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala) { #client-layer }
 @@@
 @@@ div { .group-java }
 ```java

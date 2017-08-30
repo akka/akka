@@ -11,4 +11,4 @@ If there are several best language alternatives that the client has equal prefer
 
 ## Example
 
-@@snip [MiscDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #selectPreferredLanguage }
+@@snip [MiscDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #selectPreferredLanguage }

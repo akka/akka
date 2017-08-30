@@ -21,7 +21,7 @@ use case.
 
 In the below examples, we'll be referring to the `Tweet` and `Measurement` case classes as our model, which are defined as:
 
-@@snip [JsonStreamingExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #models }
+@@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #models }
 
 ## Responding with JSON Streams
 
@@ -44,7 +44,7 @@ simple - clients need only to find the new-lines and apply JSON unmarshalling fo
 
 The final step is simply completing a request using a Source of tweets, as simple as that:
 
-@@snip [JsonStreamingExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #response-streaming }
+@@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #response-streaming }
 
 ## Consuming JSON Streaming uploads
 
@@ -55,9 +55,9 @@ In this example, we want to consume this data in a streaming fashion from the re
 back-pressure to the underlying TCP connection, if the server can not cope with the rate of incoming data (back-pressure
 will be applied automatically thanks to using Akka HTTP/Streams).
 
-@@snip [JsonStreamingExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #formats }
+@@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #formats }
 
-@@snip [JsonStreamingExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #incoming-request-streaming }
+@@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #incoming-request-streaming }
 
 ## Simple CSV streaming example
 
@@ -68,7 +68,7 @@ and that the streaming support operates on the same `Content-Type` as the render
 an error during runtime that the marshaller did not expose the expected content type and thus we can not render
 the streaming response).
 
-@@snip [JsonStreamingExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #csv-example }
+@@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #csv-example }
 
 ## Implementing custom EntityStreamingSupport traits
 

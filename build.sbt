@@ -175,7 +175,11 @@ lazy val docs = project("docs")
       "algolia.docsearch.index_name" -> "akka-http",
       "google.analytics.account" -> "UA-21117439-1",
       "google.analytics.domain.name" -> "akka.io",
-      "github.base_url" -> GitHub.url(version.value)
+      "github.base_url" -> GitHub.url(version.value),
+      "snip.test.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
+      "snip.akka-http.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
+      "signature.test.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
+      "signature.akka-http.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
     ),
     Formatting.docFormatSettings,
     additionalTasks in ValidatePR += paradox in Compile,

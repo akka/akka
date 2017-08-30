@@ -19,10 +19,10 @@ If desired, `HttpApp` provides different hook methods that can be overridden to 
 The following example shows how to start a server:
 
 Scala
-:   @@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #minimal-routing-example }
+:   @@snip [HttpAppExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #minimal-routing-example }
 
 Java
-:   @@snip [HttpAppExampleTest.java](../../../../../test/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #minimal-imports #minimal-routing-example }
+:   @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #minimal-imports #minimal-routing-example }
 
 Firstly we define @scala[an `object` (it can also be a `class`)]@java[a `class`] that extends `HttpApp` and we just implement the routes this server will handle.
 After that, we can start a server just by providing a `host` and a `port`. Calling `startServer` blocks the current thread until the server is signaled for termination.
@@ -36,10 +36,10 @@ might not start due to the port being already in use, or because it is a privile
 Here you can see an example server that overrides the `postHttpBindingFailure` hook and prints the error to the console (this is also the default behavior)
 
 Scala
-:   @@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #failed-binding-example }
+:   @@snip [HttpAppExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #failed-binding-example }
 
 Java
-:   @@snip [HttpAppExampleTest.java](../../../../../test/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #bindingError }
+:   @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #bindingError }
 
 So if the port `80` would be already taken by another app, the call to `startServer` returns immediately and the `postHttpBindingFailure` hook will be called.
 
@@ -49,10 +49,10 @@ So if the port `80` would be already taken by another app, the call to `startSer
 In case you want to provide different settings, you can simply pass it to `startServer` as illustrated in the following example:
 
 Scala
-:   @@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #with-settings-routing-example }
+:   @@snip [HttpAppExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #with-settings-routing-example }
 
 Java
-:   @@snip [HttpAppExampleTest.java](../../../../../test/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #with-settings-routing-example }
+:   @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #with-settings-routing-example }
 
 ## Providing your own Actor System
 
@@ -61,10 +61,10 @@ In case you already created an `ActorSystem` in your application you can
 pass it to `startServer` as illustrated in the following example:
 
 Scala
-:   @@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #with-actor-system }
+:   @@snip [HttpAppExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #with-actor-system }
 
 Java
-:   @@snip [HttpAppExampleTest.java](../../../../../test/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #minimal-imports #ownActorSystem }
+:   @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #minimal-imports #ownActorSystem }
 
 ## Providing your own Actor System and Settings
 
@@ -73,10 +73,10 @@ your previously created `ActorSystem` and your custom `ServerSettings`.
 You can see an example in the following code snippet:
 
 Scala
-:   @@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #with-actor-system-settings }
+:   @@snip [HttpAppExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #with-actor-system-settings }
 
 Java
-:   @@snip [HttpAppExampleTest.java](../../../../../test/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #ownActorSystemAndSettings }
+:   @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #ownActorSystemAndSettings }
 
 ## Overriding Termination Signal
 
@@ -88,10 +88,10 @@ This method must return a @scala[`Future`]@java[`CompletionStage`] that, when te
 This following example shows how to override the default termination signal:
 
 Scala
-:   @@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #override-termination-signal }
+:   @@snip [HttpAppExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #override-termination-signal }
 
 Java
-:   @@snip [HttpAppExampleTest.java](../../../../../test/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #selfClosing #serverTerminationSignal }
+:   @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #selfClosing #serverTerminationSignal }
 
 Here the termination signal is defined by a future that will be automatically completed after 5 seconds. 
 
@@ -103,10 +103,10 @@ in a coordinated way, you can override `HttpApp`'s `postServerShutdown` method.
 Here you can find an example:
 
 Scala
-:   @@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #cleanup-after-shutdown }
+:   @@snip [HttpAppExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #cleanup-after-shutdown }
 
 Java
-:   @@snip [HttpAppExampleTest.java](../../../../../test/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #postShutdown }
+:   @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #imports #postShutdown }
 
 The `postServerShutdown` method will be only called once the server attempt to shutdown has completed. Please notice that in
 the @scala[case that `unbind` fails to stop the server, this method will also be called with a failed `Try`.]@java[exception that this method is called with, may be null. It will be a non-null one only when `unbind` fails to stop the server.]

@@ -3,7 +3,7 @@
 The Akka HTTP @ref[Low-Level Server-Side API](../server-side/low-level-api.md) provides a `Flow`- or `Function`-level interface that allows
 an application to respond to incoming HTTP requests by simply mapping requests to responses:
 
-@@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }
+@@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }
 
 While it'd be perfectly possible to define a complete REST API service purely by pattern-matching against the incoming
 `HttpRequest` (maybe with the help of a few extractors in the way of [Unfiltered](http://unfiltered.databinder.net/)) this approach becomes somewhat
@@ -19,7 +19,7 @@ using `Route.handlerFlow` or, otherwise, the conversion is also provided implici
 
 For example, the service definition from above, written using the routing DSL, would look like this:
 
-@@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #high-level-server-example }
+@@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #high-level-server-example }
 
 The core of the Routing DSL becomes available with a single import:
 

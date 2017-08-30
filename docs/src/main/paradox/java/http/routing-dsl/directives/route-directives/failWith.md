@@ -20,4 +20,4 @@ exception.
 
 ## Example
 
-@@snip [RouteDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #failWith }
+@@snip [RouteDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #failWith }
