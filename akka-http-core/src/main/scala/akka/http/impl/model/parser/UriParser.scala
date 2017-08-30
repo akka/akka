@@ -255,6 +255,32 @@ private[http] final class UriParser(val input: ParserInput,
       case Left(error) => fail(error, "request-target")
     }
 
+  /////////////////////////// ADDITIONAL HTTP/2-SPECIFIC RULES /////////////////////////
+
+  // https://tools.ietf.org/html/rfc7540#section-8.1.2.3
+  // https://tools.ietf.org/html/rfc3986#section-3.2 - without deprecated userinfo
+  def `http2-authority-pseudo-header` = hostAndPort
+
+  def parseHttp2AuthorityPseudoHeader(): Uri.Authority =
+    rule(`http2-authority-pseudo-header` ~ EOI).run() match {
+      case Right(_) => Authority(_host, _port)
+      case Left(error) => fail(error, "http2-authority-pseudo-header")
+    }
+
+  // https://tools.ietf.org/html/rfc7540#section-8.1.2.3
+  def `http2-path-pseudo-header` = rule(
+    `absolute-path` ~ optional('?' ~ rawQueryString) // origin-form
+        // TODO: asterisk-form
+  )
+
+  def parseHttp2PathPseudoHeader(): (Uri.Path, Option[String]) =
+    rule(`http2-path-pseudo-header` ~ EOI).run() match {
+      case Right(_) =>
+        val path = collapseDotSegments(_path)
+        (path, _rawQueryString)
+      case Left(error) => fail(error, "http2-path-pseudo-header")
+    }
+
   ///////////// helpers /////////////
 
   private def appendLowered(): Rule0 = rule { run(sb.append(CharUtils.toLowerCase(lastChar))) }

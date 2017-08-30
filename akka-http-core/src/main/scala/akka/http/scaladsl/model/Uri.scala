@@ -275,6 +275,28 @@ object Uri {
     new UriParser(requestTarget, charset, mode).parseHttpRequestTarget()
 
   /**
+   * Parses the given string as if it were the value of an HTTP/2 ":path" pseudo-header.
+   * The result is a path and a query string as defined in
+   * https://tools.ietf.org/html/rfc7540#section-8.1.2.3
+   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
+   * If the given string is not a valid path or query string the method throws an `IllegalUriException`.
+   */
+  private[http] def parseHttp2PathPseudoHeader(headerValue: ParserInput, charset: Charset = UTF8,
+                                               mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): (Uri.Path, Option[String]) =
+    new UriParser(headerValue, charset, mode).parseHttp2PathPseudoHeader()
+
+  /**
+   * Parses the given string as if it were the value of an HTTP/2 ":authority" pseudo-header.
+   * The result is an authority object.
+   * https://tools.ietf.org/html/rfc7540#section-8.1.2.3
+   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
+   * If the given string is not a valid path or query string the method throws an `IllegalUriException`.
+   */
+  private[http] def parseHttp2AuthorityPseudoHeader(headerValue: ParserInput, charset: Charset = UTF8,
+                                                    mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Uri.Authority =
+    new UriParser(headerValue, charset, mode).parseHttp2AuthorityPseudoHeader()
+
+  /**
    * Normalizes the given URI string by performing the following normalizations:
    *  - the `scheme` and `host` components are converted to lowercase
    *  - a potentially existing `port` component is removed if it matches one of the defined default ports for the scheme
