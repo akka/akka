@@ -33,6 +33,9 @@ abstract class FanInShape[+O] private (_out: Outlet[O @uncheckedVariance], _regi
     */
   override def inlets: immutable.Seq[Inlet[_]] = _inlets
 
+  /**
+    * Performance of subclass `UniformFanInShape` relies on `_inlets` being a `Vector`, not a `List`.
+    */
   private var _inlets: Vector[Inlet[_]] = Vector.empty
   protected def newInlet[T](name: String): Inlet[T] = {
     val p = if (_registered.hasNext) _registered.next().asInstanceOf[Inlet[T]] else Inlet[T](s"${_name}.$name")
@@ -68,7 +71,7 @@ class UniformFanInShape[-T, +O](val n: Int, _init: FanInShape.Init[O]) extends F
 
   final override def inlets: immutable.Seq[Inlet[T @uncheckedVariance]] = super.inlets.asInstanceOf[immutable.Seq[Inlet[T]]]
 
-  @deprecated("Use `inlets` or `in(id)` instead.", "2.5.4")
+  @deprecated("Use `inlets` or `in(id)` instead.", "2.5.5")
   lazy val inSeq: immutable.IndexedSeq[Inlet[T @uncheckedVariance]] = inlets.toIndexedSeq
   def in(n: Int): Inlet[T @uncheckedVariance] = inlets(n)
 }
@@ -85,7 +88,7 @@ class FanInShape1N[-T0, -T1, +O](val n: Int, _init: FanInShape.Init[O]) extends 
   override protected def construct(init: FanInShape.Init[O @uncheckedVariance]): FanInShape[O] = new FanInShape1N(n, init)
   override def deepCopy(): FanInShape1N[T0, T1, O] = super.deepCopy().asInstanceOf[FanInShape1N[T0, T1, O]]
 
-  @deprecated("Use `inlets` or `in(id)` instead.", "2.5.4")
+  @deprecated("Use `inlets` or `in(id)` instead.", "2.5.5")
   lazy val in1Seq: immutable.IndexedSeq[Inlet[T1 @uncheckedVariance]] = inlets
     .tail //head is in0
     .toIndexedSeq.asInstanceOf[immutable.IndexedSeq[Inlet[T1]]]

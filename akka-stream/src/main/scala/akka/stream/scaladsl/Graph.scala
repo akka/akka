@@ -6,7 +6,6 @@ package akka.stream.scaladsl
 import java.util.SplittableRandom
 
 import akka.NotUsed
-import akka.dispatch.forkjoin.ThreadLocalRandom
 import akka.stream._
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
@@ -968,7 +967,7 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] ⇒ O)(n: Int) extends GraphStage[
   override val shape = new UniformFanInShape[A, O](n)
   def out: Outlet[O] = shape.out
 
-  @deprecated("use `shape.inlets` or `shape.in(id)` instead", "2.5.4")
+  @deprecated("use `shape.inlets` or `shape.in(id)` instead", "2.5.5")
   def inSeq: immutable.IndexedSeq[Inlet[A]] = shape.inlets.asInstanceOf[immutable.IndexedSeq[Inlet[A]]]
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
