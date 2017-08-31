@@ -11,7 +11,7 @@ that require an authorization via an `Proxy-Authorization` header. This can be s
 
 Server-side HTTP/2 support, currently available as a preview, has now been
 @ref[included in the documentation](server-side/http2.md)
-([#1297](https://github.com/akka/akka-http/pull/1297)
+([#1297](https://github.com/akka/akka-http/pull/1297))
 
 ### Documentation consolidation
 
@@ -19,7 +19,7 @@ Behind the scenes, a lot of work has been done on the ongoing effort to
 consolidate the Java and Scala versions of the documentation, notably
 by
 Jonas Fonseca and Josep Prat. This will make our documentation more consistent,
-higher-quality and more easy to browse and maintain ([#1290](https://github.com/akka/akka-http/issues/1290)
+higher-quality and more easy to browse and maintain ([#1290](https://github.com/akka/akka-http/issues/1290))
 
 ### Improvements
 
@@ -34,7 +34,7 @@ higher-quality and more easy to browse and maintain ([#1290](https://github.com/
 
 * HttpChallenge rendering is broken if realm parameter is None ([#1295](https://github.com/akka/akka-http/issues/1295))
 * Logging with println in Http2ServerDemux ([#1275](https://github.com/akka/akka-http/issues/1275))
-* Incorrect request URIs with HTTP/2 ([#1274](https://github.com/akka/akka-http/issues/1274)
+* Incorrect request URIs with HTTP/2 ([#1274](https://github.com/akka/akka-http/issues/1274))
 * HttpResponseParser returns invalid status code for statuses without reason phrase ([#1251](https://github.com/akka/akka-http/issues/1251))
 * Ensure that no responses are lost when `host-connection-pool.idle-timeout` kicks in ([#1245](https://github.com/akka/akka-http/issues/1245))
 * Large response entity is truncated over https with 'Connection: close' header ([#1219](https://github.com/akka/akka-http/issues/1219))
