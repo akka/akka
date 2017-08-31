@@ -64,7 +64,7 @@ public class StreamTcpDocTest extends AbstractJavaTest {
       //#echo-server-simple-bind
       // IncomingConnection and ServerBinding imported from Tcp
       final Source<IncomingConnection, CompletionStage<ServerBinding>> connections =
-          Tcp.get(system).bind("127.0.0.1", 8889);
+          Tcp.get(system).bind("127.0.0.1", 8888);
       //#echo-server-simple-bind
     }
     {
@@ -133,7 +133,7 @@ public class StreamTcpDocTest extends AbstractJavaTest {
     {
     //#repl-client
       final Flow<ByteString, ByteString, CompletionStage<OutgoingConnection>> connection =
-          Tcp.get(system).outgoingConnection("127.0.0.1", 8889);
+          Tcp.get(system).outgoingConnection("127.0.0.1", 8888);
       //#repl-client
     }
 

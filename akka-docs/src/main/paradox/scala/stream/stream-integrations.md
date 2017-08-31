@@ -49,7 +49,7 @@ If you don't care about the reply values and only use them as back-pressure sign
 can use `Sink.ignore` after the `mapAsync` stage and then actor is effectively a sink
 of the stream.
 
-The same pattern can be used with @ref[Actor routers](../routing.md). Then you
+The same pattern can be used with @ref:[Actor routers](../routing.md). Then you
 can use `mapAsyncUnordered` for better efficiency if you don't care about the 
 order of the emitted downstream elements (the replies).
 
@@ -493,7 +493,7 @@ Please note that a factory is necessary to achieve reusability of the resulting 
 
 As described above any Akka Streams `Source` can be exposed as a Reactive Streams `Publisher` and
 any `Sink` can be exposed as a Reactive Streams `Subscriber`. Therefore we recommend that you 
-implement Reactive Streams integrations with built-in stages or @ref[custom stages](stream-customize.md).
+implement Reactive Streams integrations with built-in stages or @ref:[custom stages](stream-customize.md).
 
 For historical reasons the `ActorPublisher` and `ActorSubscriber` traits are
 provided to support implementing Reactive Streams `Publisher` and `Subscriber` with
@@ -524,7 +524,7 @@ type-safe and safe to implement `akka.stream.stage.GraphStage`. It can also
 expose a "stage actor ref" is needed to be addressed as-if an Actor.
 Custom stages implemented using `GraphStage` are also automatically fusable.
 
-To learn more about implementing custom stages using it refer to @ref[Custom processing with GraphStage](stream-customize.md#graphstage).
+To learn more about implementing custom stages using it refer to @ref:[Custom processing with GraphStage](stream-customize.md#graphstage).
 
 @@@
 
@@ -590,7 +590,7 @@ type-safe and safe to implement `akka.stream.stage.GraphStage`. It can also
 expose a "stage actor ref" is needed to be addressed as-if an Actor.
 Custom stages implemented using `GraphStage` are also automatically fusable.
 
-To learn more about implementing custom stages using it refer to @ref[Custom processing with GraphStage](stream-customize.md#graphstage).
+To learn more about implementing custom stages using it refer to @ref:[Custom processing with GraphStage](stream-customize.md#graphstage).
 
 @@@
 

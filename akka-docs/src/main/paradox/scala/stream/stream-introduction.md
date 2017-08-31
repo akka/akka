@@ -63,13 +63,13 @@ composition, therefore it may take some careful study of this subject until you
 feel familiar with the tools and techniques. The documentation is here to help
 and for best results we recommend the following approach:
 
- * Read the @ref[Quick Start Guide](stream-quickstart.md#stream-quickstart) to get a feel for how streams
+ * Read the @ref:[Quick Start Guide](stream-quickstart.md#stream-quickstart) to get a feel for how streams
 look like and what they can do.
- * The top-down learners may want to peruse the @ref[Design Principles behind Akka Streams](../general/stream/stream-design.md) at this
+ * The top-down learners may want to peruse the @ref:[Design Principles behind Akka Streams](../general/stream/stream-design.md) at this
 point.
  * The bottom-up learners may feel more at home rummaging through the
-@ref[Streams Cookbook](stream-cookbook.md).
+@ref:[Streams Cookbook](stream-cookbook.md).
  * For a complete overview of the built-in processing stages you can look at the
-table in @ref[stages overview](stages-overview.md)
+table in @ref:[stages overview](stages-overview.md)
  * The other sections can be read sequentially or as needed during the previous
 steps, each digging deeper into specific topics.

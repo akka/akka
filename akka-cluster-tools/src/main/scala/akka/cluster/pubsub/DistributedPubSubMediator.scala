@@ -10,7 +10,9 @@ import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 import java.net.URLEncoder
 import java.net.URLDecoder
+
 import akka.actor._
+import akka.annotation.DoNotInherit
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.Member
@@ -24,6 +26,7 @@ import akka.routing.RouterEnvelope
 import akka.routing.RoundRobinRoutingLogic
 import akka.routing.ConsistentHashingRoutingLogic
 import akka.routing.BroadcastRoutingLogic
+
 import scala.collection.immutable.TreeMap
 import com.typesafe.config.Config
 import akka.dispatch.Dispatchers
@@ -399,6 +402,7 @@ object DistributedPubSubMediator {
      */
     def wrapIfNeeded: Any ⇒ Any = {
       case msg: RouterEnvelope ⇒ MediatorRouterEnvelope(msg)
+      case null                ⇒ throw InvalidMessageException("Message must not be null")
       case msg: Any            ⇒ msg
     }
   }
@@ -475,7 +479,10 @@ trait DistributedPubSubMessage extends Serializable
  * Successful `Subscribe` and `Unsubscribe` is acknowledged with
  * [[DistributedPubSubMediator.SubscribeAck]] and [[DistributedPubSubMediator.UnsubscribeAck]]
  * replies.
+ *
+ * Not intended for subclassing by user code.
  */
+@DoNotInherit
 class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Actor with ActorLogging with PerGroupingBuffer {
 
   import DistributedPubSubMediator._

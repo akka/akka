@@ -1,0 +1,3 @@
+# #15947 catch mailbox creation failures
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.RepointableActorRef.point")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Dispatch.initWithFailure")

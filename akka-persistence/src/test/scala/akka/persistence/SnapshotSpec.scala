@@ -49,6 +49,24 @@ object SnapshotSpec {
     }
   }
 
+  class IgnoringSnapshotTestPersistentActor(name: String, _recovery: Recovery, probe: ActorRef) extends NamedPersistentActor(name) {
+    override def recovery: Recovery = _recovery
+
+    override def receiveRecover: Receive = {
+      case payload: String                             ⇒ probe ! s"${payload}-${lastSequenceNr}"
+      case other if !other.isInstanceOf[SnapshotOffer] ⇒ probe ! other
+    }
+
+    override def receiveCommand = {
+      case "done" ⇒ probe ! "done"
+      case payload: String ⇒
+        persist(payload) { _ ⇒
+          probe ! s"${payload}-${lastSequenceNr}"
+        }
+      case other ⇒ probe ! other
+    }
+  }
+
   final case class Delete1(metadata: SnapshotMetadata)
   final case class DeleteN(criteria: SnapshotSelectionCriteria)
 
@@ -91,6 +109,18 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
           state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
           timestamp should be > (0L)
       }
+      expectMsg("e-5")
+      expectMsg("f-6")
+      expectMsg(RecoveryCompleted)
+    }
+    "recover completely if snapshot is not handled" in {
+      val persistentActor = system.actorOf(Props(classOf[IgnoringSnapshotTestPersistentActor], name, Recovery(), testActor))
+      val persistenceId = name
+
+      expectMsg("a-1")
+      expectMsg("b-2")
+      expectMsg("c-3")
+      expectMsg("d-4")
       expectMsg("e-5")
       expectMsg("f-6")
       expectMsg(RecoveryCompleted)

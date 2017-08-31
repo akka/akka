@@ -3,17 +3,18 @@
  */
 package akka.stream.scaladsl
 
+import akka.Done
 import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream._
 import akka.stream.impl.QueueSource
+import akka.stream.testkit.{ GraphStageMessages, StreamSpec, TestSourceStage, TestSubscriber }
+import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.Utils._
 import akka.testkit.TestProbe
+
 import scala.concurrent.duration._
 import scala.concurrent._
-import akka.Done
-import akka.stream.testkit.{ StreamSpec, TestSubscriber, TestSourceStage, GraphStageMessages }
-import akka.stream.testkit.scaladsl.TestSink
 import org.scalatest.time.Span
 
 class QueueSourceSpec extends StreamSpec {
@@ -171,6 +172,15 @@ class QueueSourceSpec extends StreamSpec {
       queue.watchCompletion().pipeTo(testActor)
       queue.offer(1) //need to wait when first offer is done as initialization can be done in this moment
       queue.offer(2)
+      expectMsgClass(classOf[Status.Failure])
+    }
+
+    "complete watching future with failure if materializer shut down" in assertAllStagesStopped {
+      val tempMap = ActorMaterializer()
+      val s = TestSubscriber.manualProbe[Int]()
+      val queue = Source.queue(1, OverflowStrategy.fail).to(Sink.fromSubscriber(s)).run()(tempMap)
+      queue.watchCompletion().pipeTo(testActor)
+      tempMap.shutdown()
       expectMsgClass(classOf[Status.Failure])
     }
 

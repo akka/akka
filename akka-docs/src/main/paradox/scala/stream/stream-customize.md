@@ -278,7 +278,7 @@ with care.
 ### Logging inside GraphStages
 
 Logging debug or other important information in your stages is often a very good idea, especially when developing
-more advances stages which may need to be debugged at some point.
+more advanced stages which may need to be debugged at some point.
 
 @@@ div { .group-scala }
 

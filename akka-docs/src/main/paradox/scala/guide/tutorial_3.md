@@ -1,253 +1,182 @@
-# Part 3: Device Groups and Manager
+# Part 3: Working with Device Actors
+In the previous topics we explained how to view actor systems _in the large_, that is, how components should be represented, how actors should be arranged in the hierarchy. In this part, we will look at actors _in the small_ by implementing the device actor.
 
-In this chapter, we will integrate our device actors into a component that manages devices. When a new device comes
-online, there is no actor representing it. We need to be able to ask the device manager component to create a new
-device actor for us if necessary, in the required group (or return a reference to an already existing one).
+If we were working with objects, we would typically design the API as _interfaces_, a collection of abstract methods to be filled out by the actual implementation. In the world of actors, protocols take the place of interfaces. While it is not possible to formalize general protocols in the programming language, we can compose their most basic element, messages. So, we will start by identifying the messages we will want to send to device actors.
 
-Since we keep our tutorial system to the bare minimum, we have no actual component that interfaces with the external
-world via some networking protocol. For our exercise, we will just create the API necessary to integrate with such
-a component in the future. In a final system, the steps for connecting a device would look like this:
+Typically, messages fall into categories, or patterns. By identifying these patterns, you will find that it becomes easier to choose between them and to implement them. The first example demonstrates the _request-respond_ message pattern.
 
- 1. The device connects through some protocol to our system.
- 2. The component managing network connections accept the connection.
- 3. The ID of the device and the ID of the group that it belongs is acquired.
- 4. The device manager component is asked to create a group and device actor for the given IDs (or return an existing
-    one).
- 5. The device actor (just been created or located) responds with an acknowledgment, at the same time exposing its
-    ActorRef directly (by being the sender of the acknowledgment).
- 6. The networking component now uses the ActorRef of the device directly, avoiding going through the component.
+## Identifying messages for devices
+The tasks of a device actor will be simple:
 
-We are only concerned with steps 4 and 5 now. We will model the device manager component as an actor tree with three
-levels:
+ * Collect temperature measurements
+ * When asked, report the last measured temperature
 
-![device manager tree](diagrams/device_manager_tree.png)
+However, a device might start without immediately having a temperature measurement. Hence, we need to account for the case where a temperature is not present. This also allows us to test the query part of the actor without the write part present, as the device actor can simply report an empty result.
 
- * The top level is the supervisor actor representing the component. It is also the entry point to look up or create
-   group and device actors.
- * Device group actors are supervisors of the devices belonging to the group. Apart from supervising the device actors they
-   also provide extra services, like querying the temperature readings from all the devices available.
- * Device actors manage all the interactions with the actual devices, storing temperature readings for example.
+The protocol for obtaining the current temperature from the device actor is simple. The actor:
 
-When designing actor systems one of the main challenges is to decide on the granularity of the actors. For example, it
-would be perfectly possible to have only a single actor maintaining all the groups and devices in `HashMap`s for
-example. It would be also reasonable to keep the groups as separate actors, but keep device state simply inside
-the group actor.
+ 1. Waits for a request for the current temperature.
+ 2. Responds to the request with a reply that either:
 
-We chose this three-layered architecture for the following reasons:
+    * contains the current temperature or,
+    * indicates that a temperature is not yet available.
 
- * Having groups as individual actors:
-   * Allows us to isolate failures happening in a group. If a programmer error would
-     happen in the single actor that keeps all state, it would be all wiped out once that actor is restarted affecting groups that are otherwise non-faulty.
-   * Simplifies the problem of querying all the devices belonging to a group (since it only contains state related
-     to the given group).
-   * Increases the parallelism of the system by allowing to query multiple groups concurrently. Since groups have
-     dedicated actors, all of them can run concurrently.
- * Having devices as individual actors:
-   * Allows us to isolate failures happening in a device actor from the rest of the devices.
-   * Increases the parallelism of collecting temperature readings as actual network connections from different devices
-     can talk to the individual device actors directly, reducing contention points.
-
-In practice, a system can be organized in multiple ways, all depending on the characteristics of the interactions
-between actors.
-
-The following guidelines help to arrive at the right granularity:
-
- * Prefer larger granularity to smaller. Introducing more fine-grained actors than needed causes more problems than
-   it solves.
- * Prefer finer granularity if it enables higher concurrency in the system.
- * Prefer finer granularity if actors need to handle complex conversations with other actors and hence have many
-   states. We will see a very good example for this in the next chapter.
- * Prefer finer granularity if there is too much state to keep around in one place compared to dividing into smaller
-   actors.
- * Prefer finer granularity if the current actor has multiple unrelated responsibilities that can fail and restored
-   individually.
-
-
-## The Registration Protocol
-
-As the first step, we need to design the protocol for registering a device and create an actor that will be responsible
-for it. This protocol will be provided by the `DeviceManager` component itself because that is the only actor that
-is known up front: device groups and device actors are created on-demand. The steps of registering a device are the following:
-
- 1. DeviceManager receives the request to track a device for a given group and device.
- 2. If the manager already has an actor for the device group, it forwards the request to it. Otherwise, it first creates
-    a new one and then forwards the request.
- 3. The DeviceGroup receives the request to register an actor for the given device.
- 4. If the group already has an actor for the device, it forwards the request to it. Otherwise, it first creates
-    a new one and then forwards the request.
- 5. The device actor receives the request and acknowledges it to the original sender. Since the device actor is the sender of
-    the acknowledgment, the receiver, i.e. the device, will be able to learn its `ActorRef` and send direct messages to its device actor in the future.
-
-Now that the steps are defined, we only need to define the messages that we will use to communicate requests and
-their acknowledgement:
-
-@@snip [DeviceManager.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-msgs }
-
-As you see, in this case, we have not included a request ID field in the messages. Since registration is usually happening
-once, at the component that connects the system to some network protocol, we will usually have no use for the ID.
-Nevertheless, it is a good exercise to add this ID.
-
-## Add Registration Support to Device Actor
-
-We start implementing the protocol from the bottom first. In practice, both a top-down and bottom-up approach can
-work, but in our case, we benefit from the bottom-up approach as it allows us to immediately write tests for the
-new features without mocking out parts.
-
-At the bottom of our hierarchy are the `Device` actors. Their job in this registration process is rather simple, just reply to the
-registration request with an acknowledgment to the sender. *We will assume that the sender of the registration
-message is preserved in the upper layers.* We will show you in the next section how this can be achieved.
-
-We also add a safeguard against requests that come with a mismatched group or device ID. This is how the resulting
-the code looks like:
-
-@@@ note { .group-scala }
-
-We used a feature of scala pattern matching where we can match if a certain field equals to an expected
-value. This is achieved by variables included in backticks, like `` `variable` ``, and it means that the pattern
-only match if it contains the value of `variable` in that position.
-
-@@@
+We need two messages, one for the request, and one for the reply. Our first attempt might look like the following:
 
 Scala
-:   @@snip [Device.scala]($code$/scala/tutorial_3/Device.scala) { #device-with-register }
+:   @@snip [DeviceInProgress.scala]($code$/scala/tutorial_3/DeviceInProgress.scala) { #read-protocol-1 }
 
 Java
-:   @@snip [Device.java]($code$/java/jdocs/tutorial_3/Device.java) { #device-with-register }
+:   @@snip [DeviceInProgress.java]($code$/java/jdocs/tutorial_3/DeviceInProgress.java) { #read-protocol-1 }
 
-We should not leave features untested, so we immediately write two new test cases, one exercising successful
-registration, the other testing the case when IDs don't match:
+These two messages seem to cover the required functionality. However, the approach we choose must take into account the distributed nature of the application. While the basic mechanism is the same for communicating with an actor on the local JVM as with a remote actor, we need to keep the following in mind:
 
-@@@ note
+* There will be observable differences in the latency of delivery between local and remote messages, because factors like network link bandwidth and the message size also come into play.
+* Reliability is a concern because a remote message send involves more steps, which means that more can go wrong.
+* A local send will just pass a reference to the message inside the same JVM, without any restrictions on the underlying object which is sent, whereas a remote transport will place a limit on the message size.
 
-We used the `expectNoMsg()` helper method from @scala[`TestProbe`] @java[`TestKit`]. This assertion waits until the defined time-limit
-and fails if it receives any messages during this period. If no messages are received during the waiting period the
-assertion passes. It is usually a good idea to keep these timeouts low (but not too low) because they add significant
-test execution time otherwise.
+In addition, while sending inside the same JVM is significantly more reliable, if an
+actor fails due to a programmer error while processing the message, the effect is basically the same as if a remote network request fails due to the remote host crashing while processing the message. Even though in both cases, the service recovers after a while (the actor is restarted by its supervisor, the host is restarted by an operator or by a monitoring system) individual requests are lost during the crash. **Therefore, writing your actors such that every
+message could possibly be lost is the safe, pessimistic bet.**
 
-@@@
+But to further understand the need for flexibility in the protocol, it will help to consider Akka message ordering and message delivery guarantees. Akka provides the following behavior for message sends:
+
+ * At-most-once delivery, that is, no guaranteed delivery.
+ * Message ordering is maintained per sender, receiver pair.
+
+The following sections discuss this behavior in more detail:
+
+* [Message delivery](#message-delivery)
+* [Message ordering](#message-ordering)
+
+### Message delivery
+The delivery semantics provided by messaging subsystems typically fall into the following categories:
+
+ * **At-most-once delivery** &#8212; each message is delivered zero or one time; in more causal terms it means that messages can be lost, but are never duplicated.
+ * **At-least-once delivery** &#8212; potentially multiple attempts are made to deliver each message, until at least one succeeds; again, in more causal terms this means that messages can be duplicated but are never lost.
+ * **Exactly-once delivery** &#8212; each message is delivered exactly once to the recipient; the message can neither be lost nor be duplicated.
+
+The first behavior, the one used by Akka, is the cheapest and results in the highest performance. It has the least implementation overhead because it can be done in a fire-and-forget fashion without keeping the state at the sending end or in the transport mechanism. The second, at-least-once, requires retries to counter transport losses. This adds the overhead of keeping the state at the sending end and having an acknowledgment mechanism at the receiving end. Exactly-once delivery is most expensive, and results in the worst performance: in addition to the overhead added by at-least-once delivery, it requires the state to be kept at the receiving end in order to filter out
+duplicate deliveries.
+
+In an actor system, we need to determine exact meaning of a guarantee &#8212; at which point does the system consider the delivery as accomplished:
+
+ 1. When the message is sent out on the network?
+ 2. When the message is received by the target actor's host?
+ 3. When the message is put into the target actor's mailbox?
+ 4. When the message target actor starts to process the message?
+ 5. When the target actor has successfully processed the message?
+
+Most frameworks and protocols that claim guaranteed delivery actually provide something similar to points 4 and 5. While this sounds reasonable, **is it actually useful?** To understand the implications, consider a simple, practical example: a user attempts to place an order and we only want to claim that it has successfully processed once it is actually on disk in the orders database.
+
+If we rely on the successful processing of the message, the actor will report success as soon as the order has been submitted to the internal API that has the responsibility to validate it, process it and put it into the database. Unfortunately,
+immediately after the API has been invoked any the following can happen:
+
+ * The host can crash.
+ * Deserialization can fail.
+ * Validation can fail.
+ * The database might be unavailable.
+ * A programming error might occur.
+
+This illustrates that the **guarantee of delivery** does not translate to the **domain level guarantee**. We only want to report success once the order has been actually fully processed and persisted. **The only entity that can report success is the application itself, since only it has any understanding of the domain guarantees required. No generalized framework can figure out the specifics of a particular domain and what is considered a success in that domain**.
+
+In this particular example, we only want to signal success after a successful database write, where the database acknowledged that the order is now safely stored. **For these reasons Akka lifts the responsibilities of guarantees to the application
+itself, i.e. you have to implement them yourself. This gives you full control of the guarantees that you want to provide**. Now, let's consider the message ordering that Akka provides to make it easy to reason about application logic.
+
+### Message Ordering
+
+In Akka, for a given pair of actors, messages sent directly from the first to the second will not be received out-of-order. The word directly emphasizes that this guarantee only applies when sending with the tell operator directly to the final destination, but not when employing mediators.
+
+If:
+
+ * Actor `A1` sends messages `M1`, `M2`, `M3` to `A2`.
+ * Actor `A3` sends messages `M4`, `M5`, `M6` to `A2`.
+
+This means that, for Akka messages:
+
+ * If `M1` is delivered it must be delivered before `M2` and `M3`.
+ * If `M2` is delivered it must be delivered before `M3`.
+ * If `M4` is delivered it must be delivered before `M5` and `M6`.
+ * If `M5` is delivered it must be delivered before `M6`.
+ * `A2` can see messages from `A1` interleaved with messages from `A3`.
+ * Since there is no guaranteed delivery, any of the messages may be dropped, i.e. not arrive at `A2`.
+
+These guarantees strike a good balance: having messages from one actor arrive in-order is convenient for building systems that can be easily reasoned about, while on the other hand allowing messages from different actors to arrive interleaved provides sufficient freedom for an efficient implementation of the actor system.
+
+For the full details on delivery guarantees please refer to the @ref:[reference page](../general/message-delivery-reliability.md).
+
+## Adding flexibility to device messages
+
+Our first query protocol was correct, but did not take into account distributed application execution. If we want to implement resends in the actor that queries a device actor (because of timed out requests), or if we want to query multiple actors, we need to be able to correlate requests and responses. Hence, we add one more field to our messages, so that an ID can be provided by the requester  (we will add this code to our app in a later step):
 
 Scala
-:   @@snip [DeviceSpec.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-registration-tests }
+:   @@snip [DeviceInProgress.scala]($code$/scala/tutorial_3/DeviceInProgress.scala) { #read-protocol-2 }
 
 Java
-:   @@snip [DeviceTest.java]($code$/java/jdocs/tutorial_3/DeviceTest.java) { #device-registration-tests }
+:   @@snip [DeviceInProgress2.java]($code$/java/jdocs/tutorial_3/inprogress2/DeviceInProgress2.java) { #read-protocol-2 }
 
-## Device Group
+## Defining the device actor and its read protocol
 
-We are done with the registration support at the device level, now we have to implement it at the group level. A group
-has more work to do when it comes to registrations. It must either forward the request to an existing child, or it
-should create one. To be able to look up child actors by their device IDs we will use a @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`].
-
-We also want to keep the original sender of the request so that our device actor can reply directly. This is possible
-by using `forward` instead of the @scala[`!`] @java[`tell`] operator. The only difference between the two is that `forward` keeps the original
-sender while @scala[`!`] @java[`tell`] always sets the sender to be the current actor. Just like with our device actor, we ensure that we don't
-respond to wrong group IDs:
+As we learned in the Hello World example, each actor defines the type of messages it will accept. Our device actor has the responsibility to use the same ID parameter for the response of a given query, which would make it look like the following.
 
 Scala
-:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-register }
+:   @@snip [DeviceInProgress.scala]($code$/scala/tutorial_3/DeviceInProgress.scala) { #device-with-read }
 
 Java
-:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-register }
+:   @@snip [DeviceInProgress2.java]($code$/java/jdocs/tutorial_3/inprogress2/DeviceInProgress2.java) { #device-with-read }
 
-Just as we did with the device, we test this new functionality. We also test that the actors returned for the two
-different IDs are actually different, and we also attempt to record a temperature reading for each of the devices
-to see if the actors are responding.
+Note in the code that:
+
+* The @scala[companion object]@java[static method] defines how to construct a `Device` actor. The `props` parameters include an ID for the device and the group to which it belongs, which we will use later.
+* The @scala[companion object]@java[class] includes the definitions of the messages we reasoned about previously.
+* In the `Device` class, the value of `lastTemperatureReading` is initially set to @scala[`None`]@java[`Optional.empty()`], and the actor will simply report it back if queried.
+
+## Testing the actor
+
+Based on the simple actor above, we could write a simple test. In the `com.lightbend.akka.sample` package in the test tree of your project, add the following code to a @scala[`DeviceSpec.scala`]@java[`DeviceTest.java`] file.
+@scala[(We use ScalaTest but any other test framework can be used with the Akka Testkit)].
+
+You can run this test @java[by running `mvn test` or] by running `test` at the sbt prompt.
 
 Scala
-:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test-registration }
+:   @@snip [DeviceSpec.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-read-test }
 
 Java
-:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-test-registration }
+:   @@snip [DeviceTest.java]($code$/java/jdocs/tutorial_3/DeviceTest.java) { #device-read-test }
 
-It might be, that a device actor already exists for the registration request. In this case, we would like to use
-the existing actor instead of a new one. We have not tested this yet, so we need to fix this:
+Now, the actor needs a way to change the state of the temperature when it receives a message from the sensor.
+
+## Adding a write protocol
+
+The purpose of the write protocol is to update the `currentTemperature` field when the actor receives a message that contains the temperature. Again, it is tempting to define the write protocol as a very simple message, something like this:
 
 Scala
-:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test3 }
+:   @@snip [DeviceInProgress.scala]($code$/scala/tutorial_3/DeviceInProgress.scala) { #write-protocol-1 }
 
 Java
-:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-test3 }
+:   @@snip [DeviceInProgress3.java]($code$/java/jdocs/tutorial_3/DeviceInProgress3.java) { #write-protocol-1 }
 
-So far, we have implemented everything for registering device actors in the group. Devices come and go, however, so
-we will need a way to remove those from the @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`]. We will assume that when a device is removed, its corresponding device actor
-is simply stopped. We need some way for the parent to be notified when one of the device actors are stopped. Unfortunately,
-supervision will not help because it is used for error scenarios, not graceful stopping.
+However, this approach does not take into account that the sender of the record temperature message can never be sure if the message was processed or not. We have seen that Akka does not guarantee delivery of these messages and leaves it to the application to provide success notifications. In our case, we would like to send an acknowledgment to the sender once we have updated our last temperature recording, e.g. @scala[`final case class TemperatureRecorded(requestId: Long)`]@java[`TemperatureRecorded`].
+Just like in the case of temperature queries and responses, it is a good idea to include an ID field to provide maximum flexibility.
 
-There is a feature in Akka that is exactly what we need here. It is possible for an actor to _watch_ another actor
-and be notified if the other actor is stopped. This feature is called _Death Watch_ and it is an important tool for
-any Akka application. Unlike supervision, watching is not limited to parent-child relationships, any actor can watch
-any other actor given its `ActorRef`. After a watched actor stops, the watcher receives a `Terminated(ref)` message
-which also contains the reference to the watched actor. The watcher can either handle this message explicitly or, if
-it does not handle it directly it will fail with a `DeathPactException`. This latter is useful if the actor cannot
-longer perform its duties after its collaborator actor has been stopped. In our case, the group should still function
-after one device have been stopped, so we need to handle this message. The steps we need to follow are the following:
+## Actor with read and write messages
 
- 1. Whenever we create a new device actor, we must also watch it.
- 2. When we are notified that a device actor has been stopped we also need to remove it from the @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`] which maps
-    devices to device actors.
-
-Unfortunately, the `Terminated` message only contains the `ActorRef` of the child actor but we do not know
-its ID, which we need to remove it from the map of existing device to device actor mappings. To be able to do this removal, we
-need to introduce another placeholder, @scala[`Map[ActorRef, String]`] @java[`Map<ActorRef, String>`], that allow us to find out the device ID corresponding to a given `ActorRef`. Putting
-this together the result is:
+Putting the read and write protocol together, the device actor looks like the following example:
 
 Scala
-:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-remove }
+:  @@snip [Device.scala]($code$/scala/tutorial_3/Device.scala) { #full-device }
 
 Java
-:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-remove }
+:  @@snip [Device.java]($code$/java/jdocs/tutorial_3/Device.java) { #full-device }
 
-So far we have no means to get what devices the group device actor keeps track of and, therefore, we cannot test our
-new functionality yet. To make it testable, we add a new query capability (message @scala[`RequestDeviceList(requestId: Long)`] @java[`RequestDeviceList`]) that simply lists the currently active
-device IDs:
+We should also write a new test case now, exercising both the read/query and write/record functionality together:
 
-Scala
-:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-full }
+Scala:
+:   @@snip [DeviceSpec.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-write-read-test }
 
-Java
-:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-full }
+Java:
+:   @@snip [DeviceTest.java]($code$/java/jdocs/tutorial_3/DeviceTest.java) { #device-write-read-test }
 
-We almost have everything to test the removal of devices. What is missing is:
+## What's Next?
 
- * Stopping a device actor from our test case, from the outside: any actor can be stopped by simply sending a special
-   the built-in message, `PoisonPill`, which instructs the actor to stop.
- * Be notified once the device actor is stopped: we can use the _Death Watch_ facility for this purpose, too. Thankfully
-   the @scala[`TestProbe`] @java[`TestKit`] has two messages that we can easily use, `watch()` to watch a specific actor, and `expectTerminated`
-   to assert that the watched actor has been terminated.
-
-We add two more test cases now. In the first, we just test that we get back the list of proper IDs once we have added
-a few devices. The second test case makes sure that the device ID is properly removed after the device actor has
- been stopped:
-
-Scala
-:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
-
-Java
-:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-list-terminate-test }
-
-## Device Manager
-
-The only part that remains now is the entry point for our device manager component. This actor is very similar to
-the device group actor, with the only difference that it creates device group actors instead of device actors:
-
-Scala
-:   @@snip [DeviceManager.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-full }
-
-Java
-:   @@snip [DeviceManager.java]($code$/java/jdocs/tutorial_3/DeviceManager.java) { #device-manager-full }
-
-We leave tests of the device manager as an exercise as it is very similar to the tests we have written for the group
-actor.
-
-## What is Next?
-
-We have now a hierarchical component for registering and tracking devices and recording measurements. We have seen
-some conversation patterns like:
-
- * Request-respond (for temperature recordings).
- * Delegate-respond (for registration of devices).
- * Create-watch-terminate (for creating the group and device actor as children).
-
-In the next chapter, we will introduce group query capabilities, which will establish a new conversation pattern of
-scatter-gather. In particular, we will implement the functionality that allows users to query the status of all
-the devices belonging to a group.
+So far, we have started designing our overall architecture, and we wrote the first actor that directly corresponds to the domain. We now have to create the component that is responsible for maintaining groups of devices and the device actors themselves.

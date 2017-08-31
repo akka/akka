@@ -99,13 +99,13 @@ abstract class HandshakeRestartReceiverSpec
       }
 
       runOn(second) {
-        val addr = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+        val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         enterBarrier("before-shutdown")
 
         Await.result(system.whenTerminated, 10.seconds)
 
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
-              akka.remote.artery.canonical.port = ${addr.port.get}
+              akka.remote.artery.canonical.port = ${address.port.get}
               """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject2")
 

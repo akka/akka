@@ -58,7 +58,7 @@ public class IntroTest {
   public static void main(String[] args) {
     //#hello-world
     final ActorSystem<HelloWorld.Greet> system =
-      ActorSystem.create("hello", HelloWorld.greeter);
+      ActorSystem.create(HelloWorld.greeter, "hello");
 
     final CompletionStage<HelloWorld.Greeted> reply =
       AskPattern.ask(system,
@@ -198,7 +198,7 @@ public class IntroTest {
     });
 
     final ActorSystem<Void> system =
-      ActorSystem.create("ChatRoomDemo", main);
+      ActorSystem.create(main, "ChatRoomDemo");
 
     Await.result(system.whenTerminated(), Duration.create(3, TimeUnit.SECONDS));
     //#chatroom-main

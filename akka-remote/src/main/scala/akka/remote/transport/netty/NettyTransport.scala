@@ -468,10 +468,10 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
         handle ← if (isDatagram)
           Future {
             readyChannel.getRemoteAddress match {
-              case addr: InetSocketAddress ⇒
+              case address: InetSocketAddress ⇒
                 val handle = new UdpAssociationHandle(localAddress, remoteAddress, readyChannel, NettyTransport.this)
                 handle.readHandlerPromise.future.foreach {
-                  listener ⇒ udpConnectionTable.put(addr, listener)
+                  listener ⇒ udpConnectionTable.put(address, listener)
                 }
                 handle
               case unknown ⇒ throw new NettyTransportException(s"Unknown outbound remote address type [${unknown.getClass.getName}]")

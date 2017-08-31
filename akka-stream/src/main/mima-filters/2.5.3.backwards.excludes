@@ -1,0 +1,10 @@
+# #22789 Source.maybe rewritten as a graph stage
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$MaybeSubscription")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.MaybeSource")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.newInstance")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.withAttributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.attributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.this")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$")

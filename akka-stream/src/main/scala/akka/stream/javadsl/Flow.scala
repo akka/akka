@@ -21,8 +21,6 @@ import scala.compat.java8.FutureConverters._
 
 object Flow {
 
-  private[this] val _identity = new javadsl.Flow(scaladsl.Flow[Any])
-
   /** Create a `Flow` which can process elements of type `T`. */
   def create[T](): javadsl.Flow[T, T, NotUsed] = fromGraph(scaladsl.Flow[T])
 
@@ -58,10 +56,25 @@ object Flow {
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
    * will be sent to the Sink and the Flow's output will come from the Source.
    *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +----------------------------------------------+
+   *     | Resulting Flow[I, O, NotUsed]                |
+   *     |                                              |
+   *     |  +---------+                  +-----------+  |
+   *     |  |         |                  |           |  |
+   * I  ~~> | Sink[I] | [no-connection!] | Source[O] | ~~> O
+   *     |  |         |                  |           |  |
+   *     |  +---------+                  +-----------+  |
+   *     +----------------------------------------------+
+   * }}}
+   *
    * The completion of the Sink and Source sides of a Flow constructed using
    * this method are independent. So if the Sink receives a completion signal,
    * the Source side will remain unaware of that. If you are looking to couple
    * the termination signals of the two sides use `Flow.fromSinkAndSourceCoupled` instead.
+   *
+   * See also [[fromSinkAndSourceMat]] when access to materialized values of the parameters is needed.
    */
   def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     new Flow(scaladsl.Flow.fromSinkAndSourceMat(sink, source)(scaladsl.Keep.none))
@@ -69,6 +82,19 @@ object Flow {
   /**
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
    * will be sent to the Sink and the Flow's output will come from the Source.
+   *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +-------------------------------------------------------+
+   *     | Resulting Flow[I, O, M]                              |
+   *     |                                                      |
+   *     |  +-------------+                  +---------------+  |
+   *     |  |             |                  |               |  |
+   * I  ~~> | Sink[I, M1] | [no-connection!] | Source[O, M2] | ~~> O
+   *     |  |             |                  |               |  |
+   *     |  +-------------+                  +---------------+  |
+   *     +------------------------------------------------------+
+   * }}}
    *
    * The completion of the Sink and Source sides of a Flow constructed using
    * this method are independent. So if the Sink receives a completion signal,
@@ -86,6 +112,19 @@ object Flow {
   /**
    * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
    * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +---------------------------------------------+
+   *     | Resulting Flow[I, O, NotUsed]               |
+   *     |                                             |
+   *     |  +---------+                 +-----------+  |
+   *     |  |         |                 |           |  |
+   * I  ~~> | Sink[I] | ~~~(coupled)~~~ | Source[O] | ~~> O
+   *     |  |         |                 |           |  |
+   *     |  +---------+                 +-----------+  |
+   *     +---------------------------------------------+
+   * }}}
    *
    * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
    * however the Sink will also be completed. The table below illustrates the effects in detail:
@@ -128,6 +167,7 @@ object Flow {
    *   </tr>
    * </table>
    *
+   * See also [[fromSinkAndSourceCoupledMat]] when access to materialized values of the parameters is needed.
    */
   def fromSinkAndSourceCoupled[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     new Flow(scaladsl.Flow.fromSinkAndSourceCoupled(sink, source))
@@ -135,6 +175,19 @@ object Flow {
   /**
    * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
    * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +-----------------------------------------------------+
+   *     | Resulting Flow[I, O, M]                             |
+   *     |                                                     |
+   *     |  +-------------+                 +---------------+  |
+   *     |  |             |                 |               |  |
+   * I  ~~> | Sink[I, M1] | ~~~(coupled)~~~ | Source[O, M2] | ~~> O
+   *     |  |             |                 |               |  |
+   *     |  +-------------+                 +---------------+  |
+   *     +-----------------------------------------------------+
+   * }}}
    *
    * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
    * however the Sink will also be completed. The table on [[Flow.fromSinkAndSourceCoupled]]
@@ -170,19 +223,21 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * Transform this [[Flow]] by appending the given processing steps.
    * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
+   *     +---------------------------------+
+   *     | Resulting Flow[In, T, Mat]  |
+   *     |                                 |
+   *     |  +------+             +------+  |
+   *     |  |      |             |      |  |
+   * In ~~> | this |  ~~Out~~>   | flow | ~~> T
+   *     |  |   Mat|             |     M|  |
+   *     |  +------+             +------+  |
+   *     +---------------------------------+
    * }}}
    * The materialized value of the combined [[Flow]] will be the materialized
    * value of the current flow (ignoring the other Flow’s value), use
    * `viaMat` if a different strategy is needed.
+   *
+   * See also [[viaMat]] when access to materialized values of the parameter is needed.
    */
   def via[T, M](flow: Graph[FlowShape[Out, T], M]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.via(flow))
@@ -190,15 +245,15 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * Transform this [[Flow]] by appending the given processing steps.
    * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
+   *     +---------------------------------+
+   *     | Resulting Flow[In, T, M2]       |
+   *     |                                 |
+   *     |  +------+            +------+   |
+   *     |  |      |            |      |   |
+   * In ~~> | this |  ~~Out~~>  | flow |  ~~> T
+   *     |  |   Mat|            |     M|   |
+   *     |  +------+            +------+   |
+   *     +---------------------------------+
    * }}}
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting Flow.
@@ -212,19 +267,21 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    * {{{
-   *     +----------------------------+
-   *     | Resulting Sink             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | flow | ~Out~> | sink |  |
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
+   *     +------------------------------+
+   *     | Resulting Sink[In, Mat]      |
+   *     |                              |
+   *     |  +------+          +------+  |
+   *     |  |      |          |      |  |
+   * In ~~> | flow | ~~Out~~> | sink |  |
+   *     |  |   Mat|          |     M|  |
+   *     |  +------+          +------+  |
+   *     +------------------------------+
    * }}}
    * The materialized value of the combined [[Sink]] will be the materialized
    * value of the current flow (ignoring the given Sink’s value), use
    * `toMat` if a different strategy is needed.
+   *
+   * See also [[toMat]] when access to materialized values of the parameter is needed.
    */
   def to(sink: Graph[SinkShape[Out], _]): javadsl.Sink[In, Mat] =
     new Sink(delegate.to(sink))
@@ -233,12 +290,12 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    * {{{
    *     +----------------------------+
-   *     | Resulting Sink             |
+   *     | Resulting Sink[In, M2]     |
    *     |                            |
    *     |  +------+        +------+  |
    *     |  |      |        |      |  |
    * In ~~> | flow | ~Out~> | sink |  |
-   *     |  |      |        |      |  |
+   *     |  |   Mat|        |     M|  |
    *     |  +------+        +------+  |
    *     +----------------------------+
    * }}}
@@ -263,6 +320,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * The materialized value of the combined [[Flow]] will be the materialized
    * value of the current flow (ignoring the other Flow’s value), use
    * `joinMat` if a different strategy is needed.
+   *
+   * See also [[joinMat]] when access to materialized values of the parameter is needed.
    */
   def join[M](flow: Graph[FlowShape[Out, In], M]): javadsl.RunnableGraph[Mat] =
     RunnableGraph.fromGraph(delegate.join(flow))
@@ -323,6 +382,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
+   *
+   * See also [[viaMat]] when access to materialized values of the parameter is needed.
    */
   def joinMat[I2, O2, Mat2, M](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2], combine: function.Function2[Mat, Mat2, M]): Flow[I2, O2, M] =
     new Flow(delegate.joinMat(bidi)(combinerToScala(combine)))
@@ -344,6 +405,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the mapping function returns an element
    *
@@ -393,6 +456,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * The returned `Iterable` MUST NOT contain `null` values,
    * as they are illegal as stream elements - according to the Reactive Streams specification.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the mapping function returns an element or there are still remaining elements
    * from the previously calculated collection
@@ -461,6 +526,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * The function `f` is always invoked on the elements in the order they arrive (even though the result of the futures
    * returned by `f` might be emitted in a different order).
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' any of the CompletionStages returned by the provided function complete
    *
    * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
@@ -477,6 +544,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * Only pass on those elements that satisfy the given predicate.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the given predicate returns true for the element
    *
    * '''Backpressures when''' the given predicate returns true for the element and downstream backpressures
@@ -491,6 +560,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
 
   /**
    * Only pass on those elements that NOT satisfy the given predicate.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the given predicate returns false for the element
    *
@@ -507,6 +578,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the provided partial function is defined for the element
    *
@@ -575,6 +648,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * The stream will be completed without producing any elements if `n` is zero
    * or negative.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the specified number of elements to take has not yet been reached
    *
    * '''Backpressures when''' downstream backpressures
@@ -587,7 +662,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * See also [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
    */
-  def limitWeighted(n: Long)(costFn: function.Function[Out, Long]): javadsl.Flow[In, Out, Mat] = {
+  def limitWeighted(n: Long)(costFn: function.Function[Out, java.lang.Long]): javadsl.Flow[In, Out, Mat] = {
     new Flow(delegate.limitWeighted(n)(costFn.apply))
   }
 
@@ -619,6 +694,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * [[akka.stream.Supervision#restart]] current value starts at `zero` again
    * the stream will continue.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the function scanning the element returns a new element
    *
    * '''Backpressures when''' downstream backpressures
@@ -644,6 +721,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * [[akka.stream.Supervision.Resume]] current value starts at the previous
    * current value, or zero when it doesn't have one, and the stream will continue.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the future returned by f` completes
    *
    * '''Backpressures when''' downstream backpressures
@@ -661,6 +740,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Similar to `scan` but only emits its result when the upstream completes,
    * after which it also completes. Applies the given function `f` towards its current and next value,
    * yielding the next current value.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * If the function `f` throws an exception and the supervision decision is
    * [[akka.stream.Supervision#restart]] current value starts at `zero` again
@@ -681,6 +762,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Similar to `fold` but with an asynchronous function.
    * Applies the given function towards its current and next value,
    * yielding the next current value.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * If the function `f` returns a failure and the supervision decision is
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
@@ -705,6 +788,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * the reduce stage will fail its downstream with a [[NoSuchElementException]],
    * which is semantically in-line with that Scala's standard library collections
    * do in such situations.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' upstream completes
    *
@@ -815,7 +900,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, Long], d: FiniteDuration): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] =
+  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, java.lang.Long], d: FiniteDuration): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] =
     new Flow(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
 
   /**
@@ -884,6 +969,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * The stream will be completed without producing any elements if predicate is false for
    * the first stream element.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the predicate is true
    *
    * '''Backpressures when''' downstream backpressures
@@ -920,6 +1007,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
   /**
    * Discard elements at the beginning of the stream while predicate is true.
    * All elements will be taken after predicate returns false first time.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' predicate returned false and for all following stream elements
    *
@@ -1079,6 +1168,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' downstream stops backpressuring and there is a conflated element available
    *
    * '''Backpressures when''' never
@@ -1107,6 +1198,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' downstream stops backpressuring and there is a conflated element available
    *
    * '''Backpressures when''' never
@@ -1130,6 +1223,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' downstream stops backpressuring and there is an aggregated element available
    *
@@ -1176,7 +1271,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * @param seed Provides the first state for a batched value using the first unconsumed element as a start
    * @param aggregate Takes the currently batched value and the current pending element to produce a new batch
    */
-  def batchWeighted[S](max: Long, costFn: function.Function[Out, Long], seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): javadsl.Flow[In, S, Mat] =
+  def batchWeighted[S](max: Long, costFn: function.Function[Out, java.lang.Long], seed: function.Function[Out, S], aggregate: function.Function2[S, Out, S]): javadsl.Flow[In, S, Mat] =
     new Flow(delegate.batchWeighted(max, costFn.apply, seed.apply)(aggregate.apply))
 
   /**
@@ -2055,6 +2150,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * of a complex object flowing through this element.
    *
    * Uses the given [[LoggingAdapter]] for logging.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the mapping function returns an element
    *
