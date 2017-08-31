@@ -10,7 +10,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
 
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.3.0")
-//addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.1")
+addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.2")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.17")
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.0-M1")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.1")
