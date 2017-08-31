@@ -82,6 +82,7 @@ The implicits for most of the predefined marshallers in Akka HTTP are provided t
 `Marshaller` trait. This means that they are always available and never need to be explicitly imported.
 Additionally, you can simply "override" them by bringing your own custom version into local scope.
 
+<a id="custom-marshallers" />
 ## Custom Marshallers
 
 Akka HTTP gives you a few convenience tools for constructing marshallers for your own types.

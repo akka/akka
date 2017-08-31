@@ -7,6 +7,7 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
+  val jacksonVersion = "2.8.8"
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
@@ -42,7 +43,7 @@ object Dependencies {
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.3"       // ApacheV2
 
     // For akka-http-jackson support
-    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.8.8"       // ApacheV2
+    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % jacksonVersion // ApacheV2
 
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
@@ -53,7 +54,8 @@ object Dependencies {
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
-      val gson        = "com.google.code.gson"        % "gson"                         % "2.3.1"             % "test"
+      val gson        = "com.google.code.gson"             % "gson"                    % "2.3.1"             % "test"
+      val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonVersion      % "test" // ApacheV2
     }
 
     object Test {
@@ -108,7 +110,7 @@ object Dependencies {
 
   lazy val httpJackson = l ++= Seq(jackson)
 
-  lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson)
+  lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson, Docs.jacksonXml)
 }
 
 

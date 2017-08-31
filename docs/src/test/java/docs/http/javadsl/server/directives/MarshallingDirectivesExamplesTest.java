@@ -47,9 +47,9 @@ public class MarshallingDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testEntity() {
     //#example-entity-with-json
-    final Unmarshaller<HttpEntity, Person> unmarshallar = Jackson.unmarshaller(Person.class);
+    final Unmarshaller<HttpEntity, Person> unmarshaller = Jackson.unmarshaller(Person.class);
 
-    final Route route = entity(unmarshallar, person ->
+    final Route route = entity(unmarshaller, person ->
       complete( "Person:" +  person.getName() + " - favoriteNumber:" + person.getFavoriteNumber() )
     );
 
