@@ -340,8 +340,14 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
 
   private val associationListenerPromise: Promise[AssociationEventListener] = Promise()
 
-  private def sslHandler(remoteAddress: Option[Address], isClient: Boolean): SslHandler = {
-    val handler = NettySSLSupport(settings.SslSettings.get, log, isClient, remoteAddress)
+  private def sslClientHandler(remoteAddress: Address): SslHandler = {
+    val handler = NettySSLSupport(settings.SslSettings.get, log, isClient = true, Some(remoteAddress))
+    handler.setCloseOnSSLException(true)
+    handler
+  }
+
+  private def sslServerHandler(): SslHandler = {
+    val handler = NettySSLSupport(settings.SslSettings.get, log, isClient = false)
     handler.setCloseOnSSLException(true)
     handler
   }
@@ -349,7 +355,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   private val serverPipelineFactory: ChannelPipelineFactory = new ChannelPipelineFactory {
     override def getPipeline: ChannelPipeline = {
       val pipeline = newPipeline
-      if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(None, isClient = false))
+      if (EnableSsl) pipeline.addFirst("SslHandler", sslServerHandler())
       val handler = if (isDatagram) new UdpServerHandler(NettyTransport.this, associationListenerPromise.future)
       else new TcpServerHandler(NettyTransport.this, associationListenerPromise.future, log)
       pipeline.addLast("ServerHandler", handler)
@@ -361,7 +367,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     new ChannelPipelineFactory {
       override def getPipeline: ChannelPipeline = {
         val pipeline = newPipeline
-        if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(Option(remoteAddress), isClient = true))
+        if (EnableSsl) pipeline.addFirst("SslHandler", sslClientHandler(remoteAddress))
         val handler = if (isDatagram) new UdpClientHandler(NettyTransport.this, remoteAddress)
         else new TcpClientHandler(NettyTransport.this, remoteAddress, log)
         pipeline.addLast("clienthandler", handler)

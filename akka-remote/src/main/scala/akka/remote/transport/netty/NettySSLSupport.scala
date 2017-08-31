@@ -41,6 +41,7 @@ private[akka] class SSLSettings(config: Config) {
   val SSLRandomNumberGenerator = getString("random-number-generator")
 
   val SSLRequireMutualAuthentication = getBoolean("require-mutual-authentication")
+
   val SSLRequireHostnameValidation = getBoolean("require-hostname-validation")
 
   private val sslContext = new AtomicReference[SSLContext]()
