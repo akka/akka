@@ -128,16 +128,12 @@ private[akka] object NettySSLSupport {
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
    */
   def apply(settings: SSLSettings, log: MarkerLoggingAdapter, isClient: Boolean): SslHandler = {
-    val context = settings.getOrCreateContext(log)
-    val sslEngine = context.createSSLEngine()
-
-    val sslParams = new SSLParameters()
-    if (!isClient && settings.SSLRequireMutualAuthentication) sslParams.setNeedClientAuth(true)
-
-    sslEngine.setSSLParameters(sslParams)
+    val sslEngine = settings.getOrCreateContext(log).createSSLEngine // TODO: pass host information to enable host verification
     sslEngine.setUseClientMode(isClient)
     sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray)
     sslEngine.setEnabledProtocols(Array(settings.SSLProtocol))
+
+    if (!isClient && settings.SSLRequireMutualAuthentication) sslEngine.setNeedClientAuth(true)
     new SslHandler(sslEngine)
   }
 }
