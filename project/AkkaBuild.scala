@@ -10,12 +10,14 @@ import java.util.Properties
 import akka.TestExtras.JUnitFileReporting
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
-import sbt.TestLogger.wrap
+//import sbt.TestLogger.wrap
 import sbt._
-import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
+// import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore FIXME
 
 object AkkaBuild {
 
+  @deprecated("used to exist in previous sbt") def wrap[T](logger: T): T = logger
+  
   val enableMiMa = true
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
@@ -25,17 +27,18 @@ object AkkaBuild {
     version             := "2.5-SNAPSHOT"
   )
 
-  lazy val rootSettings = parentSettings ++ Release.settings ++
-    UnidocRoot.akkaSettings ++
-    Protobuf.settings ++ Seq(
-      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean
-    )
+//  lazy val rootSettings = parentSettings ++ Release.settings ++ // FIXME
+  lazy val rootSettings = parentSettings // ++ FIXME 
+//    UnidocRoot.akkaSettings ++
+//    Protobuf.settings ++ Seq(
+//      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean
+//    ) 
 
   val dontPublishSettings = Seq(
     publishSigned := (),
     publish := (),
-    publishArtifact in Compile := false,
-    whitesourceIgnore := true
+    publishArtifact in Compile := false//, // FIXME
+    // whitesourceIgnore := true // FIXME
   )
 
   val dontPublishDocsSettings = Seq(
@@ -68,8 +71,10 @@ object AkkaBuild {
         // Maven resolver settings
         val resolver = Resolver.file("user-publish-m2-local", new File(path))
         (resolver, Seq(
-          otherResolvers := resolver:: publishTo.value.toList,
-          publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = resolver.name, checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value, overwrite = true)
+          otherResolvers := resolver:: publishTo.value.toList
+          // ,
+          // FIXME seems to need much more things now... 
+          // publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = resolver.name, checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value, overwrite = true)
         ))
     }
 
@@ -91,7 +96,8 @@ object AkkaBuild {
 
   lazy val defaultSettings = resolverSettings ++
     TestExtras.Filter.settings ++
-    Protobuf.settings ++ Seq(
+    // Protobuf.settings ++ Seq( // FIXME
+    Seq(
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
@@ -101,7 +107,7 @@ object AkkaBuild {
     javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
     javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
     javacOptions in doc ++= Seq(),
-    incOptions := incOptions.value.withNameHashing(true),
+    //    incOptions := incOptions.value.withNameHashing(true), // no idea, it's gone now?
 
     crossVersion := CrossVersion.binary,
 
@@ -139,20 +145,31 @@ object AkkaBuild {
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
 
+      // FIXME no idea how to fix this
     // don't save test output to a file, workaround for https://github.com/sbt/sbt/issues/937
-    testListeners in (Test, test) := {
-      val logger = streams.value.log
-
-      def contentLogger(log: sbt.Logger, buffered: Boolean): ContentLogger = {
-        val blog = new BufferedLogger(FullLogger(log))
-        if (buffered) blog.record()
-        new ContentLogger(wrap(blog), () => blog.stopQuietly())
-      }
-
-      val logTest = {_: TestDefinition => streams.value.log }
-      val buffered = logBuffered.value
-      Seq(new TestLogger(new TestLogging(wrap(logger), tdef => contentLogger(logTest(tdef), buffered))))
-    },
+//    testListeners in (Test, test) := {
+//      val logger = streams.value.log
+//
+//      def contentLogger(log: sbt.Logger, buffered: Boolean): ContentLogger = {
+//        val blog = new BufferedLogger(FullLogger(log))
+//        if (buffered) blog.record()
+//         new ContentLogger(new testing.Logger { // TODO is this the way?
+//           override def debug(s: String): Unit = blog.debug(s)
+//           override def error(s: String): Unit = blog.error(s)
+//           override def ansiCodesSupported(): Boolean = blog.ansiCodesSupported
+//           override def warn(s: String): Unit = blog.warn(s)
+//           override def trace(throwable: Throwable): Unit = blog.trace(throwable)
+//           override def info(s: String): Unit = blog.info(s)
+//         }, () => blog.stopQuietly())
+//      }
+//
+//      val logTest = {_: TestDefinition => streams.value.log }
+//      val buffered = logBuffered.value
+////      Seq(new TestLogger(new TestLogging(wrap(logger), tdef => contentLogger(logTest(tdef), buffered)))) // FIXME
+//      Seq(new testing.Logger {
+//        
+//      })
+//    },
 
     // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
     // -a Show stack traces and exception class name for AssertionErrors.
