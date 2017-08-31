@@ -2,6 +2,7 @@
 1. Communicate that a release is about to be released in [Gitter Akka Dev Channel](https://gitter.im/akka/dev), so that no new Pull Requests are merged
 2. Add a release notes entry in docs/src/main/paradox/release-notes.md. As a helper run
 `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule.
+2. Update latest Akka 2.5 version variable `akka25Version` in `project/Dependencies.scala`
 3. Once the release notes have been merged, create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description including notable changes mentioning external contributors.
 4. Travis CI will start a [CI build](https://travis-ci.org/akka/akka-http/builds) for the new tag and publish artifacts to Bintray and will sync them to Maven Central.
 5. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.2 deployRsync akkarepo@repo.akka.io"` to deploy API and reference documentation.

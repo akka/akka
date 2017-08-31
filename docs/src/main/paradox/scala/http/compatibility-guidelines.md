@@ -33,7 +33,7 @@ the rest of your Akka environment, for example like this:
 sbt
 :   @@@vars
     ```
-    val akkaVersion = "2.5.[...]"
+    val akkaVersion = "$akka25.version$"
     val akkaHttpVersion = "$project.version$"
     libraryDependencies += "com.typesafe.akka" %% "akka-http"   % akkaHttpVersion
     libraryDependencies += "com.typesafe.akka" %% "akka-actor"  % akkaVersion
@@ -45,8 +45,8 @@ Gradle
 :   @@@vars
     ```
     compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$', version: '$project.version$'
-    compile group: 'com.typesafe.akka', name: 'akka-actor_$scala.binary_version$', version: '2.5.[...]'
-    compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '2.5.[...]'
+    compile group: 'com.typesafe.akka', name: 'akka-actor_$scala.binary_version$', version: '$akka25.version$'
+    compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '$akka25.version$'
     ```
     @@@
     
@@ -62,12 +62,12 @@ Maven
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-stream_$scala.binary_version$</artifactId>
-      <version>2.5.[...]</version>
+      <version>$akka25.version$</version>
     </dependency>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-http_$scala.binary_version$</artifactId>
-      <version>$project.version$</version>
+      <version>$akka25.version$</version>
     </dependency>
     ```
     @@@
