@@ -181,7 +181,7 @@ Scala
 :  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #proxy-dc }
 
 Java
-:  @@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #proxy-dc }
+:  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #proxy-dc }
 
 Another way to manage global entities is to make sure that certain entity ids are located in 
 only one data center by routing the messages to the right region. For example, the routing function
