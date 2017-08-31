@@ -4,12 +4,12 @@
 package akka.cluster.protobuf
 
 import akka.cluster._
-import akka.actor.{ Address, ExtendedActorSystem }
+import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
-import akka.routing.{ DefaultOptimalSizeExploringResizer, RoundRobinPool }
+import akka.routing.RoundRobinPool
 
 import collection.immutable.SortedSet
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, TestKit }
 
 class ClusterMessageSerializerSpec extends AkkaSpec(
   "akka.actor.provider = cluster") {
@@ -80,6 +80,41 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       checkSerialization(InternalClusterAction.Welcome(uniqueAddress, g2))
     }
 
+    "be compatible with wire format of version 2.5.3 (using use-role instead of use-roles)" in {
+      val system = ActorSystem("ClusterMessageSerializer-old-wire-format")
+
+      try {
+        val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
+
+        // the oldSnapshot was created with the version of ClusterRouterPoolSettings in Akka 2.5.3. See issue #23257.
+        // It was created with:
+        /*
+          import org.apache.commons.codec.binary.Hex.encodeHex
+          val bytes = serializer.toBinary(
+            ClusterRouterPool(RoundRobinPool(nrOfInstances = 4), ClusterRouterPoolSettings(123, 345, true, Some("role ABC"))))
+          println(String.valueOf(encodeHex(bytes)))
+        */
+
+        val oldBytesHex = "0a0f08101205524f5252501a04080418001211087b10d90218012208726f6c6520414243"
+
+        import org.apache.commons.codec.binary.Hex.decodeHex
+        val oldBytes = decodeHex(oldBytesHex.toCharArray)
+        val result = serializer.fromBinary(oldBytes, classOf[ClusterRouterPool])
+
+        result match {
+          case pool: ClusterRouterPool ⇒
+            pool.settings.totalInstances should ===(123)
+            pool.settings.maxInstancesPerNode should ===(345)
+            pool.settings.allowLocalRoutees should ===(true)
+            pool.settings.useRole should ===(Some("role ABC"))
+            pool.settings.useRoles should ===(Set("role ABC"))
+        }
+      } finally {
+        TestKit.shutdownActorSystem(system)
+      }
+
+    }
+
     "add a default data center role if none is present" in {
       val env = roundtrip(GossipEnvelope(a1.uniqueAddress, d1.uniqueAddress, Gossip(SortedSet(a1, d1))))
       env.gossip.members.head.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
@@ -87,7 +122,34 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
     }
   }
   "Cluster router pool" must {
-    "be serializable" in {
+    "be serializable with no role" in {
+      checkSerialization(ClusterRouterPool(
+        RoundRobinPool(
+          nrOfInstances = 4
+        ),
+        ClusterRouterPoolSettings(
+          totalInstances = 2,
+          maxInstancesPerNode = 5,
+          allowLocalRoutees = true
+        )
+      ))
+    }
+
+    "be serializable with one role" in {
+      checkSerialization(ClusterRouterPool(
+        RoundRobinPool(
+          nrOfInstances = 4
+        ),
+        ClusterRouterPoolSettings(
+          totalInstances = 2,
+          maxInstancesPerNode = 5,
+          allowLocalRoutees = true,
+          useRoles = Set("Richard, Duke of Gloucester")
+        )
+      ))
+    }
+
+    "be serializable with many roles" in {
       checkSerialization(ClusterRouterPool(
         RoundRobinPool(
           nrOfInstances = 4),
@@ -95,7 +157,9 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
           totalInstances = 2,
           maxInstancesPerNode = 5,
           allowLocalRoutees = true,
-          useRole = Some("Richard, Duke of Gloucester"))))
+          useRoles = Set("Richard, Duke of Gloucester", "Hongzhi Emperor", "Red Rackham")
+        )
+      ))
     }
   }
 

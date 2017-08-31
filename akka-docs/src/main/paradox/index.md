@@ -1,4 +1,4 @@
 # Contents
 
-* @ref[Java Documentation](java/index.md)
-* @ref[Scala Documentation](scala/index.md)
+* @ref:[Java Documentation](java/index.md)
+* @ref:[Scala Documentation](scala/index.md)

@@ -144,6 +144,15 @@ object AdapterSpec {
 class AdapterSpec extends AkkaSpec {
   import AdapterSpec._
 
+  "ActorSystem adaption" must {
+    "only happen once for a given actor system" in {
+      val typed1 = system.toTyped
+      val typed2 = system.toTyped
+
+      typed1 should be theSameInstanceAs typed2
+    }
+  }
+
   "Adapted actors" must {
 
     "send message from typed to untyped" in {

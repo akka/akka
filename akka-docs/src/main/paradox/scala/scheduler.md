@@ -10,6 +10,10 @@ You can schedule sending of messages to actors and execution of tasks
 (functions or Runnable).  You will get a `Cancellable` back that you can call
 `cancel` on to cancel the execution of the scheduled operation.
 
+When scheduling periodic or single messages in an actor to itself it is recommended to
+use the @ref:[Actor Timers](actors.md#actors-timers) instead of using the `Scheduler`
+directly.
+
 The scheduler in Akka is designed for high-throughput of thousands up to millions 
 of triggers. The prime use-case being triggering Actor receive timeouts, Future timeouts,
 circuit breakers and other time dependent events which happen all-the-time and in many 

@@ -39,7 +39,7 @@ object Framing {
    * Creates a Flow that decodes an incoming stream of unstructured byte chunks into a stream of frames, assuming that
    * incoming frames have a field that encodes their length.
    *
-   * If the input stream finishes before the last frame has been fully decoded this Flow will fail the stream reporting
+   * If the input stream finishes before the last frame has been fully decoded, this Flow will fail the stream reporting
    * a truncated frame.
    *
    * @param fieldLength The length of the "size" field in bytes
@@ -56,6 +56,36 @@ object Framing {
     byteOrder:          ByteOrder = ByteOrder.LITTLE_ENDIAN): Flow[ByteString, ByteString, NotUsed] = {
     require(fieldLength >= 1 && fieldLength <= 4, "Length field length must be 1, 2, 3 or 4.")
     Flow[ByteString].via(new LengthFieldFramingStage(fieldLength, fieldOffset, maximumFrameLength, byteOrder))
+      .named("lengthFieldFraming")
+  }
+
+  /**
+   * Creates a Flow that decodes an incoming stream of unstructured byte chunks into a stream of frames, assuming that
+   * incoming frames have a field that encodes their length.
+   *
+   * If the input stream finishes before the last frame has been fully decoded, this Flow will fail the stream reporting
+   * a truncated frame.
+   *
+   * @param fieldLength The length of the "size" field in bytes
+   * @param fieldOffset The offset of the field from the beginning of the frame in bytes
+   * @param maximumFrameLength The maximum length of allowed frames while decoding. If the maximum length is exceeded
+   *                           this Flow will fail the stream. This length *includes* the header (i.e the offset and
+   *                           the length of the size field)
+   * @param byteOrder The ''ByteOrder'' to be used when decoding the field
+   * @param computeFrameSize This function can be supplied if frame size is varied or needs to be computed in a special fashion.
+   *                         For example, frame can have a shape like this: `[offset bytes][body size bytes][body bytes][footer bytes]`.
+   *                         Then computeFrameSize can be used to compute the frame size: `(offset bytes, computed size) => (actual frame size)`.
+   *                         ''Actual frame size'' must be equal or bigger than sum of `fieldOffset` and `fieldLength`, the stage fails otherwise.
+   *
+   */
+  def lengthField(
+    fieldLength:        Int,
+    fieldOffset:        Int,
+    maximumFrameLength: Int,
+    byteOrder:          ByteOrder,
+    computeFrameSize:   (Array[Byte], Int) ⇒ Int): Flow[ByteString, ByteString, NotUsed] = {
+    require(fieldLength >= 1 && fieldLength <= 4, "Length field length must be 1, 2, 3 or 4.")
+    Flow[ByteString].via(new LengthFieldFramingStage(fieldLength, fieldOffset, maximumFrameLength, byteOrder, Some(computeFrameSize)))
       .named("lengthFieldFraming")
   }
 
@@ -224,7 +254,18 @@ object Framing {
     val lengthFieldLength:  Int,
     val lengthFieldOffset:  Int,
     val maximumFrameLength: Int,
-    val byteOrder:          ByteOrder) extends GraphStage[FlowShape[ByteString, ByteString]] {
+    val byteOrder:          ByteOrder,
+    computeFrameSize:       Option[(Array[Byte], Int) ⇒ Int]) extends GraphStage[FlowShape[ByteString, ByteString]] {
+
+    //for the sake of binary compatibility
+    def this(
+      lengthFieldLength:  Int,
+      lengthFieldOffset:  Int,
+      maximumFrameLength: Int,
+      byteOrder:          ByteOrder) {
+      this(lengthFieldLength, lengthFieldOffset, maximumFrameLength, byteOrder, None)
+    }
+
     private val minimumChunkSize = lengthFieldOffset + lengthFieldLength
     private val intDecoder = byteOrder match {
       case ByteOrder.BIG_ENDIAN    ⇒ bigEndianDecoder
@@ -263,11 +304,16 @@ object Framing {
           pushFrame()
         } else if (buffSize >= minimumChunkSize) {
           val parsedLength = intDecoder(buffer.iterator.drop(lengthFieldOffset), lengthFieldLength)
-          frameSize = parsedLength + minimumChunkSize
+          frameSize = computeFrameSize match {
+            case Some(f) ⇒ f(buffer.take(lengthFieldOffset).toArray, parsedLength)
+            case None    ⇒ parsedLength + minimumChunkSize
+          }
           if (frameSize > maximumFrameLength) {
             failStage(new FramingException(s"Maximum allowed frame size is $maximumFrameLength but decoded frame header reported size $frameSize"))
           } else if (parsedLength < 0) {
             failStage(new FramingException(s"Decoded frame header reported negative size $parsedLength"))
+          } else if (frameSize < minimumChunkSize) {
+            failStage(new FramingException(s"Computed frame size $frameSize is less than minimum chunk size $minimumChunkSize"))
           } else if (buffSize >= frameSize) {
             pushFrame()
           } else tryPull()

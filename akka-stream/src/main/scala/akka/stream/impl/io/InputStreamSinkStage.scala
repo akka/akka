@@ -114,7 +114,7 @@ private[stream] object InputStreamSinkStage {
   var isInitialized = false
   var isActive = true
   var isStageAlive = true
-  val subscriberClosedException = new IOException("Reactive stream is terminated, no reads are possible")
+  def subscriberClosedException = new IOException("Reactive stream is terminated, no reads are possible")
   var detachedChunk: Option[ByteString] = None
 
   @scala.throws(classOf[IOException])

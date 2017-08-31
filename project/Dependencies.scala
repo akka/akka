@@ -41,7 +41,7 @@ object Dependencies {
   object Compile {
     // Compile
 
-    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.15.6" exclude("org.slf4j", "slf4j-api") // ApacheV2
+    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.17.7" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config        = "com.typesafe"                % "config"                       % "1.3.1"       // ApacheV2
@@ -60,7 +60,7 @@ object Dependencies {
     val sigar         = "org.fusesource"              % "sigar"                        % "1.6.4"       // ApacheV2
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.0" // CC0
+    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.1" // CC0
 
     // ssl-config
     val sslConfigCore = "com.typesafe"                %% "ssl-config-core"             % sslConfigVersion // ApacheV2
@@ -75,7 +75,6 @@ object Dependencies {
 
     val aeronDriver = "io.aeron"                      % "aeron-driver"                 % aeronVersion       // ApacheV2
     val aeronClient = "io.aeron"                      % "aeron-client"                 % aeronVersion       // ApacheV2
-
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.3"             % "test"
       val gson        = "com.google.code.gson"        % "gson"                         % "2.8.0"             % "test"
@@ -101,8 +100,8 @@ object Dependencies {
       val jimfs        = "com.google.jimfs"            % "jimfs"                        % "1.1"              % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
-      val metricsJvm      = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.2"            % "test" // ApacheV2
+      val metrics         = "io.dropwizard.metrics"        % "metrics-core"                 % "3.2.4"            % "test" // ApacheV2
+      val metricsJvm      = "io.dropwizard.metrics"        % "metrics-jvm"                  % "3.2.4"            % "test" // ApacheV2
       val latencyUtils    = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
       val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
       val metricsAll      = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
@@ -112,7 +111,7 @@ object Dependencies {
       val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % slf4jVersion    % "test"    // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.0" % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.1" % "test" // CC0
     }
 
     object Provided {

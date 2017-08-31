@@ -13,6 +13,7 @@ import ch.qos.logback.core.OutputStreamAppender
 import java.io.ByteArrayOutputStream
 
 import org.scalatest.BeforeAndAfterEach
+import org.slf4j.{ Marker, MarkerFactory }
 
 object Slf4jLoggerSpec {
 
@@ -28,6 +29,8 @@ object Slf4jLoggerSpec {
 
   final case class StringWithMDC(s: String, mdc: Map[String, Any])
   final case class StringWithMarker(s: String, marker: LogMarker)
+  final case class StringWithSlf4jMarker(s: String, marker: Marker)
+  final case class StringWithSlf4jMarkerMDC(s: String, marker: Marker, mdc: Map[String, Any])
 
   final class LogProducer extends Actor with DiagnosticActorLogging {
 
@@ -38,6 +41,12 @@ object Slf4jLoggerSpec {
         log.error(e, e.getMessage)
       case (s: String, x: Int, y: Int) ⇒
         log.info(s, x, y)
+      case StringWithSlf4jMarker(s, m) ⇒
+        markLog.info(Slf4jLogMarker(m), s)
+      case StringWithSlf4jMarkerMDC(s, mark, mdc) ⇒
+        markLog.mdc(mdc)
+        markLog.info(Slf4jLogMarker(mark), s)
+        markLog.clearMDC()
       case StringWithMDC(s, mdc) ⇒
         log.mdc(mdc)
         log.info(s)
@@ -107,6 +116,28 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
       s should include("marker=[SECURITY]")
+      s should include("msg=[security-wise interesting message]")
+    }
+
+    "log info with slf4j marker" in {
+      val slf4jMarker = MarkerFactory.getMarker("SLF")
+      slf4jMarker.add(MarkerFactory.getMarker("ADDED")) // slf4j markers can have children
+      producer ! StringWithSlf4jMarker("security-wise interesting message", slf4jMarker)
+
+      awaitCond(outputString.contains("----"), 5 seconds)
+      val s = outputString
+      s should include("marker=[SLF [ ADDED ]]")
+      s should include("msg=[security-wise interesting message]")
+    }
+    "log info with slf4j marker and MDC" in {
+      val slf4jMarker = MarkerFactory.getMarker("SLF")
+      slf4jMarker.add(MarkerFactory.getMarker("ADDED")) // slf4j markers can have children
+      producer ! StringWithSlf4jMarkerMDC("security-wise interesting message", slf4jMarker, Map("ticketNumber" → 3671, "ticketDesc" → "Custom MDC Values"))
+
+      awaitCond(outputString.contains("----"), 5 seconds)
+      val s = outputString
+      s should include("marker=[SLF [ ADDED ]]")
+      s should include("mdc=[ticket-#3671: Custom MDC Values]")
       s should include("msg=[security-wise interesting message]")
     }
 

@@ -395,7 +395,7 @@ either not rely on messages being the same instance or turn the setting off.
 ### Wire Protocol Compatibility
 
 It is possible to use Akka Remoting between nodes running Akka 2.4.16 and 2.5-M1, but some settings have changed so you might need
-to adjust some configuration as described in [mig25_rolling](#mig25-rolling).
+to adjust some configuration as described in [Rolling Update](#mig25-rolling).
 
 Note however that if using Java serialization it will not be possible to mix nodes using Scala 2.11 and 2.12.
 
@@ -416,10 +416,18 @@ Some settings have changed default value in 2.5-M1 and therefore you need to rev
 before doing a rolling update to 2.5-M1. Such settings are mentioned elsewhere in this migration guide
 and here is a summary of things to consider.
 
- * [mig25_addser](#mig25-addser)
- * [mig25_weaklyup](#mig25-weaklyup)
- * [mig25_sharding_store](#mig25-sharding-store)
- * [mig25_mutual](#mig25-mutual)
+ * [akka.actor.additional-serialization-bindings](#mig25-addser)
+ * [akka.cluster.allow-weakly-up-members](#mig25-weaklyup)
+ * [akka.cluster.sharding.state-store-mode](#mig25-sharding-store)
+ * [akka.remote.netty.ssl.require-mutual-authentication](#mig25-mutual)
+ 
+#### Limit lookup of routees to nodes tagged with multiple roles
+
+Starting with 2.5.4, cluster routing supports delivering messages to routees tagged with all specified roles
+using `use-roles` (instead of `use-role` in previous versions). When doing rolling upgrades and using this new feature,
+it is important to first upgrade the existing nodes to the latest version of Akka
+and then start using multiple roles in a separate rolling upgrade. Otherwise, if a new node sends a message 
+with the restriction `use-roles = ["a", "b"]`, that will only require the "a" role on old nodes.
 
 ### Coordinated Shutdown
 
@@ -464,7 +472,7 @@ you might need to enable/disable it in configuration when performing rolling upg
 <a id="mig25-sharding-store"></a>
 ### Cluster Sharding state-store-mode
 
-Distributed Data mode is now the default `state-store-mode` for Cluster Sharding. The persistence mode
+Distributed Data mode, which was still experimental in 2.4.x, is now the default `state-store-mode` for Cluster Sharding. The persistence mode
 is also supported. Read more in the @ref:[documentation](../cluster-sharding.md#cluster-sharding-mode).
 
 It's important to use the same mode on all nodes in the cluster, i.e. if you perform a rolling upgrade
@@ -478,6 +486,9 @@ akka.cluster.sharding.state-store-mode = persistence
 Note that the stored @ref:[Remembering Entities](../cluster-sharding.md#cluster-sharding-remembering) data with `persistence` mode cannot
 be migrated to the `data` mode. Such entities must be started again in some other way when using
 `ddata` mode.
+
+Rolling upgrades from clusters that already used the (then-experimental) `ddata`
+mode are not supported.
 
 ### Cluster Sharding remember entities
 
@@ -705,6 +716,8 @@ final ActorRef throttler =
     .to(Sink.actorRef(target, NotUsed.getInstance()))
     .run(materializer);
 ```
+
+Note, that when using `Sink.actorRef` the sender of the original message sent to the `thottler` ActorRef will be lost and messages will arrive at the `target` with the sender set to `ActorRef.noSender`. Using this construct it is currently impossible to keep the original sender. Alternatively, you can manually specify a static sender by replacing `Sink.actorRef` with @java[`Sink.foreach(msg -> target.tell(msg, whateverSender))`]@scala[`Sink.foreach(msg => target.tell(msg, whateverSender))`]. You could also calculate a sender by inspecting the `msg`. Be cautious not to use `target.tell(msg, sender())` inside of `Sink.foreach` because the result of `sender()` is undefined or will fail when executed from within a stream.
 
 ## Akka Typed
 

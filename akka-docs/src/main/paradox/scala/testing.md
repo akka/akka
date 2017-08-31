@@ -361,7 +361,7 @@ above; just use the power!
 
 @@@ warning
 
-Any message send from a `TestProbe` to another actor which runs on the
+Any message sent from a `TestProbe` to another actor which runs on the
 CallingThreadDispatcher runs the risk of dead-lock, if that other actor might
 also send to this probe. The implementation of `TestProbe.watch` and
 `TestProbe.unwatch` will also send a message to the watchee, which

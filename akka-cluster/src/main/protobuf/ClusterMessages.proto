@@ -229,4 +229,5 @@ message UniqueAddress {
    required uint32 maxInstancesPerNode = 2;
    required bool allowLocalRoutees = 3;
    optional string useRole = 4;
+   repeated string useRoles = 5;
  }

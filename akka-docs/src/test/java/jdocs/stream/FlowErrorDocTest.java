@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
+import akka.japi.pf.PFBuilder;
 import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
@@ -137,5 +138,65 @@ public class FlowErrorDocTest extends AbstractJavaTest {
       Arrays.asList(0, 1, 4, 0, 5, 12), 
       result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
+
+  @Test
+  public void demonstrateRecover() {
+    //#recover
+    final Materializer mat = ActorMaterializer.create(system);
+    Source.from(Arrays.asList(0, 1, 2, 3, 4, 5, 6)).map(n -> {
+      if (n < 5) return n.toString();
+      else throw new RuntimeException("Boom!");
+    }).recover(new PFBuilder()
+        .match(RuntimeException.class, ex -> "stream truncated")
+        .build()
+    ).runForeach(System.out::println, mat);
+    //#recover
+
+/*
+Output:
+//#recover-output
+0
+1
+2
+3
+4
+stream truncated
+//#recover-output
+*/
+  }
+
+  @Test
+   public void demonstrateRecoverWithRetries() {
+    //#recoverWithRetries
+    final Materializer mat = ActorMaterializer.create(system);
+    Source<String, NotUsed> planB = Source.from(Arrays.asList("five", "six", "seven", "eight"));
+
+    Source.from(Arrays.asList(0, 1, 2, 3, 4, 5, 6)).map(n -> {
+      if (n < 5) return n.toString();
+      else throw new RuntimeException("Boom!");
+    }).recoverWithRetries(
+        1, // max attempts
+        new PFBuilder()
+            .match(RuntimeException.class, ex -> planB)
+            .build()
+    ).runForeach(System.out::println, mat);
+    //#recoverWithRetries
+
+/*
+Output:
+//#recoverWithRetries-output
+0
+1
+2
+3
+4
+five
+six
+seven
+eight
+//#recoverWithRetries-output
+ */
+  }
+
 
 }

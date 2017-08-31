@@ -3,7 +3,7 @@ package akka.stream
 import akka.actor.{ ActorSystem, Props }
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.testkit.{ ImplicitSender, TestActor }
 
 import scala.concurrent.Await
@@ -24,7 +24,7 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
     "properly shut down actors associated with it" in {
       val m = ActorMaterializer.create(system)
 
-      val f = Source.maybe[Int].runFold(0)(_ + _)(m)
+      val f = Source.fromPublisher(TestPublisher.probe[Int]()(system)).runFold(0)(_ + _)(m)
 
       m.shutdown()
 

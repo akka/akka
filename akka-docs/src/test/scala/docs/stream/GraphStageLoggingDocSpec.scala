@@ -7,7 +7,6 @@ import java.util.concurrent.ThreadLocalRandom
 
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, StageLogging }
 import akka.testkit.{ AkkaSpec, EventFilter }
 
 class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
@@ -16,6 +15,8 @@ class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
   implicit val ec = system.dispatcher
 
   //#stage-with-logging
+  import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, StageLogging }
+
   final class RandomLettersSource extends GraphStage[SourceShape[String]] {
     val out = Outlet[String]("RandomLettersSource.out")
     override val shape: SourceShape[String] = SourceShape(out)

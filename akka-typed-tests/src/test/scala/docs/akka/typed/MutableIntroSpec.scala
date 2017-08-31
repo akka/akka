@@ -105,7 +105,7 @@ class MutableIntroSpec extends TypedSpec {
         }
       }
 
-    val system = ActorSystem("ChatRoomDemo", main)
+    val system = ActorSystem(main, "ChatRoomDemo")
     Await.result(system.whenTerminated, 1.second)
     //#chatroom-main
   }

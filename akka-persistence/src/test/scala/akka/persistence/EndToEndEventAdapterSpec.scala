@@ -151,7 +151,7 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
     """.stripMargin)
 
   def persister(name: String, probe: Option[ActorRef] = None)(implicit system: ActorSystem) =
-    system.actorOf(Props(classOf[EndToEndAdapterActor], name, "akka.persistence.journal." + journalName, probe), name)
+    system.actorOf(Props(classOf[EndToEndAdapterActor], name, "akka.persistence.journal." + journalName, probe))
 
   def withActorSystem[T](name: String, config: Config)(block: ActorSystem ⇒ T): T = {
     val system = ActorSystem(name, journalConfig withFallback config)

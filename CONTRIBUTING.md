@@ -62,7 +62,7 @@ The steps are exactly the same for everyone involved in the project (be it core 
 1. [Fork the project](https://github.com/akka/akka#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a pull request against the mainline Akka.
 1. Create a branch on your fork and work on the feature. For example: `git checkout -b wip-custom-headers-akka-http`
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
-   - Please write additional tests covering your feature and adjust existing ones if needed before submitting your pull request. The `validatePullRequest` sbt task ([explained below](#validatePullRequest)) may come in handy to verify your changes are correct.
+   - Please write additional tests covering your feature and adjust existing ones if needed before submitting your pull request. The `validatePullRequest` sbt task ([explained below](#the-validatepullrequest-task)) may come in handy to verify your changes are correct.
 1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
 1. If it's a new feature, or a change of behaviour, document it on the [akka-docs](https://github.com/akka/akka/tree/master/akka-docs), remember, an undocumented feature is not a feature. If the feature was touching Scala or Java DSL, make sure to document it in both the Java and Scala documentation (usually in a file of the same name, but under `/scala/` instead of `/java/` etc).
 1. Now it's finally time to [submit the pull request](https://help.github.com/articles/using-pull-requests)!
@@ -181,7 +181,7 @@ an error like this:
 [error]    filter with: ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync")
 ```
 
-In such situations it's good to consult with a core team member if the violation can be safely ignored (by adding the above snippet to `project/MiMa.scala`), or if it would indeed break binary compatibility.
+In such situations it's good to consult with a core team member if the violation can be safely ignored (by adding the above snippet to `<module>/src/main/mima-filters/<last-version>.backwards.excludes`), or if it would indeed break binary compatibility.
 
 Situations when it may be fine to ignore a MiMa issued warning include:
 
@@ -232,6 +232,15 @@ akka-docs/paradox
 ```
 
 The generated html documentation is in `akka-docs/target/paradox/site/main/index.html`.
+
+### Java- or Scala-specific documentation
+
+For new documentation chapters, we recommend adding a page to the `scala` tree documenting both Java and Scala, using [tabs](http://developer.lightbend.com/docs/paradox/latest/features/snippet-inclusion.html) for code snippets and [groups]( http://developer.lightbend.com/docs/paradox/latest/features/groups.html) for other Java- or Scala-specific segments or sections.
+An example of such a 'merged' page is `akka-docs/src/main/paradox/scala/actors.md`.
+
+Add a symlink to the `java` tree to make the page available there as well.
+
+Consolidation of existing pages is tracked in [issue #23052](https://github.com/akka/akka/issues/23052)
 
 ### Note for paradox on Windows
 

@@ -272,6 +272,7 @@ class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaExc
  */
 @SerialVersionUID(1L)
 final case class UnhandledMessage(@BeanProperty message: Any, @BeanProperty sender: ActorRef, @BeanProperty recipient: ActorRef)
+  extends NoSerializationVerificationNeeded
 
 /**
  * Classes for passing status back to the sender.

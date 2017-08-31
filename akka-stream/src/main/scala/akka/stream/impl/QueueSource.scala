@@ -3,25 +3,17 @@
  */
 package akka.stream.impl
 
-import akka.dispatch.ExecutionContexts
-import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.OverflowStrategies._
 import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
-import akka.stream.scaladsl.{ Keep, Source, SourceQueueWithComplete }
+import akka.stream.scaladsl.SourceQueueWithComplete
 
-import scala.annotation.tailrec
-import scala.concurrent.{ Future, Promise }
 import akka.Done
 import java.util.concurrent.CompletionStage
-
 import akka.annotation.InternalApi
-import akka.util.OptionVal
 
+import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.FutureConverters._
-import scala.util.Try
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -53,9 +45,13 @@ import scala.util.control.NonFatal
         if (maxBuffer > 0) buffer = Buffer(maxBuffer, materializer)
         initCallback(callback.invoke)
       }
-      override def postStop(): Unit = stopCallback {
-        case Offer(elem, promise) ⇒ promise.failure(new IllegalStateException("Stream is terminated. SourceQueue is detached"))
-        case _                    ⇒ // ignore
+      override def postStop(): Unit = {
+        val exception = new AbruptStageTerminationException(this)
+        completion.tryFailure(exception)
+        stopCallback {
+          case Offer(elem, promise) ⇒ promise.failure(exception)
+          case _                    ⇒ // ignore
+        }
       }
 
       private def enqueueAndSuccess(offer: Offer[T]): Unit = {

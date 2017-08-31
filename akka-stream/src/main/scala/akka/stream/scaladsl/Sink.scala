@@ -275,6 +275,8 @@ object Sink {
    * the reduce stage will fail its downstream with a [[NoSuchElementException]],
    * which is semantically in-line with that Scala's standard library collections
    * do in such situations.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    */
   def reduce[T](f: (T, T) ⇒ T): Sink[T, Future[T]] =
     Flow[T].reduce(f).toMat(Sink.head)(Keep.right).named("reduceSink")
@@ -403,6 +405,8 @@ object Sink {
    * try to create sink with next element
    *
    * `fallback` will be executed when there was no elements and completed is received from upstream.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    */
   def lazyInit[T, M](sinkFactory: T ⇒ Future[Sink[T, M]], fallback: () ⇒ M): Sink[T, Future[M]] =
     Sink.fromGraph(new LazySink(sinkFactory, fallback))

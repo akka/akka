@@ -275,7 +275,7 @@ object Source {
    * Streams the elements of an asynchronous source once its given `completion` stage completes.
    * If the `completion` fails the stream is failed with that exception.
    */
-  def fromSourceCompletionStage[T, M](completion: CompletionStage[Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
+  def fromSourceCompletionStage[T, M](completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -355,16 +355,13 @@ object Source {
    * with None.
    */
   def maybe[T]: Source[T, Promise[Option[T]]] =
-    fromGraph(new MaybeSource[T](DefaultAttributes.maybeSource, shape("MaybeSource")))
+    Source.fromGraph(MaybeSource.asInstanceOf[Graph[SourceShape[T], Promise[Option[T]]]])
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
    */
   def failed[T](cause: Throwable): Source[T, NotUsed] =
-    fromGraph(new PublisherSource(
-      ErrorPublisher(cause, "FailedSource")[T],
-      DefaultAttributes.failedSource,
-      shape("FailedSource")))
+    Source.fromGraph(new FailedSource[T](cause))
 
   /**
    * Creates a `Source` that is not materialized until there is downstream demand, when the source gets materialized
@@ -520,6 +517,8 @@ object Source {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * @param create - function that is called on stream start and creates/opens resource.
    * @param read - function that reads data from opened resource. It is called each time backpressure signal
    *             is received. Stream calls close and completes when `read` returns None.
@@ -540,6 +539,8 @@ object Source {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * @param create - function that is called on stream start and creates/opens resource.
    * @param read - function that reads data from opened resource. It is called each time backpressure signal

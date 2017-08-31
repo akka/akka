@@ -541,6 +541,24 @@ Sources and sinks for integrating with `java.io.InputStream` and `java.io.Output
 `StreamConverters`. As they are blocking APIs the implementations of these stages are run on a separate
 dispatcher configured through the `akka.stream.blocking-io-dispatcher`.
 
+@@@ warning
+
+Be aware that `asInputStream` and `asOutputStream` materialize `InputStream` and `OutputStream` respectively as
+blocking API implementation. They will block tread until data will be available from upstream.
+Because of blocking nature these objects cannot be used in `mapMaterializeValue` section as it causes deadlock
+of the stream materialization process.
+For example, following snippet will fall with timeout exception:
+
+```scala
+...
+.toMat(StreamConverters.asInputStream().mapMaterializedValue { inputStream ⇒
+        inputStream.read()  // this could block forever
+        ...
+}).run()
+```
+
+@@@
+
 ---------------------------------------------------------------
 
 ### fromOutputStream
@@ -685,6 +703,18 @@ single input (e.g. `mapConcat`) or consume multiple elements before emitting one
 However, these rate transformations are data-driven, i.e. it is the incoming elements that define how the
 rate is affected. This is in contrast with [detached stages](#backpressure-aware-stages) which can change their processing behavior
 depending on being backpressured by downstream or not.
+
+---------------------------------------------------------------
+
+### alsoTo
+
+Attaches the given `Sink` to this `Flow`, meaning that elements that passes through will also be sent to the `Sink`.
+
+**emits** when an element is available and demand exists both from the Sink and the downstream
+
+**backpressures** when downstream or Sink backpressures
+
+**completes** when upstream completes
 
 ---------------------------------------------------------------
 

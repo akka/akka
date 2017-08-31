@@ -383,9 +383,21 @@ A path in an actor system represents a "place" which might be occupied
 by a living actor. Initially (apart from system initialized actors) a path is
 empty. When `actorOf()` is called it assigns an *incarnation* of the actor
 described by the passed `Props` to the given path. An actor incarnation is
-identified by the path *and a UID*. A restart only swaps the `Actor`
+identified by the path *and a UID*. 
+
+It is worth noting about the difference between:
+
+* restart 
+* stop, followed by re-creation of actor
+
+as explained below.
+
+A restart only swaps the `Actor`
 instance defined by the `Props` but the incarnation and hence the UID remains
 the same.
+As long as the incarnation is same, you can keep using the same `ActorRef`.
+Restart is handled by the [Supervision Strategy](fault-tolerance.md#creating-a-supervisor-strategy) of actor's parent actor,
+and there is more discussion about [what restart means](../general/supervision.md#what-restarting-means)
 
 The lifecycle of an incarnation ends when the actor is stopped. At
 that point the appropriate lifecycle events are called and watching actors
@@ -598,7 +610,7 @@ You can also acquire an `ActorRef` for an `ActorSelection` with
 the `resolveOne` method of the `ActorSelection`. It returns a `Future`
 of the matching `ActorRef` if such an actor exists. @java[(see also
 @ref:[Java 8 Compatibility](java8-compat.md) for Java compatibility).] It is completed with
-failure [[akka.actor.ActorNotFound]] if no such actor exists or the identification
+failure `akka.actor.ActorNotFound` if no such actor exists or the identification
 didn't complete within the supplied `timeout`.
 
 Remote actor addresses may also be looked up, if @ref:[remoting](remoting.md) is enabled:
@@ -733,8 +745,12 @@ is available in the `akka.pattern.PatternsCS` object.
 
 @@@ warning
 
-To complete the future with an exception you need send a Failure message to the sender.
-This is *not done automatically* when an actor throws an exception while processing a message.
+To complete the future with an exception you need to send an `akka.actor.Status.Failure` message to the sender.
+This is *not done automatically* when an actor throws an exception while processing a message. 
+
+Please note that Scala's `Try` sub types `scala.util.Failure` and `scala.util.Success` are not treated 
+specially, and would complete the ask Future with the given value - only the `akka.actor.Status` messages 
+are treated specially by the ask pattern.
 
 @@@
 
@@ -822,10 +838,10 @@ You can build such behavior with a builder named `ReceiveBuilder`. Here is an ex
 
 @@@
 
-@Scala
+Scala
 :  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #imports1 #my-actor }
 
-@Java
+Java
 :  @@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #imports #my-actor }
 
 @@@ div { .group-java }
@@ -851,7 +867,7 @@ That has benefits such as:
 The `Receive` can be implemented in other ways than using the `ReceiveBuilder` since it in the
 end is just a wrapper around a Scala `PartialFunction`. In Java, you can implement `PartialFunction` by
 extending `AbstractPartialFunction`. For example, one could implement an adapter
-to [Javaslang Pattern Matching DSL](http://www.javaslang.io/javaslang-jdocs/#_pattern_matching).
+to [Vavr Pattern Matching DSL](http://www.vavr.io/vavr-docs/#_pattern_matching).
 
 If the validation of the `ReceiveBuilder` match logic turns out to be a bottleneck for some of your
 actors you can consider to implement it at lower level by extending `UntypedAbstractActor` instead
@@ -904,6 +920,29 @@ Java
 Messages marked with `NotInfluenceReceiveTimeout` will not reset the timer. This can be useful when
 `ReceiveTimeout` should be fired by external inactivity but not influenced by internal activity,
 e.g. scheduled tick messages.
+
+<a id="actors-timers"></a>
+
+## Timers, scheduled messages
+
+Messages can be scheduled to be sent at a later point by using the @ref:[Scheduler](scheduler.md) directly,
+but when scheduling periodic or single messages in an actor to itself it's more convenient and safe
+to use the support for named timers. The lifecycle of scheduled messages can be difficult to manage
+when the actor is restarted and that is taken care of by the timers.
+
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/TimerDocSpec.scala) { #timers }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/TimerDocTest.java) { #timers }
+
+Each timer has a key and can be replaced or cancelled. It's guaranteed that a message from the
+previous incarnation of the timer with the same key is not received, even though it might already
+be enqueued in the mailbox when it was cancelled or the new timer was started.
+
+The timers are bound to the lifecycle of the actor that owns it, and thus are cancelled
+automatically when it is restarted or stopped. Note that the `TimerScheduler` is not thread-safe, 
+i.e. it must only be used within the actor that owns it.
 
 <a id="stopping-actors"></a>
 ## Stopping actors
@@ -981,16 +1020,10 @@ Java
 termination of several actors:
 
 Scala
-:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop }
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop}
 
 Java
-:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-gracefulStop #gracefulStop }
-
-Scala
-:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop-actor }
-
-Java
-:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop-actor }
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop}
 
 When `gracefulStop()` returns successfully, the actor’s `postStop()` hook
 will have been executed: there exists a happens-before edge between the end of
@@ -1309,15 +1342,15 @@ The rich lifecycle hooks of Actors provide a useful toolkit to implement various
 lifetime of an `ActorRef`, an actor can potentially go through several restarts, where the old instance is replaced by
 a fresh one, invisibly to the outside observer who only sees the `ActorRef`.
 
-One may think about the new instances as "incarnations". Initialization might be necessary for every incarnation
-of an actor, but sometimes one needs initialization to happen only at the birth of the first instance when the
+Initialization might be necessary every time an actor is instantiated, 
+but sometimes one needs initialization to happen only at the birth of the first instance when the
 `ActorRef` is created. The following sections provide patterns for different initialization needs.
 
 ### Initialization via constructor
 
 Using the constructor for initialization has various benefits. First of all, it makes it possible to use `val` fields to store
 any state that does not change during the life of the actor instance, making the implementation of the actor more robust.
-The constructor is invoked for every incarnation of the actor, therefore the internals of the actor can always assume
+The constructor is invoked when an actor instance is created calling `actorOf` and also on restart, therefore the internals of the actor can always assume
 that proper initialization happened. This is also the drawback of this approach, as there are cases when one would
 like to avoid reinitializing internals on restart. For example, it is often useful to preserve child actors across
 restarts. The following section provides a pattern for this case.
@@ -1326,11 +1359,11 @@ restarts. The following section provides a pattern for this case.
 
 The method `preStart()` of an actor is only called once directly during the initialization of the first instance, that
 is, at creation of its `ActorRef`. In the case of restarts, `preStart()` is called from `postRestart()`, therefore
-if not overridden, `preStart()` is called on every incarnation. However, by overriding `postRestart()` one can disable
+if not overridden, `preStart()` is called on every restart. However, by overriding `postRestart()` one can disable
 this behavior, and ensure that there is only one call to `preStart()`.
 
 One useful usage of this pattern is to disable creation of new `ActorRefs` for children during restarts. This can be
-achieved by overriding `preRestart()`:
+achieved by overriding `preRestart()`. Below is the default implementation of these lifecycle hooks:
 
 Scala
 :  @@snip [InitializationDocSpec.scala]($code$/scala/docs/actor/InitializationDocSpec.scala) { #preStartInit }

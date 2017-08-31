@@ -17,14 +17,21 @@ concepts and architecture of [eventsourced](https://github.com/eligosource/event
 
 Akka persistence is a separate jar file. Make sure that you have the following dependency in your project:
 
-Scala
+sbt
 :   @@@vars
     ```
     "com.typesafe.akka" %% "akka-persistence" % "$akka.version$"
     ```
     @@@
 
-Java
+gradle
+:   @@@vars
+    ``` 
+    compile group: 'com.typesafe.akka', name: 'akka-persistence_$scala.binary_version$', version: '$akka.version$'
+    ```
+    @@@
+
+maven
 :   @@@vars
     ```
     <dependency>
@@ -40,7 +47,7 @@ in-memory heap based journal, local file-system based snapshot-store and LevelDB
 
 LevelDB based plugins will require the following additional dependency declaration:
 
-Scala
+sbt
 :   @@@vars
     ```
     "org.iq80.leveldb"            % "leveldb"          % "0.7"
@@ -48,7 +55,15 @@ Scala
     ```
     @@@
 
-Java
+gradle
+:   @@@vars
+    ```
+    compile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.7'
+    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
+    ```
+    @@@
+
+maven
 :   @@@vars
     ```
     <dependency>
@@ -76,7 +91,7 @@ case of sender and receiver JVM crashes.
 are journaled and which are received by the persistent actor without being journaled. Journal maintains `highestSequenceNr` that is increased on each message.
 The storage backend of a journal is pluggable. The persistence extension comes with a "leveldb" journal plugin, which writes to the local filesystem.
 Replicated journals are available as [Community plugins](http://akka.io/community/).
- * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's or a view's internal state. Snapshots are
+ * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's internal state. Snapshots are
 used for optimizing recovery times. The storage backend of a snapshot store is pluggable.
 The persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem.
  * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
@@ -177,7 +192,7 @@ By default, a persistent actor is automatically recovered on start and on restar
 New messages sent to a persistent actor during recovery do not interfere with replayed messages.
 They are stashed and received by a persistent actor after recovery phase completes.
 
-The number of concurrent recoveries of recoveries that can be in progress at the same time is limited 
+The number of concurrent recoveries that can be in progress at the same time is limited 
 to not overload the system and the backend data store. When exceeding the limit the actors will wait 
 until other recoveries have been completed. This is configured by:
 
@@ -187,7 +202,7 @@ akka.persistence.max-concurrent-recoveries = 50
 
 @@@ note
 
-Accessing the @scala[`sender()`]@java[sender with `getSender()] for replayed messages will always result in a `deadLetters` reference,
+Accessing the @scala[`sender()`]@java[sender with `getSender()`] for replayed messages will always result in a `deadLetters` reference,
 as the original sender is presumed to be long gone. If you indeed have to notify an actor during
 recovery in the future, store its `ActorPath` explicitly in your persisted events.
 
@@ -209,9 +224,8 @@ Scala
 Java
 :  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #recovery-no-snap }
 
-Another example, which can be fun for experiments but probably not in a real application, is setting an
-upper bound to the replay which allows the actor to be replayed to a certain point "in the past"
-instead to its most up to date state. Note that after that it is a bad idea to persist new
+Another possible recovery customization, which can be useful for debugging, is setting an
+upper bound on the replay, causing the actor to be replayed only up to a certain point "in the past" (instead of being replayed to its most up to date state). Note that after that it is a bad idea to persist new
 events because a later recovery will probably be confused by the new events that follow the
 events that were previously skipped.
 
@@ -338,7 +352,7 @@ Java
 
 @@@ note
 
-In order to implement the pattern known as "*command sourcing*" simply call @scala[persistAsync(cmd)(...)`]@java[`persistAsync`] right away on all incoming
+In order to implement the pattern known as "*command sourcing*" simply call @scala[`persistAsync(cmd)(...)`]@java[`persistAsync`] right away on all incoming
 messages and handle them in the callback.
 
 @@@
@@ -639,8 +653,7 @@ akka.persistence.journal.leveldb.replay-filter {
 <a id="snapshots"></a>
 ## Snapshots
 
-Snapshots can dramatically reduce recovery times of persistent actors and views. The following discusses snapshots
-in context of persistent actors but this is also applicable to persistent views.
+As you model your domain using actors, you may notice that some actors may be prone to accumulating extremely long event logs and experiencing long recovery times. Sometimes, the right approach may be to split out into a set of shorter lived actors. However, when this is not an option, you can use snapshots to reduce recovery times drastically. 
 
 Persistent actors can save snapshots of internal state by calling the  `saveSnapshot` method. If saving of a snapshot
 succeeds, the persistent actor receives a `SaveSnapshotSuccess` message, otherwise a `SaveSnapshotFailure` message
@@ -683,13 +696,13 @@ saved snapshot matches the specified `SnapshotSelectionCriteria` will replay all
 @@@ note
 
 In order to use snapshots, a default snapshot-store (`akka.persistence.snapshot-store.plugin`) must be configured,
-or the @scala`PersistentActor`]@java[persistent actor] can pick a snapshot store explicitly by overriding @scala[`def snapshotPluginId: String`]@java[`String snapshotPluginId()`].
+or the @scala[`PersistentActor`]@java[persistent actor] can pick a snapshot store explicitly by overriding @scala[`def snapshotPluginId: String`]@java[`String snapshotPluginId()`].
 
 Since it is acceptable for some applications to not use any snapshotting, it is legal to not configure a snapshot store.
 However, Akka will log a warning message when this situation is detected and then continue to operate until
 an actor tries to store a snapshot, at which point the operation will fail (by replying with an `SaveSnapshotFailure` for example).
 
-Note that @ref:[Cluster Sharding](cluster-sharding.md) is using snapshots, so if you use Cluster Sharding you need to define a snapshot store plugin.
+Note that the "persistence mode" of @ref:[Cluster Sharding](cluster-sharding.md) makes use of snapshots. If you use that mode, you'll need to define a snapshot store plugin.
 
 @@@
 
@@ -999,10 +1012,10 @@ Storage backends for journals and snapshot stores are pluggable in the Akka pers
 
 A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](http://akka.io/community/)
 
-Plugins can be selected either by "default" for all persistent actors and views,
-or "individually", when a persistent actor or view defines its own set of plugins.
+Plugins can be selected either by "default" for all persistent actors,
+or "individually", when a persistent actor defines its own set of plugins.
 
-When a persistent actor or view does NOT override the `journalPluginId` and `snapshotPluginId` methods,
+When a persistent actor does NOT override the `journalPluginId` and `snapshotPluginId` methods,
 the persistence extension will use the "default" journal and snapshot-store plugins configured in `reference.conf`:
 
 ```
@@ -1026,9 +1039,33 @@ Java
 ### Eager initialization of persistence plugin
 
 By default, persistence plugins are started on-demand, as they are used. In some case, however, it might be beneficial
-to start a certain plugin eagerly. In order to do that, you should first add the `akka.persistence.Persistence`
+to start a certain plugin eagerly. In order to do that, you should first add `akka.persistence.Persistence`
 under the `akka.extensions` key. Then, specify the IDs of plugins you wish to start automatically under
 `akka.persistence.journal.auto-start-journals` and `akka.persistence.snapshot-store.auto-start-snapshot-stores`.
+
+For example, if you want eager initialization for the leveldb journal plugin and the local snapshot store plugin, your configuration should look like this:  
+
+```
+akka {
+
+  extensions = [akka.persistence.Persistence]
+
+  persistence {
+
+    journal {
+      plugin = "akka.persistence.journal.leveldb"
+      auto-start-journals = ["akka.persistence.journal.leveldb"]
+    }
+
+    snapshot-store {
+      plugin = "akka.persistence.snapshot-store.local"
+      auto-start-snapshot-stores = ["akka.persistence.snapshot-store.local"]
+    }
+  
+  }
+
+}
+```
 
 <a id="journal-plugin-api"></a>
 ### Journal plugin API
@@ -1065,7 +1102,7 @@ A journal plugin can be activated with the following minimal configuration:
 
 The journal plugin instance is an actor so the methods corresponding to requests from persistent actors
 are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
-actors to achive parallelism.
+actors to achieve parallelism.
 
 The journal plugin class must have a constructor with one of these signatures:
 
@@ -1117,19 +1154,33 @@ Don't run snapshot store tasks/futures on the system default dispatcher, since t
 
 In order to help developers build correct and high quality storage plugins, we provide a Technology Compatibility Kit ([TCK](http://en.wikipedia.org/wiki/Technology_Compatibility_Kit) for short).
 
-The TCK is usable from Java as well as Scala projects. For @scala[Scala]@java[Java] you need to include the akka-persistence-tck dependency:
+The TCK is usable from Java as well as Scala projects. To test your implementation (independently of language) you need to include the akka-persistence-tck dependency:
 
-```
-"com.typesafe.akka" %% "akka-persistence-tck" % "$akka.version$" % "test"
-```
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-persistence-tck_${scala.version}</artifactId>
-  <version>$akka.version$</version>
-  <scope>test</scope>
-</dependency>
-```
+sbt
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-persistence-tck" % "$akka.version$" % "test"
+    ```
+    @@@
+
+gradle
+:   @@@vars
+    ```
+    testCompile group: 'com.typesafe.akka', name: 'akka-persistence-tck_$scala.binary_version$', version: '$akka.version$'
+    ```
+    @@@
+
+maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-persistence-tck_$scala.binary_version$</artifactId>
+      <version>$akka.version$</version>
+      <scope>test</scope>
+    </dependency>
+    ```
+    @@@
 
 To include the Journal TCK tests in your test suite simply extend the provided @scala[`JournalSpec`]@java[`JavaJournalSpec`]:
 
@@ -1140,7 +1191,7 @@ Java
 :  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #journal-tck-java }
 
 Please note that some of the tests are optional, and by overriding the `supports...` methods you give the
-TCK the needed information about which tests to run. You can implement these methods using @scala[boolean falues or] the
+TCK the needed information about which tests to run. You can implement these methods using @scala[boolean values or] the
 provided `CapabilityFlag.on` / `CapabilityFlag.off` values.
 
 We also provide a simple benchmarking class @scala[`JournalPerfSpec`]@java[`JavaJournalPerfSpec`] which includes all the tests that @scala[`JournalSpec`]@java[`JavaJournalSpec`]
@@ -1181,15 +1232,25 @@ instance. Enable this plugin by defining config property:
 
 LevelDB based plugins will also require the following additional dependency declaration:
 
-Scala
+sbt
 :   @@@vars
     ```
     "org.iq80.leveldb"            % "leveldb"          % "0.7"
     "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
     ```
     @@@
-    @@@vars
-     ```
+
+gradle
+:   @@@vars
+    ```
+    compile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.7'
+    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
+    ```
+    @@@
+
+maven
+:   @@@vars
+    ```
     <dependency>
       <groupId>org.iq80.leveldb</groupId>
       <artifactId>leveldb</artifactId>
@@ -1203,7 +1264,6 @@ Scala
     ```
     @@@
   
-
 The default location of LevelDB files is a directory named `journal` in the current working
 directory. This location can be changed by configuration where the specified path can be relative or absolute:
 
@@ -1283,7 +1343,7 @@ you don't have to configure it.
 A persistence plugin proxy allows sharing of journals and snapshot stores across multiple actor systems (on the same or
 on different nodes). This, for example, allows persistent actors to failover to a backup node and continue using the
 shared journal instance from the backup node. The proxy works by forwarding all the journal/snapshot store messages to a
-single, shared, persistence plugin instance, and therefor supports any use case supported by the proxied plugin.
+single, shared, persistence plugin instance, and therefore supports any use case supported by the proxied plugin.
 
 @@@ warning
 
@@ -1362,12 +1422,12 @@ to the @ref:[reference configuration](general/configuration.md#config-akka-persi
 
 ## Multiple persistence plugin configurations
 
-By default, a persistent actor or view will use the "default" journal and snapshot store plugins
+By default, a persistent actor will use the "default" journal and snapshot store plugins
 configured in the following sections of the `reference.conf` configuration resource:
 
 @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #default-config }
 
-Note that in this case the actor or view overrides only the `persistenceId` method:
+Note that in this case the actor overrides only the `persistenceId` method:
 
 Scala
 :  @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #default-plugins }
@@ -1375,8 +1435,8 @@ Scala
 Java
 :  @@snip [PersistenceMultiDocTest.java]($code$/java/jdocs/persistence/PersistenceMultiDocTest.java) { #default-plugins }
 
-When the persistent actor or view overrides the `journalPluginId` and `snapshotPluginId` methods,
-the actor or view will be serviced by these specific persistence plugins instead of the defaults:
+When the persistent actor overrides the `journalPluginId` and `snapshotPluginId` methods,
+the actor will be serviced by these specific persistence plugins instead of the defaults:
 
 Scala
 :  @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #override-plugins }

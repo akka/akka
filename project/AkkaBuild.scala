@@ -12,6 +12,7 @@ import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
 import sbt.TestLogger.wrap
 import sbt._
+import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
 
 object AkkaBuild {
 
@@ -33,7 +34,8 @@ object AkkaBuild {
   val dontPublishSettings = Seq(
     publishSigned := (),
     publish := (),
-    publishArtifact in Compile := false
+    publishArtifact in Compile := false,
+    whitesourceIgnore := true
   )
 
   val dontPublishDocsSettings = Seq(

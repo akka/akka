@@ -40,6 +40,8 @@ OK:  3.1.n --> 3.2.0 ...
 
 ### Cases where binary compatibility is not retained
 
+If a security vulnerability is reported in Akka or a transient dependency of Akka and it cannot be solved without breaking binary compatibility then fixing the security issue is more important. In such cases binary compatibility might not be retained when releasing a minor version. Such exception is always noted in the release announcement.
+
 Some modules are excluded from the binary compatibility guarantees, such as:
 
  * `*-testkit` modules - since these are to be used only in tests, which usually are re-compiled and run on demand

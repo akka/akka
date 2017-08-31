@@ -76,7 +76,7 @@ abstract class ClusterConsistentHashingGroupSpec extends MultiNodeSpec(ClusterCo
       val router = system.actorOf(
         ClusterRouterGroup(
           local = ConsistentHashingGroup(paths, hashMapping = hashMapping),
-          settings = ClusterRouterGroupSettings(totalInstances = 10, paths, allowLocalRoutees = true, useRole = None)).props(),
+          settings = ClusterRouterGroupSettings(totalInstances = 10, paths, allowLocalRoutees = true)).props(),
         "router")
       // it may take some time until router receives cluster member events
       awaitAssert { currentRoutees(router).size should ===(3) }

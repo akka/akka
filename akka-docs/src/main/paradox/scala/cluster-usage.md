@@ -6,14 +6,21 @@ For introduction to the Akka Cluster concepts please see @ref:[Cluster Specifica
 
 The Akka cluster is a separate jar file. Make sure that you have the following dependency in your project:
 
-Scala
+sbt
 :   @@@vars
     ```
     "com.typesafe.akka" %% "akka-cluster" % "$akka.version$"
     ```
     @@@
    
-Java
+gradle
+:   @@@vars
+    ```
+     compile group: 'com.typesafe.akka', name: 'akka-cluster_$scala.binary_version$', version: '$akka.version$'
+    ```
+    @@@
+
+maven
 :   @@@vars
     ```
     <dependency>
@@ -599,7 +606,7 @@ akka.actor.deployment {
       cluster {
         enabled = on
         allow-local-routees = on
-        use-role = compute
+        use-roles = ["compute"]
       }
     }
 }
@@ -615,7 +622,7 @@ the router will try to use them as soon as the member status is changed to 'Up'.
 The actor paths without address information that are defined in `routees.paths` are used for selecting the
 actors to which the messages will be forwarded to by the router.
 Messages will be forwarded to the routees using @ref:[ActorSelection](actors.md#actorselection), so the same delivery semantics should be expected.
-It is possible to limit the lookup of routees to member nodes tagged with a certain role by specifying `use-role`.
+It is possible to limit the lookup of routees to member nodes tagged with a particular set of roles by specifying `use-roles`.
 
 `max-total-nr-of-instances` defines total number of routees in the cluster. By default `max-total-nr-of-instances`
 is set to a high value (10000) that will result in new routees added to the router when nodes join the cluster.
@@ -686,7 +693,7 @@ akka.actor.deployment {
     cluster {
       enabled = on
       allow-local-routees = on
-      use-role = compute
+      use-roles = ["compute"]
     }
   }
 }
@@ -715,14 +722,14 @@ akka.actor.deployment {
         enabled = on
         max-nr-of-instances-per-node = 3
         allow-local-routees = on
-        use-role = compute
+        use-roles = ["compute"]
       }
     }
 }
 ```
 
-It is possible to limit the deployment of routees to member nodes tagged with a certain role by
-specifying `use-role`.
+It is possible to limit the deployment of routees to member nodes tagged with a particular set of roles by
+specifying `use-roles`.
 
 `max-total-nr-of-instances` defines total number of routees in the cluster, but the number of routees
 per node, `max-nr-of-instances-per-node`, will not be exceeded. By default `max-total-nr-of-instances`
@@ -790,7 +797,7 @@ akka.actor.deployment {
       enabled = on
       max-nr-of-instances-per-node = 3
       allow-local-routees = on
-      use-role = compute
+      use-roles = ["compute"]
     }
   }
 }
@@ -869,7 +876,7 @@ the actor system for a specific role. This can also be used to grab the `akka.ac
 ## How to Test
 
 Currently testing with the `sbt-multi-jvm` plugin is only documented for Scala. 
-Go to the corresponding @ref[Scala page](../scala/cluster-usage.md#how-to-test) for details.
+Go to the corresponding @ref:[Scala page](../scala/cluster-usage.md#how-to-test) for details.
 
 @@@ 
 
