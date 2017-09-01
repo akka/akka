@@ -1005,10 +1005,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         leaderActionCounter = 0
         leaderActionsOnConvergence()
       } else {
-        if (cluster.settings.AllowWeaklyUpMembers)
+        leaderActionCounter += 1
+        if (cluster.settings.AllowWeaklyUpMembers && leaderActionCounter >= 3)
           moveJoiningToWeaklyUp()
 
-        leaderActionCounter += 1
         if (leaderActionCounter == firstNotice || leaderActionCounter % periodicNotice == 0)
           logInfo(
             "Leader can currently not perform its duties, reachability status: [{}], member status: [{}]",
