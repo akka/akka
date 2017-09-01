@@ -188,3 +188,10 @@ trait Cancellable {
   def isCancelled: Boolean
 }
 //#cancellable
+
+object Cancellable {
+  val alreadyCancelled = new Cancellable {
+    def cancel(): Boolean = false
+    def isCancelled: Boolean = true
+  }
+}
