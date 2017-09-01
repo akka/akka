@@ -12,6 +12,8 @@ import scala.beans.BeanProperty
 import scala.util.control.NoStackTrace
 import java.util.Optional
 
+import akka.annotation.InternalApi
+
 /**
  * INTERNAL API
  *
@@ -509,6 +511,7 @@ trait Actor {
    * @param receive current behavior.
    * @param msg current message.
    */
+  @InternalApi
   protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
     // optimization: avoid allocation of lambda
     if (receive.applyOrElse(msg, Actor.notHandledFun).asInstanceOf[AnyRef] eq Actor.NotHandled) {
@@ -517,23 +520,35 @@ trait Actor {
   }
 
   /**
+   * INTERNAL API.
+   *
    * Can be overridden to intercept calls to `preStart`. Calls `preStart` by default.
    */
+  @InternalApi
   protected[akka] def aroundPreStart(): Unit = preStart()
 
   /**
+   * INTERNAL API.
+   *
    * Can be overridden to intercept calls to `postStop`. Calls `postStop` by default.
    */
+  @InternalApi
   protected[akka] def aroundPostStop(): Unit = postStop()
 
   /**
+   * INTERNAL API.
+   *
    * Can be overridden to intercept calls to `preRestart`. Calls `preRestart` by default.
    */
+  @InternalApi
   protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = preRestart(reason, message)
 
   /**
+   * INTERNAL API.
+   *
    * Can be overridden to intercept calls to `postRestart`. Calls `postRestart` by default.
    */
+  @InternalApi
   protected[akka] def aroundPostRestart(reason: Throwable): Unit = postRestart(reason)
 
   /**
