@@ -594,7 +594,8 @@ While Akka is a peer-to-peer technology, each connection between nodes starts ou
 the other (the "server").
 
 Note that if TLS is enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate
-by compromising any node with certificates issued by the same internal PKI tree.
+by compromising any node with certificates issued by the same internal PKI tree. To limit this risk hostname validation can be enabled.
+This requires the certificates to be host specific and contain at least one Subject Alternative Name.
 
 See also a description of the settings in the @ref:[Remote Configuration](remoting.md#remote-configuration) section.
 
