@@ -399,7 +399,7 @@ java -classpath <jar files, including akka-cluster-sharding>
 
 The program is included in the `akka-cluster-sharding` jar file. It
 is easiest to run it with same classpath and configuration as your ordinary
-application. It can be run from sbt or maven in similar way.
+application. It can be run from sbt or Maven in similar way.
 
 Specify the entity type names (same as you use in the `start` method
 of `ClusterSharding`) as program arguments.

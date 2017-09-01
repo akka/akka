@@ -344,7 +344,7 @@ sbt
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
 ```
 
-maven
+Maven
 :   ```xml
     <dependency>
       <groupId>ch.qos.logback</groupId>
