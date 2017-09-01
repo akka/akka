@@ -33,6 +33,7 @@ import akka.actor.CoordinatedShutdown
 import akka.annotation.DoNotInherit
 import akka.pattern.ask
 import akka.util.Timeout
+import akka.cluster.ClusterSettings
 
 object ClusterSingletonManagerSettings {
 
@@ -259,10 +260,10 @@ object ClusterSingletonManager {
       }
       override def postStop(): Unit = cluster.unsubscribe(self)
 
-      def matchingRole(member: Member): Boolean = role match {
-        case None    ⇒ true
-        case Some(r) ⇒ member.hasRole(r)
-      }
+      private val selfDc = ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
+
+      def matchingRole(member: Member): Boolean =
+        member.hasRole(selfDc) && role.forall(member.hasRole)
 
       def trackChange(block: () ⇒ Unit): Unit = {
         val before = membersByAge.headOption

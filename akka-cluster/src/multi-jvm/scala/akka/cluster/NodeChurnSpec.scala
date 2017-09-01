@@ -23,6 +23,7 @@ object NodeChurnMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = 1s
+      akka.cluster.prune-gossip-tombstones-after = 1s
       akka.remote.log-frame-size-exceeding = 1200b
       akka.remote.artery.advanced {
         idle-cpu-level = 1

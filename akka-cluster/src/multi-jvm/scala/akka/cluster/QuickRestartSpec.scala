@@ -91,7 +91,7 @@ abstract class QuickRestartSpec
             Cluster(system).state.members.size should ===(totalNumberOfNodes)
             Cluster(system).state.members.map(_.status == MemberStatus.Up)
             // use the role to test that it is the new incarnation that joined, sneaky
-            Cluster(system).state.members.flatMap(_.roles) should ===(Set(s"round-$n"))
+            Cluster(system).state.members.flatMap(_.roles) should ===(Set(s"round-$n", ClusterSettings.DcRolePrefix + "default"))
           }
         }
         enterBarrier("members-up-" + n)

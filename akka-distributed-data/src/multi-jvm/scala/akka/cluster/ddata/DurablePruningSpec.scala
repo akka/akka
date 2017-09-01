@@ -16,6 +16,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import scala.concurrent.Await
+import akka.cluster.MemberStatus
 
 object DurablePruningSpec extends MultiNodeConfig {
   val first = role("first")
@@ -73,6 +74,13 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
       val replicator2 = startReplicator(sys2)
       val probe2 = TestProbe()(sys2)
       Cluster(sys2).join(node(first).address)
+      awaitAssert({
+        Cluster(system).state.members.size should ===(4)
+        Cluster(system).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(sys2).state.members.size should ===(4)
+        Cluster(sys2).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+      }, 10.seconds)
+      enterBarrier("joined")
 
       within(5.seconds) {
         awaitAssert {

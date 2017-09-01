@@ -101,7 +101,7 @@ private[cluster] abstract class AutoDownBase(autoDownUnreachableAfter: FiniteDur
 
   import context.dispatcher
 
-  val skipMemberStatus = Gossip.convergenceSkipUnreachableWithMemberStatus
+  val skipMemberStatus = MembershipState.convergenceSkipUnreachableWithMemberStatus
 
   var scheduledUnreachable: Map[UniqueAddress, Cancellable] = Map.empty
   var pendingUnreachable: Set[UniqueAddress] = Set.empty
