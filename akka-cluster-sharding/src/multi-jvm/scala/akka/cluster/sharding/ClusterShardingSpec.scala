@@ -460,6 +460,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         val proxy = system.actorOf(
           ShardRegion.proxyProps(
             typeName = "counter",
+            dataCenter = None,
             settings,
             coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
             extractEntityId = extractEntityId,
@@ -695,6 +696,21 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
       counterRegionViaStart should equal(counterRegionViaGet)
     }
     enterBarrier("after-11")
+
+  }
+
+  "demonstrate API for DC proxy" in within(50.seconds) {
+    runOn(sixth) {
+      // #proxy-dc
+      val counterProxyDcB: ActorRef = ClusterSharding(system).startProxy(
+        typeName = "Counter",
+        role = None,
+        dataCenter = Some("B"),
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
+      // #proxy-dc
+    }
+    enterBarrier("after-dc-proxy")
 
   }
 

@@ -228,12 +228,26 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   def createSingletonProxy(): ActorRef = {
     //#create-singleton-proxy
-    system.actorOf(
+    val proxy = system.actorOf(
       ClusterSingletonProxy.props(
         singletonManagerPath = "/user/consumer",
         settings = ClusterSingletonProxySettings(system).withRole("worker")),
       name = "consumerProxy")
     //#create-singleton-proxy
+    proxy
+  }
+
+  def createSingletonProxyDc(): ActorRef = {
+    //#create-singleton-proxy-dc
+    val proxyDcB = system.actorOf(
+      ClusterSingletonProxy.props(
+        singletonManagerPath = "/user/consumer",
+        settings = ClusterSingletonProxySettings(system)
+          .withRole("worker")
+          .withDataCenter("B")),
+      name = "consumerProxyDcB")
+    //#create-singleton-proxy-dc
+    proxyDcB
   }
 
   def verifyProxyMsg(oldest: RoleName, proxyNode: RoleName, msg: Int): Unit = {

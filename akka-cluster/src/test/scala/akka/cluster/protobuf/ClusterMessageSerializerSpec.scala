@@ -16,16 +16,18 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
 
-  def checkSerialization(obj: AnyRef): Unit = {
+  def roundtrip[T <: AnyRef](obj: T): T = {
     val blob = serializer.toBinary(obj)
-    val ref = serializer.fromBinary(blob, obj.getClass)
-    obj match {
-      case env: GossipEnvelope ⇒
-        val env2 = obj.asInstanceOf[GossipEnvelope]
+    serializer.fromBinary(blob, obj.getClass).asInstanceOf[T]
+  }
+
+  def checkSerialization(obj: AnyRef): Unit = {
+    (obj, roundtrip(obj)) match {
+      case (env: GossipEnvelope, env2: GossipEnvelope) ⇒
         env2.from should ===(env.from)
         env2.to should ===(env.to)
         env2.gossip should ===(env.gossip)
-      case _ ⇒
+      case (_, ref) ⇒
         ref should ===(obj)
     }
 
@@ -35,10 +37,10 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
   val a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Joining, Set.empty)
   val b1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, Set("r1"))
-  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, Set("r2"))
-  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Exiting, Set("r1", "r2"))
+  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, Set.empty, "foo")
+  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Exiting, Set("r1"), "foo")
   val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Down, Set("r3"))
-  val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("r2", "r3"))
+  val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("r3"), "foo")
 
   "ClusterMessages" must {
 
@@ -65,9 +67,11 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       val g2 = (g1 :+ node3 :+ node4).seen(a1.uniqueAddress).seen(c1.uniqueAddress)
       val reachability3 = Reachability.empty.unreachable(a1.uniqueAddress, e1.uniqueAddress).unreachable(b1.uniqueAddress, e1.uniqueAddress)
       val g3 = g2.copy(members = SortedSet(a1, b1, c1, d1, e1), overview = g2.overview.copy(reachability = reachability3))
+      val g4 = g1.remove(d1.uniqueAddress, 352684800)
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g1))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g2))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g3))
+      checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g4))
 
       checkSerialization(GossipStatus(a1.uniqueAddress, g1.version))
       checkSerialization(GossipStatus(a1.uniqueAddress, g2.version))
@@ -110,6 +114,12 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       }
 
     }
+
+    "add a default data center role if none is present" in {
+      val env = roundtrip(GossipEnvelope(a1.uniqueAddress, d1.uniqueAddress, Gossip(SortedSet(a1, d1))))
+      env.gossip.members.head.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
+      env.gossip.members.tail.head.roles should be(Set("r1", ClusterSettings.DcRolePrefix + "foo"))
+    }
   }
   "Cluster router pool" must {
     "be serializable with no role" in {
@@ -142,8 +152,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
     "be serializable with many roles" in {
       checkSerialization(ClusterRouterPool(
         RoundRobinPool(
-          nrOfInstances = 4
-        ),
+          nrOfInstances = 4),
         ClusterRouterPoolSettings(
           totalInstances = 2,
           maxInstancesPerNode = 5,

@@ -70,6 +70,12 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
             _state = _state.copy(roleLeaderMap = _state.roleLeaderMap + (role → leader))
           case stats: CurrentInternalStats ⇒ _latestStats = stats
           case ClusterShuttingDown         ⇒
+
+          case r: ReachableDataCenter ⇒
+            _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters - r.dataCenter)
+          case r: UnreachableDataCenter ⇒
+            _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters + r.dataCenter)
+
         }
         case s: CurrentClusterState ⇒ _state = s
       }
@@ -109,12 +115,12 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   def status: MemberStatus = self.status
 
   /**
-   * Is this node the leader?
+   * Is this node the current data center leader
    */
   def isLeader: Boolean = leader.contains(selfAddress)
 
   /**
-   * Get the address of the current leader.
+   * Get the address of the current data center leader
    */
   def leader: Option[Address] = state.leader
 

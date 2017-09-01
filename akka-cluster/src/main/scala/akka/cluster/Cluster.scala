@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.ConfigurationException
 import akka.actor._
+import akka.cluster.ClusterSettings.DataCenter
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.{ Logging, LoggingAdapter }
 import akka.japi.Util
@@ -77,6 +78,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   def selfAddress: Address = selfUniqueAddress.address
 
+  /** Data center to which this node belongs to (defaults to "default" if not configured explicitly) */
+  def selfDataCenter: DataCenter = settings.SelfDataCenter
+
   /**
    * roles that this member has
    */
@@ -96,10 +100,19 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   logInfo("Starting up...")
 
   val failureDetector: FailureDetectorRegistry[Address] = {
-    def createFailureDetector(): FailureDetector =
+    val createFailureDetector = () ⇒
       FailureDetectorLoader.load(settings.FailureDetectorImplementationClass, settings.FailureDetectorConfig, system)
 
-    new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
+    new DefaultFailureDetectorRegistry(createFailureDetector)
+  }
+
+  val crossDcFailureDetector: FailureDetectorRegistry[Address] = {
+    val createFailureDetector = () ⇒
+      FailureDetectorLoader.load(
+        settings.MultiDataCenter.CrossDcFailureDetectorSettings.ImplementationClass,
+        settings.MultiDataCenter.CrossDcFailureDetectorSettings.config, system)
+
+    new DefaultFailureDetectorRegistry(createFailureDetector)
   }
 
   // needs to be lazy to allow downing provider impls to access Cluster (if not we get deadlock)
@@ -411,7 +424,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   private def closeScheduler(): Unit = scheduler match {
     case x: Closeable ⇒ x.close()
-    case _            ⇒
+    case _            ⇒ // ignore, this is fine
   }
 
   /**
@@ -420,13 +433,32 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   private[cluster] object InfoLogger {
 
     def logInfo(message: String): Unit =
-      if (LogInfo) log.info("Cluster Node [{}] - {}", selfAddress, message)
+      if (LogInfo)
+        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
+          log.info("Cluster Node [{}] - {}", selfAddress, message)
+        else
+          log.info("Cluster Node [{}] dc [{}] - {}", selfAddress, settings.SelfDataCenter, message)
 
     def logInfo(template: String, arg1: Any): Unit =
-      if (LogInfo) log.info("Cluster Node [{}] - " + template, selfAddress, arg1)
+      if (LogInfo)
+        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
+          log.info("Cluster Node [{}] - " + template, selfAddress, arg1)
+        else
+          log.info("Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.SelfDataCenter, arg1)
 
     def logInfo(template: String, arg1: Any, arg2: Any): Unit =
-      if (LogInfo) log.info("Cluster Node [{}] - " + template, selfAddress, arg1, arg2)
+      if (LogInfo)
+        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
+          log.info("Cluster Node [{}] - " + template, selfAddress, arg1, arg2)
+        else
+          log.info("Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.SelfDataCenter, arg1, arg2)
+
+    def logInfo(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
+      if (LogInfo)
+        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
+          log.info("Cluster Node [{}] - " + template, selfAddress, arg1, arg2, arg3)
+        else
+          log.info("Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template, selfAddress, arg1, arg2, arg3)
   }
 
 }
