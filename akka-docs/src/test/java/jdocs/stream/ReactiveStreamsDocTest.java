@@ -92,7 +92,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
     /**
      * This is a minimal version of SubscriberProbe,
      * which lives in akka-stream-testkit (test scope) and for
-     * now wanted to avoid setting up (test -> compile) dependency for maven).
+     * now wanted to avoid setting up (test -> compile) dependency for Maven).
      *
      * TODO: Once SubscriberProbe is easily used here replace this MPS with it.
      */

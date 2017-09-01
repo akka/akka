@@ -13,14 +13,14 @@ sbt
     ```
     @@@
    
-gradle
+Gradle
 :   @@@vars
     ```
      compile group: 'com.typesafe.akka', name: 'akka-cluster_$scala.binary_version$', version: '$akka.version$'
     ```
     @@@
 
-maven
+Maven
 :   @@@vars
     ```
     <dependency>
