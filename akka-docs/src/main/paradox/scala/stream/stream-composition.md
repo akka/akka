@@ -274,7 +274,7 @@ Java
 
 As the last example, we wire together `nestedSource` and `nestedSink` and we use a custom combiner function to
 create a yet another materialized type of the resulting `RunnableGraph`. This combiner function just ignores
-the @scala[`Future[Sink]`] @java[`CompletionStage<Sink>`] part, and wraps the other two values in a custom case class `MyClass`
+the @scala[`Future[String]`] @java[`CompletionStage<String>`] part, and wraps the other two values in a custom case class `MyClass`
 (indicated by color *purple* on the diagram):
 
 Scala
