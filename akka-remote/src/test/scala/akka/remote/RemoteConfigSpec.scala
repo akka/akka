@@ -130,6 +130,7 @@ class RemoteConfigSpec extends AkkaSpec(
       sslSettings.SSLProtocol should ===("TLSv1.2")
       sslSettings.SSLEnabledAlgorithms should ===(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
       sslSettings.SSLRandomNumberGenerator should ===("")
+      sslSettings.SSLTrustManagerFactoryClass should ===("akka.remote.transport.netty.DefaultTrustManagerFactory")
     }
 
     "have debug logging of the failure injector turned off in reference.conf" in {

@@ -25,6 +25,23 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API
  */
+private[akka] object KeyStoreHelper {
+  def load(filename: String, password: String): KeyStore = {
+    val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
+    val fin = Files.newInputStream(Paths.get(filename))
+    try keyStore.load(fin, password.toCharArray) finally Try(fin.close())
+    keyStore
+  }
+}
+
+private[akka] class DefaultTrustManagerFactory extends CustomTrustManagerFactory {
+  override def create(filename: String, password: String): Array[TrustManager] = {
+    val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+    trustManagerFactory.init(KeyStoreHelper.load(filename, password))
+    trustManagerFactory.getTrustManagers
+  }
+}
+
 private[akka] class SSLSettings(config: Config) {
   import config.{ getBoolean, getString, getStringList }
 
@@ -57,23 +74,12 @@ private[akka] class SSLSettings(config: Config) {
 
   private def constructContext(log: MarkerLoggingAdapter): SSLContext =
     try {
-      def loadKeystore(filename: String, password: String): KeyStore = {
-        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
-        val fin = Files.newInputStream(Paths.get(filename))
-        try keyStore.load(fin, password.toCharArray) finally Try(fin.close())
-        keyStore
-      }
-
       val keyManagers = {
         val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-        factory.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray)
+        factory.init(KeyStoreHelper.load(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray)
         factory.getKeyManagers
       }
-      val trustManagers = if (SSLTrustManagerFactoryClass.isEmpty) {
-        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-        trustManagerFactory.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword))
-        trustManagerFactory.getTrustManagers
-      } else {
+      val trustManagers = {
         val dynamicAccess = new ReflectiveDynamicAccess(getClass.getClassLoader)
         dynamicAccess.createInstanceFor[CustomTrustManagerFactory](SSLTrustManagerFactoryClass, EmptyImmutableSeq) match {
           case Success(factory: CustomTrustManagerFactory) ⇒ factory.create(SSLTrustStore, SSLTrustStorePassword)
