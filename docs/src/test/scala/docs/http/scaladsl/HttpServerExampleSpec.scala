@@ -517,6 +517,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     import akka.stream.ActorMaterializer
     import akka.util.Timeout
     import spray.json.DefaultJsonProtocol._
+    import scala.concurrent.Future
     import scala.concurrent.duration._
     import scala.io.StdIn
 
