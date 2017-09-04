@@ -1041,7 +1041,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
             if (upNumber == 0) {
               // It is alright to use same upNumber as already used by a removed member, since the upNumber
               // is only used for comparing age of current cluster members (Member.isOlderThan)
-              val youngest = latestGossip.youngestMember
+              val youngest = membershipState.youngestMember
               upNumber = 1 + (if (youngest.upNumber == Int.MaxValue) 0 else youngest.upNumber)
             } else {
               upNumber += 1

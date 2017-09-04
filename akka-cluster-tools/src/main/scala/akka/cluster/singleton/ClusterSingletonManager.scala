@@ -686,6 +686,11 @@ class ClusterSingletonManager(
     case Event(HandOverToMe, OldestData(singleton, singletonTerminated)) ⇒
       gotoHandingOver(singleton, singletonTerminated, Some(sender()))
 
+    case Event(TakeOverFromMe, _) ⇒
+      // already oldest, so confirm and continue like that
+      sender() ! HandOverToMe
+      stay
+
     case Event(Terminated(ref), d @ OldestData(singleton, _)) if ref == singleton ⇒
       stay using d.copy(singletonTerminated = true)
 
