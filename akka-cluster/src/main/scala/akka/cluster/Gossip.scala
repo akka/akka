@@ -204,11 +204,6 @@ private[cluster] final case class Gossip(
 
   def hasMember(node: UniqueAddress): Boolean = membersMap.contains(node)
 
-  def youngestMember: Member = {
-    require(members.nonEmpty, "No youngest when no members")
-    members.maxBy(m ⇒ if (m.upNumber == Int.MaxValue) 0 else m.upNumber)
-  }
-
   def removeAll(nodes: Iterable[UniqueAddress], removalTimestamp: Long): Gossip = {
     nodes.foldLeft(this)((gossip, node) ⇒ gossip.remove(node, removalTimestamp))
   }
