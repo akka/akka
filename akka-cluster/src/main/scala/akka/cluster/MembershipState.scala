@@ -159,11 +159,20 @@ import scala.util.Random
   def isInSameDc(node: UniqueAddress): Boolean =
     node == selfUniqueAddress || latestGossip.member(node).dataCenter == selfDc
 
+  def membersInSameDc: immutable.SortedSet[Member] =
+    members.filter(_.dataCenter == selfDc)
+
   def validNodeForGossip(node: UniqueAddress): Boolean =
     node != selfUniqueAddress &&
       ((isInSameDc(node) && isReachableExcludingDownedObservers(node)) ||
         // if cross DC we need to check pairwise unreachable observation
         overview.reachability.isReachable(selfUniqueAddress, node))
+
+  def youngestMember: Member = {
+    val mbrs = membersInSameDc
+    require(mbrs.nonEmpty, "No youngest when no members")
+    mbrs.maxBy(m ⇒ if (m.upNumber == Int.MaxValue) 0 else m.upNumber)
+  }
 
 }
 
