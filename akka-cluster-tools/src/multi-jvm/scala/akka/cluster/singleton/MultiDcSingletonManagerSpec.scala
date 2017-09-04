@@ -21,7 +21,7 @@ object MultiDcSingletonManagerSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.actor.serialize-creators = off
     akka.remote.log-remote-lifecycle-events = off"""))
@@ -94,7 +94,7 @@ abstract class MultiDcSingletonManagerSpec extends MultiNodeSpec(MultiDcSingleto
       enterBarrier("managers-started")
 
       proxy ! MultiDcSingleton.Ping
-      val pong = expectMsgType[MultiDcSingleton.Pong](10.seconds)
+      val pong = expectMsgType[MultiDcSingleton.Pong](20.seconds)
 
       enterBarrier("pongs-received")
 
