@@ -454,7 +454,7 @@ object ClusterEvent {
       val removedMembers = oldGossip.members diff newGossip.members
       val removedEvents = removedMembers.map(m ⇒ MemberRemoved(m.copy(status = Removed), m.status))
 
-      (new VectorBuilder[MemberEvent]() ++= memberEvents ++= removedEvents).result()
+      (new VectorBuilder[MemberEvent]() ++= removedEvents ++= memberEvents).result()
     }
 
   /**

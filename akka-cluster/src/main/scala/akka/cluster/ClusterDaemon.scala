@@ -886,10 +886,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         else winningGossip seen selfUniqueAddress)
       assertLatestGossip()
 
-      // for all new joining nodes we remove them from the failure detector
+      // for all new nodes we remove them from the failure detector
       latestGossip.members foreach {
         node ⇒
-          if (node.status == Joining && !localGossip.members(node)) {
+          if (!localGossip.members(node)) {
             failureDetector.remove(node.address)
             crossDcFailureDetector.remove(node.address)
           }
