@@ -204,12 +204,12 @@ class GossipSpec extends WordSpec with Matchers {
       // a2 and e1 is Joining
       val g1 = Gossip(members = SortedSet(a2, b1.copyUp(3), e1), overview = GossipOverview(reachability =
         Reachability.empty.unreachable(a2.uniqueAddress, e1.uniqueAddress)))
-      g1.youngestMember should ===(b1)
+      state(g1).youngestMember should ===(b1)
       val g2 = Gossip(members = SortedSet(a2, b1.copyUp(3), e1), overview = GossipOverview(reachability =
         Reachability.empty.unreachable(a2.uniqueAddress, b1.uniqueAddress).unreachable(a2.uniqueAddress, e1.uniqueAddress)))
-      g2.youngestMember should ===(b1)
+      state(g2).youngestMember should ===(b1)
       val g3 = Gossip(members = SortedSet(a2, b1.copyUp(3), e2.copyUp(4)))
-      g3.youngestMember should ===(e2)
+      state(g3).youngestMember should ===(e2)
     }
 
     "reach convergence per data center" in {
@@ -344,8 +344,7 @@ class GossipSpec extends WordSpec with Matchers {
         overview = GossipOverview(reachability =
           Reachability.empty
             .unreachable(dc1b1.uniqueAddress, dc2d2.uniqueAddress)
-            .unreachable(dc2d2.uniqueAddress, dc1b1.uniqueAddress)
-        ))
+            .unreachable(dc2d2.uniqueAddress, dc1b1.uniqueAddress)))
         .:+(VectorClock.Node(Gossip.vclockName(dc1b1.uniqueAddress)))
         .:+(VectorClock.Node(Gossip.vclockName(dc2d2.uniqueAddress)))
         .remove(dc1b1.uniqueAddress, System.currentTimeMillis())
