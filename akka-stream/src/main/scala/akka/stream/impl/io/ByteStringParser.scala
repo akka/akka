@@ -131,8 +131,10 @@ import scala.util.control.{ NoStackTrace, NonFatal }
       // truncation if necessary, or complete the stage (and maybe a final emit).
       if (isAvailable(objOut)) doParse()
       // if we do not have a pending pull,
-      else if (acceptUpstreamFinish) completeStage()
-      else current.onTruncation()
+      else if (buffer.isEmpty) {
+        if (acceptUpstreamFinish) completeStage()
+        else current.onTruncation()
+      }
     }
 
     setHandlers(bytesIn, objOut, this)
