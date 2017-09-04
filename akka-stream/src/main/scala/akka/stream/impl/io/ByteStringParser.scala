@@ -127,10 +127,12 @@ import scala.util.control.{ NoStackTrace, NonFatal }
     }
 
     override def onUpstreamFinish(): Unit = {
-      // If we have no pending pull from downstream, attempt to invoke the parser again. This will handle
+      // If we have no a pending pull from downstream, attempt to invoke the parser again. This will handle
       // truncation if necessary, or complete the stage (and maybe a final emit).
       if (isAvailable(objOut)) doParse()
-      // Otherwise the pending pull will kick of doParse()
+      // if we do not have a pending pull,
+      else if (acceptUpstreamFinish) completeStage()
+      else current.onTruncation()
     }
 
     setHandlers(bytesIn, objOut, this)
