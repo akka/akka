@@ -7,20 +7,20 @@ escaping and other URI specific semantics are applied.
 ### Parsing a URI string
 
 We follow [RFC 3986](http://tools.ietf.org/html/rfc3986#section-1.1.2) to implement the URI parsing rules.
-When you try to parse a URI string, Akka HTTP internally creates an instance of the `URI` class, which holds the modeled URI components inside.
+When you try to parse a URI string, Akka HTTP internally creates an instance of the `Uri` class, which holds the modeled URI components inside.
 
 For example, the following creates an instance of a simple valid URI:
 
 Scala
 :   
     ```
-    URI("http://localhost")
+    Uri("http://localhost")
     ```
     
 Java
 :   
     ```
-    URI.create("http://localhost");
+    Uri.create("http://localhost");
     ```
 
 
