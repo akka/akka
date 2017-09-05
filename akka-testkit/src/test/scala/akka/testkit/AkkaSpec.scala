@@ -77,7 +77,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   override val invokeBeforeAllAndAfterAllEvenIfNoTestsAreExpected = true
 
   final override def beforeAll {
-    startCoroner
+    startCoroner()
     atStartup()
   }
 
