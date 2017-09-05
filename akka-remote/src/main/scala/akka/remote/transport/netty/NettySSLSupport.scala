@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl._
 
 import akka.actor.ReflectiveDynamicAccess
+import akka.annotation.InternalApi
 import akka.event.{ LogMarker, MarkerLoggingAdapter }
 import akka.japi.Util._
 import akka.remote.RemoteTransportException
@@ -25,6 +26,7 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] object KeyStoreHelper {
   def load(filename: String, password: String): KeyStore = {
     val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
@@ -34,6 +36,10 @@ private[akka] object KeyStoreHelper {
   }
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] class DefaultTrustManagerFactory extends CustomTrustManagerFactory {
   override def create(filename: String, password: String): Array[TrustManager] = {
     val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
