@@ -17,10 +17,6 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.1")
 
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.15")
 
-addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
-
-addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
-
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "1.0.0")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.26")

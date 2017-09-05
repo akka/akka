@@ -6,5 +6,3 @@ lazy val root = Project(
 ).aggregate(actor)
 
 lazy val actor = Project(id = "akka-actor", base = file("akka-actor "))
-  .settings(akka.AkkaBuild.buildSettings)
-
