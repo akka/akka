@@ -1249,21 +1249,8 @@ object GraphDSL extends GraphApply {
      *
      * @return The outlet that will emit the materialized value.
      */
-    def materializedValue: Outlet[M @uncheckedVariance] = {
-      val promise = Promise[M]
-      val source = Source.fromFuture(promise.future)
-
-      traversalBuilderInProgress = traversalBuilderInProgress
-        .transformMat { mat: M ⇒
-          promise.trySuccess(mat)
-          mat
-        }
-        .add(source.traversalBuilder, source.shape, Keep.left)
-
-      unwiredOuts += source.shape.out
-
-      source.shape.out
-    }
+    def materializedValue: Outlet[M @uncheckedVariance] =
+      add(Source.maybe[M], { (prev: M, prom: Promise[Option[M]]) ⇒ prom.success(Some(prev)); prev }).out
 
     private[GraphDSL] def traversalBuilder: TraversalBuilder = traversalBuilderInProgress
 
