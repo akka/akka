@@ -440,7 +440,11 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `fishForMessage`, but gets a different partial function and returns properly typed message.
+   * Waits for specific message that partial function matches while ignoring all other messages coming in the meantime.
+   * Use it to ignore any number of messages while waiting for a specific one.
+   *
+   * @return result of applying partial function to the last received message,
+   *         i.e. the first one for which the partial function is defined
    */
   def fishForSpecificMessage[T](max: Duration = Duration.Undefined, hint: String = "")(f: PartialFunction[Any, T]): T = {
     val _max = remainingOrDilated(max)
