@@ -15,7 +15,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.1")
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.15")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.18")
 
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
 
@@ -40,6 +40,6 @@ addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.10")
 
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.3")
 
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.5")
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.6")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
