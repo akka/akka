@@ -780,6 +780,13 @@ sbt
     ```
     @@@
 
+Gradle
+:   @@@vars
+    ```
+    compile group: 'com.typesafe.akka', name: 'akka-distributed-data_$scala.binary_version$', version: '$akka.version$'
+    ```
+    @@@
+
 Maven
 :   @@@vars
     ```
