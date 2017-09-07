@@ -8,14 +8,21 @@ Note that implementations for other journals may have different semantics.
 Akka persistence LevelDB query implementation is bundled in the `akka-persistence-query` artifact.
 Make sure that you have the following dependency in your project:
 
-Scala
+sbt
 :   @@@vars
     ```
     "com.typesafe.akka" %% "akka-persistence-query" % "$akka.version$"
     ```
     @@@
 
-Java
+Gradle
+:   @@@vars
+    ```
+    compile group: 'com.typesafe.akka', name: 'akka-persistence-query_$scala.binary_version$', version: '$akka.version$'
+    ```
+    @@@
+
+Maven
 :   @@@vars
     ```
     <dependency>

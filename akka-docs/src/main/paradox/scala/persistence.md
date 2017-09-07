@@ -55,7 +55,7 @@ sbt
     ```
     @@@
 
-gradle
+Gradle
 :   @@@vars
     ```
     compile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.7'
@@ -1163,7 +1163,7 @@ sbt
     ```
     @@@
 
-gradle
+Gradle
 :   @@@vars
     ```
     testCompile group: 'com.typesafe.akka', name: 'akka-persistence-tck_$scala.binary_version$', version: '$akka.version$'
@@ -1240,7 +1240,7 @@ sbt
     ```
     @@@
 
-gradle
+Gradle
 :   @@@vars
     ```
     compile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.7'
