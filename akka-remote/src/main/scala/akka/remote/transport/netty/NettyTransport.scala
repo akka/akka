@@ -341,7 +341,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   private val associationListenerPromise: Promise[AssociationEventListener] = Promise()
 
   private def sslHandler(isClient: Boolean): SslHandler = {
-    val handler = NettySSLSupport(settings.SslSettings.get, log, isClient)
+    val handler = NettySSLSupport(settings.SslSettings.get, log, isClient, system.dynamicAccess)
     handler.setCloseOnSSLException(true)
     handler
   }
