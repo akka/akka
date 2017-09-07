@@ -123,9 +123,9 @@ private[remote] object AssociationState {
  * INTERNAL API
  */
 private[remote] final class AssociationState(
-  val incarnation: Int,
+  val incarnation:                Int,
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
-  val quarantined: ImmutableLongMap[AssociationState.QuarantinedTimestamp]) {
+  val quarantined:                ImmutableLongMap[AssociationState.QuarantinedTimestamp]) {
 
   import AssociationState.QuarantinedTimestamp
 
@@ -225,7 +225,7 @@ private[remote] trait OutboundContext {
  */
 private[remote] object FlushOnShutdown {
   def props(done: Promise[Done], timeout: FiniteDuration,
-    inboundContext: InboundContext, associations: Set[Association]): Props = {
+            inboundContext: InboundContext, associations: Set[Association]): Props = {
     require(associations.nonEmpty)
     Props(new FlushOnShutdown(done, timeout, inboundContext, associations))
   }
@@ -237,7 +237,7 @@ private[remote] object FlushOnShutdown {
  * INTERNAL API
  */
 private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDuration,
-  inboundContext: InboundContext, associations: Set[Association]) extends Actor {
+                                      inboundContext: InboundContext, associations: Set[Association]) extends Actor {
 
   var remaining = Map.empty[UniqueAddress, Int]
 
@@ -962,7 +962,7 @@ private[akka] class ArteryTransport(_system: ExtendedActorSystem, _provider: Rem
     createOutboundSink(ordinaryStreamId, outboundContext, envelopeBufferPool)
 
   private def createOutboundSink(streamId: Int, outboundContext: OutboundContext,
-    bufferPool: EnvelopeBufferPool): Sink[OutboundEnvelope, (OutboundCompressionAccess, Future[Done])] = {
+                                 bufferPool: EnvelopeBufferPool): Sink[OutboundEnvelope, (OutboundCompressionAccess, Future[Done])] = {
 
     outboundLane(outboundContext, bufferPool)
       .toMat(aeronSink(outboundContext, streamId, bufferPool))(Keep.both)
@@ -972,7 +972,7 @@ private[akka] class ArteryTransport(_system: ExtendedActorSystem, _provider: Rem
     aeronSink(outboundContext, ordinaryStreamId, envelopeBufferPool)
 
   private def aeronSink(outboundContext: OutboundContext, streamId: Int,
-    bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
+                        bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
 
     val giveUpAfter =
       if (streamId == controlStreamId) settings.Advanced.GiveUpSystemMessageAfter
@@ -986,7 +986,7 @@ private[akka] class ArteryTransport(_system: ExtendedActorSystem, _provider: Rem
 
   private def outboundLane(
     outboundContext: OutboundContext,
-    bufferPool: EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] = {
+    bufferPool:      EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] = {
 
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
@@ -1133,7 +1133,7 @@ private[remote] object ArteryTransport {
 
   final case class InboundStreamMatValues(
     aeronSourceLifecycle: AeronSource.ResourceLifecycle,
-    completed: Future[Done])
+    completed:            Future[Done])
 
   def autoSelectPort(hostname: String): Int = {
     val socket = DatagramChannel.open().socket()

@@ -7,7 +7,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
 
 private[akka] class TypedRemoteActorRef[T](
   untypedRemoteRef: RemoteActorRef,
-  remote: RemoteTransport)
+  remote:           RemoteTransport)
   extends ActorRefAdapter(untypedRemoteRef: RemoteActorRef) {
 
   override def tell(message: Any): Unit =
