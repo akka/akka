@@ -343,7 +343,7 @@ object Sink {
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
    * limiting stage in front of this `Sink`.
    */
-  def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
+  def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] = //  TODO no configurable onFailureMessage?
     fromGraph(new ActorRefSink(ref, onCompleteMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
 
   /**
