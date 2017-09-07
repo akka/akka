@@ -78,6 +78,11 @@ private[akka] class SSLSettings(config: Config) {
       case ctx ⇒ ctx
     }
 
+  /**
+   * For binary backwards compatibility. Don't use
+   * @deprecated
+   */
+  final def getOrCreateContext(log: MarkerLoggingAdapter): SSLContext = getOrCreateContext(log, new ReflectiveDynamicAccess(getClass.getClassLoader))
   private def constructContext(log: MarkerLoggingAdapter, dynamicAccess: DynamicAccess): SSLContext =
     try {
       val keyManagers = {
