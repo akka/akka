@@ -4,7 +4,7 @@
 package akka.typed.cluster
 
 import akka.actor.Address
-import akka.cluster.ClusterEvent.{MemberEvent, MemberUp}
+import akka.cluster.ClusterEvent.{ MemberEvent, MemberUp }
 import akka.typed.ActorSystem
 import akka.typed.scaladsl.Actor
 import akka.typed.cluster.Cluster._
@@ -18,17 +18,17 @@ class ClusterApiSpec {
   val typedSystem: ActorSystem[Nothing] = system.toTyped
   val cluster = Cluster(typedSystem)
 
-  val clusterSubscriber = Actor.deferred[MemberEvent] { ctx =>
+  val clusterSubscriber = Actor.deferred[MemberEvent] { ctx ⇒
 
     cluster.subscriptions ! Subscribe[MemberEvent](ctx.self)
 
-    Actor.immutable[MemberEvent] { (_, msg) =>
+    Actor.immutable[MemberEvent] { (_, msg) ⇒
       msg match {
-        case up: MemberUp if up.member.address == cluster.self.address=>
+        case up: MemberUp if up.member.address == cluster.self.address ⇒
           cluster.manager ! Leave(cluster.self.address)
           Actor.same
 
-        case other =>
+        case other ⇒
           println(s"Got cluster state event $other")
           Actor.same
       }

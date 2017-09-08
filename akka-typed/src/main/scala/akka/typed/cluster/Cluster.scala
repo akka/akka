@@ -5,9 +5,10 @@ package akka.typed.cluster
 
 import akka.actor.Address
 import akka.annotation.DoNotInherit
-import akka.cluster.ClusterEvent.{ClusterDomainEvent, CurrentClusterState, InitialStateAsSnapshot, SubscriptionInitialStateMode}
+import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState, InitialStateAsSnapshot, SubscriptionInitialStateMode }
 import akka.cluster._
-import akka.typed.{ActorRef, ActorSystem, ExtensionId}
+import akka.typed.internal.adapter.ActorSystemAdapter
+import akka.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
@@ -15,20 +16,20 @@ import scala.reflect.ClassTag
 object Cluster extends ExtensionId[Cluster] {
 
   sealed trait ClusterStateSubscription
+  // we can't have initial cluster as snapshot as that wouldn't be a ClusterDomainEvent?
   object Subscribe {
-    def apply[T <: ClusterDomainEvent : ClassTag](subscriber: ActorRef[T],
-                                                  initialStateMode: SubscriptionInitialStateMode = InitialStateAsSnapshot) =
-      new Subscribe[T](subscriber, Set(implicitly[ClassTag[T]].runtimeClass), initialStateMode)
+    def apply[T <: ClusterDomainEvent: ClassTag](
+      subscriber: ActorRef[T]) =
+      new Subscribe[T](subscriber, Set(implicitly[ClassTag[T]].runtimeClass))
   }
-  final case class Subscribe[T <: ClusterDomainEvent](subscriber: ActorRef[T],
-                                                // Not sure that/how we can enforce the clases, if we want multiple messages, but would be nice
-                                                // maybe just enforce using multiple messages in that case? or provide a small dsl "andAlso[OtherT]"
-                                                classes: Set[Class[_]],
-                                                initialStateMode: SubscriptionInitialStateMode = InitialStateAsSnapshot)
+  final case class Subscribe[T <: ClusterDomainEvent](
+    subscriber: ActorRef[T],
+    // Not sure that/how we can enforce the clases, if we want multiple messages, but would be nice
+    // maybe just enforce using multiple messages in that case? or provide a small dsl "andAlso[OtherT]"
+    classes: Set[Class[_]])
     extends ClusterStateSubscription
   final case class Unsubscribe[T](subscriber: ActorRef[T]) extends ClusterStateSubscription
   final case class GetCurrentState(recipient: ActorRef[CurrentClusterState]) extends ClusterStateSubscription
-
 
   sealed trait ClusterCommand
 
@@ -78,12 +79,14 @@ object Cluster extends ExtensionId[Cluster] {
    */
   final case class Down(address: Address) extends ClusterCommand
 
-
-  def createExtension(system: ActorSystem[_]): Cluster = ???
+  def createExtension(system: ActorSystem[_]): Cluster = {
+    require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted actor systems can be used for cluster features")
+    ???
+  }
 }
 
 @DoNotInherit
-sealed trait Cluster {
+sealed trait Cluster extends Extension {
 
   import Cluster._
 
@@ -104,7 +107,6 @@ sealed trait Cluster {
     /** Java API: roles that this member has */
     def getRoles: java.util.Set[String]
 
-
     // and maybe, just maybe these two belongs here as well, as they are about the cluster node itself -
     // the self-view of the state and whether the self-has been shutdown?
     /** Returns true if this cluster instance has be shutdown. */
@@ -114,7 +116,6 @@ sealed trait Cluster {
     /** Current snapshot state of the cluster. */
     def state: CurrentClusterState
   }
-
 
   /** Details about this cluster node itself */
   def self: ClusterSelf
