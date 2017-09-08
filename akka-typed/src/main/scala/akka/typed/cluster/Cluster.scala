@@ -146,6 +146,7 @@ sealed trait Cluster {
   def registerOnMemberRemoved[T](code: ⇒ T): Unit =
     registerOnMemberRemoved(new Runnable { override def run(): Unit = code })
 
+  // also: it's racy?
   def registerOnMemberRemoved(callback: Runnable): Unit = {
     if (_isTerminated.get())
       callback.run()
