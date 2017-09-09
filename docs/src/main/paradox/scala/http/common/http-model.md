@@ -169,7 +169,7 @@ entity regardless of its concrete subtype.
  * Use @scala[`Chunked`]@java[`HttpEntityChunked`] for an entity of unknown length
  * Use @scala[`CloseDelimited`]@java[`HttpEntityCloseDelimited`] for a response as a legacy alternative to @scala[`Chunked`]@java[`HttpEntityChunked`] if the client
 doesn't support chunked transfer encoding. Otherwise use @scala[`Chunked`]@java[`HttpEntityChunked`]!
- * In a `Multipart.Bodypart` use @scala[`IndefiniteLength`]@java[`HttpEntityIndefiniteLength`] for content of unknown length.
+ * In a `Multipart.BodyPart` use @scala[`IndefiniteLength`]@java[`HttpEntityIndefiniteLength`] for content of unknown length.
 
 @@@
 
