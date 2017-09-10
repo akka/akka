@@ -304,7 +304,7 @@ Java
 
 The parentheses are not actually needed in all cases, but they visually
 distinguish between modifiers and their arguments and therefore make the code
-even more pleasant to read for foreigners.
+even more pleasant to read.
 
 @@@ note
 

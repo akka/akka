@@ -412,7 +412,7 @@ prepared Sink using `toMat`]@java[`Sink.fold` will sum all `Integer` elements of
 a `CompletionStage<Integer>`. Next we use the `map` method of `tweets` `Source` which will change each incoming tweet
 into an integer value `1`.  Finally we connect the Flow to the previously prepared Sink using `toMat`].
 
-Remember those mysterious `Mat` type parameters on @scala[``Source[+Out, +Mat]``, `Flow[-In, +Out, +Mat]` and `Sink[-In, +Mat]`]@java[``Source<Out, Mat>``, `Flow<In, Out, Mat>` and `Sink<In, Mat>`]?
+Remember those mysterious `Mat` type parameters on @scala[`Source[+Out, +Mat]`, `Flow[-In, +Out, +Mat]` and `Sink[-In, +Mat]`]@java[`Source<Out, Mat>`, `Flow<In, Out, Mat>` and `Sink<In, Mat>`]?
 They represent the type of values these processing parts return when materialized. When you chain these together,
 you can explicitly combine their materialized values. In our example we used the @scala[`Keep.right`]@java[`Keep.right()`] predefined function,
 which tells the implementation to only care about the materialized type of the stage currently appended to the right.
