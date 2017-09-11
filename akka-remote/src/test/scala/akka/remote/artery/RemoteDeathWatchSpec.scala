@@ -15,7 +15,7 @@ import akka.remote.RARP
 import akka.remote.RemoteActorRef
 
 object RemoteDeathWatchSpec {
-  val otherPort = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
+  val otherPort = SocketUtil.temporaryLocalPort(udp = true)
 
   val config = ConfigFactory.parseString(s"""
     akka {
@@ -45,7 +45,7 @@ class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.conf
     system.eventStream.subscribe(probe.ref, classOf[QuarantinedEvent])
     val rarp = RARP(system).provider
     // pick an unused port
-    val port = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
+    val port = SocketUtil.temporaryLocalPort(udp = true)
     // simulate de-serialized ActorRef
     val ref = rarp.resolveActorRef(s"akka://OtherSystem@localhost:$port/user/foo/bar#1752527294")
 
