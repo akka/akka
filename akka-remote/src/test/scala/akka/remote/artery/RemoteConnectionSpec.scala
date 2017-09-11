@@ -26,7 +26,7 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       muteSystem(localSystem)
       val localProbe = new TestProbe(localSystem)
 
-      val remotePort = temporaryServerAddress(udp = true).getPort
+      val remotePort = temporaryLocalPort(udp = true)
 
       // try to talk to it before it is up
       val selection = localSystem.actorSelection(s"akka://$nextGeneratedSystemName@localhost:$remotePort/user/echo")
