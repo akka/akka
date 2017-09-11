@@ -19,7 +19,7 @@ import akka.testkit.TestProbe
 import scala.collection.immutable
 import scala.util.control.NonFatal
 
-object TestkitDocSpec {
+object TestKitDocSpec {
   case object Say42
   case object Unknown
 
@@ -86,8 +86,8 @@ object TestkitDocSpec {
   }
 }
 
-class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
-  import TestkitDocSpec._
+class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
+  import TestKitDocSpec._
 
   "demonstrate usage of TestActorRef" in {
     //#test-actor-ref
