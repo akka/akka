@@ -14,6 +14,8 @@ The objective of `HttpApp` is to help you start an HTTP server with just a few l
 This is accomplished just by extending `HttpApp` and implementing the `routes()` method.
 If desired, `HttpApp` provides different hook methods that can be overridden to change its default behavior.
 
+Please note that `HttpApp` is not the canonical way of starting an akka-http server. It is a tool to get up and running fast. For integrating into already existing Akka applications that already bring their `ActorSystem` using `Http.bindAndHandle` (which is also just a single line of code) is recommended over using `HttpApp`.
+
 ## Minimal Example
 
 The following example shows how to start a server:
@@ -65,6 +67,10 @@ Scala
 
 Java
 :   @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #minimal-imports #ownActorSystem }
+
+When you provide your own `ActorSystem` you are responsible for terminating it. For more fine-grained control over the shutdown of various parts of the application, take a look at @scala[@extref[Coordinated Shutdown](akka25-docs:scala/actors.html#coordinated-shutdown)]@java[@extref[Coordinated Shutdown](akka25-docs:java/actors.html#coordinated-shutdown)] extension which is available since Akka 2.5.0.
+
+
 
 ## Providing your own Actor System and Settings
 

@@ -107,6 +107,7 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
   "failed-binding" in compileOnlySpec {
     //#failed-binding-example
+    import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
@@ -121,6 +122,12 @@ class HttpAppExampleSpec extends WordSpec with Matchers
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
           }
         }
+
+      override protected def postHttpBinding(binding: Http.ServerBinding): Unit = {
+        super.postHttpBinding(binding)
+        val sys = systemReference.get()
+        sys.log.info(s"Running on [${sys.name}] actor system")
+      }
 
       override protected def postHttpBindingFailure(cause: Throwable): Unit = {
         println(s"The server could not be started due to $cause")

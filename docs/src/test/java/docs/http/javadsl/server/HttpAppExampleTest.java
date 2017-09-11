@@ -8,6 +8,7 @@ import akka.http.javadsl.server.HttpApp;
 import akka.http.javadsl.server.Route;
 //#minimal-imports
 import akka.http.javadsl.settings.ServerSettings;
+import akka.http.javadsl.ServerBinding;
 import com.typesafe.config.ConfigFactory;
 //#imports
 import org.junit.Test;
@@ -148,6 +149,13 @@ public class HttpAppExampleTest extends JUnitSuite {
             complete("<h1>Say hello to akka-http</h1>")
           )
         );
+      }
+
+      @Override
+      protected void postHttpBinding(ServerBinding binding) {
+        super.postHttpBinding(binding);
+        final ActorSystem sys = systemReference.get();
+        sys.log().info("Running on [" + sys.name() + "] actor system");
       }
 
       @Override

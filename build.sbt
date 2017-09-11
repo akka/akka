@@ -169,6 +169,7 @@ lazy val docs = project("docs")
       }),
       "jackson.version" -> Dependencies.jacksonVersion,
       "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion.value}/%s",
+      "extref.akka25-docs.base_url" -> s"http://doc.akka.io/docs/akka/2.5/%s",
       "javadoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
         s"http://doc.akka.io/japi/akka-http/$v"
