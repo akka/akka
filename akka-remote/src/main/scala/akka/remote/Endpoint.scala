@@ -260,7 +260,12 @@ private[remote] class ReliableDeliverySupervisor(
   // it serves a separator.
   // If we already have an inbound handle then UID is initially confirmed.
   // (This actor is never restarted)
-  var uidConfirmed: Boolean = uid.isDefined
+  var uidConfirmed: Boolean = uid.isDefined && (uid != refuseUid)
+
+  if (uid.isDefined && (uid == refuseUid))
+    throw new HopelessAssociation(localAddress, remoteAddress, uid,
+      new IllegalStateException(
+        s"The remote system [$remoteAddress] has a UID [${uid.get}] that has been quarantined. Association aborted."))
 
   override def postStop(): Unit = {
     // All remaining messages in the buffer has to be delivered to dead letters. It is important to clear the sequence
@@ -321,6 +326,8 @@ private[remote] class ReliableDeliverySupervisor(
 
     case s: EndpointWriter.StopReading ⇒
       writer forward s
+
+    case Ungate ⇒ // ok, not gated
   }
 
   def gated(writerTerminated: Boolean, earlyUngateRequested: Boolean): Receive = {
@@ -377,6 +384,7 @@ private[remote] class ReliableDeliverySupervisor(
     case EndpointWriter.FlushAndStop ⇒ context.stop(self)
     case EndpointWriter.StopReading(w, replyTo) ⇒
       replyTo ! EndpointWriter.StoppedReading(w)
+    case Ungate ⇒ // ok, not gated
   }
 
   private def goToIdle(): Unit = {
@@ -867,11 +875,12 @@ private[remote] class EndpointWriter(
   }
 
   private def trySendPureAck(): Unit =
-    for (h ← handle; ack ← lastAck)
+    for (h ← handle; ack ← lastAck) {
       if (h.write(codec.constructPureAck(ack))) {
         ackDeadline = newAckDeadline
         lastAck = None
       }
+    }
 
   private def startReadEndpoint(handle: AkkaProtocolHandle): Some[ActorRef] = {
     val newReader =
