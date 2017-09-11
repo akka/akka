@@ -82,6 +82,13 @@ final class ClusterSettings(val config: Config, val systemName: String) {
       case _     ⇒ cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
     }
   }
+  val ShutdownAfterUnsuccessfulJoinSeedNodes: Duration = {
+    val key = "shutdown-after-unsuccessful-join-seed-nodes"
+    toRootLowerCase(cc.getString(key)) match {
+      case "off" ⇒ Duration.Undefined
+      case _     ⇒ cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
+    }
+  }
   val PeriodicTasksInitialDelay: FiniteDuration = cc.getMillisDuration("periodic-tasks-initial-delay")
   val GossipInterval: FiniteDuration = cc.getMillisDuration("gossip-interval")
   val GossipTimeToLive: FiniteDuration = {
