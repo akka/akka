@@ -225,7 +225,7 @@ class QueueSourceSpec extends StreamSpec {
       sub.cancel()
       expectMsg(Done)
 
-      queue.offer(1).failed.foreach { e ⇒ e.isInstanceOf[IllegalStateException] should ===(true) }
+      queue.offer(1).failed.futureValue shouldBe an[StreamDetachedException]
     }
 
     "not share future across materializations" in {

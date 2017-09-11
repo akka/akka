@@ -6,6 +6,9 @@ package akka.stream.scaladsl
 import scala.concurrent.Future
 import akka.Done
 import akka.stream.QueueOfferResult
+import akka.stream.stage.GraphStageLogic
+
+import scala.util.control.NoStackTrace
 
 /**
  * This trait allows to have the queue as a data source for some stream.

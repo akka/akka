@@ -6,9 +6,10 @@ package akka.stream.scaladsl
 import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream.Attributes.inputBuffer
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, StreamDetachedException }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -109,7 +110,7 @@ class QueueSinkSpec extends StreamSpec {
       sub.sendComplete()
       Await.result(queue.pull(), noMsgTimeout) should be(None)
 
-      queue.pull().failed.foreach { e ⇒ e.isInstanceOf[IllegalStateException] should ===(true) }
+      queue.pull().failed.futureValue shouldBe an[StreamDetachedException]
     }
 
     "keep on sending even after the buffer has been full" in assertAllStagesStopped {
