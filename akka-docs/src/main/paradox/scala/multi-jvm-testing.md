@@ -76,7 +76,7 @@ forked JVM.
 So to create a 3-node test called `Sample`, you can create three applications
 like the following:
 
-```
+```scala
 package sample
 
 object SampleMultiJvmNode1 {
@@ -165,7 +165,7 @@ do this use the same naming convention as above, but create ScalaTest suites
 rather than objects with main methods. You need to have ScalaTest on the
 classpath. Here is a similar example to the one above but using ScalaTest:
 
-```
+```scala
 package sample
 
 import org.scalatest.WordSpec
