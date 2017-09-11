@@ -6,7 +6,8 @@ package akka.stream.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
-import akka.stream.ActorMaterializer
+import akka.event.Logging
+import akka.stream.{ ActorAttributes, ActorMaterializer }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
@@ -308,15 +309,30 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
       val (flowInSource, flowInProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val (flowOutProbe, flowOutSource) = TestSource.probe[String].toMat(BroadcastHub.sink)(Keep.both).run()
 
+      implicit val l = Logging(system, "setupFlow")
+
       // We can't just use ordinary probes here because we're expecting them to get started/restarted. Instead, we
       // simply use the probes as a message bus for feeding and capturing events.
       val (source, sink) = TestSource.probe[String].viaMat(RestartFlow.withBackoff(minBackoff, maxBackoff, 0) { () ⇒
         created.incrementAndGet()
         Flow.fromSinkAndSource(
-          Flow[String].takeWhile(_ != "cancel").to(Sink.foreach(flowInSource.sendNext).mapMaterializedValue(_.onComplete {
-            case Success(_) ⇒ flowInSource.sendNext("in complete")
-            case Failure(_) ⇒ flowInSource.sendNext("in error")
-          })),
+          Flow[String]
+            .log("before:takeWhile").withAttributes(ActorAttributes.logLevels(Logging.WarningLevel, Logging.WarningLevel, Logging.WarningLevel))
+            .takeWhile(_ != "cancel")
+            .log("after:takeWhile").withAttributes(ActorAttributes.logLevels(Logging.WarningLevel, Logging.WarningLevel, Logging.WarningLevel))
+            .to(Sink.foreach[String] { x ⇒
+              l.warning("inside:foreach: " + x)
+              flowInSource.sendNext(x)
+            }
+              .mapMaterializedValue(_.onComplete {
+                case s @ Success(_) ⇒
+                  l.warning("mat-value:success: " + s)
+                  flowInSource.sendNext("in complete")
+                case f @ Failure(_) ⇒
+                  l.warning("mat-value:fail: " + f)
+                  flowInSource.sendNext("in error")
+              })
+            ),
           flowOutSource.takeWhile(_ != "complete").map {
             case "error" ⇒ throw TE("error")
             case other   ⇒ other
@@ -353,12 +369,14 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
 
       source.sendNext("a")
       flowInProbe.requestNext("a")
+
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
-      source.sendNext("cancel")
       // This will complete the flow in probe and cancel the flow out probe
       flowInProbe.request(2)
+      source.sendNext("cancel")
+
       Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain only ("in complete", "out complete")
 
       // and it should restart
