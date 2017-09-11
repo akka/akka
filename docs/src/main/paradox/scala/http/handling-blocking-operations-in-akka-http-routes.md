@@ -132,5 +132,5 @@ This is the recommended way of dealing with any kind of blocking in reactive
 applications. It is referred to as "bulkheading" or "isolating" the bad behaving
 parts of an app. In this case, bad behaviour of blocking operations.
 
-There is good documentation available in Akka docs section, 
-[Blocking needs careful management](http://doc.akka.io/docs/akka/current/general/actor-systems.html#Blocking_Needs_Careful_Management).
+There is good documentation available in Akka docs section,
+@extref[Blocking needs careful management](akka-docs:general/actor-systems.html#Blocking_Needs_Careful_Management).
