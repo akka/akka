@@ -8,7 +8,7 @@ be put into `WEB-INF/lib`
  
 ## Lightbend Enterprise Suite
  
-An Akka application can also be packaged and deployed using [Lightbend Enterprise Suite](https://conductr.lightbend.com/docs/2.2.x/DevQuickStart).
+An Akka application can also be packaged and deployed using [Lightbend Enterprise Suite](https://conductr.lightbend.com/docs/2.1.x/DevQuickStart).
 
 Lightbend Enterprise Suite is a solution for managing Lightbend Reactive Platform applications across a cluster of machines.
 It is reactive from the ground up thus enabling operations to provide the resiliency required to unleash the full benefits 

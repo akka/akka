@@ -32,6 +32,7 @@ class ClusterConfigSpec extends AkkaSpec {
       SeedNodes should ===(Vector.empty[Address])
       SeedNodeTimeout should ===(5 seconds)
       RetryUnsuccessfulJoinAfter should ===(10 seconds)
+      ShutdownAfterUnsuccessfulJoinSeedNodes should ===(Duration.Undefined)
       PeriodicTasksInitialDelay should ===(1 seconds)
       GossipInterval should ===(1 second)
       GossipTimeToLive should ===(2 seconds)
