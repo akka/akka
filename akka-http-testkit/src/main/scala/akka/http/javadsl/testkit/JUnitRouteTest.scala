@@ -13,7 +13,7 @@ import com.typesafe.config.{ ConfigFactory, Config }
 import org.junit.rules.ExternalResource
 import org.junit.{ Assert, Rule }
 import scala.concurrent.duration._
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future }
 
 /**
  * A RouteTest that uses JUnit assertions. ActorSystem and Materializer are provided as an [[org.junit.rules.ExternalResource]]
@@ -24,7 +24,7 @@ abstract class JUnitRouteTestBase extends RouteTest {
   implicit def system: ActorSystem = systemResource.system
   implicit def materializer: Materializer = systemResource.materializer
 
-  protected def createTestRouteResult(request: HttpRequest, result: RouteResult): TestRouteResult =
+  protected def createTestRouteResultAsync(request: HttpRequest, result: Future[RouteResult]): TestRouteResult =
     new TestRouteResult(result, awaitDuration)(system.dispatcher, materializer) {
       protected def assertEquals(expected: AnyRef, actual: AnyRef, message: String): Unit =
         reportDetails { Assert.assertEquals(message, expected, actual) }
