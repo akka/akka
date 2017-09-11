@@ -1,7 +1,6 @@
 # Event Bus
 
 Originally conceived as a way to send messages to groups of actors, the
-`EventBus` has been generalized into a set of abstract base classes
 `EventBus` has been generalized into a set of @scala[composable traits] @java[abstract base classes]
 implementing a simple interface:
 
