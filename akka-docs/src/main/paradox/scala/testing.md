@@ -63,6 +63,9 @@ actor—are stopped.
 The above mentioned @scala[`expectMsg`]@java[`expectMsgEquals`] is not the only method for formulating
 assertions concerning received messages, the full set is this:
 
+Scala
+:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-expect }
+
 Java
 :   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-expect }
 
