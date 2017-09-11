@@ -7,9 +7,9 @@ import akka.stream.OverflowStrategies._
 import akka.stream._
 import akka.stream.stage._
 import akka.stream.scaladsl.SourceQueueWithComplete
-
 import akka.Done
 import java.util.concurrent.CompletionStage
+
 import akka.annotation.InternalApi
 
 import scala.concurrent.{ Future, Promise }
@@ -46,7 +46,7 @@ import scala.compat.java8.FutureConverters._
         initCallback(callback.invoke)
       }
       override def postStop(): Unit = {
-        val exception = new AbruptStageTerminationException(this)
+        val exception = new StreamDetachedException()
         completion.tryFailure(exception)
         stopCallback {
           case Offer(elem, promise) ⇒ promise.failure(exception)
