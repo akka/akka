@@ -49,7 +49,6 @@ import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
 import akka.stream.Materializer
 import akka.stream.SharedKillSwitch
-import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
@@ -65,8 +64,6 @@ import org.agrona.ErrorHandler
 import org.agrona.IoUtil
 import org.agrona.concurrent.BackoffIdleStrategy
 import akka.remote.artery.Decoder.InboundCompressionAccess
-import akka.remote.transport.TestTransport
-import com.typesafe.config.ConfigFactory
 
 /**
  * INTERNAL API
@@ -609,7 +606,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   // TODO Add FR Events
   private def startAeronErrorLog(): Unit = {
-    areonErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE))
+    areonErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE), log)
     val lastTimestamp = new AtomicLong(0L)
     import system.dispatcher
     aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
