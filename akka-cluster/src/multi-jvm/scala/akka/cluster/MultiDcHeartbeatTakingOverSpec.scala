@@ -85,10 +85,10 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
     // end of these will be filled in during the initial phase of the test -----------
 
     def refreshOldestMemberHeartbeatStatuses() = {
-      expectedAlphaHeartbeaterNodes = takeNOldestMembers(_.dataCenter == "alpha", 2)
+      expectedAlphaHeartbeaterNodes = takeNOldestMembers(dataCenter = "alpha", 2)
       expectedAlphaHeartbeaterRoles = membersAsRoles(expectedAlphaHeartbeaterNodes)
 
-      expectedBetaHeartbeaterNodes = takeNOldestMembers(_.dataCenter == "beta", 2)
+      expectedBetaHeartbeaterNodes = takeNOldestMembers(dataCenter = "beta", 2)
       expectedBetaHeartbeaterRoles = membersAsRoles(expectedBetaHeartbeaterNodes)
 
       expectedNoActiveHeartbeatSenderRoles = roles.toSet -- (expectedAlphaHeartbeaterRoles union expectedBetaHeartbeaterRoles)
@@ -154,7 +154,7 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
       enterBarrier("after-alpha-monitoring-node-left")
 
       implicit val sender = observer.ref
-      val expectedAlphaMonitoringNodesAfterLeaving = (takeNOldestMembers(_.dataCenter == "alpha", 3).filterNot(_.status == MemberStatus.Exiting))
+      val expectedAlphaMonitoringNodesAfterLeaving = (takeNOldestMembers(dataCenter = "alpha", 3).filterNot(_.status == MemberStatus.Exiting))
       runOn(membersAsRoles(expectedAlphaMonitoringNodesAfterLeaving).toList: _*) {
         awaitAssert({
 
@@ -180,16 +180,15 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
    * strongly guaratnee the order of "oldest" members, as they're linearized by the order in which they become Up
    * (since marking that transition is a Leader action).
    */
-  private def membersByAge(): immutable.SortedSet[Member] =
+  private def membersByAge(dataCenter: ClusterSettings.DataCenter): immutable.SortedSet[Member] =
     SortedSet.empty(Member.ageOrdering)
-      .union(cluster.state.members.filter(m ⇒ m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
+      .union(cluster.state.members.filter(m ⇒ m.dataCenter == dataCenter &&
+        m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
 
   /** INTERNAL API */
   @InternalApi
-  private[cluster] def takeNOldestMembers(memberFilter: Member ⇒ Boolean, n: Int): immutable.SortedSet[Member] =
-    membersByAge()
-      .filter(memberFilter)
-      .take(n)
+  private[cluster] def takeNOldestMembers(dataCenter: ClusterSettings.DataCenter, n: Int): immutable.SortedSet[Member] =
+    membersByAge(dataCenter).take(n)
 
   private def membersAsRoles(ms: SortedSet[Member]): SortedSet[RoleName] = {
     val res = ms.flatMap(m ⇒ roleName(m.address))
