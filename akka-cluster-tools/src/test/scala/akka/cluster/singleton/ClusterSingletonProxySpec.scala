@@ -63,7 +63,6 @@ object ClusterSingletonProxySpec {
       loglevel = INFO
       cluster {
         auto-down-unreachable-after = 10s
-        min-nr-of-members = 2
       }
       actor.provider = "cluster"
       remote {
