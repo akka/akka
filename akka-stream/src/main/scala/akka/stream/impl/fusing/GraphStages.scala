@@ -455,7 +455,7 @@ import scala.concurrent.{ Future, Promise }
     GraphDSL.create() { implicit builder ⇒
       import GraphDSL.Implicits._
       val concat = builder.add(stage)
-      val ds = concat.inSeq.map { inlet ⇒
+      val ds = concat.inlets.map { inlet ⇒
         val detacher = builder.add(GraphStages.detacher[T])
         detacher ~> inlet
         detacher.in

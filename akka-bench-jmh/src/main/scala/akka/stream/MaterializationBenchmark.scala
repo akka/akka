@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.util.ConstantFun
 import org.openjdk.jmh.annotations._
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -25,7 +24,7 @@ object MaterializationBenchmark {
     source.to(Sink.ignore)
   }
 
-  val graphWithJunctionsBuilder = (numOfJunctions: Int) =>
+  val graphWithJunctionsGradualBuilder = (numOfJunctions: Int) =>
     RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
 
@@ -40,6 +39,21 @@ object MaterializationBenchmark {
 
       Source.single(()) ~> broadcast
       outlet ~> Sink.ignore
+      ClosedShape
+    })
+
+  val graphWithJunctionsImmediateBuilder = (numOfJunctions: Int) =>
+    RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+      import GraphDSL.Implicits._
+
+      val broadcast = b.add(Broadcast[Unit](numOfJunctions))
+      val merge = b.add(Merge[Unit](numOfJunctions))
+      for (i <- 0 until numOfJunctions) {
+        broadcast ~> merge
+      }
+
+      Source.single(()) ~> broadcast
+      merge ~> Sink.ignore
       ClosedShape
     })
 
@@ -80,13 +94,15 @@ object MaterializationBenchmark {
 @OutputTimeUnit(TimeUnit.SECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
 class MaterializationBenchmark {
+
   import MaterializationBenchmark._
 
   implicit val system = ActorSystem("MaterializationBenchmark")
   implicit val materializer = ActorMaterializer()
 
   var flowWithMap: RunnableGraph[NotUsed] = _
-  var graphWithJunctions: RunnableGraph[NotUsed] = _
+  var graphWithJunctionsGradual: RunnableGraph[NotUsed] = _
+  var graphWithJunctionsImmediate: RunnableGraph[NotUsed] = _
   var graphWithImportedFlow: RunnableGraph[NotUsed] = _
   var subStream: RunnableGraph[Future[Unit]] = _
 
@@ -96,7 +112,8 @@ class MaterializationBenchmark {
   @Setup
   def setup(): Unit = {
     flowWithMap = flowWithMapBuilder(complexity)
-    graphWithJunctions = graphWithJunctionsBuilder(complexity)
+    graphWithJunctionsGradual = graphWithJunctionsGradualBuilder(complexity)
+    graphWithJunctionsImmediate = graphWithJunctionsImmediateBuilder(complexity)
     graphWithImportedFlow = graphWithImportedFlowBuilder(complexity)
     subStream = subStreamBuilder(complexity)
   }
@@ -110,7 +127,10 @@ class MaterializationBenchmark {
   def flow_with_map(): NotUsed = flowWithMap.run()
 
   @Benchmark
-  def graph_with_junctions(): NotUsed = graphWithJunctions.run()
+  def graph_with_junctions_gradual(): NotUsed = graphWithJunctionsGradual.run()
+
+  @Benchmark
+  def graph_with_junctions_immediate(): NotUsed = graphWithJunctionsImmediate.run()
 
   @Benchmark
   def graph_with_imported_flow(): NotUsed = graphWithImportedFlow.run()

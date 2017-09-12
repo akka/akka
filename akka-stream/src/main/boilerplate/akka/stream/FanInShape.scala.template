@@ -4,7 +4,6 @@
 package akka.stream
 
 import scala.collection.immutable
-import scala.annotation.varargs
 import scala.annotation.unchecked.uncheckedVariance
 
 object FanInShape {
@@ -28,9 +27,15 @@ abstract class FanInShape[+O] private (_out: Outlet[O @uncheckedVariance], _regi
   def this(init: FanInShape.Init[O]) = this(init.outlet, init.inlets.iterator, init.name)
 
   final def out: Outlet[O @uncheckedVariance] = _out
-  final override def outlets: immutable.Seq[Outlet[_]] = _out :: Nil
-  final override def inlets: immutable.Seq[Inlet[_]] = _inlets
+  final override def outlets: immutable.Seq[Outlet[O @uncheckedVariance]] = _out :: Nil
+  /**
+    * Not meant for overriding outside of Akka.
+    */
+  override def inlets: immutable.Seq[Inlet[_]] = _inlets
 
+  /**
+    * Performance of subclass `UniformFanInShape` relies on `_inlets` being a `Vector`, not a `List`.
+    */
   private var _inlets: Vector[Inlet[_]] = Vector.empty
   protected def newInlet[T](name: String): Inlet[T] = {
     val p = if (_registered.hasNext) _registered.next().asInstanceOf[Inlet[T]] else Inlet[T](s"${_name}.$name")
@@ -54,28 +59,42 @@ object UniformFanInShape {
 }
 
 class UniformFanInShape[-T, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {
+
+  //ports get added to `FanInShape.inlets` as a side-effect of calling `newInlet`
+  for (i <- 0 until n) newInlet[T](s"in$i")
+
   def this(n: Int) = this(n, FanInShape.Name[O]("UniformFanIn"))
   def this(n: Int, name: String) = this(n, FanInShape.Name[O](name))
   def this(outlet: Outlet[O], inlets: Array[Inlet[T]]) = this(inlets.length, FanInShape.Ports(outlet, inlets.toList))
   override protected def construct(init: FanInShape.Init[O @uncheckedVariance]): FanInShape[O] = new UniformFanInShape(n, init)
   override def deepCopy(): UniformFanInShape[T, O] = super.deepCopy().asInstanceOf[UniformFanInShape[T, O]]
 
-  val inSeq: immutable.IndexedSeq[Inlet[T @uncheckedVariance]] = Vector.tabulate(n)(i => newInlet[T](s"in$i"))
-  def in(n: Int): Inlet[T @uncheckedVariance] = inSeq(n)
+  final override def inlets: immutable.Seq[Inlet[T @uncheckedVariance]] = super.inlets.asInstanceOf[immutable.Seq[Inlet[T]]]
+
+  @deprecated("Use `inlets` or `in(id)` instead.", "2.5.5")
+  lazy val inSeq: immutable.IndexedSeq[Inlet[T @uncheckedVariance]] = inlets.toIndexedSeq
+  def in(n: Int): Inlet[T @uncheckedVariance] = inlets(n)
 }
 
 class FanInShape1N[-T0, -T1, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {
+
+  //ports get added to `FanInShape.inlets` as a side-effect of calling `newInlet`
+  val in0: Inlet[T0 @uncheckedVariance] = newInlet[T0]("in0")
+  for (i <- 1 until n) newInlet[T1](s"in$i")
+
   def this(n: Int) = this(n, FanInShape.Name[O]("FanInShape1N"))
   def this(n: Int, name: String) = this(n, FanInShape.Name[O](name))
   def this(outlet: Outlet[O @uncheckedVariance], in0: Inlet[T0 @uncheckedVariance], inlets1: Array[Inlet[T1 @uncheckedVariance]]) = this(inlets1.length, FanInShape.Ports(outlet, in0 :: inlets1.toList))
   override protected def construct(init: FanInShape.Init[O @uncheckedVariance]): FanInShape[O] = new FanInShape1N(n, init)
   override def deepCopy(): FanInShape1N[T0, T1, O] = super.deepCopy().asInstanceOf[FanInShape1N[T0, T1, O]]
 
-  val in0: Inlet[T0 @uncheckedVariance] = newInlet[T0]("in0")
-  val in1Seq: immutable.IndexedSeq[Inlet[T1 @uncheckedVariance]] = Vector.tabulate(n)(i => newInlet[T1](s"in${i+1}"))
+  @deprecated("Use `inlets` or `in(id)` instead.", "2.5.5")
+  lazy val in1Seq: immutable.IndexedSeq[Inlet[T1 @uncheckedVariance]] = inlets
+    .tail //head is in0
+    .toIndexedSeq.asInstanceOf[immutable.IndexedSeq[Inlet[T1]]]
   def in(n: Int): Inlet[T1 @uncheckedVariance] = {
     require(n > 0, "n must be > 0")
-    in1Seq(n - 1)
+    inlets(n).asInstanceOf[Inlet[T1]]
   }
 }
 
