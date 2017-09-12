@@ -1,0 +1,11 @@
+# #21732Migrate JavaSource to GraphStage
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.FileSource")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.newInstance")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.FileSource.withAttributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.attributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.label")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.this")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FilePublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FilePublisher$Continue$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FilePublisher")
