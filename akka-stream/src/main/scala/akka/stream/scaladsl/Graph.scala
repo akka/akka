@@ -181,7 +181,7 @@ object MergePreferred {
  * Merge several streams, taking elements as they arrive from input streams
  * (picking from preferred when several have elements ready).
  *
- * A `MergePreferred` has one `out` port, one `preferred` input port and 0 or more secondary `in` ports.
+ * A `MergePreferred` has one `out` port, one `preferred` input port and 1 or more secondary `in` ports.
  *
  * '''Emits when''' one of the inputs has an element available, preferring
  * a specified input if multiple have elements available
@@ -191,11 +191,9 @@ object MergePreferred {
  * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
  *
  * '''Cancels when''' downstream cancels
- *
- * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
 final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolean) extends GraphStage[MergePreferred.MergePreferredShape[T]] {
-  require(secondaryPorts >= 1, "A MergePreferred must have more than 0 secondary input ports")
+  require(secondaryPorts >= 1, "A MergePreferred must have 1 or more secondary input ports")
 
   override def initialAttributes = DefaultAttributes.mergePreferred
   override val shape: MergePreferred.MergePreferredShape[T] =
@@ -213,8 +211,8 @@ final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolea
     }
 
     override def preStart(): Unit = {
-      tryPull(preferred)
-      shape.inSeq.foreach(tryPull)
+      //while initializing this `MergePreferredShape`, the `preferred` port gets added to `inlets` by side-effect.
+      shape.inlets.foreach(tryPull)
     }
 
     setHandler(out, eagerTerminateOutput)
@@ -304,8 +302,6 @@ object MergePrioritized {
  * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
  *
  * '''Cancels when''' downstream cancels
- *
- * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
 final class MergePrioritized[T] private (val priorities: Seq[Int], val eagerComplete: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
   private val inputPorts = priorities.size
@@ -969,8 +965,10 @@ object ZipWithN {
 class ZipWithN[A, O](zipper: immutable.Seq[A] ⇒ O)(n: Int) extends GraphStage[UniformFanInShape[A, O]] {
   override def initialAttributes = DefaultAttributes.zipWithN
   override val shape = new UniformFanInShape[A, O](n)
-  def out = shape.out
-  val inSeq = shape.inSeq
+  def out: Outlet[O] = shape.out
+
+  @deprecated("use `shape.inlets` or `shape.in(id)` instead", "2.5.5")
+  def inSeq: immutable.IndexedSeq[Inlet[A]] = shape.inlets.asInstanceOf[immutable.IndexedSeq[Inlet[A]]]
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
     var pending = 0
@@ -981,16 +979,16 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] ⇒ O)(n: Int) extends GraphStage[
     val pullInlet = pull[A] _
 
     private def pushAll(): Unit = {
-      push(out, zipper(inSeq.map(grabInlet)))
+      push(out, zipper(shape.inlets.map(grabInlet)))
       if (willShutDown) completeStage()
-      else inSeq.foreach(pullInlet)
+      else shape.inlets.foreach(pullInlet)
     }
 
     override def preStart(): Unit = {
-      inSeq.foreach(pullInlet)
+      shape.inlets.foreach(pullInlet)
     }
 
-    inSeq.foreach(in ⇒ {
+    shape.inlets.foreach(in ⇒ {
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           pending -= 1
@@ -1288,7 +1286,7 @@ object GraphDSL extends GraphApply {
 
     @tailrec
     private[stream] def findOut[I, O](b: Builder[_], junction: UniformFanOutShape[I, O], n: Int): Outlet[O] = {
-      if (n == junction.outArray.length)
+      if (n == junction.outlets.length)
         throw new IllegalArgumentException(s"no more outlets free on $junction")
       else if (!b.traversalBuilder.isUnwired(junction.out(n))) findOut(b, junction, n + 1)
       else junction.out(n)
@@ -1296,7 +1294,7 @@ object GraphDSL extends GraphApply {
 
     @tailrec
     private[stream] def findIn[I, O](b: Builder[_], junction: UniformFanInShape[I, O], n: Int): Inlet[I] = {
-      if (n == junction.inSeq.length)
+      if (n == junction.inlets.length)
         throw new IllegalArgumentException(s"no more inlets free on $junction")
       else if (!b.traversalBuilder.isUnwired(junction.in(n))) findIn(b, junction, n + 1)
       else junction.in(n)
@@ -1316,7 +1314,7 @@ object GraphDSL extends GraphApply {
 
       def ~>[Out](junction: UniformFanInShape[T, Out])(implicit b: Builder[_]): PortOps[Out] = {
         def bind(n: Int): Unit = {
-          if (n == junction.inSeq.length)
+          if (n == junction.inlets.length)
             throw new IllegalArgumentException(s"no more inlets free on $junction")
           else if (!b.traversalBuilder.isUnwired(junction.in(n))) bind(n + 1)
           else b.addEdge(importAndGetPort(b), junction.in(n))
@@ -1359,7 +1357,7 @@ object GraphDSL extends GraphApply {
 
       def <~[In](junction: UniformFanOutShape[In, T])(implicit b: Builder[_]): ReversePortOps[In] = {
         def bind(n: Int): Unit = {
-          if (n == junction.outArray.length)
+          if (n == junction.outlets.length)
             throw new IllegalArgumentException(s"no more outlets free on $junction")
           else if (!b.traversalBuilder.isUnwired(junction.out(n))) bind(n + 1)
           else b.addEdge(junction.out(n), importAndGetPortReverse(b))
