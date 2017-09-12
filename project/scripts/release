@@ -52,6 +52,8 @@
 #                          "<your password>")
 #
 # 3) You must have access to gustav.akka.io
+#    Please note that gustav.akka.io is the same as repo.akka.io, 
+#    but the latter domain is pointed at cloudflare so one could not ssh into it.
 #
 # 3.1) Ask someone in the team for login information for the akkarepo user.
 #
