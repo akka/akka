@@ -33,7 +33,6 @@ class ApiTest {
       def onRecoveryComplete(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State] = ???
       def snapshot[Snapshot](
         onState: State ⇒ Option[Snapshot]          = (_: State) ⇒ None,
-        onEvent: Event ⇒ Option[Snapshot]          = (_: Event) ⇒ None,
         on:      (State, Event) ⇒ Option[Snapshot] = (_: State, _: Event) ⇒ None,
         recover: Snapshot ⇒ Option[State]
       ): PersistentBehavior[Command, Event, State] = ???
