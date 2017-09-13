@@ -31,6 +31,12 @@ class ApiTest {
       override def receiveMessage(ctx: typed.ActorContext[Command], msg: Command): Behavior[Command] = ???
 
       def onRecoveryComplete(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State] = ???
+      def snapshot[Snapshot](
+        onState: State ⇒ Option[Snapshot]          = (_: State) ⇒ None,
+        onEvent: Event ⇒ Option[Snapshot]          = (_: Event) ⇒ None,
+        on:      (State, Event) ⇒ Option[Snapshot] = (_: State, _: Event) ⇒ None,
+        recover: Snapshot ⇒ Option[State]
+      ): PersistentBehavior[Command, Event, State] = ???
     }
 
     def persistent[Command, Event, State](
@@ -197,6 +203,37 @@ class ApiTest {
     })
   }
 
-  // Something with spawning child actors
   // explicit snapshots
+  object ExplicitSnapshots {
+    type Task = String
+
+    sealed trait Command
+    case class RegisterTask(task: Task) extends Command
+    case class TaskDone(task: Task) extends Command
+
+    sealed trait Event
+    case class TaskRegistered(task: Task) extends Event
+    case class TaskRemoved(task: Task) extends Event
+
+    case class State(tasksInFlight: List[Task])
+
+    Actor.persistent[Command, Event, State](
+      persistenceId = "asdf",
+      initialState = State(Nil),
+      commandHandler = state ⇒ {
+        case (_, RegisterTask(task)) ⇒ Persist(TaskRegistered(task))
+        case (_, TaskDone(task))     ⇒ Persist(TaskRemoved(task))
+      },
+      onEvent = (state, evt) ⇒ evt match {
+        case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
+        case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
+      }
+    ).snapshot[Unit](
+        state ⇒ if (state.tasksInFlight.isEmpty) Some(()) else None,
+        recover = _ ⇒ Some(State(Nil))
+      )
+  }
+
+  // Spawning child actors
+
 }
