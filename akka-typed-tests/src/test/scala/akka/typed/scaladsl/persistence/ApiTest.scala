@@ -2,7 +2,7 @@ package akka.typed.scaladsl.persistence
 
 import scala.concurrent.duration._
 import akka.typed.{ ActorRef, Behavior }
-import akka.typed.scaladsl.ActorContext
+import akka.typed.scaladsl.{ ActorContext, TimerScheduler }
 
 import scala.concurrent.ExecutionContext
 
@@ -150,7 +150,7 @@ class ApiTest {
 
   }
 
-  // Something with 'become'
+  // Example with 'become'
   object Become {
     sealed trait Mood
     case object Happy extends Mood
@@ -184,10 +184,11 @@ class ApiTest {
       case (_, MoodChanged(to)) ⇒ to
     }
     )
-    akka.typed.scaladsl.Actor.deferred[Command] { ctx ⇒
-      // TODO initialize scheduler
+
+    akka.typed.scaladsl.Actor.withTimers((timers: TimerScheduler[Command]) ⇒ {
+      timers.startPeriodicTimer("swing", MoodSwing, 10.seconds)
       b
-    }
+    })
   }
 
   // Something with spawning child actors
