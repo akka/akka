@@ -3,7 +3,7 @@ package akka.typed.scaladsl.persistence
 import akka.typed
 
 import scala.concurrent.duration._
-import akka.typed.{ ActorRef, Behavior, ExtensibleBehavior, Signal }
+import akka.typed.{ ActorRef, Behavior, ExtensibleBehavior, Signal, Terminated }
 import akka.typed.scaladsl.{ ActorContext, TimerScheduler }
 
 import scala.concurrent.ExecutionContext
@@ -36,6 +36,8 @@ class ApiTest {
         on:      (State, Event) ⇒ Option[Snapshot] = (_: State, _: Event) ⇒ None,
         recover: Snapshot ⇒ Option[State]
       ): PersistentBehavior[Command, Event, State] = ???
+
+      def signalHandler(handler: State ⇒ ((ActorContext[Command], Any) ⇒ PersistentEffect[Event])) = ???
     }
 
     def persistent[Command, Event, State](
@@ -264,5 +266,41 @@ class ApiTest {
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       }
     )
+  }
+
+  object UsingSignals {
+    type Task = String
+    case class RegisterTask(task: Task)
+
+    sealed trait Event
+    case class TaskRegistered(task: Task) extends Event
+    case class TaskRemoved(task: Task) extends Event
+
+    case class State(tasksInFlight: List[Task])
+
+    def worker(task: Task): Behavior[Nothing] = ???
+
+    Actor.persistent[RegisterTask, Event, State](
+      persistenceId = "asdf",
+      initialState = State(Nil),
+      commandHandler = _ ⇒ {
+        case (ctx, RegisterTask(task)) ⇒ Persist(TaskRegistered(task))
+          .andThen { _ ⇒
+            val child = ctx.spawn[Nothing](worker(task), task)
+            // This assumes *any* termination of the child may trigger a `TaskDone`:
+            ctx.watch(child)
+          }
+      },
+      onEvent = (state, evt) ⇒ evt match {
+        case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
+        case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
+      }
+    ).signalHandler(_ ⇒ {
+        case (ctx, Terminated(actorRef)) ⇒
+          // watchWith (as in the above example) is nicer because it means we don't have to
+          // 'manually' associate the task and the child actor, but we wanted to demonstrate
+          // signals here:
+          Persist(TaskRemoved(actorRef.path.name))
+      })
   }
 }
