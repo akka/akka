@@ -46,9 +46,4 @@ abstract class FanInShape[+O] private (_out: Outlet[O @uncheckedVariance], _regi
   protected def construct(init: Init[O @uncheckedVariance]): FanInShape[O]
 
   def deepCopy(): FanInShape[O] = construct(Ports[O](_out.carbonCopy(), inlets.map(_.carbonCopy())))
-  final def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): FanInShape[O] = {
-    require(outlets.size == 1, s"proposed outlets [${outlets.mkString(", ")}] do not fit FanInShape")
-    require(inlets.size == _inlets.size, s"proposed inlets [${inlets.mkString(", ")}] do not fit FanInShape")
-    construct(Ports[O](outlets.head.asInstanceOf[Outlet[O]], inlets))
-  }
 }

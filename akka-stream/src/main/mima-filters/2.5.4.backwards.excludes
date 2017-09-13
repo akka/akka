@@ -9,3 +9,10 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSour
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FilePublisher$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FilePublisher$Continue$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FilePublisher")
+
+# Cleanup from left-overs from old materializer.
+# Methods are not used from inside akka. It's technically a binary incompatible because methods were public before.
+# It would break user code which called `copyFromPorts` explicitly. This seems highly unlikely as these methods were
+# thought to be used only from inside the old materializer.
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.FanInShape.copyFromPorts")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.FanOutShape.copyFromPorts")
