@@ -20,7 +20,7 @@ content negotiation which saves two additional layers of indirection that are re
 
 ## Predefined Unmarshallers
 
-Akka HTTP already predefines a number of marshallers for the most common types.
+Akka HTTP already predefines a number of unmarshallers for the most common types.
 Specifically these are:
 
  * @scaladoc[PredefinedFromStringUnmarshallers](akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers)
