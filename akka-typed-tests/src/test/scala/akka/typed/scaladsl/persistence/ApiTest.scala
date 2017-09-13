@@ -234,6 +234,36 @@ class ApiTest {
       )
   }
 
-  // Spawning child actors
+  object SpawnChild {
+    type Task = String
+    sealed trait Command
+    case class RegisterTask(task: Task) extends Command
+    case class TaskDone(task: Task) extends Command
 
+    sealed trait Event
+    case class TaskRegistered(task: Task) extends Event
+    case class TaskRemoved(task: Task) extends Event
+
+    case class State(tasksInFlight: List[Task])
+
+    def worker(task: Task): Behavior[Nothing] = ???
+
+    Actor.persistent[Command, Event, State](
+      persistenceId = "asdf",
+      initialState = State(Nil),
+      commandHandler = _ ⇒ {
+        case (ctx, RegisterTask(task)) ⇒ Persist(TaskRegistered(task))
+          .andThen { _ ⇒
+            val child = ctx.spawn[Nothing](worker(task), task)
+            // This assumes *any* termination of the child may trigger a `TaskDone`:
+            ctx.watchWith(child, TaskDone(task))
+          }
+        case (_, TaskDone(task)) ⇒ Persist(TaskRemoved(task))
+      },
+      onEvent = (state, evt) ⇒ evt match {
+        case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
+        case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
+      }
+    )
+  }
 }
