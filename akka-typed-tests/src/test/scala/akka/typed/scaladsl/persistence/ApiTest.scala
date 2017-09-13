@@ -1,7 +1,9 @@
 package akka.typed.scaladsl.persistence
 
+import akka.typed
+
 import scala.concurrent.duration._
-import akka.typed.{ ActorRef, Behavior }
+import akka.typed.{ ActorRef, Behavior, ExtensibleBehavior, Signal }
 import akka.typed.scaladsl.{ ActorContext, TimerScheduler }
 
 import scala.concurrent.ExecutionContext
@@ -24,13 +26,19 @@ class ApiTest {
   object Actor {
     import TypedPersistentActor._
 
+    class PersistentBehavior[Command, Event, State] extends ExtensibleBehavior[Command] {
+      override def receiveSignal(ctx: typed.ActorContext[Command], msg: Signal): Behavior[Command] = ???
+      override def receiveMessage(ctx: typed.ActorContext[Command], msg: Command): Behavior[Command] = ???
+
+      def onRecoveryComplete(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State] = ???
+    }
+
     def persistent[Command, Event, State](
-      persistenceId:      String,
-      initialState:       State,
-      commandHandler:     State ⇒ ((ActorContext[Command], Command) ⇒ PersistentEffect[Event]),
-      onEvent:            (State, Event) ⇒ State,
-      onRecoveryComplete: (ActorContext[Command], State) ⇒ Unit                                = (_: ActorContext[Command], _: State) ⇒ ()
-    ) = ???
+      persistenceId:  String,
+      initialState:   State,
+      commandHandler: State ⇒ ((ActorContext[Command], Command) ⇒ PersistentEffect[Event]),
+      onEvent:        (State, Event) ⇒ State
+    ): PersistentBehavior[Command, Event, State] = ???
   }
 
   import TypedPersistentActor._
@@ -138,15 +146,13 @@ class ApiTest {
             dataByCorrelationId = state.dataByCorrelationId + (correlationId → data))
         case SideEffectAcknowledged(correlationId) ⇒
           state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
-      },
-
-      onRecoveryComplete = (ctx, state) ⇒ {
-        state.dataByCorrelationId.foreach {
-          case (correlationId, data) ⇒ performSideEffect(ctx.self, correlationId, data)
+      }).onRecoveryComplete {
+        case (ctx, state) ⇒ {
+          state.dataByCorrelationId.foreach {
+            case (correlationId, data) ⇒ performSideEffect(ctx.self, correlationId, data)
+          }
         }
       }
-
-    )
 
   }
 
