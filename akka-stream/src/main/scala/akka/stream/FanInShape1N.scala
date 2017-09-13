@@ -3,6 +3,8 @@ package akka.stream
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 
+@Deprecated
+@deprecated("FanInShape1N was removed because it was not used anywhere. Use a custom shape extending from FanInShape directly.", "2.5.5")
 class FanInShape1N[-T0, -T1, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {
 
   //ports get added to `FanInShape.inlets` as a side-effect of calling `newInlet`
