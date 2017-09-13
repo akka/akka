@@ -68,7 +68,7 @@ class ActorHierarchyExperiments extends AkkaSpec {
     //#print-refs
 
 object ActorHierarchyExperiments extends App {
-  val system = ActorSystem()
+  val system = ActorSystem("testSystem")
 
   val firstRef = system.actorOf(Props[PrintMyActorRefActor], "first-actor")
   println(s"First: $firstRef")

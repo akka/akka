@@ -113,7 +113,7 @@ class SupervisedActor extends AbstractActor {
 //#print-refs
 public class ActorHierarchyExperiments {
   public static void main(String[] args) throws java.io.IOException {
-    ActorSystem system = ActorSystem.create("test");
+    ActorSystem system = ActorSystem.create("testSystem");
 
     ActorRef firstRef = system.actorOf(Props.create(PrintMyActorRefActor.class), "first-actor");
     System.out.println("First: " + firstRef);
