@@ -192,8 +192,9 @@ useful when you are uncertain of what configuration is used.
 If in doubt, you can also easily and nicely inspect configuration objects
 before or after using them to construct an actor system:
 
+@@@vars
 ```
-Welcome to Scala version @scalaVersion@ (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0).
+Welcome to Scala $scala.binary_version$ (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0).
 Type in expressions to have them evaluated.
 Type :help for more information.
 
@@ -213,6 +214,7 @@ res1: java.lang.String =
     }
 }
 ```
+@@@
 
 The comments preceding every item give detailed information about the origin of
 the setting (file & line number) plus possible comments which were present,
