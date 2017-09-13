@@ -14,7 +14,7 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 ## Description
 
-Logs both, the request and the response.
+Logs both, the request and the response using the `LoggingAdapter` of the `RequestContext`.
 
 This directive is a combination of @ref[logRequest](logRequest.md) and @ref[logResult](logResult.md).
 
