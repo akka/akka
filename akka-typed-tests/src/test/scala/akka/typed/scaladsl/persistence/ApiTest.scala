@@ -342,15 +342,15 @@ class ApiTest {
 
     def isFullyHydrated(basket: Basket, ids: List[Id]) = basket.items.map(_.id) == ids
 
-    def addItem(id: Id, self: ActorRef[Command]) = Persist(ItemAdded(id)).andThen(_ ⇒
-      (metadataRegistry ? (GetMetaData(id, _: ActorRef[MetaData])))
-        .map(GotMetaData(_))
-        .foreach { self ! _ }
-    )
-
     akka.typed.scaladsl.Actor.deferred { ctx: ActorContext[Command] ⇒
       var basket = Basket(Nil)
       var stash: Seq[Command] = Nil
+      val adapt = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
+
+      def addItem(id: Id, self: ActorRef[Command]) =
+        Persist(ItemAdded(id)).andThen(_ ⇒
+          metadataRegistry ! GetMetaData(id, adapt)
+        )
 
       Actor.persistent[Command, Event, List[Id]](
         persistenceId = "basket-1",
@@ -385,11 +385,10 @@ class ApiTest {
           case ItemAdded(id)   ⇒ id +: state
           case ItemRemoved(id) ⇒ state.filter(_ != id)
         }
-      ).onRecoveryComplete((ctx, state) ⇒ state.foreach(id ⇒
-          (metadataRegistry ? (GetMetaData(id, _: ActorRef[MetaData])))
-            .map(GotMetaData(_))
-            .foreach { ctx.self ! _ }
-        ))
+      ).onRecoveryComplete((ctx, state) ⇒ {
+          val ad = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
+          state.foreach(id ⇒ metadataRegistry ! GetMetaData(id, ad))
+        })
     }
   }
 }
