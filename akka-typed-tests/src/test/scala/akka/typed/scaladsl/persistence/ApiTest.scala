@@ -47,11 +47,8 @@ class ApiTest {
       override def receiveMessage(ctx: typed.ActorContext[Command], msg: Command): Behavior[Command] = ???
 
       def onRecoveryComplete(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State] = ???
-      def snapshot[Snapshot](
-        onState: State ⇒ Option[Snapshot]          = (_: State) ⇒ None,
-        on:      (State, Event) ⇒ Option[Snapshot] = (_: State, _: Event) ⇒ None,
-        recover: Snapshot ⇒ Option[State]
-      ): PersistentBehavior[Command, Event, State] = ???
+      def snapshotOnState(predicate: State ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
+      def snapshotOn(predicate: (State, Event) ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
     }
 
     def persistent[Command, Event, State](
@@ -239,10 +236,7 @@ class ApiTest {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       }
-    ).snapshot[Unit](
-        state ⇒ if (state.tasksInFlight.isEmpty) Some(()) else None,
-        recover = _ ⇒ Some(State(Nil))
-      )
+    ).snapshotOnState(_.tasksInFlight.isEmpty)
   }
 
   object SpawnChild {
