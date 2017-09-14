@@ -16,10 +16,8 @@ class ApiTest {
 
     case object PersistNothing extends PersistentEffect[Nothing]
 
-    case class PersistAnd[Event](event: Event, callback: Event ⇒ Unit) extends PersistentEffect[Event]
-
-    case class Persist[Event](event: Event) extends PersistentEffect[Event] {
-      def andThen(callback: Event ⇒ Unit) = PersistAnd(event, callback)
+    case class Persist[Event](event: Event, callbacks: List[Event ⇒ Unit] = Nil) extends PersistentEffect[Event] {
+      def andThen(callback: Event ⇒ Unit) = Persist(event, callback :: callbacks)
     }
 
     case class Unhandled[Event]() extends PersistentEffect[Event]
