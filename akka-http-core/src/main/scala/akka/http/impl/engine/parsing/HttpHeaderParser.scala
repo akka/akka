@@ -494,17 +494,21 @@ private[http] object HttpHeaderParser {
 
   private[parsing] class ModeledHeaderValueParser(headerName: String, maxHeaderValueLength: Int, maxValueCount: Int, log: LoggingAdapter, settings: HeaderParser.Settings)
     extends HeaderValueParser(headerName, maxValueCount) {
+    val parser = HeaderParser.lookupParser(headerName, settings).getOrElse(
+      throw new IllegalStateException(s"Missing parser for modeled [$headerName].")
+    )
+
     def apply(hhp: HttpHeaderParser, input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
       // TODO: optimize by running the header value parser directly on the input ByteString (rather than an extracted String); seems done?
       val (headerValue, endIx) = scanHeaderValue(hhp, input, valueStart, valueStart + maxHeaderValueLength + 2, log, settings.illegalResponseHeaderValueProcessingMode)()
       val trimmedHeaderValue = headerValue.trim
-      val header = HeaderParser.parseFull(headerName, trimmedHeaderValue, settings) match {
+      val header = parser(trimmedHeaderValue) match {
         case HeaderParser.Success(h) ⇒ h
         case HeaderParser.Failure(error) ⇒
           onIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header"))
           RawHeader(headerName, trimmedHeaderValue)
         case HeaderParser.RuleNotFound ⇒
-          throw new IllegalStateException(s"Unexpected RuleNotFound exception for modeled header [${headerName}]")
+          throw new IllegalStateException(s"Unexpected RuleNotFound exception for modeled header [$headerName]")
       }
       header → endIx
     }
