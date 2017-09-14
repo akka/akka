@@ -22,19 +22,22 @@ class ApiTest {
       def andThen(callback: Event ⇒ Unit) = PersistAnd(event, callback)
     }
 
-    class ActionHandler[Command: ClassTag, Event, State](val handler: ((ActorContext[Command], State, Any) ⇒ PersistentEffect[Event])) {
-      def onSignal(signalHandler: (ActorContext[Command], State, Any) ⇒ PersistentEffect[Event]): ActionHandler[Command, Event, State] =
+    case class Unhandled[Event]() extends PersistentEffect[Event]
+
+    class ActionHandler[Command: ClassTag, Event, State](val handler: ((Any, State, ActorContext[Command]) ⇒ PersistentEffect[Event])) {
+      def onSignal(signalHandler: (Any, State, ActorContext[Command]) ⇒ PersistentEffect[Event]): ActionHandler[Command, Event, State] =
         new ActionHandler({
-          case (ctx, state, command: Command) ⇒ handler(ctx, state, command)
-          case (ctx, state, signal)           ⇒ signalHandler(ctx, state, signal)
+          case (command: Command, state, ctx) ⇒ handler(command, state, ctx)
+          case (signal: Signal, state, ctx)   ⇒ signalHandler(signal, state, ctx)
+          case _                              ⇒ Unhandled[Event]()
         })
     }
     object ActionHandler {
       def cmd[Command: ClassTag, Event, State](commandHandler: Command ⇒ PersistentEffect[Event]): ActionHandler[Command, Event, State] = ???
-      def apply[Command: ClassTag, Event, State](commandHandler: ((ActorContext[Command], State, Command) ⇒ PersistentEffect[Event])): ActionHandler[Command, Event, State] = ???
+      def apply[Command: ClassTag, Event, State](commandHandler: ((Command, State, ActorContext[Command]) ⇒ PersistentEffect[Event])): ActionHandler[Command, Event, State] = ???
       def byState[Command: ClassTag, Event, State](actionHandler: State ⇒ ActionHandler[Command, Event, State]): ActionHandler[Command, Event, State] =
         new ActionHandler(handler = {
-          case (ctx, state, action) ⇒ actionHandler(state).handler(ctx, state, action)
+          case (action, state, ctx) ⇒ actionHandler(state).handler(action, state, ctx)
         })
     }
   }
@@ -55,7 +58,7 @@ class ApiTest {
       persistenceId:  String,
       initialState:   State,
       commandHandler: ActionHandler[Command, Event, State],
-      onEvent:        (State, Event) ⇒ State
+      onEvent:        (Event, State) ⇒ State
     ): PersistentBehavior[Command, Event, State] = ???
   }
 
@@ -84,8 +87,8 @@ class ApiTest {
         case Cmd(data) ⇒ Persist(Evt(data))
       }),
 
-      onEvent = (state, evt) ⇒ evt match {
-        case Evt(data) ⇒ state.copy(data :: state.events)
+      onEvent = {
+        case (Evt(data), state) ⇒ state.copy(data :: state.events)
       }
     )
   }
@@ -112,8 +115,8 @@ class ApiTest {
             .andThen { evt ⇒ { sender ! Ack } }
       }),
 
-      onEvent = (state, evt) ⇒ evt match {
-        case Evt(data) ⇒ state.copy(data :: state.events)
+      onEvent = {
+        case (Evt(data), state) ⇒ state.copy(data :: state.events)
       }
     )
   }
@@ -144,7 +147,7 @@ class ApiTest {
 
       initialState = EventsInFlight(0, Map.empty),
 
-      commandHandler = ActionHandler((ctx, state, cmd) ⇒ cmd match {
+      commandHandler = ActionHandler((cmd, state, ctx) ⇒ cmd match {
         case DoSideEffect(data) ⇒
           Persist(IntentRecorded(state.nextCorrelationId, data)).andThen { evt ⇒
             performSideEffect(ctx.self, evt.correlationId, data)
@@ -153,7 +156,7 @@ class ApiTest {
           Persist(SideEffectAcknowledged(correlationId))
       }),
 
-      onEvent = (state, evt) ⇒ evt match {
+      onEvent = (evt, state) ⇒ evt match {
         case IntentRecorded(correlationId, data) ⇒
           EventsInFlight(
             nextCorrelationId = correlationId + 1,
@@ -201,7 +204,7 @@ class ApiTest {
         })
       }),
       onEvent = {
-        case (_, MoodChanged(to)) ⇒ to
+        case (MoodChanged(to), _) ⇒ to
       }
     )
 
@@ -232,7 +235,7 @@ class ApiTest {
         case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
         case TaskDone(task)     ⇒ Persist(TaskRemoved(task))
       }),
-      onEvent = (state, evt) ⇒ evt match {
+      onEvent = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       }
@@ -256,7 +259,7 @@ class ApiTest {
     Actor.persistent[Command, Event, State](
       persistenceId = "asdf",
       initialState = State(Nil),
-      commandHandler = ActionHandler((ctx, _, cmd) ⇒ cmd match {
+      commandHandler = ActionHandler((cmd, _, ctx) ⇒ cmd match {
         case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
           .andThen { _ ⇒
             val child = ctx.spawn[Nothing](worker(task), task)
@@ -265,7 +268,7 @@ class ApiTest {
           }
         case TaskDone(task) ⇒ Persist(TaskRemoved(task))
       }),
-      onEvent = (state, evt) ⇒ evt match {
+      onEvent = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       }
@@ -288,7 +291,7 @@ class ApiTest {
       persistenceId = "asdf",
       initialState = State(Nil),
       // The 'onSignal' seems to break type inference here.. not sure if that can be avoided?
-      commandHandler = ActionHandler[RegisterTask, Event, State]((ctx, state, cmd) ⇒ cmd match {
+      commandHandler = ActionHandler[RegisterTask, Event, State]((cmd, state, ctx) ⇒ cmd match {
         case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
           .andThen { _ ⇒
             val child = ctx.spawn[Nothing](worker(task), task)
@@ -296,13 +299,13 @@ class ApiTest {
             ctx.watch(child)
           }
       }).onSignal({
-        case (ctx, _, Terminated(actorRef)) ⇒
+        case (Terminated(actorRef), _, ctx) ⇒
           // watchWith (as in the above example) is nicer because it means we don't have to
           // 'manually' associate the task and the child actor, but we wanted to demonstrate
           // signals here:
           Persist(TaskRemoved(actorRef.path.name))
       }),
-      onEvent = (state, evt) ⇒ evt match {
+      onEvent = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       }
@@ -356,7 +359,7 @@ class ApiTest {
         initialState = Nil,
         commandHandler =
           ActionHandler.byState(state ⇒
-            if (isFullyHydrated(basket, state)) ActionHandler { (ctx, state, cmd) ⇒
+            if (isFullyHydrated(basket, state)) ActionHandler { (cmd, state, ctx) ⇒
               cmd match {
                 case AddItem(id)    ⇒ addItem(id, ctx.self)
                 case RemoveItem(id) ⇒ Persist(ItemRemoved(id))
@@ -365,7 +368,7 @@ class ApiTest {
                 case GetTotalPrice(sender) ⇒ sender ! basket.items.map(_.price).sum; PersistNothing
               }
             }
-            else ActionHandler { (ctx, state, cmd) ⇒
+            else ActionHandler { (cmd, state, ctx) ⇒
               cmd match {
                 case AddItem(id)    ⇒ addItem(id, ctx.self)
                 case RemoveItem(id) ⇒ Persist(ItemRemoved(id))
@@ -380,7 +383,7 @@ class ApiTest {
               }
             }
           ),
-        onEvent = (state, evt) ⇒ evt match {
+        onEvent = (evt, state) ⇒ evt match {
           case ItemAdded(id)   ⇒ id +: state
           case ItemRemoved(id) ⇒ state.filter(_ != id)
         }
