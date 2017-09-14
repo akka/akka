@@ -5,7 +5,7 @@ package akka.typed.cluster
 
 import akka.actor.Address
 import akka.cluster.ClusterEvent.{ MemberEvent, MemberUp }
-import akka.typed.ActorSystem
+import akka.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.typed.scaladsl.Actor
 import akka.typed.cluster.Cluster._
 import akka.typed.scaladsl.adapter._
@@ -18,14 +18,14 @@ class ClusterApiSpec {
   val typedSystem: ActorSystem[Nothing] = system.toTyped
   val cluster = Cluster(typedSystem)
 
-  val clusterSubscriber = Actor.deferred[MemberEvent] { ctx ⇒
+  val subscriberBehavior: Behavior[MemberEvent] = Actor.deferred[MemberEvent] { ctx ⇒
 
-    cluster.subscriptions ! Subscribe[MemberEvent](ctx.self)
+    cluster.subscriptions ! Subscribe(ctx.self)
 
     Actor.immutable[MemberEvent] { (_, msg) ⇒
       msg match {
-        case up: MemberUp if up.member.address == cluster.self.address ⇒
-          cluster.manager ! Leave(cluster.self.address)
+        case up: MemberUp if up.member.address == cluster.selfMember.address ⇒
+          cluster.manager ! Leave(cluster.selfMember.address)
           Actor.same
 
         case other ⇒
@@ -35,14 +35,17 @@ class ClusterApiSpec {
     }
   }
 
-  system.spawn(clusterSubscriber, "cluster-subscriber")
+  val subscriber = system.spawn(subscriberBehavior, "cluster-subscriber")
 
-  cluster.manager ! Join(cluster.self.address)
+  cluster.manager ! Join(cluster.selfMember.address)
 
   val n1: Address = ???
   val n2: Address = ???
   val n3: Address = ???
 
-  cluster.manager ! JoinSeedNodes(List(cluster.self.address, n1, n2, n3))
+  cluster.manager ! JoinSeedNodes(List(cluster.selfMember.address, n1, n2, n3))
+
+  // wants just a subset of the events
+  cluster.subscriptions ! Subscribe(subscriber, classOf[MemberUp])
 
 }

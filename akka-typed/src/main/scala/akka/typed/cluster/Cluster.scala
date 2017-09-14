@@ -5,7 +5,7 @@ package akka.typed.cluster
 
 import akka.actor.Address
 import akka.annotation.DoNotInherit
-import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState, InitialStateAsSnapshot, SubscriptionInitialStateMode }
+import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState }
 import akka.cluster._
 import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
@@ -15,19 +15,45 @@ import scala.reflect.ClassTag
 
 object Cluster extends ExtensionId[Cluster] {
 
+  /**
+   * Messages for subscribing to changes in the cluster state
+   */
   sealed trait ClusterStateSubscription
-  // we can't have initial cluster as snapshot as that wouldn't be a ClusterDomainEvent?
+
+  trait ClusterStateEvents
+
   object Subscribe {
-    def apply[T <: ClusterDomainEvent: ClassTag](
-      subscriber: ActorRef[T]) =
-      new Subscribe[T](subscriber, Set(implicitly[ClassTag[T]].runtimeClass))
+    def apply[A <: ClusterDomainEvent: ClassTag](subscriber: ActorRef[A]) =
+      new Subscribe[A, A](subscriber, implicitly[ClassTag[A]].runtimeClass.asInstanceOf[Class[A]])
   }
-  final case class Subscribe[T <: ClusterDomainEvent](
-    subscriber: ActorRef[T],
-    // Not sure that/how we can enforce the clases, if we want multiple messages, but would be nice
-    // maybe just enforce using multiple messages in that case? or provide a small dsl "andAlso[OtherT]"
-    classes: Set[Class[_]])
-    extends ClusterStateSubscription
+
+  /**
+   * Subscribe to cluster state changes. The initial state of the cluster will be sent as
+   * a "replay" of the subscribed events.
+   *
+   * If all you are interested in is to react on this node becoming a part of the cluster,
+   * see [[OnSelfUp]]
+   *
+   * @param subscriber A subscriber that will receive events until it is unsubscribed or stops
+   * @param eventClass The type of events to subscribe to, can be individual event types such as
+   *                   `ReachabilityEvent` or one of the common supertypes, such as `MemberEvent` to get
+   *                   all the subtypes of events.
+   */
+  final case class Subscribe[A <: ClusterDomainEvent, S <: A](
+    subscriber: ActorRef[A],
+    eventClass: Class[S]) extends ClusterStateSubscription
+
+  /**
+   * Subscribe to this node being up, after sending this event the subscription is automatically
+   * cancelled. If the node is already up the event is also sent to the subscriber.
+   */
+  final case class OnSelfUp(subscriber: ActorRef[SelfUp]) extends ClusterStateSubscription
+
+  /**
+   * @param currentClusterState The cluster state snapshot from when the node became Up.
+   */
+  case class SelfUp(currentClusterState: CurrentClusterState)
+
   final case class Unsubscribe[T](subscriber: ActorRef[T]) extends ClusterStateSubscription
   final case class GetCurrentState(recipient: ActorRef[CurrentClusterState]) extends ClusterStateSubscription
 
@@ -90,38 +116,15 @@ sealed trait Cluster extends Extension {
 
   import Cluster._
 
-  // Note: not sure about this, but when five accessors are prefixed with `self` that kind of points towards the need
-  // for a scope/namespace for them
-
-  trait ClusterSelf {
-    /** The address of this cluster member. */
-    def address: Address
-
-    /** Data center to which this node belongs to (defaults to "default" if not configured explicitly) */
-    def dataCenter: akka.cluster.ClusterSettings.DataCenter
-
-    /** Scala API: roles that this member has */
-    def roles: Set[String]
-
-    // TODO javadsl/scaladsl rather than a coveritall API?
-    /** Java API: roles that this member has */
-    def getRoles: java.util.Set[String]
-
-    // and maybe, just maybe these two belongs here as well, as they are about the cluster node itself -
-    // the self-view of the state and whether the self-has been shutdown?
-    /** Returns true if this cluster instance has be shutdown. */
-    def isTerminated: Boolean
-
-    // also, the mutable snapshot feels icky but I guess it simplifies things enough to keep?
-    /** Current snapshot state of the cluster. */
-    def state: CurrentClusterState
-  }
-
   /** Details about this cluster node itself */
-  def self: ClusterSelf
+  def selfMember: Member
 
-  // I'm thinking settings and failure detectors are really implementation details that has leaked
-  // and should not be accessible through the public api?
+  /** Returns true if this cluster instance has be shutdown. */
+  def isTerminated: Boolean
+
+  // also, the mutable snapshot feels icky but I guess it simplifies things enough to keep?
+  /** Current snapshot state of the cluster. */
+  def state: CurrentClusterState
 
   /**
    * @return an actor that allows for subscribing to messages when the cluster state changes
@@ -132,28 +135,5 @@ sealed trait Cluster extends Extension {
    * @return an actor that accepts commands to join, leave and down nodes in a cluster
    */
   def manager: ActorRef[ClusterCommand]
-
-  // These ones I think should be removed in favour of subscribing to events because that makes how it is executed more clear
-  // and also gives less API surface
-  // problem is then that actor may be dead on remove, but that is a general problem for all actors so shouldn't be suprising?
-  // Or we could keep a subscription-actor alive at all times and handle that there?
-  /*
-  def registerOnMemberUp[T](code: ⇒ T): Unit =
-    registerOnMemberUp(new Runnable { def run() = code })
-
-  def registerOnMemberUp(callback: Runnable): Unit =
-    clusterDaemons ! InternalClusterAction.AddOnMemberUpListener(callback)
-
-  def registerOnMemberRemoved[T](code: ⇒ T): Unit =
-    registerOnMemberRemoved(new Runnable { override def run(): Unit = code })
-
-  // also: it's racy?
-  def registerOnMemberRemoved(callback: Runnable): Unit = {
-    if (_isTerminated.get())
-      callback.run()
-    else
-      clusterDaemons ! InternalClusterAction.AddOnMemberRemovedListener(callback)
-  }
-  */
 
 }

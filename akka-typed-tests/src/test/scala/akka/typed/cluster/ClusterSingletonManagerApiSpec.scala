@@ -11,15 +11,22 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 
 object ClusterSingletonManagerApiSpec {
-  case object Pong
-  case class Ping(respondTo: ActorRef[Pong.type])
 
-  val pingPong = Actor.immutable[Ping] { (ctx, msg) ⇒
+  trait PingProtocol
+  case object Pong
+  case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol
+
+  case object Perish extends PingProtocol
+
+  val pingPong = Actor.immutable[PingProtocol] { (ctx, msg) ⇒
 
     msg match {
       case Ping(respondTo) ⇒
         respondTo ! Pong
         Actor.same
+
+      case Perish ⇒
+        Actor.stopped
     }
 
   }
@@ -41,7 +48,8 @@ class ClusterSingletonManagerApiSpec {
     pingPong,
     "ping-pong",
     Props.empty,
-    ClusterSingletonSettings(typed)
+    ClusterSingletonSettings(typed),
+    Perish
   )
 
   implicit val timeout: Timeout = 3.seconds
