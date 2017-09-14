@@ -25,7 +25,7 @@ class UniformFanOutShape[-I, +O](n: Int, _init: FanOutShape.Init[I @uncheckedVar
   final override def outlets: immutable.Seq[Outlet[O @uncheckedVariance]] = super.outlets.asInstanceOf[immutable.Seq[Outlet[O]]]
 
   @Deprecated
-  @deprecated("use `outlets` or `out(id)` instead", "2.5.5")
+  @deprecated("use 'outlets' or 'out(id)' instead", "2.5.5")
   lazy val outArray: Array[Outlet[O @uncheckedVariance]] = outlets.toArray
   def out(n: Int): Outlet[O @uncheckedVariance] = outlets(n)
 }

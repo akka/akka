@@ -17,7 +17,7 @@ class FanInShape1N[-T0, -T1, +O](val n: Int, _init: FanInShape.Init[O]) extends 
   override protected def construct(init: FanInShape.Init[O @uncheckedVariance]): FanInShape[O] = new FanInShape1N(n, init)
   override def deepCopy(): FanInShape1N[T0, T1, O] = super.deepCopy().asInstanceOf[FanInShape1N[T0, T1, O]]
 
-  @deprecated("Use `inlets` or `in(id)` instead.", "2.5.5")
+  @deprecated("Use 'inlets' or 'in(id)' instead.", "2.5.5")
   lazy val in1Seq: immutable.IndexedSeq[Inlet[T1 @uncheckedVariance]] = inlets
     .tail //head is in0
     .toIndexedSeq.asInstanceOf[immutable.IndexedSeq[Inlet[T1]]]
