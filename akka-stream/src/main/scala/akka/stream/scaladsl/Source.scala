@@ -160,25 +160,6 @@ final class Source[+Out, +Mat](
    * Converts this Scala DSL element to it's Java DSL counterpart.
    */
   def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
-
-  /**
-   * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
-   */
-  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
-    Source.fromGraph(GraphDSL.create() { implicit b ⇒
-      import GraphDSL.Implicits._
-      val c = b.add(strategy(rest.size + 2))
-      first ~> c.in(0)
-      second ~> c.in(1)
-
-      @tailrec def combineRest(idx: Int, i: Iterator[Source[T, _]]): SourceShape[U] =
-        if (i.hasNext) {
-          i.next() ~> c.in(idx)
-          combineRest(idx + 1, i)
-        } else SourceShape(c.out)
-
-      combineRest(2, rest.iterator)
-    })
 }
 
 object Source {

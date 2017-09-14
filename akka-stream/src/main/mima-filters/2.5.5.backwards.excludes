@@ -1,0 +1,2 @@
+# #22452 scaladsl Source.combine instance method was a pasting accident
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.combine")
