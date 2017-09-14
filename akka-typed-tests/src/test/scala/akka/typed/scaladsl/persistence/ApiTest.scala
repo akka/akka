@@ -61,6 +61,11 @@ class ApiTest {
 
   import TypedPersistentActor._
 
+  import akka.typed.scaladsl.AskPattern._
+  implicit val timeout: akka.util.Timeout = 1.second
+  implicit val scheduler: akka.actor.Scheduler = ???
+  implicit val ec: ExecutionContext = ???
+
   object Simple {
     sealed trait MyCommand
     case class Cmd(data: String) extends MyCommand
@@ -114,8 +119,6 @@ class ApiTest {
   }
 
   object RecoveryComplete {
-    import akka.typed.scaladsl.AskPattern._
-
     sealed trait Command
     case class DoSideEffect(data: String) extends Command
     case class AcknowledgeSideEffect(correlationId: Int) extends Command
@@ -129,9 +132,6 @@ class ApiTest {
     case class Request(correlationId: Int, data: String, sender: ActorRef[Response])
     case class Response(correlationId: Int)
     val sideEffectProcessor: ActorRef[Request] = ???
-    implicit val timeout: akka.util.Timeout = 1.second
-    implicit val scheduler: akka.actor.Scheduler = ???
-    implicit val ec: ExecutionContext = ???
 
     def performSideEffect(sender: ActorRef[AcknowledgeSideEffect], correlationId: Int, data: String) = {
       (sideEffectProcessor ? (Request(correlationId, data, _: ActorRef[Response])))
@@ -307,5 +307,88 @@ class ApiTest {
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       }
     )
+  }
+
+  object Rehydrating {
+    type Id = String
+
+    sealed trait Command
+    case class AddItem(id: Id) extends Command
+    case class RemoveItem(id: Id) extends Command
+    case class GetTotalPrice(sender: ActorRef[Int]) extends Command
+    /* Internal: */
+    case class GotMetaData(data: MetaData) extends Command
+
+    /**
+     * Items have all kinds of metadata, but we only persist the 'id', and
+     * rehydrate the metadata on recovery from a registry
+     */
+    case class Item(id: Id, name: String, price: Int)
+    case class Basket(items: Seq[Item]) {
+      def updatedWith(data: MetaData): Basket = ???
+    }
+
+    sealed trait Event
+    case class ItemAdded(id: Id) extends Event
+    case class ItemRemoved(id: Id) extends Event
+
+    /*
+      * The metadata registry
+      */
+    case class GetMetaData(id: Id, sender: ActorRef[MetaData])
+    case class MetaData(id: Id, name: String, price: Int)
+    val metadataRegistry: ActorRef[GetMetaData] = ???
+
+    def isFullyHydrated(basket: Basket, ids: List[Id]) = basket.items.map(_.id) == ids
+
+    def addItem(id: Id, self: ActorRef[Command]) = Persist(ItemAdded(id)).andThen(_ ⇒
+      (metadataRegistry ? (GetMetaData(id, _: ActorRef[MetaData])))
+        .map(GotMetaData(_))
+        .foreach { self ! _ }
+    )
+
+    akka.typed.scaladsl.Actor.deferred { ctx: ActorContext[Command] ⇒
+      var basket = Basket(Nil)
+      var stash: Seq[Command] = Nil
+
+      Actor.persistent[Command, Event, List[Id]](
+        persistenceId = "basket-1",
+        initialState = Nil,
+        commandHandler =
+          ActionHandler.byState(state ⇒
+            if (isFullyHydrated(basket, state)) ActionHandler { (ctx, state, cmd) ⇒
+              cmd match {
+                case AddItem(id)    ⇒ addItem(id, ctx.self)
+                case RemoveItem(id) ⇒ Persist(ItemRemoved(id))
+                case GotMetaData(data) ⇒
+                  basket = basket.updatedWith(data); PersistNothing
+                case GetTotalPrice(sender) ⇒ sender ! basket.items.map(_.price).sum; PersistNothing
+              }
+            }
+            else ActionHandler { (ctx, state, cmd) ⇒
+              cmd match {
+                case AddItem(id)    ⇒ addItem(id, ctx.self)
+                case RemoveItem(id) ⇒ Persist(ItemRemoved(id))
+                case GotMetaData(data) ⇒
+                  basket = basket.updatedWith(data)
+                  if (isFullyHydrated(basket, state)) {
+                    stash.foreach(ctx.self ! _)
+                    stash = Nil
+                  }
+                  PersistNothing
+                case cmd: GetTotalPrice ⇒ stash :+= cmd; PersistNothing
+              }
+            }
+          ),
+        onEvent = (state, evt) ⇒ evt match {
+          case ItemAdded(id)   ⇒ id +: state
+          case ItemRemoved(id) ⇒ state.filter(_ != id)
+        }
+      ).onRecoveryComplete((ctx, state) ⇒ state.foreach(id ⇒
+          (metadataRegistry ? (GetMetaData(id, _: ActorRef[MetaData])))
+            .map(GotMetaData(_))
+            .foreach { ctx.self ! _ }
+        ))
+    }
   }
 }
