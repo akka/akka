@@ -9,7 +9,7 @@ import scala.reflect.ClassTag
 
 import akka.util.OptionVal
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
-import akka.japi.function.Procedure2
+import akka.japi.function.{ Procedure, Procedure2 }
 import akka.japi.pf.PFBuilder
 
 import akka.typed.Behavior
@@ -190,6 +190,16 @@ object Actor {
    * @return the behavior builder
    */
   def immutable[T](`type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]
+
+  /**
+   * Construct an actor behavior that can react to lifecycle signals only.
+   */
+  def onSignal[T](handler: JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
+    val jSame = new JapiFunction2[ActorContext[T], T, Behavior[T]] {
+      override def apply(ctx: ActorContext[T], msg: T) = same
+    }
+    immutable(jSame, handler)
+  }
 
   /**
    * This type of Behavior wraps another Behavior while allowing you to perform
