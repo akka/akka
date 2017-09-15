@@ -35,11 +35,11 @@ class ApiTest {
 
     class ActionHandler[Command: ClassTag, Event, State](val handler: ((Any, State, ActorContext[Command]) ⇒ PersistentEffect[Event])) {
       def onSignal(signalHandler: PartialFunction[(Any, State, ActorContext[Command]), PersistentEffect[Event]]): ActionHandler[Command, Event, State] =
-        new ActionHandler({
+        ActionHandler {
           case (command: Command, state, ctx) ⇒ handler(command, state, ctx)
           case (signal: Signal, state, ctx)   ⇒ signalHandler.orElse(unhandledSignal).apply((signal, state, ctx))
           case _                              ⇒ Unhandled[Event]()
-        })
+        }
       private val unhandledSignal: PartialFunction[(Any, State, ActorContext[Command]), PersistentEffect[Event]] = { case _ ⇒ Unhandled() }
     }
     object ActionHandler {
@@ -93,9 +93,9 @@ class ApiTest {
 
       initialState = ExampleState(Nil),
 
-      commandHandler = ActionHandler.cmd({
+      commandHandler = ActionHandler.cmd {
         case Cmd(data) ⇒ Persist(Evt(data))
-      }),
+      },
 
       onEvent = {
         case (Evt(data), state) ⇒ state.copy(data :: state.events)
@@ -119,11 +119,11 @@ class ApiTest {
 
       initialState = ExampleState(Nil),
 
-      commandHandler = ActionHandler.cmd({
+      commandHandler = ActionHandler.cmd {
         case Cmd(data, sender) ⇒
           Persist(Evt(data))
             .andThen { evt ⇒ { sender ! Ack } }
-      }),
+      },
 
       onEvent = {
         case (Evt(data), state) ⇒ state.copy(data :: state.events)
@@ -199,20 +199,20 @@ class ApiTest {
     val b: Behavior[Command] = Actor.persistent[Command, Event, Mood](
       persistenceId = "myPersistenceId",
       initialState = Happy,
-      commandHandler = ActionHandler.byState({
-        case Happy ⇒ ActionHandler.cmd({
+      commandHandler = ActionHandler.byState {
+        case Happy ⇒ ActionHandler.cmd {
           case Greet(whom) ⇒
             println(s"Super happy to meet you $whom!")
             PersistNothing()
           case MoodSwing ⇒ Persist(MoodChanged(Sad))
-        })
-        case Sad ⇒ ActionHandler.cmd({
+        }
+        case Sad ⇒ ActionHandler.cmd {
           case Greet(whom) ⇒
             println(s"hi $whom")
             PersistNothing()
           case MoodSwing ⇒ Persist(MoodChanged(Happy))
-        })
-      }),
+        }
+      },
       onEvent = {
         case (MoodChanged(to), _) ⇒ to
       }
@@ -241,10 +241,10 @@ class ApiTest {
     Actor.persistent[Command, Event, State](
       persistenceId = "asdf",
       initialState = State(Nil),
-      commandHandler = ActionHandler.cmd({
+      commandHandler = ActionHandler.cmd {
         case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
         case TaskDone(task)     ⇒ Persist(TaskRemoved(task))
-      }),
+      },
       onEvent = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
@@ -308,13 +308,13 @@ class ApiTest {
             // This assumes *any* termination of the child may trigger a `TaskDone`:
             ctx.watch(child)
           }
-      }).onSignal({
+      }).onSignal {
         case (Terminated(actorRef), _, ctx) ⇒
           // watchWith (as in the above example) is nicer because it means we don't have to
           // 'manually' associate the task and the child actor, but we wanted to demonstrate
           // signals here:
           Persist(TaskRemoved(actorRef.path.name))
-      }),
+      },
       onEvent = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
