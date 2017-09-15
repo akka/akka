@@ -12,15 +12,26 @@ import scala.reflect.ClassTag
 class ApiTest {
   object TypedPersistentActor {
 
-    sealed trait PersistentEffect[+Event]
+    sealed abstract class PersistentEffect[+Event]() {
+      type Self <: PersistentEffect[Event]
 
-    case object PersistNothing extends PersistentEffect[Nothing]
-
-    case class Persist[Event](event: Event, callbacks: List[Event ⇒ Unit] = Nil) extends PersistentEffect[Event] {
-      def andThen(callback: Event ⇒ Unit) = Persist(event, callback :: callbacks)
+      def andThen(callback: Event ⇒ Unit): Self
     }
 
-    case class Unhandled[Event]() extends PersistentEffect[Event]
+    case class PersistNothing[Event](callbacks: List[Event ⇒ Unit] = Nil) extends PersistentEffect[Event] {
+      type Self = PersistNothing[Event]
+      def andThen(callback: Event ⇒ Unit) = PersistNothing(callback :: callbacks)
+    }
+
+    case class Persist[Event](event: Event, callbacks: List[Event ⇒ Unit] = Nil) extends PersistentEffect[Event] {
+      type Self = Persist[Event]
+      def andThen(callback: Event ⇒ Unit) = Persist[Event](event, callback :: callbacks)
+    }
+
+    case class Unhandled[Event](callbacks: List[Event ⇒ Unit] = Nil) extends PersistentEffect[Event] {
+      type Self = Unhandled[Event]
+      def andThen(callback: Event ⇒ Unit) = Unhandled(callback :: callbacks)
+    }
 
     class ActionHandler[Command: ClassTag, Event, State](val handler: ((Any, State, ActorContext[Command]) ⇒ PersistentEffect[Event])) {
       def onSignal(signalHandler: (Any, State, ActorContext[Command]) ⇒ PersistentEffect[Event]): ActionHandler[Command, Event, State] =
@@ -191,13 +202,13 @@ class ApiTest {
         case Happy ⇒ ActionHandler.cmd({
           case Greet(whom) ⇒
             println(s"Super happy to meet you $whom!")
-            PersistNothing
+            PersistNothing()
           case MoodSwing ⇒ Persist(MoodChanged(Sad))
         })
         case Sad ⇒ ActionHandler.cmd({
           case Greet(whom) ⇒
             println(s"hi $whom")
-            PersistNothing
+            PersistNothing()
           case MoodSwing ⇒ Persist(MoodChanged(Happy))
         })
       }),
@@ -362,8 +373,8 @@ class ApiTest {
                 case AddItem(id)    ⇒ addItem(id, ctx.self)
                 case RemoveItem(id) ⇒ Persist(ItemRemoved(id))
                 case GotMetaData(data) ⇒
-                  basket = basket.updatedWith(data); PersistNothing
-                case GetTotalPrice(sender) ⇒ sender ! basket.items.map(_.price).sum; PersistNothing
+                  basket = basket.updatedWith(data); PersistNothing()
+                case GetTotalPrice(sender) ⇒ sender ! basket.items.map(_.price).sum; PersistNothing()
               }
             }
             else ActionHandler { (cmd, state, ctx) ⇒
@@ -376,8 +387,8 @@ class ApiTest {
                     stash.foreach(ctx.self ! _)
                     stash = Nil
                   }
-                  PersistNothing
-                case cmd: GetTotalPrice ⇒ stash :+= cmd; PersistNothing
+                  PersistNothing()
+                case cmd: GetTotalPrice ⇒ stash :+= cmd; PersistNothing()
               }
             }
           ),
@@ -390,5 +401,43 @@ class ApiTest {
           state.foreach(id ⇒ metadataRegistry ! GetMetaData(id, ad))
         })
     }
+  }
+
+  object FactoringOutEventHandling {
+    sealed trait Mood
+    case object Happy extends Mood
+    case object Sad extends Mood
+
+    case object Ack
+
+    sealed trait Command
+    case class Greet(name: String) extends Command
+    case class CheerUp(sender: ActorRef[Ack.type]) extends Command
+
+    sealed trait Event
+    case class MoodChanged(to: Mood) extends Event
+
+    def changeMoodIfNeeded(currentState: Mood, newMood: Mood): PersistentEffect[Event] =
+      if (currentState == newMood) PersistNothing()
+      else Persist(MoodChanged(newMood))
+
+    Actor.persistent[Command, Event, Mood](
+      persistenceId = "myPersistenceId",
+      initialState = Sad,
+      commandHandler = ActionHandler { (cmd, state, _) ⇒
+        cmd match {
+          case Greet(whom) ⇒
+            println(s"Hi there, I'm $state!")
+            PersistNothing()
+          case CheerUp(sender) ⇒
+            changeMoodIfNeeded(state, Happy)
+              .andThen { _ ⇒ sender ! Ack }
+        }
+      },
+      onEvent = {
+        case (MoodChanged(to), _) ⇒ to
+      }
+    )
+
   }
 }
