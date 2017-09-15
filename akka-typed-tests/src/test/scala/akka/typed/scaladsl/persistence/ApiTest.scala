@@ -34,12 +34,13 @@ class ApiTest {
     }
 
     class ActionHandler[Command: ClassTag, Event, State](val handler: ((Any, State, ActorContext[Command]) ⇒ PersistentEffect[Event])) {
-      def onSignal(signalHandler: (Any, State, ActorContext[Command]) ⇒ PersistentEffect[Event]): ActionHandler[Command, Event, State] =
+      def onSignal(signalHandler: PartialFunction[(Any, State, ActorContext[Command]), PersistentEffect[Event]]): ActionHandler[Command, Event, State] =
         new ActionHandler({
           case (command: Command, state, ctx) ⇒ handler(command, state, ctx)
-          case (signal: Signal, state, ctx)   ⇒ signalHandler(signal, state, ctx)
+          case (signal: Signal, state, ctx)   ⇒ signalHandler.orElse(unhandledSignal).apply((signal, state, ctx))
           case _                              ⇒ Unhandled[Event]()
         })
+      private val unhandledSignal: PartialFunction[(Any, State, ActorContext[Command]), PersistentEffect[Event]] = { case _ ⇒ Unhandled() }
     }
     object ActionHandler {
       def cmd[Command: ClassTag, Event, State](commandHandler: Command ⇒ PersistentEffect[Event]): ActionHandler[Command, Event, State] = ???
