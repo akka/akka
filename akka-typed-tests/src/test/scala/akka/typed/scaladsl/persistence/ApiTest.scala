@@ -12,39 +12,34 @@ import scala.reflect.ClassTag
 class ApiTest {
   object TypedPersistentActor {
 
-    sealed abstract class PersistentEffect[+Event]() {
-      type Self <: PersistentEffect[Event]
-
-      def andThen(callback: Event ⇒ Unit): Self
+    sealed abstract class PersistentEffect[+Event, State]() {
+      def andThen(callback: State ⇒ Unit): PersistentEffect[Event, State]
     }
 
-    case class PersistNothing[Event](callbacks: List[Event ⇒ Unit] = Nil) extends PersistentEffect[Event] {
-      type Self = PersistNothing[Event]
-      def andThen(callback: Event ⇒ Unit) = PersistNothing(callback :: callbacks)
+    case class PersistNothing[Event, State](callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
+      def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
     }
 
-    case class Persist[Event](event: Event, callbacks: List[Event ⇒ Unit] = Nil) extends PersistentEffect[Event] {
-      type Self = Persist[Event]
-      def andThen(callback: Event ⇒ Unit) = Persist[Event](event, callback :: callbacks)
+    case class Persist[Event, State](event: Event, callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
+      def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
     }
 
-    case class Unhandled[Event](callbacks: List[Event ⇒ Unit] = Nil) extends PersistentEffect[Event] {
-      type Self = Unhandled[Event]
-      def andThen(callback: Event ⇒ Unit) = Unhandled(callback :: callbacks)
+    case class Unhandled[Event, State](callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
+      def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
     }
 
-    class ActionHandler[Command: ClassTag, Event, State](val handler: ((Any, State, ActorContext[Command]) ⇒ PersistentEffect[Event])) {
-      def onSignal(signalHandler: PartialFunction[(Any, State, ActorContext[Command]), PersistentEffect[Event]]): ActionHandler[Command, Event, State] =
+    class ActionHandler[Command: ClassTag, Event, State](val handler: ((Any, State, ActorContext[Command]) ⇒ PersistentEffect[Event, State])) {
+      def onSignal(signalHandler: PartialFunction[(Any, State, ActorContext[Command]), PersistentEffect[Event, State]]): ActionHandler[Command, Event, State] =
         ActionHandler {
           case (command: Command, state, ctx) ⇒ handler(command, state, ctx)
           case (signal: Signal, state, ctx)   ⇒ signalHandler.orElse(unhandledSignal).apply((signal, state, ctx))
-          case _                              ⇒ Unhandled[Event]()
+          case _                              ⇒ Unhandled()
         }
-      private val unhandledSignal: PartialFunction[(Any, State, ActorContext[Command]), PersistentEffect[Event]] = { case _ ⇒ Unhandled() }
+      private val unhandledSignal: PartialFunction[(Any, State, ActorContext[Command]), PersistentEffect[Event, State]] = { case _ ⇒ Unhandled() }
     }
     object ActionHandler {
-      def cmd[Command: ClassTag, Event, State](commandHandler: Command ⇒ PersistentEffect[Event]): ActionHandler[Command, Event, State] = ???
-      def apply[Command: ClassTag, Event, State](commandHandler: ((Command, State, ActorContext[Command]) ⇒ PersistentEffect[Event])): ActionHandler[Command, Event, State] = ???
+      def cmd[Command: ClassTag, Event, State](commandHandler: Command ⇒ PersistentEffect[Event, State]): ActionHandler[Command, Event, State] = ???
+      def apply[Command: ClassTag, Event, State](commandHandler: ((Command, State, ActorContext[Command]) ⇒ PersistentEffect[Event, State])): ActionHandler[Command, Event, State] = ???
       def byState[Command: ClassTag, Event, State](actionHandler: State ⇒ ActionHandler[Command, Event, State]): ActionHandler[Command, Event, State] =
         new ActionHandler(handler = {
           case (action, state, ctx) ⇒ actionHandler(state).handler(action, state, ctx)
@@ -121,8 +116,8 @@ class ApiTest {
 
       commandHandler = ActionHandler.cmd {
         case Cmd(data, sender) ⇒
-          Persist(Evt(data))
-            .andThen { evt ⇒ { sender ! Ack } }
+          Persist[MyEvent, ExampleState](Evt(data))
+            .andThen { _ ⇒ { sender ! Ack } }
       },
 
       onEvent = {
@@ -159,8 +154,8 @@ class ApiTest {
 
       commandHandler = ActionHandler((cmd, state, ctx) ⇒ cmd match {
         case DoSideEffect(data) ⇒
-          Persist(IntentRecorded(state.nextCorrelationId, data)).andThen { evt ⇒
-            performSideEffect(ctx.self, evt.correlationId, data)
+          Persist[Event, EventsInFlight](IntentRecorded(state.nextCorrelationId, data)).andThen { _ ⇒
+            performSideEffect(ctx.self, state.nextCorrelationId, data)
           }
         case AcknowledgeSideEffect(correlationId) ⇒
           Persist(SideEffectAcknowledged(correlationId))
@@ -270,7 +265,7 @@ class ApiTest {
       persistenceId = "asdf",
       initialState = State(Nil),
       commandHandler = ActionHandler((cmd, _, ctx) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
+        case RegisterTask(task) ⇒ Persist[Event, State](TaskRegistered(task))
           .andThen { _ ⇒
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
@@ -302,7 +297,7 @@ class ApiTest {
       initialState = State(Nil),
       // The 'onSignal' seems to break type inference here.. not sure if that can be avoided?
       commandHandler = ActionHandler[RegisterTask, Event, State]((cmd, state, ctx) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
+        case RegisterTask(task) ⇒ Persist[Event, State](TaskRegistered(task))
           .andThen { _ ⇒
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
@@ -360,7 +355,7 @@ class ApiTest {
       val adapt = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
 
       def addItem(id: Id, self: ActorRef[Command]) =
-        Persist(ItemAdded(id)).andThen(_ ⇒
+        Persist[Event, List[Id]](ItemAdded(id)).andThen(_ ⇒
           metadataRegistry ! GetMetaData(id, adapt)
         )
 
@@ -418,7 +413,7 @@ class ApiTest {
     sealed trait Event
     case class MoodChanged(to: Mood) extends Event
 
-    def changeMoodIfNeeded(currentState: Mood, newMood: Mood): PersistentEffect[Event] =
+    def changeMoodIfNeeded(currentState: Mood, newMood: Mood): PersistentEffect[Event, Mood] =
       if (currentState == newMood) PersistNothing()
       else Persist(MoodChanged(newMood))
 
