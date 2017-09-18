@@ -64,22 +64,19 @@ object HttpHeader {
       val parser = new HeaderParser(value, settings)
       parser.`header-field-value`.run() match {
         case Success(preProcessedValue) ⇒
-          try {
-            HeaderParser.parseFull(name.toLowerCase, preProcessedValue, settings) match {
-              case Right(header) ⇒ ParsingResult.Ok(header, Nil)
-              case Left(info) ⇒
-                val errors = info.withSummaryPrepended(s"Illegal HTTP header '$name'") :: Nil
-                ParsingResult.Ok(RawHeader(name, preProcessedValue), errors)
-            }
-          } catch {
-            case HeaderParser.RuleNotFoundException ⇒ ParsingResult.Ok(RawHeader(name, preProcessedValue), Nil)
+          HeaderParser.parseFull(name.toLowerCase, preProcessedValue, settings) match {
+            case HeaderParser.Success(header) ⇒ ParsingResult.Ok(header, Nil)
+            case HeaderParser.Failure(info) ⇒
+              val errors = info.withSummaryPrepended(s"Illegal HTTP header '$name'") :: Nil
+              ParsingResult.Ok(RawHeader(name, preProcessedValue), errors)
+            case HeaderParser.RuleNotFound ⇒ ParsingResult.Ok(RawHeader(name, preProcessedValue), Nil)
           }
         case Failure(error) ⇒
-          val info = error match {
+          val info = (error match {
             case e: ParseError ⇒ parser.parseError(e)
             case e             ⇒ parser.failure(e)
-          }
-          ParsingResult.Error(info.left.get.withSummaryPrepended(s"Illegal HTTP header value"))
+          }).info
+          ParsingResult.Error(info.withSummaryPrepended(s"Illegal HTTP header value"))
       }
     } else ParsingResult.Error(ErrorInfo(s"Illegal HTTP header name", name))
 
