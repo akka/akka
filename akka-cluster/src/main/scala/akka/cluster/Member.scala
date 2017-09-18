@@ -18,7 +18,7 @@ import scala.runtime.AbstractFunction2
  * and roles.
  */
 @SerialVersionUID(1L)
-class Member private[cluster] (
+class Member private[akka] (
   val uniqueAddress:             UniqueAddress,
   private[cluster] val upNumber: Int, // INTERNAL API
   val status:                    MemberStatus,

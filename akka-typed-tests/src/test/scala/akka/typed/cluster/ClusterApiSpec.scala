@@ -3,49 +3,72 @@
  */
 package akka.typed.cluster
 
-import akka.actor.Address
-import akka.cluster.ClusterEvent.{ MemberEvent, MemberUp }
-import akka.typed.{ ActorRef, ActorSystem, Behavior }
-import akka.typed.scaladsl.Actor
-import akka.typed.cluster.Cluster._
+import akka.cluster.ClusterEvent._
+import akka.typed.TypedSpec
+import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.adapter._
+import akka.typed.testkit.TestKitSettings
+import akka.typed.testkit.scaladsl.TestProbe
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
 
-class ClusterApiSpec {
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
-  // Compile only for now
-
-  val system: akka.actor.ActorSystem = ???
-  val typedSystem: ActorSystem[Nothing] = system.toTyped
-  val cluster = Cluster(typedSystem)
-
-  val subscriberBehavior: Behavior[MemberEvent] = Actor.deferred[MemberEvent] { ctx ⇒
-
-    cluster.subscriptions ! Subscribe(ctx.self)
-
-    Actor.immutable[MemberEvent] { (_, msg) ⇒
-      msg match {
-        case up: MemberUp if up.member.address == cluster.selfMember.address ⇒
-          cluster.manager ! Leave(cluster.selfMember.address)
-          Actor.same
-
-        case other ⇒
-          println(s"Got cluster state event $other")
-          Actor.same
+object ClusterApiSpec {
+  val config = ConfigFactory.parseString(
+    """
+      akka.actor.provider = cluster
+      akka.remote.artery.enabled = true
+      akka.remote.artery.canonical.port = 25552
+      akka.cluster.jmx.multi-mbeans-in-same-jvm = on
+      akka.actor {
+        serialize-messages = off
+        allow-java-serialization = off
       }
+    """)
+}
+
+class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures {
+
+  val testSettings = TestKitSettings(adaptedSystem)
+  val clusterNode1 = Cluster(adaptedSystem)
+  val untypedSystem1 = ActorSystemAdapter.toUntyped(adaptedSystem)
+
+  val system2 = akka.actor.ActorSystem(
+    adaptedSystem.name,
+    ConfigFactory.parseString("akka.remote.artery.canonical.port = 25553").withFallback(ClusterApiSpec.config))
+  val adaptedSystem2 = system2.toTyped
+  val clusterNode2 = Cluster(adaptedSystem2)
+
+  object `A typed cluster` {
+
+    def `01 must join a cluster and observe events from both sides`() = {
+      val node1Probe = TestProbe[MemberEvent]()(adaptedSystem, testSettings)
+      clusterNode1.subscriptions ! Subscribe(node1Probe.ref)
+
+      clusterNode1.manager ! Join(clusterNode1.selfMember.address)
+      node1Probe.expectMsgType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
+
+      val probe = TestProbe[SelfUp]()(adaptedSystem2, testSettings)
+      clusterNode2.subscriptions ! OnSelfUp(probe.ref)
+
+      clusterNode2.manager ! Join(clusterNode1.selfMember.address)
+      probe.expectMsgType[SelfUp]
+      node1Probe.expectMsgType[MemberJoined].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+      node1Probe.expectMsgType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
+
+      clusterNode2.manager ! Leave(clusterNode2.selfMember.address)
+
+      node1Probe.expectMsgType[MemberLeft].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+      node1Probe.expectMsgType[MemberExited].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+      node1Probe.expectMsgType[MemberRemoved].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
     }
   }
 
-  val subscriber = system.spawn(subscriberBehavior, "cluster-subscriber")
-
-  cluster.manager ! Join(cluster.selfMember.address)
-
-  val n1: Address = ???
-  val n2: Address = ???
-  val n3: Address = ???
-
-  cluster.manager ! JoinSeedNodes(List(cluster.selfMember.address, n1, n2, n3))
-
-  // wants just a subset of the events
-  cluster.subscriptions ! Subscribe(subscriber, classOf[MemberUp])
+  override def afterAll(): Unit = {
+    super.afterAll()
+    Await.result(system2.terminate(), 3.seconds)
+  }
 
 }
