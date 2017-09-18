@@ -1,0 +1,18 @@
+/**
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+package akka.stream
+
+import scala.annotation.unchecked.uncheckedVariance
+
+[2..#class FanInShape1[[#-T0#], +O](_init: FanInShape.Init[O]) extends FanInShape[O](_init) {
+  def this(name: String) = this(FanInShape.Name[O](name))
+  def this([#in0: Inlet[T0]#], out: Outlet[O]) = this(FanInShape.Ports(out, [#in0# :: ] :: Nil))
+  override protected def construct(init: FanInShape.Init[O @uncheckedVariance]): FanInShape[O] = new FanInShape1(init)
+  override def deepCopy(): FanInShape1[[#T0#], O] = super.deepCopy().asInstanceOf[FanInShape1[[#T0#], O]]
+
+  [#val in0: Inlet[T0 @uncheckedVariance] = newInlet[T0]("in0")#
+  ]
+}#
+
+]
