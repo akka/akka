@@ -25,7 +25,7 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
 import scala.language.implicitConversions
 
-object Unmarshaller {
+object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
   implicit def fromScala[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]): Unmarshaller[A, B] =
     scalaUnmarshaller
 
@@ -40,14 +40,14 @@ object Unmarshaller {
   /**
    * Creates an unmarshaller from an asynchronous Java function.
    */
-  def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]): Unmarshaller[A, B] =
+  override def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]): Unmarshaller[A, B] =
     unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ f(a).toScala
     }
 
   /**
    * Creates an unmarshaller from a Java function.
    */
-  def sync[A, B](f: java.util.function.Function[A, B]): Unmarshaller[A, B] =
+  override def sync[A, B](f: java.util.function.Function[A, B]): Unmarshaller[A, B] =
     unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ scala.concurrent.Future.successful(f.apply(a))
     }
 
@@ -89,19 +89,19 @@ object Unmarshaller {
     u.forContentTypes(theTypes: _*)
   }
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala)
   }
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala)
   }
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala)
   }
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B], u5: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B], u5: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala, u5.asScala)
   }
 
