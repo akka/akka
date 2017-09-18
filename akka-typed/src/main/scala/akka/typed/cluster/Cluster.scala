@@ -130,10 +130,8 @@ private[akka] object AdapterClusterImpl {
   private def subscriptionsBehavior(adaptedCluster: akka.cluster.Cluster) = Actor.deferred[ClusterStateSubscription] { ctx ⇒
     val cluster = Cluster(ctx.system)
     var upSubscribers: List[ActorRef[SelfUp]] = Nil
-    if (cluster.selfMember.status != MemberStatus.Up) {
-      println("subscribing")
+    if (cluster.selfMember.status != MemberStatus.Up)
       adaptedCluster.subscribe(ctx.self.toUntyped, ClusterEvent.initialStateAsEvents, classOf[MemberUp])
-    }
 
     Actor.immutable[AnyRef] { (ctx, msg) ⇒
       msg match {
@@ -159,7 +157,6 @@ private[akka] object AdapterClusterImpl {
           Actor.same
 
         case ClusterEvent.MemberUp(member) if member.uniqueAddress == cluster.selfMember.uniqueAddress ⇒
-          println("got up")
           upSubscribers.foreach(_ ! SelfUp(adaptedCluster.state))
           upSubscribers = Nil
           Actor.same
@@ -216,6 +213,9 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
   def isTerminated = adaptedCluster.isTerminated
   def state = adaptedCluster.state
 
+  // TODO arbitrary timeout here because systemActorOf returns future ref and
+  // ActorRef(future-ref) can only work on adapted untyped actors
+  // put it in config instead? or figure out way around futures
   private implicit val timeout: Timeout = 5.seconds
   lazy val subscriptions = Await.result(system.systemActorOf(subscriptionsBehavior(adaptedCluster), "cluster-state-subscriptions"), 5.seconds)
   lazy val manager = Await.result(system.systemActorOf(managerBehavior(adaptedCluster), "cluster-command-manager"), 5.seconds)
