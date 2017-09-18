@@ -47,6 +47,18 @@ object PersistencePluginDocSpec {
       //#native-config
       akka.persistence.journal.leveldb.native = off
       //#native-config
+
+      //#compaction-intervals-config
+      # Number of deleted messages per persistence id that will trigger journal compaction
+      akka.persistence.journal.leveldb.compaction-intervals {
+        persistence-id-1 = 100
+        persistence-id-2 = 200
+        # ...
+        persistence-id-N = 1000
+        # use wildcards to match unspecified persistence ids, if any
+        "*" = 250
+      }
+      //#compaction-intervals-config
     """
 }
 

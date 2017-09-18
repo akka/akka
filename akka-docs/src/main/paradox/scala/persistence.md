@@ -1271,6 +1271,13 @@ directory. This location can be changed by configuration where the specified pat
 
 With this plugin, each actor system runs its own private LevelDB instance.
 
+One peculiarity of LevelDB is that the deletion operation does not remove messages from the journal, but adds 
+a "tombstone" for each deleted message instead. In the case of heavy journal usage, especially one including frequent 
+deletes, this may be an issue as users may find themselves dealing with continuously increasing journal sizes. To 
+this end, LevelDB offers a special journal compaction function that is exposed via the following configuration:
+   
+@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #compaction-intervals-config }
+
 <a id="shared-leveldb-journal"></a>
 ### Shared LevelDB journal
 

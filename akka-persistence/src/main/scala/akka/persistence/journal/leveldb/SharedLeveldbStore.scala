@@ -28,7 +28,7 @@ class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
     if (cfg ne LeveldbStore.emptyConfig) cfg.getConfig("store")
     else context.system.settings.config.getConfig("akka.persistence.journal.leveldb-shared.store")
 
-  def receive = {
+  def receive = receiveCompactionInternal orElse {
     case WriteMessages(messages) ⇒
       // TODO it would be nice to DRY this with AsyncWriteJournal, but this is using
       //      AsyncWriteProxy message protocol
