@@ -15,20 +15,25 @@ import akka.serialization.SerializationExtension
 import org.iq80.leveldb._
 
 import scala.collection.immutable
+import scala.collection.JavaConverters._
 import scala.util._
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import akka.persistence.journal.Tagged
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
 
 private[persistence] object LeveldbStore {
   val emptyConfig = ConfigFactory.empty()
+
+  def toCompactionIntervalMap(obj: ConfigObject): Map[String, Long] = {
+    obj.unwrapped().asScala.map(entry ⇒ (entry._1, java.lang.Long.parseLong(entry._2.toString))).toMap
+  }
 }
 
 /**
  * INTERNAL API.
  */
-private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with LeveldbIdMapping with LeveldbRecovery {
+private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with LeveldbIdMapping with LeveldbRecovery with LeveldbCompaction {
 
   def prepareConfig: Config
 
@@ -40,6 +45,7 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
   val leveldbWriteOptions = new WriteOptions().sync(config.getBoolean("fsync")).snapshot(false)
   val leveldbDir = new File(config.getString("dir"))
   var leveldb: DB = _
+  override val compactionIntervals: Map[String, Long] = LeveldbStore.toCompactionIntervalMap(config.getObject("compaction-intervals"))
 
   private val persistenceIdSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]] with mutable.MultiMap[String, ActorRef]
   private val tagSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]] with mutable.MultiMap[String, ActorRef]
@@ -112,6 +118,8 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
             batch.delete(keyToBytes(Key(nid, sequenceNr, 0)))
             sequenceNr += 1
           }
+
+          self ! LeveldbCompaction.TryCompactLeveldb(persistenceId, toSeqNr)
         }
       }
     } catch {
