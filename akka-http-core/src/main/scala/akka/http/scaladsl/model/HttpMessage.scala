@@ -56,6 +56,10 @@ sealed trait HttpMessage extends jm.HttpMessage {
    * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
    * "stream can cannot be materialized more than once" exception.
    *
+   * When called on `Strict` entities or sources whose values can be buffered in memory,
+   * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+   * the mentioned exceptions due to the data being held in memory.
+   *
    * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
    */
   def discardEntityBytes(mat: Materializer): HttpMessage.DiscardedEntity = entity.discardBytes()(mat)
@@ -203,6 +207,10 @@ object HttpMessage {
      * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
      * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
      * "stream can cannot be materialized more than once" exception.
+     *
+     * When called on `Strict` entities or sources whose values can be buffered in memory,
+     * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+     * the mentioned exceptions due to the data being held in memory.
      *
      * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
      */

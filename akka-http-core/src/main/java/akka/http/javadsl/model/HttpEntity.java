@@ -155,6 +155,10 @@ public interface HttpEntity {
      * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
      * "stream can cannot be materialized more than once" exception.
      *
+     * When called on `Strict` entities or sources whose values can be buffered in memory,
+     * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+     * the mentioned exceptions due to the data being held in memory.
+     *
      * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
      */
     HttpMessage.DiscardedEntity discardBytes(Materializer materializer);
