@@ -26,6 +26,9 @@ class UniformFanOutShape[-I, +O](n: Int, _init: FanOutShape.Init[I @uncheckedVar
 
   @Deprecated
   @deprecated("use 'outlets' or 'out(id)' instead", "2.5.5")
-  lazy val outArray: Array[Outlet[O @uncheckedVariance]] = outlets.toArray
+  def outArray: Array[Outlet[O @uncheckedVariance]] = _outArray
+
+  // cannot deprecate a lazy val because of genjavadoc problem https://github.com/typesafehub/genjavadoc/issues/85
+  private lazy val _outArray: Array[Outlet[O @uncheckedVariance]] = outlets.toArray
   def out(n: Int): Outlet[O @uncheckedVariance] = outlets(n)
 }
