@@ -18,9 +18,14 @@ class FanInShape1N[-T0, -T1, +O](val n: Int, _init: FanInShape.Init[O]) extends 
   override def deepCopy(): FanInShape1N[T0, T1, O] = super.deepCopy().asInstanceOf[FanInShape1N[T0, T1, O]]
 
   @deprecated("Use 'inlets' or 'in(id)' instead.", "2.5.5")
-  lazy val in1Seq: immutable.IndexedSeq[Inlet[T1 @uncheckedVariance]] = inlets
-    .tail //head is in0
-    .toIndexedSeq.asInstanceOf[immutable.IndexedSeq[Inlet[T1]]]
+  def in1Seq: immutable.IndexedSeq[Inlet[T1 @uncheckedVariance]] = _in1Seq
+
+  // cannot deprecate a lazy val because of genjavadoc problem https://github.com/typesafehub/genjavadoc/issues/85
+  private lazy val _in1Seq: immutable.IndexedSeq[Inlet[T1 @uncheckedVariance]] =
+    inlets
+      .tail //head is in0
+      .toIndexedSeq.asInstanceOf[immutable.IndexedSeq[Inlet[T1]]]
+
   def in(n: Int): Inlet[T1 @uncheckedVariance] = {
     require(n > 0, "n must be > 0")
     inlets(n).asInstanceOf[Inlet[T1]]
