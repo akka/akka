@@ -51,15 +51,13 @@
 #                          "<your username>",
 #                          "<your password>")
 #
-# 3) You must have access to gustav.akka.io
-#    Please note that gustav.akka.io is the same as repo.akka.io, 
-#    but the latter domain is pointed at cloudflare so one could not ssh into it.
+# 3) You must have access to repo.akka.io
 #
 # 3.1) Ask someone in the team for login information for the akkarepo user.
 #
 # 3.2) Install your public ssh key to avoid typing in your password.
 #      From the command line:
-#        shell> cat ~/.ssh/id_rsa.pub | ssh akkarepo@gustav.akka.io "cat >> ~/.ssh/authorized_keys"
+#        shell> cat ~/.ssh/id_rsa.pub | ssh akkarepo@repo.akka.io "cat >> ~/.ssh/authorized_keys"
 ##
 # 4) Have access to github.com/akka/akka. This should be a given.
 #
@@ -76,7 +74,7 @@
 # https://docs.sonatype.org/display/Repository/Sonatype+OSS+Maven+Repository+Usage+Guide
 
 # defaults
-declare -r default_server="akkarepo@gustav.akka.io"
+declare -r default_server="akkarepo@repo.akka.io"
 declare -r default_path="www"
 
 # settings
@@ -157,6 +155,12 @@ done
 if [ $# != "1" ]; then
   usage
   fail "A release version must be specified"
+fi
+
+declare -r java_version="$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')"
+if [ "$java_version" != "9" ]; then
+  echo "Detected java version: $java_version"
+  fail "Akka MUST be released using JDK 9, in order to support j.u.c.Flow interfaces in Akka Streams"
 fi
 
 declare -r version=$1
