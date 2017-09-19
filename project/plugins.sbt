@@ -11,7 +11,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.3.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.2")
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.17")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.18")
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.0-M1")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.1")
 // addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "2.0.0") // FIXME broken on jdk9
@@ -21,7 +21,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.2.2-RC2")
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.3.1")
 //addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.3") // TODO
-//addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.5") // TODO
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.6")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
 
 // // JDK9 features support via Multi-Release JARs
