@@ -530,3 +530,7 @@ abstract class AbstractPersistentActor extends AbstractActor with Eventsourced {
 
 }
 
+/**
+ * Java API: Combination of [[AbstractPersistentActor]] and [[akka.actor.AbstractActorWithTimers]].
+ */
+abstract class AbstractPersistentActorWithTimers extends AbstractPersistentActor with Timers
