@@ -7,16 +7,12 @@ import akka.actor.{ Address, ExtendedActorSystem }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState, MemberUp }
 import akka.cluster._
-import akka.pattern.FutureRef
 import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.Actor
-import akka.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Terminated }
 import akka.typed.scaladsl.adapter._
-import akka.util.Timeout
+import akka.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Terminated }
 
-import scala.concurrent.duration._
 import scala.collection.immutable
-import scala.concurrent.Await
 import scala.reflect.ClassTag
 
 /**
