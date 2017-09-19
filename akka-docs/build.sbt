@@ -1,14 +1,15 @@
-import akka.{ AkkaBuild, Dependencies, Formatting, GitHub }
-import akka.ValidatePullRequest._
+import akka.{ AkkaBuild, Dependencies, Formatting, GitHub, Protobuf }
+// import akka.ValidatePullRequest._ // FIXME
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 AkkaBuild.defaultSettings
 AkkaBuild.dontPublishSettings
 Formatting.docFormatSettings
 Dependencies.docs
+Protobuf.settings
 
 unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
-additionalTasks in ValidatePR += paradox in Compile
+// additionalTasks in ValidatePR += paradox in Compile FIXME
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)
 disablePlugins(MimaPlugin)

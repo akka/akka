@@ -62,8 +62,11 @@ object AkkaBuild {
         // Maven resolver settings
         val resolver = Resolver.file("user-publish-m2-local", new File(path))
         (resolver, Seq(
-          otherResolvers := resolver :: publishTo.value.toList,
-          publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = resolver.name, checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value, overwrite = true)))
+          otherResolvers := resolver :: publishTo.value.toList
+        // ,
+        // FIXME seems to need much more things now...
+        // publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = resolver.name, checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value, overwrite = true)
+        ))
     }
 
   lazy val resolverSettings = {
@@ -94,7 +97,7 @@ object AkkaBuild {
       javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
-      incOptions := incOptions.value.withNameHashing(true),
+      //    incOptions := incOptions.value.withNameHashing(true), // no idea, it's gone now?
 
       crossVersion := CrossVersion.binary,
 
@@ -168,18 +171,7 @@ object AkkaBuild {
 
       // with forked tests the working directory is set to each module's home directory
       // rather than the Akka root, some tests depend on Akka root being working dir, so reset
-      testGrouping in Test := {
-        val original: Seq[Tests.Group] = (testGrouping in Test).value
-
-        original.map { group ⇒
-          group.runPolicy match {
-            case Tests.SubProcess(forkOptions) ⇒
-              group.copy(runPolicy = Tests.SubProcess(forkOptions.copy(
-                workingDirectory = Some(new File(System.getProperty("user.dir"))))))
-            case _ ⇒ group
-          }
-        }
-      },
+      baseDirectory in test := file(System.getProperty("user.dir")),
 
       parallelExecution in Test := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,

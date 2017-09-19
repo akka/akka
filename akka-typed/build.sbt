@@ -5,6 +5,7 @@ AkkaBuild.mayChangeSettings
 Formatting.formatSettings
 
 disablePlugins(MimaPlugin)
+enablePlugins(akka.Unidoc)
 
 initialCommands := """
   import akka.typed._

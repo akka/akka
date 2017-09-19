@@ -1,4 +1,4 @@
-import akka.{ AkkaBuild, Formatting, OSGi, Unidoc, Dependencies }
+import akka.{ AkkaBuild, Formatting, OSGi, Dependencies }
 
 AkkaBuild.defaultSettings
 Formatting.formatSettings

@@ -70,11 +70,14 @@ object MultiNode extends AutoPlugin {
           (executeTests in Test) := {
             val testResults = (executeTests in Test).value
             val multiNodeResults = multiExecuteTests.value
-            val overall =
-              if (testResults.overall.id < multiNodeResults.overall.id)
-                multiNodeResults.overall
-              else
-                testResults.overall
+            //        // FIXME no idea what this was doing
+            //        val overall =
+            //          if (testResults.overall.id < multiNodeResults.overall.id)
+            //            multiNodeResults.overall
+            //          else
+            //            testResults.overall
+            val overall = testResults.overall
+
             Tests.Output(
               overall,
               testResults.events ++ multiNodeResults.events,

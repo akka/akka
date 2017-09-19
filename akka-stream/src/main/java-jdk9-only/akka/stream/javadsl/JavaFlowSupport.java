@@ -102,19 +102,24 @@ public final class JavaFlowSupport {
       // have to jump though scaladsl for the toMat because type inference of the Keep.both
       return
         source.via(flow).toMat(sink, Keep.both())
-          .mapMaterializedValue(pair -> {
-            final java.util.concurrent.Flow.Subscriber<In> sub = pair.first();
-            final java.util.concurrent.Flow.Publisher<Out> pub = pair.second();
-
-            return new java.util.concurrent.Flow.Processor<In, Out>() {
-              @Override public void onError(Throwable t) { sub.onError(t); }
-              @Override public void onSubscribe(java.util.concurrent.Flow.Subscription s) { sub.onSubscribe(s); }
-              @Override public void onComplete() { sub.onComplete(); }
-              @Override public void onNext(In t) { sub.onNext(t); }
-              @Override public void subscribe(java.util.concurrent.Flow.Subscriber<? super Out> s) { pub.subscribe(s); }
-            };
-          });
+          .mapMaterializedValue(pair -> new WrappingProcessor<In, Out>(pair.first(), pair.second()));
     }
+  }
+
+  private static final class WrappingProcessor<In, Out> implements java.util.concurrent.Flow.Processor<In, Out> {
+    private final java.util.concurrent.Flow.Subscriber<In> sub;
+    private final java.util.concurrent.Flow.Publisher<Out> pub;
+
+    public WrappingProcessor(java.util.concurrent.Flow.Subscriber<In> sub, java.util.concurrent.Flow.Publisher<Out> pub) {
+      this.sub = sub;
+      this.pub = pub;
+    }
+
+    @Override public void onError(Throwable t) { sub.onError(t); }
+    @Override public void onSubscribe(java.util.concurrent.Flow.Subscription s) { sub.onSubscribe(s); }
+    @Override public void onComplete() { sub.onComplete(); }
+    @Override public void onNext(In t) { sub.onNext(t); }
+    @Override public void subscribe(java.util.concurrent.Flow.Subscriber<? super Out> s) { pub.subscribe(s); }
   }
 
   /**

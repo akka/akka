@@ -4,12 +4,14 @@
 
 package akka
 
-import sbt._
-import Process._
-import Keys._
-import com.typesafe.sbt.preprocess.Preprocess._
-
 import java.io.File
+import java.io.PrintWriter
+
+import scala.sys.process._
+
+import sbt._
+import sbt.util.CacheStoreFactory
+import Keys._
 
 object Protobuf {
   val paths = SettingKey[Seq[File]]("protobuf-paths", "The paths that contain *.proto files.")
@@ -26,13 +28,14 @@ object Protobuf {
     generate := {
       val sourceDirs = paths.value
       val targetDirs = outputPaths.value
+      val log = streams.value.log
 
       if (sourceDirs.size != targetDirs.size)
         sys.error(s"Unbalanced number of paths and destination paths!\nPaths: $sourceDirs\nDestination Paths: $targetDirs")
 
       if (sourceDirs exists (_.exists)) {
         val cmd = protoc.value
-        val log = streams.value.log
+
         checkProtocVersion(cmd, protocVersion.value, log)
 
         val base = baseDirectory.value
@@ -85,4 +88,44 @@ object Protobuf {
           sys.error("protoc returned exit code: %d" format exitCode)
       }
   }
+
+  /**
+   * Create a transformed version of all files in a directory, given a predicate and a transform function for each file. From sbt-site
+   */
+  private def transformDirectory(sourceDir: File, targetDir: File, transformable: File ⇒ Boolean, transform: (File, File) ⇒ Unit, cache: File, log: Logger): File = {
+    val runTransform = FileFunction.cached(CacheStoreFactory(cache), FilesInfo.hash, FilesInfo.exists) { (in: ChangeReport[File], out: ChangeReport[File]) ⇒
+      val map = Path.rebase(sourceDir, targetDir)
+      if (in.removed.nonEmpty || in.modified.nonEmpty) {
+        log.info("Preprocessing directory %s..." format sourceDir)
+        for (source ← in.removed; target ← map(source)) {
+          IO delete target
+        }
+        val updated = for (source ← in.modified; target ← map(source)) yield {
+          if (source.isFile) {
+            if (transformable(source)) transform(source, target)
+            else IO.copyFile(source, target)
+          }
+          target
+        }
+        log.info("Directory preprocessed: " + targetDir)
+        updated
+      } else Set.empty
+    }
+    val sources = (sourceDir.allPaths).get.toSet
+    runTransform(sources)
+    targetDir
+  }
+
+  /**
+   * Transform a file, line by line.
+   */
+  def transformFile(transform: String ⇒ String)(source: File, target: File): Unit = {
+    IO.reader(source) { reader ⇒
+      IO.writer(target, "", IO.defaultCharset) { writer ⇒
+        val pw = new PrintWriter(writer)
+        IO.foreachLine(reader) { line ⇒ pw.println(transform(line)) }
+      }
+    }
+  }
+
 }

@@ -5,4 +5,4 @@ Formatting.formatSettings
 OSGi.agent
 Dependencies.agent
 
-enablePlugins(ScaladocNoVerificationOfDiagrams)
+enablePlugins(akka.Unidoc, ScaladocNoVerificationOfDiagrams)

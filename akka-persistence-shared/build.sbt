@@ -7,4 +7,5 @@ Dependencies.persistenceShared
 
 fork in Test := true
 
+enablePlugins(akka.Unidoc)
 disablePlugins(MimaPlugin)
