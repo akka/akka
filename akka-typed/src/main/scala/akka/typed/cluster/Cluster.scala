@@ -3,16 +3,16 @@
  */
 package akka.typed.cluster
 
-import java.util.concurrent.atomic.AtomicReference
-
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState, MemberEvent, MemberUp }
+import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState, MemberEvent }
 import akka.cluster._
+import akka.cluster.protobuf.msg.ClusterMessages
+import akka.japi.Util
 import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.adapter._
-import akka.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Terminated }
+import akka.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, PostStop, Terminated }
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
@@ -27,7 +27,7 @@ sealed trait ClusterStateSubscription
 
 object Subscribe {
   def apply[A <: ClusterDomainEvent: ClassTag](subscriber: ActorRef[A]) =
-    new Subscribe[A, A](subscriber, implicitly[ClassTag[A]].runtimeClass.asInstanceOf[Class[A]])
+    new Subscribe[A](subscriber, implicitly[ClassTag[A]].runtimeClass.asInstanceOf[Class[A]])
 }
 
 /**
@@ -42,13 +42,15 @@ object Subscribe {
  *                   `ReachabilityEvent` or one of the common supertypes, such as `MemberEvent` to get
  *                   all the subtypes of events.
  */
-final case class Subscribe[A <: ClusterDomainEvent, S <: A](
+final case class Subscribe[A <: ClusterDomainEvent](
   subscriber: ActorRef[A],
-  eventClass: Class[S]) extends ClusterStateSubscription
+  eventClass: Class[A]) extends ClusterStateSubscription
 
 /**
  * Subscribe to this node being up, after sending this event the subscription is automatically
- * cancelled. If the node is already up the event is also sent to the subscriber.
+ * cancelled. If the node is already up the event is also sent to the subscriber. If the node was up
+ * but is no more because it left or is leaving the cluster, no event is sent and the subscription
+ * request is ignored.
  */
 final case class OnSelfUp(subscriber: ActorRef[SelfUp]) extends ClusterStateSubscription
 
@@ -56,6 +58,15 @@ final case class OnSelfUp(subscriber: ActorRef[SelfUp]) extends ClusterStateSubs
  * @param currentClusterState The cluster state snapshot from when the node became Up.
  */
 final case class SelfUp(currentClusterState: CurrentClusterState)
+
+/**
+ * Subscribe to this node being removed from the cluster. If the node was already removed from the cluster
+ * when this subscription is created it will be responded to immediately from the subscriptions actor.
+ */
+final case class OnSelfRemoved(subscriber: ActorRef[SelfRemoved.type]) extends ClusterStateSubscription
+
+// TODO any additional data worth passing with this response?
+final case object SelfRemoved
 
 final case class Unsubscribe[T](subscriber: ActorRef[T]) extends ClusterStateSubscription
 final case class GetCurrentState(recipient: ActorRef[CurrentClusterState]) extends ClusterStateSubscription
@@ -79,6 +90,7 @@ sealed trait ClusterCommand
 final case class Join(address: Address) extends ClusterCommand
 
 /**
+ * Scala API:
  * Join the specified seed nodes without defining them in config.
  * Especially useful from tests when Addresses are unknown before startup time.
  *
@@ -86,7 +98,23 @@ final case class Join(address: Address) extends ClusterCommand
  * When it has successfully joined it must be restarted to be able to join another
  * cluster or to join the same cluster again.
  */
-final case class JoinSeedNodes(seedNodes: immutable.Seq[Address]) extends ClusterCommand
+final case class JoinSeedNodes(seedNodes: immutable.Seq[Address]) extends ClusterCommand {
+
+  /**
+   * Java API:
+   *
+   * Join the specified seed nodes without defining them in config.
+   * Especially useful from tests when Addresses are unknown before startup time.
+   *
+   * An actor system can only join a cluster once. Additional attempts will be ignored.
+   * When it has successfully joined it must be restarted to be able to join another
+   * cluster or to join the same cluster again.
+   *
+   * Creates a defensive copy of the list to ensure immutability.
+   */
+  def this(seedNodes: java.util.List[Address]) = this(Util.immutableSeq(seedNodes))
+
+}
 
 /**
  * Send command to issue state transition to LEAVING for the node specified by 'address'.
@@ -128,17 +156,22 @@ object Cluster extends ExtensionId[Cluster] {
 private[akka] object AdapterClusterImpl {
 
   private def subscriptionsBehavior(adaptedCluster: akka.cluster.Cluster) = Actor.deferred[ClusterStateSubscription] { ctx ⇒
+    var selfSeenUp = false
     var upSubscribers: List[ActorRef[SelfUp]] = Nil
+    var removedSubscribers: List[ActorRef[SelfRemoved.type]] = Nil
+
     adaptedCluster.subscribe(ctx.self.toUntyped, ClusterEvent.initialStateAsEvents, classOf[MemberEvent])
 
-    Actor.immutable[AnyRef] { (ctx, msg) ⇒
-      val cluster = Cluster(ctx.system)
-      def updateCachedSelfMember(member: Member): Unit = {
-        // safe because we are the only writer
-        cluster.asInstanceOf[AdapterClusterImpl]._cachedSelfMember = member
-      }
-      msg match {
+    // important to not eagerly refer to it or we get a cycle here
+    def cluster = Cluster(ctx.system)
+    def updateCachedSelfMember(member: Member): Unit = {
+      // safe because we are the only writer
+      cluster.asInstanceOf[AdapterClusterImpl]._cachedSelfMember = member
+    }
 
+    Actor.immutable[AnyRef] { (ctx, msg) ⇒
+
+      msg match {
         case Subscribe(subscriber, eventClass) ⇒
           adaptedCluster.subscribe(subscriber.toUntyped, initialStateMode = ClusterEvent.initialStateAsEvents, eventClass)
           Actor.same
@@ -149,23 +182,39 @@ private[akka] object AdapterClusterImpl {
 
         case OnSelfUp(subscriber) ⇒
           if (cluster.selfMember.status == MemberStatus.Up) subscriber ! SelfUp(adaptedCluster.state)
-          else {
+          else if (!selfSeenUp) {
             ctx.watch(subscriber)
             upSubscribers = subscriber :: upSubscribers
+          } else {
+            // self did join, but is now no longer up, we want to avoid subscribing
+            // to not get a memory leak, but also not signal anything
           }
+          Actor.same
+
+        case OnSelfRemoved(subscriber) ⇒
+          val selfStatus = cluster.selfMember.status
+          if (selfSeenUp && selfStatus == MemberStatus.Removed) subscriber ! SelfRemoved
+          else removedSubscribers = subscriber :: removedSubscribers
           Actor.same
 
         case GetCurrentState(sender) ⇒
           adaptedCluster.sendCurrentClusterState(sender.toUntyped)
           Actor.same
 
-        case ClusterEvent.MemberUp(member) if member.uniqueAddress == adaptedCluster.selfUniqueAddress ⇒
-          upSubscribers.foreach(_ ! SelfUp(adaptedCluster.state))
+        case ClusterEvent.MemberUp(member) if member.uniqueAddress == cluster.selfMember.uniqueAddress ⇒
+          selfSeenUp = true
+          upSubscribers.foreach(_ ! SelfUp(cluster.state))
           upSubscribers = Nil
           updateCachedSelfMember(member)
           Actor.same
 
-        case m: MemberEvent if m.member.uniqueAddress == adaptedCluster.selfUniqueAddress ⇒
+        case ClusterEvent.MemberRemoved(member, _) if member.uniqueAddress == cluster.selfMember.uniqueAddress ⇒
+          removedSubscribers.foreach(_ ! SelfRemoved)
+          removedSubscribers = Nil
+          updateCachedSelfMember(member)
+          Actor.same
+
+        case m: MemberEvent if m.member.uniqueAddress == cluster.selfMember.uniqueAddress ⇒
           updateCachedSelfMember(m.member)
           Actor.same
 
@@ -177,6 +226,7 @@ private[akka] object AdapterClusterImpl {
 
       case (_, Terminated(ref)) ⇒
         upSubscribers = upSubscribers.filterNot(_ == ref)
+        removedSubscribers = removedSubscribers.filterNot(_ == ref)
         Actor.same
 
     }.narrow[ClusterStateSubscription]

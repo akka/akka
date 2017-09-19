@@ -5,7 +5,7 @@ package akka.typed.cluster
 
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.typed.TypedSpec
+import akka.typed.{ ActorRef, TypedSpec }
 import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.adapter._
 import akka.typed.testkit.TestKitSettings
@@ -21,8 +21,10 @@ object ClusterApiSpec {
     """
       akka.actor.provider = cluster
       akka.remote.artery.enabled = true
-      akka.remote.artery.canonical.port = 25552
+      akka.remote.netty.tcp.port = 0
+      akka.remote.artery.canonical.port = 0
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
+      akka.coordinated-shutdown.terminate-actor-system = off
       akka.actor {
         serialize-messages = off
         allow-java-serialization = off
@@ -36,57 +38,86 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
   val clusterNode1 = Cluster(adaptedSystem)
   val untypedSystem1 = ActorSystemAdapter.toUntyped(adaptedSystem)
 
-  val system2 = akka.actor.ActorSystem(
-    adaptedSystem.name,
-    ConfigFactory.parseString("akka.remote.artery.canonical.port = 25553").withFallback(ClusterApiSpec.config))
-  val adaptedSystem2 = system2.toTyped
-  val clusterNode2 = Cluster(adaptedSystem2)
+  def compileOnlyApiChecks(): Unit = {
+    val subscriber: ActorRef[MemberEvent] = ???
+    // all events based on actorref type
+    clusterNode1.subscriptions ! Subscribe(subscriber)
+    // less events than type accepts
+    clusterNode1.subscriptions ! Subscribe(subscriber, classOf[MemberUp])
+
+  }
 
   object `A typed cluster` {
 
     def `01 must join a cluster and observe events from both sides`() = {
-      val node1Probe = TestProbe[MemberEvent]()(adaptedSystem, testSettings)
-      val node2Probe = TestProbe[SelfUp]()(adaptedSystem2, testSettings)
 
-      clusterNode1.selfMember.status should ===(MemberStatus.Removed)
-      clusterNode2.selfMember.status should ===(MemberStatus.Removed)
+      val system2 = akka.actor.ActorSystem(adaptedSystem.name, adaptedSystem.settings.config)
+      val adaptedSystem2 = system2.toTyped
 
-      clusterNode1.subscriptions ! Subscribe(node1Probe.ref)
+      try {
+        val clusterNode2 = Cluster(adaptedSystem2)
 
-      clusterNode1.manager ! Join(clusterNode1.selfMember.address)
-      node1Probe.expectMsgType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
+        val node1Probe = TestProbe[AnyRef]()(adaptedSystem, testSettings)
+        val node2Probe = TestProbe[AnyRef]()(adaptedSystem2, testSettings)
 
-      node1Probe.awaitAssert(
-        clusterNode1.selfMember.status should ===(MemberStatus.Up)
-      )
-
-      clusterNode2.subscriptions ! OnSelfUp(node2Probe.ref)
-
-      clusterNode2.manager ! Join(clusterNode1.selfMember.address)
-      node2Probe.awaitAssert(
-        clusterNode2.selfMember.status should ===(MemberStatus.Up)
-      )
-
-      node2Probe.expectMsgType[SelfUp]
-      node1Probe.expectMsgType[MemberJoined].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
-      node1Probe.expectMsgType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
-
-      clusterNode2.manager ! Leave(clusterNode2.selfMember.address)
-
-      node1Probe.expectMsgType[MemberLeft].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
-      node1Probe.expectMsgType[MemberExited].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
-      node1Probe.expectMsgType[MemberRemoved].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
-
-      node2Probe.awaitAssert(
+        // initial cached selfMember
+        clusterNode1.selfMember.status should ===(MemberStatus.Removed)
         clusterNode2.selfMember.status should ===(MemberStatus.Removed)
-      )
 
+        // check that subscriptions work
+        clusterNode1.subscriptions ! Subscribe(node1Probe.ref, classOf[MemberEvent])
+        clusterNode1.manager ! Join(clusterNode1.selfMember.address)
+        node1Probe.expectMsgType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
+
+        // check that cached selfMember is updated
+        node1Probe.awaitAssert(
+          clusterNode1.selfMember.status should ===(MemberStatus.Up)
+        )
+
+        // subscribing to OnSelfUp when already up
+        clusterNode1.subscriptions ! OnSelfUp(node1Probe.ref)
+        node1Probe.expectMsgType[SelfUp]
+
+        // selfMember update and on up subscription on node 2 when joining
+        clusterNode2.subscriptions ! OnSelfUp(node2Probe.ref)
+        clusterNode2.manager ! Join(clusterNode1.selfMember.address)
+        node2Probe.awaitAssert(
+          clusterNode2.selfMember.status should ===(MemberStatus.Up)
+        )
+        node2Probe.expectMsgType[SelfUp]
+
+        // events about node2 joining to subscriber on node1
+        node1Probe.expectMsgType[MemberJoined].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+        node1Probe.expectMsgType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
+
+        // OnSelfRemoved and subscription events around node2 leaving
+        clusterNode2.subscriptions ! OnSelfRemoved(node2Probe.ref)
+        clusterNode2.manager ! Leave(clusterNode2.selfMember.address)
+
+        // node1 seeing all those transition events
+        node1Probe.expectMsgType[MemberLeft].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+        node1Probe.expectMsgType[MemberExited].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+        node1Probe.expectMsgType[MemberRemoved].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+
+        // selfMember updated and self removed event gotten
+        node2Probe.awaitAssert(
+          clusterNode2.selfMember.status should ===(MemberStatus.Removed)
+        )
+        node2Probe.expectMsg(SelfRemoved)
+        println("got active self removed, sending second")
+
+        // subscribing to SelfRemoved when already removed yields immediate message back
+        clusterNode2.subscriptions ! OnSelfRemoved(node2Probe.ref)
+        node2Probe.expectMsg(SelfRemoved)
+
+        // subscribing to SelfUp when already removed yields nothing
+        clusterNode2.subscriptions ! OnSelfUp(node2Probe.ref)
+        node2Probe.expectNoMsg(100.millis)
+
+      } finally {
+        Await.result(system2.terminate(), 3.seconds)
+      }
     }
-  }
-
-  override def afterAll(): Unit = {
-    super.afterAll()
-    Await.result(system2.terminate(), 3.seconds)
   }
 
 }
