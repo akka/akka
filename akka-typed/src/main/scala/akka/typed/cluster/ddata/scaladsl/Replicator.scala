@@ -29,7 +29,7 @@ object Replicator {
   type WriteMajority = dd.Replicator.WriteMajority
   type WriteAll = dd.Replicator.WriteAll
 
-  sealed trait Command[A <: ReplicatedData] {
+  trait Command[A <: ReplicatedData] {
     def key: Key[A]
   }
 
