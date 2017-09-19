@@ -157,17 +157,17 @@ class FramingSpec extends StreamSpec {
     }
 
     def encodeComplexFrame(
-      payload:     ByteString,
+      payload: ByteString,
       fieldOffset: Int,
       fieldLength: Int,
-      byteOrder:   ByteOrder,
-      offset:      ByteString,
-      tail:        ByteString): ByteString = {
+      byteOrder: ByteOrder,
+      offset: ByteString,
+      tail: ByteString): ByteString = {
       val header = {
         val h = (new ByteStringBuilder).putInt(payload.size)(byteOrder).result()
         byteOrder match {
           case ByteOrder.LITTLE_ENDIAN ⇒ h.take(fieldLength)
-          case ByteOrder.BIG_ENDIAN    ⇒ h.drop(4 - fieldLength)
+          case ByteOrder.BIG_ENDIAN ⇒ h.drop(4 - fieldLength)
         }
       }
       offset ++ header ++ payload ++ tail

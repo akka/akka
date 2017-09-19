@@ -28,15 +28,15 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
 
   /** INTERNAL API */
   @InternalApi def materialize[Mat](
-    _runnableGraph:    Graph[ClosedShape, Mat],
+    _runnableGraph: Graph[ClosedShape, Mat],
     initialAttributes: Attributes): Mat
 
   /** INTERNAL API */
   @InternalApi private[akka] def materialize[Mat](
-    graph:             Graph[ClosedShape, Mat],
+    graph: Graph[ClosedShape, Mat],
     initialAttributes: Attributes,
-    defaultPhase:      Phase[Any],
-    phases:            Map[IslandTag, Phase[Any]]): Mat
+    defaultPhase: Phase[Any],
+    phases: Map[IslandTag, Phase[Any]]): Mat
 
   /**
    * INTERNAL API

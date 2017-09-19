@@ -5,7 +5,7 @@
 package akka.stream.stage
 
 import akka.event.{ LoggingAdapter, NoLogging }
-import akka.stream.{ ActorMaterializer, MaterializerLoggingProvider }
+import akka.stream.MaterializerLoggingProvider
 
 /**
  * Simple way to obtain a [[LoggingAdapter]] when used together with an [[ActorMaterializer]].

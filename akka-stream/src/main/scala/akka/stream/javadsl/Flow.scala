@@ -2248,7 +2248,7 @@ object RunnableGraph {
     }
 
   /** INTERNAL API */
-  private final class RunnableGraphAdapter[Mat](runnable: scaladsl.RunnableGraph[Mat]) extends RunnableGraph[Mat] {
+  private[akka] final class RunnableGraphAdapter[Mat](runnable: scaladsl.RunnableGraph[Mat]) extends RunnableGraph[Mat] {
     override def shape = ClosedShape
     override def traversalBuilder = runnable.traversalBuilder
 

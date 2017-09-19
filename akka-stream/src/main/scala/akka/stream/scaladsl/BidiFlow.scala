@@ -11,8 +11,7 @@ import scala.concurrent.duration.FiniteDuration
 
 final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   override val traversalBuilder: TraversalBuilder,
-  override val shape:            BidiShape[I1, O1, I2, O2]
-) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
+  override val shape:            BidiShape[I1, O1, I2, O2]) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
 
   def asJava: javadsl.BidiFlow[I1, O1, I2, O2, Mat] = new javadsl.BidiFlow(this)
 
@@ -70,8 +69,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
 
     new BidiFlow(
       newTraversalBuilder,
-      BidiShape(newBidi1Shape.in1, newBidi2Shape.out1, newBidi2Shape.in2, newBidi1Shape.out2)
-    )
+      BidiShape(newBidi1Shape.in1, newBidi2Shape.out1, newBidi2Shape.in2, newBidi1Shape.out2))
   }
 
   /**
@@ -129,8 +127,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
 
     new Flow(
       LinearTraversalBuilder.fromBuilder(resultBuilder, newShape, Keep.right),
-      newShape
-    )
+      newShape)
   }
 
   /**
@@ -139,8 +136,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   def reversed: BidiFlow[I2, O2, I1, O1, Mat] =
     new BidiFlow(
       traversalBuilder,
-      BidiShape(shape.in2, shape.out2, shape.in1, shape.out1)
-    )
+      BidiShape(shape.in2, shape.out2, shape.in1, shape.out1))
 
   /**
    * Transform only the materialized value of this BidiFlow, leaving all other properties as they were.
@@ -148,8 +144,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): BidiFlow[I1, O1, I2, O2, Mat2] =
     new BidiFlow(
       traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]),
-      shape
-    )
+      shape)
 
   /**
    * Change the attributes of this [[Source]] to the given ones and seal the list
@@ -161,8 +156,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   override def withAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(
       traversalBuilder.setAttributes(attr),
-      shape
-    )
+      shape)
 
   /**
    * Add the given attributes to this Source. Further calls to `withAttributes`
@@ -200,8 +194,7 @@ object BidiFlow {
       case other ⇒
         new BidiFlow(
           other.traversalBuilder,
-          other.shape
-        )
+          other.shape)
     }
 
   /**
@@ -233,8 +226,7 @@ object BidiFlow {
       TraversalBuilder.empty()
         .add(flow1.traversalBuilder, newFlow1Shape, Keep.right)
         .add(flow2.traversalBuilder, newFlow2Shape, combine),
-      BidiShape(newFlow1Shape.in, newFlow1Shape.out, newFlow2Shape.in, newFlow2Shape.out)
-    )
+      BidiShape(newFlow1Shape.in, newFlow1Shape.out, newFlow2Shape.in, newFlow2Shape.out))
   }
 
   /**

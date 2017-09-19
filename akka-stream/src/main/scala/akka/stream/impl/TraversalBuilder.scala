@@ -753,8 +753,8 @@ import scala.collection.immutable.Map.Map1
               applyIslandAndAttributes(
                 beforeBuilder.concat(
                   composite
-                  .assign(out, inOffset - composite.offsetOfModule(out))
-                  .traversal).concat(traversalSoFar)),
+                    .assign(out, inOffset - composite.offsetOfModule(out))
+                    .traversal).concat(traversalSoFar)),
             pendingBuilder = OptionVal.None, beforeBuilder = EmptyTraversal)
         case OptionVal.None ⇒
           copy(

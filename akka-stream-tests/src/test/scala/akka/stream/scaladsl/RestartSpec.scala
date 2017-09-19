@@ -64,7 +64,7 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
         created.incrementAndGet()
         Source(List("a", "b", "c"))
           .map {
-            case "c"   ⇒ throw TE("failed")
+            case "c" ⇒ throw TE("failed")
             case other ⇒ other
           }
       }.runWith(TestSink.probe)
@@ -319,13 +319,11 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
           })),
           flowOutSource.takeWhile(_ != "complete").map {
             case "error" ⇒ throw TE("error")
-            case other   ⇒ other
+            case other ⇒ other
           }.watchTermination()((_, term) ⇒
             term.foreach(_ ⇒ {
               flowInSource.sendNext("out complete")
-            })
-          )
-        )
+            })))
       })(Keep.left).toMat(TestSink.probe[String])(Keep.both).run()
 
       (created, source, flowInProbe, flowOutProbe, sink)

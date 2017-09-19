@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.event.LoggingAdapter
 import akka.stream._
-import akka.Done
+import akka.{ Done, NotUsed, stream }
 import akka.stream.impl._
 import akka.stream.impl.fusing._
 import akka.stream.stage._
@@ -18,15 +18,15 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
-import akka.NotUsed
 import akka.annotation.DoNotInherit
+import akka.stream.javadsl.RunnableGraph
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
 final class Flow[-In, +Out, +Mat](
   override val traversalBuilder: LinearTraversalBuilder,
-  override val shape:            FlowShape[In, Out])
+  override val shape: FlowShape[In, Out])
   extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
   // TODO: debug string
@@ -307,7 +307,7 @@ object Flow {
    */
   def fromGraph[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
-      case f: Flow[I, O, M]         ⇒ f
+      case f: Flow[I, O, M] ⇒ f
       case f: javadsl.Flow[I, O, M] ⇒ f.asScala
       case other ⇒ new Flow(
         LinearTraversalBuilder.fromBuilder(g.traversalBuilder, g.shape, Keep.right),
@@ -475,7 +475,7 @@ object RunnableGraph {
   def fromGraph[Mat](g: Graph[ClosedShape, Mat]): RunnableGraph[Mat] =
     g match {
       case r: RunnableGraph[Mat] ⇒ r
-      case other                 ⇒ RunnableGraph(other.traversalBuilder)
+      case other ⇒ RunnableGraph(other.traversalBuilder)
     }
 }
 /**
@@ -505,6 +505,10 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
     addAttributes(Attributes.name(name))
 
   override def async: RunnableGraph[Mat] = addAttributes(Attributes.asyncBoundary)
+  
+  /** Convert this type to its JavaDSL counter-part */
+  def asJava: akka.stream.javadsl.RunnableGraph[Mat] =
+    new stream.javadsl.RunnableGraph.RunnableGraphAdapter(this)
 }
 
 /**
@@ -1841,7 +1845,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
-               costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] =
+    costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] =
     via(new Throttle(cost, per, maximumBurst, costCalculation, mode))
 
   /**
@@ -1985,7 +1989,7 @@ trait FlowOps[+Out, +Mat] {
     via(interleaveGraph(that, segmentSize))
 
   protected def interleaveGraph[U >: Out, M](
-    that:        Graph[SourceShape[U], M],
+    that: Graph[SourceShape[U], M],
     segmentSize: Int): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.create(that) { implicit b ⇒ r ⇒
       val interleave = b.add(Interleave[U](2, segmentSize))

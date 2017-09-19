@@ -22,8 +22,7 @@ import scala.collection.immutable.Range.Inclusive
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.OptionConverters._
-import java.util.concurrent.CompletionStage
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{ CompletableFuture, CompletionStage, Flow }
 
 import scala.compat.java8.FutureConverters._
 

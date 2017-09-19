@@ -513,8 +513,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
             setHandlers(in, out, this)
           }
-      }
-    ) {
+      }) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
@@ -527,7 +526,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       ev.nonEmpty should be(true)
       ev.forall {
         case OnError(_: IllegalArgumentException) ⇒ true
-        case _                                    ⇒ false
+        case _ ⇒ false
       } should be(true)
     }
 

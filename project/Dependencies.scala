@@ -26,14 +26,14 @@ object Dependencies {
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 12 => "1.13.4" // does not work for 2.11
-        case _ => "1.13.2"
+        case Some((2, n)) if n >= 12 ⇒ "1.13.4" // does not work for 2.11
+        case _ ⇒ "1.13.2"
       }),
     scalaTestVersion := "3.0.0",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 12 => "0.8.0"
-        case _ => "0.7.0"
+        case Some((2, n)) if n >= 12 ⇒ "0.8.0"
+        case _ ⇒ "0.7.0"
       }
     })
 
@@ -187,16 +187,16 @@ object Dependencies {
 }
 
 object DependencyHelpers {
-  case class ScalaVersionDependentModuleID(modules: String => Seq[ModuleID]) {
+  case class ScalaVersionDependentModuleID(modules: String ⇒ Seq[ModuleID]) {
     def %(config: String): ScalaVersionDependentModuleID =
-      ScalaVersionDependentModuleID(version => modules(version).map(_ % config))
+      ScalaVersionDependentModuleID(version ⇒ modules(version).map(_ % config))
   }
   object ScalaVersionDependentModuleID {
-    implicit def liftConstantModule(mod: ModuleID): ScalaVersionDependentModuleID = versioned(_ => mod)
+    implicit def liftConstantModule(mod: ModuleID): ScalaVersionDependentModuleID = versioned(_ ⇒ mod)
 
-    def versioned(f: String => ModuleID): ScalaVersionDependentModuleID = ScalaVersionDependentModuleID(v => Seq(f(v)))
+    def versioned(f: String ⇒ ModuleID): ScalaVersionDependentModuleID = ScalaVersionDependentModuleID(v ⇒ Seq(f(v)))
     def fromPF(f: PartialFunction[String, ModuleID]): ScalaVersionDependentModuleID =
-      ScalaVersionDependentModuleID(version => if (f.isDefinedAt(version)) Seq(f(version)) else Nil)
+      ScalaVersionDependentModuleID(version ⇒ if (f.isDefinedAt(version)) Seq(f(version)) else Nil)
   }
 
   /**
@@ -204,16 +204,16 @@ object DependencyHelpers {
    * dependent entries.
    */
   def versionDependentDeps(modules: ScalaVersionDependentModuleID*): Def.Setting[Seq[ModuleID]] =
-    libraryDependencies ++= modules.flatMap(m => m.modules(scalaVersion.value))
+    libraryDependencies ++= modules.flatMap(m ⇒ m.modules(scalaVersion.value))
 
   val ScalaVersion = """\d\.\d+\.\d+(?:-(?:M|RC)\d+)?""".r
-  val nominalScalaVersion: String => String = {
+  val nominalScalaVersion: String ⇒ String = {
     // matches:
     // 2.12.0-M1
     // 2.12.0-RC1
     // 2.12.0
-    case version @ ScalaVersion() => version
+    case version @ ScalaVersion() ⇒ version
     // transforms 2.12.0-custom-version to 2.12.0
-    case version => version.takeWhile(_ != '-')
+    case version ⇒ version.takeWhile(_ != '-')
   }
 }

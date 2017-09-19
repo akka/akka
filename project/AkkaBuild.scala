@@ -61,8 +61,8 @@ object AkkaBuild {
 
   val (mavenLocalResolver, mavenLocalResolverSettings) =
     System.getProperty("akka.build.M2Dir") match {
-      case null => (Resolver.mavenLocal, Seq.empty)
-      case path =>
+      case null ⇒ (Resolver.mavenLocal, Seq.empty)
+      case path ⇒
         // Maven resolver settings
         val resolver = Resolver.file("user-publish-m2-local", new File(path))
         (resolver, Seq(
@@ -84,7 +84,7 @@ object AkkaBuild {
       Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
     else Seq.empty
   } ++ Seq(
-    pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
+    pomIncludeRepository := (_ ⇒ false) // do not leak internal repositories during staging
   )
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
@@ -96,7 +96,7 @@ object AkkaBuild {
       // compile options
       scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
-      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
+      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
       // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
       javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),

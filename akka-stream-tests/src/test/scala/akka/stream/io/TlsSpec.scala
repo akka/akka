@@ -100,7 +100,7 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
 
     val debug = Flow[SslTlsInbound].map { x ⇒
       x match {
-        case SessionTruncated   ⇒ system.log.debug(s" ----------- truncated ")
+        case SessionTruncated ⇒ system.log.debug(s" ----------- truncated ")
         case SessionBytes(_, b) ⇒ system.log.debug(s" ----------- (${b.size}) ${b.take(32).utf8String}")
       }
       x
@@ -122,19 +122,19 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
 
     trait CommunicationSetup extends Named {
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
-                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]): Flow[SslTlsOutbound, SslTlsInbound, NotUsed]
+        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]): Flow[SslTlsOutbound, SslTlsInbound, NotUsed]
       def cleanup(): Unit = ()
     }
 
     object ClientInitiates extends CommunicationSetup {
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
-                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) =
+        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) =
         clientTls(leftClosing) atop serverTls(rightClosing).reversed join rhs
     }
 
     object ServerInitiates extends CommunicationSetup {
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
-                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) =
+        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) =
         serverTls(leftClosing) atop clientTls(rightClosing).reversed join rhs
     }
 
@@ -149,7 +149,7 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
     object ClientInitiatesViaTcp extends CommunicationSetup {
       var binding: Tcp.ServerBinding = null
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
-                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
+        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
         binding = server(serverTls(rightClosing).reversed join rhs)
         clientTls(leftClosing) join Tcp().outgoingConnection(binding.localAddress)
       }
@@ -159,7 +159,7 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
     object ServerInitiatesViaTcp extends CommunicationSetup {
       var binding: Tcp.ServerBinding = null
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
-                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
+        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
         binding = server(clientTls(rightClosing).reversed join rhs)
         serverTls(leftClosing) join Tcp().outgoingConnection(binding.localAddress)
       }
@@ -243,7 +243,7 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
       override def flow =
         Flow[SslTlsInbound]
           .mapConcat {
-            case SessionTruncated       ⇒ SessionTruncated :: Nil
+            case SessionTruncated ⇒ SessionTruncated :: Nil
             case SessionBytes(s, bytes) ⇒ bytes.map(b ⇒ SessionBytes(s, ByteString(b)))
           }
           .take(5)
@@ -260,7 +260,7 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
       override def flow =
         Flow[SslTlsInbound]
           .mapConcat {
-            case SessionTruncated       ⇒ SessionTruncated :: Nil
+            case SessionTruncated ⇒ SessionTruncated :: Nil
             case SessionBytes(s, bytes) ⇒ bytes.map(b ⇒ SessionBytes(s, ByteString(b)))
           }
           .take(5)
@@ -397,8 +397,7 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
       val (server, serverErr) = Tcp()
         .bind("localhost", 0)
         .mapAsync(1)(c ⇒
-          c.flow.joinMat(serverTls(IgnoreBoth).reversed.joinMat(simple)(Keep.right))(Keep.right).run()
-        )
+          c.flow.joinMat(serverTls(IgnoreBoth).reversed.joinMat(simple)(Keep.right))(Keep.right).run())
         .toMat(Sink.head)(Keep.both).run()
 
       val clientErr = simple.join(badClientTls(IgnoreBoth))
@@ -475,7 +474,7 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
       def run(hostName: String): Future[akka.Done] = {
         val rhs = Flow[SslTlsInbound]
           .map {
-            case SessionTruncated   ⇒ SendBytes(ByteString.empty)
+            case SessionTruncated ⇒ SendBytes(ByteString.empty)
             case SessionBytes(_, b) ⇒ SendBytes(b)
           }
         val clientTls = TLS(sslContext, None, cipherSuites, Client, EagerClose, Some((hostName, 80)))

@@ -37,8 +37,7 @@ import scala.util.Try
           case None ⇒
             // callback on future completion
             promise.future.onComplete(
-              getAsyncCallback(handleCompletion).invoke
-            )(ExecutionContexts.sameThreadExecutionContext)
+              getAsyncCallback(handleCompletion).invoke)(ExecutionContexts.sameThreadExecutionContext)
         }
       }
 

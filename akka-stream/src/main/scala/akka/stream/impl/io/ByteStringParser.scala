@@ -99,8 +99,7 @@ import scala.util.control.{ NoStackTrace, NonFatal }
         failStage(
           new IllegalStateException(s"Parsing logic didn't produce result after $recursionLimit steps. " +
             "Aborting processing to avoid infinite cycles. In the unlikely case that the parsing logic " +
-            "needs more recursion, override ParsingLogic.recursionLimit.")
-        )
+            "needs more recursion, override ParsingLogic.recursionLimit."))
       else {
         val recurse = doParseInner()
         if (recurse) doParse(remainingRecursions - 1)

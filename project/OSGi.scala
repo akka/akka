@@ -60,15 +60,15 @@ object OSGi {
 
   val http = exports(
     Seq("akka.http.impl.server") ++
-    Seq(
-      "akka.http.$DSL$.server.*",
-      "akka.http.$DSL$.client.*",
-      "akka.http.$DSL$.coding.*",
-      "akka.http.$DSL$.common.*",
-      "akka.http.$DSL$.marshalling.*",
-      "akka.http.$DSL$.unmarshalling.*") flatMap { p =>
-        Seq(p.replace("$DSL$", "scaladsl"), p.replace("$DSL$", "javadsl"))
-      },
+      Seq(
+        "akka.http.$DSL$.server.*",
+        "akka.http.$DSL$.client.*",
+        "akka.http.$DSL$.coding.*",
+        "akka.http.$DSL$.common.*",
+        "akka.http.$DSL$.marshalling.*",
+        "akka.http.$DSL$.unmarshalling.*") flatMap { p ⇒
+          Seq(p.replace("$DSL$", "scaladsl"), p.replace("$DSL$", "javadsl"))
+        },
     imports = Seq(
       scalaJava8CompatImport(),
       akkaImport("akka.stream.*"),

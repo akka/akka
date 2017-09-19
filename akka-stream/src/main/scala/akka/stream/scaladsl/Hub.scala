@@ -207,7 +207,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int) extends GraphStageWi
       while (event ne null) {
         event match {
           case Register(_, demandCallback) ⇒ demandCallback.invoke(MergeHub.Cancel)
-          case _                           ⇒
+          case _ ⇒
         }
         event = queue.poll()
       }
@@ -635,7 +635,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
           @tailrec def register(): Unit = {
             logic.state.get() match {
               case Closed(Some(ex)) ⇒ failStage(ex)
-              case Closed(None)     ⇒ completeStage()
+              case Closed(None) ⇒ completeStage()
               case previousState @ Open(callbackFuture, registrations) ⇒
                 val newRegistrations = Consumer(id, callback) :: registrations
                 if (logic.state.compareAndSet(previousState, Open(callbackFuture, newRegistrations))) {
@@ -687,7 +687,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
 
         private def onCommand(cmd: ConsumerEvent): Unit = cmd match {
           case HubCompleted(Some(ex)) ⇒ failStage(ex)
-          case HubCompleted(None)     ⇒ completeStage()
+          case HubCompleted(None) ⇒ completeStage()
           case Wakeup ⇒
             if (isAvailable(out)) onPull()
           case Initialize(initialOffset) ⇒
@@ -752,7 +752,7 @@ object PartitionHub {
    *   is backpressured.
    */
   @ApiMayChange def statefulSink[T](partitioner: () ⇒ (ConsumerInfo, T) ⇒ Long, startAfterNrOfConsumers: Int,
-                                    bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
+    bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
     Sink.fromGraph(new PartitionHub[T](partitioner, startAfterNrOfConsumers, bufferSize))
 
   /**
@@ -785,7 +785,7 @@ object PartitionHub {
    */
   @ApiMayChange
   def sink[T](partitioner: (Int, T) ⇒ Int, startAfterNrOfConsumers: Int,
-              bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
+    bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
     statefulSink(() ⇒ (info, elem) ⇒ info.consumerIdByIdx(partitioner(info.size, elem)), startAfterNrOfConsumers, bufferSize)
 
   @DoNotInherit @ApiMayChange trait ConsumerInfo extends akka.stream.javadsl.PartitionHub.ConsumerInfo {
@@ -962,7 +962,7 @@ object PartitionHub {
       override def remove(id: Long): Unit = {
         (if (id < FixedQueues) queues1.getAndSet(id.toInt, null)
         else queues2.remove(id)) match {
-          case null  ⇒
+          case null ⇒
           case queue ⇒ _totalSize.addAndGet(-queue.size)
         }
       }
@@ -975,7 +975,7 @@ object PartitionHub {
  * INTERNAL API
  */
 @InternalApi private[akka] class PartitionHub[T](
-  partitioner:             () ⇒ (PartitionHub.ConsumerInfo, T) ⇒ Long,
+  partitioner: () ⇒ (PartitionHub.ConsumerInfo, T) ⇒ Long,
   startAfterNrOfConsumers: Int, bufferSize: Int)
   extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
   import PartitionHub.Internal._
@@ -1203,7 +1203,7 @@ object PartitionHub {
           @tailrec def register(): Unit = {
             logic.state.get() match {
               case Closed(Some(ex)) ⇒ failStage(ex)
-              case Closed(None)     ⇒ completeStage()
+              case Closed(None) ⇒ completeStage()
               case previousState @ Open(callbackFuture, registrations) ⇒
                 val newRegistrations = consumer :: registrations
                 if (logic.state.compareAndSet(previousState, Open(callbackFuture, newRegistrations))) {
@@ -1240,7 +1240,7 @@ object PartitionHub {
           callbackCount += 1
           cmd match {
             case HubCompleted(Some(ex)) ⇒ failStage(ex)
-            case HubCompleted(None)     ⇒ completeStage()
+            case HubCompleted(None) ⇒ completeStage()
             case Wakeup ⇒
               if (isAvailable(out)) onPull()
             case Initialize ⇒

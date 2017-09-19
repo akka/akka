@@ -20,7 +20,11 @@ import scala.concurrent.duration._
 import akka.NotUsed
 
 /**
- * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams
+ * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams (the collections API).
+ * 
+ * For converters to/from `java.util.concurrent.Flow` (previously known as Reactive Streams),
+ * please use JDK 9 and refer to `akka.stream.scaladsl.JavaFlowSupport`.
+ * 
  */
 object StreamConverters {
 

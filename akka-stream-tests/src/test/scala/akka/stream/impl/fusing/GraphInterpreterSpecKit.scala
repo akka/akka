@@ -113,8 +113,7 @@ object GraphInterpreterSpecKit {
           outOwner = outOwner,
           outHandler = outOwner.outHandler(0),
           inOwner = inOwner,
-          inHandler = inOwner.inHandler(0)
-        )
+          inHandler = inOwner.inHandler(0))
 
         outOwner.portToConn(outOwner.inCount) = connection
         inOwner.portToConn(0) = connection
@@ -144,8 +143,7 @@ object GraphInterpreterSpecKit {
           outOwner = outOwner,
           outHandler = outOwner.outHandler(outlet.id),
           inOwner = inOwner,
-          inHandler = inOwner.inHandler(inlet.id)
-        )
+          inHandler = inOwner.inHandler(inlet.id))
 
         connections(idx) = connection
         inOwner.portToConn(inlet.id) = connection

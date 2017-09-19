@@ -44,10 +44,10 @@ object MultiNode extends AutoPlugin {
     val MultinodeJvmArgs = "multinode\\.(D|X)(.*)".r
     val knownPrefix = Set("multnode.", "akka.", "MultiJvm.")
     val akkaProperties = System.getProperties.propertyNames.asScala.toList.collect {
-      case MultinodeJvmArgs(a, b) =>
+      case MultinodeJvmArgs(a, b) ⇒
         val value = System.getProperty("multinode." + a + b)
         "-" + a + b + (if (value == "") "" else "=" + value)
-      case key: String if knownPrefix.exists(pre => key.startsWith(pre)) => "-D" + key + "=" + System.getProperty(key)
+      case key: String if knownPrefix.exists(pre ⇒ key.startsWith(pre)) ⇒ "-D" + key + "=" + System.getProperty(key)
     }
 
     "-Xmx256m" :: akkaProperties ::: CliOptions.sbtLogNoFormat.ifTrue("-Dakka.test.nocolor=true").toList
@@ -96,7 +96,7 @@ object MultiNodeScalaTest extends AutoPlugin {
   override lazy val projectSettings = Seq(
     extraOptions in MultiJvm := {
       val src = (sourceDirectory in MultiJvm).value
-      (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      (name: String) ⇒ (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
     },
     scalatestOptions in MultiJvm := {
       Seq("-C", "org.scalatest.extra.QuietReporter") ++

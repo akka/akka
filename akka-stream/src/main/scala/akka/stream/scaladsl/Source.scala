@@ -31,7 +31,7 @@ import scala.compat.java8.FutureConverters._
  */
 final class Source[+Out, +Mat](
   override val traversalBuilder: LinearTraversalBuilder,
-  override val shape:            SourceShape[Out])
+  override val shape: SourceShape[Out])
   extends FlowOpsMat[Out, Mat] with Graph[SourceShape[Out], Mat] {
 
   override type Repr[+O] = Source[O, Mat @uncheckedVariance]
@@ -229,7 +229,7 @@ object Source {
    * it so also in type.
    */
   def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
-    case s: Source[T, M]         ⇒ s
+    case s: Source[T, M] ⇒ s
     case s: javadsl.Source[T, M] ⇒ s.asScala
     case other ⇒ new Source(
       LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
@@ -458,9 +458,9 @@ object Source {
    */
   def zipWithN[T, O](zipper: immutable.Seq[T] ⇒ O)(sources: immutable.Seq[Source[T, _]]): Source[O, NotUsed] = {
     val source = sources match {
-      case immutable.Seq()       ⇒ empty[O]
+      case immutable.Seq() ⇒ empty[O]
       case immutable.Seq(source) ⇒ source.map(t ⇒ zipper(immutable.Seq(t))).mapMaterializedValue(_ ⇒ NotUsed)
-      case s1 +: s2 +: ss        ⇒ combine(s1, s2, ss: _*)(ZipWithN(zipper))
+      case s1 +: s2 +: ss ⇒ combine(s1, s2, ss: _*)(ZipWithN(zipper))
     }
 
     source.addAttributes(DefaultAttributes.zipWithN)

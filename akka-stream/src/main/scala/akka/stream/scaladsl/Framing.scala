@@ -50,10 +50,10 @@ object Framing {
    * @param byteOrder The ''ByteOrder'' to be used when decoding the field
    */
   def lengthField(
-    fieldLength:        Int,
-    fieldOffset:        Int       = 0,
+    fieldLength: Int,
+    fieldOffset: Int = 0,
     maximumFrameLength: Int,
-    byteOrder:          ByteOrder = ByteOrder.LITTLE_ENDIAN): Flow[ByteString, ByteString, NotUsed] = {
+    byteOrder: ByteOrder = ByteOrder.LITTLE_ENDIAN): Flow[ByteString, ByteString, NotUsed] = {
     require(fieldLength >= 1 && fieldLength <= 4, "Length field length must be 1, 2, 3 or 4.")
     Flow[ByteString].via(new LengthFieldFramingStage(fieldLength, fieldOffset, maximumFrameLength, byteOrder))
       .named("lengthFieldFraming")
@@ -79,11 +79,11 @@ object Framing {
    *
    */
   def lengthField(
-    fieldLength:        Int,
-    fieldOffset:        Int,
+    fieldLength: Int,
+    fieldOffset: Int,
     maximumFrameLength: Int,
-    byteOrder:          ByteOrder,
-    computeFrameSize:   (Array[Byte], Int) ⇒ Int): Flow[ByteString, ByteString, NotUsed] = {
+    byteOrder: ByteOrder,
+    computeFrameSize: (Array[Byte], Int) ⇒ Int): Flow[ByteString, ByteString, NotUsed] = {
     require(fieldLength >= 1 && fieldLength <= 4, "Length field length must be 1, 2, 3 or 4.")
     Flow[ByteString].via(new LengthFieldFramingStage(fieldLength, fieldOffset, maximumFrameLength, byteOrder, Some(computeFrameSize)))
       .named("lengthFieldFraming")
@@ -251,24 +251,24 @@ object Framing {
   }
 
   private final class LengthFieldFramingStage(
-    val lengthFieldLength:  Int,
-    val lengthFieldOffset:  Int,
+    val lengthFieldLength: Int,
+    val lengthFieldOffset: Int,
     val maximumFrameLength: Int,
-    val byteOrder:          ByteOrder,
-    computeFrameSize:       Option[(Array[Byte], Int) ⇒ Int]) extends GraphStage[FlowShape[ByteString, ByteString]] {
+    val byteOrder: ByteOrder,
+    computeFrameSize: Option[(Array[Byte], Int) ⇒ Int]) extends GraphStage[FlowShape[ByteString, ByteString]] {
 
     //for the sake of binary compatibility
     def this(
-      lengthFieldLength:  Int,
-      lengthFieldOffset:  Int,
+      lengthFieldLength: Int,
+      lengthFieldOffset: Int,
       maximumFrameLength: Int,
-      byteOrder:          ByteOrder) {
+      byteOrder: ByteOrder) {
       this(lengthFieldLength, lengthFieldOffset, maximumFrameLength, byteOrder, None)
     }
 
     private val minimumChunkSize = lengthFieldOffset + lengthFieldLength
     private val intDecoder = byteOrder match {
-      case ByteOrder.BIG_ENDIAN    ⇒ bigEndianDecoder
+      case ByteOrder.BIG_ENDIAN ⇒ bigEndianDecoder
       case ByteOrder.LITTLE_ENDIAN ⇒ littleEndianDecoder
     }
 
@@ -306,7 +306,7 @@ object Framing {
           val parsedLength = intDecoder(buffer.iterator.drop(lengthFieldOffset), lengthFieldLength)
           frameSize = computeFrameSize match {
             case Some(f) ⇒ f(buffer.take(lengthFieldOffset).toArray, parsedLength)
-            case None    ⇒ parsedLength + minimumChunkSize
+            case None ⇒ parsedLength + minimumChunkSize
           }
           if (frameSize > maximumFrameLength) {
             failStage(new FramingException(s"Maximum allowed frame size is $maximumFrameLength but decoded frame header reported size $frameSize"))

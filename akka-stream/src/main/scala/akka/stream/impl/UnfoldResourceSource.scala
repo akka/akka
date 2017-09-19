@@ -16,9 +16,9 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 @InternalApi private[akka] final class UnfoldResourceSource[T, S](
-  create:   () ⇒ S,
+  create: () ⇒ S,
   readData: (S) ⇒ Option[T],
-  close:    (S) ⇒ Unit) extends GraphStage[SourceShape[T]] {
+  close: (S) ⇒ Unit) extends GraphStage[SourceShape[T]] {
   val out = Outlet[T]("UnfoldResourceSource.out")
   override val shape = SourceShape(out)
   override def initialAttributes: Attributes = DefaultAttributes.unfoldResourceSource
@@ -40,7 +40,7 @@ import scala.util.control.NonFatal
       try {
         readData(blockingStream) match {
           case Some(data) ⇒ push(out, data)
-          case None       ⇒ closeStage()
+          case None ⇒ closeStage()
         }
       } catch {
         case NonFatal(ex) ⇒ decider(ex) match {

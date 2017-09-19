@@ -50,7 +50,7 @@ import scala.compat.java8.FutureConverters._
         completion.tryFailure(exception)
         stopCallback {
           case Offer(elem, promise) ⇒ promise.failure(exception)
-          case _                    ⇒ // ignore
+          case _ ⇒ // ignore
         }
       }
 

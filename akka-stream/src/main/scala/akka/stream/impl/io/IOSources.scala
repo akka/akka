@@ -89,8 +89,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
         //if already read something and try
         if (availableChunks.nonEmpty) {
           emitMultiple(out, availableChunks.iterator,
-            () ⇒ if (eofEncountered) success() else setHandler(out, handler)
-          )
+            () ⇒ if (eofEncountered) success() else setHandler(out, handler))
           availableChunks = Vector.empty[ByteString]
         } else if (eofEncountered) success()
       }

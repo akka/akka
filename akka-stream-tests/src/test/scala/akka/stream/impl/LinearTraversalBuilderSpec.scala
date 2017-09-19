@@ -587,8 +587,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
 
       mat.attributesAssignments should ===(List(
         sink → (Attributes.name("test") and Attributes.name("testSink")),
-        source → (Attributes.name("test") and Attributes.name("testSource"))
-      ))
+        source → (Attributes.name("test") and Attributes.name("testSource"))))
     }
 
     "properly accumulate attributes in chain" in {
@@ -601,8 +600,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
 
       mat.attributesAssignments should ===(List(
         sink → (Attributes.name("test") and Attributes.name("testSink")),
-        source → (Attributes.name("test") and Attributes.name("source"))
-      ))
+        source → (Attributes.name("test") and Attributes.name("source"))))
     }
 
     "overwrite last attributes until a new module is added" in {
@@ -617,8 +615,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
 
       mat.attributesAssignments should ===(List(
         sink → (Attributes.name("test2") and Attributes.name("testSink")),
-        source → (Attributes.name("test2") and Attributes.name("source2"))
-      ))
+        source → (Attributes.name("test2") and Attributes.name("source2"))))
     }
 
     "propagate attributes to embedded linear sink and source" in {
@@ -632,8 +629,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
 
       mat.attributesAssignments should ===(List(
         sink → (Attributes.name("test") and Attributes.name("sink")),
-        source → (Attributes.name("test") and Attributes.name("source"))
-      ))
+        source → (Attributes.name("test") and Attributes.name("source"))))
     }
 
     "propagate attributes to embedded linear flow" in {
@@ -650,8 +646,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       mat.attributesAssignments should ===(List(
         sink → (Attributes.name("test") and Attributes.name("sink")),
         flow1 → (Attributes.name("test") and Attributes.name("compositeSource") and Attributes.name("flow")),
-        source → (Attributes.name("test") and Attributes.name("compositeSource") and Attributes.name("source"))
-      ))
+        source → (Attributes.name("test") and Attributes.name("compositeSource") and Attributes.name("source"))))
     }
 
     "propagate attributes to embedded composite sink" in {
@@ -667,8 +662,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       mat.attributesAssignments should ===(List(
         compositeSink → (Attributes.name("test") and Attributes.name("sink")),
         flow1 → (Attributes.name("test") and Attributes.name("flow")),
-        source → (Attributes.name("test") and Attributes.name("source"))
-      ))
+        source → (Attributes.name("test") and Attributes.name("source"))))
     }
 
     "propagate attributes to embedded composite source" in {
@@ -689,8 +683,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       mat.attributesAssignments should ===(List(
         sink → (Attributes.name("test") and Attributes.name("sink")),
         flow1 → (Attributes.name("test") and Attributes.name("flow")),
-        compositeSource → (Attributes.name("test") and Attributes.name("source-outer") and Attributes.name("source"))
-      ))
+        compositeSource → (Attributes.name("test") and Attributes.name("source-outer") and Attributes.name("source"))))
     }
 
     "propagate attributes to embedded composite flow" in {
@@ -706,8 +699,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       mat.attributesAssignments should ===(List(
         sink → (Attributes.name("test") and Attributes.name("sink")),
         compositeFlow1 → (Attributes.name("test") and Attributes.name("flow")),
-        source → (Attributes.name("test") and Attributes.name("source"))
-      ))
+        source → (Attributes.name("test") and Attributes.name("source"))))
     }
 
     "properly append a Source to empty linear" in {
@@ -823,8 +815,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
         (sink, Attributes.none, TestDefaultIsland),
         (flow2, Attributes.none, TestDefaultIsland),
         (flow1, Attributes.name("island2"), TestIsland2),
-        (source, Attributes.name("island2") and Attributes.name("island1"), TestIsland1)
-      ))
+        (source, Attributes.name("island2") and Attributes.name("island1"), TestIsland1)))
     }
 
     "properly nest flow with islands" in {
@@ -847,8 +838,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
         (sink, Attributes.none, TestDefaultIsland),
         (flow2, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
         (flow1, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
-        (source, Attributes.none, TestDefaultIsland)
-      ))
+        (source, Attributes.none, TestDefaultIsland)))
     }
 
     "properly nest flow with island inside another island" in {
@@ -872,8 +862,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
         (sink, Attributes.none, TestDefaultIsland),
         (flow2, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
         (flow1, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
-        (source, Attributes.name("wholeThing"), TestIsland2)
-      ))
+        (source, Attributes.name("wholeThing"), TestIsland2)))
     }
 
     "properly nest flow with islands starting from linear enclosing a composite" in {
@@ -896,8 +885,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
         (sink, Attributes.none, TestDefaultIsland),
         (flow2, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
         (compositeFlow1, Attributes.name("wholeThing"), TestIsland2),
-        (source, Attributes.name("wholeThing"), TestIsland2)
-      ))
+        (source, Attributes.name("wholeThing"), TestIsland2)))
     }
 
     "properly nest flow containing composite with islands" in {
@@ -919,8 +907,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
         (sink, Attributes.none, TestDefaultIsland),
         (compositeFlow2, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
         (flow1, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
-        (source, Attributes.none, TestDefaultIsland)
-      ))
+        (source, Attributes.none, TestDefaultIsland)))
     }
 
   }

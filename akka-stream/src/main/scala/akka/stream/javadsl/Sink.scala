@@ -209,7 +209,7 @@ object Sink {
    * message will be sent to the destination actor.
    */
   def actorRefWithAck[In](ref: ActorRef, onInitMessage: Any, ackMessage: Any, onCompleteMessage: Any,
-                          onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
+    onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.actorRefWithAck[In](ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage.apply))
 
   /**
@@ -230,7 +230,7 @@ object Sink {
   def fromGraph[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
     g match {
       case s: Sink[T, M] ⇒ s
-      case other         ⇒ new Sink(scaladsl.Sink.fromGraph(other))
+      case other ⇒ new Sink(scaladsl.Sink.fromGraph(other))
     }
 
   /**
