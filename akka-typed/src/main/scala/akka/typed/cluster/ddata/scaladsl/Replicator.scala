@@ -34,9 +34,7 @@ object Replicator {
   }
 
   final case class Get[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency, request: Option[Any] = None)(val replyTo: ActorRef[GetResponse[A]])
-    extends Command[A] {
-
-  }
+    extends Command[A]
 
   type GetResponse[A <: ReplicatedData] = dd.Replicator.GetResponse[A]
   object GetSuccess {
@@ -96,5 +94,35 @@ object Replicator {
   type UpdateTimeout[A <: ReplicatedData] = dd.Replicator.UpdateTimeout[A]
   type ModifyFailure[A <: ReplicatedData] = dd.Replicator.ModifyFailure[A]
   type StoreFailure[A <: ReplicatedData] = dd.Replicator.StoreFailure[A]
+
+  /**
+   * Register a subscriber that will be notified with a [[Changed]] message
+   * when the value of the given `key` is changed. Current value is also
+   * sent as a [[Changed]] message to a new subscriber.
+   *
+   * Subscribers will be notified periodically with the configured `notify-subscribers-interval`,
+   * and it is also possible to send an explicit `FlushChanges` message to
+   * the `Replicator` to notify the subscribers immediately.
+   *
+   * The subscriber will automatically be unregistered if it is terminated.
+   *
+   * If the key is deleted the subscriber is notified with a [[Deleted]]
+   * message.
+   */
+  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]])
+    extends Command[A]
+
+  /**
+   * Unregister a subscriber.
+   *
+   * @see [[Replicator.Subscribe]]
+   */
+  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]])
+    extends Command[A]
+
+  object Changed {
+    def unapply[A <: ReplicatedData](chg: Changed[A]): Option[Key[A]] = Some(chg.key)
+  }
+  type Changed[A <: ReplicatedData] = dd.Replicator.Changed[A]
 
 }
