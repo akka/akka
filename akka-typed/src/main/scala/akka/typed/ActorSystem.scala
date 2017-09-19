@@ -220,14 +220,14 @@ object ActorSystem {
     val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext,
       Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps)), actorSystemSettings)
     untyped.start()
-    new ActorSystemAdapter(untyped)
+    ActorSystemAdapter.AdapterExtension(untyped).adapter
   }
 
   /**
    * Wrap an untyped [[akka.actor.ActorSystem]] such that it can be used from
    * Akka Typed [[Behavior]].
    */
-  def wrap(untyped: a.ActorSystem): ActorSystem[Nothing] = new ActorSystemAdapter(untyped.asInstanceOf[a.ActorSystemImpl])
+  def wrap(untyped: a.ActorSystem): ActorSystem[Nothing] = ActorSystemAdapter.AdapterExtension(untyped.asInstanceOf[a.ActorSystemImpl]).adapter
 }
 
 /**

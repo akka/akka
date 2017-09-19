@@ -18,11 +18,11 @@ import scala.runtime.AbstractFunction2
  * and roles.
  */
 @SerialVersionUID(1L)
-class Member private[akka] (
-  val uniqueAddress:             UniqueAddress,
-  private[cluster] val upNumber: Int, // INTERNAL API
-  val status:                    MemberStatus,
-  val roles:                     Set[String]) extends Serializable {
+class Member private[cluster] (
+  val uniqueAddress:          UniqueAddress,
+  private[akka] val upNumber: Int, // INTERNAL API
+  val status:                 MemberStatus,
+  val roles:                  Set[String]) extends Serializable {
 
   lazy val dataCenter: DataCenter = roles.find(_.startsWith(ClusterSettings.DcRolePrefix))
     .getOrElse(throw new IllegalStateException("DataCenter undefined, should not be possible"))
@@ -90,7 +90,7 @@ object Member {
    * INTERNAL API
    * Create a new member with status Joining.
    */
-  private[cluster] def apply(uniqueAddress: UniqueAddress, roles: Set[String]): Member =
+  private[akka] def apply(uniqueAddress: UniqueAddress, roles: Set[String]): Member =
     new Member(uniqueAddress, Int.MaxValue, Joining, roles)
 
   /**

@@ -4,6 +4,7 @@
 package akka.typed.cluster
 
 import akka.cluster.ClusterEvent._
+import akka.cluster.MemberStatus
 import akka.typed.TypedSpec
 import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.adapter._
@@ -45,16 +46,28 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
 
     def `01 must join a cluster and observe events from both sides`() = {
       val node1Probe = TestProbe[MemberEvent]()(adaptedSystem, testSettings)
+      val node2Probe = TestProbe[SelfUp]()(adaptedSystem2, testSettings)
+
+      clusterNode1.selfMember.status should ===(MemberStatus.Removed)
+      clusterNode2.selfMember.status should ===(MemberStatus.Removed)
+
       clusterNode1.subscriptions ! Subscribe(node1Probe.ref)
 
       clusterNode1.manager ! Join(clusterNode1.selfMember.address)
       node1Probe.expectMsgType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
 
-      val probe = TestProbe[SelfUp]()(adaptedSystem2, testSettings)
-      clusterNode2.subscriptions ! OnSelfUp(probe.ref)
+      node1Probe.awaitAssert(
+        clusterNode1.selfMember.status should ===(MemberStatus.Up)
+      )
+
+      clusterNode2.subscriptions ! OnSelfUp(node2Probe.ref)
 
       clusterNode2.manager ! Join(clusterNode1.selfMember.address)
-      probe.expectMsgType[SelfUp]
+      node2Probe.awaitAssert(
+        clusterNode2.selfMember.status should ===(MemberStatus.Up)
+      )
+
+      node2Probe.expectMsgType[SelfUp]
       node1Probe.expectMsgType[MemberJoined].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
       node1Probe.expectMsgType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
 
@@ -63,6 +76,11 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
       node1Probe.expectMsgType[MemberLeft].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
       node1Probe.expectMsgType[MemberExited].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
       node1Probe.expectMsgType[MemberRemoved].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+
+      node2Probe.awaitAssert(
+        clusterNode2.selfMember.status should ===(MemberStatus.Removed)
+      )
+
     }
   }
 

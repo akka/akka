@@ -3,9 +3,11 @@
  */
 package akka.typed.cluster
 
+import java.util.concurrent.atomic.AtomicReference
+
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState, MemberUp }
+import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState, MemberEvent, MemberUp }
 import akka.cluster._
 import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.Actor
@@ -115,8 +117,7 @@ final case class Down(address: Address) extends ClusterCommand
  */
 object Cluster extends ExtensionId[Cluster] {
 
-  def createExtension(system: ActorSystem[_]): Cluster =
-    new AdapterClusterImpl(system)
+  def createExtension(system: ActorSystem[_]): Cluster = new AdapterClusterImpl(system)
 
 }
 
@@ -127,12 +128,15 @@ object Cluster extends ExtensionId[Cluster] {
 private[akka] object AdapterClusterImpl {
 
   private def subscriptionsBehavior(adaptedCluster: akka.cluster.Cluster) = Actor.deferred[ClusterStateSubscription] { ctx ⇒
-    val cluster = Cluster(ctx.system)
     var upSubscribers: List[ActorRef[SelfUp]] = Nil
-    if (cluster.selfMember.status != MemberStatus.Up)
-      adaptedCluster.subscribe(ctx.self.toUntyped, ClusterEvent.initialStateAsEvents, classOf[MemberUp])
+    adaptedCluster.subscribe(ctx.self.toUntyped, ClusterEvent.initialStateAsEvents, classOf[MemberEvent])
 
     Actor.immutable[AnyRef] { (ctx, msg) ⇒
+      val cluster = Cluster(ctx.system)
+      def updateCachedSelfMember(member: Member): Unit = {
+        // safe because we are the only writer
+        cluster.asInstanceOf[AdapterClusterImpl]._cachedSelfMember = member
+      }
       msg match {
 
         case Subscribe(subscriber, eventClass) ⇒
@@ -152,15 +156,20 @@ private[akka] object AdapterClusterImpl {
           Actor.same
 
         case GetCurrentState(sender) ⇒
-          sender ! adaptedCluster.state
+          adaptedCluster.sendCurrentClusterState(sender.toUntyped)
           Actor.same
 
-        case ClusterEvent.MemberUp(member) if member.uniqueAddress == cluster.selfMember.uniqueAddress ⇒
+        case ClusterEvent.MemberUp(member) if member.uniqueAddress == adaptedCluster.selfUniqueAddress ⇒
           upSubscribers.foreach(_ ! SelfUp(adaptedCluster.state))
           upSubscribers = Nil
+          updateCachedSelfMember(member)
           Actor.same
 
-        case _: ClusterEvent.MemberUp ⇒
+        case m: MemberEvent if m.member.uniqueAddress == adaptedCluster.selfUniqueAddress ⇒
+          updateCachedSelfMember(m.member)
+          Actor.same
+
+        case _: MemberEvent ⇒
           Actor.same
 
       }
@@ -209,18 +218,21 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
   private def extendedUntyped = untypedSystem.asInstanceOf[ExtendedActorSystem]
   private val adaptedCluster = akka.cluster.Cluster(untypedSystem)
 
-  def selfMember =
-    adaptedCluster.state.members.find(_.uniqueAddress == adaptedCluster.selfUniqueAddress).getOrElse(
-      // Not sure if this fake-it-until-you-make it strategy makes sense, but wanted to avoid using an option here
-      new Member(adaptedCluster.selfUniqueAddress, 0, MemberStatus.Joining, adaptedCluster.selfRoles)
-    )
-  def isTerminated = adaptedCluster.isTerminated
-  def state = adaptedCluster.state
+  // is updated on change events by the subscriptions actor
+  @volatile private[akka] var _cachedSelfMember =
+    // initial placeholder member
+    Member(adaptedCluster.selfUniqueAddress, adaptedCluster.selfRoles).copy(MemberStatus.Removed)
 
-  override lazy val subscriptions: ActorRef[ClusterStateSubscription] = extendedUntyped.systemActorOf(
-    PropsAdapter(subscriptionsBehavior(adaptedCluster)), "cluster-state-subscriptions")
+  override def selfMember = _cachedSelfMember
+  override def isTerminated = adaptedCluster.isTerminated
+  override def state = adaptedCluster.state
+
+  // must not be lazy as it also updates the cached selfMember
+  override val subscriptions: ActorRef[ClusterStateSubscription] = extendedUntyped.systemActorOf(
+    PropsAdapter(subscriptionsBehavior(adaptedCluster)), "clusterStateSubscriptions")
+
   override lazy val manager: ActorRef[ClusterCommand] = extendedUntyped.systemActorOf(
-    PropsAdapter(managerBehavior(adaptedCluster)), "cluster-command-manager")
+    PropsAdapter(managerBehavior(adaptedCluster)), "clusterCommandManager")
 
 }
 

@@ -5,19 +5,25 @@ package akka.typed.testkit.scaladsl
 
 import scala.concurrent.duration._
 import java.util.concurrent.BlockingDeque
+
 import akka.typed.Behavior
 import akka.typed.scaladsl.Actor
 import akka.typed.ActorSystem
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicInteger
+
 import akka.typed.ActorRef
 import akka.util.Timeout
 import akka.util.PrettyDuration.PrettyPrintableDuration
+
 import scala.concurrent.Await
 import com.typesafe.config.Config
 import akka.typed.testkit.TestKitSettings
 import akka.util.BoxedType
+
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 
 object TestProbe {
   private val testActorId = new AtomicInteger(0)
@@ -35,6 +41,7 @@ object TestProbe {
 }
 
 class TestProbe[M](name: String)(implicit val system: ActorSystem[_], val settings: TestKitSettings) {
+
   import TestProbe._
   private val queue = new LinkedBlockingDeque[M]
 
@@ -224,6 +231,37 @@ class TestProbe[M](name: String)(implicit val system: ActorSystem[_], val settin
     assert(o != null, s"timeout ($max) during expectMsgClass waiting for $c")
     assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
     o.asInstanceOf[C]
+  }
+
+  /**
+   * Evaluate the given assert every `interval` until it does not throw an exception.
+   * If the `max` timeout expires the last exception is thrown.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
+   */
+  def awaitAssert(a: ⇒ Any, max: Duration = Duration.Undefined, interval: Duration = 100.millis) {
+    val _max = remainingOrDilated(max)
+    val stop = now + _max
+
+    @tailrec
+    def poll(t: Duration) {
+      val failed =
+        try { a; false } catch {
+          case NonFatal(e) ⇒
+            if ((now + t) >= stop) throw e
+            true
+        }
+      if (failed) {
+        Thread.sleep(t.toMillis)
+        poll((stop - now) min interval)
+      }
+    }
+
+    poll(_max min interval)
   }
 
 }
