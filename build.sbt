@@ -1,4 +1,5 @@
-enablePlugins(akka.UnidocRoot, akka.TimeStampede, akka.UnidocWithPrValidation)
+// enablePlugins(akka.UnidocRoot, akka.TimeStampede, akka.UnidocWithPrValidation) // FIXME
+enablePlugins(akka.TimeStampede) // FIXME
 disablePlugins(MimaPlugin)
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
@@ -29,7 +30,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   protobuf,
   remote, remoteTests,
   slf4j,
-  stream, streamTestkit, streamTests, streamTestsTck,
+  stream, streamTestkit, streamTests, streamTestsTck, 
   testkit,
   typed, typedTests, typedTestkit
 )
@@ -39,7 +40,7 @@ lazy val root = Project(
   base = file(".")
 ).aggregate(aggregatedProjects: _*)
  .settings(rootSettings: _*)
- .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs))
+ // .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs)) // FIXME once unidoc fixed
 
 lazy val actor = akkaModule("akka-actor")
 
@@ -52,7 +53,8 @@ lazy val agent = akkaModule("akka-agent")
 lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   // remove dependencies that we have to build ourselves (Scala STM)
   .aggregate(aggregatedProjects diff List[ProjectReference](agent, docs): _*)
-  .disablePlugins(ValidatePullRequest, MimaPlugin)
+  // .disablePlugins(ValidatePullRequest, MimaPlugin) // FIXME
+   .disablePlugins(MimaPlugin)
 
 lazy val benchJmh = akkaModule("akka-bench-jmh")
   .dependsOn(
@@ -62,7 +64,8 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
       persistence, distributedData,
       testkit
     ).map(_ % "compile->compile;compile->test;provided->provided"): _*
-  ).disablePlugins(ValidatePullRequest)
+//  ).disablePlugins(ValidatePullRequest) // FIXME
+  ) // FIXME disable validation here
 
 lazy val camel = akkaModule("akka-camel")
   .dependsOn(actor, slf4j, testkit % "test->test")

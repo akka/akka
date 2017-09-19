@@ -22,8 +22,7 @@ object Publish extends AutoPlugin {
     organizationHomepage := Some(url("http://www.lightbend.com")),
     publishMavenStyle := true,
     pomIncludeRepository := { x => false },
-    defaultPublishTo := crossTarget.value / "repository"
-  )
+    defaultPublishTo := crossTarget.value / "repository")
 
   def akkaPomExtra = {
     /* The scm info is automatic from the sbt-git plugin

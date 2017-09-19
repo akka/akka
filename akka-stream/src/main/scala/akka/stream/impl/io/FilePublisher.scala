@@ -66,8 +66,8 @@ import scala.util.control.NonFatal
 
   def receive = {
     case ActorPublisherMessage.Request(elements) ⇒ readAndSignal(maxBuffer)
-    case Continue                                ⇒ readAndSignal(maxBuffer)
-    case ActorPublisherMessage.Cancel            ⇒ context.stop(self)
+    case Continue ⇒ readAndSignal(maxBuffer)
+    case ActorPublisherMessage.Cancel ⇒ context.stop(self)
   }
 
   def readAndSignal(maxReadAhead: Int): Unit =
@@ -95,7 +95,7 @@ import scala.util.control.NonFatal
           eofReachedAtOffset = chan.position
           log.debug("No more bytes available to read (got `-1` from `read`), marking final bytes of file @ " + eofReachedAtOffset)
           chunks
-        case 0            ⇒ readAhead(maxChunks, chunks) // had nothing to read into this chunk
+        case 0 ⇒ readAhead(maxChunks, chunks) // had nothing to read into this chunk
         case Int.MinValue ⇒ Vector.empty // read failed, we're done here
         case readBytes ⇒
           buf.flip()

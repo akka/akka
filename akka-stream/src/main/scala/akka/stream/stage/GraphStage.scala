@@ -24,6 +24,18 @@ import akka.stream.scaladsl.{ GenericGraph, GenericGraphWithChangedAttributes }
 import akka.util.OptionVal
 import akka.annotation.InternalApi
 
+/**
+ * Scala API: A GraphStage represents a reusable graph stream processing stage.
+ *
+ * Extend this `GraphStageWithMaterializedValue` if you want to provide a materialized value,
+ * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
+ * value you can instead extende [[GraphStage]] which materializes a [[NotUsed]] value.
+ *
+ * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
+ * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
+ *
+ * See also [[AbstractGraphStageWithMaterializedValue]] for Java DSL for this stage.
+ */
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
   @throws(classOf[Exception])
@@ -50,9 +62,33 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
 }
 
 /**
- * A GraphStage represents a reusable graph stream processing stage. A GraphStage consists of a [[Shape]] which describes
- * its input and output ports and a factory function that creates a [[GraphStageLogic]] which implements the processing
- * logic that ties the ports together.
+ * Java API: A GraphStage represents a reusable graph stream processing stage.
+ *
+ * Extend this `AbstractGraphStageWithMaterializedValue` if you want to provide a materialized value,
+ * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
+ * value you can instead extende [[GraphStage]] which materializes a [[NotUsed]] value.
+ *
+ * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
+ * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
+ *
+ * See also [[GraphStageWithMaterializedValue]] for Scala DSL for this stage.
+ */
+abstract class AbstractGraphStageWithMaterializedValue[+S <: Shape, M] extends GraphStageWithMaterializedValue[S, M] {
+  @throws(classOf[Exception])
+  final def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, M) = {
+    val pair = createLogicAndMaterializedValuePair(inheritedAttributes)
+    pair.first → pair.second
+  }
+
+  @throws(classOf[Exception])
+  def createLogicAndMaterializedValuePair(inheritedAttributes: Attributes): akka.japi.Pair[GraphStageLogic, M]
+}
+
+/**
+ * A GraphStage represents a reusable graph stream processing stage.
+ *
+ * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
+ * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
  */
 abstract class GraphStage[S <: Shape] extends GraphStageWithMaterializedValue[S, NotUsed] {
   final override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, NotUsed) =

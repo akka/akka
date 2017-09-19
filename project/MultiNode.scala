@@ -5,14 +5,14 @@ package akka
 
 import akka.TestExtras.Filter
 import akka.TestExtras.Filter.Keys._
-import com.typesafe.sbt.{SbtScalariform, SbtMultiJvm}
+import com.typesafe.sbt.{ SbtScalariform, SbtMultiJvm }
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import sbt._
 import sbt.Keys._
 
 object MultiNode extends AutoPlugin {
-  
+
   // MultiJvm tests can be excluded from normal test target an validatePullRequest
   // with -Dakka.test.multi-in-test=false
   val multiNodeTestInTest: Boolean =
@@ -55,32 +55,35 @@ object MultiNode extends AutoPlugin {
 
   private val multiJvmSettings =
     SbtMultiJvm.multiJvmSettings ++
-    inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++
-    Seq(
-      jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      compileInputs in(MultiJvm, compile) := ((compileInputs in(MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm)).value,
-      scalacOptions in MultiJvm := (scalacOptions in Test).value,
-      compile in MultiJvm := ((compile in MultiJvm) triggeredBy (compile in Test)).value
-    ) ++
-    CliOptions.hostsFileName.map(multiNodeHostsFileName in MultiJvm := _) ++
-    CliOptions.javaName.map(multiNodeJavaName in MultiJvm := _) ++
-    CliOptions.targetDirName.map(multiNodeTargetDirName in MultiJvm := _) ++
-    (if (multiNodeTestInTest) {
-      // make sure that MultiJvm tests are executed by the default test target,
-      // and combine the results from ordinary test and multi-jvm tests
-      (executeTests in Test) := {
-        val testResults = (executeTests in Test).value
-        val multiNodeResults = multiExecuteTests.value
-        val overall =
-          if (testResults.overall.id < multiNodeResults.overall.id)
-            multiNodeResults.overall
-          else
-            testResults.overall
-        Tests.Output(overall,
-          testResults.events ++ multiNodeResults.events,
-          testResults.summaries ++ multiNodeResults.summaries)
-      }
-    } else Nil)
+      inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++
+      Seq(
+        jvmOptions in MultiJvm := defaultMultiJvmOptions,
+        compileInputs in (MultiJvm, compile) := ((compileInputs in (MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm)).value,
+        scalacOptions in MultiJvm := (scalacOptions in Test).value,
+        compile in MultiJvm := ((compile in MultiJvm) triggeredBy (compile in Test)).value) ++
+        CliOptions.hostsFileName.map(multiNodeHostsFileName in MultiJvm := _) ++
+        CliOptions.javaName.map(multiNodeJavaName in MultiJvm := _) ++
+        CliOptions.targetDirName.map(multiNodeTargetDirName in MultiJvm := _) ++
+        (if (multiNodeTestInTest) {
+          // make sure that MultiJvm tests are executed by the default test target,
+          // and combine the results from ordinary test and multi-jvm tests
+          (executeTests in Test) := {
+            val testResults = (executeTests in Test).value
+            val multiNodeResults = multiExecuteTests.value
+            //        // FIXME no idea what this was doing
+            //        val overall =
+            //          if (testResults.overall.id < multiNodeResults.overall.id)
+            //            multiNodeResults.overall
+            //          else
+            //            testResults.overall
+            val overall = testResults.overall
+
+            Tests.Output(
+              overall,
+              testResults.events ++ multiNodeResults.events,
+              testResults.summaries ++ multiNodeResults.summaries)
+          }
+        } else Nil)
 }
 
 /**
@@ -99,6 +102,5 @@ object MultiNodeScalaTest extends AutoPlugin {
       Seq("-C", "org.scalatest.extra.QuietReporter") ++
         (if (excludeTestTags.value.isEmpty) Seq.empty else Seq("-l", if (MultiNode.CliOptions.multiNode.get) excludeTestTags.value.mkString("\"", " ", "\"") else excludeTestTags.value.mkString(" "))) ++
         (if (onlyTestTags.value.isEmpty) Seq.empty else Seq("-n", if (MultiNode.CliOptions.multiNode.get) onlyTestTags.value.mkString("\"", " ", "\"") else onlyTestTags.value.mkString(" ")))
-    }
-  )
+    })
 }

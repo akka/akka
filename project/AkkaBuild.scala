@@ -4,48 +4,47 @@
 
 package akka
 
-import java.io.{FileInputStream, InputStreamReader}
+import java.io.{ FileInputStream, InputStreamReader }
 import java.util.Properties
 
 import akka.TestExtras.JUnitFileReporting
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
-import sbt.TestLogger.wrap
+//import sbt.TestLogger.wrap
 import sbt._
-import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
+// import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore FIXME
 
 object AkkaBuild {
+
+  @deprecated("used to exist in previous sbt") def wrap[T](logger: T): T = logger
 
   val enableMiMa = true
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
   lazy val buildSettings = Dependencies.Versions ++ Seq(
-    organization        := "com.typesafe.akka",
-    version             := "2.5-SNAPSHOT"
-  )
+    organization := "com.typesafe.akka",
+    version := "2.5-SNAPSHOT")
 
-  lazy val rootSettings = parentSettings ++ Release.settings ++
-    UnidocRoot.akkaSettings ++
-    Protobuf.settings ++ Seq(
-      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean
-    )
+  //  lazy val rootSettings = parentSettings ++ Release.settings ++ // FIXME
+  lazy val rootSettings = parentSettings // ++ FIXME
+  //    UnidocRoot.akkaSettings ++
+  //    Protobuf.settings ++ Seq(
+  //      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean
+  //    )
 
   val dontPublishSettings = Seq(
     publishSigned := (),
     publish := (),
-    publishArtifact in Compile := false,
-    whitesourceIgnore := true
+    publishArtifact in Compile := false //, // FIXME
+  // whitesourceIgnore := true // FIXME
   )
 
   val dontPublishDocsSettings = Seq(
-    sources in doc in Compile := List()
-  )
-
+    sources in doc in Compile := List())
 
   lazy val parentSettings = Seq(
-    publishArtifact := false
-  ) ++ dontPublishSettings
+    publishArtifact := false) ++ dontPublishSettings
 
   lazy val mayChangeSettings = Seq(
     description := """|This module of Akka is marked as
@@ -58,8 +57,7 @@ object AkkaBuild {
                       |refine and simplify based on your feedback. Additionally
                       |such a module may be dropped in major releases
                       |without prior deprecation.
-                      |""".stripMargin
-  )
+                      |""".stripMargin)
 
   val (mavenLocalResolver, mavenLocalResolverSettings) =
     System.getProperty("akka.build.M2Dir") match {
@@ -68,19 +66,21 @@ object AkkaBuild {
         // Maven resolver settings
         val resolver = Resolver.file("user-publish-m2-local", new File(path))
         (resolver, Seq(
-          otherResolvers := resolver:: publishTo.value.toList,
-          publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = resolver.name, checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value, overwrite = true)
+          otherResolvers := resolver :: publishTo.value.toList
+        // ,
+        // FIXME seems to need much more things now...
+        // publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = resolver.name, checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value, overwrite = true)
         ))
     }
 
   lazy val resolverSettings = {
     // should we be allowed to use artifacts published to the local maven repository
-    if(System.getProperty("akka.build.useLocalMavenResolver", "false").toBoolean)
+    if (System.getProperty("akka.build.useLocalMavenResolver", "false").toBoolean)
       Seq(resolvers += mavenLocalResolver)
     else Seq.empty
   } ++ {
     // should we be allowed to use artifacts from sonatype snapshots
-    if(System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
+    if (System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
       Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
     else Seq.empty
   } ++ Seq(
@@ -91,29 +91,30 @@ object AkkaBuild {
 
   lazy val defaultSettings = resolverSettings ++
     TestExtras.Filter.settings ++
-    Protobuf.settings ++ Seq(
-    // compile options
-    scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
-    scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
-    scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
-      opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-    // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
-    javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
-    javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
-    javacOptions in doc ++= Seq(),
-    incOptions := incOptions.value.withNameHashing(true),
+    // Protobuf.settings ++ Seq( // FIXME
+    Seq(
+      // compile options
+      scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
+      scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
+      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
+        opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
+      // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
+      javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
+      javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
+      javacOptions in doc ++= Seq(),
+      //    incOptions := incOptions.value.withNameHashing(true), // no idea, it's gone now?
 
-    crossVersion := CrossVersion.binary,
+      crossVersion := CrossVersion.binary,
 
-    ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
+      ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
-    licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-    homepage := Some(url("http://akka.io/")),
+      licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+      homepage := Some(url("http://akka.io/")),
 
-    apiURL := Some(url(s"http://doc.akka.io/api/akka/${version.value}")),
+      apiURL := Some(url(s"http://doc.akka.io/api/akka/${version.value}")),
 
-    initialCommands :=
-      """|import language.postfixOps
+      initialCommands :=
+        """|import language.postfixOps
          |import akka.actor._
          |import ActorDSL._
          |import scala.concurrent._
@@ -129,44 +130,53 @@ object AkkaBuild {
          |implicit val timeout = Timeout(5 seconds)
          |""".stripMargin,
 
-    /**
-     * Test settings
-     */
+      /**
+       * Test settings
+       */
 
-    parallelExecution in Test := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-    logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
+      parallelExecution in Test := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
+      logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
-    // show full stack traces and test case durations
-    testOptions in Test += Tests.Argument("-oDF"),
+      // show full stack traces and test case durations
+      testOptions in Test += Tests.Argument("-oDF"),
 
-    // don't save test output to a file, workaround for https://github.com/sbt/sbt/issues/937
-    testListeners in (Test, test) := {
-      val logger = streams.value.log
+      // FIXME no idea how to fix this
+      // don't save test output to a file, workaround for https://github.com/sbt/sbt/issues/937
+      //    testListeners in (Test, test) := {
+      //      val logger = streams.value.log
+      //
+      //      def contentLogger(log: sbt.Logger, buffered: Boolean): ContentLogger = {
+      //        val blog = new BufferedLogger(FullLogger(log))
+      //        if (buffered) blog.record()
+      //         new ContentLogger(new testing.Logger { // TODO is this the way?
+      //           override def debug(s: String): Unit = blog.debug(s)
+      //           override def error(s: String): Unit = blog.error(s)
+      //           override def ansiCodesSupported(): Boolean = blog.ansiCodesSupported
+      //           override def warn(s: String): Unit = blog.warn(s)
+      //           override def trace(throwable: Throwable): Unit = blog.trace(throwable)
+      //           override def info(s: String): Unit = blog.info(s)
+      //         }, () => blog.stopQuietly())
+      //      }
+      //
+      //      val logTest = {_: TestDefinition => streams.value.log }
+      //      val buffered = logBuffered.value
+      ////      Seq(new TestLogger(new TestLogging(wrap(logger), tdef => contentLogger(logTest(tdef), buffered)))) // FIXME
+      //      Seq(new testing.Logger {
+      //
+      //      })
+      //    },
 
-      def contentLogger(log: sbt.Logger, buffered: Boolean): ContentLogger = {
-        val blog = new BufferedLogger(FullLogger(log))
-        if (buffered) blog.record()
-        new ContentLogger(wrap(blog), () => blog.stopQuietly())
-      }
-
-      val logTest = {_: TestDefinition => streams.value.log }
-      val buffered = logBuffered.value
-      Seq(new TestLogger(new TestLogging(wrap(logger), tdef => contentLogger(logTest(tdef), buffered))))
-    },
-
-    // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
-    // -a Show stack traces and exception class name for AssertionErrors.
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
-  ) ++
-    mavenLocalResolverSettings ++
-    JUnitFileReporting.settings ++
-    docLintingSettings
+      // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
+      // -a Show stack traces and exception class name for AssertionErrors.
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")) ++
+      mavenLocalResolverSettings ++
+      JUnitFileReporting.settings ++
+      docLintingSettings
 
   lazy val docLintingSettings = Seq(
-     javacOptions in compile ++= Seq("-Xdoclint:none"),
-     javacOptions in test ++= Seq("-Xdoclint:none"),
-     javacOptions in doc ++= Seq("-Xdoclint:none")
-   )
+    javacOptions in compile ++= Seq("-Xdoclint:none"),
+    javacOptions in test ++= Seq("-Xdoclint:none"),
+    javacOptions in doc ++= Seq("-Xdoclint:none"))
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._
@@ -181,5 +191,5 @@ object AkkaBuild {
     }
   }
 
-  def majorMinor(version: String): Option[String] ="""\d+\.\d+""".r.findFirstIn(version)
+  def majorMinor(version: String): Option[String] = """\d+\.\d+""".r.findFirstIn(version)
 }

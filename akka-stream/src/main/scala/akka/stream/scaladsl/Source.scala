@@ -162,8 +162,9 @@ final class Source[+Out, +Mat](
   def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
 
   /**
-   * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
+   * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
    */
+  @deprecated("Use `Source.combine` on companion object instead", "2.5.5")
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
@@ -429,7 +430,7 @@ object Source {
   }
 
   /**
-   * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
+   * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit b ⇒
