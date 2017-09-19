@@ -9,6 +9,10 @@ import akka.stream.stage._
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
+import java.util
+import java.util.Collections
+import scala.collection.JavaConverters._
+
 /**
  * Creates shared or single kill switches which can be used to control completion of graphs from the outside.
  *  - The factory ``shared()`` returns a [[SharedKillSwitch]] which provides a [[Graph]] of [[FlowShape]] that can be
@@ -181,6 +185,28 @@ final class UniqueKillSwitch private[stream] (private val promise: Promise[Done]
   override def toString: String = s"SingleKillSwitch($hashCode)"
 }
 
+private[stream] class WeaklyLinkedPromises[T] {
+  private[this] val lock = new Object
+  private[this] val _promises = Collections.newSetFromMap(new util.WeakHashMap[Promise[T], java.lang.Boolean]).asScala
+  private[this] var _completedWith: Option[Try[T]] = None
+
+  def complete(result: Try[T]): Unit = lock.synchronized {
+    if (_completedWith.isEmpty) {
+      _completedWith = Some(result)
+      for (promise ← _promises) promise.tryComplete(result)
+    }
+  }
+
+  def weaklyLinkedFuture(): Future[T] = lock.synchronized {
+    val promise = Promise[T]
+    _completedWith match {
+      case Some(result) ⇒ promise.complete(result)
+      case None         ⇒ _promises += promise
+    }
+    promise.future
+  }
+}
+
 /**
  * A [[SharedKillSwitch]] is a provider for [[Graph]]s of [[FlowShape]] that can be completed or failed from the outside.
  * A [[Graph]] returned by the switch can be materialized arbitrary amount of times: every newly materialized [[Graph]]
@@ -203,7 +229,7 @@ final class UniqueKillSwitch private[stream] (private val promise: Promise[Done]
  * This class is thread-safe, the instance can be passed safely among threads and its methods may be invoked concurrently.
  */
 final class SharedKillSwitch private[stream] (val name: String) extends KillSwitch {
-  private[this] val shutdownPromise = Promise[Done]
+  private[this] val shutdownPromises = new WeaklyLinkedPromises[Done]
   private[this] val _flow: Graph[FlowShape[Any, Any], SharedKillSwitch] = new SharedKillSwitchFlow
 
   /**
@@ -212,7 +238,7 @@ final class SharedKillSwitch private[stream] (val name: String) extends KillSwit
    * case the command is ignored). Subsequent invocations of [[SharedKillSwitch#shutdown()]] and [[SharedKillSwitch#abort()]] will be
    * ignored.
    */
-  def shutdown(): Unit = shutdownPromise.trySuccess(Done)
+  def shutdown(): Unit = shutdownPromises.complete(Success(Done))
 
   /**
    * After calling [[SharedKillSwitch#abort()]] all materialized, running instances of all [[Graph]]s provided by the
@@ -225,7 +251,7 @@ final class SharedKillSwitch private[stream] (val name: String) extends KillSwit
    *
    * @param reason The exception to be used for failing the linked [[Graph]]s
    */
-  def abort(reason: Throwable): Unit = shutdownPromise.tryFailure(reason)
+  def abort(reason: Throwable): Unit = shutdownPromises.complete(Failure(reason))
 
   /**
    * Returns a typed Flow of a requested type that will be linked to this [[SharedKillSwitch]] instance. By invoking
@@ -245,7 +271,7 @@ final class SharedKillSwitch private[stream] (val name: String) extends KillSwit
     override def toString: String = s"SharedKillSwitchFlow(switch: $name)"
 
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, SharedKillSwitch) = {
-      val logic = new KillSwitches.KillableGraphStageLogic(shutdownPromise.future, shape) with InHandler with OutHandler {
+      val logic = new KillSwitches.KillableGraphStageLogic(shutdownPromises.weaklyLinkedFuture, shape) with InHandler with OutHandler {
         setHandler(shape.in, this)
         setHandler(shape.out, this)
 
