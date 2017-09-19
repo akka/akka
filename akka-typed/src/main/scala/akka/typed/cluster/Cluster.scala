@@ -57,7 +57,7 @@ final case class OnSelfUp(subscriber: ActorRef[SelfUp]) extends ClusterStateSubs
 /**
  * @param currentClusterState The cluster state snapshot from when the node became Up.
  */
-case class SelfUp(currentClusterState: CurrentClusterState)
+final case class SelfUp(currentClusterState: CurrentClusterState)
 
 final case class Unsubscribe[T](subscriber: ActorRef[T]) extends ClusterStateSubscription
 final case class GetCurrentState(recipient: ActorRef[CurrentClusterState]) extends ClusterStateSubscription
@@ -114,6 +114,9 @@ final case class Leave(address: Address) extends ClusterCommand
  */
 final case class Down(address: Address) extends ClusterCommand
 
+/**
+ * Akka Typed Cluster API entry point
+ */
 object Cluster extends ExtensionId[Cluster] {
 
   def createExtension(system: ActorSystem[_]): Cluster =
@@ -198,6 +201,10 @@ private[akka] object AdapterClusterImpl {
 
 }
 
+/**
+ * INTERNAL API:
+ */
+@InternalApi
 private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Cluster {
   import AdapterClusterImpl._
 
@@ -228,15 +235,12 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
 @DoNotInherit
 sealed trait Cluster extends Extension {
 
-  import Cluster._
-
   /** Details about this cluster node itself */
   def selfMember: Member
 
   /** Returns true if this cluster instance has be shutdown. */
   def isTerminated: Boolean
 
-  // also, the mutable snapshot feels icky but I guess it simplifies things enough to keep?
   /** Current snapshot state of the cluster. */
   def state: CurrentClusterState
 
