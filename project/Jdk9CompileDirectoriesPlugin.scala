@@ -15,7 +15,7 @@ object Jdk9CompileDirectoriesPlugin extends AutoPlugin {
   override lazy val projectSettings = Seq(
 
     javacOptions in Compile ++= {
-      val opts = javacOptions.value
+      val opts = (javacOptions in Compile).value
       val targetOpts = opts.dropWhile(_ != "-target").take(2)
       
       if (isJDK9 && targetOpts.isEmpty) Seq("-target", "1.8", "-source", "1.8")
