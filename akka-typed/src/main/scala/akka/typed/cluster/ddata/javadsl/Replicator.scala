@@ -26,7 +26,7 @@ object Replicator {
   def behavior(settings: dd.ReplicatorSettings): Behavior[Command[_]] =
     ReplicatorBehavior.behavior(settings).narrow[Command[_]]
 
-  sealed trait Command[A <: ReplicatedData] extends scaladsl.Replicator.Command[A] {
+  trait Command[A <: ReplicatedData] extends scaladsl.Replicator.Command[A] {
     def key: Key[A]
   }
 
@@ -252,6 +252,48 @@ object Replicator {
     def key: Key[A]
     def request: Optional[Any]
     def getRequest: Optional[Any] = request
+  }
+
+  /**
+   * Register a subscriber that will be notified with a [[Changed]] message
+   * when the value of the given `key` is changed. Current value is also
+   * sent as a [[Changed]] message to a new subscriber.
+   *
+   * Subscribers will be notified periodically with the configured `notify-subscribers-interval`,
+   * and it is also possible to send an explicit `FlushChanges` message to
+   * the `Replicator` to notify the subscribers immediately.
+   *
+   * The subscriber will automatically be unregistered if it is terminated.
+   *
+   * If the key is deleted the subscriber is notified with a [[Deleted]]
+   * message.
+   */
+  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command[A]
+  /**
+   * Unregister a subscriber.
+   *
+   * @see [[Replicator.Subscribe]]
+   */
+  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command[A]
+  /**
+   * The data value is retrieved with [[#get]] using the typed key.
+   *
+   * @see [[Replicator.Subscribe]]
+   */
+  final case class Changed[A <: ReplicatedData](key: Key[A])(data: A) {
+    /**
+     * The data value, with correct type.
+     * Scala pattern matching cannot infer the type from the `key` parameter.
+     */
+    def get[T <: ReplicatedData](key: Key[T]): T = {
+      require(key == this.key, "wrong key used, must use contained key")
+      data.asInstanceOf[T]
+    }
+
+    /**
+     * The data value. Use [[#get]] to get the fully typed value.
+     */
+    def dataValue: A = data
   }
 
 }

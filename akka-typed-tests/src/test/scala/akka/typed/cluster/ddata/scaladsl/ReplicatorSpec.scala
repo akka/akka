@@ -20,6 +20,7 @@ import akka.typed.scaladsl.adapter._
 import akka.typed.testkit.TestKitSettings
 import akka.typed.testkit.scaladsl._
 import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.Eventually
 
 object ReplicatorSpec {
 
@@ -32,9 +33,11 @@ object ReplicatorSpec {
   sealed trait ClientCommand
   final case object Increment extends ClientCommand
   final case class GetValue(replyTo: ActorRef[Int]) extends ClientCommand
+  final case class GetCachedValue(replyTo: ActorRef[Int]) extends ClientCommand
   private sealed trait InternalMsg extends ClientCommand
   private case class InternalUpdateResponse[A <: ReplicatedData](rsp: Replicator.UpdateResponse[A]) extends InternalMsg
   private case class InternalGetResponse[A <: ReplicatedData](rsp: Replicator.GetResponse[A]) extends InternalMsg
+  private case class InternalChanged[A <: ReplicatedData](chg: Replicator.Changed[A]) extends InternalMsg
 
   val Key = GCounterKey("counter")
 
@@ -46,33 +49,51 @@ object ReplicatorSpec {
       val getResponseAdapter: ActorRef[Replicator.GetResponse[GCounter]] =
         ctx.spawnAdapter(InternalGetResponse.apply)
 
-      Actor.immutable[ClientCommand] { (ctx, msg) ⇒
-        msg match {
-          case Increment ⇒
-            replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal)(_ + 1)(updateResponseAdapter)
-            Actor.same
+      val changedAdapter: ActorRef[Replicator.Changed[GCounter]] =
+        ctx.spawnAdapter(InternalChanged.apply)
 
-          case GetValue(replyTo) ⇒
-            replicator ! Replicator.Get(Key, Replicator.ReadLocal, Some(replyTo))(getResponseAdapter)
-            Actor.same
+      replicator ! Replicator.Subscribe(Key, changedAdapter)
 
-          case internal: InternalMsg ⇒ internal match {
-            case InternalUpdateResponse(_) ⇒ Actor.same // ok
-
-            case InternalGetResponse(rsp @ Replicator.GetSuccess(Key, Some(replyTo: ActorRef[Int] @unchecked))) ⇒
-              val value = rsp.get(Key).value.toInt
-              replyTo ! value
+      def behavior(cachedValue: Int): Behavior[ClientCommand] = {
+        Actor.immutable[ClientCommand] { (ctx, msg) ⇒
+          msg match {
+            case Increment ⇒
+              replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal)(_ + 1)(updateResponseAdapter)
               Actor.same
 
-            case InternalGetResponse(rsp) ⇒
-              Actor.unhandled // not dealing with failures
+            case GetValue(replyTo) ⇒
+              replicator ! Replicator.Get(Key, Replicator.ReadLocal, Some(replyTo))(getResponseAdapter)
+              Actor.same
+
+            case GetCachedValue(replyTo) ⇒
+              replicator ! Replicator.Get(Key, Replicator.ReadLocal, Some(replyTo))(getResponseAdapter)
+              Actor.same
+
+            case internal: InternalMsg ⇒ internal match {
+              case InternalUpdateResponse(_) ⇒ Actor.same // ok
+
+              case InternalGetResponse(rsp @ Replicator.GetSuccess(Key, Some(replyTo: ActorRef[Int] @unchecked))) ⇒
+                val value = rsp.get(Key).value.toInt
+                replyTo ! value
+                Actor.same
+
+              case InternalGetResponse(rsp) ⇒
+                Actor.unhandled // not dealing with failures
+
+              case InternalChanged(chg @ Replicator.Changed(Key)) ⇒
+                val value = chg.get(Key).value.intValue
+                behavior(value)
+            }
           }
         }
       }
+
+      behavior(cachedValue = 0)
     }
+
 }
 
-class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) {
+class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) with Eventually {
   import ReplicatorSpec._
 
   trait RealTests extends StartSupport {
@@ -81,16 +102,32 @@ class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) {
     val settings = ReplicatorSettings(system)
     implicit val cluster = Cluster(system.toUntyped)
 
-    def `API prototype`(): Unit = {
-
+    def `have API for Update and Get`(): Unit = {
       val replicator = start(Replicator.behavior(settings))
-
       val c = start(client(replicator))
 
       val probe = TestProbe[Int]
       c ! Increment
       c ! GetValue(probe.ref)
       probe.expectMsg(1)
+    }
+
+    def `have API for Subscribe`(): Unit = {
+      val replicator = start(Replicator.behavior(settings))
+      val c = start(client(replicator))
+
+      val probe = TestProbe[Int]
+      c ! Increment
+      c ! Increment
+      eventually {
+        c ! GetCachedValue(probe.ref)
+        probe.expectMsg(2)
+      }
+      c ! Increment
+      eventually {
+        c ! GetCachedValue(probe.ref)
+        probe.expectMsg(3)
+      }
     }
 
   }
