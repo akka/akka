@@ -3,7 +3,7 @@
  */
 package akka.typed.cluster
 
-import akka.actor.Address
+import akka.actor.{ Address, ExtendedActorSystem }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState, MemberUp }
 import akka.cluster._
@@ -210,6 +210,7 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
 
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted actor systems can be used for cluster features")
   private val untypedSystem = ActorSystemAdapter.toUntyped(system)
+  private def extendedUntyped = untypedSystem.asInstanceOf[ExtendedActorSystem]
   private val adaptedCluster = akka.cluster.Cluster(untypedSystem)
 
   def selfMember =
@@ -220,12 +221,10 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
   def isTerminated = adaptedCluster.isTerminated
   def state = adaptedCluster.state
 
-  // TODO arbitrary timeout here because systemActorOf returns future ref and
-  // ActorRef(future-ref) can only work on adapted untyped actors
-  // put it in config instead? or figure out way around futures
-  private implicit val timeout: Timeout = 5.seconds
-  lazy val subscriptions = Await.result(system.systemActorOf(subscriptionsBehavior(adaptedCluster), "cluster-state-subscriptions"), 5.seconds)
-  lazy val manager = Await.result(system.systemActorOf(managerBehavior(adaptedCluster), "cluster-command-manager"), 5.seconds)
+  override lazy val subscriptions: ActorRef[ClusterStateSubscription] = extendedUntyped.systemActorOf(
+    PropsAdapter(subscriptionsBehavior(adaptedCluster)), "cluster-state-subscriptions")
+  override lazy val manager: ActorRef[ClusterCommand] = extendedUntyped.systemActorOf(
+    PropsAdapter(managerBehavior(adaptedCluster)), "cluster-command-manager")
 
 }
 
