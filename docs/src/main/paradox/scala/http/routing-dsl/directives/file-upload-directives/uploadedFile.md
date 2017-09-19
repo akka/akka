@@ -7,10 +7,10 @@
 ## Description
 
 Streams the contents of a file uploaded as a multipart form into a temporary file on disk and provides the file and
-metadata about the upload as extracted value.
+metadata about the upload.
 
-If there is an error writing to disk the request will be failed with the thrown exception, if there is no field
-with the given name the request will be rejected, if there are multiple file parts with the same name, the first
+If there is an error writing to disk the request will be failed with the thrown exception. If there is no field
+with the given name the request will be rejected. If there are multiple file parts with the same name, the first
 one will be used and the subsequent ones ignored.
 
 @@@ note

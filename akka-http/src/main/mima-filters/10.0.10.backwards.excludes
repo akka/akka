@@ -1,0 +1,6 @@
+# Mima filters needed to check newer versions against 10.0.10
+
+# Issue #1033 Add multiple file upload directive
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FileUploadDirectives.fileUploadAll")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FileUploadDirectives.storeUploadedFile")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FileUploadDirectives.storeUploadedFiles")

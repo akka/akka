@@ -1,4 +1,5 @@
-# uploadedFile
+<a id="storeuploadedfile-java"></a>
+# storeUploadedFile
 
 ## Description
 
@@ -11,10 +12,10 @@ one will be used and the subsequent ones ignored.
 
 @@@ note
 This directive will stream contents of the request into a file, however one can not start processing these
-until the file has been written completely. For streaming APIs it is preferred to use the @ref[fileUpload](fileUpload.md)
+until the file has been written completely. For streaming APIs it is preferred to use the @ref[fileUpload](fileUpload.md#fileupload-java)
 directive, as it allows for streaming handling of the incoming data bytes.
 @@@
 
 ## Example
 
-@@snip [FileUploadDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FileUploadDirectivesExamplesTest.java) { #uploadedFile }
+@@snip [FileUploadDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FileUploadDirectivesExamplesTest.java) { #storeUploadedFile }
