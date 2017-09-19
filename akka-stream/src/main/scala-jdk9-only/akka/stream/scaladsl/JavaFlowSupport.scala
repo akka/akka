@@ -22,7 +22,7 @@ object JavaFlowSupport {
   import JavaFlowAndRsConverters.Implicits._
 
   /**
-   * [[akka.stream.javadsl.Source]] factories operating with `java.util.concurrent.Flow.*` interfaces.
+   * [[akka.stream.scaladsl.Source]] factories operating with `java.util.concurrent.Flow.*` interfaces.
    */
   object Source {
 
@@ -51,7 +51,7 @@ object JavaFlowSupport {
   }
 
   /**
-   * [[akka.stream.javadsl.Flow]] factories operating with `java.util.concurrent.Flow.*` interfaces.
+   * [[akka.stream.scaladsl.Flow]] factories operating with `java.util.concurrent.Flow.*` interfaces.
    */
   object Flow {
 
@@ -93,7 +93,7 @@ object JavaFlowSupport {
   }
 
   /**
-   * [[akka.stream.javadsl.Sink]] factories operating with `java.util.concurrent.Flow.*` interfaces.
+   * [[akka.stream.scaladsl.Sink]] factories operating with `java.util.concurrent.Flow.*` interfaces.
    */
   object Sink {
     /**

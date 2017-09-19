@@ -13,7 +13,7 @@ import akka.stream.impl.JavaFlowAndRsConverters;
  * For use only with `JDK 9+`.
  * <p>
  * Provides support for `java.util.concurrent.Flow.*` interfaces which mirror the Reactive Streams
- * interfaces from `org.reactivestreams`. See <http//www.reactive-streams.org/>(reactive-streams.org).
+ * interfaces from `org.reactivestreams`. See <a href="http//www.reactive-streams.org/">reactive-streams.org</a>.
  */
 public final class JavaFlowSupport {
 
@@ -23,20 +23,23 @@ public final class JavaFlowSupport {
     throw new RuntimeException("No instances allowed!");
   }
 
+  /**
+   * {@link akka.stream.javadsl.Flow]] factories operating with {@code java.util.concurrent.Flow.*} interfaces.
+   */
   public static final class Source {
     private Source() {
       throw new RuntimeException("No instances allowed!");
     }
 
     /**
-     * Helper to create <<Source>> from <<java.util.concurrent.Flow.Publisher>>.
+     * Helper to create {@code Source} from {@link java.util.concurrent.Flow.Publisher}.
      * <p>
      * Construct a transformation starting with given publisher. The transformation steps
-     * are executed by a series of <<java.util.concurrent.Flow.Processor>> instances
+     * are executed by a series of {@link java.util.concurrent.Flow.Processor} instances
      * that mediate the flow of elements downstream and the propagation of
      * back-pressure upstream.
      * <p>
-     * See also <<Source.fromPublisher>> if wanting to integrate with <<org.reactivestreams.Publisher>> instead
+     * See also {@code Source.fromPublisher} if wanting to integrate with {@link org.reactivestreams.Publisher} instead
      * (which carries the same semantics, however existed before RS's inclusion in Java 9).
      */
     public static <T> akka.stream.javadsl.Source<T, NotUsed> fromPublisher(java.util.concurrent.Flow.Publisher<T> publisher) {
@@ -44,9 +47,9 @@ public final class JavaFlowSupport {
     }
 
     /**
-     * Creates a `Source` that is materialized as a <<java.util.concurrent.Flow.Subscriber>>
+     * Creates a {@code Source} that is materialized as a {@link java.util.concurrent.Flow.Subscriber}.
      * <p>
-     * See also <<Source.asSubscriber>> if wanting to integrate with <<org.reactivestreams.Subscriber>> instead
+     * See also {@code Source.asSubscriber} if wanting to integrate with {@link org.reactivestreams.Subscriber} instead
      * (which carries the same semantics, however existed before RS's inclusion in Java 9).
      */
     public static <T> akka.stream.javadsl.Source<T, java.util.concurrent.Flow.Subscriber<T>> asSubscriber() {
@@ -54,6 +57,9 @@ public final class JavaFlowSupport {
     }
   }
 
+  /**
+   * {@link akka.stream.javadsl.Flow]] factories operating with {@code java.util.concurrent.Flow.*} interfaces.
+   */
   public static final class Flow {
     private Flow() {
       throw new RuntimeException("No instances allowed!");
@@ -83,11 +89,11 @@ public final class JavaFlowSupport {
     }
 
     /**
-     * Converts this Flow to a <<RunnableGraph>> that materializes to a Reactive Streams <<java.util.concurrent.Flow.Processor>>
+     * Converts this Flow to a {@code RunnableGraph} that materializes to a Reactive Streams {@link java.util.concurrent.Flow.Processor}
      * which implements the operations encapsulated by this Flow. Every materialization results in a new Processor
-     * instance, i.e. the returned <<RunnableGraph>> is reusable.
+     * instance, i.e. the returned {@code RunnableGraph} is reusable.
      *
-     * @return A <<RunnableGraph>> that materializes to a Processor when run() is called on it.
+     * @return A {@code RunnableGraph} that materializes to a {@code Processor} when {@code run()} is called on it.
      */
     public static <In, Out, Mat> akka.stream.javadsl.RunnableGraph<java.util.concurrent.Flow.Processor<In, Out>> toProcessor(akka.stream.javadsl.Flow<In, Out, Mat> flow) {
       final akka.stream.javadsl.Source<In, java.util.concurrent.Flow.Subscriber<In>> source = JavaFlowSupport.Source.<In>asSubscriber();
@@ -120,15 +126,15 @@ public final class JavaFlowSupport {
     }
 
     /**
-     * A `Sink` that materializes into a <<java.util.concurrent.Flow.Publisher>>.
+     * A `Sink` that materializes into a {@link java.util.concurrent.Flow.Publisher}.
      * <p>
-     * If `fanout` is `WITH_FANOUT`, the materialized `Publisher` will support multiple `Subscriber`s and
-     * the size of the `inputBuffer` configured for this stage becomes the maximum number of elements that
-     * the fastest <<java.util.concurrent.Flow.Subscriber>> can be ahead of the slowest one before slowing
+     * If {@code fanout} is {@code WITH_FANOUT}, the materialized {@code Publisher} will support multiple {@code Subscriber}s and
+     * the size of the {@code inputBuffer} configured for this stage becomes the maximum number of elements that
+     * the fastest {@link java.util.concurrent.Flow.Subscriber} can be ahead of the slowest one before slowing
      * the processing down due to back pressure.
      * <p>
-     * If `fanout` is `WITHOUT_FANOUT` then the materialized `Publisher` will only support a single `Subscriber` and
-     * reject any additional `Subscriber`s.
+     * If {@code fanout} is {@code WITHOUT_FANOUT} then the materialized {@code Publisher} will only support a single {@code Subscriber} and
+       * reject any additional {@code Subscriber}s.
      */
     public static <T> akka.stream.javadsl.Sink<T, java.util.concurrent.Flow.Publisher<T>> asPublisher(AsPublisher fanout) {
       return akka.stream.javadsl.Sink.<T>asPublisher(fanout).mapMaterializedValue(JavaFlowAndRsConverters::asJava);
