@@ -16,8 +16,8 @@ object Jdk9CompileDirectoriesPlugin extends AutoPlugin {
 
     javacOptions in Compile ++= {
       // making sure we're really targeting 1.8
-      if (isJDK9) Seq("-target", "1.8", "-source", "1.8")
-      else Seq.empty[String]
+      if (isJDK9) Seq("-target", "1.8", "-source", "1.8", "-Xdoclint:none")
+      else Seq("-Xdoclint:none")
     },
     
     unmanagedSourceDirectories in Compile ++= {

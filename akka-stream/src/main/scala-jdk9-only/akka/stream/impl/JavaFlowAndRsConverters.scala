@@ -11,8 +11,11 @@ import org.{ reactivestreams => rs }
 import JavaFlowAndRsConverters.Implicits._
 
 /**
- * Provides converters between Reactive Streams (reactive-streams.org) and their Java 9+ counter-parts,
- * defined in `java.util.concurrent.Flow.*`.
+ * INTERNAL API: Provides converters between Reactive Streams (reactive-streams.org) and their Java 9+ counter-parts,
+ * defined in `java.util.concurrent.Flow.*`. This API is internal because Reactive Streams will ship with such
+ * adapters itself at some point, and we'd not want to duplicate that effort for users to be confused about which ones 
+ * to use. These adapters are used internally by Akka Streams to convert between the standards but you should not touch 
+ * them directly - use thr `JavaFlowSupport` classes instead.
  * 
  * Please note that either of these types are designed for *inter-op* and usually should not be used directly 
  * in applications. The intended use case is for shared libraries, like database drivers or similar to provide
@@ -23,7 +26,8 @@ import JavaFlowAndRsConverters.Implicits._
  * Please see https://github.com/reactive-streams/reactive-streams-jvm to learn more about the specification,
  * and TCK that is available to verify an implementation is a valid implementation.
  */
-object JavaFlowAndRsConverters {
+@InternalApi
+private[akka] object JavaFlowAndRsConverters {
 
   /** Adds `asJava` and `asRs` enrichment methods to Reactive Streams and j.u.c.Flow types. */
   object Implicits {
