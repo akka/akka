@@ -15,9 +15,11 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
   import ClusterSingletonProxySpec._
 
   val seed = new ActorSys()
-  seed.cluster.join(seed.cluster.selfAddress)
 
-  val testSystems = (0 until 4).map(_ ⇒ new ActorSys(joinTo = Some(seed.cluster.selfAddress))) :+ seed
+  val testSystems = {
+    val joiners = (0 until 4).map(n ⇒ new ActorSys(joinTo = Some(seed.cluster.selfAddress)))
+    joiners :+ seed
+  }
 
   "The cluster singleton proxy" must {
     "correctly identify the singleton" in {
@@ -35,7 +37,7 @@ object ClusterSingletonProxySpec {
     extends TestKit(ActorSystem(name, ConfigFactory.parseString(cfg))) {
 
     val cluster = Cluster(system)
-    joinTo.foreach(address ⇒ cluster.join(address))
+    cluster.join(joinTo.getOrElse(cluster.selfAddress))
 
     cluster.registerOnMemberUp {
       system.actorOf(
@@ -54,17 +56,14 @@ object ClusterSingletonProxySpec {
       val probe = TestProbe()
       probe.send(proxy, msg)
       // 25 seconds to make sure the singleton was started up
-      probe.expectMsg(25.seconds, "Got " + msg)
+      probe.expectMsg(25.seconds, s"while testing the proxy from ${cluster.selfAddress}", "Got " + msg)
     }
   }
 
   val cfg = """
     akka {
       loglevel = INFO
-      cluster {
-        auto-down-unreachable-after = 10s
-        min-nr-of-members = 2
-      }
+      cluster.jmx.enabled = off
       actor.provider = "cluster"
       remote {
         log-remote-lifecycle-events = off
@@ -86,6 +85,7 @@ object ClusterSingletonProxySpec {
 
     def receive: Actor.Receive = {
       case msg ⇒
+        log.info(s"Got $msg")
         sender() ! "Got " + msg
     }
   }
