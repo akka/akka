@@ -276,7 +276,7 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
  * Not intended for user extension.
  */
 @DoNotInherit
-sealed trait Cluster extends Extension {
+sealed abstract class Cluster extends Extension {
 
   /** Details about this cluster node itself */
   def selfMember: Member

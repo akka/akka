@@ -226,7 +226,7 @@ class TestProbe[M](name: String)(implicit val system: ActorSystem[_], val settin
   def expectMsgType[T <: M](max: FiniteDuration)(implicit t: ClassTag[T]): T =
     expectMsgClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
 
-  private def expectMsgClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
+  private[akka] def expectMsgClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
     val o = receiveOne(max)
     assert(o != null, s"timeout ($max) during expectMsgClass waiting for $c")
     assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
