@@ -30,9 +30,9 @@ class MiscMessageSerializerSpec extends TypedSpec(MiscMessageSerializerSpec.conf
 
     def `must serialize and deserialize typed actor refs `(): Unit = {
 
-      val ref = (adaptedSystem ? Create(Actor.empty[Unit], "some-actor")).futureValue
+      val ref = (system ? Create(Actor.empty[Unit], "some-actor")).futureValue
 
-      val serialization = SerializationExtension(ActorSystemAdapter.toUntyped(adaptedSystem))
+      val serialization = SerializationExtension(ActorSystemAdapter.toUntyped(system))
 
       val serializer = serialization.findSerializerFor(ref) match {
         case s: SerializerWithStringManifest ⇒ s
