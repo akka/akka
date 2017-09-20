@@ -8,6 +8,9 @@ import akka.typed.ActorSystem
 import akka.typed.scaladsl.adapter._
 import com.typesafe.config.Config
 
+/**
+ * @see [[akka.cluster.ddata.ReplicatorSettings]].
+ */
 object ReplicatorSettings {
   /**
    * Create settings from the default configuration

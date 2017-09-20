@@ -81,7 +81,7 @@ public class ReplicatorTest extends JUnitSuite {
   static final Key<GCounter> Key = GCounterKey.create("counter");
 
   static class Client extends MutableBehavior<ClientCommand> {
-    private final ActorRef<Replicator.Command<?>> replicator;
+    private final ActorRef<Replicator.Command> replicator;
     private final Cluster node;
     final ActorRef<Replicator.UpdateResponse<GCounter>> updateResponseAdapter;
     final ActorRef<Replicator.GetResponse<GCounter>> getResponseAdapter;
@@ -89,7 +89,7 @@ public class ReplicatorTest extends JUnitSuite {
 
     private int cachedValue = 0;
 
-    public Client(ActorRef<Command<?>> replicator, Cluster node, ActorContext<ClientCommand> ctx) {
+    public Client(ActorRef<Command> replicator, Cluster node, ActorContext<ClientCommand> ctx) {
       this.replicator = replicator;
       this.node = node;
 
@@ -102,7 +102,7 @@ public class ReplicatorTest extends JUnitSuite {
       replicator.tell(new Replicator.Subscribe<>(Key, changedAdapter));
     }
 
-    public static Behavior<ClientCommand> create(ActorRef<Command<?>> replicator, Cluster node) {
+    public static Behavior<ClientCommand> create(ActorRef<Command> replicator, Cluster node) {
       return Actor.mutable(ctx -> new Client(replicator, node, ctx));
     }
 
@@ -168,7 +168,7 @@ public class ReplicatorTest extends JUnitSuite {
   public void shouldHaveApiForUpdateAndGet() {
     TestKit probe = new TestKit(system);
     akka.cluster.ddata.ReplicatorSettings settings = ReplicatorSettings.create(typedSystem());
-    ActorRef<Replicator.Command<?>> replicator =
+    ActorRef<Replicator.Command> replicator =
         Adapter.spawnAnonymous(system, Replicator.behavior(settings));
     ActorRef<ClientCommand> client =
         Adapter.spawnAnonymous(system, Client.create(replicator, Cluster.get(system)));
@@ -182,7 +182,7 @@ public class ReplicatorTest extends JUnitSuite {
   public void shouldHaveApiForSubscribe() {
     TestKit probe = new TestKit(system);
     akka.cluster.ddata.ReplicatorSettings settings = ReplicatorSettings.create(typedSystem());
-    ActorRef<Replicator.Command<?>> replicator =
+    ActorRef<Replicator.Command> replicator =
         Adapter.spawnAnonymous(system, Replicator.behavior(settings));
     ActorRef<ClientCommand> client =
         Adapter.spawnAnonymous(system, Client.create(replicator, Cluster.get(system)));
