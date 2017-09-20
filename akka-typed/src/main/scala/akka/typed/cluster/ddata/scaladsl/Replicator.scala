@@ -37,6 +37,14 @@ object Replicator {
 
   trait Command
 
+  object Get {
+    /**
+     * Convenience for `ask`.
+     */
+    def apply[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency): ActorRef[GetResponse[A]] ⇒ Get[A] =
+      (replyTo ⇒ Get(key, consistency, replyTo, None))
+  }
+
   /**
    * Send this message to the local `Replicator` to retrieve a data value for the
    * given `key`. The `Replicator` will reply with one of the [[GetResponse]] messages.
@@ -80,6 +88,13 @@ object Replicator {
       key: Key[A], initial: A, writeConsistency: WriteConsistency, replyTo: ActorRef[UpdateResponse[A]],
       request: Option[Any] = None)(modify: A ⇒ A): Update[A] =
       Update(key, writeConsistency, replyTo, request)(modifyWithInitial(initial, modify))
+
+    /**
+     * Convenience for `ask`.
+     */
+    def apply[A <: ReplicatedData](key: Key[A], initial: A,
+                                   writeConsistency: WriteConsistency)(modify: A ⇒ A): ActorRef[UpdateResponse[A]] ⇒ Update[A] =
+      (replyTo ⇒ Update(key, writeConsistency, replyTo, None)(modifyWithInitial(initial, modify)))
 
     private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A ⇒ A): Option[A] ⇒ A = {
       case Some(data) ⇒ modify(data)
@@ -174,6 +189,13 @@ object Replicator {
    */
   type Changed[A <: ReplicatedData] = dd.Replicator.Changed[A]
 
+  object Delete {
+    /**
+     * Convenience for `ask`.
+     */
+    def apply[A <: ReplicatedData](key: Key[A], consistency: WriteConsistency): ActorRef[DeleteResponse[A]] ⇒ Delete[A] =
+      (replyTo ⇒ Delete(key, consistency, replyTo, None))
+  }
   /**
    * Send this message to the local `Replicator` to delete a data value for the
    * given `key`. The `Replicator` will reply with one of the [[DeleteResponse]] messages.
@@ -190,6 +212,14 @@ object Replicator {
   type DeleteSuccess[A <: ReplicatedData] = dd.Replicator.DeleteSuccess[A]
   type ReplicationDeleteFailure[A <: ReplicatedData] = dd.Replicator.ReplicationDeleteFailure[A]
   type DataDeleted[A <: ReplicatedData] = dd.Replicator.DataDeleted[A]
+
+  object GetReplicaCount {
+    /**
+     * Convenience for `ask`.
+     */
+    def apply(): ActorRef[ReplicaCount] ⇒ GetReplicaCount =
+      (replyTo ⇒ GetReplicaCount(replyTo))
+  }
 
   /**
    * Get current number of replicas, including the local replica.
