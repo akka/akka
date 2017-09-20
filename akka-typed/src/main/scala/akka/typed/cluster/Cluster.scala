@@ -3,19 +3,17 @@
  */
 package akka.typed.cluster
 
-import akka.actor.{ Address, ExtendedActorSystem }
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState, MemberEvent }
+import akka.actor.{Address, ExtendedActorSystem}
+import akka.annotation.{DoNotInherit, InternalApi}
+import akka.cluster.ClusterEvent.{ClusterDomainEvent, CurrentClusterState, MemberEvent}
 import akka.cluster._
-import akka.cluster.protobuf.msg.ClusterMessages
 import akka.japi.Util
 import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.adapter._
-import akka.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, PostStop, Terminated }
+import akka.typed.{ActorRef, ActorSystem, Extension, ExtensionId, Terminated}
 
 import scala.collection.immutable
-import scala.reflect.ClassTag
 
 /**
  * Messages for subscribing to changes in the cluster state
@@ -24,11 +22,6 @@ import scala.reflect.ClassTag
  */
 @DoNotInherit
 sealed trait ClusterStateSubscription
-
-object Subscribe {
-  def apply[A <: ClusterDomainEvent: ClassTag](subscriber: ActorRef[A]) =
-    new Subscribe[A](subscriber, implicitly[ClassTag[A]].runtimeClass.asInstanceOf[Class[A]])
-}
 
 /**
  * Subscribe to cluster state changes. The initial state of the cluster will be sent as
@@ -90,8 +83,7 @@ sealed trait ClusterCommand
 final case class Join(address: Address) extends ClusterCommand
 
 /**
- * Scala API:
- * Join the specified seed nodes without defining them in config.
+ * Scala API: Join the specified seed nodes without defining them in config.
  * Especially useful from tests when Addresses are unknown before startup time.
  *
  * An actor system can only join a cluster once. Additional attempts will be ignored.
@@ -101,9 +93,7 @@ final case class Join(address: Address) extends ClusterCommand
 final case class JoinSeedNodes(seedNodes: immutable.Seq[Address]) extends ClusterCommand {
 
   /**
-   * Java API:
-   *
-   * Join the specified seed nodes without defining them in config.
+   * Java API: Join the specified seed nodes without defining them in config.
    * Especially useful from tests when Addresses are unknown before startup time.
    *
    * An actor system can only join a cluster once. Additional attempts will be ignored.
@@ -147,6 +137,7 @@ object Cluster extends ExtensionId[Cluster] {
 
   def createExtension(system: ActorSystem[_]): Cluster = new AdapterClusterImpl(system)
 
+  def get(system: ActorSystem[_]): Cluster = apply(system)
 }
 
 /**

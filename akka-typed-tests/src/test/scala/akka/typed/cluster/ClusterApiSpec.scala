@@ -38,15 +38,6 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
   val clusterNode1 = Cluster(adaptedSystem)
   val untypedSystem1 = ActorSystemAdapter.toUntyped(adaptedSystem)
 
-  def compileOnlyApiChecks(): Unit = {
-    val subscriber: ActorRef[MemberEvent] = ???
-    // all events based on actorref type
-    clusterNode1.subscriptions ! Subscribe(subscriber)
-    // less events than type accepts
-    clusterNode1.subscriptions ! Subscribe(subscriber, classOf[MemberUp])
-
-  }
-
   object `A typed cluster` {
 
     def `01 must join a cluster and observe events from both sides`() = {
@@ -104,7 +95,6 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
           clusterNode2.selfMember.status should ===(MemberStatus.Removed)
         )
         node2Probe.expectMsg(SelfRemoved)
-        println("got active self removed, sending second")
 
         // subscribing to SelfRemoved when already removed yields immediate message back
         clusterNode2.subscriptions ! OnSelfRemoved(node2Probe.ref)

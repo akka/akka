@@ -99,6 +99,10 @@ object ClusterSingleton extends ExtensionId[ClusterSingleton] {
 
   override def createExtension(system: ActorSystem[_]): ClusterSingleton = new ClusterSingletonImpl(system)
 
+  /**
+   * Java API:
+   */
+  def get(system: ActorSystem[_]): ClusterSingleton = apply(system)
 }
 
 /**
