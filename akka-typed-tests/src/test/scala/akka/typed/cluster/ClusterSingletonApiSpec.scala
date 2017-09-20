@@ -107,10 +107,10 @@ class ClusterSingletonApiSpec extends TypedSpec(ClusterSingletonApiSpec.config) 
 
     def `01 must be accessible from two nodes in a cluster`() = {
       val node1UpProbe = TestProbe[SelfUp]()(adaptedSystem, implicitly[TestKitSettings])
-      clusterNode1.subscriptions ! OnSelfUp(node1UpProbe.ref)
+      clusterNode1.subscriptions ! Subscribe(node1UpProbe.ref, classOf[SelfUp])
 
       val node2UpProbe = TestProbe[SelfUp]()(adaptedSystem2, implicitly[TestKitSettings])
-      clusterNode1.subscriptions ! OnSelfUp(node2UpProbe.ref)
+      clusterNode1.subscriptions ! Subscribe(node2UpProbe.ref, classOf[SelfUp])
 
       clusterNode1.manager ! Join(clusterNode1.selfMember.address)
       clusterNode2.manager ! Join(clusterNode1.selfMember.address)

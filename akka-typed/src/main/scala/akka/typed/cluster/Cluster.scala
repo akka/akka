@@ -27,9 +27,6 @@ sealed trait ClusterStateSubscription
  * Subscribe to cluster state changes. The initial state of the cluster will be sent as
  * a "replay" of the subscribed events.
  *
- * If all you are interested in is to react on this node becoming a part of the cluster,
- * see [[OnSelfUp]]
- *
  * @param subscriber A subscriber that will receive events until it is unsubscribed or stops
  * @param eventClass The type of events to subscribe to, can be individual event types such as
  *                   `ReachabilityEvent` or one of the common supertypes, such as `MemberEvent` to get
@@ -44,24 +41,18 @@ final case class Subscribe[A <: ClusterDomainEvent](
  * cancelled. If the node is already up the event is also sent to the subscriber. If the node was up
  * but is no more because it left or is leaving the cluster, no event is sent and the subscription
  * request is ignored.
+ *
+ * Note: Only emitted for the typed cluster.
  */
-final case class OnSelfUp(subscriber: ActorRef[SelfUp]) extends ClusterStateSubscription
-
-/**
- * @param currentClusterState The cluster state snapshot from when the node became Up.
- */
-final case class SelfUp(currentClusterState: CurrentClusterState)
+final case class SelfUp(currentClusterState: CurrentClusterState) extends ClusterDomainEvent
 
 /**
  * Subscribe to this node being removed from the cluster. If the node was already removed from the cluster
  * when this subscription is created it will be responded to immediately from the subscriptions actor.
+ *
+ * Note: Only emitted for the typed cluster.
  */
-final case class OnSelfRemoved(subscriber: ActorRef[SelfRemoved]) extends ClusterStateSubscription
-
-/**
- * @param previousStatus The state the node had before it was removed
- */
-final case class SelfRemoved(previousStatus: MemberStatus)
+final case class SelfRemoved(previousStatus: MemberStatus) extends ClusterDomainEvent
 
 final case class Unsubscribe[T](subscriber: ActorRef[T]) extends ClusterStateSubscription
 final case class GetCurrentState(recipient: ActorRef[CurrentClusterState]) extends ClusterStateSubscription
@@ -183,15 +174,7 @@ private[akka] object AdapterClusterImpl {
     Actor.immutable[AnyRef] { (ctx, msg) ⇒
 
       msg match {
-        case Subscribe(subscriber, eventClass) ⇒
-          adaptedCluster.subscribe(subscriber.toUntyped, initialStateMode = ClusterEvent.initialStateAsEvents, eventClass)
-          Actor.same
-
-        case Unsubscribe(subscriber) ⇒
-          adaptedCluster.unsubscribe(subscriber.toUntyped)
-          Actor.same
-
-        case OnSelfUp(subscriber) ⇒
+        case Subscribe(subscriber: ActorRef[SelfUp] @unchecked, clazz) if clazz == classOf[SelfUp] ⇒
           seenState match {
             case Up ⇒ subscriber ! SelfUp(adaptedCluster.state)
             case BeforeUp ⇒
@@ -203,11 +186,19 @@ private[akka] object AdapterClusterImpl {
           }
           Actor.same
 
-        case OnSelfRemoved(subscriber) ⇒
+        case Subscribe(subscriber: ActorRef[SelfRemoved] @unchecked, clazz) if clazz == classOf[SelfRemoved] ⇒
           seenState match {
             case BeforeUp | Up ⇒ removedSubscribers = subscriber :: removedSubscribers
             case Removed(s)    ⇒ subscriber ! SelfRemoved(s)
           }
+          Actor.same
+
+        case Subscribe(subscriber, eventClass) ⇒
+          adaptedCluster.subscribe(subscriber.toUntyped, initialStateMode = ClusterEvent.initialStateAsEvents, eventClass)
+          Actor.same
+
+        case Unsubscribe(subscriber) ⇒
+          adaptedCluster.unsubscribe(subscriber.toUntyped)
           Actor.same
 
         case GetCurrentState(sender) ⇒

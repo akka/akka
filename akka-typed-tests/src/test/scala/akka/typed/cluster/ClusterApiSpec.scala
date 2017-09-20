@@ -66,11 +66,11 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
         )
 
         // subscribing to OnSelfUp when already up
-        clusterNode1.subscriptions ! OnSelfUp(node1Probe.ref)
+        clusterNode1.subscriptions ! Subscribe(node1Probe.ref, classOf[SelfUp])
         node1Probe.expectMsgType[SelfUp]
 
         // selfMember update and on up subscription on node 2 when joining
-        clusterNode2.subscriptions ! OnSelfUp(node2Probe.ref)
+        clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfUp])
         clusterNode2.manager ! Join(clusterNode1.selfMember.address)
         node2Probe.awaitAssert(
           clusterNode2.selfMember.status should ===(MemberStatus.Up)
@@ -82,7 +82,7 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
         node1Probe.expectMsgType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
 
         // OnSelfRemoved and subscription events around node2 leaving
-        clusterNode2.subscriptions ! OnSelfRemoved(node2Probe.ref)
+        clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfRemoved])
         clusterNode2.manager ! Leave(clusterNode2.selfMember.address)
 
         // node1 seeing all those transition events
@@ -97,11 +97,11 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
         node2Probe.expectMsg(SelfRemoved(MemberStatus.Exiting))
 
         // subscribing to SelfRemoved when already removed yields immediate message back
-        clusterNode2.subscriptions ! OnSelfRemoved(node2Probe.ref)
+        clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfRemoved])
         node2Probe.expectMsg(SelfRemoved(MemberStatus.Exiting))
 
         // subscribing to SelfUp when already removed yields nothing
-        clusterNode2.subscriptions ! OnSelfUp(node2Probe.ref)
+        clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfUp])
         node2Probe.expectNoMsg(100.millis)
 
       } finally {
