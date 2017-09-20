@@ -6,7 +6,7 @@ Today, the actor model is not only recognized as a highly effective solution &#8
 
 * [The challenge of encapsulation](#the-illusion-of-encapsulation)
 * [The illusion of shared memory on modern computer architectures](#The-illusion-of-shared-memory-on-modern-computer-architectures)
-* [The illustion of a call stack](#the-illusion-of-a-call-stack)
+* [The illusion of a call stack](#the-illusion-of-a-call-stack)
 
 
 ## The challenge of encapsulation
