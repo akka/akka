@@ -89,7 +89,7 @@ object KillSwitches {
 
     override val initialAttributes = Attributes.name("breaker")
     override val shape = BidiShape(
-      Inlet[Any]("KillSwitchBidi.in1"), Outlet[Any]("KillSwitchBidi .out1"),
+      Inlet[Any]("KillSwitchBidi.in1"), Outlet[Any]("KillSwitchBidi.out1"),
       Inlet[Any]("KillSwitchBidi.in2"), Outlet[Any]("KillSwitchBidi.out2"))
     override def toString: String = "UniqueKillSwitchBidi"
 
