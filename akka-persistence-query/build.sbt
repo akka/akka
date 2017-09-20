@@ -1,5 +1,4 @@
-//import akka.{ AkkaBuild, Dependencies, Formatting, ScaladocNoVerificationOfDiagrams, OSGi }
-import akka.{ AkkaBuild, Dependencies, Formatting, OSGi } // FIXME
+import akka.{ AkkaBuild, Dependencies, Formatting, ScaladocNoVerificationOfDiagrams, OSGi }
 
 AkkaBuild.defaultSettings
 Formatting.formatSettings
@@ -8,4 +7,4 @@ Dependencies.persistenceQuery
 
 fork in Test := true
 
-//enablePlugins(ScaladocNoVerificationOfDiagrams) // FIXME
+enablePlugins(ScaladocNoVerificationOfDiagrams)

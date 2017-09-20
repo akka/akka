@@ -1,5 +1,4 @@
-// import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, MultiNode, ScaladocNoVerificationOfDiagrams } // FIXME
-import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, MultiNode } // FIXME
+import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, MultiNode, ScaladocNoVerificationOfDiagrams }
 
 AkkaBuild.defaultSettings
 Formatting.formatSettings
@@ -17,6 +16,5 @@ description := """|
                   |support for these modules.
                   |""".stripMargin
 
-//enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams) // FIXME
-enablePlugins(MultiNode)
+enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
 disablePlugins(MimaPlugin)

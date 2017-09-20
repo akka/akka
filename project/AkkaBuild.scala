@@ -27,8 +27,8 @@ object AkkaBuild {
     version := "2.5-SNAPSHOT")
 
   //  lazy val rootSettings = parentSettings ++ Release.settings ++ // FIXME
-  lazy val rootSettings = parentSettings // ++ FIXME
-  //    UnidocRoot.akkaSettings ++
+  lazy val rootSettings = parentSettings ++
+      UnidocRoot.akkaSettings // ++ FIXME
   //    Protobuf.settings ++ Seq(
   //      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean
   //    )
