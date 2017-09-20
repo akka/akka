@@ -623,7 +623,8 @@ import scala.util.control.NonFatal
   override def toString: String = {
     val builder = StringBuilder.newBuilder
     builder.append("GraphInterpreterShell(\n  logics: [\n")
-    interpreter.logics.foreach { logic ⇒
+    val logicsToPrint = if (isInitialized) interpreter.logics else logics
+    logicsToPrint.foreach { logic ⇒
       builder.append("    ")
         .append(logic.originalStage.getOrElse(logic).toString)
         .append(" attrs: [")
@@ -631,14 +632,16 @@ import scala.util.control.NonFatal
         .append("],\n")
     }
     builder.setLength(builder.length - 2)
-    builder.append("\n  ],\n  connections: [\n")
-    interpreter.connections.foreach { connection ⇒
-      builder
-        .append("    ")
-        .append(if (connection == null) "null" else connection.toString)
-        .append(",\n")
+    if (isInitialized) {
+      builder.append("\n  ],\n  connections: [\n")
+      interpreter.connections.foreach { connection ⇒
+        builder
+          .append("    ")
+          .append(if (connection == null) "null" else connection.toString)
+          .append(",\n")
+      }
+      builder.setLength(builder.length - 2)
     }
-    builder.setLength(builder.length - 2)
     builder.append("\n  ]\n)")
     builder.toString()
   }
