@@ -3,11 +3,14 @@
  */
 package akka.stream
 
-import akka.Done
+import akka.{ Done, NotUsed }
 import akka.stream.stage._
 
 import scala.concurrent.{ Future, Promise }
+import scala.collection.concurrent.TrieMap
 import scala.util.{ Failure, Success, Try }
+
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Creates shared or single kill switches which can be used to control completion of graphs from the outside.
@@ -145,6 +148,39 @@ trait KillSwitch {
 }
 //#kill-switch
 
+private[stream] final class TerminationSignal {
+  final class Listener private[TerminationSignal] {
+    private[TerminationSignal] val promise = Promise[Done]
+    def future: Future[Done] = promise.future
+    def unregister(): Unit = removeListener(this)
+  }
+
+  private[this] val _listeners = TrieMap.empty[Listener, NotUsed]
+  private[this] val _completedWith: AtomicReference[Option[Try[Done]]] = new AtomicReference(None)
+
+  def tryComplete(result: Try[Done]): Unit = {
+    if (_completedWith.compareAndSet(None, Some(result))) {
+      for ((listener, _) ← _listeners) listener.promise.tryComplete(result)
+    }
+  }
+
+  def createListener(): Listener = {
+    val listener = new Listener
+    if (_completedWith.get.isEmpty) {
+      _listeners += (listener → NotUsed)
+    }
+    _completedWith.get match {
+      case Some(result) ⇒ listener.promise.tryComplete(result)
+      case None         ⇒ // Ignore.
+    }
+    listener
+  }
+
+  private def removeListener(listener: Listener): Unit = {
+    _listeners -= listener
+  }
+}
+
 /**
  * A [[UniqueKillSwitch]] is always a result of a materialization (unlike [[SharedKillSwitch]] which is constructed
  * before any materialization) and it always controls that graph and stage which yielded the materialized value.
@@ -203,7 +239,7 @@ final class UniqueKillSwitch private[stream] (private val promise: Promise[Done]
  * This class is thread-safe, the instance can be passed safely among threads and its methods may be invoked concurrently.
  */
 final class SharedKillSwitch private[stream] (val name: String) extends KillSwitch {
-  private[this] val shutdownPromise = Promise[Done]
+  private[this] val terminationSignal = new TerminationSignal
   private[this] val _flow: Graph[FlowShape[Any, Any], SharedKillSwitch] = new SharedKillSwitchFlow
 
   /**
@@ -212,7 +248,7 @@ final class SharedKillSwitch private[stream] (val name: String) extends KillSwit
    * case the command is ignored). Subsequent invocations of [[SharedKillSwitch#shutdown()]] and [[SharedKillSwitch#abort()]] will be
    * ignored.
    */
-  def shutdown(): Unit = shutdownPromise.trySuccess(Done)
+  def shutdown(): Unit = terminationSignal.tryComplete(Success(Done))
 
   /**
    * After calling [[SharedKillSwitch#abort()]] all materialized, running instances of all [[Graph]]s provided by the
@@ -225,7 +261,7 @@ final class SharedKillSwitch private[stream] (val name: String) extends KillSwit
    *
    * @param reason The exception to be used for failing the linked [[Graph]]s
    */
-  def abort(reason: Throwable): Unit = shutdownPromise.tryFailure(reason)
+  def abort(reason: Throwable): Unit = terminationSignal.tryComplete(Failure(reason))
 
   /**
    * Returns a typed Flow of a requested type that will be linked to this [[SharedKillSwitch]] instance. By invoking
@@ -245,13 +281,18 @@ final class SharedKillSwitch private[stream] (val name: String) extends KillSwit
     override def toString: String = s"SharedKillSwitchFlow(switch: $name)"
 
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, SharedKillSwitch) = {
-      val logic = new KillSwitches.KillableGraphStageLogic(shutdownPromise.future, shape) with InHandler with OutHandler {
+      val shutdownListener = terminationSignal.createListener()
+      val logic = new KillSwitches.KillableGraphStageLogic(shutdownListener.future, shape) with InHandler with OutHandler {
         setHandler(shape.in, this)
         setHandler(shape.out, this)
 
         override def onPush(): Unit = push(shape.out, grab(shape.in))
         override def onPull(): Unit = pull(shape.in)
 
+        override def postStop(): Unit = {
+          shutdownListener.unregister()
+          super.postStop()
+        }
       }
 
       (logic, SharedKillSwitch.this)
