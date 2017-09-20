@@ -33,12 +33,16 @@ import akka.typed.Terminated
   val localAskTimeout = 60.seconds // ReadLocal, WriteLocal shouldn't timeout
   val additionalAskTimeout = 1.second
 
-  def behavior(settings: dd.ReplicatorSettings): Behavior[SReplicator.Command] = {
-    val untypedReplicatorProps = dd.Replicator.props(settings)
+  def behavior(settings: dd.ReplicatorSettings, underlyingReplicator: Option[akka.actor.ActorRef]): Behavior[SReplicator.Command] = {
 
     Actor.deferred { ctx ⇒
-      // FIXME perhaps add supervisor for restarting
-      val untypedReplicator = ctx.actorOf(untypedReplicatorProps, name = "underlying")
+      val untypedReplicator = underlyingReplicator match {
+        case Some(ref) ⇒ ref
+        case None ⇒
+          // FIXME perhaps add supervisor for restarting
+          val untypedReplicatorProps = dd.Replicator.props(settings)
+          ctx.actorOf(untypedReplicatorProps, name = "underlying")
+      }
 
       def withState(
         subscribeAdapters: Map[ActorRef[JReplicator.Changed[ReplicatedData]], ActorRef[dd.Replicator.Changed[ReplicatedData]]]): Behavior[SReplicator.Command] = {

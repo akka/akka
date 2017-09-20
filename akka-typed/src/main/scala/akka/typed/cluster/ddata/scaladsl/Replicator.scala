@@ -21,7 +21,14 @@ object Replicator {
    * The `Behavior` for the `Replicator` actor.
    */
   def behavior(settings: ReplicatorSettings): Behavior[Command] =
-    ReplicatorBehavior.behavior(settings)
+    ReplicatorBehavior.behavior(settings, underlyingReplicator = None)
+
+  /**
+   * The `Behavior` for the `Replicator` actor.
+   * It will use the given underlying [[akka.cluster.ddata.Replicator]]
+   */
+  def behavior(settings: ReplicatorSettings, underlyingReplicator: akka.actor.ActorRef): Behavior[Command] =
+    ReplicatorBehavior.behavior(settings, Some(underlyingReplicator))
 
   type ReadConsistency = dd.Replicator.ReadConsistency
   val ReadLocal = dd.Replicator.ReadLocal
