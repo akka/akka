@@ -110,6 +110,19 @@ of the server, and `q` in the case of the client. This is implemented by @scala[
 and concatenating a `Source` with a single `BYE` element which will then be sent after the original source completed]@java[using a custom `GraphStage`
 which completes the stream once it encounters such command].
 
+### Using framing in your protocol
+
+Streaming transport protocols like TCP just pass streams of bytes, and does not know what is a logical chunk of bytes from the
+application's point of view. Often when implementing network protocols you will want to introduce your own framing.
+This can be done in two ways:
+An end-of-frame marker, e.g. end line `\n`, can do framing via `Framing.delimiter`.
+Or a length-field can be used to build a framing protocol.
+There is a bidi implementing this protocol provided by `Framing.simpleFramingProtocol`,
+see
+@scala[[ScalaDoc](http://doc.akka.io/api/akka/current/akka/stream/scaladsl/Framing$.html)]
+@java[[Javadoc](http://doc.akka.io/japi/akka/current/akka/stream/javadsl/Framing.html#simpleFramingProtocol-int-)]
+for more information.
+
 ## Streaming File IO
 
 Akka Streams provide simple Sources and Sinks that can work with `ByteString` instances to perform IO operations
