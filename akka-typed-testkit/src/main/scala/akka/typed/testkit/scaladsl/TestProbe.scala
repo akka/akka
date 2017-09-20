@@ -234,7 +234,9 @@ class TestProbe[M](name: String)(implicit val system: ActorSystem[_], val settin
   }
 
   /**
-   * Evaluate the given assert every `interval` until it does not throw an exception.
+   * Evaluate the given assert every `interval` until it does not throw an exception and return the
+   * result.
+   *
    * If the `max` timeout expires the last exception is thrown.
    *
    * If no timeout is given, take it from the innermost enclosing `within`
@@ -243,19 +245,23 @@ class TestProbe[M](name: String)(implicit val system: ActorSystem[_], val settin
    * Note that the timeout is scaled using Duration.dilated,
    * which uses the configuration entry "akka.test.timefactor".
    */
-  def awaitAssert(a: ⇒ Any, max: Duration = Duration.Undefined, interval: Duration = 100.millis) {
+  def awaitAssert[A](a: ⇒ A, max: Duration = Duration.Undefined, interval: Duration = 100.millis): A = {
     val _max = remainingOrDilated(max)
     val stop = now + _max
 
     @tailrec
-    def poll(t: Duration) {
-      val failed =
-        try { a; false } catch {
+    def poll(t: Duration): A = {
+      val result: A =
+        try {
+          a
+        } catch {
           case NonFatal(e) ⇒
             if ((now + t) >= stop) throw e
-            true
+            else null.asInstanceOf[A]
         }
-      if (failed) {
+
+      if (result != null) result
+      else {
         Thread.sleep(t.toMillis)
         poll((stop - now) min interval)
       }
