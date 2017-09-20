@@ -19,6 +19,7 @@ import scala.concurrent.duration.Duration
 import java.util.Optional
 import akka.actor.DeadLetterSuppression
 import akka.annotation.InternalApi
+import akka.annotation.DoNotInherit
 
 object Replicator {
   import dd.Replicator.DefaultMajorityMinCap
@@ -26,7 +27,7 @@ object Replicator {
   def behavior(settings: dd.ReplicatorSettings): Behavior[Command[_]] =
     ReplicatorBehavior.behavior(settings).narrow[Command[_]]
 
-  trait Command[A <: ReplicatedData] extends scaladsl.Replicator.Command[A] {
+  @DoNotInherit trait Command[A <: ReplicatedData] extends scaladsl.Replicator.Command[A] {
     def key: Key[A]
   }
 
@@ -113,7 +114,7 @@ object Replicator {
       this(key, consistency, replyTo, Optional.empty[Any])
   }
 
-  sealed abstract class GetResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+  @DoNotInherit sealed abstract class GetResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
     def key: Key[A]
     def request: Optional[Any]
     def getRequest: Optional[Any] = request
@@ -158,9 +159,6 @@ object Replicator {
    * Send this message to the local `Replicator` to update a data value for the
    * given `key`. The `Replicator` will reply with one of the [[UpdateResponse]] messages.
    *
-   * Note that the [[Replicator.Update$ companion]] object provides `apply` functions for convenient
-   * construction of this message.
-   *
    * The current data value for the `key` is passed as parameter to the `modify` function.
    * It is `None` if there is no value for the `key`, and otherwise `Some(data)`. The function
    * is supposed to return the new value of the data, which will then be replicated according to
@@ -187,7 +185,7 @@ object Replicator {
         Update.modifyWithInitial(initial, data ⇒ modify.apply(data)))
 
     /**
-     * Java API: Modify value of local `Replicator` and replicate with given `writeConsistency`.
+     * Modify value of local `Replicator` and replicate with given `writeConsistency`.
      *
      * The current value for the `key` is passed to the `modify` function.
      * If there is no current data value for the `key` the `initial` value will be
@@ -204,7 +202,7 @@ object Replicator {
 
   }
 
-  sealed abstract class UpdateResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+  @DoNotInherit sealed abstract class UpdateResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
     def key: Key[A]
     def request: Optional[Any]
     def getRequest: Optional[Any] = request
@@ -212,7 +210,7 @@ object Replicator {
   final case class UpdateSuccess[A <: ReplicatedData](key: Key[A], request: Optional[Any])
     extends UpdateResponse[A] with DeadLetterSuppression
 
-  sealed abstract class UpdateFailure[A <: ReplicatedData] extends UpdateResponse[A]
+  @DoNotInherit sealed abstract class UpdateFailure[A <: ReplicatedData] extends UpdateResponse[A]
 
   /**
    * The direct replication of the [[Update]] could not be fulfill according to
