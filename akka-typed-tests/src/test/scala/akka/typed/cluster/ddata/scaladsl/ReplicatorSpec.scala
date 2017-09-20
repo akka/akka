@@ -21,6 +21,10 @@ import akka.typed.testkit.TestKitSettings
 import akka.typed.testkit.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
+import akka.util.Timeout
+import akka.typed.cluster.ddata.scaladsl.Replicator._
+import akka.actor.Scheduler
+import scala.concurrent.Future
 
 object ReplicatorSpec {
 
@@ -90,6 +94,27 @@ object ReplicatorSpec {
 
       behavior(cachedValue = 0)
     }
+
+  object CompileOnlyTest {
+    def shouldHaveConvenienceForAsk(): Unit = {
+      val replicator: ActorRef[Replicator.Command] = ???
+      implicit val timeout = Timeout(3.seconds)
+      implicit val scheduler: Scheduler = ???
+      implicit val cluster: Cluster = ???
+
+      val reply1: Future[GetResponse[GCounter]] = replicator ? Replicator.Get(Key, Replicator.ReadLocal)
+
+      val reply2: Future[UpdateResponse[GCounter]] =
+        replicator ? Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal)(_ + 1)
+
+      val reply3: Future[DeleteResponse[GCounter]] = replicator ? Replicator.Delete(Key, Replicator.WriteLocal)
+
+      val reply4: Future[ReplicaCount] = replicator ? Replicator.GetReplicaCount()
+
+      // supress unused compiler warnings
+      println("" + reply1 + reply2 + reply3 + reply4)
+    }
+  }
 
 }
 
