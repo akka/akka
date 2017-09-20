@@ -1,5 +1,5 @@
 import akka.{ AkkaBuild, Dependencies, Formatting, GitHub }
-// import akka.ValidatePullRequest._ // FIXME
+// import akka.ValidatePullRequest._ FIXME
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 AkkaBuild.defaultSettings
@@ -8,9 +8,9 @@ Formatting.docFormatSettings
 Dependencies.docs
 
 unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
-//additionalTasks in ValidatePR += paradox in Compile // FIXME
+// additionalTasks in ValidatePR += paradox in Compile FIXME
 
-//enablePlugins(ScaladocNoVerificationOfDiagrams) // FIXME
+enablePlugins(ScaladocNoVerificationOfDiagrams)
 disablePlugins(MimaPlugin)
 enablePlugins(AkkaParadoxPlugin)
 
@@ -43,7 +43,7 @@ paradoxProperties ++= Map(
   "google.analytics.account" -> "UA-21117439-1",
   "google.analytics.domain.name" -> "akka.io",
   "snip.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
-  "snip.akka.base_dir" -> ((baseDirectory in Test).value / "..").getAbsolutePath,
+  "snip.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
   "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath
 )
 paradoxGroups := Map("Languages" -> Seq("Scala", "Java"))
