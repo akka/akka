@@ -155,6 +155,16 @@ class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) with Eventually {
       }
     }
 
+    def `have an extension`(): Unit = {
+      val replicator = DistributedData(system).replicator
+      val c = start(client(replicator))
+
+      val probe = TestProbe[Int]
+      c ! Increment
+      c ! GetValue(probe.ref)
+      probe.expectMsg(1)
+    }
+
   }
 
   object `A ReplicatorBehavior (real, adapted)` extends RealTests with AdaptedSystem
