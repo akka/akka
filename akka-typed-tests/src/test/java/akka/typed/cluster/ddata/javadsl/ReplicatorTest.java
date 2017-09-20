@@ -167,7 +167,7 @@ public class ReplicatorTest extends JUnitSuite {
   @Test
   public void shouldHaveApiForUpdateAndGet() {
     TestKit probe = new TestKit(system);
-    akka.cluster.ddata.ReplicatorSettings settings = ReplicatorSettings.apply(typedSystem());
+    akka.cluster.ddata.ReplicatorSettings settings = ReplicatorSettings.create(typedSystem());
     ActorRef<Replicator.Command<?>> replicator =
         Adapter.spawnAnonymous(system, Replicator.behavior(settings));
     ActorRef<ClientCommand> client =
@@ -181,7 +181,7 @@ public class ReplicatorTest extends JUnitSuite {
   @Test
   public void shouldHaveApiForSubscribe() {
     TestKit probe = new TestKit(system);
-    akka.cluster.ddata.ReplicatorSettings settings = ReplicatorSettings.apply(typedSystem());
+    akka.cluster.ddata.ReplicatorSettings settings = ReplicatorSettings.create(typedSystem());
     ActorRef<Replicator.Command<?>> replicator =
         Adapter.spawnAnonymous(system, Replicator.behavior(settings));
     ActorRef<ClientCommand> client =
