@@ -168,7 +168,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         writer.expectMsg(Ack)
         pullFromServerSide(remaining = 8, into = buffer)
         buffer.flip()
-        buffer.limit should ===(8)
+        buffer.limit() should ===(8)
 
         // not reply to write commander for writes without Ack
         val unackedWrite = Write(ByteString("morestuff!"))
@@ -198,7 +198,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         writer.send(connectionActor, write)
         pullFromServerSide(remaining = bufferSize, into = buffer)
         buffer.flip()
-        buffer.limit should ===(bufferSize)
+        buffer.limit() should ===(bufferSize)
 
         ByteString(buffer) should ===(testData)
       }
