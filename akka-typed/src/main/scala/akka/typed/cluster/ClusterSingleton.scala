@@ -152,7 +152,7 @@ private[akka] final class ClusterSingletonImpl(system: ActorSystem[_]) extends C
           ClusterSingletonProxy.props(s"/system/${managerNameFor(singletonName)}", settings.toProxySettings(singletonName)),
           proxyName)
       } catch {
-        case ex: InvalidActorNameException ⇒
+        case ex: InvalidActorNameException if ex.getMessage.endsWith("is not unique!") ⇒
           // this is fine, we don't want to start more of it than one
           untypedSystem.actorFor(s"/system/$proxyName")
       }
