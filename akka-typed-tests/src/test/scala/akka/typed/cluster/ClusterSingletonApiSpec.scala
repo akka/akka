@@ -125,15 +125,23 @@ class ClusterSingletonApiSpec extends TypedSpec(ClusterSingletonApiSpec.config) 
       val node1ref = cs1.spawn(pingPong, "ping-pong", Props.empty, settings, Perish)
       val node2ref = cs2.spawn(pingPong, "ping-pong", Props.empty, settings, Perish)
 
+      // subsequent spawning returns the same refs
+      cs1.spawn(pingPong, "ping-pong", Props.empty, settings, Perish) should ===(node1ref)
+      cs2.spawn(pingPong, "ping-pong", Props.empty, settings, Perish) should ===(node2ref)
+
       val node1PongProbe = TestProbe[Pong.type]()(adaptedSystem, implicitly[TestKitSettings])
       val node2PongProbe = TestProbe[Pong.type]()(adaptedSystem2, implicitly[TestKitSettings])
 
-      // FIXME await assert missing
-      node1ref ! Ping(node1PongProbe.ref)
-      node2ref ! Ping(node2PongProbe.ref)
+      node1PongProbe.awaitAssert({
+        node1ref ! Ping(node1PongProbe.ref)
+        node1PongProbe.expectMsg(Pong)
+      }, 3.seconds)
 
-      node1PongProbe.expectMsg(Pong)
-      node2PongProbe.expectMsg(Pong)
+      node2PongProbe.awaitAssert({
+        node2ref ! Ping(node2PongProbe.ref)
+        node2PongProbe.expectMsg(Pong)
+      }, 3.seconds)
+
     }
   }
 
