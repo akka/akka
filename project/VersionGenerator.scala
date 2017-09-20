@@ -9,7 +9,7 @@ import sbt.Keys._
 /**
  * Generate version.conf and akka/Version.scala files based on the version setting.
  */
-object Version {
+object VersionGenerator {
 
   def versionSettings: Seq[Setting[_]] = inConfig(Compile)(Seq(
     resourceGenerators += generateVersion(resourceManaged, _ / "version.conf",
