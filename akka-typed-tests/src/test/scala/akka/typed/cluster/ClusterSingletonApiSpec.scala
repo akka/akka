@@ -88,23 +88,23 @@ object ClusterSingletonApiSpec {
 class ClusterSingletonApiSpec extends TypedSpec(ClusterSingletonApiSpec.config) with ScalaFutures {
   import ClusterSingletonApiSpec._
 
-  implicit val testSettings = TestKitSettings(adaptedSystem)
-  val clusterNode1 = Cluster(adaptedSystem)
-  val untypedSystem1 = ActorSystemAdapter.toUntyped(adaptedSystem)
+  implicit val testSettings = TestKitSettings(system)
+  val clusterNode1 = Cluster(system)
+  val untypedSystem1 = system.toUntyped
 
   val system2 = akka.actor.ActorSystem(
-    adaptedSystem.name,
+    system.name,
     ConfigFactory.parseString(
       """
         akka.cluster.roles = ["singleton"]
-      """).withFallback(adaptedSystem.settings.config))
+      """).withFallback(system.settings.config))
   val adaptedSystem2 = system2.toTyped
   val clusterNode2 = Cluster(adaptedSystem2)
 
   object `A typed cluster singleton` {
 
     def `01 must be accessible from two nodes in a cluster`() = {
-      val node1UpProbe = TestProbe[SelfUp]()(adaptedSystem, implicitly[TestKitSettings])
+      val node1UpProbe = TestProbe[SelfUp]()(system, implicitly[TestKitSettings])
       clusterNode1.subscriptions ! Subscribe(node1UpProbe.ref, classOf[SelfUp])
 
       val node2UpProbe = TestProbe[SelfUp]()(adaptedSystem2, implicitly[TestKitSettings])
@@ -116,10 +116,10 @@ class ClusterSingletonApiSpec extends TypedSpec(ClusterSingletonApiSpec.config) 
       node1UpProbe.expectMsgType[SelfUp]
       node2UpProbe.expectMsgType[SelfUp]
 
-      val cs1 = ClusterSingleton(adaptedSystem)
+      val cs1 = ClusterSingleton(system)
       val cs2 = ClusterSingleton(adaptedSystem2)
 
-      val settings = ClusterSingletonSettings(adaptedSystem).withRole("singleton")
+      val settings = ClusterSingletonSettings(system).withRole("singleton")
       val node1ref = cs1.spawn(pingPong, "ping-pong", Props.empty, settings, Perish)
       val node2ref = cs2.spawn(pingPong, "ping-pong", Props.empty, settings, Perish)
 
@@ -127,7 +127,7 @@ class ClusterSingletonApiSpec extends TypedSpec(ClusterSingletonApiSpec.config) 
       cs1.spawn(pingPong, "ping-pong", Props.empty, settings, Perish) should ===(node1ref)
       cs2.spawn(pingPong, "ping-pong", Props.empty, settings, Perish) should ===(node2ref)
 
-      val node1PongProbe = TestProbe[Pong.type]()(adaptedSystem, implicitly[TestKitSettings])
+      val node1PongProbe = TestProbe[Pong.type]()(system, implicitly[TestKitSettings])
       val node2PongProbe = TestProbe[Pong.type]()(adaptedSystem2, implicitly[TestKitSettings])
 
       node1PongProbe.awaitAssert({

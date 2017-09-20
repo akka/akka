@@ -135,7 +135,7 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
   import AdapterClusterImpl._
 
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted actor systems can be used for cluster features")
-  private val untypedSystem = ActorSystemAdapter.toUntyped(system)
+  private val untypedSystem = system.toUntyped
   private def extendedUntyped = untypedSystem.asInstanceOf[ExtendedActorSystem]
   private val untypedCluster = akka.cluster.Cluster(untypedSystem)
 
