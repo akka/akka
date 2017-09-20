@@ -1,9 +1,8 @@
-//import akka.{ AkkaBuild, Formatting, OSGi, Unidoc, Dependencies } // FIXME
-import akka.{ AkkaBuild, Formatting, OSGi, Dependencies }
+import akka.{ AkkaBuild, Formatting, OSGi, Unidoc, Dependencies }
 
 AkkaBuild.defaultSettings
 Formatting.formatSettings
 OSGi.protobuf
 
-//enablePlugins(ScaladocNoVerificationOfDiagrams) // FIXME
+enablePlugins(ScaladocNoVerificationOfDiagrams)
 disablePlugins(MimaPlugin)

@@ -1,9 +1,8 @@
 import akka._
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 
-// enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams) // FIXME
-enablePlugins(JmhPlugin)
-// disablePlugins(Unidoc, MimaPlugin) // FIXME unidoc
+enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams)
+disablePlugins(Unidoc, MimaPlugin)
 disablePlugins(MimaPlugin)
 
 AkkaBuild.defaultSettings

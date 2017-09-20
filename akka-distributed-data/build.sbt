@@ -1,5 +1,4 @@
-// import akka.{ AkkaBuild, Dependencies, Formatting, MultiNode, Unidoc, OSGi } FIXME
-import akka.{ AkkaBuild, Dependencies, Formatting, MultiNode, OSGi }
+import akka.{ AkkaBuild, Dependencies, Formatting, MultiNode, Unidoc, OSGi }
 
 AkkaBuild.defaultSettings
 Formatting.formatSettings

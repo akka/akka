@@ -1,4 +1,4 @@
-import akka.{ AkkaBuild, Dependencies, Formatting, MultiNodeScalaTest }
+import akka.{ AkkaBuild, Dependencies, Formatting, MultiNodeScalaTest, Unidoc }
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 
 AkkaBuild.defaultSettings
