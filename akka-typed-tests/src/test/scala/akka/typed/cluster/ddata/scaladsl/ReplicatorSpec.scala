@@ -41,7 +41,7 @@ object ReplicatorSpec {
 
   val Key = GCounterKey("counter")
 
-  def client(replicator: ActorRef[Replicator.Command[_]])(implicit cluster: Cluster): Behavior[ClientCommand] =
+  def client(replicator: ActorRef[Replicator.Command])(implicit cluster: Cluster): Behavior[ClientCommand] =
     Actor.deferred[ClientCommand] { ctx ⇒
       val updateResponseAdapter: ActorRef[Replicator.UpdateResponse[GCounter]] =
         ctx.spawnAdapter(InternalUpdateResponse.apply)
@@ -58,15 +58,15 @@ object ReplicatorSpec {
         Actor.immutable[ClientCommand] { (ctx, msg) ⇒
           msg match {
             case Increment ⇒
-              replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal)(_ + 1)(updateResponseAdapter)
+              replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, updateResponseAdapter)(_ + 1)
               Actor.same
 
             case GetValue(replyTo) ⇒
-              replicator ! Replicator.Get(Key, Replicator.ReadLocal, Some(replyTo))(getResponseAdapter)
+              replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
               Actor.same
 
             case GetCachedValue(replyTo) ⇒
-              replicator ! Replicator.Get(Key, Replicator.ReadLocal, Some(replyTo))(getResponseAdapter)
+              replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
               Actor.same
 
             case internal: InternalMsg ⇒ internal match {

@@ -20,16 +20,18 @@ import java.util.Optional
 import akka.actor.DeadLetterSuppression
 import akka.annotation.InternalApi
 import akka.annotation.DoNotInherit
+import scala.util.control.NoStackTrace
 
+/**
+ * @see [[akka.cluster.ddata.Replicator]].
+ */
 object Replicator {
   import dd.Replicator.DefaultMajorityMinCap
 
-  def behavior(settings: dd.ReplicatorSettings): Behavior[Command[_]] =
-    ReplicatorBehavior.behavior(settings).narrow[Command[_]]
+  def behavior(settings: dd.ReplicatorSettings): Behavior[Command] =
+    ReplicatorBehavior.behavior(settings).narrow[Command]
 
-  @DoNotInherit trait Command[A <: ReplicatedData] extends scaladsl.Replicator.Command[A] {
-    def key: Key[A]
-  }
+  @DoNotInherit trait Command extends scaladsl.Replicator.Command
 
   sealed trait ReadConsistency {
     def timeout: FiniteDuration
@@ -108,7 +110,7 @@ object Replicator {
    * or maintain local correlation data structures.
    */
   final case class Get[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency, replyTo: ActorRef[GetResponse[A]], request: Optional[Any])
-    extends Command[A] {
+    extends Command {
 
     def this(key: Key[A], consistency: ReadConsistency, replyTo: ActorRef[GetResponse[A]]) =
       this(key, consistency, replyTo, Optional.empty[Any])
@@ -127,7 +129,6 @@ object Replicator {
 
     /**
      * The data value, with correct type.
-     * Scala pattern matching cannot infer the type from the `key` parameter.
      */
     def get[T <: ReplicatedData](key: Key[T]): T = {
       require(key == this.key, "wrong key used, must use contained key")
@@ -170,7 +171,7 @@ object Replicator {
    */
   final case class Update[A <: ReplicatedData] private (key: Key[A], writeConsistency: WriteConsistency,
                                                         replyTo: ActorRef[UpdateResponse[A]], request: Optional[Any])(val modify: Option[A] ⇒ A)
-    extends Command[A] with NoSerializationVerificationNeeded {
+    extends Command with NoSerializationVerificationNeeded {
 
     /**
      * Modify value of local `Replicator` and replicate with given `writeConsistency`.
@@ -246,12 +247,6 @@ object Replicator {
     override def getRequest: Optional[Any] = request
   }
 
-  sealed trait DeleteResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
-    def key: Key[A]
-    def request: Optional[Any]
-    def getRequest: Optional[Any] = request
-  }
-
   /**
    * Register a subscriber that will be notified with a [[Changed]] message
    * when the value of the given `key` is changed. Current value is also
@@ -266,13 +261,13 @@ object Replicator {
    * If the key is deleted the subscriber is notified with a [[Deleted]]
    * message.
    */
-  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command[A]
+  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
   /**
    * Unregister a subscriber.
    *
    * @see [[Replicator.Subscribe]]
    */
-  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command[A]
+  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
   /**
    * The data value is retrieved with [[#get]] using the typed key.
    *
@@ -293,5 +288,55 @@ object Replicator {
      */
     def dataValue: A = data
   }
+
+  /**
+   * Send this message to the local `Replicator` to delete a data value for the
+   * given `key`. The `Replicator` will reply with one of the [[DeleteResponse]] messages.
+   *
+   * The optional `request` context is included in the reply messages. This is a convenient
+   * way to pass contextual information (e.g. original sender) without having to use `ask`
+   * or maintain local correlation data structures.
+   */
+  final case class Delete[A <: ReplicatedData](key: Key[A], consistency: WriteConsistency,
+                                               replyTo: ActorRef[DeleteResponse[A]], request: Optional[Any])
+    extends Command with NoSerializationVerificationNeeded {
+
+    def this(key: Key[A], consistency: WriteConsistency, replyTo: ActorRef[DeleteResponse[A]]) =
+      this(key, consistency, replyTo, Optional.empty())
+  }
+
+  sealed trait DeleteResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+    def key: Key[A]
+    def request: Optional[Any]
+    def getRequest: Optional[Any] = request
+  }
+  final case class DeleteSuccess[A <: ReplicatedData](key: Key[A], request: Optional[Any]) extends DeleteResponse[A]
+  final case class ReplicationDeleteFailure[A <: ReplicatedData](key: Key[A], request: Optional[Any]) extends DeleteResponse[A]
+  final case class DataDeleted[A <: ReplicatedData](key: Key[A], request: Optional[Any])
+    extends RuntimeException with NoStackTrace with DeleteResponse[A] {
+    override def toString: String = s"DataDeleted [$key]"
+  }
+
+  /**
+   * Get current number of replicas, including the local replica.
+   * Will reply to sender with [[ReplicaCount]].
+   */
+  final case class GetReplicaCount(replyTo: ActorRef[ReplicaCount]) extends Command
+
+  /**
+   * Current number of replicas. Reply to `GetReplicaCount`.
+   */
+  final case class ReplicaCount(n: Int)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] case object FlushChanges extends Command
+
+  /**
+   * The `FlushChanges` instance. Notify subscribers of changes now, otherwise they will be notified periodically
+   * with the configured `notify-subscribers-interval`.
+   */
+  def flushChanges: Command = FlushChanges
 
 }
