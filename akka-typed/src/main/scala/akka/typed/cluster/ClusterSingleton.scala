@@ -15,13 +15,17 @@ import com.typesafe.config.Config
 import scala.concurrent.duration.FiniteDuration
 
 object ClusterSingletonSettings {
-  def apply[A](
+  def apply(
     system: ActorSystem[_]
+  ): ClusterSingletonSettings = fromConfig(system.settings.config.getConfig("akka.cluster"))
+
+  def fromConfig(
+    config: Config
   ): ClusterSingletonSettings = {
-    // TODO read existing cluster singleton settings or introduce its own config namespace?
-    // currently singleton name is required and then discarded
-    val mgrSettings = ClusterSingletonManagerSettings(system.settings.config.getConfig("akka.cluster.singleton"))
-    val proxySettings = ClusterSingletonProxySettings(system.settings.config.getConfig("akka.cluster.singleton-proxy"))
+    // TODO introduce a config namespace for typed singleton and read that?
+    // currently singleton name is required and then discarded, for example
+    val mgrSettings = ClusterSingletonManagerSettings(config.getConfig("singleton"))
+    val proxySettings = ClusterSingletonProxySettings(config.getConfig("singleton-proxy"))
     new ClusterSingletonSettings(
       mgrSettings.role,
       proxySettings.dataCenter,
@@ -30,12 +34,6 @@ object ClusterSingletonSettings {
       mgrSettings.handOverRetryInterval,
       proxySettings.bufferSize
     )
-  }
-
-  def fromConfig[A](
-    config: Config
-  ): ClusterSingletonSettings = {
-    ???
   }
 }
 

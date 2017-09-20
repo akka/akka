@@ -7,14 +7,12 @@ import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
-import akka.typed.testkit.TestKitSettings
 import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.Actor
-import akka.typed.scaladsl.AskPattern._
 import akka.typed.scaladsl.adapter._
+import akka.typed.testkit.TestKitSettings
 import akka.typed.testkit.scaladsl.TestProbe
 import akka.typed.{ ActorRef, Props, TypedSpec }
-import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 

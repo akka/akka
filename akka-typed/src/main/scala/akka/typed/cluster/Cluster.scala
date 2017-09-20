@@ -257,18 +257,18 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted actor systems can be used for cluster features")
   private val untypedSystem = ActorSystemAdapter.toUntyped(system)
   private def extendedUntyped = untypedSystem.asInstanceOf[ExtendedActorSystem]
-  private val adaptedCluster = akka.cluster.Cluster(untypedSystem)
+  private val untypedCluster = akka.cluster.Cluster(untypedSystem)
 
-  override def selfMember = adaptedCluster.selfMember
-  override def isTerminated = adaptedCluster.isTerminated
-  override def state = adaptedCluster.state
+  override def selfMember = untypedCluster.selfMember
+  override def isTerminated = untypedCluster.isTerminated
+  override def state = untypedCluster.state
 
   // must not be lazy as it also updates the cached selfMember
   override val subscriptions: ActorRef[ClusterStateSubscription] = extendedUntyped.systemActorOf(
-    PropsAdapter(subscriptionsBehavior(adaptedCluster)), "clusterStateSubscriptions")
+    PropsAdapter(subscriptionsBehavior(untypedCluster)), "clusterStateSubscriptions")
 
   override lazy val manager: ActorRef[ClusterCommand] = extendedUntyped.systemActorOf(
-    PropsAdapter(managerBehavior(adaptedCluster)), "clusterCommandManager")
+    PropsAdapter(managerBehavior(untypedCluster)), "clusterCommandManager")
 
 }
 
