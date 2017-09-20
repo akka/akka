@@ -94,11 +94,11 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
         node2Probe.awaitAssert(
           clusterNode2.selfMember.status should ===(MemberStatus.Removed)
         )
-        node2Probe.expectMsg(SelfRemoved)
+        node2Probe.expectMsg(SelfRemoved(MemberStatus.Exiting))
 
         // subscribing to SelfRemoved when already removed yields immediate message back
         clusterNode2.subscriptions ! OnSelfRemoved(node2Probe.ref)
-        node2Probe.expectMsg(SelfRemoved)
+        node2Probe.expectMsg(SelfRemoved(MemberStatus.Exiting))
 
         // subscribing to SelfUp when already removed yields nothing
         clusterNode2.subscriptions ! OnSelfUp(node2Probe.ref)

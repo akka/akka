@@ -3,15 +3,15 @@
  */
 package akka.typed.cluster
 
-import akka.actor.{Address, ExtendedActorSystem}
-import akka.annotation.{DoNotInherit, InternalApi}
-import akka.cluster.ClusterEvent.{ClusterDomainEvent, CurrentClusterState, MemberEvent}
+import akka.actor.{ Address, ExtendedActorSystem }
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState, MemberEvent }
 import akka.cluster._
 import akka.japi.Util
 import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.adapter._
-import akka.typed.{ActorRef, ActorSystem, Extension, ExtensionId, Terminated}
+import akka.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Terminated }
 
 import scala.collection.immutable
 
@@ -56,10 +56,12 @@ final case class SelfUp(currentClusterState: CurrentClusterState)
  * Subscribe to this node being removed from the cluster. If the node was already removed from the cluster
  * when this subscription is created it will be responded to immediately from the subscriptions actor.
  */
-final case class OnSelfRemoved(subscriber: ActorRef[SelfRemoved.type]) extends ClusterStateSubscription
+final case class OnSelfRemoved(subscriber: ActorRef[SelfRemoved]) extends ClusterStateSubscription
 
-// TODO any additional data worth passing with this response?
-final case object SelfRemoved
+/**
+ * @param previousStatus The state the node had before it was removed
+ */
+final case class SelfRemoved(previousStatus: MemberStatus)
 
 final case class Unsubscribe[T](subscriber: ActorRef[T]) extends ClusterStateSubscription
 final case class GetCurrentState(recipient: ActorRef[CurrentClusterState]) extends ClusterStateSubscription
@@ -146,18 +148,36 @@ object Cluster extends ExtensionId[Cluster] {
 @InternalApi
 private[akka] object AdapterClusterImpl {
 
+  private sealed trait SeenState
+  private case object BeforeUp extends SeenState
+  private case object Up extends SeenState
+  private case class Removed(previousStatus: MemberStatus) extends SeenState
+
   private def subscriptionsBehavior(adaptedCluster: akka.cluster.Cluster) = Actor.deferred[ClusterStateSubscription] { ctx ⇒
-    var selfSeenUp = false
+    var seenState: SeenState = BeforeUp
     var upSubscribers: List[ActorRef[SelfUp]] = Nil
-    var removedSubscribers: List[ActorRef[SelfRemoved.type]] = Nil
+    var removedSubscribers: List[ActorRef[SelfRemoved]] = Nil
 
     adaptedCluster.subscribe(ctx.self.toUntyped, ClusterEvent.initialStateAsEvents, classOf[MemberEvent])
 
     // important to not eagerly refer to it or we get a cycle here
-    def cluster = Cluster(ctx.system)
-    def updateCachedSelfMember(member: Member): Unit = {
-      // safe because we are the only writer
-      cluster.asInstanceOf[AdapterClusterImpl]._cachedSelfMember = member
+    lazy val cluster = Cluster(ctx.system)
+    def onSelfMemberEvent(event: MemberEvent): Unit = {
+      event match {
+        case ClusterEvent.MemberUp(_) ⇒
+          seenState = Up
+          val upMessage = SelfUp(cluster.state)
+          upSubscribers.foreach(_ ! upMessage)
+          upSubscribers = Nil
+
+        case ClusterEvent.MemberRemoved(_, previousStatus) ⇒
+          seenState = Removed(previousStatus)
+          val removedMessage = SelfRemoved(previousStatus)
+          removedSubscribers.foreach(_ ! removedMessage)
+          removedSubscribers = Nil
+
+        case _ ⇒ // This is fine.
+      }
     }
 
     Actor.immutable[AnyRef] { (ctx, msg) ⇒
@@ -172,41 +192,30 @@ private[akka] object AdapterClusterImpl {
           Actor.same
 
         case OnSelfUp(subscriber) ⇒
-          if (cluster.selfMember.status == MemberStatus.Up) subscriber ! SelfUp(adaptedCluster.state)
-          else if (!selfSeenUp) {
-            ctx.watch(subscriber)
-            upSubscribers = subscriber :: upSubscribers
-          } else {
+          seenState match {
+            case Up ⇒ subscriber ! SelfUp(adaptedCluster.state)
+            case BeforeUp ⇒
+              ctx.watch(subscriber)
+              upSubscribers = subscriber :: upSubscribers
+            case _: Removed ⇒
             // self did join, but is now no longer up, we want to avoid subscribing
             // to not get a memory leak, but also not signal anything
           }
           Actor.same
 
         case OnSelfRemoved(subscriber) ⇒
-          val selfStatus = cluster.selfMember.status
-          if (selfSeenUp && selfStatus == MemberStatus.Removed) subscriber ! SelfRemoved
-          else removedSubscribers = subscriber :: removedSubscribers
+          seenState match {
+            case BeforeUp | Up ⇒ removedSubscribers = subscriber :: removedSubscribers
+            case Removed(s)    ⇒ subscriber ! SelfRemoved(s)
+          }
           Actor.same
 
         case GetCurrentState(sender) ⇒
           adaptedCluster.sendCurrentClusterState(sender.toUntyped)
           Actor.same
 
-        case ClusterEvent.MemberUp(member) if member.uniqueAddress == cluster.selfMember.uniqueAddress ⇒
-          selfSeenUp = true
-          upSubscribers.foreach(_ ! SelfUp(cluster.state))
-          upSubscribers = Nil
-          updateCachedSelfMember(member)
-          Actor.same
-
-        case ClusterEvent.MemberRemoved(member, _) if member.uniqueAddress == cluster.selfMember.uniqueAddress ⇒
-          removedSubscribers.foreach(_ ! SelfRemoved)
-          removedSubscribers = Nil
-          updateCachedSelfMember(member)
-          Actor.same
-
-        case m: MemberEvent if m.member.uniqueAddress == cluster.selfMember.uniqueAddress ⇒
-          updateCachedSelfMember(m.member)
+        case evt: MemberEvent if evt.member.uniqueAddress == cluster.selfMember.uniqueAddress ⇒
+          onSelfMemberEvent(evt)
           Actor.same
 
         case _: MemberEvent ⇒
@@ -259,12 +268,7 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
   private def extendedUntyped = untypedSystem.asInstanceOf[ExtendedActorSystem]
   private val adaptedCluster = akka.cluster.Cluster(untypedSystem)
 
-  // is updated on change events by the subscriptions actor
-  @volatile private[akka] var _cachedSelfMember =
-    // initial placeholder member
-    Member(adaptedCluster.selfUniqueAddress, adaptedCluster.selfRoles).copy(MemberStatus.Removed)
-
-  override def selfMember = _cachedSelfMember
+  override def selfMember = adaptedCluster.selfMember
   override def isTerminated = adaptedCluster.isTerminated
   override def state = adaptedCluster.state
 

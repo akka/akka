@@ -110,7 +110,7 @@ object ClusterSingleton extends ExtensionId[ClusterSingleton] {
  */
 @InternalApi
 private[akka] object ClusterSingletonImpl {
-  def managerNameFor(singletonName: String) = s"singleton-manager-${singletonName}"
+  def managerNameFor(singletonName: String) = s"singletonManager${singletonName}"
 }
 
 /**
@@ -155,7 +155,7 @@ private[akka] final class ClusterSingletonImpl(system: ActorSystem[_]) extends C
   }
 
   def spawnProxy[A](singletonName: String, props: Props, settings: ClusterSingletonSettings): ActorRef[A] = {
-    val proxyName = s"singleton-proxy-${singletonName}"
+    val proxyName = s"singletonProxy${singletonName}"
     val untypedProxy =
       try {
         untypedSystem.systemActorOf(
