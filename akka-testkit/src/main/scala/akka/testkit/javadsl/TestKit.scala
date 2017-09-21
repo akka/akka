@@ -189,9 +189,9 @@ class TestKit(system: ActorSystem) {
   def awaitCond(max: Duration, interval: Duration, message: String, p: Supplier[Boolean]): Unit =
     tp.awaitCond(p.get, max, interval, message)
 
-  def awaitAssert(a: Supplier[Any]): Unit = tp.awaitAssert(a.get)
+  def awaitAssert[A](a: Supplier[A]): A = tp.awaitAssert(a.get)
 
-  def awaitAssert(max: Duration, a: Supplier[Any]): Unit = tp.awaitAssert(a.get, max)
+  def awaitAssert[A](max: Duration, a: Supplier[A]): A = tp.awaitAssert(a.get, max)
 
   /**
    * Evaluate the given assert every `interval` until it does not throw an exception.
@@ -200,7 +200,7 @@ class TestKit(system: ActorSystem) {
    * Note that the timeout is scaled using Duration.dilated,
    * which uses the configuration entry "akka.test.timefactor".
    */
-  def awaitAssert(max: Duration, interval: Duration, a: Supplier[Any]): Unit = tp.awaitAssert(a.get, max, interval)
+  def awaitAssert[A](max: Duration, interval: Duration, a: Supplier[A]): A = tp.awaitAssert(a.get, max, interval)
 
   /**
    * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
