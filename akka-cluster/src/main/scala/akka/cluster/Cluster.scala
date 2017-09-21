@@ -15,7 +15,7 @@ import akka.dispatch.MonitorableThreadFactory
 import akka.event.{ Logging, LoggingAdapter }
 import akka.japi.Util
 import akka.pattern._
-import akka.remote.{ DefaultFailureDetectorRegistry, FailureDetector, _ }
+import akka.remote.{ DefaultFailureDetectorRegistry, _ }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.annotation.varargs
@@ -214,6 +214,11 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * Current snapshot state of the cluster.
    */
   def state: CurrentClusterState = readView.state
+
+  /**
+   * Current snapshot of the member itself
+   */
+  def selfMember: Member = readView.self
 
   /**
    * Subscribe to one or more cluster domain events.

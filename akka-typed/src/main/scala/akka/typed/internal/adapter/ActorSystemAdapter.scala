@@ -5,17 +5,13 @@ package akka.typed
 package internal
 package adapter
 
-import akka.{ actor ⇒ a, dispatch ⇒ d }
-import akka.dispatch.sysmsg
+import akka.{ actor ⇒ a }
 
 import scala.concurrent.ExecutionContextExecutor
 import akka.util.Timeout
 
 import scala.concurrent.Future
 import akka.annotation.InternalApi
-import akka.typed.receptionist.Receptionist
-
-import scala.annotation.unchecked.uncheckedVariance
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
@@ -81,7 +77,18 @@ import scala.annotation.unchecked.uncheckedVariance
 }
 
 private[typed] object ActorSystemAdapter {
-  def apply(untyped: a.ActorSystem): ActorSystem[Nothing] = new ActorSystemAdapter(untyped.asInstanceOf[a.ActorSystemImpl])
+  def apply(untyped: a.ActorSystem): ActorSystem[Nothing] = AdapterExtension(untyped).adapter
+
+  // to make sure we do never create more than one adapter for the same actor system
+  class AdapterExtension(system: a.ExtendedActorSystem) extends a.Extension {
+    val adapter = new ActorSystemAdapter(system.asInstanceOf[a.ActorSystemImpl])
+  }
+  object AdapterExtension extends a.ExtensionId[AdapterExtension] with a.ExtensionIdProvider {
+    override def get(system: a.ActorSystem): AdapterExtension = super.get(system)
+    override def lookup = AdapterExtension
+    override def createExtension(system: a.ExtendedActorSystem): AdapterExtension =
+      new AdapterExtension(system)
+  }
 
   def toUntyped[U](sys: ActorSystem[_]): a.ActorSystem =
     sys match {
@@ -90,3 +97,4 @@ private[typed] object ActorSystemAdapter {
         s"($sys of class ${sys.getClass.getName})")
     }
 }
+

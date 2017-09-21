@@ -13,7 +13,7 @@ import akka.cluster.MemberStatus._
 import akka.event.EventStream
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.actor.DeadLetterSuppression
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 import scala.collection.breakOut
 import scala.runtime.AbstractFunction5
@@ -53,8 +53,11 @@ object ClusterEvent {
 
   /**
    * Marker interface for cluster domain events.
+   *
+   * Not intended for user extension.
    */
-  sealed trait ClusterDomainEvent extends DeadLetterSuppression
+  @DoNotInherit
+  trait ClusterDomainEvent extends DeadLetterSuppression
 
   // for binary compatibility (used to be a case class)
   object CurrentClusterState extends AbstractFunction5[immutable.SortedSet[Member], Set[Member], Set[Address], Option[Address], Map[String, Option[Address]], CurrentClusterState] {
