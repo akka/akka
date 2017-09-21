@@ -12,16 +12,16 @@ import akka.ConfigurationException
 import akka.actor._
 import akka.cluster.ClusterSettings.DataCenter
 import akka.dispatch.MonitorableThreadFactory
-import akka.event.{Logging, LoggingAdapter}
+import akka.event.{ Logging, LoggingAdapter }
 import akka.japi.Util
 import akka.pattern._
-import akka.remote.{DefaultFailureDetectorRegistry, _}
-import com.typesafe.config.{Config, ConfigFactory}
+import akka.remote.{ DefaultFailureDetectorRegistry, _ }
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.annotation.varargs
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{ Await, ExecutionContext }
 import scala.util.control.NonFatal
 
 /**

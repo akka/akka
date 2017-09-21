@@ -3,16 +3,12 @@
  */
 package akka.typed.cluster
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.function.{Function => JFunction}
-
-import akka.actor.{ExtendedActorSystem, InvalidActorNameException, NoSerializationVerificationNeeded}
-import akka.annotation.{DoNotInherit, InternalApi}
+import akka.actor.NoSerializationVerificationNeeded
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.singleton.{ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings, ClusterSingletonManager => OldSingletonManager}
-import akka.typed.internal.adapter.ActorSystemAdapter
-import akka.typed.scaladsl.adapter._
-import akka.typed.{ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props}
+import akka.cluster.singleton.{ ClusterSingletonManagerSettings, ClusterSingletonProxySettings }
+import akka.typed.cluster.internal.AdaptedClusterSingletonImpl
+import akka.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props }
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.FiniteDuration
@@ -97,7 +93,7 @@ final class ClusterSingletonSettings(
 
 object ClusterSingleton extends ExtensionId[ClusterSingleton] {
 
-  override def createExtension(system: ActorSystem[_]): ClusterSingleton = new ClusterSingletonImpl(system)
+  override def createExtension(system: ActorSystem[_]): ClusterSingleton = new AdaptedClusterSingletonImpl(system)
 
   /**
    * Java API:
@@ -111,53 +107,6 @@ object ClusterSingleton extends ExtensionId[ClusterSingleton] {
 @InternalApi
 private[akka] object ClusterSingletonImpl {
   def managerNameFor(singletonName: String) = s"singletonManager${singletonName}"
-}
-
-/**
- * INTERNAL API:
- */
-@InternalApi
-private[akka] final class ClusterSingletonImpl(system: ActorSystem[_]) extends ClusterSingleton {
-  require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted actor systems can be used for the typed cluster singleton")
-  import ClusterSingletonImpl._
-
-  private lazy val cluster = Cluster(system)
-  private val untypedSystem = ActorSystemAdapter.toUntyped(system).asInstanceOf[ExtendedActorSystem]
-
-  private val proxies = new ConcurrentHashMap[String, ActorRef[_]]()
-
-  override def spawn[A](
-    behavior:           Behavior[A],
-    singletonName:      String,
-    props:              Props,
-    settings:           ClusterSingletonSettings,
-    terminationMessage: A) = {
-
-    if (settings.shouldRunManager(cluster)) {
-      val managerName = managerNameFor(singletonName)
-      // start singleton on this node
-      val adaptedProps = PropsAdapter(behavior, props)
-      try {
-        untypedSystem.systemActorOf(
-          OldSingletonManager.props(adaptedProps, terminationMessage, settings.toManagerSettings(singletonName)),
-          managerName)
-      } catch {
-        case ex: InvalidActorNameException if ex.getMessage.endsWith("is not unique!") ⇒
-        // This is fine. We just wanted to make sure it is running and it already is
-      }
-    }
-
-    val proxyCreator = new JFunction[String, ActorRef[_]] {
-      def apply(singletonName: String): ActorRef[_] = {
-        val proxyName = s"singletonProxy$singletonName"
-        untypedSystem.systemActorOf(
-          ClusterSingletonProxy.props(s"/system/${managerNameFor(singletonName)}", settings.toProxySettings(singletonName)),
-          proxyName)
-      }
-    }
-
-    proxies.computeIfAbsent(singletonName, proxyCreator).asInstanceOf[ActorRef[A]]
-  }
 }
 
 /**
