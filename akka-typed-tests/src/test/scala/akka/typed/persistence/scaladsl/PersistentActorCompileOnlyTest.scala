@@ -58,7 +58,7 @@ object PersistentActorCompileOnlyTest {
 
       actions = Actions.command {
         case Cmd(data, sender) ⇒
-          Persist[MyEvent, ExampleState](Evt(data))
+          Persist(Evt(data))
             .andThen { _ ⇒ { sender ! Ack } }
       },
 
@@ -100,7 +100,7 @@ object PersistentActorCompileOnlyTest {
 
       actions = Actions((cmd, state, ctx) ⇒ cmd match {
         case DoSideEffect(data) ⇒
-          Persist[Event, EventsInFlight](IntentRecorded(state.nextCorrelationId, data)).andThen { _ ⇒
+          Persist(IntentRecorded(state.nextCorrelationId, data)).andThen { _ ⇒
             performSideEffect(ctx.self, state.nextCorrelationId, data)
           }
         case AcknowledgeSideEffect(correlationId) ⇒
@@ -209,7 +209,7 @@ object PersistentActorCompileOnlyTest {
       persistenceId = "asdf",
       initialState = State(Nil),
       actions = Actions((cmd, _, ctx) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist[Event, State](TaskRegistered(task))
+        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
           .andThen { _ ⇒
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
@@ -240,7 +240,7 @@ object PersistentActorCompileOnlyTest {
       initialState = State(Nil),
       // The 'onSignal' seems to break type inference here.. not sure if that can be avoided?
       actions = Actions[RegisterTask, Event, State]((cmd, state, ctx) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist[Event, State](TaskRegistered(task))
+        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
           .andThen { _ ⇒
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
@@ -376,6 +376,31 @@ object PersistentActorCompileOnlyTest {
         case (MoodChanged(to), _) ⇒ to
       })
 
+  }
+
+  object Stopping {
+    sealed trait Command
+    case object Enough extends Command
+
+    sealed trait Event
+    case object Done extends Event
+
+    type State = Unit
+
+    PersistentActor.persistent[Command, Event, State](
+      persistenceId = "myPersistenceId",
+      initialState = (),
+      actions = Actions { (cmd, _, _) ⇒
+        cmd match {
+          case Enough ⇒ Persist(Done)
+            .andThen((_: State) ⇒ println("yay"))
+            // Ugh it doesn't make much sense to have to include the type parameters here...
+            .andThen(Stop[Event, State]())
+        }
+      },
+      onEvent = {
+        case (Done, _) ⇒ ()
+      })
   }
 
 }

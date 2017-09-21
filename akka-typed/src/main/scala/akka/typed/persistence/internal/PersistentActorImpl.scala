@@ -26,7 +26,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
    * Stop the actor for passivation. `PoisonPill` does not work well
    * with persistent actors.
    */
-  case object Stop
+  case object StopForPassivation
 
   def props[C, E, S](
     behaviorFactory: () ⇒ PersistentBehavior[C, E, S]): a.Props =
@@ -76,13 +76,13 @@ import akka.typed.internal.adapter.ActorRefAdapter
   }
 
   override def receiveCommand: Receive = {
-    case PersistentActorImpl.Stop ⇒
+    case PersistentActorImpl.StopForPassivation ⇒
       context.stop(self)
 
     case msg ⇒
       try {
         // FIXME sigHandler(state)
-        val effect = msg match {
+        val effects = msg match {
           case a.Terminated(ref) ⇒
             val sig = Terminated(ActorRefAdapter(ref))(null)
             actions.sigHandler(state).applyOrElse((sig, state, ctx), unhandledSignal)
@@ -94,21 +94,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
             actions.commandHandler(cmd, state, ctx)
         }
 
-        effect match {
-          case Persist(event, callbacks) ⇒
-            // apply the event before persist so that validation exception is handled before persisting
-            // the invalid event, in case such validation is implemented in the event handler.
-            state = applyEvent(state, event)
-            persist(event) { _ ⇒
-              callbacks.foreach(_.apply(state))
-            }
-          // FIXME PersistAll
-          case PersistNothing(callbacks) ⇒
-            callbacks.foreach(_.apply(state))
-          case Unhandled(callbacks) ⇒
-            super.unhandled(msg)
-            callbacks.foreach(_.apply(state))
-        }
+        applyEffects(msg, effects)
       } catch {
         case e: MatchError ⇒ throw new IllegalStateException(
           s"Undefined state [${state.getClass.getName}] or handler for [${msg.getClass.getName} " +
@@ -117,5 +103,27 @@ import akka.typed.internal.adapter.ActorRefAdapter
 
   }
 
+  private def applyEffects(msg: Any, effect: PersistentEffect[E, S], callback: Option[Unit ⇒ Unit] = None): Unit = effect match {
+    case CompositeEffect(mainEffect, chainedEffects) ⇒
+      applyEffects(msg, mainEffect, Some(_ ⇒ chainedEffects.foreach(applyChainableEffect)))
+    case Persist(event) ⇒
+      // apply the event before persist so that validation exception is handled before persisting
+      // the invalid event, in case such validation is implemented in the event handler.
+      state = applyEvent(state, event)
+      persist(event) { _ ⇒
+        callback.foreach(_.apply(()))
+      }
+    // FIXME PersistAll
+    case PersistNothing() ⇒
+    case Unhandled() ⇒
+      super.unhandled(msg)
+    case c: ChainableEffect[_, S] ⇒
+      applyChainableEffect(c)
+  }
+
+  def applyChainableEffect(effect: ChainableEffect[_, S]): Unit = effect match {
+    case Stop()                ⇒ // FIXME implement
+    case SideEffect(callbacks) ⇒ callbacks.apply(state)
+  }
 }
 

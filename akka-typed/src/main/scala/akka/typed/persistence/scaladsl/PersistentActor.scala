@@ -20,20 +20,29 @@ object PersistentActor {
       recoveryCompleted = (state, _) ⇒ state)
 
   sealed abstract class PersistentEffect[+Event, State]() {
-    def andThen(callback: State ⇒ Unit): PersistentEffect[Event, State]
+
+    def andThen(sideEffect: ChainableEffect[_, State]): PersistentEffect[Event, State] =
+      CompositeEffect(this, List(sideEffect))
+
+    /** Convenience method to register a side effect with just a callback function */
+    def andThen(callback: State ⇒ Unit): PersistentEffect[Event, State] = andThen(SideEffect(callback))
   }
 
-  final case class PersistNothing[Event, State](callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
-    def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
+  case class CompositeEffect[Event, State](mainEffect: PersistentEffect[Event, State], sideEffects: List[ChainableEffect[_, State]]) extends PersistentEffect[Event, State] {
+    override def andThen(sideEffect: ChainableEffect[_, State]): PersistentEffect[Event, State] =
+      copy(sideEffects = sideEffects :+ sideEffect)
   }
 
-  case class Persist[Event, State](event: Event, callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
-    def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
-  }
+  case class PersistNothing[Event, State]() extends PersistentEffect[Event, State]
+  case class Persist[Event, State](event: Event) extends PersistentEffect[Event, State]
 
-  case class Unhandled[Event, State](callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
-    def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
+  trait ChainableEffect[Event, State] {
+    self: PersistentEffect[Event, State] ⇒
   }
+  case class SideEffect[Event, State](effect: State ⇒ Unit) extends PersistentEffect[Event, State] with ChainableEffect[Event, State]
+  case class Stop[Event, State]() extends PersistentEffect[Event, State] with ChainableEffect[Event, State]()
+
+  case class Unhandled[Event, State]() extends PersistentEffect[Event, State]
 
   type CommandHandler[Command, Event, State] = Function3[Command, State, ActorContext[Command], PersistentEffect[Event, State]]
   type SignalHandler[Command, Event, State] = PartialFunction[(Signal, State, ActorContext[Command]), PersistentEffect[Event, State]]
