@@ -4,7 +4,7 @@
 package akka.typed.cluster
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.function
+import java.util.function.{Function => JFunction}
 
 import akka.actor.{ExtendedActorSystem, InvalidActorNameException, NoSerializationVerificationNeeded}
 import akka.annotation.{DoNotInherit, InternalApi}
@@ -147,7 +147,7 @@ private[akka] final class ClusterSingletonImpl(system: ActorSystem[_]) extends C
       }
     }
 
-    val proxyCreator = new function.Function[String, ActorRef[_]] {
+    val proxyCreator = new JFunction[String, ActorRef[_]] {
       def apply(singletonName: String): ActorRef[_] = {
         val proxyName = s"singletonProxy$singletonName"
         untypedSystem.systemActorOf(
