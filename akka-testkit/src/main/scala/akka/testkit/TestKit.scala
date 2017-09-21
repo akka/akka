@@ -303,16 +303,22 @@ trait TestKitBase {
 
     @tailrec
     def poll(t: Duration): A = {
+      // cannot use null-ness of result as signal it failed
+      // because Java API and not wanting to return a value will be "return null"
+      var failed = false
       val result: A =
         try {
-          a
+          val aRes = a
+          failed = false
+          aRes
         } catch {
           case NonFatal(e) ⇒
+            failed = true
             if ((now + t) >= stop) throw e
             else null.asInstanceOf[A]
         }
 
-      if (result != null) result
+      if (result != failed) result
       else {
         Thread.sleep(t.toMillis)
         poll((stop - now) min interval)
