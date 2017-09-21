@@ -83,8 +83,8 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
       val c2 = start(counter("c2"))
       c2 ! GetValue(probe.ref)
       probe.expectMsg(State(3, Vector(0, 1, 2)))
-      c ! Increment
-      c ! GetValue(probe.ref)
+      c2 ! Increment
+      c2 ! GetValue(probe.ref)
       probe.expectMsg(State(4, Vector(0, 1, 2, 3)))
     }
 
