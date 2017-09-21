@@ -58,8 +58,8 @@ object PersistentActorCompileOnlyTest {
 
       actions = Actions.command {
         case Cmd(data, sender) ⇒
-          Persist[MyEvent, ExampleState](Evt(data))
-            .andThen { _ ⇒ { sender ! Ack } }
+          Persist(Evt(data))
+            .andThen { sender ! Ack }
       },
 
       onEvent = {
@@ -100,7 +100,7 @@ object PersistentActorCompileOnlyTest {
 
       actions = Actions((cmd, state, ctx) ⇒ cmd match {
         case DoSideEffect(data) ⇒
-          Persist[Event, EventsInFlight](IntentRecorded(state.nextCorrelationId, data)).andThen { _ ⇒
+          Persist(IntentRecorded(state.nextCorrelationId, data)).andThen {
             performSideEffect(ctx.self, state.nextCorrelationId, data)
           }
         case AcknowledgeSideEffect(correlationId) ⇒
@@ -209,8 +209,8 @@ object PersistentActorCompileOnlyTest {
       persistenceId = "asdf",
       initialState = State(Nil),
       actions = Actions((cmd, _, ctx) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist[Event, State](TaskRegistered(task))
-          .andThen { _ ⇒
+        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
+          .andThen {
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
             ctx.watchWith(child, TaskDone(task))
@@ -240,8 +240,8 @@ object PersistentActorCompileOnlyTest {
       initialState = State(Nil),
       // The 'onSignal' seems to break type inference here.. not sure if that can be avoided?
       actions = Actions[RegisterTask, Event, State]((cmd, state, ctx) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist[Event, State](TaskRegistered(task))
-          .andThen { _ ⇒
+        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
+          .andThen {
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
             ctx.watch(child)
@@ -299,8 +299,8 @@ object PersistentActorCompileOnlyTest {
       val adapt = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
 
       def addItem(id: Id, self: ActorRef[Command]) =
-        Persist[Event, List[Id]](ItemAdded(id)).andThen(_ ⇒
-          metadataRegistry ! GetMetaData(id, adapt))
+        Persist[Event, List[Id]](ItemAdded(id))
+          .andThen { metadataRegistry ! GetMetaData(id, adapt) }
 
       PersistentActor.persistent[Command, Event, List[Id]](
         persistenceId = "basket-1",
