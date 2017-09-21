@@ -126,25 +126,25 @@ class LocalReceptionistSpec extends TypedSpec with Eventually {
     def `must support subscribing to service changes`(): Unit = new TestSetup {
       val regProbe = TestProbe[Registered[_]]("regProbe")
 
-      val aUser = TestProbe[Listing[ServiceA]]("aUser")
-      receptionist ! Subscribe(ServiceKeyA, aUser.ref)
+      val aSubscriber = TestProbe[Listing[ServiceA]]("aUser")
+      receptionist ! Subscribe(ServiceKeyA, aSubscriber.ref)
 
       val serviceA: ActorRef[ServiceA] = start(stoppableBehavior)
       receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
       regProbe.expectMsg(Registered(ServiceKeyA, serviceA))
 
-      aUser.expectMsg(Listing(ServiceKeyA, Set(serviceA)))
+      aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA)))
 
       val serviceA2: ActorRef[ServiceA] = start(stoppableBehavior)
       receptionist ! Register(ServiceKeyA, serviceA2, regProbe.ref)
       regProbe.expectMsg(Registered(ServiceKeyA, serviceA2))
 
-      aUser.expectMsg(Listing(ServiceKeyA, Set(serviceA, serviceA2)))
+      aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA, serviceA2)))
 
       serviceA ! Stop
-      aUser.expectMsg(Listing(ServiceKeyA, Set(serviceA2)))
+      aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA2)))
       serviceA2 ! Stop
-      aUser.expectMsg(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+      aSubscriber.expectMsg(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
     }
 
     def `must work with ask`(): Unit = sync(runTest("Receptionist") {
