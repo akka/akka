@@ -24,7 +24,7 @@ Although this list cannot be exhaustive, we explicitly honor diversity in age, c
 
 ## Reporting Issues
 
-In case you notice un-addressed bad behaviour, please contact the team via info@lightbend.com email address or the [contact owner](https://groups.google.com/forum/#!contactowner/akka-user) form for the Akka mailing list.
+If you have a concern about the conduct of other community members, we recommend you first speak with respective project leads and committers about the problem. If unsure where to ask, you can contact the team via the info@lightbend.com email address or the [contact owner](https://groups.google.com/forum/#!contactowner/akka-user) form for the Akka mailing list.
 
 ## Thanks
 
