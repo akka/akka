@@ -641,11 +641,11 @@ private[akka] class ClusterShardingGuardian extends Actor {
               .withRole(role)
             context.actorOf(
               ClusterSingletonManager
-              .props(
-                singletonProps,
-                terminationMessage = PoisonPill,
-                singletonSettings)
-              .withDispatcher(context.props.dispatcher),
+                .props(
+                  singletonProps,
+                  terminationMessage = PoisonPill,
+                  singletonSettings)
+                .withDispatcher(context.props.dispatcher),
               name = cName)
           }
 
