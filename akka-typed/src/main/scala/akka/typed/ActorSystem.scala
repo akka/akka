@@ -151,7 +151,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: inter
    * Return a reference to this system’s [[akka.typed.receptionist.Receptionist]].
    */
   def receptionist: ActorRef[Receptionist.Command] =
-    Receptionist(this).receptionist
+    Receptionist(this).ref
 }
 
 object ActorSystem {

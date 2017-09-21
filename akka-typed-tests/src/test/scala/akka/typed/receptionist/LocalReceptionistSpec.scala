@@ -18,11 +18,11 @@ import scala.concurrent.duration._
 class LocalReceptionistSpec extends TypedSpec with Eventually {
 
   trait ServiceA
-  val ServiceKeyA = Receptionist.key[ServiceA]("service-a")
+  val ServiceKeyA = Receptionist.ServiceKey[ServiceA]("service-a")
   val behaviorA = Actor.empty[ServiceA]
 
   trait ServiceB
-  val ServiceKeyB = Receptionist.key[ServiceB]("service-b")
+  val ServiceKeyB = Receptionist.ServiceKey[ServiceB]("service-b")
   val behaviorB = Actor.empty[ServiceB]
 
   case object Stop extends ServiceA with ServiceB
@@ -33,7 +33,7 @@ class LocalReceptionistSpec extends TypedSpec with Eventually {
     }
   }
 
-  import akka.typed.internal.receptionist.LocalReceptionist.behavior
+  import akka.typed.internal.receptionist.ReceptionistImpl.{ onlyLocalBehavior ⇒ behavior }
 
   trait CommonTests extends StartSupport {
     implicit def system: ActorSystem[TypedSpec.Command]
@@ -174,7 +174,7 @@ class LocalReceptionistSpec extends TypedSpec with Eventually {
         startWith.withKeepTraces(true) {
           system.receptionist ! Find(ServiceKeyA)(self)
         }.expectMessage(1.second) { (msg, _) ⇒
-          msg.addresses should ===(Set())
+          msg.serviceInstances should ===(Set())
         }
       }
     })

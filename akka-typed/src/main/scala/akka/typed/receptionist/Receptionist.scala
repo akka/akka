@@ -1,25 +1,38 @@
+/**
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.typed.receptionist
 
+import akka.annotation.InternalApi
 import akka.typed.ActorRef
 import akka.typed.ActorSystem
 import akka.typed.Extension
 import akka.typed.ExtensionId
-import akka.typed.internal.receptionist.LocalReceptionist
+import akka.typed.internal.receptionist.ClusterReceptionist
+import akka.typed.internal.receptionist.ReceptionistImpl
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+import scala.collection.JavaConverters._
 
-class ReceptionistExt(system: ActorSystem[_]) extends Extension {
-  val receptionist: ActorRef[Receptionist.Command] =
+class Receptionist(system: ActorSystem[_]) extends Extension {
+  private def hasCluster: Boolean =
+    // FIXME: replace with better indicator that cluster is enabled
+    system.settings.config.getString("akka.actor.provider") == "cluster"
+
+  val ref: ActorRef[Receptionist.Command] = {
+    val behavior =
+      if (hasCluster) ClusterReceptionist.clusterBehavior
+      else ReceptionistImpl.onlyLocalBehavior
+
     ActorRef(
-      system.systemActorOf(
-        LocalReceptionist.behavior // FIXME: either create local or cluster version depending on configuration
-        , "receptionist")(
+      system.systemActorOf(behavior, "receptionist")(
         // FIXME: where should that timeout be configured? Shouldn't there be a better `Extension`
         //        implementation that does this dance for us?
 
         10.seconds
       ))
+  }
 }
 
 /**
@@ -28,11 +41,23 @@ class ReceptionistExt(system: ActorSystem[_]) extends Extension {
  * Actors need only know the Receptionist’s identity in order to be able to use
  * the services of the registered Actors.
  */
-object Receptionist extends ExtensionId[ReceptionistExt] {
-  def createExtension(system: ActorSystem[_]): ReceptionistExt = new ReceptionistExt(system)
+object Receptionist extends ExtensionId[Receptionist] {
+  def createExtension(system: ActorSystem[_]): Receptionist = new Receptionist(system)
+  def get(system: ActorSystem[_]): Receptionist = apply(system)
 
-  private[typed] abstract class AbstractServiceKey {
+  /**
+   * Internal representation of [[ServiceKey]] which is needed
+   * in order to use a TypedMultiMap (using keys with a type parameter does not
+   * work in Scala 2.x).
+   *
+   * Internal API
+   */
+  @InternalApi
+  private[typed] sealed abstract class AbstractServiceKey {
     type Protocol
+
+    /** Type-safe down-cast */
+    def asServiceKey: ServiceKey[Protocol]
   }
 
   /**
@@ -41,50 +66,58 @@ object Receptionist extends ExtensionId[ReceptionistExt] {
    * protocol spoken by that service (think of it as the set of first messages
    * that a client could send).
    */
-  trait ServiceKey[T] extends AbstractServiceKey {
+  abstract class ServiceKey[T] extends AbstractServiceKey {
     final type Protocol = T
     def id: String
+    def asServiceKey: ServiceKey[T] = this
   }
 
-  /**
-   * Creates a service key. The given ID should uniquely define a service with a given protocol.
-   */
-  def key[T](_id: String)(implicit tTag: ClassTag[T]): ServiceKey[T] = new ServiceKey[T] {
-    def id: String = _id
-
-    override def toString: String = s"ServiceKey[$tTag]($id)"
+  object ServiceKey {
+    /**
+     * Creates a service key. The given ID should uniquely define a service with a given protocol.
+     */
+    // FIXME: not sure if the ClassTag pulls its weight. It's only used in toString currently.
+    def apply[T](id: String)(implicit tTag: ClassTag[T]): ServiceKey[T] = ReceptionistImpl.DefaultServiceKey(id)
   }
 
-  sealed abstract class AllCommands
+  /** Internal superclass for external and internal commands */
+  @InternalApi
+  sealed private[typed] abstract class AllCommands
 
   /**
    * The set of commands accepted by a Receptionist.
    */
   sealed abstract class Command extends AllCommands
+  @InternalApi
   private[typed] abstract class InternalCommand extends AllCommands
 
   /**
    * Associate the given [[akka.typed.ActorRef]] with the given [[ServiceKey]]. Multiple
    * registrations can be made for the same key. Unregistration is implied by
    * the end of the referenced Actor’s lifecycle.
+   *
+   * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor.
    */
-  final case class Register[T](key: ServiceKey[T], address: ActorRef[T], replyTo: ActorRef[Registered[T]]) extends Command
+  final case class Register[T](key: ServiceKey[T], serviceInstance: ActorRef[T], replyTo: ActorRef[Registered[T]]) extends Command
   object Register {
-    def apply[T](key: ServiceKey[T], address: ActorRef[T]): ActorRef[Registered[T]] ⇒ Register[T] =
-      replyTo ⇒ Register(key, address, replyTo)
+    /** Auxiliary constructor to be used with the ask pattern */
+    def apply[T](key: ServiceKey[T], service: ActorRef[T]): ActorRef[Registered[T]] ⇒ Register[T] =
+      replyTo ⇒ Register(key, service, replyTo)
   }
 
   /**
    * Confirmation that the given [[akka.typed.ActorRef]] has been associated with the [[ServiceKey]].
    */
-  final case class Registered[T](key: ServiceKey[T], address: ActorRef[T])
+  final case class Registered[T](key: ServiceKey[T], serviceInstance: ActorRef[T])
 
   /**
-   * Subscribe to service updates.
+   * Subscribe the given actor to service updates. When new instances are registered or unregistered to the given key
+   * the given subscriber will be sent a [[Listing]] with the new set of instances for that service.
+   *
+   * The subscription will be acknowledged by sending out a first [[Listing]]. The subscription automatically ends
+   * with the termination of the subscriber.
    */
   final case class Subscribe[T](key: ServiceKey[T], subscriber: ActorRef[Listing[T]]) extends Command
-
-  // FIXME: do we need a Subscribed event?
 
   /**
    * Query the Receptionist for a list of all Actors implementing the given
@@ -92,6 +125,7 @@ object Receptionist extends ExtensionId[ReceptionistExt] {
    */
   final case class Find[T](key: ServiceKey[T], replyTo: ActorRef[Listing[T]]) extends Command
   object Find {
+    /** Auxiliary constructor to use with the ask pattern */
     def apply[T](key: ServiceKey[T]): ActorRef[Listing[T]] ⇒ Find[T] =
       replyTo ⇒ Find(key, replyTo)
   }
@@ -99,5 +133,8 @@ object Receptionist extends ExtensionId[ReceptionistExt] {
   /**
    * Current listing of all Actors that implement the protocol given by the [[ServiceKey]].
    */
-  final case class Listing[T](key: ServiceKey[T], addresses: Set[ActorRef[T]])
+  final case class Listing[T](key: ServiceKey[T], serviceInstances: Set[ActorRef[T]]) {
+    /** Java API */
+    def getServiceInstances: java.util.Set[ActorRef[T]] = serviceInstances.asJava
+  }
 }
