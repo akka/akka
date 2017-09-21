@@ -163,7 +163,8 @@ lazy val typed = akkaModule("akka-typed")
     cluster % "compile->compile;test->test",
     clusterTools,
     clusterSharding,
-    distributedData)
+    distributedData,
+    persistence % "compile->compile;test->test")
 
 lazy val typedTests = akkaModule("akka-typed-tests")
   .dependsOn(typed, typedTestkit % "compile->compile;test->test")

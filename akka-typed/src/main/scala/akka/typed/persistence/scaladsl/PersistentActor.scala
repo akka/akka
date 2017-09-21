@@ -3,21 +3,21 @@
  */
 package akka.typed.persistence.scaladsl
 
-import akka.typed
-import akka.typed.scaladsl.ActorContext
-import akka.typed.ExtensibleBehavior
-import akka.typed.Signal
-import akka.typed.Behavior
-import scala.reflect.ClassTag
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.typed.Behavior.UntypedBehavior
+import akka.typed.Signal
+import akka.typed.persistence.internal.PersistentActorImpl
+import akka.typed.scaladsl.ActorContext
 
 object PersistentActor {
   def persistent[Command, Event, State](
-    persistenceId:  String,
-    initialState:   State,
-    commandHandler: ActionHandler[Command, Event, State],
-    onEvent:        (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior
+    persistenceId: String,
+    initialState:  State,
+    actions:       Actions[Command, Event, State],
+    onEvent:       (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
+    new PersistentBehavior(persistenceId, initialState, actions, onEvent,
+      recoveryCompleted = (state, _) ⇒ state)
 
   sealed abstract class PersistentEffect[+Event, State]() {
     def andThen(callback: State ⇒ Unit): PersistentEffect[Event, State]
@@ -35,31 +35,100 @@ object PersistentActor {
     def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
   }
 
-  class ActionHandler[Command: ClassTag, Event, State](val handler: ((Any, State, ActorContext[Command]) ⇒ PersistentEffect[Event, State])) {
-    def onSignal(signalHandler: PartialFunction[(Any, State, ActorContext[Command]), PersistentEffect[Event, State]]): ActionHandler[Command, Event, State] =
-      ActionHandler {
-        case (command: Command, state, ctx) ⇒ handler(command, state, ctx)
-        case (signal: Signal, state, ctx)   ⇒ signalHandler.orElse(unhandledSignal).apply((signal, state, ctx))
-        case _                              ⇒ Unhandled()
-      }
-    private val unhandledSignal: PartialFunction[(Any, State, ActorContext[Command]), PersistentEffect[Event, State]] = { case _ ⇒ Unhandled() }
+  type CommandHandler[Command, Event, State] = Function3[Command, State, ActorContext[Command], PersistentEffect[Event, State]]
+  type SignalHandler[Command, Event, State] = PartialFunction[(Signal, State, ActorContext[Command]), PersistentEffect[Event, State]]
+
+  /**
+   * `Actions` defines command handlers and partial function for other signals,
+   * e.g. `Termination` messages if `watch` is used.
+   *
+   * Note that you can have different actions based on current state by using
+   * [[Actions#byState]].
+   */
+  object Actions {
+    def apply[Command, Event, State](commandHandler: CommandHandler[Command, Event, State]): Actions[Command, Event, State] =
+      new Actions(commandHandler, Map.empty)
+
+    /**
+     * Select different actions based on current state.
+     */
+    def byState[Command, Event, State](choice: State ⇒ Actions[Command, Event, State]): Actions[Command, Event, State] =
+      new ByStateActions(choice, signalHandler = PartialFunction.empty)
+
   }
-  object ActionHandler {
-    def cmd[Command: ClassTag, Event, State](commandHandler: Command ⇒ PersistentEffect[Event, State]): ActionHandler[Command, Event, State] = ???
-    def apply[Command: ClassTag, Event, State](commandHandler: ((Command, State, ActorContext[Command]) ⇒ PersistentEffect[Event, State])): ActionHandler[Command, Event, State] =
-      new ActionHandler(commandHandler.asInstanceOf[((Any, State, ActorContext[Command]) ⇒ PersistentEffect[Event, State])])
-    def byState[Command: ClassTag, Event, State](actionHandler: State ⇒ ActionHandler[Command, Event, State]): ActionHandler[Command, Event, State] =
-      new ActionHandler(handler = {
-        case (action, state, ctx) ⇒ actionHandler(state).handler(action, state, ctx)
-      })
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] final class ByStateActions[Command, Event, State](
+    choice:        State ⇒ Actions[Command, Event, State],
+    signalHandler: SignalHandler[Command, Event, State])
+    extends Actions[Command, Event, State](
+      commandHandler = (cmd, state, ctx) ⇒ choice(state).commandHandler(cmd, state, ctx),
+      signalHandler) {
+
+    // SignalHandler may be registered in the wrapper or in the wrapped
+    private[akka] override def sigHandler(state: State): SignalHandler[Command, Event, State] =
+      choice(state).sigHandler(state).orElse(signalHandler)
+
+    // override to preserve the ByStateActions
+    private[akka] override def withSignalHandler(
+      handler: SignalHandler[Command, Event, State]): Actions[Command, Event, State] =
+      new ByStateActions(choice, handler)
+
   }
+
+  /**
+   * `Actions` defines command handlers and partial function for other signals,
+   * e.g. `Termination` messages if `watch` is used.
+   * `Actions` is an immutable class.
+   */
+  @DoNotInherit class Actions[Command, Event, State] private[akka] (
+    val commandHandler: CommandHandler[Command, Event, State],
+    val signalHandler:  SignalHandler[Command, Event, State]) {
+
+    @InternalApi private[akka] def sigHandler(state: State): SignalHandler[Command, Event, State] =
+      signalHandler
+
+    def onSignal(handler: SignalHandler[Command, Event, State]): Actions[Command, Event, State] =
+      withSignalHandler(signalHandler.orElse(handler))
+
+    /** INTERNAL API */
+    @InternalApi private[akka] def withSignalHandler(
+      handler: SignalHandler[Command, Event, State]): Actions[Command, Event, State] =
+      new Actions(commandHandler, handler)
+
+  }
+
 }
 
-class PersistentBehavior[Command, Event, State] extends ExtensibleBehavior[Command] {
-  override def receiveSignal(ctx: typed.ActorContext[Command], msg: Signal): Behavior[Command] = ???
-  override def receiveMessage(ctx: typed.ActorContext[Command], msg: Command): Behavior[Command] = ???
+class PersistentBehavior[Command, Event, State](
+  val persistenceId:     String,
+  val initialState:      State,
+  val actions:           PersistentActor.Actions[Command, Event, State],
+  val onEvent:           (Event, State) ⇒ State,
+  val recoveryCompleted: (State, ActorContext[Command]) ⇒ State) extends UntypedBehavior[Command] {
+  import PersistentActor._
 
-  def onRecoveryComplete(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State] = ???
-  def snapshotOnState(predicate: State ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
-  def snapshotOn(predicate: (State, Event) ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
+  /** INTERNAL API */
+  @InternalApi private[akka] override def untypedProps: akka.actor.Props = PersistentActorImpl.props(() ⇒ this)
+
+  /**
+   * The `callback` function is called to notify the actor that the recovery process
+   * is finished.
+   */
+  def onRecoveryCompleted(callback: (State, ActorContext[Command]) ⇒ State): PersistentBehavior[Command, Event, State] =
+    copy(recoveryCompleted = callback)
+
+  def snapshotOnState(predicate: State ⇒ Boolean): PersistentBehavior[Command, Event, State] = ??? // FIXME
+
+  def snapshotOn(predicate: (State, Event) ⇒ Boolean): PersistentBehavior[Command, Event, State] = ??? // FIXME
+
+  private def copy(
+    persistenceId:     String                                 = persistenceId,
+    initialState:      State                                  = initialState,
+    actions:           Actions[Command, Event, State]         = actions,
+    onEvent:           (Event, State) ⇒ State                 = onEvent,
+    recoveryCompleted: (State, ActorContext[Command]) ⇒ State = recoveryCompleted): PersistentBehavior[Command, Event, State] =
+    new PersistentBehavior(persistenceId, initialState, actions, onEvent, recoveryCompleted)
 }
