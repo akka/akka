@@ -56,10 +56,12 @@ object PersistentActorCompileOnlyTest {
 
       initialState = ExampleState(Nil),
 
-      actions = Actions.command {
-        case Cmd(data, sender) ⇒
-          Persist[MyEvent, ExampleState](Evt(data))
-            .andThen { _ ⇒ { sender ! Ack } }
+      actions = Actions { (cmd, _, ctx) ⇒
+        cmd match {
+          case Cmd(data, sender) ⇒
+            ctx.persist(Evt(data))
+              .andThen { _ ⇒ { sender ! Ack } }
+        }
       },
 
       onEvent = {
@@ -100,7 +102,7 @@ object PersistentActorCompileOnlyTest {
 
       actions = Actions((cmd, state, ctx) ⇒ cmd match {
         case DoSideEffect(data) ⇒
-          Persist[Event, EventsInFlight](IntentRecorded(state.nextCorrelationId, data)).andThen { _ ⇒
+          ctx.persist(IntentRecorded(state.nextCorrelationId, data)).andThen { _ ⇒
             performSideEffect(ctx.self, state.nextCorrelationId, data)
           }
         case AcknowledgeSideEffect(correlationId) ⇒
@@ -209,7 +211,7 @@ object PersistentActorCompileOnlyTest {
       persistenceId = "asdf",
       initialState = State(Nil),
       actions = Actions((cmd, _, ctx) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist[Event, State](TaskRegistered(task))
+        case RegisterTask(task) ⇒ ctx.persist(TaskRegistered(task))
           .andThen { _ ⇒
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
@@ -240,7 +242,7 @@ object PersistentActorCompileOnlyTest {
       initialState = State(Nil),
       // The 'onSignal' seems to break type inference here.. not sure if that can be avoided?
       actions = Actions[RegisterTask, Event, State]((cmd, state, ctx) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist[Event, State](TaskRegistered(task))
+        case RegisterTask(task) ⇒ ctx.persist(TaskRegistered(task))
           .andThen { _ ⇒
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
