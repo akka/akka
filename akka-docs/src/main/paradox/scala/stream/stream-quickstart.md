@@ -290,7 +290,7 @@ Java
 :   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #authors-foreach-println }
 
 Materializing and running a stream always requires a `Materializer` to be @scala[in implicit scope (or passed in explicitly,
-like this: `.run(materializer)`)]@java[to be passed in explicitly, like this: `.run(mat)`].
+like this: `.run(materializer)`)]@java[passed in explicitly, like this: `.run(mat)`].
 
 The complete snippet looks like this:
 
@@ -381,7 +381,7 @@ Scala
 :   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweets-slow-consumption-dropHead }
 
 Java
-:  @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-slow-consumption-dropHead } 
+:  @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-slow-consumption-dropHead }
 
 The `buffer` element takes an explicit and required `OverflowStrategy`, which defines how the buffer should react
 when it receives another element while it is full. Strategies provided include dropping the oldest element (`dropHead`),
