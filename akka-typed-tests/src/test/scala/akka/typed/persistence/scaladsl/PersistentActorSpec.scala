@@ -19,6 +19,7 @@ import org.scalatest.concurrent.Eventually
 import akka.util.Timeout
 import akka.typed.persistence.scaladsl.PersistentActor._
 import akka.typed.SupervisorStrategy
+import akka.typed.Terminated
 
 object PersistentActorSpec {
 
@@ -28,24 +29,49 @@ object PersistentActorSpec {
 
   sealed trait Command
   final case object Increment extends Command
+  final case object IncrementLater extends Command
+  final case object IncrementAfterReceiveTimeout extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
+  private case object Timeout extends Command
 
   sealed trait Event
   final case class Incremented(delta: Int) extends Event
 
   final case class State(value: Int, history: Vector[Int])
 
+  case object Tick
+
   def counter(persistenceId: String): Behavior[Command] = {
     PersistentActor.persistent[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
-      actions = Actions((cmd, state, ctx) ⇒ cmd match {
+      actions = Actions[Command, Event, State]((cmd, state, ctx) ⇒ cmd match {
         case Increment ⇒
           Persist(Incremented(1))
         case GetValue(replyTo) ⇒
           replyTo ! state
           PersistNothing()
-      }),
+        case IncrementLater ⇒
+          // purpose is to test signals
+          val delay = ctx.spawnAnonymous(Actor.withTimers[Tick.type] { timers ⇒
+            timers.startSingleTimer(Tick, Tick, 10.millis)
+            Actor.immutable((_, msg) ⇒ msg match {
+              case Tick ⇒ Actor.stopped
+            })
+          })
+          ctx.watch(delay)
+          PersistNothing()
+        case IncrementAfterReceiveTimeout ⇒
+          ctx.setReceiveTimeout(10.millis, Timeout)
+          PersistNothing()
+        case Timeout ⇒
+          ctx.cancelReceiveTimeout()
+          Persist(Incremented(100))
+      })
+        .onSignal {
+          case (Terminated(_), _, _) ⇒
+            Persist(Incremented(10))
+        },
       onEvent = (evt, state) ⇒ evt match {
         case Incremented(delta) ⇒
           State(state.value + delta, state.history :+ state.value)
@@ -83,9 +109,35 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
       val c2 = start(counter("c2"))
       c2 ! GetValue(probe.ref)
       probe.expectMsg(State(3, Vector(0, 1, 2)))
-      c ! Increment
-      c ! GetValue(probe.ref)
+      c2 ! Increment
+      c2 ! GetValue(probe.ref)
       probe.expectMsg(State(4, Vector(0, 1, 2, 3)))
+    }
+
+    def `handle Terminated signal`(): Unit = {
+      val c = start(counter("c3"))
+
+      val probe = TestProbe[State]
+      c ! Increment
+      c ! IncrementLater
+      eventually {
+        c ! GetValue(probe.ref)
+        probe.expectMsg(State(11, Vector(0, 1)))
+      }
+    }
+
+    def `handle receive timeout`(): Unit = {
+      val c = start(counter("c4"))
+
+      val probe = TestProbe[State]
+      c ! Increment
+      c ! IncrementAfterReceiveTimeout
+      // let it timeout
+      Thread.sleep(500)
+      eventually {
+        c ! GetValue(probe.ref)
+        probe.expectMsg(State(101, Vector(0, 1)))
+      }
     }
 
     def `work when wrapped in other behavior`(): Unit = {
@@ -93,7 +145,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
       // behavior is running as an untyped PersistentActor it's not possible to
       // wrap it in Actor.deferred or Actor.supervise
       pending
-      val behavior = Actor.supervise[Command](counter("c3"))
+      val behavior = Actor.supervise[Command](counter("c13"))
         .onFailure(SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.1))
       val c = start(behavior)
     }

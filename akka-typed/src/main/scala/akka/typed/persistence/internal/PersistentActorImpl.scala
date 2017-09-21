@@ -3,7 +3,7 @@
  */
 package akka.typed.persistence.internal
 
-import akka.actor.Props
+import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.{ PersistentActor ⇒ UntypedPersistentActor }
@@ -14,6 +14,8 @@ import akka.typed.internal.adapter.ActorContextAdapter
 import akka.typed.persistence.scaladsl.PersistentActor
 import akka.typed.persistence.scaladsl.PersistentBehavior
 import akka.typed.scaladsl.ActorContext
+import akka.typed.Terminated
+import akka.typed.internal.adapter.ActorRefAdapter
 
 /**
  * INTERNAL API
@@ -27,8 +29,8 @@ import akka.typed.scaladsl.ActorContext
   case object Stop
 
   def props[C, E, S](
-    behaviorFactory: () ⇒ PersistentBehavior[C, E, S]): Props =
-    Props(new PersistentActorImpl(behaviorFactory()))
+    behaviorFactory: () ⇒ PersistentBehavior[C, E, S]): a.Props =
+    a.Props(new PersistentActorImpl(behaviorFactory()))
 
 }
 
@@ -52,7 +54,8 @@ import akka.typed.scaladsl.ActorContext
 
   private val eventHandler: (E, S) ⇒ S = behavior.onEvent
 
-  private val ctx = new ActorContextAdapter[C](context).asScala
+  private val ctxAdapter = new ActorContextAdapter[C](context)
+  private val ctx = ctxAdapter.asScala
 
   override def receiveRecover: Receive = {
     case SnapshotOffer(_, snapshot) ⇒
@@ -80,8 +83,12 @@ import akka.typed.scaladsl.ActorContext
       try {
         // FIXME sigHandler(state)
         val effect = msg match {
-          case sig: Signal ⇒
+          case a.Terminated(ref) ⇒
+            val sig = Terminated(ActorRefAdapter(ref))(null)
             actions.sigHandler(state).applyOrElse((sig, state, ctx), unhandledSignal)
+          case a.ReceiveTimeout ⇒
+            actions.commandHandler(ctxAdapter.receiveTimeoutMsg, state, ctx)
+          // TODO note that PostStop and PreRestart signals are not handled, we wouldn't be able to persist there
           case cmd: C @unchecked ⇒
             // FIXME we could make it more safe by using ClassTag for C
             actions.commandHandler(cmd, state, ctx)
