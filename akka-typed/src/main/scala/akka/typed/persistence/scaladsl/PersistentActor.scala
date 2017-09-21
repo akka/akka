@@ -3,6 +3,7 @@
  */
 package akka.typed.persistence.scaladsl
 
+import scala.collection.immutable
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.typed.Behavior.UntypedBehavior
@@ -20,20 +21,46 @@ object PersistentActor {
       recoveryCompleted = (state, _) ⇒ state)
 
   sealed abstract class PersistentEffect[+Event, State]() {
-    def andThen(callback: State ⇒ Unit): PersistentEffect[Event, State]
+    /* All events that will be persisted in this effect */
+    def events: immutable.Seq[Event] = Nil
+
+    /* All side effects that will be performed in this effect */
+    def sideEffects: immutable.Seq[ChainableEffect[_, State]] =
+      if (isInstanceOf[ChainableEffect[_, State]]) immutable.Seq(asInstanceOf[ChainableEffect[_, State]])
+      else Nil
+
+    def andThen(sideEffects: ChainableEffect[_, State]*): PersistentEffect[Event, State] =
+      CompositeEffect(if (events.isEmpty) None else Some(this), sideEffects.toList)
+
+    /** Convenience method to register a side effect with just a callback function */
+    def andThen(callback: State ⇒ Unit): PersistentEffect[Event, State] =
+      andThen(SideEffect[Event, State](callback))
   }
 
-  final case class PersistNothing[Event, State](callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
-    def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
+  case class CompositeEffect[Event, State](persistingEffect: Option[PersistentEffect[Event, State]], override val sideEffects: immutable.Seq[ChainableEffect[_, State]]) extends PersistentEffect[Event, State] {
+    override val events = persistingEffect.map(_.events).getOrElse(Nil)
+    override def andThen(additionalSideEffects: ChainableEffect[_, State]*): CompositeEffect[Event, State] =
+      copy(sideEffects = sideEffects ++ additionalSideEffects)
+  }
+  object CompositeEffect {
+    def apply[Event, State](persistAll: PersistAll[Event, State], sideEffects: immutable.Seq[ChainableEffect[_, State]]): CompositeEffect[Event, State] =
+      CompositeEffect(Some(persistAll), sideEffects)
   }
 
-  case class Persist[Event, State](event: Event, callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
-    def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
-  }
+  case class PersistNothing[Event, State]() extends PersistentEffect[Event, State]
 
-  case class Unhandled[Event, State](callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
-    def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
+  case class Persist[Event, State](event: Event) extends PersistentEffect[Event, State] {
+    override val events = event :: Nil
   }
+  case class PersistAll[Event, State](override val events: immutable.Seq[Event]) extends PersistentEffect[Event, State]
+
+  trait ChainableEffect[Event, State] {
+    self: PersistentEffect[Event, State] ⇒
+  }
+  case class SideEffect[Event, State](effect: State ⇒ Unit) extends PersistentEffect[Event, State] with ChainableEffect[Event, State]
+  case class Stop[Event, State]() extends PersistentEffect[Event, State] with ChainableEffect[Event, State]()
+
+  case class Unhandled[Event, State]() extends PersistentEffect[Event, State]
 
   type CommandHandler[Command, Event, State] = Function3[Command, State, ActorContext[Command], PersistentEffect[Event, State]]
   type SignalHandler[Command, Event, State] = PartialFunction[(Signal, State, ActorContext[Command]), PersistentEffect[Event, State]]

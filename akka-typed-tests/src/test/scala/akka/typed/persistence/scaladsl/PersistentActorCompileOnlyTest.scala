@@ -58,7 +58,7 @@ object PersistentActorCompileOnlyTest {
 
       actions = Actions.command {
         case Cmd(data, sender) ⇒
-          Persist[MyEvent, ExampleState](Evt(data))
+          Persist(Evt(data))
             .andThen { _ ⇒ { sender ! Ack } }
       },
 
@@ -100,7 +100,7 @@ object PersistentActorCompileOnlyTest {
 
       actions = Actions((cmd, state, ctx) ⇒ cmd match {
         case DoSideEffect(data) ⇒
-          Persist[Event, EventsInFlight](IntentRecorded(state.nextCorrelationId, data)).andThen { _ ⇒
+          Persist(IntentRecorded(state.nextCorrelationId, data)).andThen { _ ⇒
             performSideEffect(ctx.self, state.nextCorrelationId, data)
           }
         case AcknowledgeSideEffect(correlationId) ⇒
@@ -209,7 +209,7 @@ object PersistentActorCompileOnlyTest {
       persistenceId = "asdf",
       initialState = State(Nil),
       actions = Actions((cmd, _, ctx) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist[Event, State](TaskRegistered(task))
+        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
           .andThen { _ ⇒
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
@@ -240,7 +240,7 @@ object PersistentActorCompileOnlyTest {
       initialState = State(Nil),
       // The 'onSignal' seems to break type inference here.. not sure if that can be avoided?
       actions = Actions[RegisterTask, Event, State]((cmd, state, ctx) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist[Event, State](TaskRegistered(task))
+        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
           .andThen { _ ⇒
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
@@ -351,9 +351,11 @@ object PersistentActorCompileOnlyTest {
     sealed trait Command
     case class Greet(name: String) extends Command
     case class CheerUp(sender: ActorRef[Ack.type]) extends Command
+    case class Remember(memory: String) extends Command
 
     sealed trait Event
     case class MoodChanged(to: Mood) extends Event
+    case class Remembered(memory: String) extends Event
 
     def changeMoodIfNeeded(currentState: Mood, newMood: Mood): PersistentEffect[Event, Mood] =
       if (currentState == newMood) PersistNothing()
@@ -370,12 +372,48 @@ object PersistentActorCompileOnlyTest {
           case CheerUp(sender) ⇒
             changeMoodIfNeeded(state, Happy)
               .andThen { _ ⇒ sender ! Ack }
+          case Remember(memory) ⇒
+            // A more elaborate example to show we still have full control over the effects
+            // if needed (e.g. when some logic is factored out but you want to add more effects)
+            val commonEffects = changeMoodIfNeeded(state, Happy)
+            CompositeEffect(
+              PersistAll[Event, Mood](commonEffects.events :+ Remembered(memory)),
+              commonEffects.sideEffects
+            )
+
         }
       },
       onEvent = {
-        case (MoodChanged(to), _) ⇒ to
+        case (MoodChanged(to), _)   ⇒ to
+        case (Remembered(_), state) ⇒ state
       })
 
+  }
+
+  object Stopping {
+    sealed trait Command
+    case object Enough extends Command
+
+    sealed trait Event
+    case object Done extends Event
+
+    type State = Unit
+
+    PersistentActor.persistent[Command, Event, State](
+      persistenceId = "myPersistenceId",
+      initialState = (),
+      actions = Actions { (cmd, _, _) ⇒
+        cmd match {
+          case Enough ⇒
+            Persist(Done)
+              .andThen(
+                SideEffect(_ ⇒ println("yay")),
+                Stop())
+        }
+      },
+      onEvent = {
+        case (Done, _) ⇒ ()
+      })
   }
 
 }
