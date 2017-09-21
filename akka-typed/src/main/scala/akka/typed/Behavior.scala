@@ -275,8 +275,11 @@ object Behavior {
 
   private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] =
     behavior match {
-      case SameBehavior | UnhandledBehavior | _: UntypedBehavior[_] ⇒
+      case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
+      case _: UntypedBehavior[_] ⇒
+        throw new IllegalArgumentException(s"cannot wrap behavior [$behavior] in " +
+          "Actor.deferred, Actor.supervise or similar")
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
       case IgnoreBehavior         ⇒ SameBehavior.asInstanceOf[Behavior[T]]
       case s: StoppedBehavior[T]  ⇒ s

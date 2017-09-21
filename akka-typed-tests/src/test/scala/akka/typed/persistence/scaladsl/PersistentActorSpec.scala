@@ -18,6 +18,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 import akka.util.Timeout
 import akka.typed.persistence.scaladsl.PersistentActor._
+import akka.typed.SupervisorStrategy
 
 object PersistentActorSpec {
 
@@ -85,6 +86,16 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
       c ! Increment
       c ! GetValue(probe.ref)
       probe.expectMsg(State(4, Vector(0, 1, 2, 3)))
+    }
+
+    def `work when wrapped in other behavior`(): Unit = {
+      // FIXME This is a major problem with current implementation. Since the
+      // behavior is running as an untyped PersistentActor it's not possible to
+      // wrap it in Actor.deferred or Actor.supervise
+      pending
+      val behavior = Actor.supervise[Command](counter("c3"))
+        .onFailure(SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.1))
+      val c = start(behavior)
     }
 
   }
