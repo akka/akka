@@ -16,9 +16,19 @@ import akka.util.TypedMultiMap
 
 import scala.reflect.ClassTag
 
+/**
+ * Marker interface to use with dynamic access
+ *
+ * Internal API
+ */
+@InternalApi
+private[typed] trait ReceptionistBehaviorProvider {
+  def behavior: Behavior[Command]
+}
+
 /** Internal API */
 @InternalApi
-private[typed] object ReceptionistImpl {
+private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
   // FIXME: make sure to provide serializer
   case class DefaultServiceKey[T](id: String)(implicit tTag: ClassTag[T]) extends ServiceKey[T] {
     override def toString: String = s"ServiceKey[$tTag]($id)"
@@ -36,7 +46,8 @@ private[typed] object ReceptionistImpl {
     def onUnregister[T](key: ServiceKey[T], address: ActorRef[T]): Unit = ()
   }
 
-  val onlyLocalBehavior: Behavior[Command] = init(_ ⇒ LocalExternalInterface)
+  override def behavior: Behavior[Command] = localOnlyBehavior
+  val localOnlyBehavior: Behavior[Command] = init(_ ⇒ LocalExternalInterface)
 
   type KV[K <: AbstractServiceKey] = ActorRef[K#Protocol]
   type ServiceMap = TypedMultiMap[AbstractServiceKey, KV]
@@ -52,7 +63,7 @@ private[typed] object ReceptionistImpl {
   type SubscriptionsKV[K <: AbstractServiceKey] = ActorRef[Listing[K#Protocol]]
   type SubscriptionMap = TypedMultiMap[AbstractServiceKey, SubscriptionsKV]
 
-  private[receptionist] def init(externalInterfaceFactory: ActorContext[AllCommands] ⇒ ExternalInterface): Behavior[Command] =
+  private[typed] def init(externalInterfaceFactory: ActorContext[AllCommands] ⇒ ExternalInterface): Behavior[Command] =
     Actor.deferred[AllCommands] { ctx ⇒
       val externalInterface = externalInterfaceFactory(ctx)
       behavior(

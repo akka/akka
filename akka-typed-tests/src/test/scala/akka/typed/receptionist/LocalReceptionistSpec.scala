@@ -33,7 +33,7 @@ class LocalReceptionistSpec extends TypedSpec with Eventually {
     }
   }
 
-  import akka.typed.internal.receptionist.ReceptionistImpl.{ onlyLocalBehavior ⇒ behavior }
+  import akka.typed.internal.receptionist.ReceptionistImpl.{ localOnlyBehavior ⇒ behavior }
 
   trait CommonTests extends StartSupport {
     implicit def system: ActorSystem[TypedSpec.Command]

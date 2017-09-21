@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.typed.internal.receptionist
+package akka.typed.cluster.internal.receptionist
 
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
@@ -12,6 +12,8 @@ import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.Replicator.WriteConsistency
 import akka.typed.ActorRef
 import akka.typed.Behavior
+import akka.typed.internal.receptionist.ReceptionistBehaviorProvider
+import akka.typed.internal.receptionist.ReceptionistImpl
 import akka.typed.internal.receptionist.ReceptionistImpl._
 import akka.typed.receptionist.Receptionist.AllCommands
 import akka.typed.receptionist.Receptionist.Command
@@ -23,7 +25,7 @@ import scala.language.higherKinds
 
 /** Internal API */
 @InternalApi
-private[typed] object ClusterReceptionist {
+private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   private final val ReceptionistKey = ORMultiMapKey[ServiceKey[_], ActorRef[_]]("ReceptionistKey")
   private final val EmptyORMultiMap = ORMultiMap.empty[ServiceKey[_], ActorRef[_]]
 
@@ -48,6 +50,7 @@ private[typed] object ClusterReceptionist {
     def apply(map: ORMultiMap[ServiceKey[_], ActorRef[_]]): ServiceMap = TypedORMultiMap[ServiceKey, ActorRef](map)
   }
 
+  def behavior: Behavior[Command] = clusterBehavior
   val clusterBehavior: Behavior[Command] = ReceptionistImpl.init(clusteredReceptionist())
 
   case class ClusterReceptionistSettings(

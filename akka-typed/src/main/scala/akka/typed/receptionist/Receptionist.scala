@@ -8,12 +8,12 @@ import akka.typed.ActorRef
 import akka.typed.ActorSystem
 import akka.typed.Extension
 import akka.typed.ExtensionId
-import akka.typed.internal.receptionist.ClusterReceptionist
+import akka.typed.internal.receptionist.ReceptionistBehaviorProvider
 import akka.typed.internal.receptionist.ReceptionistImpl
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
 
 class Receptionist(system: ActorSystem[_]) extends Extension {
   private def hasCluster: Boolean =
@@ -22,8 +22,18 @@ class Receptionist(system: ActorSystem[_]) extends Extension {
 
   val ref: ActorRef[Receptionist.Command] = {
     val behavior =
-      if (hasCluster) ClusterReceptionist.clusterBehavior
-      else ReceptionistImpl.onlyLocalBehavior
+      if (hasCluster)
+        system.dynamicAccess
+          .createInstanceFor[ReceptionistBehaviorProvider]("akka.typed.cluster.internal.ClusterReceptionist", Nil)
+          .recover {
+            case ex ⇒
+              system.log.error(
+                ex,
+                "ClusterReceptionist could not be loaded dynamically. Make sure you have all required binaries on the classpath.")
+              ReceptionistImpl
+          }.get.behavior
+
+      else ReceptionistImpl.localOnlyBehavior
 
     ActorRef(
       system.systemActorOf(behavior, "receptionist")(
