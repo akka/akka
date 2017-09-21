@@ -318,7 +318,7 @@ trait TestKitBase {
             else null.asInstanceOf[A]
         }
 
-      if (result != failed) result
+      if (!failed) result
       else {
         Thread.sleep(t.toMillis)
         poll((stop - now) min interval)
