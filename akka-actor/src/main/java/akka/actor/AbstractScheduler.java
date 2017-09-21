@@ -19,7 +19,7 @@ import scala.concurrent.duration.FiniteDuration;
  *
  * Scheduler implementation are loaded reflectively at ActorSystem start-up
  * with the following constructor arguments:
- *  1) the system’s com.typesafe.config.Config (from system.settings.config)
+ *  1) the system's com.typesafe.config.Config (from system.settings.config)
  *  2) a akka.event.LoggingAdapter
  *  3) a java.util.concurrent.ThreadFactory
  */

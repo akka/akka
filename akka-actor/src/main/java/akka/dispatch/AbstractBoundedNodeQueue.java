@@ -88,7 +88,7 @@ public abstract class AbstractBoundedNodeQueue<T> {
     public final int capacity() {
         return capacity;
     }
-    // Possible TODO — impl. could be switched to addNode(new Node(value)) if we want to allocate even if full already
+    // Possible TODO - impl. could be switched to addNode(new Node(value)) if we want to allocate even if full already
     public final boolean add(final T value) {
         for(Node<T> n = null;;) {
             final Node<T> lastNode = getEnq();
