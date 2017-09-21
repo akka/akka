@@ -40,14 +40,16 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
     def removeBinding[T](key: K[T], value: V[T])(implicit cluster: Cluster): TypedORMultiMap[K, V] =
       TypedORMultiMap[K, V](map.removeBinding(key, value))
+
+    def toORMultiMap: ORMultiMap[K[_], V[_]] = map
   }
   object TypedORMultiMap {
     def empty[K[_], V[_]] = TypedORMultiMap[K, V](ORMultiMap.empty[K[_], V[_]])
   }
-  type ServiceMap = TypedORMultiMap[ServiceKey, ActorRef]
-  object ServiceMap {
-    def empty: ServiceMap = TypedORMultiMap.empty
-    def apply(map: ORMultiMap[ServiceKey[_], ActorRef[_]]): ServiceMap = TypedORMultiMap[ServiceKey, ActorRef](map)
+  type ServiceRegistry = TypedORMultiMap[ServiceKey, ActorRef]
+  object ServiceRegistry {
+    def empty: ServiceRegistry = TypedORMultiMap.empty
+    def apply(map: ORMultiMap[ServiceKey[_], ActorRef[_]]): ServiceRegistry = TypedORMultiMap[ServiceKey, ActorRef](map)
   }
 
   def behavior: Behavior[Command] = clusterBehavior
@@ -67,22 +69,20 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     val replicator = DistributedData(untypedSystem).replicator
     implicit val cluster = Cluster(untypedSystem)
 
-    var state = ServiceMap.empty
+    var state = ServiceRegistry.empty
 
-    def diff(lastState: ServiceMap, newState: ServiceMap): ReceptionistImpl.ServiceMap = {
-      def changesForKey[T](map: ReceptionistImpl.ServiceMap, key: ServiceKey[T]): ReceptionistImpl.ServiceMap = {
+    def diff(lastState: ServiceRegistry, newState: ServiceRegistry): ReceptionistImpl.LocalServiceRegistry = {
+      def changesForKey[T](registry: ReceptionistImpl.LocalServiceRegistry, key: ServiceKey[T]): ReceptionistImpl.LocalServiceRegistry = {
         val oldValues = lastState.getOrEmpty(key)
         val newValues = newState.getOrEmpty(key)
         if (oldValues != newValues)
-          newValues.foldLeft(map) { (map, entry) ⇒
-            map.inserted(key)(entry)
-          }
+          newValues.foldLeft(registry) { (registry, entry) ⇒ registry.inserted(key)(entry) }
         else
-          map
+          registry
       }
 
-      (lastState.map.entries.keySet ++ newState.map.entries.keySet)
-        .foldLeft(ReceptionistImpl.ServiceMap.empty)(changesForKey(_, _))
+      (lastState.toORMultiMap.entries.keySet ++ newState.toORMultiMap.entries.keySet)
+        .foldLeft(ReceptionistImpl.LocalServiceRegistry.empty)(changesForKey(_, _))
     }
 
     val adapter: ActorRef[Replicator.ReplicatorMessage] =
@@ -90,7 +90,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         x match {
           case changed @ Replicator.Changed(ReceptionistKey) ⇒
             val value = changed.get(ReceptionistKey)
-            val changes = diff(state, ServiceMap(value))
+            val changes = diff(state, ServiceRegistry(value))
             RegistrationsChangedExternally(changes)
         }
       }
@@ -98,18 +98,18 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     replicator ! Replicator.Subscribe(ReceptionistKey, adapter.toUntyped)
 
     new ExternalInterface {
-      private def update(update: ServiceMap ⇒ ServiceMap): Unit = {
+      private def updateRegistry(update: ServiceRegistry ⇒ ServiceRegistry): Unit = {
         state = update(state)
-        replicator ! Replicator.Update(ReceptionistKey, EmptyORMultiMap, settings.writeConsistency) { map ⇒
-          update(ServiceMap(map)).map
+        replicator ! Replicator.Update(ReceptionistKey, EmptyORMultiMap, settings.writeConsistency) { registry ⇒
+          update(ServiceRegistry(registry)).toORMultiMap
         }
       }
 
       def onRegister[T](key: ServiceKey[T], address: ActorRef[T]): Unit =
-        update(_.addBinding(key, address))
+        updateRegistry(_.addBinding(key, address))
 
       def onUnregister[T](key: ServiceKey[T], address: ActorRef[T]): Unit =
-        update(_.removeBinding(key, address))
+        updateRegistry(_.removeBinding(key, address))
     }
   }
 }

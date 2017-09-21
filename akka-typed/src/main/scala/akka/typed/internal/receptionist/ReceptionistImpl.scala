@@ -50,18 +50,18 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
   val localOnlyBehavior: Behavior[Command] = init(_ ⇒ LocalExternalInterface)
 
   type KV[K <: AbstractServiceKey] = ActorRef[K#Protocol]
-  type ServiceMap = TypedMultiMap[AbstractServiceKey, KV]
-  object ServiceMap {
-    val empty: ServiceMap = TypedMultiMap.empty[AbstractServiceKey, KV]
+  type LocalServiceRegistry = TypedMultiMap[AbstractServiceKey, KV]
+  object LocalServiceRegistry {
+    val empty: LocalServiceRegistry = TypedMultiMap.empty[AbstractServiceKey, KV]
   }
 
   sealed abstract class ReceptionistInternalCommand extends InternalCommand
   final case class RegisteredActorTerminated[T](key: ServiceKey[T], address: ActorRef[T]) extends ReceptionistInternalCommand
   final case class SubscriberTerminated[T](key: ServiceKey[T], address: ActorRef[Listing[T]]) extends ReceptionistInternalCommand
-  final case class RegistrationsChangedExternally(changes: ServiceMap) extends ReceptionistInternalCommand
+  final case class RegistrationsChangedExternally(changes: LocalServiceRegistry) extends ReceptionistInternalCommand
 
   type SubscriptionsKV[K <: AbstractServiceKey] = ActorRef[Listing[K#Protocol]]
-  type SubscriptionMap = TypedMultiMap[AbstractServiceKey, SubscriptionsKV]
+  type SubscriptionRegistry = TypedMultiMap[AbstractServiceKey, SubscriptionsKV]
 
   private[typed] def init(externalInterfaceFactory: ActorContext[AllCommands] ⇒ ExternalInterface): Behavior[Command] =
     Actor.deferred[AllCommands] { ctx ⇒
@@ -73,13 +73,13 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
     }.narrow[Command]
 
   private def behavior(
-    serviceMap:        ServiceMap,
-    subscriptions:     SubscriptionMap,
+    serviceRegistry:   LocalServiceRegistry,
+    subscriptions:     SubscriptionRegistry,
     externalInterface: ExternalInterface): Behavior[AllCommands] = {
 
     /** Helper to create new state */
-    def next(newMap: ServiceMap = serviceMap, newSubs: SubscriptionMap = subscriptions) =
-      behavior(newMap, newSubs, externalInterface)
+    def next(newRegistry: LocalServiceRegistry = serviceRegistry, newSubscriptions: SubscriptionRegistry = subscriptions) =
+      behavior(newRegistry, newSubscriptions, externalInterface)
 
     /**
      * Hack to allow multiple termination notifications per target
@@ -97,17 +97,20 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
       })
 
     /** Helper that makes sure that subscribers are notified when an entry is changed */
-    def updateMap(changedKeysHint: Set[AbstractServiceKey], f: ServiceMap ⇒ ServiceMap): Behavior[AllCommands] = {
-      val newMap = f(serviceMap)
+    def updateRegistry(changedKeysHint: Set[AbstractServiceKey], f: LocalServiceRegistry ⇒ LocalServiceRegistry): Behavior[AllCommands] = {
+      val newRegistry = f(serviceRegistry)
 
       def notifySubscribersFor[T](key: AbstractServiceKey): Unit = {
-        val newListing = newMap.get(key)
+        val newListing = newRegistry.get(key)
         subscriptions.get(key).foreach(_ ! Listing(key.asServiceKey, newListing))
       }
 
       changedKeysHint foreach notifySubscribersFor
-      next(newMap = newMap)
+      next(newRegistry = newRegistry)
     }
+
+    def replyWithListing[T](key: ServiceKey[T], replyTo: ActorRef[Listing[T]]): Unit =
+      replyTo ! Listing(key, serviceRegistry get key)
 
     immutable[AllCommands] { (ctx, msg) ⇒
       msg match {
@@ -116,29 +119,30 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
           replyTo ! Registered(key, serviceInstance)
           externalInterface.onRegister(key, serviceInstance)
 
-          updateMap(Set(key), _.inserted(key)(serviceInstance))
+          updateRegistry(Set(key), _.inserted(key)(serviceInstance))
 
         case Find(key, replyTo) ⇒
-          val set = serviceMap get key
-          replyTo ! Listing(key, set)
+          replyWithListing(key, replyTo)
+
           same
 
         case RegistrationsChangedExternally(changes) ⇒
-          updateMap(changes.keySet, _ ++ changes) // overwrite all changed keys
+          updateRegistry(changes.keySet, _ ++ changes) // overwrite all changed keys
 
         case RegisteredActorTerminated(key, serviceInstance) ⇒
           externalInterface.onUnregister(key, serviceInstance)
-          updateMap(Set(key), _.removed(key)(serviceInstance))
+          updateRegistry(Set(key), _.removed(key)(serviceInstance))
 
         case Subscribe(key, subscriber) ⇒
           watchWith(ctx, subscriber, SubscriberTerminated(key, subscriber))
 
-          ctx.self ! Find(key, subscriber) // immediately request to send listings to the new subscriber
+          // immediately reply with initial listings to the new subscriber
+          replyWithListing(key, subscriber)
 
-          next(newSubs = subscriptions.inserted(key)(subscriber))
+          next(newSubscriptions = subscriptions.inserted(key)(subscriber))
 
         case SubscriberTerminated(key, subscriber) ⇒
-          next(newSubs = subscriptions.removed(key)(subscriber))
+          next(newSubscriptions = subscriptions.removed(key)(subscriber))
       }
     }
   }
