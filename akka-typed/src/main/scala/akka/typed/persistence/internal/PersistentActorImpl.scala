@@ -95,13 +95,18 @@ import akka.typed.internal.adapter.ActorRefAdapter
         }
 
         effect match {
-          case Persist(event, callbacks) ⇒
+          case PersistWithCallback(event, callbacks) ⇒
             // apply the event before persist so that validation exception is handled before persisting
             // the invalid event, in case such validation is implemented in the event handler.
             state = applyEvent(state, event)
             persist(event) { _ ⇒
               callbacks.foreach(_.apply(state))
             }
+          case Persist(event) ⇒
+            // apply the event before persist so that validation exception is handled before persisting
+            // the invalid event, in case such validation is implemented in the event handler.
+            state = applyEvent(state, event)
+            persist(event) { _ ⇒ }
           // FIXME PersistAll
           case PersistNothing(callbacks) ⇒
             callbacks.foreach(_.apply(state))

@@ -21,18 +21,27 @@ object PersistentActor {
 
   sealed abstract class PersistentEffect[+Event, State]() {
     def andThen(callback: State ⇒ Unit): PersistentEffect[Event, State]
+    def andThen(callback: ⇒ Unit): PersistentEffect[Event, State]
   }
 
   final case class PersistNothing[Event, State](callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
     def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
+    def andThen(callback: ⇒ Unit) = copy(callbacks = ((_: State) ⇒ callback) :: callbacks)
   }
 
-  case class Persist[Event, State](event: Event, callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
+  case class PersistWithCallback[Event, State](event: Event, callbacks: List[State ⇒ Unit]) extends PersistentEffect[Event, State] {
     def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
+    def andThen(callback: ⇒ Unit) = copy(callbacks = ((_: State) ⇒ callback) :: callbacks)
+  }
+
+  case class Persist[Event, State](event: Event) extends PersistentEffect[Event, State] {
+    def andThen(callback: State ⇒ Unit): PersistentEffect[Event, State] = PersistWithCallback(event, List(callback))
+    def andThen(callback: ⇒ Unit) = PersistWithCallback(event, List((_: State) ⇒ callback))
   }
 
   case class Unhandled[Event, State](callbacks: List[State ⇒ Unit] = Nil) extends PersistentEffect[Event, State] {
     def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
+    def andThen(callback: ⇒ Unit) = copy(callbacks = ((_: State) ⇒ callback) :: callbacks)
   }
 
   type CommandHandler[Command, Event, State] = Function3[Command, State, ActorContext[Command], PersistentEffect[Event, State]]
