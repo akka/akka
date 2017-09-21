@@ -101,7 +101,7 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
         node2Probe.expectMsg(SelfRemoved(MemberStatus.Exiting))
 
         // subscribing to SelfUp when already removed yields nothing
-        clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfRemoved])
+        clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfUp])
         node2Probe.expectNoMsg(100.millis)
 
       } finally {
