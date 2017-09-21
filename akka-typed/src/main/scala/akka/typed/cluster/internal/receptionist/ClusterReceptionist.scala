@@ -15,6 +15,7 @@ import akka.typed.Behavior
 import akka.typed.internal.receptionist.ReceptionistBehaviorProvider
 import akka.typed.internal.receptionist.ReceptionistImpl
 import akka.typed.internal.receptionist.ReceptionistImpl._
+import akka.typed.receptionist.Receptionist.AbstractServiceKey
 import akka.typed.receptionist.Receptionist.AllCommands
 import akka.typed.receptionist.Receptionist.Command
 import akka.typed.receptionist.Receptionist.ServiceKey
@@ -71,18 +72,19 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
     var state = ServiceRegistry.empty
 
-    def diff(lastState: ServiceRegistry, newState: ServiceRegistry): ReceptionistImpl.LocalServiceRegistry = {
-      def changesForKey[T](registry: ReceptionistImpl.LocalServiceRegistry, key: ServiceKey[T]): ReceptionistImpl.LocalServiceRegistry = {
+    def diff(lastState: ServiceRegistry, newState: ServiceRegistry): Map[AbstractServiceKey, Set[ActorRef[_]]] = {
+      def changesForKey[T](registry: Map[AbstractServiceKey, Set[ActorRef[_]]], key: ServiceKey[T]): Map[AbstractServiceKey, Set[ActorRef[_]]] = {
         val oldValues = lastState.getOrEmpty(key)
         val newValues = newState.getOrEmpty(key)
         if (oldValues != newValues)
-          newValues.foldLeft(registry) { (registry, entry) ⇒ registry.inserted(key)(entry) }
+          registry + (key → newValues.asInstanceOf[Set[ActorRef[_]]])
         else
           registry
       }
 
-      (lastState.toORMultiMap.entries.keySet ++ newState.toORMultiMap.entries.keySet)
-        .foldLeft(ReceptionistImpl.LocalServiceRegistry.empty)(changesForKey(_, _))
+      val allKeys = lastState.toORMultiMap.entries.keySet ++ newState.toORMultiMap.entries.keySet
+      allKeys
+        .foldLeft(Map.empty[AbstractServiceKey, Set[ActorRef[_]]])(changesForKey(_, _))
     }
 
     val adapter: ActorRef[Replicator.ReplicatorMessage] =
@@ -90,7 +92,9 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         x match {
           case changed @ Replicator.Changed(ReceptionistKey) ⇒
             val value = changed.get(ReceptionistKey)
-            val changes = diff(state, ServiceRegistry(value))
+            val oldState = state
+            state = ServiceRegistry(value) // is that thread-safe?
+            val changes = diff(oldState, state)
             RegistrationsChangedExternally(changes)
         }
       }

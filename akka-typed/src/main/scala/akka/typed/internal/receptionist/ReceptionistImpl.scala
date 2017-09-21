@@ -58,7 +58,7 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
   sealed abstract class ReceptionistInternalCommand extends InternalCommand
   final case class RegisteredActorTerminated[T](key: ServiceKey[T], address: ActorRef[T]) extends ReceptionistInternalCommand
   final case class SubscriberTerminated[T](key: ServiceKey[T], address: ActorRef[Listing[T]]) extends ReceptionistInternalCommand
-  final case class RegistrationsChangedExternally(changes: LocalServiceRegistry) extends ReceptionistInternalCommand
+  final case class RegistrationsChangedExternally(changes: Map[AbstractServiceKey, Set[ActorRef[_]]]) extends ReceptionistInternalCommand
 
   type SubscriptionsKV[K <: AbstractServiceKey] = ActorRef[Listing[K#Protocol]]
   type SubscriptionRegistry = TypedMultiMap[AbstractServiceKey, SubscriptionsKV]
@@ -115,6 +115,7 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
     immutable[AllCommands] { (ctx, msg) ⇒
       msg match {
         case Register(key, serviceInstance, replyTo) ⇒
+          println(s"[${ctx.self}] Actor was registered: $key $serviceInstance")
           watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
           replyTo ! Registered(key, serviceInstance)
           externalInterface.onRegister(key, serviceInstance)
@@ -127,9 +128,19 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
           same
 
         case RegistrationsChangedExternally(changes) ⇒
-          updateRegistry(changes.keySet, _ ++ changes) // overwrite all changed keys
+          println(s"[${ctx.self}] Registration changed: $changes")
+
+          // FIXME: get rid of casts
+          def makeChanges(registry: LocalServiceRegistry): LocalServiceRegistry =
+            changes.foldLeft(registry) {
+              case (reg, (key, values)) ⇒
+                reg.setAll(key)(values.asInstanceOf[Set[ActorRef[key.Protocol]]])
+            }
+
+          updateRegistry(changes.keySet, makeChanges) // overwrite all changed keys
 
         case RegisteredActorTerminated(key, serviceInstance) ⇒
+          println(s"[${ctx.self}] Registered actor terminated: $key $serviceInstance")
           externalInterface.onUnregister(key, serviceInstance)
           updateRegistry(Set(key), _.removed(key)(serviceInstance))
 
