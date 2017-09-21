@@ -6,13 +6,13 @@ package akka.typed.cluster
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function
 
-import akka.actor.{ ExtendedActorSystem, InvalidActorNameException, NoSerializationVerificationNeeded, RootActorPath }
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.actor.{ExtendedActorSystem, InvalidActorNameException, NoSerializationVerificationNeeded}
+import akka.annotation.{DoNotInherit, InternalApi}
 import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.singleton.{ ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings, ClusterSingletonManager ⇒ OldSingletonManager }
-import akka.typed.internal.adapter.{ ActorRefAdapter, ActorSystemAdapter }
+import akka.cluster.singleton.{ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings, ClusterSingletonManager => OldSingletonManager}
+import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.adapter._
-import akka.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props }
+import akka.typed.{ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props}
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.FiniteDuration

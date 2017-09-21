@@ -1,7 +1,6 @@
 package akka.typed.cluster;
 
 import akka.cluster.ClusterEvent;
-import akka.typed.ActorRef;
 import akka.typed.ActorSystem;
 import akka.typed.testkit.TestKitSettings;
 import akka.typed.testkit.javadsl.TestProbe;

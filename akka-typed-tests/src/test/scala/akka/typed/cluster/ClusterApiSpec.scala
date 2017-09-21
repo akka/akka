@@ -5,7 +5,7 @@ package akka.typed.cluster
 
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.typed.{ ActorRef, TypedSpec }
+import akka.typed.TypedSpec
 import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.adapter._
 import akka.typed.testkit.TestKitSettings
