@@ -103,15 +103,15 @@ import akka.typed.internal.adapter.ActorRefAdapter
 
   }
 
-  private def applyEffects(msg: Any, effect: PersistentEffect[E, S], callback: Option[Unit ⇒ Unit] = None): Unit = effect match {
-    case CompositeEffect(mainEffect, chainedEffects) ⇒
-      applyEffects(msg, mainEffect, Some(_ ⇒ chainedEffects.foreach(applyChainableEffect)))
+  private def applyEffects(msg: Any, effect: PersistentEffect[E, S], chainedEffects: Seq[ChainableEffect[_, S]] = Nil): Unit = effect match {
+    case CompositeEffect(head, tail) ⇒
+      applyEffects(msg, head, tail)
     case Persist(event) ⇒
       // apply the event before persist so that validation exception is handled before persisting
       // the invalid event, in case such validation is implemented in the event handler.
       state = applyEvent(state, event)
       persist(event) { _ ⇒
-        callback.foreach(_.apply(()))
+        chainedEffects.foreach(applyChainableEffect)
       }
     // FIXME PersistAll
     case PersistNothing() ⇒

@@ -20,17 +20,17 @@ object PersistentActor {
       recoveryCompleted = (state, _) ⇒ state)
 
   sealed abstract class PersistentEffect[+Event, State]() {
-
-    def andThen(sideEffect: ChainableEffect[_, State]): PersistentEffect[Event, State] =
-      CompositeEffect(this, List(sideEffect))
+    def andThen(sideEffects: ChainableEffect[_, State]*): PersistentEffect[Event, State] =
+      CompositeEffect(this, sideEffects)
 
     /** Convenience method to register a side effect with just a callback function */
-    def andThen(callback: State ⇒ Unit): PersistentEffect[Event, State] = andThen(SideEffect(callback))
+    def andThen(callback: State ⇒ Unit): PersistentEffect[Event, State] =
+      andThen(SideEffect[Event, State](callback))
   }
 
-  case class CompositeEffect[Event, State](mainEffect: PersistentEffect[Event, State], sideEffects: List[ChainableEffect[_, State]]) extends PersistentEffect[Event, State] {
-    override def andThen(sideEffect: ChainableEffect[_, State]): PersistentEffect[Event, State] =
-      copy(sideEffects = sideEffects :+ sideEffect)
+  case class CompositeEffect[Event, State](mainEffect: PersistentEffect[Event, State], effects: Seq[ChainableEffect[_, State]]) extends PersistentEffect[Event, State] {
+    override def andThen(sideEffects: ChainableEffect[_, State]*): CompositeEffect[Event, State] =
+      copy(effects = effects ++ sideEffects)
   }
 
   case class PersistNothing[Event, State]() extends PersistentEffect[Event, State]

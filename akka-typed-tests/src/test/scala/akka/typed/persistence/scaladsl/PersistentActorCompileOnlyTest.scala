@@ -392,10 +392,11 @@ object PersistentActorCompileOnlyTest {
       initialState = (),
       actions = Actions { (cmd, _, _) ⇒
         cmd match {
-          case Enough ⇒ Persist(Done)
-            .andThen((_: State) ⇒ println("yay"))
-            // Ugh it doesn't make much sense to have to include the type parameters here...
-            .andThen(Stop[Event, State]())
+          case Enough ⇒
+            Persist(Done)
+              .andThen(
+                SideEffect(_ ⇒ println("yay")),
+                Stop())
         }
       },
       onEvent = {
