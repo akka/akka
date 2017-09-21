@@ -50,6 +50,12 @@ object PersistentActor {
       new Actions(commandHandler, Map.empty)
 
     /**
+     * Convenience for simple commands that don't need the state and context.
+     */
+    def command[Command, Event, State](commandHandler: Command ⇒ PersistentEffect[Event, State]): Actions[Command, Event, State] =
+      apply((cmd, _, _) ⇒ commandHandler(cmd))
+
+    /**
      * Select different actions based on current state.
      */
     def byState[Command, Event, State](choice: State ⇒ Actions[Command, Event, State]): Actions[Command, Event, State] =
