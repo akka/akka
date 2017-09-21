@@ -35,8 +35,13 @@ object PersistentActor {
     def andThen(callback: State ⇒ Unit) = copy(callbacks = callback :: callbacks)
   }
 
-  type CommandHandler[Command, Event, State] = Function3[Command, State, ActorContext[Command], PersistentEffect[Event, State]]
-  type SignalHandler[Command, Event, State] = PartialFunction[(Signal, State, ActorContext[Command]), PersistentEffect[Event, State]]
+  trait PersistentActorContext[Command, Event, State] extends ActorContext[Command] {
+    self: akka.typed.javadsl.ActorContext[Command] ⇒
+    def persist(event: Event): Persist[Event, State]
+  }
+
+  type CommandHandler[Command, Event, State] = Function3[Command, State, PersistentActorContext[Command, Event, State], PersistentEffect[Event, State]]
+  type SignalHandler[Command, Event, State] = PartialFunction[(Signal, State, PersistentActorContext[Command, Event, State]), PersistentEffect[Event, State]]
 
   /**
    * `Actions` defines command handlers and partial function for other signals,

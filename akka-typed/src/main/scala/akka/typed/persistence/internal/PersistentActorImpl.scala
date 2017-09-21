@@ -54,8 +54,11 @@ import akka.typed.internal.adapter.ActorRefAdapter
 
   private val eventHandler: (E, S) ⇒ S = behavior.onEvent
 
-  private val ctxAdapter = new ActorContextAdapter[C](context)
-  private val ctx = ctxAdapter.asScala
+  //private val ctxAdapter = new ActorContextAdapter[C](context)
+  //private val ctx = ctxAdapter.asScala
+  private val ctx = new ActorContextAdapter[C](context) with PersistentActorContext[C, E, S] {
+    def persist(event: E): Persist[E, S] = Persist(event)
+  }
 
   override def receiveRecover: Receive = {
     case SnapshotOffer(_, snapshot) ⇒
@@ -71,7 +74,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
   def applyEvent(s: S, event: E): S =
     eventHandler.apply(event, s)
 
-  private val unhandledSignal: PartialFunction[(Signal, S, ActorContext[C]), PersistentEffect[E, S]] = {
+  private val unhandledSignal: PartialFunction[(Signal, S, PersistentActorContext[C, E, S]), PersistentEffect[E, S]] = {
     case sig ⇒ Unhandled()
   }
 
@@ -87,7 +90,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
             val sig = Terminated(ActorRefAdapter(ref))(null)
             actions.sigHandler(state).applyOrElse((sig, state, ctx), unhandledSignal)
           case a.ReceiveTimeout ⇒
-            actions.commandHandler(ctxAdapter.receiveTimeoutMsg, state, ctx)
+            actions.commandHandler(ctx.receiveTimeoutMsg, state, ctx)
           // TODO note that PostStop and PreRestart signals are not handled, we wouldn't be able to persist there
           case cmd: C @unchecked ⇒
             // FIXME we could make it more safe by using ClassTag for C
