@@ -1,0 +1,5 @@
+# awaitAssert signature update introduced in #23613
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.testkit.TestKitBase.awaitAssert")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.awaitAssert")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.testkit.TestKit.awaitAssert")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.testkit.javadsl.TestKit.awaitAssert")

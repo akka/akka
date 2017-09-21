@@ -90,7 +90,7 @@ object Member {
    * INTERNAL API
    * Create a new member with status Joining.
    */
-  private[cluster] def apply(uniqueAddress: UniqueAddress, roles: Set[String]): Member =
+  private[akka] def apply(uniqueAddress: UniqueAddress, roles: Set[String]): Member =
     new Member(uniqueAddress, Int.MaxValue, Joining, roles)
 
   /**

@@ -5,19 +5,25 @@ package akka.typed.testkit.scaladsl
 
 import scala.concurrent.duration._
 import java.util.concurrent.BlockingDeque
+
 import akka.typed.Behavior
 import akka.typed.scaladsl.Actor
 import akka.typed.ActorSystem
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicInteger
+
 import akka.typed.ActorRef
 import akka.util.Timeout
 import akka.util.PrettyDuration.PrettyPrintableDuration
+
 import scala.concurrent.Await
 import com.typesafe.config.Config
 import akka.typed.testkit.TestKitSettings
 import akka.util.BoxedType
+
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 
 object TestProbe {
   private val testActorId = new AtomicInteger(0)
@@ -35,6 +41,7 @@ object TestProbe {
 }
 
 class TestProbe[M](name: String)(implicit val system: ActorSystem[_], val settings: TestKitSettings) {
+
   import TestProbe._
   private val queue = new LinkedBlockingDeque[M]
 
@@ -219,11 +226,48 @@ class TestProbe[M](name: String)(implicit val system: ActorSystem[_], val settin
   def expectMsgType[T <: M](max: FiniteDuration)(implicit t: ClassTag[T]): T =
     expectMsgClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
 
-  private def expectMsgClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
+  private[akka] def expectMsgClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
     val o = receiveOne(max)
     assert(o != null, s"timeout ($max) during expectMsgClass waiting for $c")
     assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
     o.asInstanceOf[C]
+  }
+
+  /**
+   * Evaluate the given assert every `interval` until it does not throw an exception and return the
+   * result.
+   *
+   * If the `max` timeout expires the last exception is thrown.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
+   */
+  def awaitAssert[A](a: ⇒ A, max: Duration = Duration.Undefined, interval: Duration = 100.millis): A = {
+    val _max = remainingOrDilated(max)
+    val stop = now + _max
+
+    @tailrec
+    def poll(t: Duration): A = {
+      val result: A =
+        try {
+          a
+        } catch {
+          case NonFatal(e) ⇒
+            if ((now + t) >= stop) throw e
+            else null.asInstanceOf[A]
+        }
+
+      if (result != null) result
+      else {
+        Thread.sleep(t.toMillis)
+        poll((stop - now) min interval)
+      }
+    }
+
+    poll(_max min interval)
   }
 
 }

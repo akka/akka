@@ -7,10 +7,14 @@ package adapter
 
 import akka.{ actor ⇒ a, dispatch ⇒ d }
 import akka.dispatch.sysmsg
+
 import scala.concurrent.ExecutionContextExecutor
 import akka.util.Timeout
+
 import scala.concurrent.Future
 import akka.annotation.InternalApi
+import akka.typed.scaladsl.adapter.AdapterExtension
+
 import scala.annotation.unchecked.uncheckedVariance
 
 /**
@@ -80,7 +84,18 @@ import scala.annotation.unchecked.uncheckedVariance
 }
 
 private[typed] object ActorSystemAdapter {
-  def apply(untyped: a.ActorSystem): ActorSystem[Nothing] = new ActorSystemAdapter(untyped.asInstanceOf[a.ActorSystemImpl])
+  def apply(untyped: a.ActorSystem): ActorSystem[Nothing] = AdapterExtension(untyped).adapter
+
+  // to make sure we do never create more than one adapter for the same actor system
+  class AdapterExtension(system: a.ExtendedActorSystem) extends a.Extension {
+    val adapter = new ActorSystemAdapter(system.asInstanceOf[a.ActorSystemImpl])
+  }
+  object AdapterExtension extends a.ExtensionId[AdapterExtension] with a.ExtensionIdProvider {
+    override def get(system: a.ActorSystem): AdapterExtension = super.get(system)
+    override def lookup = AdapterExtension
+    override def createExtension(system: a.ExtendedActorSystem): AdapterExtension =
+      new AdapterExtension(system)
+  }
 
   def toUntyped[U](sys: ActorSystem[_]): a.ActorSystem =
     sys match {
@@ -103,3 +118,4 @@ private[typed] object ActorSystemAdapter {
         "receptionist"))
   }
 }
+
