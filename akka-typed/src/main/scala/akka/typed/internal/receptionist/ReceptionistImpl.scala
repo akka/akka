@@ -26,8 +26,6 @@ private[typed] object ReceptionistImpl {
 
   /**
    * Interface to allow plugging of external service discovery infrastructure in to the existing receptionist API.
-   *
-   * FIXME: find better name
    */
   trait ExternalInterface {
     def onRegister[T](key: ServiceKey[T], address: ActorRef[T]): Unit
@@ -56,11 +54,11 @@ private[typed] object ReceptionistImpl {
 
   private[receptionist] def init(externalInterfaceFactory: ActorContext[AllCommands] ⇒ ExternalInterface): Behavior[Command] =
     Actor.deferred[AllCommands] { ctx ⇒
-      val bus = externalInterfaceFactory(ctx)
+      val externalInterface = externalInterfaceFactory(ctx)
       behavior(
         TypedMultiMap.empty[AbstractServiceKey, KV],
         TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV],
-        bus)
+        externalInterface)
     }.narrow[Command]
 
   private def behavior(
