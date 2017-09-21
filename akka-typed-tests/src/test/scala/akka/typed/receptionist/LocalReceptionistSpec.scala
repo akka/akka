@@ -129,6 +129,8 @@ class LocalReceptionistSpec extends TypedSpec with Eventually {
       val aSubscriber = TestProbe[Listing[ServiceA]]("aUser")
       receptionist ! Subscribe(ServiceKeyA, aSubscriber.ref)
 
+      aSubscriber.expectMsg(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+
       val serviceA: ActorRef[ServiceA] = start(stoppableBehavior)
       receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
       regProbe.expectMsg(Registered(ServiceKeyA, serviceA))
