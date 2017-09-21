@@ -4,7 +4,7 @@ This Code of Conduct governs how we behave in any forum and whenever we will be 
 
 We strive to:
 
-- **Be open**: We invite anybody, from any company, to participate in any aspect of our projects. Our community is open, and any responsibility can be carried by any contributor who demonstrates the required capacity and competence.
+- **Be open**: We invite anybody, either in their personal capacity or from any company, to participate in any aspect of our projects. Our community is open, and any responsibility can be carried by any contributor who demonstrates the required capacity and competence.
 - **Be empathetic**: We work together to resolve conflict, assume good intentions and do our best to act in an empathic fashion. We don’t allow frustration to turn into a personal attack. A community where people feel uncomfortable or threatened is not a productive one.
 - **Be collaborative**: Collaboration reduces redundancy and improves the quality of our work. We prefer to work transparently and involve interested parties as early as possible. Wherever possible, we work closely with upstream projects and others in the free software community to coordinate our efforts.
 - **Be inquisitive**: Nobody knows everything, asking questions early avoids many problems later, so questions are encouraged, though they may be directed to the appropriate forum. Those who are asked should be responsive and helpful.
