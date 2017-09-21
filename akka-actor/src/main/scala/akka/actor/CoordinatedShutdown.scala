@@ -477,11 +477,18 @@ final class CoordinatedShutdown private[akka] (
           new Cancellable {
             @volatile var cancelled = false
             def cancel(): Boolean = {
-              if (Runtime.getRuntime.removeShutdownHook(thread)) {
-                cancelled = true
-                true
-              } else {
-                false
+              try {
+                if (Runtime.getRuntime.removeShutdownHook(thread)) {
+                  cancelled = true
+                  _jvmHooksLatch.get.countDown()
+                  true
+                } else {
+                  false
+                }
+              } catch {
+                case _: IllegalStateException ⇒
+                  // shutdown already in progress
+                  false
               }
             }
             def isCancelled: Boolean = cancelled
@@ -502,7 +509,7 @@ final class CoordinatedShutdown private[akka] (
 
   /**
    * Java API: Add a JVM shutdown hook that will be run when the JVM process
-   * begins its shutdown sequence. Added hooks may run in an order
+   * begins its shutdown sequence. Added hooks may run in any order
    * concurrently, but they are running before Akka internal shutdown
    * hooks, e.g. those shutting down Artery.
    */

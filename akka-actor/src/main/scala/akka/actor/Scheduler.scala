@@ -190,7 +190,7 @@ trait Cancellable {
 //#cancellable
 
 object Cancellable {
-  val alreadyCancelled = new Cancellable {
+  val alreadyCancelled: Cancellable = new Cancellable {
     def cancel(): Boolean = false
     def isCancelled: Boolean = true
   }
