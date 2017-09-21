@@ -351,9 +351,11 @@ object PersistentActorCompileOnlyTest {
     sealed trait Command
     case class Greet(name: String) extends Command
     case class CheerUp(sender: ActorRef[Ack.type]) extends Command
+    case class Remember(memory: String) extends Command
 
     sealed trait Event
     case class MoodChanged(to: Mood) extends Event
+    case class Remembered(memory: String) extends Event
 
     def changeMoodIfNeeded(currentState: Mood, newMood: Mood): PersistentEffect[Event, Mood] =
       if (currentState == newMood) PersistNothing()
@@ -370,10 +372,20 @@ object PersistentActorCompileOnlyTest {
           case CheerUp(sender) ⇒
             changeMoodIfNeeded(state, Happy)
               .andThen { _ ⇒ sender ! Ack }
+          case Remember(memory) ⇒
+            // A more elaborate example to show we still have full control over the effects
+            // if needed (e.g. when some logic is factored out but you want to add more effects)
+            val commonEffects = changeMoodIfNeeded(state, Happy)
+            CompositeEffect(
+              PersistAll[Event, Mood](commonEffects.events :+ Remembered(memory)),
+              commonEffects.sideEffects
+            )
+
         }
       },
       onEvent = {
-        case (MoodChanged(to), _) ⇒ to
+        case (MoodChanged(to), _)   ⇒ to
+        case (Remembered(_), state) ⇒ state
       })
 
   }

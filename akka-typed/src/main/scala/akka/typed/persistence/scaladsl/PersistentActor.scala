@@ -20,21 +20,36 @@ object PersistentActor {
       recoveryCompleted = (state, _) ⇒ state)
 
   sealed abstract class PersistentEffect[+Event, State]() {
+    /* All events that will be persisted in this effect */
+    def events: Seq[Event] = Nil
+    /* All side effects that will be performed in this effect */
+    def sideEffects: Seq[ChainableEffect[_, State]] =
+      if (isInstanceOf[ChainableEffect[_, State]]) Seq(asInstanceOf[ChainableEffect[_, State]])
+      else Seq()
+
     def andThen(sideEffects: ChainableEffect[_, State]*): PersistentEffect[Event, State] =
-      CompositeEffect(this, sideEffects)
+      CompositeEffect(if (events.isEmpty) None else Some(this), sideEffects)
 
     /** Convenience method to register a side effect with just a callback function */
     def andThen(callback: State ⇒ Unit): PersistentEffect[Event, State] =
       andThen(SideEffect[Event, State](callback))
   }
 
-  case class CompositeEffect[Event, State](mainEffect: PersistentEffect[Event, State], effects: Seq[ChainableEffect[_, State]]) extends PersistentEffect[Event, State] {
-    override def andThen(sideEffects: ChainableEffect[_, State]*): CompositeEffect[Event, State] =
-      copy(effects = effects ++ sideEffects)
+  case class CompositeEffect[Event, State](persistingEffect: Option[PersistentEffect[Event, State]], override val sideEffects: Seq[ChainableEffect[_, State]]) extends PersistentEffect[Event, State] {
+    override val events = persistingEffect.map(_.events).getOrElse(Nil)
+    override def andThen(additionalSideEffects: ChainableEffect[_, State]*): CompositeEffect[Event, State] =
+      copy(sideEffects = sideEffects ++ additionalSideEffects)
+  }
+  object CompositeEffect {
+    def apply[Event, State](persistAll: PersistAll[Event, State], sideEffects: Seq[ChainableEffect[_, State]]): CompositeEffect[Event, State] = CompositeEffect(Some(persistAll), sideEffects)
   }
 
   case class PersistNothing[Event, State]() extends PersistentEffect[Event, State]
-  case class Persist[Event, State](event: Event) extends PersistentEffect[Event, State]
+
+  case class Persist[Event, State](event: Event) extends PersistentEffect[Event, State] {
+    override val events = Seq(event)
+  }
+  case class PersistAll[Event, State](override val events: Seq[Event]) extends PersistentEffect[Event, State]
 
   trait ChainableEffect[Event, State] {
     self: PersistentEffect[Event, State] ⇒

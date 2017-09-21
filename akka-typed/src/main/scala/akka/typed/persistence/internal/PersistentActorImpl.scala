@@ -103,25 +103,33 @@ import akka.typed.internal.adapter.ActorRefAdapter
 
   }
 
-  private def applyEffects(msg: Any, effect: PersistentEffect[E, S], chainedEffects: Seq[ChainableEffect[_, S]] = Nil): Unit = effect match {
-    case CompositeEffect(head, tail) ⇒
-      applyEffects(msg, head, tail)
+  private def applyEffects(msg: Any, effect: PersistentEffect[E, S], sideEffects: Seq[ChainableEffect[_, S]] = Nil): Unit = effect match {
+    case CompositeEffect(Some(persist), sideEffects) ⇒
+      applyEffects(msg, persist, sideEffects)
+    case CompositeEffect(_, sideEffects) ⇒
+      sideEffects.foreach(applySideEffect)
     case Persist(event) ⇒
       // apply the event before persist so that validation exception is handled before persisting
       // the invalid event, in case such validation is implemented in the event handler.
       state = applyEvent(state, event)
       persist(event) { _ ⇒
-        chainedEffects.foreach(applyChainableEffect)
+        sideEffects.foreach(applySideEffect)
       }
-    // FIXME PersistAll
+    case PersistAll(events) ⇒
+      // apply the event before persist so that validation exception is handled before persisting
+      // the invalid event, in case such validation is implemented in the event handler.
+      state = events.foldLeft(state)(applyEvent)
+      persistAll(scala.collection.immutable.Seq(events)) { _ ⇒
+        sideEffects.foreach(applySideEffect)
+      }
     case PersistNothing() ⇒
     case Unhandled() ⇒
       super.unhandled(msg)
     case c: ChainableEffect[_, S] ⇒
-      applyChainableEffect(c)
+      applySideEffect(c)
   }
 
-  def applyChainableEffect(effect: ChainableEffect[_, S]): Unit = effect match {
+  def applySideEffect(effect: ChainableEffect[_, S]): Unit = effect match {
     case Stop()                ⇒ // FIXME implement
     case SideEffect(callbacks) ⇒ callbacks.apply(state)
   }
