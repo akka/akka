@@ -26,7 +26,7 @@ class FunctionRefSpec extends TypedSpecSetup {
       val ref = ActorRef(f)
       ref ! "42"
       ref ! "43"
-      target.receiveAll() should ===(Left(Watch(target, ref)) :: Right("42") :: Right("43") :: Nil)
+      target.receiveAll() should ===(Right("42") :: Right("43") :: Nil)
     }
 
     def `must forward messages that are received before getting the ActorRef`(): Unit = {
