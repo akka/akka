@@ -24,7 +24,7 @@ class Receptionist(system: ActorSystem[_]) extends Extension {
     val behavior =
       if (hasCluster)
         system.dynamicAccess
-          .createInstanceFor[ReceptionistBehaviorProvider]("akka.typed.cluster.internal.ClusterReceptionist", Nil)
+          .createInstanceFor[ReceptionistBehaviorProvider]("akka.typed.cluster.internal.receptionist.ClusterReceptionist$", Nil)
           .recover {
             case ex ⇒
               system.log.error(
