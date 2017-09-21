@@ -20,6 +20,7 @@ import akka.event.Logging.Error
 import akka.event.Logging
 import akka.typed.Behavior.StoppedBehavior
 import akka.util.OptionVal
+import akka.typed.Behavior.UntypedBehavior
 
 /**
  * INTERNAL API
@@ -104,6 +105,8 @@ private[typed] class ActorCell[T](
   protected def ctx: ActorContext[T] = this
 
   override def spawn[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
+    if (behavior.isInstanceOf[UntypedBehavior[_]])
+      throw new IllegalArgumentException(s"${behavior.getClass.getName} requires untyped ActorSystem")
     if (childrenMap contains name) throw InvalidActorNameException(s"actor name [$name] is not unique")
     if (terminatingMap contains name) throw InvalidActorNameException(s"actor name [$name] is not yet free")
     val dispatcher = props.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
