@@ -3,7 +3,10 @@
  */
 package akka.typed.cluster
 
-import akka.actor.{ ExtendedActorSystem, InvalidActorNameException, NoSerializationVerificationNeeded }
+import java.util.concurrent.ConcurrentHashMap
+import java.util.function
+
+import akka.actor.{ ExtendedActorSystem, InvalidActorNameException, NoSerializationVerificationNeeded, RootActorPath }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.singleton.{ ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings, ClusterSingletonManager ⇒ OldSingletonManager }
@@ -45,28 +48,27 @@ final class ClusterSingletonSettings(
   val handOverRetryInterval:           FiniteDuration,
   val bufferSize:                      Int) extends NoSerializationVerificationNeeded {
 
-  /**
-   * Replace the required roles with a new set of required roles
-   */
-  def withRole(role: String): ClusterSingletonSettings =
-    new ClusterSingletonSettings(Some(role), dataCenter, singletonIdentificationInterval, removalMargin, handOverRetryInterval, bufferSize)
+  def withRole(role: String): ClusterSingletonSettings = copy(role = Some(role))
 
-  def withNoRole(): ClusterSingletonSettings =
-    new ClusterSingletonSettings(None, dataCenter, singletonIdentificationInterval, removalMargin, handOverRetryInterval, bufferSize)
+  def withNoRole(): ClusterSingletonSettings = copy(role = None)
 
-  def withDataCenter(dataCenter: DataCenter): ClusterSingletonSettings =
-    new ClusterSingletonSettings(None, Some(dataCenter), singletonIdentificationInterval, removalMargin, handOverRetryInterval, bufferSize)
+  def withDataCenter(dataCenter: DataCenter): ClusterSingletonSettings = copy(dataCenter = Some(dataCenter))
 
-  def withNoDataCenter(): ClusterSingletonSettings =
-    new ClusterSingletonSettings(None, None, singletonIdentificationInterval, removalMargin, handOverRetryInterval, bufferSize)
+  def withNoDataCenter(): ClusterSingletonSettings = copy(dataCenter = None)
 
-  def withRemovalMargin(removalMargin: FiniteDuration): ClusterSingletonSettings =
-    new ClusterSingletonSettings(role, dataCenter, singletonIdentificationInterval, removalMargin, handOverRetryInterval, bufferSize)
+  def withRemovalMargin(removalMargin: FiniteDuration): ClusterSingletonSettings = copy(removalMargin = removalMargin)
 
-  def withHandoverRetryInterval(handOverRetryInterval: FiniteDuration): ClusterSingletonSettings =
-    new ClusterSingletonSettings(role, dataCenter, singletonIdentificationInterval, removalMargin, handOverRetryInterval, bufferSize)
+  def withHandoverRetryInterval(handOverRetryInterval: FiniteDuration): ClusterSingletonSettings = copy(handOverRetryInterval = handOverRetryInterval)
 
-  def withBufferSize(bufferSize: Int): ClusterSingletonSettings =
+  def withBufferSize(bufferSize: Int): ClusterSingletonSettings = copy(bufferSize = bufferSize)
+
+  private def copy(
+    role:                            Option[String]     = role,
+    dataCenter:                      Option[DataCenter] = dataCenter,
+    singletonIdentificationInterval: FiniteDuration     = singletonIdentificationInterval,
+    removalMargin:                   FiniteDuration     = removalMargin,
+    handOverRetryInterval:           FiniteDuration     = handOverRetryInterval,
+    bufferSize:                      Int                = bufferSize) =
     new ClusterSingletonSettings(role, dataCenter, singletonIdentificationInterval, removalMargin, handOverRetryInterval, bufferSize)
 
   /**
@@ -122,6 +124,8 @@ private[akka] final class ClusterSingletonImpl(system: ActorSystem[_]) extends C
   private lazy val cluster = Cluster(system)
   private val untypedSystem = ActorSystemAdapter.toUntyped(system).asInstanceOf[ExtendedActorSystem]
 
+  private val proxies = new ConcurrentHashMap[String, ActorRef[_]]()
+
   override def spawn[A](
     behavior:           Behavior[A],
     singletonName:      String,
@@ -143,19 +147,16 @@ private[akka] final class ClusterSingletonImpl(system: ActorSystem[_]) extends C
       }
     }
 
-    val proxyName = s"singletonProxy${singletonName}"
-    val untypedProxy =
-      try {
+    val proxyCreator = new function.Function[String, ActorRef[_]] {
+      def apply(singletonName: String): ActorRef[_] = {
+        val proxyName = s"singletonProxy$singletonName"
         untypedSystem.systemActorOf(
           ClusterSingletonProxy.props(s"/system/${managerNameFor(singletonName)}", settings.toProxySettings(singletonName)),
           proxyName)
-      } catch {
-        case ex: InvalidActorNameException if ex.getMessage.endsWith("is not unique!") ⇒
-          // this is fine, we don't want to start more of it than one
-          untypedSystem.actorFor(s"/system/$proxyName")
       }
+    }
 
-    ActorRefAdapter(untypedProxy)
+    proxies.computeIfAbsent(singletonName, proxyCreator).asInstanceOf[ActorRef[A]]
   }
 }
 
