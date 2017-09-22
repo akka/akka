@@ -23,6 +23,7 @@ object ClusterApiSpec {
       akka.remote.artery.enabled = true
       akka.remote.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
+      akka.remote.artery.canonical.hostname = 127.0.0.1
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
       akka.coordinated-shutdown.terminate-actor-system = off
       akka.actor {
@@ -62,8 +63,7 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
 
         // check that cached selfMember is updated
         node1Probe.awaitAssert(
-          clusterNode1.selfMember.status should ===(MemberStatus.Up)
-        )
+          clusterNode1.selfMember.status should ===(MemberStatus.Up))
 
         // subscribing to OnSelfUp when already up
         clusterNode1.subscriptions ! Subscribe(node1Probe.ref, classOf[SelfUp])
@@ -73,8 +73,7 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
         clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfUp])
         clusterNode2.manager ! Join(clusterNode1.selfMember.address)
         node2Probe.awaitAssert(
-          clusterNode2.selfMember.status should ===(MemberStatus.Up)
-        )
+          clusterNode2.selfMember.status should ===(MemberStatus.Up))
         node2Probe.expectMsgType[SelfUp]
 
         // events about node2 joining to subscriber on node1
@@ -92,8 +91,7 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
 
         // selfMember updated and self removed event gotten
         node2Probe.awaitAssert(
-          clusterNode2.selfMember.status should ===(MemberStatus.Removed)
-        )
+          clusterNode2.selfMember.status should ===(MemberStatus.Removed))
         node2Probe.expectMsg(SelfRemoved(MemberStatus.Exiting))
 
         // subscribing to SelfRemoved when already removed yields immediate message back

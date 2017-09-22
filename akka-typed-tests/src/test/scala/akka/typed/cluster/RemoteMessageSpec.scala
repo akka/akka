@@ -10,7 +10,6 @@ import akka.testkit.AkkaSpec
 import akka.typed.{ ActorRef, ActorSystem }
 import akka.typed.scaladsl.Actor
 import akka.actor.{ ExtendedActorSystem, ActorSystem ⇒ UntypedActorSystem }
-import akka.cluster.Cluster
 import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Promise
