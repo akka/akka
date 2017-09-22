@@ -62,6 +62,7 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
   implicit val untypedSystem = system.toUntyped
   private val untypedCluster = akka.cluster.Cluster(untypedSystem)
 
+  val typeKey = EntityTypeKey[TestProtocol]("envelope-shard")
   val behavior = Actor.immutable[TestProtocol] {
     case (_, StopPlz()) ⇒
       Actor.stopped
@@ -74,6 +75,8 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       toMe ! "Hello!"
       Actor.same
   }
+
+  val typeKey2 = EntityTypeKey[IdTestProtocol]("no-envelope-shard")
   val behaviorWithId = Actor.immutable[IdTestProtocol] {
     case (_, IdStopPlz(_)) ⇒
       Actor.stopped
@@ -95,7 +98,7 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       val ref = sharding.spawn(
         behavior,
         Props.empty,
-        "envelope-shard",
+        typeKey,
         ClusterShardingSettings(system),
         10,
         StopPlz())
@@ -110,7 +113,7 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       val ref = sharding.spawn(
         behaviorWithId,
         Props.empty,
-        "no-envelope-shard",
+        typeKey2,
         ClusterShardingSettings(system),
         ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, _.id),
         IdStopPlz("THE_ID_HERE"))
@@ -140,8 +143,7 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
     untypedCluster.join(untypedCluster.selfAddress)
 
     def `11 EntityRef - tell`(): Unit = {
-      val charlieRef: EntityRef[TestProtocol] =
-        sharding.entityRefFor[TestProtocol]("envelope-shard", "charlie")
+      val charlieRef = sharding.entityRefFor(typeKey, "charlie")
 
       val p = TestProbe[String]()
 
@@ -154,11 +156,9 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       charlieRef ! StopPlz()
     }
 
-    def `11 EntityRef - ask`(): Unit = {
-      val bobRef: EntityRef[TestProtocol] =
-        sharding.entityRefFor[TestProtocol]("envelope-shard", "bob")
-      val charlieRef: EntityRef[TestProtocol] =
-        sharding.entityRefFor[TestProtocol]("envelope-shard", "charlie")
+    def `12 EntityRef - ask`(): Unit = {
+      val bobRef = sharding.entityRefFor(typeKey, "bob")
+      val charlieRef = sharding.entityRefFor(typeKey, "charlie")
 
       val p = TestProbe[String]()
 

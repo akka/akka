@@ -40,8 +40,7 @@ class Receptionist(system: ActorSystem[_]) extends Extension {
         // FIXME: where should that timeout be configured? Shouldn't there be a better `Extension`
         //        implementation that does this dance for us?
 
-        10.seconds
-      ))
+        10.seconds))
   }
 }
 
@@ -84,10 +83,17 @@ object Receptionist extends ExtensionId[Receptionist] {
 
   object ServiceKey {
     /**
-     * Creates a service key. The given ID should uniquely define a service with a given protocol.
+     * Scala API: Creates a service key. The given ID should uniquely define a service with a given protocol.
      */
-    // FIXME: not sure if the ClassTag pulls its weight. It's only used in toString currently.
-    def apply[T](id: String)(implicit tTag: ClassTag[T]): ServiceKey[T] = ReceptionistImpl.DefaultServiceKey(id)
+    def apply[T](id: String)(implicit tTag: ClassTag[T]): ServiceKey[T] =
+      ReceptionistImpl.DefaultServiceKey(id, implicitly[ClassTag[T]].runtimeClass.getName)
+
+    /**
+     * Java API: Creates a service key. The given ID should uniquely define a service with a given protocol.
+     */
+    def create[T](clazz: Class[T], id: String): ServiceKey[T] =
+      ReceptionistImpl.DefaultServiceKey(id, clazz.getName)
+
   }
 
   /** Internal superclass for external and internal commands */

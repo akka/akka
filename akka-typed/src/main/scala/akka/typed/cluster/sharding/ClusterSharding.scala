@@ -12,6 +12,7 @@ import akka.typed.scaladsl.adapter.PropsAdapter
 import akka.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props }
 
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 /**
  * Default envelope type that may be used with Cluster Sharding.
@@ -63,8 +64,7 @@ object ShardingMessageExtractor {
    */
   def noEnvelope[A](
     maxNumberOfShards: Int,
-    extractEntityId:   A ⇒ String
-  ): ShardingMessageExtractor[A, A] =
+    extractEntityId:   A ⇒ String): ShardingMessageExtractor[A, A] =
     new HashCodeNoEnvelopeMessageExtractor[A](maxNumberOfShards) {
       // TODO catch MatchError here and return null for those to yield an "unhandled" when partial functions are used?
       def entityId(message: A) = extractEntityId(message)
@@ -143,6 +143,28 @@ abstract class HashCodeNoEnvelopeMessageExtractor[A](maxNumberOfShards: Int) ext
   override def toString = s"HashCodeNoEnvelopeMessageExtractor($maxNumberOfShards)"
 }
 
+/**
+ * The key of an entity type, the `name` must be unique.
+ */
+abstract class EntityTypeKey[T] {
+  def name: String
+}
+
+object EntityTypeKey {
+  /**
+   * Scala API: Creates an `EntityTypeKey`. The `name` must be unique.
+   */
+  def apply[T](name: String)(implicit tTag: ClassTag[T]): EntityTypeKey[T] =
+    AdaptedClusterShardingImpl.EntityTypeKeyImpl(name, implicitly[ClassTag[T]].runtimeClass.getName)
+
+  /**
+   * Java API: Creates an `EntityTypeKey`. The `name` must be unique.
+   */
+  def create[T](messageClass: Class[T], name: String): EntityTypeKey[T] =
+    AdaptedClusterShardingImpl.EntityTypeKeyImpl(name, messageClass.getName)
+
+}
+
 object ClusterSharding extends ExtensionId[ClusterSharding] {
 
   override def createExtension(system: ActorSystem[_]): ClusterSharding =
@@ -150,6 +172,15 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
 
   /** Java API */
   def get(system: ActorSystem[_]): ClusterSharding = apply(system)
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object AdaptedClusterShardingImpl {
+  final case class EntityTypeKeyImpl[T](name: String, messageClassName: String) extends EntityTypeKey[T] {
+    override def toString: String = s"EntityTypeKey[$messageClassName]($name)"
+  }
 }
 
 /** INTERNAL API */
@@ -165,27 +196,27 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
   override def spawn[A](
     behavior:           Behavior[A],
     entityProps:        Props,
-    typeName:           String,
+    typeKey:            EntityTypeKey[A],
     settings:           ClusterShardingSettings,
     maxNumberOfShards:  Int,
     handOffStopMessage: A): ActorRef[ShardingEnvelope[A]] = {
     val extractor = new HashCodeMessageExtractor[A](maxNumberOfShards)
-    spawn(behavior, entityProps, typeName, settings, extractor, defaultShardAllocationStrategy(settings), handOffStopMessage)
+    spawn(behavior, entityProps, typeKey, settings, extractor, defaultShardAllocationStrategy(settings), handOffStopMessage)
   }
 
   override def spawn[E, A](
     behavior:           Behavior[A],
     entityProps:        Props,
-    typeName:           String,
+    typeKey:            EntityTypeKey[A],
     settings:           ClusterShardingSettings,
     messageExtractor:   ShardingMessageExtractor[E, A],
     handOffStopMessage: A): ActorRef[E] =
-    spawn(behavior, entityProps, typeName, settings, messageExtractor, defaultShardAllocationStrategy(settings), handOffStopMessage)
+    spawn(behavior, entityProps, typeKey, settings, messageExtractor, defaultShardAllocationStrategy(settings), handOffStopMessage)
 
   override def spawn[E, A](
     behavior:           Behavior[A],
     entityProps:        Props,
-    typeName:           String,
+    typeKey:            EntityTypeKey[A],
     settings:           ClusterShardingSettings,
     extractor:          ShardingMessageExtractor[E, A],
     allocationStrategy: ShardAllocationStrategy,
@@ -197,34 +228,29 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
       if (settings.shouldHostShard(cluster)) {
         system.log.info("Starting Shard Region [{}]...")
         untypedSharding.start(
-          typeName,
+          typeKey.name,
           PropsAdapter(behavior, entityProps),
           untypedSettings,
           extractor, extractor,
           defaultShardAllocationStrategy(settings),
-          handOffStopMessage
-        )
+          handOffStopMessage)
       } else {
         system.log.info("Starting Shard Region Proxy [{}] (no actors will be hosted on this node)...")
 
         untypedSharding.startProxy(
-          typeName,
+          typeKey.name,
           settings.role,
           dataCenter = None, // TODO what about the multi-dc value here?
           extractShardId = extractor,
-          extractEntityId = extractor
-        )
+          extractEntityId = extractor)
       }
 
     ActorRefAdapter(ref)
   }
 
-  override def entityRefFor[A](typeName: String, entityId: String): EntityRef[A] = {
-    new AdaptedEntityRefImpl[A](untypedSharding.shardRegion(typeName), entityId)
+  override def entityRefFor[A](typeKey: EntityTypeKey[A], entityId: String): EntityRef[A] = {
+    new AdaptedEntityRefImpl[A](untypedSharding.shardRegion(typeKey.name), entityId)
   }
-
-  override def getEntityRefFor[A](msgClass: Class[A], typeName: String, entityId: String): EntityRef[A] =
-    entityRefFor[A](typeName, entityId)
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
     val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
@@ -232,7 +258,7 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
     new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
   }
 
-  // --- extractor conversions --- 
+  // --- extractor conversions ---
   @InternalApi
   private implicit def convertExtractEntityId[E, A](extractor: ShardingMessageExtractor[E, A]): UntypedShardRegion.ExtractEntityId = {
     // TODO what if msg was null
@@ -259,16 +285,16 @@ sealed trait ClusterSharding extends Extension {
    * [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] will be used for shard allocation strategy.
    *
    * @param behavior The behavior for entities
-   * @param typeName A name that uniquely identifies the type of entity in this cluster
+   * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param handOffStopMessage Message sent to an entity to tell it to stop
    * @tparam A The type of command the entity accepts
    */
-  // TODO: FYI, I think it would be very good to have rule that "behavior, otherstuff" 
+  // TODO: FYI, I think it would be very good to have rule that "behavior, otherstuff"
   // TODO: or "behavior, props, otherstuff" be the consistent style we want to promote in parameter ordering, WDYT?
   def spawn[A](
     behavior:           Behavior[A],
     props:              Props,
-    typeName:           String,
+    typeKey:            EntityTypeKey[A],
     settings:           ClusterShardingSettings,
     maxNumberOfShards:  Int,
     handOffStopMessage: A): ActorRef[ShardingEnvelope[A]]
@@ -277,7 +303,7 @@ sealed trait ClusterSharding extends Extension {
    * Spawn a shard region or a proxy depending on if the settings require role and if this node has such a role.
    *
    * @param behavior The behavior for entities
-   * @param typeName A name that uniquely identifies the type of entity in this cluster
+   * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param entityProps Props to apply when starting an entity
    * @param allocationStrategy Allocation strategy which decides on which nodes to allocate new shards
    * @param handOffStopMessage Message sent to an entity to tell it to stop
@@ -287,18 +313,17 @@ sealed trait ClusterSharding extends Extension {
   def spawn[E, A](
     behavior:           Behavior[A],
     entityProps:        Props,
-    typeName:           String,
+    typeKey:            EntityTypeKey[A],
     settings:           ClusterShardingSettings,
     messageExtractor:   ShardingMessageExtractor[E, A],
     allocationStrategy: ShardAllocationStrategy,
-    handOffStopMessage: A
-  ): ActorRef[E]
+    handOffStopMessage: A): ActorRef[E]
 
   /**
    * Spawn a shard region or a proxy depending on if the settings require role and if this node has such a role.
    *
    * @param behavior The behavior for entities
-   * @param typeName A name that uniquely identifies the type of entity in this cluster
+   * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param entityProps Props to apply when starting an entity
    * @param handOffStopMessage Message sent to an entity to tell it to stop
    * @tparam E A possible envelope around the message the entity accepts
@@ -307,11 +332,10 @@ sealed trait ClusterSharding extends Extension {
   def spawn[E, A](
     behavior:           Behavior[A],
     entityProps:        Props,
-    typeName:           String,
+    typeKey:            EntityTypeKey[A],
     settings:           ClusterShardingSettings,
     messageExtractor:   ShardingMessageExtractor[E, A],
-    handOffStopMessage: A
-  ): ActorRef[E]
+    handOffStopMessage: A): ActorRef[E]
 
   /**
    * Create an `ActorRef`-like reference to a specific sharded entity.
@@ -324,20 +348,7 @@ sealed trait ClusterSharding extends Extension {
    *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
-  def entityRefFor[A](typeName: String, entityId: String): EntityRef[A]
-
-  /**
-   * Java API: Create an `ActorRef`-like reference to a specific sharded entity.
-   * Messages sent to it will be wrapped in a [[ShardingEnvelope]] and passed to the local shard region or proxy.
-   *
-   * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
-   * here provided `entityId`.
-   *
-   * FIXME a more typed version of this API will be explored in https://github.com/akka/akka/issues/23690
-   *
-   * For in-depth documentation of its semantics, see [[EntityRef]].
-   */
-  def getEntityRefFor[A](msgClass: Class[A], typeName: String, entityId: String): EntityRef[A]
+  def entityRefFor[A](typeKey: EntityTypeKey[A], entityId: String): EntityRef[A]
 
   /** The default ShardAllocationStrategy currently is [[LeastShardAllocationStrategy]] however could be changed in the future. */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy
