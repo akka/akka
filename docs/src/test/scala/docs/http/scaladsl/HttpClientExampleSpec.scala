@@ -205,7 +205,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
   "host-level-streamed-example" in compileOnlySpec {
     //#host-level-streamed-example
-    import java.nio.file.Path
+    import java.nio.file.{ Path, Paths }
 
     import scala.util.{ Failure, Success }
     import scala.concurrent.Future
@@ -226,7 +226,13 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
     case class FileToUpload(name: String, location: Path)
 
-    def filesToUpload(): Source[FileToUpload, NotUsed] = ???
+    def filesToUpload(): Source[FileToUpload, NotUsed] =
+      // This could even be a lazy/infinite stream. For this example we have a finite one:
+      Source(List(
+        FileToUpload("foo.txt", Paths.get("./foo.txt")),
+        FileToUpload("bar.txt", Paths.get("./bar.txt")),
+        FileToUpload("baz.txt", Paths.get("./baz.txt"))
+      ))
 
     val poolClientFlow =
       Http().cachedHostConnectionPool[FileToUpload]("akka.io")
