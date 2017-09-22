@@ -5,22 +5,29 @@ package akka.typed
 package internal
 
 import com.typesafe.config.Config
+
 import scala.concurrent.ExecutionContext
 import java.util.concurrent.ThreadFactory
+
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import akka.{ actor ⇒ a, dispatch ⇒ d, event ⇒ e }
+
 import scala.util.control.NonFatal
 import scala.util.control.ControlThrowable
 import scala.collection.immutable
 import akka.typed.Dispatchers
+
 import scala.concurrent.Promise
 import java.util.concurrent.ConcurrentSkipListSet
 import java.util.concurrent.atomic.AtomicBoolean
+
 import scala.collection.JavaConverters._
 import scala.util.Success
 import akka.util.Timeout
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicInteger
+
+import akka.typed.receptionist.Receptionist
 import akka.typed.scaladsl.AskPattern
 
 object ActorSystemImpl {
@@ -226,9 +233,6 @@ private[typed] class ActorSystemImpl[-T](
   }
 
   private val systemGuardian: ActorRefImpl[SystemCommand] = createTopLevel(systemGuardianBehavior, "system", EmptyProps)
-
-  override val receptionist: ActorRef[patterns.Receptionist.Command] =
-    ActorRef(systemActorOf(patterns.Receptionist.behavior, "receptionist")(settings.untyped.CreationTimeout))
 
   private val userGuardian: ActorRefImpl[T] = createTopLevel(_userGuardianBehavior, "user", _userGuardianProps)
 
