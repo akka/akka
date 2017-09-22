@@ -160,6 +160,7 @@ lazy val streamTestsTck = akkaModule("akka-stream-tests-tck")
 lazy val typed = akkaModule("akka-typed")
   .dependsOn(
     testkit % "compile->compile;test->test",
+    persistence % "provided->compile",
     cluster % "provided->compile",
     clusterTools % "provided->compile",
     clusterSharding % "provided->compile",
@@ -169,11 +170,11 @@ lazy val typedTests = akkaModule("akka-typed-tests")
   .dependsOn(typed, typedTestkit % "compile->compile;test->provided;test->test")
   // the provided dependencies
   .dependsOn(
+    persistence % "compile->compile;test->test",
     cluster % "test->test",
     clusterTools,
     clusterSharding,
-    distributedData,
-    persistence % "compile->compile;test->test")
+    distributedData)
 
 lazy val typedTestkit = akkaModule("akka-typed-testkit")
   .dependsOn(typed, testkit % "compile->compile;test->test")

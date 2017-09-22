@@ -30,8 +30,8 @@ private[typed] trait ReceptionistBehaviorProvider {
 @InternalApi
 private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
   // FIXME: make sure to provide serializer
-  case class DefaultServiceKey[T](id: String)(implicit tTag: ClassTag[T]) extends ServiceKey[T] {
-    override def toString: String = s"ServiceKey[$tTag]($id)"
+  final case class DefaultServiceKey[T](id: String, typeName: String) extends ServiceKey[T] {
+    override def toString: String = s"ServiceKey[$typeName]($id)"
   }
 
   /**
