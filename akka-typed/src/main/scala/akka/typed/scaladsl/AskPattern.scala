@@ -12,11 +12,14 @@ import akka.actor.Scheduler
 import akka.typed.internal.FunctionRef
 import akka.actor.RootActorPath
 import akka.actor.Address
+import akka.annotation.InternalApi
 import akka.typed.ActorRef
 import akka.typed.internal.{ adapter ⇒ adapt }
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
+ * The `?` operator is pronounced as "ask".
+ *
  * The party that asks may be within or without an Actor, since the
  * implementation will fabricate a (hidden) [[ActorRef]] that is bound to a
  * [[scala.concurrent.Promise]]. This ActorRef will need to be injected in the
@@ -36,6 +39,27 @@ import akka.typed.internal.{ adapter ⇒ adapt }
  */
 object AskPattern {
   implicit class Askable[T](val ref: ActorRef[T]) extends AnyVal {
+    /**
+     * The ask-pattern implements the initiator side of a request–reply protocol.
+     * The `?` operator is pronounced as "ask".
+     *
+     * The party that asks may be within or without an Actor, since the
+     * implementation will fabricate a (hidden) [[ActorRef]] that is bound to a
+     * [[scala.concurrent.Promise]]. This ActorRef will need to be injected in the
+     * message that is sent to the target Actor in order to function as a reply-to
+     * address, therefore the argument to the ask / `?`
+     * operator is not the message itself but a function that given the reply-to
+     * address will create the message.
+     *
+     * {{{
+     * case class Request(msg: String, replyTo: ActorRef[Reply])
+     * case class Reply(msg: String)
+     *
+     * implicit val timeout = Timeout(3.seconds)
+     * val target: ActorRef[Request] = ...
+     * val f: Future[Reply] = target ? (Request("hello", _))
+     * }}}
+     */
     def ?[U](f: ActorRef[U] ⇒ T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] =
       ref match {
         case a: adapt.ActorRefAdapter[_]    ⇒ askUntyped(ref, a.untyped, timeout, f)
@@ -44,7 +68,7 @@ object AskPattern {
       }
   }
 
-  private class PromiseRef[U](target: ActorRef[_], untyped: InternalActorRef, timeout: Timeout) {
+  private final class PromiseRef[U](target: ActorRef[_], untyped: InternalActorRef, timeout: Timeout) {
 
     // Note: _promiseRef mustn't have a type pattern, since it can be null
     private[this] val (_ref: ActorRef[U], _future: Future[U], _promiseRef) =

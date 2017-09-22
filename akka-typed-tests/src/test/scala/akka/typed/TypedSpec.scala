@@ -65,7 +65,7 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
     sys
   }
   private var adaptedSystemUsed = false
-  lazy val adaptedSystem: ActorSystem[TypedSpec.Command] = {
+  lazy val system: ActorSystem[TypedSpec.Command] = {
     val sys = ActorSystem.adapter(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
     adaptedSystemUsed = true
     sys
@@ -90,7 +90,7 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
   }
 
   trait AdaptedSystem {
-    def system: ActorSystem[TypedSpec.Command] = adaptedSystem
+    def system: ActorSystem[TypedSpec.Command] = TypedSpec.this.system
   }
 
   implicit val timeout = setTimeout
@@ -100,7 +100,7 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
     if (nativeSystemUsed)
       Await.result(nativeSystem.terminate, timeout.duration)
     if (adaptedSystemUsed)
-      Await.result(adaptedSystem.terminate, timeout.duration)
+      Await.result(system.terminate, timeout.duration)
   }
 
   // TODO remove after basing on ScalaTest 3 with async support
