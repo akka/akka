@@ -28,25 +28,26 @@ import scala.concurrent.duration._
 
 object ClusterReceptionistSpec {
   val config = ConfigFactory.parseString(
-    """
-      akka.log-level = DEBUG
+    s"""
       akka.actor {
         provider = cluster
         serialize-messages = off
         allow-java-serialization = true
         serializers {
-          test = "akka.typed.cluster.receptionist.ClusterReceptionistSpec$PingSerializer"
+          test = "akka.typed.cluster.receptionist.ClusterReceptionistSpec$$PingSerializer"
         }
         serialization-bindings {
-          "akka.typed.cluster.receptionist.ClusterReceptionistSpec$Ping" = test
-          "akka.typed.cluster.receptionist.ClusterReceptionistSpec$Pong$" = test
-          "akka.typed.cluster.receptionist.ClusterReceptionistSpec$Perish$" = test
+          "akka.typed.cluster.receptionist.ClusterReceptionistSpec$$Ping" = test
+          "akka.typed.cluster.receptionist.ClusterReceptionistSpec$$Pong$$" = test
+          "akka.typed.cluster.receptionist.ClusterReceptionistSpec$$Perish$$" = test
           # for now, using Java serializers is good enough (tm), see #23687
-          # "akka.typed.internal.receptionist.ReceptionistImpl$DefaultServiceKey" = test
+          # "akka.typed.internal.receptionist.ReceptionistImpl$$DefaultServiceKey" = test
         }
       }
       akka.remote.artery.enabled = true
-      akka.remote.artery.canonical.port = 25552
+      akka.remote.netty.tcp.port = 0
+      akka.remote.artery.canonical.port = 0
+      akka.remote.artery.canonical.hostname = 127.0.0.1
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
     """)
 
@@ -102,11 +103,7 @@ class ClusterReceptionistSpec extends TypedSpec(ClusterReceptionistSpec.config) 
 
   val system2 = akka.actor.ActorSystem(
     adaptedSystem.name,
-    ConfigFactory.parseString(
-      """
-        akka.remote.artery.canonical.port = 0
-      """
-    ).withFallback(adaptedSystem.settings.config))
+    adaptedSystem.settings.config)
   val adaptedSystem2 = system2.toTyped
   val clusterNode2 = Cluster(system2)
 
