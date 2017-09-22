@@ -3,19 +3,15 @@
  */
 package akka.typed.cluster.sharding
 
-import scala.language.implicitConversions
-import akka.actor.ExtendedActorSystem
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.sharding.ShardCoordinator.{ LeastShardAllocationStrategy, ShardAllocationStrategy }
-import akka.cluster.sharding.ShardRegion.ExtractShardId
-import akka.cluster.sharding.{ ClusterSharding ⇒ UntypedClusterSharding }
-import akka.cluster.sharding.{ ShardRegion ⇒ UntypedShardRegion }
+import akka.cluster.sharding.{ ClusterSharding ⇒ UntypedClusterSharding, ShardRegion ⇒ UntypedShardRegion }
+import akka.typed.cluster.Cluster
 import akka.typed.internal.adapter.{ ActorRefAdapter, ActorSystemAdapter }
 import akka.typed.scaladsl.adapter.PropsAdapter
 import akka.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props }
 
-import scala.reflect.ClassTag
-import scala.util.Try
+import scala.language.implicitConversions
 
 /**
  * Default envelope type that may be used with Cluster Sharding.
@@ -150,15 +146,16 @@ abstract class HashCodeNoEnvelopeMessageExtractor[A](maxNumberOfShards: Int) ext
 object ClusterSharding extends ExtensionId[ClusterSharding] {
 
   override def createExtension(system: ActorSystem[_]): ClusterSharding =
-    new ClusterShardingImpl(system)
+    new AdaptedClusterShardingImpl(system)
 
   /** Java API */
   def get(system: ActorSystem[_]): ClusterSharding = apply(system)
 }
 
-final class ClusterShardingImpl(system: ActorSystem[_]) extends ClusterSharding {
+final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSharding {
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted untyped actor systems can be used for cluster features")
 
+  private val cluster = Cluster(system)
   private val untypedSystem = ActorSystemAdapter.toUntyped(system)
   private val untypedSharding = akka.cluster.sharding.ClusterSharding(untypedSystem)
 
@@ -169,7 +166,7 @@ final class ClusterShardingImpl(system: ActorSystem[_]) extends ClusterSharding 
     settings:           ClusterShardingSettings,
     maxNumberOfShards:  Int,
     handOffStopMessage: A): ActorRef[ShardingEnvelope[A]] = {
-    val extractor = new HashCodeMessageExtractor[A](10)
+    val extractor = new HashCodeMessageExtractor[A](maxNumberOfShards)
     spawn(behavior, entityProps, typeName, settings, extractor, defaultShardAllocationStrategy(settings), handOffStopMessage)
   }
 
@@ -191,17 +188,30 @@ final class ClusterShardingImpl(system: ActorSystem[_]) extends ClusterSharding 
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: A): ActorRef[E] = {
 
-    println(s"extractor = $extractor")
     val untypedSettings = ClusterShardingSettings.toUntypedSettings(settings)
 
-    val ref = untypedSharding.start(
-      typeName,
-      PropsAdapter(behavior, entityProps),
-      untypedSettings,
-      convertExtractEntityId[E, A](extractor), convertExtractShardId[E, A](extractor),
-      defaultShardAllocationStrategy(settings),
-      handOffStopMessage
-    )
+    val ref =
+      if (settings.shouldHostShard(cluster)) {
+        system.log.info("Starting Shard Region [{}]...")
+        untypedSharding.start(
+          typeName,
+          PropsAdapter(behavior, entityProps),
+          untypedSettings,
+          extractor, extractor,
+          defaultShardAllocationStrategy(settings),
+          handOffStopMessage
+        )
+      } else {
+        system.log.info("Starting Shard Region Proxy [{}] (no actors will be hosted on this node)...")
+
+        untypedSharding.startProxy(
+          typeName,
+          settings.role,
+          dataCenter = None, // TODO what about the multi-dc value here?
+          extractShardId = extractor,
+          extractEntityId = extractor
+        )
+      }
 
     ActorRefAdapter(ref)
   }
@@ -218,40 +228,20 @@ final class ClusterShardingImpl(system: ActorSystem[_]) extends ClusterSharding 
 
   // --- extractor conversions --- 
   @InternalApi
-  private def convertExtractEntityId[E, A](extractor: ShardingMessageExtractor[E, A]): UntypedShardRegion.ExtractEntityId =
-    {
-      //    // TODO what if msg was null
-      //    case msg if (Try(msg.asInstanceOf[E]).isSuccess && (extractor.entityId(msg.asInstanceOf[E]) ne null)) ⇒
-      //      // we're evaluating entityId twice, I wonder if we could do it just once (same was in old sharding's Java DSL)
-      //
-      //      (extractor.entityId(msg.asInstanceOf[E]), extractor.entityMessage(msg.asInstanceOf[E]))
+  private implicit def convertExtractEntityId[E, A](extractor: ShardingMessageExtractor[E, A]): UntypedShardRegion.ExtractEntityId = {
+    // TODO what if msg was null
+    case msg: E if extractor.entityId(msg.asInstanceOf[E]) ne null ⇒
+      // we're evaluating entityId twice, I wonder if we could do it just once (same was in old sharding's Java DSL)
 
-      new PartialFunction[Any, (String, A)] {
-        override def isDefinedAt(x: Any) = {
-          println(s"try entity id for = ${x} ==== ${Try(x.asInstanceOf[E]).isSuccess}")
-          Try(x.asInstanceOf[E]).isSuccess
-        }
-
-        override def apply(msg: Any): (String, A) =
-          (extractor.entityId(msg.asInstanceOf[E]), extractor.entityMessage(msg.asInstanceOf[E]))
-      }
-    }
+      (extractor.entityId(msg.asInstanceOf[E]), extractor.entityMessage(msg.asInstanceOf[E]))
+  }
   @InternalApi
-  private def convertExtractShardId[E, A](extractor: ShardingMessageExtractor[E, A]): UntypedShardRegion.ExtractShardId = {
-    //    case msg: E ⇒ extractor.shardId(msg)
-    //    case _ ⇒ null // FIXME wrong type, should be impossible in normal usage, log it, make it unhandled?
-    new PartialFunction[Any, String] {
-      override def isDefinedAt(x: Any) = {
-        println(s"try shard id for = ${x} ==== ${Try(x.asInstanceOf[E]).isSuccess}")
-        Try(x.asInstanceOf[E]).isSuccess
-      }
-
-      override def apply(msg: Any): String =
-        extractor.shardId(msg.asInstanceOf[E])
-    }
+  private implicit def convertExtractShardId[E, A](extractor: ShardingMessageExtractor[E, A]): UntypedShardRegion.ExtractShardId = {
+    case msg: E ⇒ extractor.shardId(msg)
   }
 }
 
+@DoNotInherit
 sealed trait ClusterSharding extends Extension {
 
   /**

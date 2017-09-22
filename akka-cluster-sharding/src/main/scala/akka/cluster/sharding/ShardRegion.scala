@@ -458,24 +458,17 @@ private[akka] class ShardRegion(
   }
 
   def receive = {
-    case Terminated(ref)            ⇒ receiveTerminated(ref)
-    case ShardInitialized(shardId)  ⇒ initializeShard(shardId, sender())
-    case evt: ClusterDomainEvent    ⇒ receiveClusterEvent(evt)
-    case state: CurrentClusterState ⇒ receiveClusterState(state)
-    case msg: CoordinatorMessage    ⇒ receiveCoordinatorMessage(msg)
-    case cmd: ShardRegionCommand    ⇒ receiveCommand(cmd)
-    case query: ShardRegionQuery    ⇒ receiveQuery(query)
-    case msg: RestartShard          ⇒ deliverMessage(msg, sender())
-    case msg: StartEntity           ⇒ deliverStartEntity(msg, sender())
-    case msg ⇒
-      println(s"msg = ${msg}")
-      println(s"extractEntityId = ${extractEntityId}")
-      if (extractEntityId.isDefinedAt(msg))
-        deliverMessage(msg, sender())
-      else
-        ???
-    //    case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
-    //    case unknownMsg                              ⇒ log.warning("Message does not have an extractor defined in shard [{}] so it was ignored: {}", typeName, unknownMsg)
+    case Terminated(ref)                         ⇒ receiveTerminated(ref)
+    case ShardInitialized(shardId)               ⇒ initializeShard(shardId, sender())
+    case evt: ClusterDomainEvent                 ⇒ receiveClusterEvent(evt)
+    case state: CurrentClusterState              ⇒ receiveClusterState(state)
+    case msg: CoordinatorMessage                 ⇒ receiveCoordinatorMessage(msg)
+    case cmd: ShardRegionCommand                 ⇒ receiveCommand(cmd)
+    case query: ShardRegionQuery                 ⇒ receiveQuery(query)
+    case msg: RestartShard                       ⇒ deliverMessage(msg, sender())
+    case msg: StartEntity                        ⇒ deliverStartEntity(msg, sender())
+    case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
+    case unknownMsg                              ⇒ log.warning("Message does not have an extractor defined in shard [{}] so it was ignored: {}", typeName, unknownMsg)
   }
 
   def receiveClusterState(state: CurrentClusterState): Unit = {

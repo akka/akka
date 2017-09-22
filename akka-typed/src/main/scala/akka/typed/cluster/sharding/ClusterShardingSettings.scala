@@ -5,10 +5,11 @@
 package akka.typed.cluster.sharding
 
 import akka.actor.NoSerializationVerificationNeeded
+import akka.annotation.InternalApi
 import akka.cluster.sharding.{ ClusterShardingSettings ⇒ UntypedShardingSettings }
 import akka.cluster.singleton.{ ClusterSingletonManagerSettings ⇒ UntypedClusterSingletonManagerSettings }
 import akka.typed.ActorSystem
-import akka.typed.cluster.ClusterSingletonManagerSettings
+import akka.typed.cluster.{ Cluster, ClusterSingletonManagerSettings }
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.FiniteDuration
@@ -21,9 +22,6 @@ object ClusterShardingSettings {
 
   def fromConfig(config: Config): ClusterShardingSettings = {
     val untypedSettings = UntypedShardingSettings(config)
-
-    val untypedCoordinatorSingletonSettings = untypedSettings.coordinatorSingletonSettings
-
     fromUntypedSettings(untypedSettings)
   }
 
@@ -233,6 +231,11 @@ final class ClusterShardingSettings(
     stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
     s"Unknown 'state-store-mode' [$stateStoreMode], " +
       s"valid values are '${StateStoreModeDData.name}' or '${StateStoreModePersistence.name}'")
+
+  /** If true, this node should run the shard region, otherwise just a shard proxy should started on this node. */
+  @InternalApi
+  private[akka] def shouldHostShard(cluster: Cluster): Boolean =
+    role.isEmpty || cluster.selfMember.roles(role.get)
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.roleOption(role))
 
