@@ -52,6 +52,10 @@ object PersistentActor {
     /** Convenience method to register a side effect with just a callback function */
     def andThen(callback: State ⇒ Unit): Effect[Event, State] =
       andThen(SideEffect[Event, State](callback))
+
+    /** Convenience method to register a side effect with just a lazy expression */
+    def andThen(callback: ⇒ Unit): Effect[Event, State] =
+      andThen(SideEffect[Event, State]((_: State) ⇒ callback))
   }
 
   case class CompositeEffect[Event, State](persistingEffect: Option[Effect[Event, State]], override val sideEffects: im.Seq[ChainableEffect[_, State]]) extends Effect[Event, State] {
