@@ -17,6 +17,8 @@ import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
 import java.util.Optional
 
+import akka.typed.receptionist.Receptionist
+
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
  * [[ActorSystem#apply]] from a [[Behavior]] object that describes the root
@@ -146,9 +148,10 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: inter
   def systemActorOf[U](behavior: Behavior[U], name: String, props: Props = Props.empty)(implicit timeout: Timeout): Future[ActorRef[U]]
 
   /**
-   * Return a reference to this system’s [[akka.typed.patterns.Receptionist$]].
+   * Return a reference to this system’s [[akka.typed.receptionist.Receptionist]].
    */
-  def receptionist: ActorRef[patterns.Receptionist.Command]
+  def receptionist: ActorRef[Receptionist.Command] =
+    Receptionist(this).ref
 }
 
 object ActorSystem {

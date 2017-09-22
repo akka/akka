@@ -5,17 +5,13 @@ package akka.typed
 package internal
 package adapter
 
-import akka.{ actor ⇒ a, dispatch ⇒ d }
-import akka.dispatch.sysmsg
+import akka.{ actor ⇒ a }
 
 import scala.concurrent.ExecutionContextExecutor
 import akka.util.Timeout
 
 import scala.concurrent.Future
 import akka.annotation.InternalApi
-import akka.typed.scaladsl.adapter.AdapterExtension
-
-import scala.annotation.unchecked.uncheckedVariance
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
@@ -66,9 +62,6 @@ import scala.annotation.unchecked.uncheckedVariance
   override def uptime: Long = untyped.uptime
   override def printTree: String = untyped.printTree
 
-  override def receptionist: ActorRef[patterns.Receptionist.Command] =
-    ReceptionistExtension(untyped).receptionist
-
   import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
   override def terminate(): scala.concurrent.Future[akka.typed.Terminated] =
@@ -103,19 +96,5 @@ private[typed] object ActorSystemAdapter {
       case _ ⇒ throw new UnsupportedOperationException("only adapted untyped ActorSystem permissible " +
         s"($sys of class ${sys.getClass.getName})")
     }
-
-  object ReceptionistExtension extends a.ExtensionId[ReceptionistExtension] with a.ExtensionIdProvider {
-    override def get(system: a.ActorSystem): ReceptionistExtension = super.get(system)
-    override def lookup = ReceptionistExtension
-    override def createExtension(system: a.ExtendedActorSystem): ReceptionistExtension =
-      new ReceptionistExtension(system)
-  }
-
-  class ReceptionistExtension(system: a.ExtendedActorSystem) extends a.Extension {
-    val receptionist: ActorRef[patterns.Receptionist.Command] =
-      ActorRefAdapter(system.systemActorOf(
-        PropsAdapter(() ⇒ patterns.Receptionist.behavior, EmptyProps),
-        "receptionist"))
-  }
 }
 
