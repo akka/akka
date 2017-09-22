@@ -337,7 +337,7 @@ abstract class SupervisorStrategy {
       }
       decision match {
         case Resume   ⇒ publish(context, Warning(child.path.toString, getClass, logMessage))
-        case Escalate ⇒ // don't log here
+        case Escalate if (!cause.isInstanceOf[AssertionError]) ⇒ // don't log here
         case _        ⇒ publish(context, Error(cause, child.path.toString, getClass, logMessage))
       }
     }
