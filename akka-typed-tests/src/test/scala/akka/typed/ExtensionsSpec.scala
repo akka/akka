@@ -5,7 +5,7 @@ package akka.typed
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Future
 
