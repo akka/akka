@@ -188,6 +188,12 @@ object Actor {
   }
 
   /**
+   * Construct an actor behavior that can react to lifecycle signals only.
+   */
+  def onSignal[T](handler: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
+    immutable[T]((_, _) ⇒ same).onSignal(handler)
+
+  /**
    * This type of Behavior wraps another Behavior while allowing you to perform
    * some action upon each received message or signal. It is most commonly used
    * for logging or tracing what a certain Actor does.
