@@ -52,13 +52,14 @@ object ClusterShardingSpec {
 }
 
 class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with ScalaFutures {
+  import akka.typed.scaladsl.adapter._
   import ClusterShardingSpec._
 
-  implicit val system = adaptedSystem
+  implicit val s = system
   implicit val testkitSettings = TestKitSettings(system)
-  val sharding = ClusterSharding(adaptedSystem)
+  val sharding = ClusterSharding(system)
 
-  implicit val untypedSystem = ActorSystemAdapter.toUntyped(adaptedSystem)
+  implicit val untypedSystem = system.toUntyped
   private val untypedCluster = akka.cluster.Cluster(untypedSystem)
 
   val behavior = Actor.immutable[TestProtocol] {
@@ -94,15 +95,15 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       val ref = sharding.spawn(
         behavior,
         Props.empty,
-        "example",
-        ClusterShardingSettings(adaptedSystem),
+        "envelope-shard",
+        ClusterShardingSettings(system),
         10,
         StopPlz()
       )
 
       val p = TestProbe[String]()
       ref ! ShardingEnvelope("test", ReplyPlz(p.ref))
-      p.expectMsg(10.seconds, "Hello!")
+      p.expectMsg(3.seconds, "Hello!")
 
       ref ! ShardingEnvelope("test", StopPlz())
     }
@@ -110,15 +111,15 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       val ref = sharding.spawn(
         behaviorWithId,
         Props.empty,
-        "example-02",
-        ClusterShardingSettings(adaptedSystem),
+        "no-envelope-shard",
+        ClusterShardingSettings(system),
         ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, _.id),
         IdStopPlz("THE_ID_HERE")
       )
 
       val p = TestProbe[String]()
       ref ! IdReplyPlz("test", p.ref)
-      p.expectMsg(10.seconds, "Hello!")
+      p.expectMsg(3.seconds, "Hello!")
 
       ref ! IdStopPlz("test")
     }
@@ -137,22 +138,40 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
     //
     //      ex.getMessage should include("already started")
     //    }
-  }
-
-  object `ShardedEntityRef` {
 
     untypedCluster.join(untypedCluster.selfAddress)
 
-    //    def `02 must expose ShardedEntityRef`(): Unit = pendingUntilFixed {
-    //      val charlieRef: ShardedEntityRef[TestProtocol] = sharding.entityRefFor[TestProtocol]("example", "charlie")
-    //
-    //      val p = TestProbe[String]()
-    //
-    //      charlieRef ! WhoAreYou(p.ref)
-    //      p.expectMsg(10.seconds, "I'm charlie")
-    //
-    //      charlieRef ! StopPlz()
-    //    }
+    def `11 EntityRef - tell`(): Unit = {
+      val charlieRef: EntityRef[TestProtocol] =
+        sharding.entityRefFor[TestProtocol]("envelope-shard", "charlie")
+
+      val p = TestProbe[String]()
+
+      charlieRef ! WhoAreYou(p.ref)
+      p.expectMsg(3.seconds, "I'm charlie")
+
+      charlieRef tell WhoAreYou(p.ref)
+      p.expectMsg(3.seconds, "I'm charlie")
+
+      charlieRef ! StopPlz()
+    }
+
+    def `11 EntityRef - ask`(): Unit = {
+      val bobRef: EntityRef[TestProtocol] =
+        sharding.entityRefFor[TestProtocol]("envelope-shard", "bob")
+      val charlieRef: EntityRef[TestProtocol] =
+        sharding.entityRefFor[TestProtocol]("envelope-shard", "charlie")
+
+      val p = TestProbe[String]()
+
+      val reply1 = bobRef ? WhoAreYou // TODO document that WhoAreYou(_) would not work
+      reply1.futureValue should ===("I'm bob")
+
+      val reply2 = charlieRef ask WhoAreYou
+      reply2.futureValue should ===("I'm charlie")
+
+      bobRef ! StopPlz()
+    }
 
   }
 

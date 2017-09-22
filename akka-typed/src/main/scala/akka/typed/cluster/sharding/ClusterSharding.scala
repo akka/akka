@@ -152,11 +152,14 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
   def get(system: ActorSystem[_]): ClusterSharding = apply(system)
 }
 
+/** INTERNAL API */
+@InternalApi
 final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSharding {
+  import akka.typed.scaladsl.adapter._
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted untyped actor systems can be used for cluster features")
 
   private val cluster = Cluster(system)
-  private val untypedSystem = ActorSystemAdapter.toUntyped(system)
+  private val untypedSystem = system.toUntyped
   private val untypedSharding = akka.cluster.sharding.ClusterSharding(untypedSystem)
 
   override def spawn[A](
@@ -216,9 +219,12 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
     ActorRefAdapter(ref)
   }
 
-  def entityRefFor[A](typeName: String, entityId: String): ShardedEntityRef[A] = {
-    ???
+  override def entityRefFor[A](typeName: String, entityId: String): EntityRef[A] = {
+    new AdaptedEntityRefImpl[A](untypedSharding.shardRegion(typeName), entityId)
   }
+
+  override def getEntityRefFor[A](msgClass: Class[A], typeName: String, entityId: String): EntityRef[A] =
+    entityRefFor[A](typeName, entityId)
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
     val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
@@ -309,14 +315,29 @@ sealed trait ClusterSharding extends Extension {
 
   /**
    * Create an `ActorRef`-like reference to a specific sharded entity.
+   * Currently you have to correctly specify the type of messages the target can handle.
+   *
+   * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
+   * here provided `entityId`.
+   *
+   * FIXME a more typed version of this API will be explored in https://github.com/akka/akka/issues/23690
+   *
+   * For in-depth documentation of its semantics, see [[EntityRef]].
+   */
+  def entityRefFor[A](typeName: String, entityId: String): EntityRef[A]
+
+  /**
+   * Java API: Create an `ActorRef`-like reference to a specific sharded entity.
    * Messages sent to it will be wrapped in a [[ShardingEnvelope]] and passed to the local shard region or proxy.
    *
-   * Note: FIXME explain why it's not the same as actor ref
+   * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
+   * here provided `entityId`.
    *
-   * This way of addressing Sharded Entities
+   * FIXME a more typed version of this API will be explored in https://github.com/akka/akka/issues/23690
+   *
+   * For in-depth documentation of its semantics, see [[EntityRef]].
    */
-  def entityRefFor[A](typeName: String, entityId: String): ShardedEntityRef[A]
-  // FIXME this is not so nice to use from Java, a class param would be welcome there
+  def getEntityRefFor[A](msgClass: Class[A], typeName: String, entityId: String): EntityRef[A]
 
   /** The default ShardAllocationStrategy currently is [[LeastShardAllocationStrategy]] however could be changed in the future. */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy

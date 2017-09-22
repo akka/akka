@@ -98,7 +98,7 @@ object ShardRegion {
    * shard id, and the message to send to the entity from an
    * incoming message.
    */
-  trait MessageExtractor {
+  trait ShardedEntityProtocol {
     /**
      * Extract the entity id from an incoming `message`. If `null` is returned
      * the message will be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
@@ -110,7 +110,7 @@ object ShardRegion {
      * message to support wrapping in message envelope that is unwrapped before
      * sending to the entity actor.
      */
-    def entityMessage(message: Any): Any
+    def unwrapMessage(message: Any): Any
     /**
      * Extract the entity id from an incoming `message`. Only messages that passed the [[#entityId]]
      * function will be used as input to this function.
@@ -119,15 +119,15 @@ object ShardRegion {
   }
 
   /**
-   * Convenience implementation of [[ShardRegion.MessageExtractor]] that
+   * Convenience implementation of [[ShardRegion.ShardedEntityProtocol]] that
    * construct `shardId` based on the `hashCode` of the `entityId`. The number
    * of unique shards is limited by the given `maxNumberOfShards`.
    */
-  abstract class HashCodeMessageExtractor(maxNumberOfShards: Int) extends MessageExtractor {
+  abstract class HashCodeShardedEntityProtocol(maxNumberOfShards: Int) extends ShardedEntityProtocol {
     /**
      * Default implementation pass on the message as is.
      */
-    override def entityMessage(message: Any): Any = message
+    override def unwrapMessage(message: Any): Any = message
 
     override def shardId(message: Any): String = {
       val id = message match {

@@ -264,7 +264,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
    * @param settings configuration settings, see [[ClusterShardingSettings]]
    * @param messageExtractor functions to extract the entity id, shard id, and the message to send to the
-   *   entity from the incoming message, see [[ShardRegion.MessageExtractor]]
+   *   entity from the incoming message, see [[ShardRegion.ShardedEntityProtocol]]
    * @param allocationStrategy possibility to use a custom shard allocation and
    *   rebalancing logic
    * @param handOffStopMessage the message that will be sent to entities when they are to be stopped
@@ -275,14 +275,14 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     typeName:           String,
     entityProps:        Props,
     settings:           ClusterShardingSettings,
-    messageExtractor:   ShardRegion.MessageExtractor,
+    messageExtractor:   ShardRegion.ShardedEntityProtocol,
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: Any): ActorRef = {
 
     start(typeName, entityProps, settings,
       extractEntityId = {
       case msg if messageExtractor.entityId(msg) ne null ⇒
-        (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
+        (messageExtractor.entityId(msg), messageExtractor.unwrapMessage(msg))
     },
       extractShardId = msg ⇒ messageExtractor.shardId(msg),
       allocationStrategy = allocationStrategy,
@@ -311,7 +311,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     typeName:         String,
     entityProps:      Props,
     settings:         ClusterShardingSettings,
-    messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
+    messageExtractor: ShardRegion.ShardedEntityProtocol): ActorRef = {
 
     val allocationStrategy = new LeastShardAllocationStrategy(
       settings.tuningParameters.leastShardAllocationRebalanceThreshold,
@@ -409,7 +409,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def startProxy(
     typeName:         String,
     role:             Optional[String],
-    messageExtractor: ShardRegion.MessageExtractor): ActorRef =
+    messageExtractor: ShardRegion.ShardedEntityProtocol): ActorRef =
     startProxy(typeName, role, dataCenter = Optional.empty(), messageExtractor)
 
   /**
@@ -434,12 +434,12 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     typeName:         String,
     role:             Optional[String],
     dataCenter:       Optional[String],
-    messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
+    messageExtractor: ShardRegion.ShardedEntityProtocol): ActorRef = {
 
     startProxy(typeName, Option(role.orElse(null)), Option(dataCenter.orElse(null)),
       extractEntityId = {
       case msg if messageExtractor.entityId(msg) ne null ⇒
-        (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
+        (messageExtractor.entityId(msg), messageExtractor.unwrapMessage(msg))
     },
       extractShardId = msg ⇒ messageExtractor.shardId(msg))
 

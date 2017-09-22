@@ -102,6 +102,7 @@ object ClusterReceptionistSpec {
 class ClusterReceptionistSpec extends TypedSpec(ClusterReceptionistSpec.config) {
   import ClusterReceptionistSpec._
 
+  val adaptedSystem = system
   implicit val testSettings = TestKitSettings(adaptedSystem)
   val untypedSystem1 = ActorSystemAdapter.toUntyped(adaptedSystem)
   val clusterNode1 = Cluster(untypedSystem1)

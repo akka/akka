@@ -17,7 +17,6 @@ import akka.actor.OneForOneStrategy;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.SupervisorStrategy;
-import akka.actor.Terminated;
 import akka.actor.ReceiveTimeout;
 //#counter-extractor
 import akka.cluster.sharding.ShardRegion;
@@ -31,7 +30,6 @@ import akka.cluster.sharding.ClusterShardingSettings;
 
 //#counter-start
 import akka.persistence.AbstractPersistentActor;
-import akka.cluster.Cluster;
 import akka.japi.pf.DeciderBuilder;
 
 // Doc code, compile only
@@ -45,7 +43,7 @@ public class ClusterShardingTest {
 
   public void demonstrateUsage() {
     //#counter-extractor
-    ShardRegion.MessageExtractor messageExtractor = new ShardRegion.MessageExtractor() {
+    ShardRegion.ShardedEntityProtocol shardedEntityProtocol = new ShardRegion.ShardedEntityProtocol() {
 
       @Override
       public String entityId(Object message) {
@@ -86,7 +84,7 @@ public class ClusterShardingTest {
     Option<String> roleOption = Option.none();
     ClusterShardingSettings settings = ClusterShardingSettings.create(system);
     ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter",
-      Props.create(Counter.class), settings, messageExtractor);
+      Props.create(Counter.class), settings, shardedEntityProtocol);
     //#counter-start
 
     //#counter-usage
@@ -100,7 +98,7 @@ public class ClusterShardingTest {
 
     //#counter-supervisor-start
     ClusterSharding.get(system).start("SupervisedCounter",
-        Props.create(CounterSupervisor.class), settings, messageExtractor);
+        Props.create(CounterSupervisor.class), settings, shardedEntityProtocol);
     //#counter-supervisor-start
 
     //#proxy-dc
@@ -109,12 +107,12 @@ public class ClusterShardingTest {
         "Counter",
         Optional.empty(),
         Optional.of("B"), // data center name
-        messageExtractor);
+        shardedEntityProtocol);
     //#proxy-dc
   }
 
   public void demonstrateUsage2() {
-    ShardRegion.MessageExtractor messageExtractor = new ShardRegion.MessageExtractor() {
+    ShardRegion.ShardedEntityProtocol shardedEntityProtocol = new ShardRegion.ShardedEntityProtocol() {
 
       @Override
       public String entityId(Object message) {
