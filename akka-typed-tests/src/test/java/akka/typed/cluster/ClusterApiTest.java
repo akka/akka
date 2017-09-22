@@ -22,6 +22,7 @@ public class ClusterApiTest extends JUnitSuite {
         "akka.remote.artery.enabled = true \n"+
         "akka.remote.netty.tcp.port = 0 \n"+
         "akka.remote.artery.canonical.port = 0 \n"+
+        "akka.remote.artery.canonical.hostname = 127.0.0.1 \n" +
         "akka.cluster.jmx.multi-mbeans-in-same-jvm = on \n"+
         "akka.coordinated-shutdown.terminate-actor-system = off \n"+
         "akka.actor { \n"+

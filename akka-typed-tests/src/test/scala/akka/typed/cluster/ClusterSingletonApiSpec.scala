@@ -22,23 +22,25 @@ import scala.concurrent.duration._
 object ClusterSingletonApiSpec {
 
   val config = ConfigFactory.parseString(
-    """
+    s"""
       akka.actor {
         provider = cluster
         serialize-messages = off
         allow-java-serialization = off
 
         serializers {
-          test = "akka.typed.cluster.ClusterSingletonApiSpec$PingSerializer"
+          test = "akka.typed.cluster.ClusterSingletonApiSpec$$PingSerializer"
         }
         serialization-bindings {
-          "akka.typed.cluster.ClusterSingletonApiSpec$Ping" = test
-          "akka.typed.cluster.ClusterSingletonApiSpec$Pong$" = test
-          "akka.typed.cluster.ClusterSingletonApiSpec$Perish$" = test
+          "akka.typed.cluster.ClusterSingletonApiSpec$$Ping" = test
+          "akka.typed.cluster.ClusterSingletonApiSpec$$Pong$$" = test
+          "akka.typed.cluster.ClusterSingletonApiSpec$$Perish$$" = test
         }
       }
+      akka.remote.netty.tcp.port = 0
       akka.remote.artery.enabled = true
-      akka.remote.artery.canonical.port = 25552
+      akka.remote.artery.canonical.port = 0
+      akka.remote.artery.canonical.hostname = 127.0.0.1
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
     """)
 
@@ -94,10 +96,8 @@ class ClusterSingletonApiSpec extends TypedSpec(ClusterSingletonApiSpec.config) 
     adaptedSystem.name,
     ConfigFactory.parseString(
       """
-        akka.remote.artery.canonical.port = 0
         akka.cluster.roles = ["singleton"]
-      """
-    ).withFallback(adaptedSystem.settings.config))
+      """).withFallback(adaptedSystem.settings.config))
   val adaptedSystem2 = system2.toTyped
   val clusterNode2 = Cluster(adaptedSystem2)
 

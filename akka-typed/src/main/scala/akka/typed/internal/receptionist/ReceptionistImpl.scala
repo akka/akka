@@ -154,6 +154,10 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
 
         case SubscriberTerminated(key, subscriber) ⇒
           next(newSubscriptions = subscriptions.removed(key)(subscriber))
+
+        case _: InternalCommand ⇒
+          // silence compiler exhaustive check
+          Actor.unhandled
       }
     }
   }
