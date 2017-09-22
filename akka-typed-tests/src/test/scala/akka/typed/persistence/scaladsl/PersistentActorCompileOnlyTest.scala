@@ -59,7 +59,7 @@ object PersistentActorCompileOnlyTest {
       actions = Actions.command {
         case Cmd(data, sender) ⇒
           Persist(Evt(data))
-            .andThen { _ ⇒ { sender ! Ack } }
+            .andThen { sender ! Ack }
       },
 
       applyEvent = {
@@ -100,7 +100,7 @@ object PersistentActorCompileOnlyTest {
 
       actions = Actions((ctx, cmd, state) ⇒ cmd match {
         case DoSideEffect(data) ⇒
-          Persist(IntentRecorded(state.nextCorrelationId, data)).andThen { _ ⇒
+          Persist(IntentRecorded(state.nextCorrelationId, data)).andThen {
             performSideEffect(ctx.self, state.nextCorrelationId, data)
           }
         case AcknowledgeSideEffect(correlationId) ⇒
@@ -210,7 +210,7 @@ object PersistentActorCompileOnlyTest {
       initialState = State(Nil),
       actions = Actions((ctx, cmd, _) ⇒ cmd match {
         case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
-          .andThen { _ ⇒
+          .andThen {
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
             ctx.watchWith(child, TaskDone(task))
@@ -241,7 +241,7 @@ object PersistentActorCompileOnlyTest {
       // The 'onSignal' seems to break type inference here.. not sure if that can be avoided?
       actions = Actions[RegisterTask, Event, State]((ctx, cmd, state) ⇒ cmd match {
         case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
-          .andThen { _ ⇒
+          .andThen {
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
             ctx.watch(child)
@@ -299,8 +299,8 @@ object PersistentActorCompileOnlyTest {
       val adapt = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
 
       def addItem(id: Id, self: ActorRef[Command]) =
-        Persist[Event, List[Id]](ItemAdded(id)).andThen(_ ⇒
-          metadataRegistry ! GetMetaData(id, adapt))
+        Persist[Event, List[Id]](ItemAdded(id))
+          .andThen(metadataRegistry ! GetMetaData(id, adapt))
 
       PersistentActor.immutable[Command, Event, List[Id]](
         persistenceId = "basket-1",
@@ -371,7 +371,7 @@ object PersistentActorCompileOnlyTest {
             PersistNothing()
           case CheerUp(sender) ⇒
             changeMoodIfNeeded(state, Happy)
-              .andThen { _ ⇒ sender ! Ack }
+              .andThen { sender ! Ack }
           case Remember(memory) ⇒
             // A more elaborate example to show we still have full control over the effects
             // if needed (e.g. when some logic is factored out but you want to add more effects)
