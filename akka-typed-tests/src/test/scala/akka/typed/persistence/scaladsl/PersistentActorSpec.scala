@@ -42,10 +42,10 @@ object PersistentActorSpec {
   case object Tick
 
   def counter(persistenceId: String): Behavior[Command] = {
-    PersistentActor.persistent[Command, Event, State](
+    PersistentActor.immutable[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
-      actions = Actions[Command, Event, State]((cmd, state, ctx) ⇒ cmd match {
+      actions = Actions[Command, Event, State]((ctx, cmd, state) ⇒ cmd match {
         case Increment ⇒
           Persist(Incremented(1))
         case GetValue(replyTo) ⇒
@@ -69,10 +69,10 @@ object PersistentActorSpec {
           Persist(Incremented(100))
       })
         .onSignal {
-          case (Terminated(_), _, _) ⇒
+          case (_, Terminated(_), _) ⇒
             Persist(Incremented(10))
         },
-      onEvent = (evt, state) ⇒ evt match {
+      applyEvent = (evt, state) ⇒ evt match {
         case Incremented(delta) ⇒
           State(state.value + delta, state.history :+ state.value)
       })
