@@ -6,9 +6,8 @@ package akka.typed
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Future
 
 class DummyExtension1 extends Extension
 object DummyExtension1 extends ExtensionId[DummyExtension1] {
@@ -131,7 +130,7 @@ class ExtensionsSpec extends TypedSpecSetup {
       intercept[RuntimeException] {
         withEmptyActorSystem(
           "ExtensionsSpec07",
-          Some(ConfigFactory.parseString("""akka.library-extensions += "akka.typed.FailingToLoadExtension$"""))
+          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.typed.FailingToLoadExtension$" """))
         ) { _ ⇒ () }
       }
 
@@ -139,7 +138,7 @@ class ExtensionsSpec extends TypedSpecSetup {
       intercept[RuntimeException] {
         withEmptyActorSystem(
           "ExtensionsSpec08",
-          Some(ConfigFactory.parseString("""akka.library-extensions += "akka.typed.MissingExtension"""))
+          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.typed.MissingExtension" """))
         ) { _ ⇒ () }
       }
 
