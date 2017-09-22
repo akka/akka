@@ -46,13 +46,13 @@ import akka.typed.internal.adapter.ActorRefAdapter
 
   private val log = Logging(context.system, behavior.getClass)
 
-  override val persistenceId: String = behavior.persistenceId
+  override val persistenceId: String = behavior.persistenceIdFromActorName(self.path.name)
 
   private var state: S = behavior.initialState
 
   private val actions: Actions[C, E, S] = behavior.actions
 
-  private val eventHandler: (E, S) ⇒ S = behavior.onEvent
+  private val eventHandler: (E, S) ⇒ S = behavior.applyEvent
 
   private val ctxAdapter = new ActorContextAdapter[C](context)
   private val ctx = ctxAdapter.asScala
@@ -62,7 +62,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
       state = snapshot.asInstanceOf[S]
 
     case RecoveryCompleted ⇒
-      state = behavior.recoveryCompleted(state, ctx)
+      state = behavior.recoveryCompleted(ctx, state)
 
     case event: E @unchecked ⇒
       state = applyEvent(state, event)
@@ -71,7 +71,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
   def applyEvent(s: S, event: E): S =
     eventHandler.apply(event, s)
 
-  private val unhandledSignal: PartialFunction[(Signal, S, ActorContext[C]), PersistentEffect[E, S]] = {
+  private val unhandledSignal: PartialFunction[(ActorContext[C], Signal, S), Effect[E, S]] = {
     case sig ⇒ Unhandled()
   }
 
@@ -81,17 +81,16 @@ import akka.typed.internal.adapter.ActorRefAdapter
 
     case msg ⇒
       try {
-        // FIXME sigHandler(state)
         val effects = msg match {
           case a.Terminated(ref) ⇒
             val sig = Terminated(ActorRefAdapter(ref))(null)
-            actions.sigHandler(state).applyOrElse((sig, state, ctx), unhandledSignal)
+            actions.sigHandler(state).applyOrElse((ctx, sig, state), unhandledSignal)
           case a.ReceiveTimeout ⇒
-            actions.commandHandler(ctxAdapter.receiveTimeoutMsg, state, ctx)
+            actions.commandHandler(ctx, ctxAdapter.receiveTimeoutMsg, state)
           // TODO note that PostStop and PreRestart signals are not handled, we wouldn't be able to persist there
           case cmd: C @unchecked ⇒
             // FIXME we could make it more safe by using ClassTag for C
-            actions.commandHandler(cmd, state, ctx)
+            actions.commandHandler(ctx, cmd, state)
         }
 
         applyEffects(msg, effects)
@@ -103,7 +102,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
 
   }
 
-  private def applyEffects(msg: Any, effect: PersistentEffect[E, S], sideEffects: Seq[ChainableEffect[_, S]] = Nil): Unit = effect match {
+  private def applyEffects(msg: Any, effect: Effect[E, S], sideEffects: Seq[ChainableEffect[_, S]] = Nil): Unit = effect match {
     case CompositeEffect(Some(persist), sideEffects) ⇒
       applyEffects(msg, persist, sideEffects)
     case CompositeEffect(_, sideEffects) ⇒
@@ -130,7 +129,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
   }
 
   def applySideEffect(effect: ChainableEffect[_, S]): Unit = effect match {
-    case Stop()                ⇒ // FIXME implement
+    case Stop()                ⇒ context.stop(self)
     case SideEffect(callbacks) ⇒ callbacks.apply(state)
   }
 }
