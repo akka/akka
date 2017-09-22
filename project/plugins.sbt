@@ -20,7 +20,7 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2") // for advan
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.1")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.2")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.1")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.4")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.2")
 
 libraryDependencies += "org.kohsuke" % "github-api" % "1.68"

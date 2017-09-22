@@ -11,32 +11,11 @@ This means it is ready to be evaluated, but the APIs and behavior are likely to 
 
 To enabled HTTP/2 support `akka-http2-support` must be added as a dependency:
 
-sbt
-:   @@@vars
-    ```sbt
-    "com.typesafe.akka" %% "akka-http2-support" % "$project.version$"
-    ```
-    @@@
-
-maven
-:   @@@vars
-    ```
-    <dependency>
-        <groupId>com.typesafe.akka</groupId>
-        <artifactId>akka-http2-support_2.12</artifactId>
-        <version>$project.version$</version>
-    </dependency>
-    ```
-    @@@
-
-gradle
-:   @@@vars
-    ```
-    dependencies {
-      compile group: 'com.typesafe.akka', name: 'akka-http2-support_2.12', version: '$project.version$'
-    }
-    ```
-    @@@
+@@dependency [sbt,Gradle,Maven] {
+  group="com.typesafe.akka"
+  artifact="akka-http2-support_$scala.binary.version$"
+  version="$project.version$"
+}
 
 HTTP/2 can then be enabled through configuration:
 

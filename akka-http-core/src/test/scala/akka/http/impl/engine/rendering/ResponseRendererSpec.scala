@@ -466,6 +466,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       def CLOSE: Option[Connection] = Some(Connection("close"))
       def KEEPA: Option[Connection] = Some(Connection("Keep-Alive"))
       // format: OFF
+      //#connection-header-table
       val table = Table(
        //--- requested by the client ----// //----- set by server app -----// //--- actually done ---//
        //            Request    Request               Response    Response    Rendered     Connection
@@ -568,6 +569,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.0`,  CLOSE,   true,        CLOSE,       true),
         (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.0`,  KEEPA,   false,       KEEPA,       false),
         (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.0`,  KEEPA,   true,        KEEPA,       false))
+      //#connection-header-table
       // format: ON
 
       forAll(table)((reqProto, headReq, reqCH, resProto, resCH, resCD, renCH, close) ⇒

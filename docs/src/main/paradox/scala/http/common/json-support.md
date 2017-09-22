@@ -14,30 +14,11 @@ that an implicit `spray.json.RootJsonReader` and/or `spray.json.RootJsonWriter` 
 
 To enable automatic support for (un)marshalling from and to JSON with [spray-json], add a library dependency onto:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-http-spray-json" % "$project.version$" $crossString$
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-http-spray-json_$scala.binary_version$', version: '$project.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-http-spray-json_$scala.binary_version$</artifactId>
-      <version>$project.version$</version>
-    </dependency>
-    ```
-    @@@
+@@dependency [sbt,Gradle,Maven] {
+  group="com.typesafe.akka"
+  artifact="akka-http-spray-json_$scala.binary.version$"
+  version="$project.version$"
+}
 
 Next, provide a `RootJsonFormat[T]` for your type and bring it into scope. Check out the [spray-json] documentation for more info on how to do this.
 
@@ -68,30 +49,11 @@ To learn more about how spray-json works please refer to its [documentation][spr
 
 To make use of the support module for (un)marshalling from and to JSON with [Jackson], add a library dependency onto:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-http-jackson" % "$project.version$" $crossString$
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-http-jackson_$scala.binary_version$', version: '$project.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-http-jackson_$scala.binary_version$</artifactId>
-      <version>$project.version$</version>
-    </dependency>
-    ```
-    @@@
+@@dependency [sbt,Gradle,Maven] {
+  group="com.typesafe.akka"
+  artifact="akka-http-jackson_$scala.binary.version$"
+  version="$project.version$"
+}
 
 Use `akka.http.javadsl.marshallers.jackson.Jackson.unmarshaller(T.class)` to create an `Unmarshaller<HttpEntity,T>` which expects the request
 body (HttpEntity) to be of type `application/json` and converts it to `T` using Jackson.

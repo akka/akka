@@ -14,30 +14,11 @@ using [Jackson], which is also the library used for providing @ref[JSON support]
 
 The custom XML (un)marshalling code shown above requires that you depend on the `jackson-dataformat-xml` library.
 
-sbt
-:   @@@vars
-    ```
-    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "$jackson.version$"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: '$jackson.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-xml</artifactId>
-      <version>$jackson.version$</version>
-    </dependency>
-    ```
-    @@@
+@@dependency [sbt,Gradle,Maven] {
+  group="com.fasterxml.jackson.dataformat"
+  artifact="jackson-dataformat-xml"
+  version="$jackson.version$"
+}
 
 @@@
 
@@ -54,30 +35,11 @@ you can use directly or build upon.
 In order to enable support for (un)marshalling from and to XML with [Scala XML][scala-xml] `NodeSeq` you must add
 the following dependency:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-http-xml" % "$project.version$" $crossString$
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-http-xml_$scala.binary_version$', version: '$project.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-http-xml_$scala.binary_version$</artifactId>
-      <version>$project.version$</version>
-    </dependency>
-    ```
-    @@@
+@@dependency [sbt,Gradle,Maven] {
+  group="com.typesafe.akka"
+  artifact="akka-http-xml_$scala.binary.version$"
+  version="$project.version$"
+}
 
 Once you have done this (un)marshalling between XML and `NodeSeq` instances should work nicely and transparently,
 by either using `import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._` or mixing in the

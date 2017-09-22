@@ -70,11 +70,11 @@ named after HTTP methods to create a request with a given method and URI directl
 <a id="synthetic-headers"></a>
 ### Synthetic Headers
 
-In some cases it may be necessary to deviate from fully RFC-Compliant behavior. For instance, Amazon S3 treats 
+In some cases it may be necessary to deviate from fully RFC-Compliant behavior. For instance, Amazon S3 treats
 the `+` character in the path part of the URL as a space, even though the RFC specifies that this behavior should
 be limited exclusively to the query portion of the URI.
 
-In order to work around these types of edge cases, Akka HTTP provides for the ability to provide extra, 
+In order to work around these types of edge cases, Akka HTTP provides for the ability to provide extra,
 non-standard information to the request via synthetic headers. These headers are not passed to the client
 but are instead consumed by the request engine and used to override default behavior.
 
@@ -123,7 +123,7 @@ It wraps a plain `ByteString` and  represents a standard, unchunked entity with 
 : The general, unchunked HTTP/1.1 message entity.
 It has a known length and presents its data as a @scala[`Source[ByteString]`]@java[`Source<ByteString, ?>`] which can be only materialized once.
 It is an error if the provided source doesn't produce exactly as many bytes as specified.
-The distinction of @scala[`Strict`]@java[`HttpEntityStrict`] and @scala[`Default`]@java[`HttpEntityDefault`] is an API-only one. On the wire, 
+The distinction of @scala[`Strict`]@java[`HttpEntityStrict`] and @scala[`Default`]@java[`HttpEntityDefault`] is an API-only one. On the wire,
 both kinds of entities look the same.
 
 @scala[HttpEntity.Chunked]@java[HttpEntityChunked]
@@ -302,7 +302,7 @@ Connection
 the potential wish of the application to close the connection after the respective response has been sent out.
 The actual logic for determining whether to close the connection is quite involved. It takes into account the
 request's method, protocol and potential `Connection` header as well as the response's protocol, entity and
-potential `Connection` header. See @github[this test](/akka-http-core/src/test/scala/akka/http/impl/engine/rendering/ResponseRendererSpec.scala#L422) for a full table of what happens when.
+potential `Connection` header. See @github[this test](/akka-http-core/src/test/scala/akka/http/impl/engine/rendering/ResponseRendererSpec.scala) { #connection-header-table } for a full table of what happens when.
 
 Strict-Transport-Security
 : HTTP Strict Transport Security (HSTS) is a web security policy mechanism which is communicated by the

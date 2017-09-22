@@ -100,10 +100,12 @@ trait HeaderDirectives {
    *
    * @group header
    */
+  //#optionalHeaderValue
   def optionalHeaderValue[T](f: HttpHeader ⇒ Option[T]): Directive1[Option[T]] =
     headerValue(f).map(Some(_): Option[T]).recoverPF {
       case Nil ⇒ provide(None)
     }
+  //#optionalHeaderValue
 
   /**
    * Extracts an optional HTTP header value using the given partial function.

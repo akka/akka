@@ -6,30 +6,11 @@ route logic easy and convenient. This "route test DSL" is made available with th
 
 To use it include the following dependency:
 
-sbt
-:   @@@vars
-    ```scala
-    "com.typesafe.akka" %% "akka-http-testkit" % "$project.version$" $crossString$
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-http-testkit_$scala.binary_version$', version: '$project.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```xml
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-http-testkit_$scala.binary_version$</artifactId>
-      <version>$project.version$</version>
-    </dependency>
-    ```
-    @@@
+@@dependency [sbt,Gradle,Maven] {
+  group="com.typesafe.akka"
+  artifact="akka-http-testkit_$scala.binary.version$"
+  version="$project.version$"
+}
 
 ## Usage
 
@@ -174,7 +155,7 @@ with HTTP response parts or rejections. Sometimes, however, you will want to ver
 
 You do this by calling the `Route.seal()` method. The `Route.seal()` method applies the logic of the @scala[in-scope]
 @ref[RejectionHandler](rejections.md#the-rejectionhandler) and @ref[RejectionHandler](rejections.md#the-rejectionhandler)
-@java[passed as method arguments] to all exceptions and rejections coming back from the 
+@java[passed as method arguments] to all exceptions and rejections coming back from the
 route, and translates them to the respective `HttpResponse`.
 
 Note that explicit call on the `Route.seal` method is needed in test code, but in your application code it is not necessary.
@@ -217,7 +198,7 @@ Java
 The timeouts you consciously defined on your lightning fast development environment might be too tight for your, most
 probably, high-loaded Continuous Integration server, invariably causing spurious failures. To account for such
 situations, timeout durations can be scaled by a given factor on such environments. Check the
-@scala[@extref[Akka Docs](akka-docs:scala/testing.html#accounting-for-slow-test-systems)]@java[@extref[Akka Docs](akka-docs:java/testing.html#accounting-for-slow-test-systems)] 
+@scala[@extref[Akka Docs](akka-docs:scala/testing.html#accounting-for-slow-test-systems)]@java[@extref[Akka Docs](akka-docs:java/testing.html#accounting-for-slow-test-systems)]
 for further information.
 
 

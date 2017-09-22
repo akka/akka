@@ -46,7 +46,7 @@ for simple transformations:
 
 @@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #map-0 }
 
-One example of a predefined directive relying on `map` is the [optionalHeaderValue](https://github.com/akka/akka-http/blob/master/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala#L103) directive.
+One example of a predefined directive relying on `map` is the @github[optionalHeaderValue](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue } directive.
 
 The tmap modifier has this signature (somewhat simplified):
 

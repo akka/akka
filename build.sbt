@@ -161,7 +161,6 @@ lazy val docs = project("docs")
       "akka25.version" -> Dependencies.akka25Version,
       "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
       "scala.binaryVersion" -> scalaBinaryVersion.value,
-      "scala.version" -> scalaVersion.value,
       "scaladoc.version" -> scalaVersion.value,
       "crossString" -> (scalaVersion.value match {
         case akka.Doc.BinVer(_) => ""
