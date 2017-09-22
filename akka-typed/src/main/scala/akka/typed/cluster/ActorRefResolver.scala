@@ -3,11 +3,16 @@
  */
 package akka.typed.cluster
 
+import java.nio.charset.StandardCharsets
+
 import akka.typed.ActorSystem
 import akka.typed.Extension
 import akka.typed.ExtensionId
 import akka.typed.ActorRef
+import akka.typed.scaladsl.adapter._
 import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
+import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 
 object ActorRefResolver extends ExtensionId[ActorRefResolver] {
   def get(system: ActorSystem[_]): ActorRefResolver = apply(system)

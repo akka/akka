@@ -33,7 +33,7 @@ object ClusterReceptionistSpec {
       akka.actor {
         provider = cluster
         serialize-messages = off
-        allow-java-serialization = off
+        allow-java-serialization = true
         serializers {
           test = "akka.typed.cluster.receptionist.ClusterReceptionistSpec$PingSerializer"
         }
@@ -41,8 +41,8 @@ object ClusterReceptionistSpec {
           "akka.typed.cluster.receptionist.ClusterReceptionistSpec$Ping" = test
           "akka.typed.cluster.receptionist.ClusterReceptionistSpec$Pong$" = test
           "akka.typed.cluster.receptionist.ClusterReceptionistSpec$Perish$" = test
-          "akka.typed.internal.receptionist.ReceptionistImpl$DefaultServiceKey" = test
-          "akka.typed.internal.adapter.ActorRefAdapter" = test
+          # for now, using Java serializers is good enough (tm), see #23687
+          # "akka.typed.internal.receptionist.ReceptionistImpl$DefaultServiceKey" = test
         }
       }
       akka.remote.artery.enabled = true
@@ -72,27 +72,21 @@ object ClusterReceptionistSpec {
   class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
     def identifier: Int = 47
     def manifest(o: AnyRef): String = o match {
-      case _: Ping                                ⇒ "a"
-      case Pong                                   ⇒ "b"
-      case Perish                                 ⇒ "c"
-      case ReceptionistImpl.DefaultServiceKey(id) ⇒ "d"
-      case a: ActorRefAdapter[_]                  ⇒ "e"
+      case _: Ping ⇒ "a"
+      case Pong    ⇒ "b"
+      case Perish  ⇒ "c"
     }
 
     def toBinary(o: AnyRef): Array[Byte] = o match {
-      case p: Ping                                ⇒ ActorRefResolver(system.toTyped).toSerializationFormat(p.respondTo).getBytes(StandardCharsets.UTF_8)
-      case Pong                                   ⇒ Array.emptyByteArray
-      case Perish                                 ⇒ Array.emptyByteArray
-      case ReceptionistImpl.DefaultServiceKey(id) ⇒ id.getBytes(StandardCharsets.UTF_8)
-      case a: ActorRefAdapter[_]                  ⇒ ActorRefResolver(system.toTyped).toSerializationFormat(a).getBytes(StandardCharsets.UTF_8)
+      case p: Ping ⇒ ActorRefResolver(system.toTyped).toSerializationFormat(p.respondTo).getBytes(StandardCharsets.UTF_8)
+      case Pong    ⇒ Array.emptyByteArray
+      case Perish  ⇒ Array.emptyByteArray
     }
 
     def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
       case "a" ⇒ Ping(ActorRefResolver(system.toTyped).resolveActorRef(new String(bytes, StandardCharsets.UTF_8)))
       case "b" ⇒ Pong
       case "c" ⇒ Perish
-      case "d" ⇒ ReceptionistImpl.DefaultServiceKey[Any](new String(bytes, StandardCharsets.UTF_8))
-      case "e" ⇒ ActorRefResolver(system.toTyped).resolveActorRef(new String(bytes, StandardCharsets.UTF_8))
     }
   }
 
