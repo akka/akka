@@ -21,9 +21,10 @@ import akka.typed.{ ActorRef, ActorSystem, Behavior, Props }
 private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) extends ClusterSingleton {
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted actor systems can be used for the typed cluster singleton")
   import ClusterSingletonImpl._
+  import akka.typed.scaladsl.adapter._
 
   private lazy val cluster = Cluster(system)
-  private val untypedSystem = ActorSystemAdapter.toUntyped(system).asInstanceOf[ExtendedActorSystem]
+  private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
 
   private val proxies = new ConcurrentHashMap[String, ActorRef[_]]()
 
