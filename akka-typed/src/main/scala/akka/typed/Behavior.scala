@@ -154,6 +154,17 @@ object Behavior {
   }
 
   /**
+   * INTERNAL API.
+   */
+  @InternalApi
+  private[akka] abstract class UntypedBehavior[T] extends Behavior[T] {
+    /**
+     * INTERNAL API
+     */
+    @InternalApi private[akka] def untypedProps: akka.actor.Props
+  }
+
+  /**
    * INTERNAL API
    */
   @InternalApi private[akka] val unhandledSignal: PartialFunction[(ActorContext[Nothing], Signal), Behavior[Nothing]] = {
@@ -264,11 +275,15 @@ object Behavior {
 
   private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] =
     behavior match {
-      case SameBehavior | UnhandledBehavior ⇒ throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
-      case d: DeferredBehavior[_]           ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
-      case IgnoreBehavior                   ⇒ SameBehavior.asInstanceOf[Behavior[T]]
-      case s: StoppedBehavior[T]            ⇒ s
-      case EmptyBehavior                    ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
+      case SameBehavior | UnhandledBehavior ⇒
+        throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
+      case _: UntypedBehavior[_] ⇒
+        throw new IllegalArgumentException(s"cannot wrap behavior [$behavior] in " +
+          "Actor.deferred, Actor.supervise or similar")
+      case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
+      case IgnoreBehavior         ⇒ SameBehavior.asInstanceOf[Behavior[T]]
+      case s: StoppedBehavior[T]  ⇒ s
+      case EmptyBehavior          ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = msg match {
           case signal: Signal ⇒ ext.receiveSignal(ctx, signal)

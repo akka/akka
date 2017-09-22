@@ -9,6 +9,7 @@ import akka.{ actor ⇒ a }
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContextExecutor
 import akka.annotation.InternalApi
+import akka.typed.Behavior.UntypedBehavior
 
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[ActorContext]].
@@ -97,12 +98,24 @@ import akka.annotation.InternalApi
     }
 
   def spawnAnonymous[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], props: Props): ActorRef[T] = {
-    Behavior.validateAsInitial(behavior)
-    ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props)))
+    behavior match {
+      case b: UntypedBehavior[_] ⇒
+        // TODO dispatcher from props
+        ActorRefAdapter(ctx.actorOf(b.untypedProps))
+      case _ ⇒
+        Behavior.validateAsInitial(behavior)
+        ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props)))
+    }
   }
 
   def spawn[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], name: String, props: Props): ActorRef[T] = {
-    Behavior.validateAsInitial(behavior)
-    ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props), name))
+    behavior match {
+      case b: UntypedBehavior[_] ⇒
+        // TODO dispatcher from props
+        ActorRefAdapter(ctx.actorOf(b.untypedProps, name))
+      case _ ⇒
+        Behavior.validateAsInitial(behavior)
+        ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props), name))
+    }
   }
 }
