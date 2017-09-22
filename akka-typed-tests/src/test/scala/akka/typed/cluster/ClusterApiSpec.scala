@@ -35,21 +35,21 @@ object ClusterApiSpec {
 
 class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures {
 
-  val testSettings = TestKitSettings(adaptedSystem)
-  val clusterNode1 = Cluster(adaptedSystem)
-  val untypedSystem1 = ActorSystemAdapter.toUntyped(adaptedSystem)
+  val testSettings = TestKitSettings(system)
+  val clusterNode1 = Cluster(system)
+  val untypedSystem1 = system.toUntyped
 
   object `A typed cluster` {
 
     def `01 must join a cluster and observe events from both sides`() = {
 
-      val system2 = akka.actor.ActorSystem(adaptedSystem.name, adaptedSystem.settings.config)
+      val system2 = akka.actor.ActorSystem(system.name, system.settings.config)
       val adaptedSystem2 = system2.toTyped
 
       try {
         val clusterNode2 = Cluster(adaptedSystem2)
 
-        val node1Probe = TestProbe[AnyRef]()(adaptedSystem, testSettings)
+        val node1Probe = TestProbe[AnyRef]()(system, testSettings)
         val node2Probe = TestProbe[AnyRef]()(adaptedSystem2, testSettings)
 
         // initial cached selfMember
