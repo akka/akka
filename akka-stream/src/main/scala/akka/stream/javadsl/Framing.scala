@@ -130,7 +130,19 @@ object Framing {
    * Returns a BidiFlow that implements a simple framing protocol. This is a convenience wrapper over [[Framing#lengthField]]
    * and simply attaches a length field header of four bytes (using big endian encoding) to outgoing messages, and decodes
    * such messages in the inbound direction. The decoded messages do not contain the header.
-   *
+   * {{{
+   *       +--------------------------------+
+   *       | Framing BidiFlow               |
+   *       |                                |
+   *       |  +--------------------------+  |
+   * in2 ~~>  |        Decoding          | ~~> out2
+   *       |  +--------------------------+  |
+   *       |                                |
+   *       |  +--------------------------+  |
+   * out1 <~~ |Encoding(Add length field)| <~~ in1
+   *       |  +--------------------------+  |
+   *       +--------------------------------+
+   * }}}
    * This BidiFlow is useful if a simple message framing protocol is needed (for example when TCP is used to send
    * individual messages) but no compatibility with existing protocols is necessary.
    *
