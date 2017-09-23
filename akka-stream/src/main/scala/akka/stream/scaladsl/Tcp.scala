@@ -144,6 +144,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
    *
+   * Note that the ByteString chunk boundaries are not retained across the network,
+   * to achieve application level chunks you have to introduce explicit framing in your streams,
+   * for example using the [[Framing]] stages.
+   *
    * @param remoteAddress The remote address to connect to
    * @param localAddress  Optional local address for the connection
    * @param options   TCP options for the connections, see [[akka.io.Tcp]] for details
@@ -183,6 +187,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Creates an [[Tcp.OutgoingConnection]] without specifying options.
    * It represents a prospective TCP client connection to the given endpoint.
+   *
+   * Note that the ByteString chunk boundaries are not retained across the network,
+   * to achieve application level chunks you have to introduce explicit framing in your streams,
+   * for example using the [[Framing]] stages.
    */
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
     outgoingConnection(InetSocketAddress.createUnresolved(host, port))
