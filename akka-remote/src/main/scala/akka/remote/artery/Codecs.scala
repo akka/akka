@@ -9,7 +9,6 @@ import akka.Done
 import akka.actor.{ EmptyLocalActorRef, _ }
 import akka.event.Logging
 import akka.remote.artery.Decoder.{ AdvertiseActorRefsCompressionTable, AdvertiseClassManifestsCompressionTable, InboundCompressionAccess, InboundCompressionAccessImpl }
-import akka.remote.artery.FlightRecorderEvents.AeronSource_Started
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress._
@@ -17,7 +16,7 @@ import akka.remote.{ MessageSerializer, OversizedPayloadException, RemoteActorRe
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream._
 import akka.stream.stage._
-import akka.util.OptionVal
+import akka.util.{ OptionVal, Unsafe }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
@@ -328,7 +327,7 @@ private[remote] final class ActorRefResolveCacheWithAddress(provider: RemoteActo
   override protected def compute(k: String): InternalActorRef =
     provider.resolveActorRefWithLocalAddress(k, localAddress.address)
 
-  override protected def hash(k: String): Int = FastHash.ofString(k)
+  override protected def hash(k: String): Int = Unsafe.fastHash(k)
 
   override protected def isCacheable(v: InternalActorRef): Boolean = !v.isInstanceOf[EmptyLocalActorRef]
 }
