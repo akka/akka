@@ -148,6 +148,9 @@ lazy val slf4j = akkaModule("akka-slf4j")
 lazy val stream = akkaModule("akka-stream")
   .dependsOn(actor)
 
+lazy val streamTyped = akkaModule("akka-stream-typed")
+  .dependsOn(stream, typed)
+
 lazy val streamTestkit = akkaModule("akka-stream-testkit")
   .dependsOn(stream, testkit % "compile->compile;test->test")
 
