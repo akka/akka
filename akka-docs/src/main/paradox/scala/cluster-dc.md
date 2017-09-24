@@ -8,7 +8,7 @@ multiple data centers, availability zones or regions.
 There can be many reasons for using more than one data center, such as:
 
 * Redundancy to tolerate failures in one location and still be operational.
-* Serve request from a location near the user to provide better responsiveness.
+* Serve requests from a location near the user to provide better responsiveness.
 * Balance the load over many servers.
 
 It's possible to run an ordinary Akka Cluster with default settings that spans multiple
@@ -23,7 +23,7 @@ data centers but that may result in problems like:
 * Downing/removal of nodes in the case of network partitions should typically be treated
   differently for failures within vs. across data centers. For network partitions across the 
   system should typically not down the unreachable nodes, but instead wait until it heals or
-  an decision is made by a human or external monitoring system. For failures within same
+  a decision is made by a human or external monitoring system. For failures within same
   data center automatic, more aggressive, downing mechanisms can be employed for quick fail over.
 * Quick fail over of Cluster Singleton and Cluster Sharding from one data center to another
   is difficult to do in a safe way. There is a risk that singletons or sharded entities become 
@@ -67,7 +67,7 @@ up a large cluster into smaller groups of nodes for better scalability.
 Some @ref[membership transitions](common/cluster.md#membership-lifecycle) are managed by 
 one node called the @ref[leader](common/cluster.md#leader). There is one leader per data center
 and it is responsible for these transitions for the members within the same data center. Members of
-other data centers are managed independently by leader of the respective data center. These actions
+other data centers are managed independently by the leader of the respective data center. These actions
 cannot be performed while there are any unreachability observations among the nodes in the data center, 
 but unreachability across different data centers don't influence the progress of membership management
 within a data center. Nodes can be added and removed also when there are network partitions between
