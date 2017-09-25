@@ -10,5 +10,8 @@ object TestMember {
     apply(address, status, Set.empty)
 
   def apply(address: Address, status: MemberStatus, roles: Set[String], dataCenter: ClusterSettings.DataCenter = ClusterSettings.DefaultDataCenter): Member =
-    new Member(UniqueAddress(address, 0L), Int.MaxValue, status, roles + (ClusterSettings.DcRolePrefix + dataCenter))
+    withUniqueAddress(UniqueAddress(address, 0L), status, roles, dataCenter)
+
+  def withUniqueAddress(uniqueAddress: UniqueAddress, status: MemberStatus, roles: Set[String], dataCenter: ClusterSettings.DataCenter): Member =
+    new Member(uniqueAddress, Int.MaxValue, status, roles + (ClusterSettings.DcRolePrefix + dataCenter))
 }

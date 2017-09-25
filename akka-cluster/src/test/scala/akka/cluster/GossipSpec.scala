@@ -33,6 +33,8 @@ class GossipSpec extends WordSpec with Matchers {
   val dc2c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Up, Set.empty, dataCenter = "dc2")
   val dc2d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Up, Set.empty, dataCenter = "dc2")
   val dc2d2 = TestMember(dc2d1.address, status = Down, roles = Set.empty, dataCenter = dc2d1.dataCenter)
+  // restarted with another uid
+  val dc2d3 = TestMember.withUniqueAddress(UniqueAddress(dc2d1.address, longUid = 3L), Up, Set.empty, dataCenter = "dc2")
 
   private def state(g: Gossip, selfMember: Member = a1): MembershipState =
     MembershipState(g, selfMember.uniqueAddress, selfMember.dataCenter, crossDcConnections = 5)
@@ -382,6 +384,36 @@ class GossipSpec extends WordSpec with Matchers {
 
       merged1.tombstones.keys should contain(dc2d1.uniqueAddress)
       merged1.members should not contain (dc2d1)
+      merged1.overview.reachability.records.filter(r ⇒ r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
+      merged1.overview.reachability.versions.keys should not contain (dc2d1.uniqueAddress)
+      merged1.version.versions.keys should not contain (VectorClock.Node(vclockName(dc2d1.uniqueAddress)))
+    }
+
+    "replace member when removed and rejoined in another data center" in {
+      // dc1 does not know removal and rejoin of new incarnation
+      val gdc1 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d1))
+        .seen(dc1b1.uniqueAddress)
+        .seen(dc2c1.uniqueAddress)
+        .:+(VectorClock.Node(vclockName(dc2d1.uniqueAddress))) // just to make sure these are also pruned
+
+      // dc2 has removed the dc2d1 node, and then same host:port is restarted and joins again, without dc1 knowning
+      val gdc2 = Gossip(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d3))
+        .seen(dc1a1.uniqueAddress)
+        .remove(dc2d1.uniqueAddress, System.currentTimeMillis())
+        .copy(members = SortedSet(dc1a1, dc1b1, dc2c1, dc2d3))
+
+      gdc2.tombstones.keys should contain(dc2d1.uniqueAddress)
+      gdc2.members.map(_.uniqueAddress) should not contain (dc2d1.uniqueAddress)
+      gdc2.members.map(_.uniqueAddress) should contain(dc2d3.uniqueAddress)
+
+      // when we merge the two, it should replace the old with new
+      val merged1 = gdc2 merge gdc1
+      merged1.members should ===(SortedSet(dc1a1, dc1b1, dc2c1, dc2d3))
+      merged1.members.map(_.uniqueAddress) should not contain (dc2d1.uniqueAddress)
+      merged1.members.map(_.uniqueAddress) should contain(dc2d3.uniqueAddress)
+
+      merged1.tombstones.keys should contain(dc2d1.uniqueAddress)
+      merged1.tombstones.keys should not contain (dc2d3.uniqueAddress)
       merged1.overview.reachability.records.filter(r ⇒ r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
       merged1.overview.reachability.versions.keys should not contain (dc2d1.uniqueAddress)
       merged1.version.versions.keys should not contain (VectorClock.Node(vclockName(dc2d1.uniqueAddress)))
