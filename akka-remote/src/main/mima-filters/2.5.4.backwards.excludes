@@ -7,3 +7,6 @@ ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.FastHash$")
 ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.FastHash")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.EnvelopeBuffer.StringValueFieldOffset")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.EnvelopeBuffer.UsAscii")
+
+#22156 lost refuseUid
+ProblemFilters.exclude[Problem]("akka.remote.EndpointManager*")
