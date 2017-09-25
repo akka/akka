@@ -8,14 +8,14 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.impl.{PhasedFusingActorMaterializer, StreamSupervisor}
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.{StreamSpec, TestSubscriber}
-import akka.stream.{ActorMaterializer, _}
+import akka.stream.testkit.{ StreamSpec, TestSubscriber }
+import akka.stream.{ ActorMaterializer, _ }
 import akka.testkit.TestLatch
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 
 object UnfoldResourceAsyncSourceSpec {
 
