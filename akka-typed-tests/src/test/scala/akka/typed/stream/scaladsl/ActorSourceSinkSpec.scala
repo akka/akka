@@ -9,15 +9,17 @@ import akka.stream.{ ActorMaterializer, OverflowStrategy }
 import akka.testkit.AkkaSpec
 import akka.typed.TypedSpec.guardian
 import akka.typed.internal.adapter.ActorSystemAdapter
+import akka.typed.testkit.TestKitSettings
 import akka.typed.testkit.scaladsl.TestProbe
 import akka.typed.{ ActorRef, ActorSystem, TypedSpec }
 import org.scalatest.{ Matchers, WordSpec }
 
 class ActorSourceSinkSpec extends WordSpec with Matchers {
 
-  val adaptedSystem: ActorSystem[TypedSpec.Command] =
+  implicit val adaptedSystem: ActorSystem[TypedSpec.Command] =
     ActorSystem.adapter(Logging.simpleName(getClass), guardian(), config = Some(AkkaSpec.testConf))
-  val untypedSystem: actor.ActorSystem = ActorSystemAdapter.toUntyped(adaptedSystem)
+  implicit val settings = TestKitSettings(adaptedSystem)
+  implicit val untypedSystem: actor.ActorSystem = ActorSystemAdapter.toUntyped(adaptedSystem)
 
   implicit val mat = ActorMaterializer()(untypedSystem)
 
