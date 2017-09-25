@@ -55,7 +55,8 @@ object DistributedPubSubSettings {
       },
       gossipInterval = config.getDuration("gossip-interval", MILLISECONDS).millis,
       removedTimeToLive = config.getDuration("removed-time-to-live", MILLISECONDS).millis,
-      maxDeltaElements = config.getInt("max-delta-elements"))
+      maxDeltaElements = config.getInt("max-delta-elements"),
+      sendToDeadLettersWhenNoSubscribers = config.getBoolean("send-to-dead-letters-when-no-subscribers"))
 
   /**
    * Java API: Create settings from the default configuration
@@ -84,13 +85,25 @@ object DistributedPubSubSettings {
  * @param removedTimeToLive Removed entries are pruned after this duration
  * @param maxDeltaElements Maximum number of elements to transfer in one message when synchronizing
  *   the registries. Next chunk will be transferred in next round of gossip.
+ * @param sendToDeadLettersWhenNoSubscribers When a message is published to a topic with no subscribers send it to the dead letters.
  */
 final class DistributedPubSubSettings(
-  val role:              Option[String],
-  val routingLogic:      RoutingLogic,
-  val gossipInterval:    FiniteDuration,
-  val removedTimeToLive: FiniteDuration,
-  val maxDeltaElements:  Int) extends NoSerializationVerificationNeeded {
+  val role:                               Option[String],
+  val routingLogic:                       RoutingLogic,
+  val gossipInterval:                     FiniteDuration,
+  val removedTimeToLive:                  FiniteDuration,
+  val maxDeltaElements:                   Int,
+  val sendToDeadLettersWhenNoSubscribers: Boolean) extends NoSerializationVerificationNeeded {
+
+  @deprecated("Use the other constructor instead.", "2.5.5")
+  def this(
+    role:              Option[String],
+    routingLogic:      RoutingLogic,
+    gossipInterval:    FiniteDuration,
+    removedTimeToLive: FiniteDuration,
+    maxDeltaElements:  Int) {
+    this(role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements, sendToDeadLettersWhenNoSubscribers = true)
+  }
 
   require(
     !routingLogic.isInstanceOf[ConsistentHashingRoutingLogic],
@@ -112,13 +125,17 @@ final class DistributedPubSubSettings(
   def withMaxDeltaElements(maxDeltaElements: Int): DistributedPubSubSettings =
     copy(maxDeltaElements = maxDeltaElements)
 
+  def withSendToDeadLettersWhenNoSubscribers(sendToDeadLetterWhenNoSubscribers: Boolean): DistributedPubSubSettings =
+    copy(sendToDeadLettersWhenNoSubscribers = sendToDeadLetterWhenNoSubscribers)
+
   private def copy(
-    role:              Option[String] = role,
-    routingLogic:      RoutingLogic   = routingLogic,
-    gossipInterval:    FiniteDuration = gossipInterval,
-    removedTimeToLive: FiniteDuration = removedTimeToLive,
-    maxDeltaElements:  Int            = maxDeltaElements): DistributedPubSubSettings =
-    new DistributedPubSubSettings(role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements)
+    role:                               Option[String] = role,
+    routingLogic:                       RoutingLogic   = routingLogic,
+    gossipInterval:                     FiniteDuration = gossipInterval,
+    removedTimeToLive:                  FiniteDuration = removedTimeToLive,
+    maxDeltaElements:                   Int            = maxDeltaElements,
+    sendToDeadLettersWhenNoSubscribers: Boolean        = sendToDeadLettersWhenNoSubscribers): DistributedPubSubSettings =
+    new DistributedPubSubSettings(role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements, sendToDeadLettersWhenNoSubscribers)
 }
 
 object DistributedPubSubMediator {
@@ -553,10 +570,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
           } yield routee).toVector
       }
 
-      if (routees.nonEmpty)
-        Router(routingLogic, routees).route(wrapIfNeeded(msg), sender())
-      else
-        sendToDeadLetters(msg)
+      if (routees.isEmpty) ignoreOrSendToDeadLetters(msg)
+      else Router(routingLogic, routees).route(wrapIfNeeded(msg), sender())
 
     case SendToAll(path, msg, skipSenderNode) ⇒
       publish(path, msg, skipSenderNode)
@@ -607,9 +622,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
       val key = mkKey(sender())
       forwardMessages(key, sender())
 
-    case GetTopics ⇒ {
+    case GetTopics ⇒
       sender ! CurrentTopics(getCurrentTopics())
-    }
 
     case msg @ Subscribed(ack, ref) ⇒
       ref ! ack
@@ -711,7 +725,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
       sender() ! deltaCount
   }
 
-  private def sendToDeadLetters(msg: Any) = context.system.deadLetters ! DeadLetter(msg, sender(), context.self)
+  private def ignoreOrSendToDeadLetters(msg: Any) =
+    if (settings.sendToDeadLettersWhenNoSubscribers) context.system.deadLetters ! DeadLetter(msg, sender(), context.self)
 
   def publish(path: String, msg: Any, allButSelf: Boolean = false): Unit = {
     val refs = for {
@@ -720,7 +735,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
       valueHolder ← bucket.content.get(path)
       ref ← valueHolder.ref
     } yield ref
-    if (refs.isEmpty) sendToDeadLetters(msg)
+    if (refs.isEmpty) ignoreOrSendToDeadLetters(msg)
     else refs.foreach(_.forward(msg))
   }
 
@@ -734,8 +749,9 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
       ref ← valueHolder.routee
     } yield (key, ref)).groupBy(_._1).values
 
-    if (groups.isEmpty) sendToDeadLetters(msg)
-    else {
+    if (groups.isEmpty) {
+      ignoreOrSendToDeadLetters(msg)
+    } else {
       val wrappedMsg = SendToOneSubscriber(msg)
       groups foreach {
         group ⇒
