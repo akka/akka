@@ -21,7 +21,7 @@ You can specify JVM options for the forked JVMs:
 jvmOptions in MultiJvm := Seq("-Xmx256M")
 ```
 
-Here is an example of a @extref[sample project](samples:tree/master/akka-sample-multi-node-scala) that uses the `sbt-multi-jvm` plugin.
+Here is an example of a @extref[sample project](samples:akka-sample-multi-node-scala) that uses the `sbt-multi-jvm` plugin.
 
 ## Running tests
 
