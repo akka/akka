@@ -343,10 +343,10 @@ object Sink {
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
    * limiting stage in front of this `Sink`.
    */
-  def actorRef[T](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable => Any): Sink[T, NotUsed] = 
+  def actorRef[T](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any): Sink[T, NotUsed] =
     fromGraph(new ActorRefSink(ref, onCompleteMessage, onFailureMessage,
       DefaultAttributes.actorRefSink, shape("ActorRefSink")))
-  
+
   /**
    * Sends the elements of the stream to the given `ActorRef`.
    * If the target actor terminates the stream will be canceled.
@@ -362,8 +362,8 @@ object Sink {
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
    * limiting stage in front of this `Sink`.
    */
-  def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] = 
-    fromGraph(new ActorRefSink(ref, onCompleteMessage, t => Status.Failure(t),
+  def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
+    fromGraph(new ActorRefSink(ref, onCompleteMessage, t ⇒ Status.Failure(t),
       DefaultAttributes.actorRefSink, shape("ActorRefSink")))
 
   /**

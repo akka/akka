@@ -16,14 +16,14 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi private[akka] object ActorRefSinkActor {
-  def props(ref: ActorRef, highWatermark: Int, onCompleteMessage: Any, onFailureMessage: Throwable => Any): Props =
+  def props(ref: ActorRef, highWatermark: Int, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any): Props =
     Props(new ActorRefSinkActor(ref, highWatermark, onCompleteMessage, onFailureMessage))
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class ActorRefSinkActor(ref: ActorRef, highWatermark: Int, onCompleteMessage: Any, onFailureMessage: Throwable => Any) 
+@InternalApi private[akka] class ActorRefSinkActor(ref: ActorRef, highWatermark: Int, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any)
   extends ActorSubscriber {
   import ActorSubscriberMessage._
 

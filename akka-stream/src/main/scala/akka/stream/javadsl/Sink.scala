@@ -194,7 +194,7 @@ object Sink {
    */
   def actorRef[In](ref: ActorRef, onCompleteMessage: Any): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.actorRef[In](ref, onCompleteMessage))
-  
+
   /**
    * Sends the elements of the stream to the given `ActorRef`.
    * If the target actor terminates the stream will be canceled.
@@ -211,7 +211,7 @@ object Sink {
    * limiting stage in front of this `Sink`.
    *
    */
-  def actorRef[In](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable => Any): Sink[In, NotUsed] =
+  def actorRef[In](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.actorRef[In](ref, onCompleteMessage, onFailureMessage))
 
   /**

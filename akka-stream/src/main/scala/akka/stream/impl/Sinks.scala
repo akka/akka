@@ -166,7 +166,7 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable => Any,
+@InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any,
                                                         val attributes: Attributes,
                                                         shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 

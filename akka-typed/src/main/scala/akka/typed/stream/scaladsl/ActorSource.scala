@@ -4,14 +4,29 @@
 
 package akka.typed.stream.scaladsl
 
+import akka.stream.OverflowStrategy
 import akka.stream.scaladsl._
 import akka.typed._
-import akka.NotUsed
-import akka.stream.{ OverflowStrategies, OverflowStrategy }
 
-object TypedSource {
+/**
+ * Collection of Sources aimed at integrating with typed Actors.
+ *
+ * You can use the factory methods directly, or import `ActorSource.Implicits`
+ * to make these methods available on [[akka.stream.scaladsl.Source]].
+ */
+object ActorSource {
 
   import akka.typed.scaladsl.adapter._
+
+  /** Provides typed actor integration methods as extendsion methods on [[akka.stream.scaladsl.Source]] */
+  object Implicits {
+
+    implicit final class TypedEnrichedSource(val s: Source.type) extends AnyVal {
+      def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef[T]] =
+        ActorSource.actorRef(bufferSize, overflowStrategy)
+    }
+
+  }
 
   /**
    * Creates a `Source` that is materialized as an [[akka.typed.ActorRef]].

@@ -1,31 +1,17 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
- */
+   * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+   */
+package akka.typed.stream.javadsl
 
-package akka.typed.stream.scaladsl
-
+import akka.NotUsed
 import akka.stream.scaladsl._
 import akka.typed._
-import akka.NotUsed
 
-object TypedSink {
-
+/**
+ * Collection of Sinks aimed at integrating with typed Actors.
+ */
+object ActorSink {
   import akka.typed.scaladsl.adapter._
-
-  object Implicits {
-    implicit final class TypedEnrichedSink(s: Source.type) {
-      def actorRef[T](ref: ActorRef[T], onCompleteMessage: T, onFailureMessage: Throwable ⇒ T): Sink[T, NotUsed] =
-        TypedSink.actorRef(ref, onCompleteMessage, onFailureMessage)
-    }
-
-    def actorRefWithAck[T](
-      ref:               ActorRef[T],
-      onInitMessage:     T,
-      ackMessage:        T,
-      onCompleteMessage: T,
-      onFailureMessage:  (Throwable) ⇒ T): Sink[T, NotUsed] =
-      TypedSink.actorRefWithAck(ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
-  }
 
   /**
    * Sends the elements of the stream to the given `ActorRef`.
@@ -43,8 +29,8 @@ object TypedSink {
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
    * limiting stage in front of this `Sink`.
    */
-  def actorRef[T](ref: ActorRef[T], onCompleteMessage: T, onFailureMessage: Throwable ⇒ T): Sink[T, NotUsed] =
-    Sink.actorRef(ref.toUntyped, onCompleteMessage)
+  def actorRef[T](ref: ActorRef[T], onCompleteMessage: T, onFailureMessage: akka.japi.function.Function[Throwable, T]): Sink[T, NotUsed] =
+    akka.typed.stream.scaladsl.ActorSink.actorRef(ref, onCompleteMessage, onFailureMessage.apply)
 
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
@@ -65,5 +51,6 @@ object TypedSink {
     ackMessage:        T,
     onCompleteMessage: T,
     onFailureMessage:  (Throwable) ⇒ T): Sink[T, NotUsed] =
-    Sink.actorRefWithAck(ref.toUntyped, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
+    akka.typed.stream.scaladsl.ActorSink.actorRefWithAck(ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage.apply)
+
 }
