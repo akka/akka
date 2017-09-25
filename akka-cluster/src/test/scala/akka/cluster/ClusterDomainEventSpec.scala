@@ -180,6 +180,20 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       diffSeen(state(g1), state(g2)) should ===(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
 
+    "be produced for removed and rejoined member in another data center" in {
+      val bUpDc2 = TestMember(bUp.address, Up, bRoles, dataCenter = "dc2")
+      val bUpDc2Removed = TestMember(bUpDc2.address, Removed, bRoles, dataCenter = "dc2")
+      val bUpDc2Restarted = TestMember.withUniqueAddress(UniqueAddress(bUpDc2.address, 2L), Up, bRoles, dataCenter = "dc2")
+      val g1 = Gossip(members = SortedSet(aUp, bUpDc2))
+      val g2 = g1
+        .remove(bUpDc2.uniqueAddress, System.currentTimeMillis()) // adds tombstone
+        .copy(members = SortedSet(aUp, bUpDc2Restarted))
+        .merge(g1)
+
+      diffMemberEvents(state(g1), state(g2)) should ===(Seq(
+        MemberRemoved(bUpDc2Removed, Up), MemberUp(bUpDc2Restarted)))
+    }
+
     "be produced for convergence changes" in {
       val g1 = Gossip(members = SortedSet(aUp, bUp, eJoining)).seen(aUp.uniqueAddress).seen(bUp.uniqueAddress).seen(eJoining.uniqueAddress)
       val g2 = Gossip(members = SortedSet(aUp, bUp, eJoining)).seen(aUp.uniqueAddress).seen(bUp.uniqueAddress)
