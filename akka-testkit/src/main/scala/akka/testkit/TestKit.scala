@@ -641,7 +641,7 @@ trait TestKitBase {
    * Assert that no message is received for the specified time.
    * Supplied value is not dilated.
    */
-  def expectNoMessage(max: FiniteDuration = testKitSettings.SingleExpectDefaultTimeout) = {
+  def expectNoMessage(max: FiniteDuration) = {
     expectNoMsg_internal(max)
   }
 

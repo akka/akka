@@ -145,7 +145,7 @@ object TestPublisher {
     /**
      * Expect no messages for a given duration.
      */
-    def expectNoMessage(max: FiniteDuration = probe.testKitSettings.SingleExpectDefaultTimeout): Self = executeAfterSubscription {
+    def expectNoMessage(max: FiniteDuration): Self = executeAfterSubscription {
       probe.expectNoMessage(max)
       self
     }
@@ -594,7 +594,7 @@ object TestSubscriber {
      *
      * Assert that no message is received for the specified time.
      */
-    def expectNoMessage(remaining: FiniteDuration = probe.testKitSettings.SingleExpectDefaultTimeout): Self = {
+    def expectNoMessage(remaining: FiniteDuration): Self = {
       probe.expectNoMessage(remaining)
       self
     }
