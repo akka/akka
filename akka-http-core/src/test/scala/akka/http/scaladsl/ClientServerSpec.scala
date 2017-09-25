@@ -14,6 +14,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.{ Success, Try }
 import akka.actor.ActorSystem
+import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpEntity._
@@ -567,6 +568,53 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
 
       serverBinding.unbind()
+    }
+
+    "complete a request/response over https when server closes connection without close_notify" in Utils.assertAllStagesStopped {
+      val source = TestPublisher.probe[ByteString]()
+
+      def handler(req: HttpRequest): HttpResponse =
+        HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`application/octet-stream`, Source.fromPublisher(source)))
+
+      val serverSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleServerContext, akka.stream.Server)
+      val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" → 8080))
+
+      val server: Flow[ByteString, ByteString, Any] =
+        Http().serverLayer()
+          .atop(serverSideTls)
+          .reversed
+          .join(Flow[HttpRequest].map(handler))
+
+      val client =
+        Http().clientLayer(Host("akka.example.org", 8080))
+          .atop(clientSideTls)
+
+      val killSwitch = KillSwitches.shared("kill-transport")
+
+      val pipe: Flow[HttpRequest, HttpResponse, Any] =
+        client
+          .atop(BidiFlow.fromFlows(Flow[ByteString], killSwitch.flow[ByteString])) // kill switch will kill server -> client connection without close_notify
+          .join(server)
+
+      val response =
+        Source.single(HttpRequest())
+          .via(pipe)
+          .runWith(Sink.head)
+          .awaitResult(10.seconds)
+
+      val sinkProbe = ByteStringSinkProbe()
+      response.entity.dataBytes.runWith(sinkProbe.sink)
+
+      source.sendNext(ByteString("abcdef"))
+      sinkProbe.expectUtf8EncodedString("abcdef")
+
+      source.sendNext(ByteString("ghij"))
+      sinkProbe.expectUtf8EncodedString("ghij")
+
+      killSwitch.shutdown() // simulate FIN in server -> client direction
+      // akka-http is currently lenient wrt TLS truncation which is *not* reported to the user
+      // FIXME: if https://github.com/akka/akka-http/issues/235 is ever fixed, expect an error here
+      sinkProbe.expectComplete()
     }
 
     "be able to deal with eager closing of the request stream on the client side" in Utils.assertAllStagesStopped {
