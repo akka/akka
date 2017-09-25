@@ -6,7 +6,6 @@ package akka.testkit
 import scala.collection.immutable
 import scala.util.Random
 import java.net.InetSocketAddress
-import java.net.SocketAddress
 import java.nio.channels.DatagramChannel
 import java.nio.channels.ServerSocketChannel
 import java.net.NetworkInterface
@@ -18,13 +17,6 @@ import java.net.StandardProtocolFamily
 object SocketUtil {
 
   import scala.language.reflectiveCalls
-
-  // Structural type needed since DatagramSocket and ServerSocket has no common ancestor apart from Object
-  private type GeneralSocket = {
-    def bind(sa: SocketAddress): Unit
-    def close(): Unit
-    def getLocalPort(): Int
-  }
 
   val RANDOM_LOOPBACK_ADDRESS = "RANDOM_LOOPBACK_ADDRESS"
 
@@ -51,9 +43,6 @@ object SocketUtil {
 
   def temporaryServerAddresses(numberOfAddresses: Int, hostname: String = RANDOM_LOOPBACK_ADDRESS, udp: Boolean = false): immutable.IndexedSeq[InetSocketAddress] = {
     Vector.fill(numberOfAddresses) {
-      val serverSocket: GeneralSocket =
-        if (udp) DatagramChannel.open().socket()
-        else ServerSocketChannel.open().socket()
 
       val address = hostname match {
         case RANDOM_LOOPBACK_ADDRESS ⇒
@@ -63,8 +52,16 @@ object SocketUtil {
           other
       }
 
-      serverSocket.bind(new InetSocketAddress(address, 0))
-      (serverSocket, new InetSocketAddress(address, serverSocket.getLocalPort))
+      if (udp) {
+        val ds = DatagramChannel.open().socket()
+        ds.bind(new InetSocketAddress(address, 0))
+        (ds, new InetSocketAddress(address, ds.getLocalPort))
+      } else {
+        val ss = ServerSocketChannel.open().socket()
+        ss.bind(new InetSocketAddress(address, 0))
+        (ss, new InetSocketAddress(address, ss.getLocalPort))
+      }
+
     } collect { case (socket, address) ⇒ socket.close(); address }
   }
 

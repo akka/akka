@@ -6,7 +6,6 @@ package akka.stream.javadsl
 import akka.NotUsed
 import akka.japi.function.Creator
 import akka.stream.KillSwitch
-import akka.stream.scaladsl.{ Sink, Source }
 
 import scala.concurrent.duration.FiniteDuration
 
