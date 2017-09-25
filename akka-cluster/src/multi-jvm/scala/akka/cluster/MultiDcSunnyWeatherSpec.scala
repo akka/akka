@@ -76,10 +76,10 @@ abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeather
       val crossDcHeartbeatSenderPath = "/system/cluster/core/daemon/crossDcHeartbeatSender"
       val selectCrossDcHeartbeatSender = system.actorSelection(crossDcHeartbeatSenderPath)
 
-      val expectedAlphaHeartbeaterNodes = takeNOldestMembers(_.dataCenter == "alpha", 2)
+      val expectedAlphaHeartbeaterNodes = takeNOldestMembers(dataCenter = "alpha", 2)
       val expectedAlphaHeartbeaterRoles = membersAsRoles(expectedAlphaHeartbeaterNodes)
 
-      val expectedBetaHeartbeaterNodes = takeNOldestMembers(_.dataCenter == "beta", 2)
+      val expectedBetaHeartbeaterNodes = takeNOldestMembers(dataCenter = "beta", 2)
       val expectedBetaHeartbeaterRoles = membersAsRoles(expectedBetaHeartbeaterNodes)
 
       val expectedNoActiveHeartbeatSenderRoles = roles.toSet -- (expectedAlphaHeartbeaterRoles union expectedBetaHeartbeaterRoles)
@@ -147,16 +147,15 @@ abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeather
    * strongly guaratnee the order of "oldest" members, as they're linearized by the order in which they become Up
    * (since marking that transition is a Leader action).
    */
-  private def membersByAge(): immutable.SortedSet[Member] =
+  private def membersByAge(dataCenter: ClusterSettings.DataCenter): immutable.SortedSet[Member] =
     SortedSet.empty(Member.ageOrdering)
-      .union(cluster.state.members.filter(m ⇒ m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
+      .union(cluster.state.members.filter(m ⇒ m.dataCenter == dataCenter &&
+        m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
 
   /** INTERNAL API */
   @InternalApi
-  private[cluster] def takeNOldestMembers(memberFilter: Member ⇒ Boolean, n: Int): immutable.SortedSet[Member] =
-    membersByAge()
-      .filter(memberFilter)
-      .take(n)
+  private[cluster] def takeNOldestMembers(dataCenter: ClusterSettings.DataCenter, n: Int): immutable.SortedSet[Member] =
+    membersByAge(dataCenter).take(n)
 
   private def membersAsRoles(ms: immutable.Set[Member]): immutable.Set[RoleName] = {
     val res = ms.flatMap(m ⇒ roleName(m.address))
