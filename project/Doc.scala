@@ -129,17 +129,3 @@ object UnidocRoot extends AutoPlugin {
     ))
   }
 }
-
-/**
- * Unidoc settings for every multi-project. Adds genjavadoc specific settings.
- */
-object Unidoc extends AutoPlugin {
-
-  override def trigger = allRequirements
-  override def requires = plugins.JvmPlugin
-
-  override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
-    Seq(
-      scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true"
-    )).getOrElse(Seq.empty)
-}
