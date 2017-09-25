@@ -166,7 +166,7 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any,
+@InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable => Any,
                                                         val attributes: Attributes,
                                                         shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
@@ -175,14 +175,14 @@ import akka.util.OptionVal
     val effectiveSettings = actorMaterializer.effectiveSettings(context.effectiveAttributes)
     val subscriberRef = actorMaterializer.actorOf(
       context,
-      ActorRefSinkActor.props(ref, effectiveSettings.maxInputBufferSize, onCompleteMessage))
+      ActorRefSinkActor.props(ref, effectiveSettings.maxInputBufferSize, onCompleteMessage, onFailureMessage))
     (akka.stream.actor.ActorSubscriber[In](subscriberRef), NotUsed)
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
-    new ActorRefSink[In](ref, onCompleteMessage, attributes, shape)
+    new ActorRefSink[In](ref, onCompleteMessage, onFailureMessage, attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] =
-    new ActorRefSink[In](ref, onCompleteMessage, attr, amendShape(attr))
+    new ActorRefSink[In](ref, onCompleteMessage, onFailureMessage, attr, amendShape(attr))
 }
 
 /**
