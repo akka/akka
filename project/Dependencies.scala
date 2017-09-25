@@ -86,7 +86,7 @@ object Dependencies {
       val commonsCodec = "commons-codec"               % "commons-codec"                % "1.10"             % "test" // ApacheV2
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.2.3"            % "test" // EPL 1.0 / LGPL 2.1
-      val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
+      val mockito      = "org.mockito"                 % "mockito-core"                 % "2.7.16"           % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"  % scalaTestVersion.value   % "test" } // ApacheV2
       val scalacheck   = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value  % "test" } // New BSD
