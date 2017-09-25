@@ -53,15 +53,25 @@ class Member private[cluster] (
    * Is this member older, has been part of cluster longer, than another
    * member. It is only correct when comparing two existing members in a
    * cluster. A member that joined after removal of another member may be
-   * considered older than the removed member. Note that is only makes
-   * sense to compare with other members inside of one data center (upNumber has
-   * a higher risk of being reused across data centers). // TODO should we enforce this to compare only within DCs?
+   * considered older than the removed member.
+   *
+   * Note that it only makes sense to compare with other members of
+   * same data center (upNumber has a higher risk of being reused across data centers).
+   * To avoid mistakes of comparing members of different data centers this
+   * method will throw `IllegalArgumentException` if the members belong
+   * to different data centers.
    */
-  def isOlderThan(other: Member): Boolean =
+  @throws[IllegalArgumentException]("if members from different data centers")
+  def isOlderThan(other: Member): Boolean = {
+    if (dataCenter != other.dataCenter)
+      throw new IllegalArgumentException(
+        "Comparing members of different data centers with isOlderThan is not allowed. " +
+          s"[$this] vs. [$other]")
     if (upNumber == other.upNumber)
       Member.addressOrdering.compare(address, other.address) < 0
     else
       upNumber < other.upNumber
+  }
 
   def copy(status: MemberStatus): Member = {
     val oldStatus = this.status
@@ -141,6 +151,11 @@ object Member {
 
   /**
    * Sort members by age, i.e. using [[Member#isOlderThan]].
+   *
+   * Note that it only makes sense to compare with other members of
+   * same data center. To avoid mistakes of comparing members of different
+   * data centers it will throw `IllegalArgumentException` if the
+   * members belong to different data centers.
    */
   val ageOrdering: Ordering[Member] = Ordering.fromLessThan[Member] {
     (a, b) ⇒ a.isOlderThan(b)
