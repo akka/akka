@@ -124,7 +124,9 @@ object TestPublisher {
 
     /**
      * Expect no messages.
+     * NOTE! Timeout value is automatically multiplied by timeFactor.
      */
+    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
     def expectNoMsg(): Self = executeAfterSubscription {
       probe.expectNoMsg()
       self
@@ -132,9 +134,19 @@ object TestPublisher {
 
     /**
      * Expect no messages for a given duration.
+     * NOTE! Timeout value is automatically multiplied by timeFactor.
      */
+    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
     def expectNoMsg(max: FiniteDuration): Self = executeAfterSubscription {
       probe.expectNoMsg(max)
+      self
+    }
+
+    /**
+     * Expect no messages for a given duration.
+     */
+    def expectNoMessage(max: FiniteDuration): Self = executeAfterSubscription {
+      probe.expectNoMessage(max)
       self
     }
 
@@ -557,7 +569,9 @@ object TestSubscriber {
      * Fluent DSL
      *
      * Same as `expectNoMsg(remaining)`, but correctly treating the timeFactor.
+     * NOTE! Timeout value is automatically multiplied by timeFactor.
      */
+    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
     def expectNoMsg(): Self = {
       probe.expectNoMsg()
       self
@@ -567,9 +581,21 @@ object TestSubscriber {
      * Fluent DSL
      *
      * Assert that no message is received for the specified time.
+     * NOTE! Timeout value is automatically multiplied by timeFactor.
      */
+    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
     def expectNoMsg(remaining: FiniteDuration): Self = {
       probe.expectNoMsg(remaining)
+      self
+    }
+
+    /**
+     * Fluent DSL
+     *
+     * Assert that no message is received for the specified time.
+     */
+    def expectNoMessage(remaining: FiniteDuration): Self = {
+      probe.expectNoMessage(remaining)
       self
     }
 

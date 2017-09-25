@@ -640,16 +640,48 @@ trait TestKitBase {
   /**
    * Same as `expectNoMsg(remainingOrDefault)`, but correctly treating the timeFactor.
    */
+  @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
   def expectNoMsg() { expectNoMsg_internal(remainingOrDefault) }
 
   /**
    * Assert that no message is received for the specified time.
+   * NOTE! Supplied value is always dilated.
    */
-  def expectNoMsg(max: FiniteDuration) { expectNoMsg_internal(max.dilated) }
+  @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
+  def expectNoMsg(max: FiniteDuration) {
+    expectNoMsg_internal(max.dilated)
+  }
+
+  /**
+   * Assert that no message is received for the specified time.
+   * Supplied value is not dilated.
+   */
+  def expectNoMessage(max: FiniteDuration) = {
+    expectNoMsg_internal(max)
+  }
 
   private def expectNoMsg_internal(max: FiniteDuration) {
-    val o = receiveOne(max)
-    assert(o eq null, s"received unexpected message $o")
+    val finish = System.nanoTime() + max.toNanos
+    val pollInterval = 100.millis
+
+    def leftNow = (finish - System.nanoTime()).nanos
+
+    var elem: AnyRef = queue.peekFirst()
+    var left = leftNow
+    while (left.toNanos > 0 && elem == null) {
+      //Use of (left / 2) gives geometric series limited by finish time similar to (1/2)^n limited by 1,
+      //so it is very precise
+      Thread.sleep(
+        pollInterval.toMillis min (left / 2).toMillis
+      )
+      left = leftNow
+      if (left.toNanos > 0) {
+        elem = queue.peekFirst()
+      }
+    }
+    val diff = (max.toNanos - left.toNanos).nanos
+    val m = s"received unexpected message $elem after ${diff.toMillis} millis"
+    assert(elem eq null, m)
     lastWasNoMsg = true
   }
 
