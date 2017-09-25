@@ -463,7 +463,8 @@ final class ORSet[A] private[akka] (
         elementsMap
     }
     clearAncestor()
-    val newVvector = vvector.merge(that.vvector)
+
+    val newVvector = vvector.merge(thatDot)
     new ORSet(newElementsMap, newVvector)
   }
 
