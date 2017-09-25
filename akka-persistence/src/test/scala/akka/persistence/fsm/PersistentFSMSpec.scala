@@ -75,7 +75,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       expectMsg(CurrentState(fsmRef, LookingAround, None))
       expectMsg(Transition(fsmRef, LookingAround, Shopping, Some(1 second)))
 
-      within(0.9 seconds, remainingOrDefault) {
+      within(0.5 seconds, remainingOrDefault) {
         expectMsg(Transition(fsmRef, Shopping, Inactive, Some(2 seconds)))
       }
 
@@ -205,7 +205,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
 
       expectMsg(CurrentState(recoveredFsmRef, Shopping, Some(1 second)))
 
-      within(0.9 seconds, remainingOrDefault) {
+      within(0.5 seconds, remainingOrDefault) {
         expectMsg(Transition(recoveredFsmRef, Shopping, Inactive, Some(2 seconds)))
       }
 
