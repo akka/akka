@@ -1,9 +1,13 @@
+/**
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.cluster.pubsub
 
 import akka.testkit._
 import akka.routing.{ ConsistentHashingRoutingLogic, RouterEnvelope }
 import org.scalatest.WordSpecLike
-import akka.actor.{ DeadLetter, ActorRef }
+import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
 
 case class WrappedMessage(msg: String) extends RouterEnvelope {
@@ -81,15 +85,6 @@ trait DistributedPubSubMediatorRouterSpec { this: WordSpecLike with TestKit with
 
       mediator ! DistributedPubSubMediator.Unsubscribe("topic", testActor)
       expectMsgClass(classOf[DistributedPubSubMediator.UnsubscribeAck])
-    }
-
-    "send message to dead letters if no recipients available" in {
-
-      val probe = TestProbe()
-      system.eventStream.subscribe(probe.ref, classOf[DeadLetter])
-      mediator ! DistributedPubSubMediator.Publish("nowhere", msg, sendOneMessageToEachGroup = true)
-      probe.expectMsgClass(classOf[DeadLetter])
-      system.eventStream.unsubscribe(probe.ref, classOf[DeadLetter])
     }
   }
 }
