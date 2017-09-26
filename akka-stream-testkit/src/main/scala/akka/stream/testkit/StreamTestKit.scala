@@ -784,7 +784,7 @@ private[testkit] object StreamTestKit {
     def cancel(): Unit = publisherProbe.ref ! CancelSubscription(this)
 
     def expectRequest(n: Long): Unit = publisherProbe.expectMsg(RequestMore(this, n))
-    def expectRequest(): Long = publisherProbe.expectMsgPF() {
+    def expectRequest(): Long = publisherProbe.expectMsgPF(hint = "expecting request() signal") {
       case RequestMore(sub, n) if sub eq this ⇒ n
     }
 
