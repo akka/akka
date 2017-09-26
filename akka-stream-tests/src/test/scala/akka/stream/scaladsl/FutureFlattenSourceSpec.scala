@@ -81,18 +81,20 @@ class FutureFlattenSourceSpec extends StreamSpec {
     "handle downstream cancelling before the underlying Future completes" in assertAllStagesStopped {
       val sourcePromise = Promise[Source[Int, String]]()
 
-      val (sourceMatVal, termination) =
+      val probe = TestSubscriber.probe[Int]()
+      val sourceMatVal =
         Source.fromFutureSource(sourcePromise.future)
-          .watchTermination()(Keep.both)
-          .to(Sink.cancelled)
+          .toMat(Sink.fromSubscriber(probe))(Keep.left)
           .run()
 
       // wait for cancellation to occur
-      termination.futureValue should ===(Done)
+      probe.ensureSubscription()
+      probe.request(1)
+      probe.cancel()
 
       // even though canceled the underlying matval should arrive
       sourcePromise.success(underlying)
-      sourceMatVal.futureValue should ===("foo")
+      sourceMatVal.failed.futureValue.getMessage should ===("Stream finished before future source completed")
     }
 
     "fail if the underlying Future is failed" in assertAllStagesStopped {

@@ -22,6 +22,7 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.util.{ Failure, Success, Try }
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -319,15 +320,10 @@ import scala.concurrent.{ Future, Promise }
 
           override def onDownstreamFinish(): Unit = {
             if (!materialized.isCompleted) {
-              // make sure we always yield the matval if possible, even if downstream cancelled
-              // before the source was materialized
-              val matValFuture = futureSource.map { gr ⇒
-                // downstream finish means it cancelled, so we push that signal through into the future materialized source
-                Source.fromGraph(gr).to(Sink.cancelled)
-                  .withAttributes(attr)
-                  .run()(subFusingMaterializer)
-              }(ExecutionContexts.sameThreadExecutionContext)
-              materialized.completeWith(matValFuture)
+              // we used to try to materialize the "inner" source here just to get
+              // the materialized value, but that is not safe and may cause the graph shell
+              // to leak/stay alive after the stage completes
+              materialized.tryFailure(new RuntimeException("Stream finished before future source completed"))
             }
 
             super.onDownstreamFinish()
