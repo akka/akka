@@ -132,6 +132,7 @@ object AkkaBuild {
     /**
      * Test settings
      */
+    fork := true,
 
     parallelExecution in Test := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
     logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
