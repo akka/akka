@@ -26,12 +26,11 @@ object AkkaBuild {
     organization := "com.typesafe.akka",
     version := "2.5-SNAPSHOT")
 
-  //  lazy val rootSettings = parentSettings ++ Release.settings ++ // FIXME
-  lazy val rootSettings = parentSettings ++
-      UnidocRoot.akkaSettings // ++ FIXME
-  //    Protobuf.settings ++ Seq(
-  //      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean
-  //    )
+  lazy val rootSettings = parentSettings ++ Release.settings ++
+    UnidocRoot.akkaSettings ++
+    Protobuf.settings ++ Seq(
+      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean
+    )
 
   val dontPublishSettings = Seq(
     publishSigned := (),
@@ -91,8 +90,7 @@ object AkkaBuild {
 
   lazy val defaultSettings = resolverSettings ++
     TestExtras.Filter.settings ++
-    // Protobuf.settings ++ Seq( // FIXME
-    Seq(
+    Protobuf.settings ++ Seq(
       // compile options
       scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
