@@ -12,6 +12,7 @@ initialize := {
 }
 
 akka.AkkaBuild.buildSettings
+akka.Release.settings
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 resolverSettings
 
