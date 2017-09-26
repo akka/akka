@@ -77,11 +77,11 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
     subscriptions:     SubscriptionRegistry,
     externalInterface: ExternalInterface): Behavior[AllCommands] = {
 
-    /** Helper to create new state */
+    // Helper to create new state
     def next(newRegistry: LocalServiceRegistry = serviceRegistry, newSubscriptions: SubscriptionRegistry = subscriptions) =
       behavior(newRegistry, newSubscriptions, externalInterface)
 
-    /**
+    /*
      * Hack to allow multiple termination notifications per target
      * FIXME: replace by simple map in our state
      */
@@ -96,7 +96,7 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
           }
       })
 
-    /** Helper that makes sure that subscribers are notified when an entry is changed */
+    // Helper that makes sure that subscribers are notified when an entry is changed
     def updateRegistry(changedKeysHint: Set[AbstractServiceKey], f: LocalServiceRegistry ⇒ LocalServiceRegistry): Behavior[AllCommands] = {
       val newRegistry = f(serviceRegistry)
 
@@ -115,7 +115,7 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
     immutable[AllCommands] { (ctx, msg) ⇒
       msg match {
         case Register(key, serviceInstance, replyTo) ⇒
-          println(s"[${ctx.self}] Actor was registered: $key $serviceInstance")
+          ctx.system.log.debug("[{}] Actor was registered: {} {}", ctx.self, key, serviceInstance)
           watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
           replyTo ! Registered(key, serviceInstance)
           externalInterface.onRegister(key, serviceInstance)
@@ -128,7 +128,8 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
           same
 
         case RegistrationsChangedExternally(changes) ⇒
-          println(s"[${ctx.self}] Registration changed: $changes")
+
+          ctx.system.log.debug("[{}] Registration changed: {}", ctx.self, changes)
 
           // FIXME: get rid of casts
           def makeChanges(registry: LocalServiceRegistry): LocalServiceRegistry =
@@ -140,7 +141,7 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
           updateRegistry(changes.keySet, makeChanges) // overwrite all changed keys
 
         case RegisteredActorTerminated(key, serviceInstance) ⇒
-          println(s"[${ctx.self}] Registered actor terminated: $key $serviceInstance")
+          ctx.system.log.debug("[{}] Registered actor terminated: {} {}", ctx.self, key, serviceInstance)
           externalInterface.onUnregister(key, serviceInstance)
           updateRegistry(Set(key), _.removed(key)(serviceInstance))
 

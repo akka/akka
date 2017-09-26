@@ -112,7 +112,6 @@ import scala.reflect.ClassTag
           null.asInstanceOf[T] // message should be ignored
         } else if (timerMsg.generation == t.generation) {
           // valid timer
-          log.debug("Received timer [{}]", timerMsg.key)
           if (!t.repeat)
             timers -= t.key
           t.msg
