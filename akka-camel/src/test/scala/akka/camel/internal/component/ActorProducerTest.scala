@@ -6,21 +6,19 @@ package akka.camel.internal.component
 
 import language.postfixOps
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Matchers.any
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.apache.camel.{ AsyncCallback, ProducerTemplate }
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
-import java.lang.String
-
 import akka.camel._
 import internal.{ CamelExchangeAdapter, DefaultCamel }
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, Suite, WordSpecLike }
 import akka.camel.TestSupport._
 import java.util.concurrent.{ CountDownLatch, TimeoutException }
 
-import org.mockito.{ ArgumentMatcher, Mockito, Matchers ⇒ MMatchers }
+import org.mockito.{ ArgumentMatcher, ArgumentMatchers, Mockito, Matchers ⇒ MMatchers }
 import org.scalatest.Matchers
 import akka.actor.Status.Failure
 import com.typesafe.config.ConfigFactory
@@ -213,8 +211,8 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
             producer = given(outCapable = true, replyTimeout = 10 millis)
             producer.processExchangeAdapter(exchange, asyncCallback)
             asyncCallback.awaitCalled(100 millis)
-            verify(exchange).setFailure(MMatchers.argThat(new ArgumentMatcher[FailureResult] {
-              def matches(failure: AnyRef) = {
+            verify(exchange).setFailure(ArgumentMatchers.argThat(new ArgumentMatcher[FailureResult] {
+              def matches(failure: FailureResult) = {
                 failure.asInstanceOf[FailureResult].cause should be(anInstanceOf[TimeoutException])
                 true
               }
