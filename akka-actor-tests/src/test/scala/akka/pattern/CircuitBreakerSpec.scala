@@ -666,10 +666,10 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
 
     "reset failure count after exception in call" when {
       "exception is defined as Success" in {
-        val breaker = CircuitBreakerSpec.multiFailureCb()
-        breaker().withCircuitBreaker(Future(sayHi))
-        for (n ← 1 to 4) breaker().withCircuitBreaker(Future(throwException))
-        awaitCond(breaker().currentFailureCount == 4, awaitTimeout)
+        val breaker: CircuitBreakerSpec.Breaker = CircuitBreakerSpec.multiFailureCb()
+
+        for (_ ← 1 to 4) breaker().withCircuitBreaker(Future(throwException))
+        awaitCond(breaker().currentFailureCount == 4, awaitTimeout, message = s"Current failure count: ${breaker().currentFailureCount}")
 
         val harmlessException = new TestException
         val harmlessExceptionAsSuccess: Try[String] ⇒ Boolean = {
@@ -691,7 +691,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
       })
       checkLatch(breaker.openLatch)
       breaker().currentFailureCount should ===(1)
-      // Since the timeout should have happend before the inner code finishes
+      // Since the timeout should have happened before the inner code finishes
       // we expect a timeout, not TestException
       intercept[TimeoutException] {
         Await.result(fut, awaitTimeout)
