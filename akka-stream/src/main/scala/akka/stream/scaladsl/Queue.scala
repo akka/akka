@@ -6,6 +6,9 @@ package akka.stream.scaladsl
 import scala.concurrent.Future
 import akka.Done
 import akka.stream.QueueOfferResult
+import akka.stream.stage.GraphStageLogic
+
+import scala.util.control.NoStackTrace
 
 /**
  * This trait allows to have the queue as a data source for some stream.
@@ -26,7 +29,8 @@ trait SourceQueue[T] {
   def offer(elem: T): Future[QueueOfferResult]
 
   /**
-   * Method returns future that completes when stream is completed and fails when stream failed
+   * Method returns a [[Future]] that will be completed if the stream completes,
+   * or will be failed when the stage faces an internal failure.
    */
   def watchCompletion(): Future[Done]
 }
@@ -46,6 +50,12 @@ trait SourceQueueWithComplete[T] extends SourceQueue[T] {
    * operation’s success.
    */
   def fail(ex: Throwable): Unit
+
+  /**
+   * Method returns a [[Future]] that will be completed if the stream completes,
+   * or will be failed when the stage faces an internal failure or the the [[SourceQueueWithComplete.fail]] method is invoked.
+   */
+  def watchCompletion(): Future[Done]
 }
 
 /**

@@ -8,7 +8,7 @@ Akka is here to change that.
 
 Using the Actor Model we raise the abstraction level and provide a better platform to build correct concurrent and scalable applications. This model is a perfect match for the principles laid out in the [Reactive Manifesto](http://www.reactivemanifesto.org/).
 
-For resilience we adopt the "Let it crash" model which the telecom industry has used with great success to build applications that self-heal and systems that never stop.
+For resilience, we adopt the "Let it crash" model which the telecom industry has used with great success to build applications that self-heal and systems that never stop.
 
 Actors also provide the abstraction for transparent distribution and the basis for truly scalable and fault-tolerant applications.
 

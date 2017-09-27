@@ -1,0 +1,12 @@
+#23504 compression tables
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.compress.InboundCompression$State$")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.compress.InboundCompression$State")
+
+#23702 Java 9 Unsafe String access
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.FastHash$")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.FastHash")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.EnvelopeBuffer.StringValueFieldOffset")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.EnvelopeBuffer.UsAscii")
+
+#22156 lost refuseUid
+ProblemFilters.exclude[Problem]("akka.remote.EndpointManager*")

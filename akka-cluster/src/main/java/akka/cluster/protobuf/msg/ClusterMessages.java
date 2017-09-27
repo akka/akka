@@ -3574,6 +3574,31 @@ public final class ClusterMessages {
      * <code>required .VectorClock version = 6;</code>
      */
     akka.cluster.protobuf.msg.ClusterMessages.VectorClockOrBuilder getVersionOrBuilder();
+
+    // repeated .Tombstone tombstones = 7;
+    /**
+     * <code>repeated .Tombstone tombstones = 7;</code>
+     */
+    java.util.List<akka.cluster.protobuf.msg.ClusterMessages.Tombstone> 
+        getTombstonesList();
+    /**
+     * <code>repeated .Tombstone tombstones = 7;</code>
+     */
+    akka.cluster.protobuf.msg.ClusterMessages.Tombstone getTombstones(int index);
+    /**
+     * <code>repeated .Tombstone tombstones = 7;</code>
+     */
+    int getTombstonesCount();
+    /**
+     * <code>repeated .Tombstone tombstones = 7;</code>
+     */
+    java.util.List<? extends akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder> 
+        getTombstonesOrBuilderList();
+    /**
+     * <code>repeated .Tombstone tombstones = 7;</code>
+     */
+    akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder getTombstonesOrBuilder(
+        int index);
   }
   /**
    * Protobuf type {@code Gossip}
@@ -3689,6 +3714,14 @@ public final class ClusterMessages {
               bitField0_ |= 0x00000002;
               break;
             }
+            case 58: {
+              if (!((mutable_bitField0_ & 0x00000040) == 0x00000040)) {
+                tombstones_ = new java.util.ArrayList<akka.cluster.protobuf.msg.ClusterMessages.Tombstone>();
+                mutable_bitField0_ |= 0x00000040;
+              }
+              tombstones_.add(input.readMessage(akka.cluster.protobuf.msg.ClusterMessages.Tombstone.PARSER, extensionRegistry));
+              break;
+            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
@@ -3708,6 +3741,9 @@ public final class ClusterMessages {
         }
         if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
           members_ = java.util.Collections.unmodifiableList(members_);
+        }
+        if (((mutable_bitField0_ & 0x00000040) == 0x00000040)) {
+          tombstones_ = java.util.Collections.unmodifiableList(tombstones_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -3917,6 +3953,42 @@ public final class ClusterMessages {
       return version_;
     }
 
+    // repeated .Tombstone tombstones = 7;
+    public static final int TOMBSTONES_FIELD_NUMBER = 7;
+    private java.util.List<akka.cluster.protobuf.msg.ClusterMessages.Tombstone> tombstones_;
+    /**
+     * <code>repeated .Tombstone tombstones = 7;</code>
+     */
+    public java.util.List<akka.cluster.protobuf.msg.ClusterMessages.Tombstone> getTombstonesList() {
+      return tombstones_;
+    }
+    /**
+     * <code>repeated .Tombstone tombstones = 7;</code>
+     */
+    public java.util.List<? extends akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder> 
+        getTombstonesOrBuilderList() {
+      return tombstones_;
+    }
+    /**
+     * <code>repeated .Tombstone tombstones = 7;</code>
+     */
+    public int getTombstonesCount() {
+      return tombstones_.size();
+    }
+    /**
+     * <code>repeated .Tombstone tombstones = 7;</code>
+     */
+    public akka.cluster.protobuf.msg.ClusterMessages.Tombstone getTombstones(int index) {
+      return tombstones_.get(index);
+    }
+    /**
+     * <code>repeated .Tombstone tombstones = 7;</code>
+     */
+    public akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder getTombstonesOrBuilder(
+        int index) {
+      return tombstones_.get(index);
+    }
+
     private void initFields() {
       allAddresses_ = java.util.Collections.emptyList();
       allRoles_ = akka.protobuf.LazyStringArrayList.EMPTY;
@@ -3924,6 +3996,7 @@ public final class ClusterMessages {
       members_ = java.util.Collections.emptyList();
       overview_ = akka.cluster.protobuf.msg.ClusterMessages.GossipOverview.getDefaultInstance();
       version_ = akka.cluster.protobuf.msg.ClusterMessages.VectorClock.getDefaultInstance();
+      tombstones_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -3958,6 +4031,12 @@ public final class ClusterMessages {
         memoizedIsInitialized = 0;
         return false;
       }
+      for (int i = 0; i < getTombstonesCount(); i++) {
+        if (!getTombstones(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -3982,6 +4061,9 @@ public final class ClusterMessages {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeMessage(6, version_);
+      }
+      for (int i = 0; i < tombstones_.size(); i++) {
+        output.writeMessage(7, tombstones_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -4025,6 +4107,10 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += akka.protobuf.CodedOutputStream
           .computeMessageSize(6, version_);
+      }
+      for (int i = 0; i < tombstones_.size(); i++) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(7, tombstones_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -4143,6 +4229,7 @@ public final class ClusterMessages {
           getMembersFieldBuilder();
           getOverviewFieldBuilder();
           getVersionFieldBuilder();
+          getTombstonesFieldBuilder();
         }
       }
       private static Builder create() {
@@ -4179,6 +4266,12 @@ public final class ClusterMessages {
           versionBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000020);
+        if (tombstonesBuilder_ == null) {
+          tombstones_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000040);
+        } else {
+          tombstonesBuilder_.clear();
+        }
         return this;
       }
 
@@ -4252,6 +4345,15 @@ public final class ClusterMessages {
           result.version_ = version_;
         } else {
           result.version_ = versionBuilder_.build();
+        }
+        if (tombstonesBuilder_ == null) {
+          if (((bitField0_ & 0x00000040) == 0x00000040)) {
+            tombstones_ = java.util.Collections.unmodifiableList(tombstones_);
+            bitField0_ = (bitField0_ & ~0x00000040);
+          }
+          result.tombstones_ = tombstones_;
+        } else {
+          result.tombstones_ = tombstonesBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -4347,6 +4449,32 @@ public final class ClusterMessages {
         if (other.hasVersion()) {
           mergeVersion(other.getVersion());
         }
+        if (tombstonesBuilder_ == null) {
+          if (!other.tombstones_.isEmpty()) {
+            if (tombstones_.isEmpty()) {
+              tombstones_ = other.tombstones_;
+              bitField0_ = (bitField0_ & ~0x00000040);
+            } else {
+              ensureTombstonesIsMutable();
+              tombstones_.addAll(other.tombstones_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.tombstones_.isEmpty()) {
+            if (tombstonesBuilder_.isEmpty()) {
+              tombstonesBuilder_.dispose();
+              tombstonesBuilder_ = null;
+              tombstones_ = other.tombstones_;
+              bitField0_ = (bitField0_ & ~0x00000040);
+              tombstonesBuilder_ = 
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getTombstonesFieldBuilder() : null;
+            } else {
+              tombstonesBuilder_.addAllMessages(other.tombstones_);
+            }
+          }
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -4379,6 +4507,12 @@ public final class ClusterMessages {
         if (!getVersion().isInitialized()) {
           
           return false;
+        }
+        for (int i = 0; i < getTombstonesCount(); i++) {
+          if (!getTombstones(i).isInitialized()) {
+            
+            return false;
+          }
         }
         return true;
       }
@@ -5300,6 +5434,246 @@ public final class ClusterMessages {
           version_ = null;
         }
         return versionBuilder_;
+      }
+
+      // repeated .Tombstone tombstones = 7;
+      private java.util.List<akka.cluster.protobuf.msg.ClusterMessages.Tombstone> tombstones_ =
+        java.util.Collections.emptyList();
+      private void ensureTombstonesIsMutable() {
+        if (!((bitField0_ & 0x00000040) == 0x00000040)) {
+          tombstones_ = new java.util.ArrayList<akka.cluster.protobuf.msg.ClusterMessages.Tombstone>(tombstones_);
+          bitField0_ |= 0x00000040;
+         }
+      }
+
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.protobuf.msg.ClusterMessages.Tombstone, akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder, akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder> tombstonesBuilder_;
+
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public java.util.List<akka.cluster.protobuf.msg.ClusterMessages.Tombstone> getTombstonesList() {
+        if (tombstonesBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(tombstones_);
+        } else {
+          return tombstonesBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public int getTombstonesCount() {
+        if (tombstonesBuilder_ == null) {
+          return tombstones_.size();
+        } else {
+          return tombstonesBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public akka.cluster.protobuf.msg.ClusterMessages.Tombstone getTombstones(int index) {
+        if (tombstonesBuilder_ == null) {
+          return tombstones_.get(index);
+        } else {
+          return tombstonesBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public Builder setTombstones(
+          int index, akka.cluster.protobuf.msg.ClusterMessages.Tombstone value) {
+        if (tombstonesBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureTombstonesIsMutable();
+          tombstones_.set(index, value);
+          onChanged();
+        } else {
+          tombstonesBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public Builder setTombstones(
+          int index, akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder builderForValue) {
+        if (tombstonesBuilder_ == null) {
+          ensureTombstonesIsMutable();
+          tombstones_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          tombstonesBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public Builder addTombstones(akka.cluster.protobuf.msg.ClusterMessages.Tombstone value) {
+        if (tombstonesBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureTombstonesIsMutable();
+          tombstones_.add(value);
+          onChanged();
+        } else {
+          tombstonesBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public Builder addTombstones(
+          int index, akka.cluster.protobuf.msg.ClusterMessages.Tombstone value) {
+        if (tombstonesBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureTombstonesIsMutable();
+          tombstones_.add(index, value);
+          onChanged();
+        } else {
+          tombstonesBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public Builder addTombstones(
+          akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder builderForValue) {
+        if (tombstonesBuilder_ == null) {
+          ensureTombstonesIsMutable();
+          tombstones_.add(builderForValue.build());
+          onChanged();
+        } else {
+          tombstonesBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public Builder addTombstones(
+          int index, akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder builderForValue) {
+        if (tombstonesBuilder_ == null) {
+          ensureTombstonesIsMutable();
+          tombstones_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          tombstonesBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public Builder addAllTombstones(
+          java.lang.Iterable<? extends akka.cluster.protobuf.msg.ClusterMessages.Tombstone> values) {
+        if (tombstonesBuilder_ == null) {
+          ensureTombstonesIsMutable();
+          super.addAll(values, tombstones_);
+          onChanged();
+        } else {
+          tombstonesBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public Builder clearTombstones() {
+        if (tombstonesBuilder_ == null) {
+          tombstones_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000040);
+          onChanged();
+        } else {
+          tombstonesBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public Builder removeTombstones(int index) {
+        if (tombstonesBuilder_ == null) {
+          ensureTombstonesIsMutable();
+          tombstones_.remove(index);
+          onChanged();
+        } else {
+          tombstonesBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder getTombstonesBuilder(
+          int index) {
+        return getTombstonesFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder getTombstonesOrBuilder(
+          int index) {
+        if (tombstonesBuilder_ == null) {
+          return tombstones_.get(index);  } else {
+          return tombstonesBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public java.util.List<? extends akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder> 
+           getTombstonesOrBuilderList() {
+        if (tombstonesBuilder_ != null) {
+          return tombstonesBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(tombstones_);
+        }
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder addTombstonesBuilder() {
+        return getTombstonesFieldBuilder().addBuilder(
+            akka.cluster.protobuf.msg.ClusterMessages.Tombstone.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder addTombstonesBuilder(
+          int index) {
+        return getTombstonesFieldBuilder().addBuilder(
+            index, akka.cluster.protobuf.msg.ClusterMessages.Tombstone.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .Tombstone tombstones = 7;</code>
+       */
+      public java.util.List<akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder> 
+           getTombstonesBuilderList() {
+        return getTombstonesFieldBuilder().getBuilderList();
+      }
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.protobuf.msg.ClusterMessages.Tombstone, akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder, akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder> 
+          getTombstonesFieldBuilder() {
+        if (tombstonesBuilder_ == null) {
+          tombstonesBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
+              akka.cluster.protobuf.msg.ClusterMessages.Tombstone, akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder, akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder>(
+                  tombstones_,
+                  ((bitField0_ & 0x00000040) == 0x00000040),
+                  getParentForChildren(),
+                  isClean());
+          tombstones_ = null;
+        }
+        return tombstonesBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:Gossip)
@@ -7684,6 +8058,499 @@ public final class ClusterMessages {
     }
 
     // @@protoc_insertion_point(class_scope:SubjectReachability)
+  }
+
+  public interface TombstoneOrBuilder
+      extends akka.protobuf.MessageOrBuilder {
+
+    // required int32 addressIndex = 1;
+    /**
+     * <code>required int32 addressIndex = 1;</code>
+     */
+    boolean hasAddressIndex();
+    /**
+     * <code>required int32 addressIndex = 1;</code>
+     */
+    int getAddressIndex();
+
+    // required int64 timestamp = 2;
+    /**
+     * <code>required int64 timestamp = 2;</code>
+     */
+    boolean hasTimestamp();
+    /**
+     * <code>required int64 timestamp = 2;</code>
+     */
+    long getTimestamp();
+  }
+  /**
+   * Protobuf type {@code Tombstone}
+   */
+  public static final class Tombstone extends
+      akka.protobuf.GeneratedMessage
+      implements TombstoneOrBuilder {
+    // Use Tombstone.newBuilder() to construct.
+    private Tombstone(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private Tombstone(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final Tombstone defaultInstance;
+    public static Tombstone getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public Tombstone getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final akka.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final akka.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private Tombstone(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              addressIndex_ = input.readInt32();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              timestamp_ = input.readInt64();
+              break;
+            }
+          }
+        }
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Tombstone_descriptor;
+    }
+
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Tombstone_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.cluster.protobuf.msg.ClusterMessages.Tombstone.class, akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder.class);
+    }
+
+    public static akka.protobuf.Parser<Tombstone> PARSER =
+        new akka.protobuf.AbstractParser<Tombstone>() {
+      public Tombstone parsePartialFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
+        return new Tombstone(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public akka.protobuf.Parser<Tombstone> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // required int32 addressIndex = 1;
+    public static final int ADDRESSINDEX_FIELD_NUMBER = 1;
+    private int addressIndex_;
+    /**
+     * <code>required int32 addressIndex = 1;</code>
+     */
+    public boolean hasAddressIndex() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required int32 addressIndex = 1;</code>
+     */
+    public int getAddressIndex() {
+      return addressIndex_;
+    }
+
+    // required int64 timestamp = 2;
+    public static final int TIMESTAMP_FIELD_NUMBER = 2;
+    private long timestamp_;
+    /**
+     * <code>required int64 timestamp = 2;</code>
+     */
+    public boolean hasTimestamp() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required int64 timestamp = 2;</code>
+     */
+    public long getTimestamp() {
+      return timestamp_;
+    }
+
+    private void initFields() {
+      addressIndex_ = 0;
+      timestamp_ = 0L;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasAddressIndex()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasTimestamp()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(akka.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeInt32(1, addressIndex_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeInt64(2, timestamp_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeInt32Size(1, addressIndex_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeInt64Size(2, timestamp_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseFrom(
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseFrom(
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseFrom(byte[] data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseFrom(
+        byte[] data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseFrom(
+        akka.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.cluster.protobuf.msg.ClusterMessages.Tombstone parseFrom(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.cluster.protobuf.msg.ClusterMessages.Tombstone prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code Tombstone}
+     */
+    public static final class Builder extends
+        akka.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Tombstone_descriptor;
+      }
+
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Tombstone_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.cluster.protobuf.msg.ClusterMessages.Tombstone.class, akka.cluster.protobuf.msg.ClusterMessages.Tombstone.Builder.class);
+      }
+
+      // Construct using akka.cluster.protobuf.msg.ClusterMessages.Tombstone.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        addressIndex_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        timestamp_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public akka.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_Tombstone_descriptor;
+      }
+
+      public akka.cluster.protobuf.msg.ClusterMessages.Tombstone getDefaultInstanceForType() {
+        return akka.cluster.protobuf.msg.ClusterMessages.Tombstone.getDefaultInstance();
+      }
+
+      public akka.cluster.protobuf.msg.ClusterMessages.Tombstone build() {
+        akka.cluster.protobuf.msg.ClusterMessages.Tombstone result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public akka.cluster.protobuf.msg.ClusterMessages.Tombstone buildPartial() {
+        akka.cluster.protobuf.msg.ClusterMessages.Tombstone result = new akka.cluster.protobuf.msg.ClusterMessages.Tombstone(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.addressIndex_ = addressIndex_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.timestamp_ = timestamp_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(akka.protobuf.Message other) {
+        if (other instanceof akka.cluster.protobuf.msg.ClusterMessages.Tombstone) {
+          return mergeFrom((akka.cluster.protobuf.msg.ClusterMessages.Tombstone)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.cluster.protobuf.msg.ClusterMessages.Tombstone other) {
+        if (other == akka.cluster.protobuf.msg.ClusterMessages.Tombstone.getDefaultInstance()) return this;
+        if (other.hasAddressIndex()) {
+          setAddressIndex(other.getAddressIndex());
+        }
+        if (other.hasTimestamp()) {
+          setTimestamp(other.getTimestamp());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasAddressIndex()) {
+          
+          return false;
+        }
+        if (!hasTimestamp()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.cluster.protobuf.msg.ClusterMessages.Tombstone parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.cluster.protobuf.msg.ClusterMessages.Tombstone) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // required int32 addressIndex = 1;
+      private int addressIndex_ ;
+      /**
+       * <code>required int32 addressIndex = 1;</code>
+       */
+      public boolean hasAddressIndex() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required int32 addressIndex = 1;</code>
+       */
+      public int getAddressIndex() {
+        return addressIndex_;
+      }
+      /**
+       * <code>required int32 addressIndex = 1;</code>
+       */
+      public Builder setAddressIndex(int value) {
+        bitField0_ |= 0x00000001;
+        addressIndex_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int32 addressIndex = 1;</code>
+       */
+      public Builder clearAddressIndex() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        addressIndex_ = 0;
+        onChanged();
+        return this;
+      }
+
+      // required int64 timestamp = 2;
+      private long timestamp_ ;
+      /**
+       * <code>required int64 timestamp = 2;</code>
+       */
+      public boolean hasTimestamp() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required int64 timestamp = 2;</code>
+       */
+      public long getTimestamp() {
+        return timestamp_;
+      }
+      /**
+       * <code>required int64 timestamp = 2;</code>
+       */
+      public Builder setTimestamp(long value) {
+        bitField0_ |= 0x00000002;
+        timestamp_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int64 timestamp = 2;</code>
+       */
+      public Builder clearTimestamp() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        timestamp_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:Tombstone)
+    }
+
+    static {
+      defaultInstance = new Tombstone(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:Tombstone)
   }
 
   public interface MemberOrBuilder
@@ -13149,6 +14016,26 @@ public final class ClusterMessages {
      */
     akka.protobuf.ByteString
         getUseRoleBytes();
+
+    // repeated string useRoles = 5;
+    /**
+     * <code>repeated string useRoles = 5;</code>
+     */
+    java.util.List<java.lang.String>
+    getUseRolesList();
+    /**
+     * <code>repeated string useRoles = 5;</code>
+     */
+    int getUseRolesCount();
+    /**
+     * <code>repeated string useRoles = 5;</code>
+     */
+    java.lang.String getUseRoles(int index);
+    /**
+     * <code>repeated string useRoles = 5;</code>
+     */
+    akka.protobuf.ByteString
+        getUseRolesBytes(int index);
   }
   /**
    * Protobuf type {@code ClusterRouterPoolSettings}
@@ -13221,6 +14108,14 @@ public final class ClusterMessages {
               useRole_ = input.readBytes();
               break;
             }
+            case 42: {
+              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
+                useRoles_ = new akka.protobuf.LazyStringArrayList();
+                mutable_bitField0_ |= 0x00000010;
+              }
+              useRoles_.add(input.readBytes());
+              break;
+            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
@@ -13229,6 +14124,9 @@ public final class ClusterMessages {
         throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
+        if (((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
+          useRoles_ = new akka.protobuf.UnmodifiableLazyStringList(useRoles_);
+        }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
@@ -13352,11 +14250,42 @@ public final class ClusterMessages {
       }
     }
 
+    // repeated string useRoles = 5;
+    public static final int USEROLES_FIELD_NUMBER = 5;
+    private akka.protobuf.LazyStringList useRoles_;
+    /**
+     * <code>repeated string useRoles = 5;</code>
+     */
+    public java.util.List<java.lang.String>
+        getUseRolesList() {
+      return useRoles_;
+    }
+    /**
+     * <code>repeated string useRoles = 5;</code>
+     */
+    public int getUseRolesCount() {
+      return useRoles_.size();
+    }
+    /**
+     * <code>repeated string useRoles = 5;</code>
+     */
+    public java.lang.String getUseRoles(int index) {
+      return useRoles_.get(index);
+    }
+    /**
+     * <code>repeated string useRoles = 5;</code>
+     */
+    public akka.protobuf.ByteString
+        getUseRolesBytes(int index) {
+      return useRoles_.getByteString(index);
+    }
+
     private void initFields() {
       totalInstances_ = 0;
       maxInstancesPerNode_ = 0;
       allowLocalRoutees_ = false;
       useRole_ = "";
+      useRoles_ = akka.protobuf.LazyStringArrayList.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -13394,6 +14323,9 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeBytes(4, getUseRoleBytes());
       }
+      for (int i = 0; i < useRoles_.size(); i++) {
+        output.writeBytes(5, useRoles_.getByteString(i));
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -13418,6 +14350,15 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += akka.protobuf.CodedOutputStream
           .computeBytesSize(4, getUseRoleBytes());
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < useRoles_.size(); i++) {
+          dataSize += akka.protobuf.CodedOutputStream
+            .computeBytesSizeNoTag(useRoles_.getByteString(i));
+        }
+        size += dataSize;
+        size += 1 * getUseRolesList().size();
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -13543,6 +14484,8 @@ public final class ClusterMessages {
         bitField0_ = (bitField0_ & ~0x00000004);
         useRole_ = "";
         bitField0_ = (bitField0_ & ~0x00000008);
+        useRoles_ = akka.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -13587,6 +14530,12 @@ public final class ClusterMessages {
           to_bitField0_ |= 0x00000008;
         }
         result.useRole_ = useRole_;
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          useRoles_ = new akka.protobuf.UnmodifiableLazyStringList(
+              useRoles_);
+          bitField0_ = (bitField0_ & ~0x00000010);
+        }
+        result.useRoles_ = useRoles_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -13615,6 +14564,16 @@ public final class ClusterMessages {
         if (other.hasUseRole()) {
           bitField0_ |= 0x00000008;
           useRole_ = other.useRole_;
+          onChanged();
+        }
+        if (!other.useRoles_.isEmpty()) {
+          if (useRoles_.isEmpty()) {
+            useRoles_ = other.useRoles_;
+            bitField0_ = (bitField0_ & ~0x00000010);
+          } else {
+            ensureUseRolesIsMutable();
+            useRoles_.addAll(other.useRoles_);
+          }
           onChanged();
         }
         this.mergeUnknownFields(other.getUnknownFields());
@@ -13829,6 +14788,99 @@ public final class ClusterMessages {
         return this;
       }
 
+      // repeated string useRoles = 5;
+      private akka.protobuf.LazyStringList useRoles_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      private void ensureUseRolesIsMutable() {
+        if (!((bitField0_ & 0x00000010) == 0x00000010)) {
+          useRoles_ = new akka.protobuf.LazyStringArrayList(useRoles_);
+          bitField0_ |= 0x00000010;
+         }
+      }
+      /**
+       * <code>repeated string useRoles = 5;</code>
+       */
+      public java.util.List<java.lang.String>
+          getUseRolesList() {
+        return java.util.Collections.unmodifiableList(useRoles_);
+      }
+      /**
+       * <code>repeated string useRoles = 5;</code>
+       */
+      public int getUseRolesCount() {
+        return useRoles_.size();
+      }
+      /**
+       * <code>repeated string useRoles = 5;</code>
+       */
+      public java.lang.String getUseRoles(int index) {
+        return useRoles_.get(index);
+      }
+      /**
+       * <code>repeated string useRoles = 5;</code>
+       */
+      public akka.protobuf.ByteString
+          getUseRolesBytes(int index) {
+        return useRoles_.getByteString(index);
+      }
+      /**
+       * <code>repeated string useRoles = 5;</code>
+       */
+      public Builder setUseRoles(
+          int index, java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureUseRolesIsMutable();
+        useRoles_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string useRoles = 5;</code>
+       */
+      public Builder addUseRoles(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureUseRolesIsMutable();
+        useRoles_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string useRoles = 5;</code>
+       */
+      public Builder addAllUseRoles(
+          java.lang.Iterable<java.lang.String> values) {
+        ensureUseRolesIsMutable();
+        super.addAll(values, useRoles_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string useRoles = 5;</code>
+       */
+      public Builder clearUseRoles() {
+        useRoles_ = akka.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000010);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string useRoles = 5;</code>
+       */
+      public Builder addUseRolesBytes(
+          akka.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureUseRolesIsMutable();
+        useRoles_.add(value);
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:ClusterRouterPoolSettings)
     }
 
@@ -13880,6 +14932,11 @@ public final class ClusterMessages {
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_SubjectReachability_fieldAccessorTable;
+  private static akka.protobuf.Descriptors.Descriptor
+    internal_static_Tombstone_descriptor;
+  private static
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_Tombstone_fieldAccessorTable;
   private static akka.protobuf.Descriptors.Descriptor
     internal_static_Member_descriptor;
   private static
@@ -13942,40 +14999,43 @@ public final class ClusterMessages {
       "(\0132\016.UniqueAddress\022\030\n\020serializedGossip\030\003" +
       " \002(\014\"^\n\014GossipStatus\022\034\n\004from\030\001 \002(\0132\016.Uni" +
       "queAddress\022\021\n\tallHashes\030\002 \003(\t\022\035\n\007version" +
-      "\030\003 \002(\0132\014.VectorClock\"\257\001\n\006Gossip\022$\n\014allAd" +
+      "\030\003 \002(\0132\014.VectorClock\"\317\001\n\006Gossip\022$\n\014allAd" +
       "dresses\030\001 \003(\0132\016.UniqueAddress\022\020\n\010allRole",
       "s\030\002 \003(\t\022\021\n\tallHashes\030\003 \003(\t\022\030\n\007members\030\004 " +
       "\003(\0132\007.Member\022!\n\010overview\030\005 \002(\0132\017.GossipO" +
-      "verview\022\035\n\007version\030\006 \002(\0132\014.VectorClock\"S" +
-      "\n\016GossipOverview\022\014\n\004seen\030\001 \003(\005\0223\n\024observ" +
-      "erReachability\030\002 \003(\0132\025.ObserverReachabil" +
-      "ity\"p\n\024ObserverReachability\022\024\n\014addressIn" +
-      "dex\030\001 \002(\005\022\017\n\007version\030\004 \002(\003\0221\n\023subjectRea" +
-      "chability\030\002 \003(\0132\024.SubjectReachability\"a\n" +
-      "\023SubjectReachability\022\024\n\014addressIndex\030\001 \002" +
-      "(\005\022#\n\006status\030\003 \002(\0162\023.ReachabilityStatus\022",
-      "\017\n\007version\030\004 \002(\003\"i\n\006Member\022\024\n\014addressInd" +
-      "ex\030\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006status\030\003 \002" +
-      "(\0162\r.MemberStatus\022\030\n\014rolesIndexes\030\004 \003(\005B" +
-      "\002\020\001\"y\n\013VectorClock\022\021\n\ttimestamp\030\001 \001(\003\022&\n" +
-      "\010versions\030\002 \003(\0132\024.VectorClock.Version\032/\n" +
-      "\007Version\022\021\n\thashIndex\030\001 \002(\005\022\021\n\ttimestamp" +
-      "\030\002 \002(\003\"\007\n\005Empty\"K\n\007Address\022\016\n\006system\030\001 \002" +
-      "(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010pr" +
-      "otocol\030\004 \001(\t\"E\n\rUniqueAddress\022\031\n\007address" +
-      "\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\r\022\014\n\004uid2\030\003 ",
-      "\001(\r\"V\n\021ClusterRouterPool\022\023\n\004pool\030\001 \002(\0132\005" +
-      ".Pool\022,\n\010settings\030\002 \002(\0132\032.ClusterRouterP" +
-      "oolSettings\"<\n\004Pool\022\024\n\014serializerId\030\001 \002(" +
-      "\r\022\020\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 \002(\014\"|\n\031Clu" +
-      "sterRouterPoolSettings\022\026\n\016totalInstances" +
-      "\030\001 \002(\r\022\033\n\023maxInstancesPerNode\030\002 \002(\r\022\031\n\021a" +
-      "llowLocalRoutees\030\003 \002(\010\022\017\n\007useRole\030\004 \001(\t*" +
-      "D\n\022ReachabilityStatus\022\r\n\tReachable\020\000\022\017\n\013" +
-      "Unreachable\020\001\022\016\n\nTerminated\020\002*b\n\014MemberS" +
-      "tatus\022\013\n\007Joining\020\000\022\006\n\002Up\020\001\022\013\n\007Leaving\020\002\022",
-      "\013\n\007Exiting\020\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005\022\014\n\010W" +
-      "eaklyUp\020\006B\035\n\031akka.cluster.protobuf.msgH\001"
+      "verview\022\035\n\007version\030\006 \002(\0132\014.VectorClock\022\036" +
+      "\n\ntombstones\030\007 \003(\0132\n.Tombstone\"S\n\016Gossip" +
+      "Overview\022\014\n\004seen\030\001 \003(\005\0223\n\024observerReacha" +
+      "bility\030\002 \003(\0132\025.ObserverReachability\"p\n\024O" +
+      "bserverReachability\022\024\n\014addressIndex\030\001 \002(" +
+      "\005\022\017\n\007version\030\004 \002(\003\0221\n\023subjectReachabilit" +
+      "y\030\002 \003(\0132\024.SubjectReachability\"a\n\023Subject" +
+      "Reachability\022\024\n\014addressIndex\030\001 \002(\005\022#\n\006st",
+      "atus\030\003 \002(\0162\023.ReachabilityStatus\022\017\n\007versi" +
+      "on\030\004 \002(\003\"4\n\tTombstone\022\024\n\014addressIndex\030\001 " +
+      "\002(\005\022\021\n\ttimestamp\030\002 \002(\003\"i\n\006Member\022\024\n\014addr" +
+      "essIndex\030\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006stat" +
+      "us\030\003 \002(\0162\r.MemberStatus\022\030\n\014rolesIndexes\030" +
+      "\004 \003(\005B\002\020\001\"y\n\013VectorClock\022\021\n\ttimestamp\030\001 " +
+      "\001(\003\022&\n\010versions\030\002 \003(\0132\024.VectorClock.Vers" +
+      "ion\032/\n\007Version\022\021\n\thashIndex\030\001 \002(\005\022\021\n\ttim" +
+      "estamp\030\002 \002(\003\"\007\n\005Empty\"K\n\007Address\022\016\n\006syst" +
+      "em\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r",
+      "\022\020\n\010protocol\030\004 \001(\t\"E\n\rUniqueAddress\022\031\n\007a" +
+      "ddress\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\r\022\014\n\004u" +
+      "id2\030\003 \001(\r\"V\n\021ClusterRouterPool\022\023\n\004pool\030\001" +
+      " \002(\0132\005.Pool\022,\n\010settings\030\002 \002(\0132\032.ClusterR" +
+      "outerPoolSettings\"<\n\004Pool\022\024\n\014serializerI" +
+      "d\030\001 \002(\r\022\020\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 \002(\014\"" +
+      "\216\001\n\031ClusterRouterPoolSettings\022\026\n\016totalIn" +
+      "stances\030\001 \002(\r\022\033\n\023maxInstancesPerNode\030\002 \002" +
+      "(\r\022\031\n\021allowLocalRoutees\030\003 \002(\010\022\017\n\007useRole" +
+      "\030\004 \001(\t\022\020\n\010useRoles\030\005 \003(\t*D\n\022Reachability",
+      "Status\022\r\n\tReachable\020\000\022\017\n\013Unreachable\020\001\022\016" +
+      "\n\nTerminated\020\002*b\n\014MemberStatus\022\013\n\007Joinin" +
+      "g\020\000\022\006\n\002Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020\003\022\010\n" +
+      "\004Down\020\004\022\013\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035\n\031ak" +
+      "ka.cluster.protobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -14011,7 +15071,7 @@ public final class ClusterMessages {
           internal_static_Gossip_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Gossip_descriptor,
-              new java.lang.String[] { "AllAddresses", "AllRoles", "AllHashes", "Members", "Overview", "Version", });
+              new java.lang.String[] { "AllAddresses", "AllRoles", "AllHashes", "Members", "Overview", "Version", "Tombstones", });
           internal_static_GossipOverview_descriptor =
             getDescriptor().getMessageTypes().get(5);
           internal_static_GossipOverview_fieldAccessorTable = new
@@ -14030,14 +15090,20 @@ public final class ClusterMessages {
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SubjectReachability_descriptor,
               new java.lang.String[] { "AddressIndex", "Status", "Version", });
-          internal_static_Member_descriptor =
+          internal_static_Tombstone_descriptor =
             getDescriptor().getMessageTypes().get(8);
+          internal_static_Tombstone_fieldAccessorTable = new
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_Tombstone_descriptor,
+              new java.lang.String[] { "AddressIndex", "Timestamp", });
+          internal_static_Member_descriptor =
+            getDescriptor().getMessageTypes().get(9);
           internal_static_Member_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Member_descriptor,
               new java.lang.String[] { "AddressIndex", "UpNumber", "Status", "RolesIndexes", });
           internal_static_VectorClock_descriptor =
-            getDescriptor().getMessageTypes().get(9);
+            getDescriptor().getMessageTypes().get(10);
           internal_static_VectorClock_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_VectorClock_descriptor,
@@ -14049,41 +15115,41 @@ public final class ClusterMessages {
               internal_static_VectorClock_Version_descriptor,
               new java.lang.String[] { "HashIndex", "Timestamp", });
           internal_static_Empty_descriptor =
-            getDescriptor().getMessageTypes().get(10);
+            getDescriptor().getMessageTypes().get(11);
           internal_static_Empty_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Empty_descriptor,
               new java.lang.String[] { });
           internal_static_Address_descriptor =
-            getDescriptor().getMessageTypes().get(11);
+            getDescriptor().getMessageTypes().get(12);
           internal_static_Address_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Address_descriptor,
               new java.lang.String[] { "System", "Hostname", "Port", "Protocol", });
           internal_static_UniqueAddress_descriptor =
-            getDescriptor().getMessageTypes().get(12);
+            getDescriptor().getMessageTypes().get(13);
           internal_static_UniqueAddress_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_UniqueAddress_descriptor,
               new java.lang.String[] { "Address", "Uid", "Uid2", });
           internal_static_ClusterRouterPool_descriptor =
-            getDescriptor().getMessageTypes().get(13);
+            getDescriptor().getMessageTypes().get(14);
           internal_static_ClusterRouterPool_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ClusterRouterPool_descriptor,
               new java.lang.String[] { "Pool", "Settings", });
           internal_static_Pool_descriptor =
-            getDescriptor().getMessageTypes().get(14);
+            getDescriptor().getMessageTypes().get(15);
           internal_static_Pool_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Pool_descriptor,
               new java.lang.String[] { "SerializerId", "Manifest", "Data", });
           internal_static_ClusterRouterPoolSettings_descriptor =
-            getDescriptor().getMessageTypes().get(15);
+            getDescriptor().getMessageTypes().get(16);
           internal_static_ClusterRouterPoolSettings_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ClusterRouterPoolSettings_descriptor,
-              new java.lang.String[] { "TotalInstances", "MaxInstancesPerNode", "AllowLocalRoutees", "UseRole", });
+              new java.lang.String[] { "TotalInstances", "MaxInstancesPerNode", "AllowLocalRoutees", "UseRole", "UseRoles", });
           return null;
         }
       };

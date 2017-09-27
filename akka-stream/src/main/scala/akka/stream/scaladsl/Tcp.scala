@@ -18,6 +18,7 @@ import akka.util.ByteString
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.control.NoStackTrace
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -143,6 +144,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
    *
+   * Note that the ByteString chunk boundaries are not retained across the network,
+   * to achieve application level chunks you have to introduce explicit framing in your streams,
+   * for example using the [[Framing]] stages.
+   *
    * @param remoteAddress The remote address to connect to
    * @param localAddress  Optional local address for the connection
    * @param options   TCP options for the connections, see [[akka.io.Tcp]] for details
@@ -182,9 +187,15 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Creates an [[Tcp.OutgoingConnection]] without specifying options.
    * It represents a prospective TCP client connection to the given endpoint.
+   *
+   * Note that the ByteString chunk boundaries are not retained across the network,
+   * to achieve application level chunks you have to introduce explicit framing in your streams,
+   * for example using the [[Framing]] stages.
    */
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
     outgoingConnection(InetSocketAddress.createUnresolved(host, port))
 }
 
-final class TcpIdleTimeoutException(msg: String, timeout: Duration) extends TimeoutException(msg: String)
+final class TcpIdleTimeoutException(msg: String, timeout: Duration)
+  extends TimeoutException(msg: String)
+  with NoStackTrace // only used from a single stage

@@ -6,6 +6,7 @@ package docs.testkit
 import language.postfixOps
 import scala.util.Success
 import akka.testkit._
+import org.junit.Assert.{ assertArrayEquals, assertEquals }
 
 //#imports-test-probe
 import scala.concurrent.duration._
@@ -15,9 +16,10 @@ import akka.testkit.TestProbe
 
 //#imports-test-probe
 
+import scala.collection.immutable
 import scala.util.control.NonFatal
 
-object TestkitDocSpec {
+object TestKitDocSpec {
   case object Say42
   case object Unknown
 
@@ -84,8 +86,8 @@ object TestkitDocSpec {
   }
 }
 
-class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
-  import TestkitDocSpec._
+class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
+  import TestKitDocSpec._
 
   "demonstrate usage of TestActorRef" in {
     //#test-actor-ref
@@ -94,6 +96,31 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val actorRef = TestActorRef[MyActor]
     val actor = actorRef.underlyingActor
     //#test-actor-ref
+  }
+
+  "demonstrate built-in expect methods" in {
+    import akka.testkit.TestActorRef
+
+    testActor.tell("hello", ActorRef.noSender)
+    testActor.tell("hello", ActorRef.noSender)
+    testActor.tell("hello", ActorRef.noSender)
+    testActor.tell("world", ActorRef.noSender)
+    testActor.tell(42, ActorRef.noSender)
+    //#test-expect
+    val hello: String = expectMsg("hello")
+    val any: String = expectMsgAnyOf("hello", "world")
+    val all: immutable.Seq[String] = expectMsgAllOf("hello", "world")
+    val i: Int = expectMsgType[Int]
+    expectNoMsg(200.millis)
+    //#test-expect
+    testActor.tell("receveN-1", ActorRef.noSender)
+    testActor.tell("receveN-2", ActorRef.noSender)
+    //#test-expect
+    val two: immutable.Seq[AnyRef] = receiveN(2)
+    //#test-expect
+    assert("hello" == hello)
+    assert("hello" == any)
+    assert(42 == i)
   }
 
   "demonstrate usage of TestFSMRef" in {

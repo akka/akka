@@ -56,11 +56,24 @@ private[io] trait ChannelRegistry {
  * Enables a channel actor to directly schedule interest setting tasks to the selector management dispatcher.
  */
 private[io] trait ChannelRegistration extends NoSerializationVerificationNeeded {
-  def enableInterest(op: Int)
-  def disableInterest(op: Int)
+  def enableInterest(op: Int): Unit
+  def disableInterest(op: Int): Unit
+
+  /**
+   * Explicitly cancel the registration
+   *
+   * This wakes up the selector to make sure the cancellation takes effect immediately.
+   */
+  def cancel(): Unit
 }
 
 private[io] object SelectionHandler {
+  // Let select return every MaxSelectMillis which will automatically cleanup stale entries in the selection set.
+  // Otherwise, an idle Selector might block for a long time keeping a reference to the dead connection actor's ActorRef
+  // which might keep other stuff in memory.
+  // See https://github.com/akka/akka/issues/23437
+  // As this is basic house-keeping functionality it doesn't seem useful to make the value configurable.
+  val MaxSelectMillis = 10000 // wake up once in 10 seconds
 
   trait HasFailureMessage {
     def failureMessage: Any
@@ -112,7 +125,7 @@ private[io] object SelectionHandler {
 
     private[this] val select = new Task {
       def tryRun(): Unit = {
-        if (selector.select() > 0) { // This assumes select return value == selectedKeys.size
+        if (selector.select(MaxSelectMillis) > 0) { // This assumes select return value == selectedKeys.size
           val keys = selector.selectedKeys
           val iterator = keys.iterator()
           while (iterator.hasNext) {
@@ -159,6 +172,13 @@ private[io] object SelectionHandler {
             channelActor ! new ChannelRegistration {
               def enableInterest(ops: Int): Unit = enableInterestOps(key, ops)
               def disableInterest(ops: Int): Unit = disableInterestOps(key, ops)
+              def cancel(): Unit = {
+                // On Windows the selector does not effectively cancel the registration until after the
+                // selector has woken up. Because here the registration is explicitly cancelled, the selector
+                // will be woken up which makes sure the cancellation (e.g. sending a RST packet for a cancelled TCP connection)
+                // is performed immediately.
+                cancelKey(key)
+              }
             }
           } catch {
             case _: ClosedChannelException ⇒
@@ -192,6 +212,13 @@ private[io] object SelectionHandler {
             val newOps = currentOps | ops
             if (newOps != currentOps) key.interestOps(newOps)
           }
+        }
+      }
+
+    private def cancelKey(key: SelectionKey): Unit =
+      execute {
+        new Task {
+          def tryRun(): Unit = key.cancel()
         }
       }
 

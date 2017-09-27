@@ -141,14 +141,7 @@ abstract class AeronStreamLatencySpec
   }
 
   def printTotal(testName: String, payloadSize: Long, histogram: Histogram, totalDurationNanos: Long, lastRepeat: Boolean): Unit = {
-    import scala.collection.JavaConverters._
-    val percentiles = histogram.percentiles(5)
-    def percentile(p: Double): Double =
-      percentiles.iterator().asScala.collectFirst {
-        case value if (p - 0.5) < value.getPercentileLevelIteratedTo &&
-          value.getPercentileLevelIteratedTo < (p + 0.5) ⇒ value.getValueIteratedTo / 1000.0
-      }.getOrElse(Double.NaN)
-
+    def percentile(p: Double): Double = histogram.getValueAtPercentile(p) / 1000.0
     val throughput = 1000.0 * histogram.getTotalCount / totalDurationNanos.nanos.toMillis
 
     println(s"=== AeronStreamLatency $testName: RTT " +

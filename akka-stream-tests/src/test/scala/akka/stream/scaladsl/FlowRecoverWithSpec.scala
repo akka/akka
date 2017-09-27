@@ -128,10 +128,35 @@ class FlowRecoverWithSpec extends StreamSpec {
         .expectError(ex)
     }
 
-    "throw IllegalArgumentException if number of retries is less than -1" in assertAllStagesStopped {
-      intercept[IllegalArgumentException] {
-        Flow[Int].recoverWithRetries(-2, { case t: Throwable ⇒ Source.empty[Int] })
-      }
+    "not attempt recovering when attempts is zero" in assertAllStagesStopped {
+      Source(1 to 3).map { a ⇒ if (a == 3) throw ex else a }
+        .recoverWithRetries(0, { case t: Throwable ⇒ Source(List(22, 33)) })
+        .runWith(TestSink.probe[Int])
+        .request(100)
+        .expectNextN(List(1, 2))
+        .expectError(ex)
+    }
+
+    "recover infinitely when negative (-1) number of attempts given" in assertAllStagesStopped {
+      val oneThenBoom = Source(1 to 2).map { a ⇒ if (a == 2) throw ex else a }
+
+      oneThenBoom
+        .recoverWithRetries(-1, { case t: Throwable ⇒ oneThenBoom })
+        .runWith(TestSink.probe[Int])
+        .request(5)
+        .expectNextN(List(1, 2, 3, 4, 5).map(_ ⇒ 1))
+        .cancel()
+    }
+
+    "recover infinitely when negative (smaller than -1) number of attempts given" in assertAllStagesStopped {
+      val oneThenBoom = Source(1 to 2).map { a ⇒ if (a == 2) throw ex else a }
+
+      oneThenBoom
+        .recoverWithRetries(-10, { case t: Throwable ⇒ oneThenBoom })
+        .runWith(TestSink.probe[Int])
+        .request(5)
+        .expectNextN(List(1, 2, 3, 4, 5).map(_ ⇒ 1))
+        .cancel()
     }
 
     "fail correctly when materialization of recover source fails" in assertAllStagesStopped {

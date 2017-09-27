@@ -15,6 +15,7 @@ import scala.concurrent.duration.FiniteDuration
  * Finite State Machine actor trait. Use as follows:
  *
  * <pre>
+ *   object A {
  *     trait State
  *     case class One extends State
  *     case class Two extends State
@@ -210,7 +211,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
     if (timers contains name) {
       timers(name).cancel
     }
-    val timer = Timer(name, msg, repeat, timerGen.next)(context)
+    val timer = Timer(name, msg, repeat, timerGen.next, this)(context)
     timer.schedule(self, timeout)
     timers(name) = timer
   }
@@ -411,8 +412,8 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
       if (generation == gen) {
         processMsg(StateTimeout, "state timeout")
       }
-    case t @ Timer(name, msg, repeat, gen) ⇒
-      if ((timers contains name) && (timers(name).generation == gen)) {
+    case t @ Timer(name, msg, repeat, gen, owner) ⇒
+      if ((owner eq this) && (timers contains name) && (timers(name).generation == gen)) {
         if (timeoutFuture.isDefined) {
           timeoutFuture.get.cancel()
           timeoutFuture = None
@@ -574,10 +575,10 @@ trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: A
   private[akka] abstract override def processEvent(event: Event, source: AnyRef): Unit = {
     if (debugEvent) {
       val srcstr = source match {
-        case s: String            ⇒ s
-        case Timer(name, _, _, _) ⇒ "timer " + name
-        case a: ActorRef          ⇒ a.toString
-        case _                    ⇒ "unknown"
+        case s: String               ⇒ s
+        case Timer(name, _, _, _, _) ⇒ "timer " + name
+        case a: ActorRef             ⇒ a.toString
+        case _                       ⇒ "unknown"
       }
       log.debug("processing {} from {} in state {}", event, srcstr, stateName)
     }

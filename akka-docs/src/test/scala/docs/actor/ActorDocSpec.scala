@@ -3,6 +3,7 @@
  */
 package docs.actor
 
+import akka.actor.Kill
 import jdocs.actor.ImmutableMessage
 
 import language.postfixOps
@@ -310,6 +311,13 @@ class Ponger(pinger: ActorRef) extends Actor {
 
 //#fiddle_code
 
+//#immutable-message-definition
+case class User(name: String)
+
+// define the case class
+case class Register(user: User)
+//#immutable-message-definition
+
 class ActorDocSpec extends AkkaSpec("""
   akka.loglevel = INFO
   akka.loggers = []
@@ -365,11 +373,6 @@ class ActorDocSpec extends AkkaSpec("""
 
     val ponger = system.actorOf(Props(classOf[Ponger], pinger), "ponger")
 
-    //#fiddle_code
-    val testProbe = new TestProbe(system)
-    testProbe watch pinger
-    testProbe watch ponger
-    //#fiddle_code
     import system.dispatcher
     system.scheduler.scheduleOnce(500 millis) {
       ponger ! Ping
@@ -377,9 +380,30 @@ class ActorDocSpec extends AkkaSpec("""
 
     // $FiddleDependency org.akka-js %%% akkajsactor % 1.2.5.1
     //#fiddle_code
+
+    val testProbe = new TestProbe(system)
+    testProbe watch pinger
     testProbe.expectTerminated(pinger)
+    testProbe watch ponger
     testProbe.expectTerminated(ponger)
     system.terminate()
+  }
+
+  "instantiates a case class" in {
+    //#immutable-message-instantiation
+    val user = User("Mike")
+    // create a new case class message
+    val message = Register(user)
+    //#immutable-message-instantiation
+  }
+
+  "use poison pill" in {
+    val victim = system.actorOf(Props[MyActor])
+    //#poison-pill
+    watch(victim)
+    victim ! PoisonPill
+    //#poison-pill
+    expectTerminated(victim)
   }
 
   "creating a Props config" in {
@@ -563,11 +587,28 @@ class ActorDocSpec extends AkkaSpec("""
         }
       }
       //#watch
-      val a = system.actorOf(Props(classOf[WatchActor], this))
+
+      val victim = system.actorOf(Props(classOf[WatchActor], this))
       implicit val sender = testActor
-      a ! "kill"
+      victim ! "kill"
       expectMsg("finished")
     }
+  }
+
+  "using Kill" in {
+    val victim = system.actorOf(TestActors.echoActorProps)
+    implicit val sender = testActor
+    val context = this
+
+    //#kill
+    context.watch(victim) // watch the Actor to receive Terminated message once it dies
+
+    victim ! Kill
+
+    expectMsgPF(hint = "expecting victim to terminate") {
+      case Terminated(v) if v == victim => v // the Actor has indeed terminated 
+    }
+    //#kill
   }
 
   "demonstrate ActorSelection" in {

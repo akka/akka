@@ -14,22 +14,22 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
-  val sslConfigVersion = "0.2.1"
-  val slf4jVersion = "1.7.23"
+  val sslConfigVersion = "0.2.2"
+  val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
-  val aeronVersion = "1.2.5"
+  val aeronVersion = "1.3.0"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.11", "2.12.2"),
+    crossScalaVersions := Seq("2.11.11", "2.12.3"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 12 => "1.13.4" // does not work for 2.11
+        case Some((2, n)) if n >= 12 => "1.13.5" // does not work for 2.11
         case _                       => "1.13.2"
       }
     ),
-    scalaTestVersion := "3.0.0",
+    scalaTestVersion := "3.0.4",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 12 => "0.8.0"
@@ -41,7 +41,7 @@ object Dependencies {
   object Compile {
     // Compile
 
-    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.4" exclude("org.slf4j", "slf4j-api") // ApacheV2
+    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.17.7" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config        = "com.typesafe"                % "config"                       % "1.3.1"       // ApacheV2
@@ -60,12 +60,12 @@ object Dependencies {
     val sigar         = "org.fusesource"              % "sigar"                        % "1.6.4"       // ApacheV2
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.0" // CC0
+    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.1" // CC0
 
     // ssl-config
     val sslConfigCore = "com.typesafe"                %% "ssl-config-core"             % sslConfigVersion // ApacheV2
 
-    val lmdb          = "org.lmdbjava"                % "lmdbjava"                     % "0.0.5" // ApacheV2, OpenLDAP Public License
+    val lmdb          = "org.lmdbjava"                % "lmdbjava"                     % "0.6.0" // ApacheV2, OpenLDAP Public License
 
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
@@ -75,10 +75,9 @@ object Dependencies {
 
     val aeronDriver = "io.aeron"                      % "aeron-driver"                 % aeronVersion       // ApacheV2
     val aeronClient = "io.aeron"                      % "aeron-client"                 % aeronVersion       // ApacheV2
-
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.3"             % "test"
-      val gson        = "com.google.code.gson"        % "gson"                         % "2.8.0"             % "test"
+      val gson        = "com.google.code.gson"        % "gson"                         % "2.8.1"             % "test"
     }
 
     object Test {
@@ -87,7 +86,7 @@ object Dependencies {
       val commonsCodec = "commons-codec"               % "commons-codec"                % "1.10"             % "test" // ApacheV2
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.2.3"            % "test" // EPL 1.0 / LGPL 2.1
-      val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
+      val mockito      = "org.mockito"                 % "mockito-core"                 % "2.7.16"           % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"  % scalaTestVersion.value   % "test" } // ApacheV2
       val scalacheck   = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value  % "test" } // New BSD
@@ -101,9 +100,9 @@ object Dependencies {
       val jimfs        = "com.google.jimfs"            % "jimfs"                        % "1.1"              % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
-      val metricsJvm      = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.2"            % "test" // ApacheV2
-      val latencyUtils    = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
+      val metrics         = "io.dropwizard.metrics"        % "metrics-core"                 % "3.2.4"            % "test" // ApacheV2
+      val metricsJvm      = "io.dropwizard.metrics"        % "metrics-jvm"                  % "3.2.4"            % "test" // ApacheV2
+      val latencyUtils    = "org.latencyutils"            % "LatencyUtils"                 % "1.0.5"            % "test" // Free BSD
       val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
       val metricsAll      = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
@@ -112,7 +111,7 @@ object Dependencies {
       val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % slf4jVersion    % "test"    // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.0" % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.1" % "test" // CC0
     }
 
     object Provided {
@@ -120,7 +119,7 @@ object Dependencies {
       // If changed, update akka-docs/build.sbt as well
       val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.6-rev002"     %     "optional;provided;test" // ApacheV2
 
-      val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.7"    %  "optional;provided"     // ApacheV2
+      val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.9"    %  "optional;provided"     // ApacheV2
       val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"    %  "optional;provided"     // New BSD
     }
 

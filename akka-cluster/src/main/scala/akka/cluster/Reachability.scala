@@ -3,6 +3,8 @@
  */
 package akka.cluster
 
+import akka.annotation.InternalApi
+
 import scala.collection.immutable
 import scala.collection.breakOut
 
@@ -40,12 +42,18 @@ private[cluster] object Reachability {
  * record, and thereby it is always possible to determine which record is newest when
  * merging two instances.
  *
+ * By default, each observer treats every other node as reachable. That allows to
+ * introduce the invariant that if an observer sees all nodes as reachable, no
+ * records should be kept at all. Therefore, in a running cluster with full
+ * reachability, no records need to be kept at all.
+ *
  * Aggregated status of a subject node is defined as (in this order):
  * - Terminated if any observer node considers it as Terminated
  * - Unreachable if any observer node considers it as Unreachable
  * - Reachable otherwise, i.e. no observer node considers it as Unreachable
  */
 @SerialVersionUID(1L)
+@InternalApi
 private[cluster] class Reachability private (
   val records:  immutable.IndexedSeq[Reachability.Record],
   val versions: Map[UniqueAddress, Long]) extends Serializable {
@@ -53,6 +61,8 @@ private[cluster] class Reachability private (
   import Reachability._
 
   private class Cache {
+    // `allUnreachable` contains all nodes that have been observed as Unreachable by at least one other node
+    // `allTerminated` contains all nodes that have been observed as Terminated by at least one other node
     val (observerRowsMap, allUnreachable, allTerminated) = {
       if (records.isEmpty) {
         val observerRowsMap = Map.empty[UniqueAddress, Map[UniqueAddress, Reachability.Record]]
@@ -116,15 +126,19 @@ private[cluster] class Reachability private (
     val newVersions = versions.updated(observer, v)
     val newRecord = Record(observer, subject, status, v)
     observerRows(observer) match {
+      // don't record Reachable observation if nothing has been noted so far
       case None if status == Reachable ⇒ this
+      // otherwise, create new instance including this first observation
       case None ⇒
         new Reachability(records :+ newRecord, newVersions)
 
+      // otherwise, update old observations
       case Some(oldObserverRows) ⇒
 
         oldObserverRows.get(subject) match {
           case None ⇒
             if (status == Reachable && oldObserverRows.forall { case (_, r) ⇒ r.status == Reachable }) {
+              // FIXME: how should we have gotten into this state?
               // all Reachable, prune by removing the records of the observer, and bump the version
               new Reachability(records.filterNot(_.observer == observer), newVersions)
             } else
@@ -156,6 +170,10 @@ private[cluster] class Reachability private (
       (this.observerRows(observer), other.observerRows(observer)) match {
         case (None, None) ⇒
         case (Some(rows1), Some(rows2)) ⇒
+          // We throw away a complete set of records based on the version here. Couldn't we lose records here? No,
+          // because the observer gossips always the complete set of records. (That's hard to see in the model, because
+          // records also contain the version number for which they were introduced but actually the version number
+          // corresponds to the whole set of records of one observer at one point in time.
           val rows = if (observerVersion1 > observerVersion2) rows1 else rows2
           recordBuilder ++= rows.collect { case (_, r) if allowed(r.subject) ⇒ r }
         case (Some(rows1), None) ⇒
@@ -191,6 +209,9 @@ private[cluster] class Reachability private (
       Reachability(newRecords, newVersions)
     }
 
+  def filterRecords(f: Record ⇒ Boolean) =
+    Reachability(records.filter(f), versions)
+
   def status(observer: UniqueAddress, subject: UniqueAddress): ReachabilityStatus =
     observerRows(observer) match {
       case None ⇒ Reachable
@@ -205,22 +226,39 @@ private[cluster] class Reachability private (
     else if (cache.allUnreachable(node)) Unreachable
     else Reachable
 
+  /**
+   * @return true if the given node is seen as Reachable, i.e. there's no negative (Unreachable, Terminated) observation
+   * record known for that the node.
+   */
   def isReachable(node: UniqueAddress): Boolean = isAllReachable || !allUnreachableOrTerminated.contains(node)
 
+  /**
+   * @return true if the given observer node can reach the subject node.
+   */
   def isReachable(observer: UniqueAddress, subject: UniqueAddress): Boolean =
     status(observer, subject) == Reachable
 
+  /**
+   * @return true if there's no negative (Unreachable, Terminated) observation record at all for
+   * any node
+   */
   def isAllReachable: Boolean = records.isEmpty
 
   /**
-   * Doesn't include terminated
+   * @return all nodes that are Unreachable (i.e. they have been reported as Unreachable by at least one other node).
+   * This does not include nodes observed to be Terminated.
    */
   def allUnreachable: Set[UniqueAddress] = cache.allUnreachable
 
+  /**
+   * @return all nodes that are Unreachable or Terminated (i.e. they have been reported as Unreachable or Terminated
+   * by at least one other node).
+   */
   def allUnreachableOrTerminated: Set[UniqueAddress] = cache.allUnreachableOrTerminated
 
   /**
-   * Doesn't include terminated
+   * @return all nodes that have been observed as Unreachable by the given observer.
+   * This doesn't include nodes observed as Terminated.
    */
   def allUnreachableFrom(observer: UniqueAddress): Set[UniqueAddress] =
     observerRows(observer) match {
@@ -255,7 +293,7 @@ private[cluster] class Reachability private (
   // only used for testing
   override def equals(obj: Any): Boolean = obj match {
     case other: Reachability ⇒
-      records.size == other.records.size && versions == versions &&
+      records.size == other.records.size && versions == other.versions &&
         cache.observerRowsMap == other.cache.observerRowsMap
     case _ ⇒ false
   }

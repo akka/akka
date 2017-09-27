@@ -5,7 +5,7 @@ Useful for integration testing where multiple systems communicate with each othe
 
 ## Setup
 
-The multi-JVM testing is an sbt plugin that you can find at [http://github.com/sbt/sbt-multi-jvm](http://github.com/sbt/sbt-multi-jvm).
+The multi-JVM testing is an sbt plugin that you can find at [https://github.com/sbt/sbt-multi-jvm](https://github.com/sbt/sbt-multi-jvm).
 
 You can add it as a plugin by adding the following to your project/plugins.sbt:
 
@@ -21,7 +21,7 @@ You can specify JVM options for the forked JVMs:
 jvmOptions in MultiJvm := Seq("-Xmx256M")
 ```
 
-Here is an example of a @extref[sample project](samples:tree/master/akka-sample-multi-node-scala) that uses the `sbt-multi-jvm` plugin.
+Here is an example of a @extref[sample project](samples:akka-sample-multi-node-scala) that uses the `sbt-multi-jvm` plugin.
 
 ## Running tests
 
@@ -76,7 +76,7 @@ forked JVM.
 So to create a 3-node test called `Sample`, you can create three applications
 like the following:
 
-```
+```scala
 package sample
 
 object SampleMultiJvmNode1 {
@@ -117,8 +117,8 @@ You can change the name of the multi-JVM test source directory by adding the fol
 configuration to your project:
 
 ```none
-unmanagedSourceDirectories in MultiJvm <<=
-   Seq(baseDirectory(_ / "src/some_directory_here")).join
+unmanagedSourceDirectories in MultiJvm :=
+   Seq(baseDirectory(_ / "src/some_directory_here")).join.value
 ```
 
 You can change what the `MultiJvm` identifier is. For example, to change it to
@@ -165,7 +165,7 @@ do this use the same naming convention as above, but create ScalaTest suites
 rather than objects with main methods. You need to have ScalaTest on the
 classpath. Here is a similar example to the one above but using ScalaTest:
 
-```
+```scala
 package sample
 
 import org.scalatest.WordSpec

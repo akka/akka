@@ -55,7 +55,7 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
   "AeronSink" must {
 
     "give up sending after given duration" in {
-      val port = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
+      val port = SocketUtil.temporaryLocalPort(udp = true)
       val channel = s"aeron:udp?endpoint=localhost:$port"
 
       Source.fromGraph(new AeronSource(channel, 1, aeron, taskRunner, pool, IgnoreEventSink, 0))

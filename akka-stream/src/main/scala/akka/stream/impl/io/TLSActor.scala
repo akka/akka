@@ -99,9 +99,9 @@ import scala.util.{ Failure, Success, Try }
             setNewSessionParameters(n)
             ByteString.empty
         }
-        if (tracing) log.debug(s"chopping from new chunk of ${buffer.size} into $name (${b.position})")
+        if (tracing) log.debug(s"chopping from new chunk of ${buffer.size} into $name (${b.position()})")
       } else {
-        if (tracing) log.debug(s"chopping from old chunk of ${buffer.size} into $name (${b.position})")
+        if (tracing) log.debug(s"chopping from old chunk of ${buffer.size} into $name (${b.position()})")
       }
       val copied = buffer.copyToBuffer(b)
       buffer = buffer.drop(copied)
@@ -348,7 +348,7 @@ import scala.util.{ Failure, Success, Try }
   private def doWrap(): Unit = {
     val result = engine.wrap(userInBuffer, transportOutBuffer)
     lastHandshakeStatus = result.getHandshakeStatus
-    if (tracing) log.debug(s"wrap: status=${result.getStatus} handshake=$lastHandshakeStatus remaining=${userInBuffer.remaining} out=${transportOutBuffer.position}")
+    if (tracing) log.debug(s"wrap: status=${result.getStatus} handshake=$lastHandshakeStatus remaining=${userInBuffer.remaining} out=${transportOutBuffer.position()}")
     if (lastHandshakeStatus == FINISHED) handshakeFinished()
     runDelegatedTasks()
     result.getStatus match {
@@ -368,7 +368,7 @@ import scala.util.{ Failure, Success, Try }
     val result = engine.unwrap(transportInBuffer, userOutBuffer)
     if (ignoreOutput) userOutBuffer.clear()
     lastHandshakeStatus = result.getHandshakeStatus
-    if (tracing) log.debug(s"unwrap: status=${result.getStatus} handshake=$lastHandshakeStatus remaining=${transportInBuffer.remaining} out=${userOutBuffer.position}")
+    if (tracing) log.debug(s"unwrap: status=${result.getStatus} handshake=$lastHandshakeStatus remaining=${transportInBuffer.remaining} out=${userOutBuffer.position()}")
     runDelegatedTasks()
     result.getStatus match {
       case OK ⇒

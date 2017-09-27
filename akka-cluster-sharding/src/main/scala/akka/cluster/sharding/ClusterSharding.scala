@@ -29,6 +29,8 @@ import akka.cluster.ddata.ReplicatorSettings
 import akka.cluster.ddata.Replicator
 import scala.util.control.NonFatal
 import akka.actor.Status
+import akka.cluster.ClusterSettings
+import akka.cluster.ClusterSettings.DataCenter
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -341,14 +343,51 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     typeName:        String,
     role:            Option[String],
     extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId:  ShardRegion.ExtractShardId): ActorRef =
+    startProxy(typeName, role, dataCenter = None, extractEntityId, extractShardId)
+
+  /**
+   * Scala API: Register a named entity type `ShardRegion` on this node that will run in proxy only mode,
+   * i.e. it will delegate messages to other `ShardRegion` actors on other nodes, but not host any
+   * entity actors itself. The [[ShardRegion]] actor for this type can later be retrieved with the
+   * [[#shardRegion]] method.
+   *
+   * Some settings can be configured as described in the `akka.cluster.sharding` section
+   * of the `reference.conf`.
+   *
+   * @param typeName the name of the entity type
+   * @param role specifies that this entity type is located on cluster nodes with a specific role.
+   *   If the role is not specified all nodes in the cluster are used.
+   * @param dataCenter The data center of the cluster nodes where the cluster sharding is running.
+   *   If None then the same data center as current node.
+   * @param extractEntityId partial function to extract the entity id and the message to send to the
+   *   entity from the incoming message, if the partial function does not match the message will
+   *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
+   * @param extractShardId function to determine the shard id for an incoming message, only messages
+   *   that passed the `extractEntityId` will be used
+   * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
+   */
+  def startProxy(
+    typeName:        String,
+    role:            Option[String],
+    dataCenter:      Option[DataCenter],
+    extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId:  ShardRegion.ExtractShardId): ActorRef = {
 
     implicit val timeout = system.settings.CreationTimeout
     val settings = ClusterShardingSettings(system).withRole(role)
-    val startMsg = StartProxy(typeName, settings, extractEntityId, extractShardId)
+    val startMsg = StartProxy(typeName, dataCenter, settings, extractEntityId, extractShardId)
     val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
-    regions.put(typeName, shardRegion)
+    // it must be possible to start several proxies, one per data center
+    regions.put(proxyName(typeName, dataCenter), shardRegion)
     shardRegion
+  }
+
+  private def proxyName(typeName: String, dataCenter: Option[DataCenter]): String = {
+    dataCenter match {
+      case None    ⇒ typeName
+      case Some(t) ⇒ typeName + "-" + t
+    }
   }
 
   /**
@@ -370,9 +409,34 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def startProxy(
     typeName:         String,
     role:             Optional[String],
+    messageExtractor: ShardRegion.MessageExtractor): ActorRef =
+    startProxy(typeName, role, dataCenter = Optional.empty(), messageExtractor)
+
+  /**
+   * Java/Scala API: Register a named entity type `ShardRegion` on this node that will run in proxy only mode,
+   * i.e. it will delegate messages to other `ShardRegion` actors on other nodes, but not host any
+   * entity actors itself. The [[ShardRegion]] actor for this type can later be retrieved with the
+   * [[#shardRegion]] method.
+   *
+   * Some settings can be configured as described in the `akka.cluster.sharding` section
+   * of the `reference.conf`.
+   *
+   * @param typeName the name of the entity type
+   * @param role specifies that this entity type is located on cluster nodes with a specific role.
+   *   If the role is not specified all nodes in the cluster are used.
+   * @param dataCenter The data center of the cluster nodes where the cluster sharding is running.
+   *   If None then the same data center as current node.
+   * @param messageExtractor functions to extract the entity id, shard id, and the message to send to the
+   *   entity from the incoming message
+   * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
+   */
+  def startProxy(
+    typeName:         String,
+    role:             Optional[String],
+    dataCenter:       Optional[String],
     messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
 
-    startProxy(typeName, Option(role.orElse(null)),
+    startProxy(typeName, Option(role.orElse(null)), Option(dataCenter.orElse(null)),
       extractEntityId = {
       case msg if messageExtractor.entityId(msg) ne null ⇒
         (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
@@ -383,12 +447,26 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
   /**
    * Retrieve the actor reference of the [[ShardRegion]] actor responsible for the named entity type.
-   * The entity type must be registered with the [[#start]] method before it can be used here.
-   * Messages to the entity is always sent via the `ShardRegion`.
+   * The entity type must be registered with the [[#start]] or [[#startProxy]] method before it
+   * can be used here. Messages to the entity is always sent via the `ShardRegion`.
    */
   def shardRegion(typeName: String): ActorRef = regions.get(typeName) match {
     case null ⇒ throw new IllegalArgumentException(s"Shard type [$typeName] must be started first")
     case ref  ⇒ ref
+  }
+
+  /**
+   * Retrieve the actor reference of the [[ShardRegion]] actor that will act as a proxy to the
+   * named entity type running in another data center. A proxy within the same data center can be accessed
+   * with [[#shardRegion]] instead of this method. The entity type must be registered with the
+   * [[#startProxy]] method before it can be used here. Messages to the entity is always sent
+   * via the `ShardRegion`.
+   */
+  def shardRegionProxy(typeName: String, dataCenter: DataCenter): ActorRef = {
+    regions.get(proxyName(typeName, Some(dataCenter))) match {
+      case null ⇒ throw new IllegalArgumentException(s"Shard type [$typeName] must be started first")
+      case ref  ⇒ ref
+    }
   }
 
 }
@@ -402,7 +480,7 @@ private[akka] object ClusterShardingGuardian {
                          extractEntityId: ShardRegion.ExtractEntityId, extractShardId: ShardRegion.ExtractShardId,
                          allocationStrategy: ShardAllocationStrategy, handOffStopMessage: Any)
     extends NoSerializationVerificationNeeded
-  final case class StartProxy(typeName: String, settings: ClusterShardingSettings,
+  final case class StartProxy(typeName: String, dataCenter: Option[DataCenter], settings: ClusterShardingSettings,
                               extractEntityId: ShardRegion.ExtractEntityId, extractShardId: ShardRegion.ExtractShardId)
     extends NoSerializationVerificationNeeded
   final case class Started(shardRegion: ActorRef) extends NoSerializationVerificationNeeded
@@ -441,7 +519,9 @@ private[akka] class ClusterShardingGuardian extends Actor {
             case Some(r) ⇒ URLEncoder.encode(r, ByteString.UTF_8) + "Replicator"
             case None    ⇒ "replicator"
           }
-          val ref = context.actorOf(Replicator.props(replicatorSettings.withRole(settings.role)), name)
+          // Use members within the data center and with the given role (if any)
+          val replicatorRoles = Set(ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter) ++ settings.role
+          val ref = context.actorOf(Replicator.props(replicatorSettings.withRoles(replicatorRoles)), name)
           replicatorByRole = replicatorByRole.updated(settings.role, ref)
           ref
       }
@@ -505,22 +585,29 @@ private[akka] class ClusterShardingGuardian extends Actor {
           sender() ! Status.Failure(e)
       }
 
-    case StartProxy(typeName, settings, extractEntityId, extractShardId) ⇒
+    case StartProxy(typeName, dataCenter, settings, extractEntityId, extractShardId) ⇒
       try {
+
         val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
         val cName = coordinatorSingletonManagerName(encName)
         val cPath = coordinatorPath(encName)
-        val shardRegion = context.child(encName).getOrElse {
+        // it must be possible to start several proxies, one per data center
+        val actorName = dataCenter match {
+          case None    ⇒ encName
+          case Some(t) ⇒ URLEncoder.encode(typeName + "-" + t, ByteString.UTF_8)
+        }
+        val shardRegion = context.child(actorName).getOrElse {
           context.actorOf(
             ShardRegion.proxyProps(
               typeName = typeName,
+              dataCenter = dataCenter,
               settings = settings,
               coordinatorPath = cPath,
               extractEntityId = extractEntityId,
               extractShardId = extractShardId,
               replicator = context.system.deadLetters,
               majorityMinCap).withDispatcher(context.props.dispatcher),
-            name = encName)
+            name = actorName)
         }
         sender() ! Started(shardRegion)
       } catch {

@@ -49,6 +49,7 @@ import static akka.pattern.PatternsCS.gracefulStop;
 import akka.pattern.AskTimeoutException;
 import scala.concurrent.duration.Duration;
 import java.util.concurrent.CompletionStage;
+
 //#import-gracefulStop
 //#import-terminated
 import akka.actor.Terminated;
@@ -788,8 +789,10 @@ public class ActorDocTest extends AbstractJavaTest {
         watch(victim);
         //#kill
         victim.tell(akka.actor.Kill.getInstance(), ActorRef.noSender());
-        //#kill
+        
+        // expecting the actor to indeed terminate:
         expectTerminated(Duration.create(3, TimeUnit.SECONDS), victim);
+        //#kill
       }
     };
   }

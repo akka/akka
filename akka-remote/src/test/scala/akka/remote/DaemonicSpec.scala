@@ -13,7 +13,7 @@ import scala.collection.JavaConverters._
 
 class DaemonicSpec extends AkkaSpec {
 
-  def addr(sys: ActorSystem, proto: String) =
+  def getOtherAddress(sys: ActorSystem, proto: String) =
     sys.asInstanceOf[ExtendedActorSystem].provider.getExternalAddressFor(Address(s"akka.$proto", "", "", 0)).get
 
   def unusedPort = {
@@ -38,7 +38,7 @@ class DaemonicSpec extends AkkaSpec {
         akka.log-dead-letters-during-shutdown = off
       """))
 
-      val unusedAddress = addr(daemonicSystem, "tcp").copy(port = Some(unusedPort))
+      val unusedAddress = getOtherAddress(daemonicSystem, "tcp").copy(port = Some(unusedPort))
       val selection = daemonicSystem.actorSelection(s"${unusedAddress}/user/SomeActor")
       selection ! "whatever"
       Thread.sleep(2.seconds.dilated.toMillis)

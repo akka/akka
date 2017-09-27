@@ -12,6 +12,7 @@ import scala.util.control.NonFatal
 import scala.concurrent.Future
 import java.util.ArrayList
 import scala.util.{ Success, Failure }
+import scala.annotation.unchecked.uncheckedVariance
 
 /**
  * Every ActorRef is also an ActorRefImpl, but these two methods shall be
@@ -22,13 +23,38 @@ import scala.util.{ Success, Failure }
 private[typed] trait ActorRefImpl[-T] extends ActorRef[T] {
   def sendSystem(signal: SystemMessage): Unit
   def isLocal: Boolean
+
+  final override def narrow[U <: T]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
+
+  final override def upcast[U >: T @uncheckedVariance]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
+
+  /**
+   * Comparison takes path and the unique id of the actor cell into account.
+   */
+  final override def compareTo(other: ActorRef[_]) = {
+    val x = this.path compareTo other.path
+    if (x == 0) if (this.path.uid < other.path.uid) -1 else if (this.path.uid == other.path.uid) 0 else 1
+    else x
+  }
+
+  final override def hashCode: Int = path.uid
+
+  /**
+   * Equals takes path and the unique id of the actor cell into account.
+   */
+  final override def equals(that: Any): Boolean = that match {
+    case other: ActorRef[_] ⇒ path.uid == other.path.uid && path == other.path
+    case _                  ⇒ false
+  }
+
+  override def toString: String = s"Actor[${path}#${path.uid}]"
 }
 
 /**
  * A local ActorRef that is backed by an asynchronous [[ActorCell]].
  */
-private[typed] class LocalActorRef[-T](_path: a.ActorPath, cell: ActorCell[T])
-  extends ActorRef[T](_path) with ActorRefImpl[T] {
+private[typed] class LocalActorRef[-T](override val path: a.ActorPath, cell: ActorCell[T])
+  extends ActorRef[T] with ActorRefImpl[T] {
   override def tell(msg: T): Unit = cell.send(msg)
   override def sendSystem(signal: SystemMessage): Unit = cell.sendSystem(signal)
   final override def isLocal: Boolean = true
@@ -41,7 +67,8 @@ private[typed] class LocalActorRef[-T](_path: a.ActorPath, cell: ActorCell[T])
  * terminates (meaning: no Hawking radiation).
  */
 private[typed] object BlackholeActorRef
-  extends ActorRef[Any](a.RootActorPath(a.Address("akka.typed.internal", "blackhole"))) with ActorRefImpl[Any] {
+  extends ActorRef[Any] with ActorRefImpl[Any] {
+  override val path: a.ActorPath = a.RootActorPath(a.Address("akka.typed.internal", "blackhole"))
   override def tell(msg: Any): Unit = ()
   override def sendSystem(signal: SystemMessage): Unit = ()
   final override def isLocal: Boolean = true
@@ -82,7 +109,7 @@ private[typed] final class FunctionRef[-T](
 /**
  * The mechanics for synthetic ActorRefs that have a lifecycle and support being watched.
  */
-private[typed] abstract class WatchableRef[-T](_p: a.ActorPath) extends ActorRef[T](_p) with ActorRefImpl[T] {
+private[typed] abstract class WatchableRef[-T](override val path: a.ActorPath) extends ActorRef[T] with ActorRefImpl[T] {
   import WatchableRef._
 
   /**

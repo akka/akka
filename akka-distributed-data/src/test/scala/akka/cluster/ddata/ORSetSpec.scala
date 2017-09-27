@@ -591,6 +591,20 @@ class ORSetSpec extends WordSpec with Matchers {
       b3.merge(a3).merge(c).elements should be(Set.empty)
     }
 
+    "not pollute the vvector of result during mergeRemoveDelta" in {
+      val a = ORSet().add(nodeA, "a")
+      val a1 = a.add(nodeB, "b").remove(nodeB, "b").resetDelta.remove(nodeA, "a") // a1 now contains dot from nodeB
+
+      a.vvector.contains(nodeA) should be(true)
+      a.vvector.contains(nodeB) should be(false)
+      a1.vvector.contains(nodeA) should be(true)
+      a1.vvector.contains(nodeB) should be(true)
+
+      val a2 = ORSet().mergeDelta(a.delta.get).mergeDelta(a1.delta.get)
+      a2.elements should be(Set.empty)
+      a2.vvector.contains(nodeB) should be(false) // a2 should not be polluted by the nodeB dot, as all operations on it pertained only to elements from nodeA
+    }
+
     "have unapply extractor" in {
       val s1 = ORSet.empty.add(node1, "a").add(node2, "b")
       val s2: ORSet[String] = s1

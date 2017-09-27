@@ -15,6 +15,7 @@
  */
 package akka.remote.artery;
 
+import akka.event.NoLogging;
 import io.aeron.CncFileDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -22,13 +23,10 @@ import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.errors.ErrorLogReader;
 
 import akka.event.LoggingAdapter;
+import akka.util.Helpers;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -38,28 +36,26 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class AeronErrorLog
 {
-    private final File cncFile;
     final MappedByteBuffer cncByteBuffer;
-    final DirectBuffer cncMetaDataBuffer;
-    final int cncVersion;
     final AtomicBuffer buffer;
-    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSZ");
-    private final ZoneId timeZone = ZoneId.systemDefault();
 
-
-
+    @Deprecated
     public AeronErrorLog(File cncFile)
     {
-      this.cncFile = cncFile;
+      this(cncFile, NoLogging.getInstance());
+    }
+
+    public AeronErrorLog(File cncFile, LoggingAdapter log)
+    {
       cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
-      cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-      cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+      final DirectBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+      final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
       buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
 
       if (CncFileDescriptor.CNC_VERSION != cncVersion)
       {
-          IoUtil.unmap(cncByteBuffer);
-          throw new IllegalStateException("CNC version not supported: file version=" + cncVersion);
+        log.warning("Aeron CnC version mismatch: compiled version = {}, file version = {}",
+          CncFileDescriptor.CNC_VERSION, cncVersion);
       }
     }
 
@@ -74,8 +70,8 @@ public class AeronErrorLog
                   log.error(String.format(
                       "Aeron error: %d observations from %s to %s for:%n %s",
                       observationCount,
-                      formatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(firstObservationTimestamp), timeZone)),
-                      formatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(lastObservationTimestamp), timeZone)),
+                      Helpers.timestamp(firstObservationTimestamp),
+                      Helpers.timestamp(lastObservationTimestamp),
                       encodedException));
                   lastTimestamp.set(Math.max(lastTimestamp.get(), lastObservationTimestamp));
                 }, sinceTimestamp);

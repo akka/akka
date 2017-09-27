@@ -88,7 +88,7 @@ The failure detector is responsible for trying to detect if a node is
 `unreachable` from the rest of the cluster. For this we are using an
 implementation of [The Phi Accrual Failure Detector](http://www.jaist.ac.jp/~defago/files/pdf/IS_RR_2004_010.pdf) by Hayashibara et al.
 
-An accrual failure detector decouple monitoring and interpretation. That makes
+An accrual failure detector decouples monitoring and interpretation. That makes
 them applicable to a wider area of scenarios and more adequate to build generic
 failure detection services. The idea is that it is keeping a history of failure
 statistics, calculated from heartbeats received from other nodes, and is
@@ -176,11 +176,10 @@ seen set (have seen the new state) then the cluster gossips 3 times instead of o
 every second. This adjusted gossip interval is a way to speed up the convergence process
 in the early dissemination phase after a state change.
 
-The choice of node to gossip with is random but it is biased to towards nodes that
-might not have seen the current state version. During each round of gossip exchange when
-no convergence it uses a probability of 0.8 (configurable) to gossip to a node not
-part of the seen set, i.e. that probably has an older version of the state. Otherwise
-gossip to any random live node.
+The choice of node to gossip with is random but biased towards nodes that might not have seen
+the current state version. During each round of gossip exchange, when convergence is not yet reached, a node
+uses a very high probability (which is configurable) to gossip with another node which is not part of the seen set, i.e. 
+which is likely to have an older version of the state. Otherwise it gossips with any random live node.
 
 This biased selection is a way to speed up the convergence process in the late dissemination
 phase after a state change.

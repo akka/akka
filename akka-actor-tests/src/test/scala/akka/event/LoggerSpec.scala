@@ -4,10 +4,14 @@
 package akka.event
 
 import akka.testkit._
+
+import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
-import java.util.{ Date, GregorianCalendar, TimeZone, Calendar }
+import java.nio.charset.StandardCharsets
+import java.util.{ Calendar, Date, GregorianCalendar, TimeZone }
+
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.serialization.SerializationExtension
@@ -283,6 +287,23 @@ class LoggerSpec extends WordSpec with Matchers {
       val expected = dateFormat.format(new Date(event.timestamp))
       log.timestamp(event) should ===(expected)
     }
+
+    "include the cause message in the log message even exceptions with no stack trace" in {
+      class MyCause(msg: String) extends RuntimeException(msg) with NoStackTrace
+
+      val log = new StdOutLogger {}
+      val out = new java.io.ByteArrayOutputStream()
+
+      val causeMessage = "Some details about the exact cause"
+
+      Console.withOut(out) {
+        log.error(Error(new MyCause(causeMessage), "source", classOf[LoggerSpec], "message", Map.empty[String, Any]))
+      }
+      out.flush()
+      out.close()
+      new String(out.toByteArray, StandardCharsets.UTF_8) should include(causeMessage)
+    }
+
   }
 
   "Ticket 3165 - serialize-messages and dual-entry serialization of LogEvent" must {

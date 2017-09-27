@@ -297,15 +297,21 @@ object ActorAttributes {
 
   /**
    * Scala API: Decides how exceptions from user are to be handled.
+   *
+   * Stages supporting supervision strategies explicitly document that they do so. If a stage does not document
+   * support for these, it should be assumed it does not support supervision.
    */
   def supervisionStrategy(decider: Supervision.Decider): Attributes =
     Attributes(SupervisionStrategy(decider))
 
   /**
    * Java API: Decides how exceptions from application code are to be handled.
+   *
+   * Stages supporting supervision strategies explicitly document that they do so. If a stage does not document
+   * support for these, it should be assumed it does not support supervision.
    */
   def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): Attributes =
-    ActorAttributes.supervisionStrategy(decider.apply _)
+    ActorAttributes.supervisionStrategy(decider.apply)
 
   /**
    * Java API

@@ -22,8 +22,9 @@ object SnapshotRecoveryLocalStoreSpec {
   }
 
   class LoadSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name)
-    with TurnOffRecoverOnStart
     with ActorLogging {
+
+    override def recovery = Recovery(toSequenceNr = 0)
 
     def receiveCommand = {
       case _ ⇒

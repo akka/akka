@@ -129,7 +129,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(ArterySpecSupport.de
         expectMsg("hello")
         systemC.terminate()
         // DeathWatchNotification is sent from systemC, failure detection takes longer than 3 seconds
-        expectTerminated(remoteRef, 5.seconds)
+        expectTerminated(remoteRef, 10.seconds)
       } finally {
         shutdown(systemC)
       }

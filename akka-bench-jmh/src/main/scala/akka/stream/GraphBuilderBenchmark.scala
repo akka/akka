@@ -23,8 +23,12 @@ class GraphBuilderBenchmark {
     MaterializationBenchmark.flowWithMapBuilder(complexity)
 
   @Benchmark
-  def graph_with_junctions(): RunnableGraph[NotUsed] =
-    MaterializationBenchmark.graphWithJunctionsBuilder(complexity)
+  def graph_with_junctions_gradual(): RunnableGraph[NotUsed] =
+    MaterializationBenchmark.graphWithJunctionsGradualBuilder(complexity)
+
+  @Benchmark
+  def graph_with_junctions_immediate(): RunnableGraph[NotUsed] =
+    MaterializationBenchmark.graphWithJunctionsImmediateBuilder(complexity)
 
   @Benchmark
   def graph_with_imported_flow(): RunnableGraph[NotUsed] =

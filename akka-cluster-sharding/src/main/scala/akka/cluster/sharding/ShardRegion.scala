@@ -20,6 +20,8 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.concurrent.Promise
 import akka.Done
+import akka.cluster.ClusterSettings
+import akka.cluster.ClusterSettings.DataCenter
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -40,7 +42,7 @@ object ShardRegion {
     handOffStopMessage: Any,
     replicator:         ActorRef,
     majorityMinCap:     Int): Props =
-    Props(new ShardRegion(typeName, Some(entityProps), settings, coordinatorPath, extractEntityId,
+    Props(new ShardRegion(typeName, Some(entityProps), dataCenter = None, settings, coordinatorPath, extractEntityId,
       extractShardId, handOffStopMessage, replicator, majorityMinCap)).withDeploy(Deploy.local)
 
   /**
@@ -50,13 +52,14 @@ object ShardRegion {
    */
   private[akka] def proxyProps(
     typeName:        String,
+    dataCenter:      Option[DataCenter],
     settings:        ClusterShardingSettings,
     coordinatorPath: String,
     extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId:  ShardRegion.ExtractShardId,
     replicator:      ActorRef,
     majorityMinCap:  Int): Props =
-    Props(new ShardRegion(typeName, None, settings, coordinatorPath, extractEntityId, extractShardId,
+    Props(new ShardRegion(typeName, None, dataCenter, settings, coordinatorPath, extractEntityId, extractShardId,
       PoisonPill, replicator, majorityMinCap)).withDeploy(Deploy.local)
 
   /**
@@ -365,6 +368,7 @@ object ShardRegion {
 private[akka] class ShardRegion(
   typeName:           String,
   entityProps:        Option[Props],
+  dataCenter:         Option[DataCenter],
   settings:           ClusterShardingSettings,
   coordinatorPath:    String,
   extractEntityId:    ShardRegion.ExtractEntityId,
@@ -419,10 +423,14 @@ private[akka] class ShardRegion(
     retryTask.cancel()
   }
 
-  def matchingRole(member: Member): Boolean = role match {
-    case None    ⇒ true
-    case Some(r) ⇒ member.hasRole(r)
+  // when using proxy the data center can be different from the own data center
+  private val targetDcRole = dataCenter match {
+    case Some(t) ⇒ ClusterSettings.DcRolePrefix + t
+    case None    ⇒ ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
   }
+
+  def matchingRole(member: Member): Boolean =
+    member.hasRole(targetDcRole) && role.forall(member.hasRole)
 
   def coordinatorSelection: Option[ActorSelection] =
     membersByAge.headOption.map(m ⇒ context.actorSelection(RootActorPath(m.address) + coordinatorPath))
@@ -471,13 +479,22 @@ private[akka] class ShardRegion(
   def receiveClusterEvent(evt: ClusterDomainEvent): Unit = evt match {
     case MemberUp(m) ⇒
       if (matchingRole(m))
-        changeMembers(membersByAge - m + m) // replace
+        changeMembers {
+          // replace, it's possible that the upNumber is changed
+          membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
+          membersByAge += m
+          membersByAge
+        }
 
     case MemberRemoved(m, _) ⇒
       if (m.uniqueAddress == cluster.selfUniqueAddress)
         context.stop(self)
       else if (matchingRole(m))
-        changeMembers(membersByAge - m)
+        changeMembers {
+          // filter, it's possible that the upNumber is changed
+          membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
+          membersByAge
+        }
 
     case _: MemberEvent ⇒ // these are expected, no need to warn about them
 

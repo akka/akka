@@ -11,10 +11,10 @@ import akka.io.Tcp._
 import akka.stream._
 import akka.stream.scaladsl.Tcp.{ IncomingConnection, ServerBinding }
 import akka.stream.scaladsl.{ Flow, _ }
-import akka.stream.testkit.TestUtils.temporaryServerAddress
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.testkit.{ EventFilter, TestKit, TestLatch, TestProbe }
+import akka.testkit.SocketUtil.temporaryServerAddress
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.typesafe.config.ConfigFactory

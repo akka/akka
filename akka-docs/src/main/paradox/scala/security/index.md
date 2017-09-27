@@ -11,7 +11,7 @@ The mailing list is very low traffic, and receives notifications only after secu
 We strongly encourage people to report such problems to our private security mailing list first, before disclosing them in a public forum.
 
 Following best practice, we strongly encourage anyone to report potential security 
-vulnerabilities to [security@akka.io](mailto:security@akka.io) before disclosing them in a public forum like the mailing list or as a Github issue.
+vulnerabilities to [security@akka.io](mailto:security@akka.io) before disclosing them in a public forum like the mailing list or as a GitHub issue.
 
 Reports to this email address will be handled by our security team, who will work together with you
 to ensure that a fix can be provided without delay.
@@ -29,5 +29,6 @@ to ensure that a fix can be provided without delay.
 @@@ index
 
 * [2017-02-10-java-serialization](2017-02-10-java-serialization.md)
+* [2017-08-09-camel](2017-08-09-camel.md)
 
 @@@

@@ -4,11 +4,15 @@
 
 package akka.persistence.fsm
 
-import akka.actor._
+import java.io.File
+
+import akka.actor.{ ActorSystem, _ }
 import akka.persistence._
 import akka.persistence.fsm.PersistentFSM._
+import akka.persistence.fsm.PersistentFSMSpec.IntAdded
 import akka.testkit._
-import com.typesafe.config.Config
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.apache.commons.io.FileUtils
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -274,6 +278,13 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       expectTerminated(persistentEventsStreamer)
     }
 
+    "can extract state name" in {
+      StateChangeEvent("xxx", None) match {
+        case StateChangeEvent(name, _) ⇒ name should equal("xxx")
+        case _                         ⇒ fail("unable to extract state name")
+      }
+    }
+
     "persist snapshot" in {
       val persistenceId = name
 
@@ -343,6 +354,41 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
 
     }
 
+    "save periodical snapshots if akka.persistence.fsm.enable-snapshot-after = on" in {
+      val sys2 = ActorSystem(
+        "PersistentFsmSpec2",
+        ConfigFactory
+          .parseString("""
+            akka.persistence.fsm.enable-snapshot-after = on
+            akka.persistence.fsm.snapshot-after = 3
+          """).withFallback(PersistenceSpec.config("leveldb", "PersistentFSMSpec2")))
+
+      try {
+        val probe = TestProbe()
+        val fsmRef = sys2.actorOf(SnapshotFSM.props(probe.ref))
+
+        fsmRef ! 1
+        fsmRef ! 2
+        fsmRef ! 3
+        // Needs to wait with expectMsg, before sending the next message to fsmRef.
+        // Otherwise, stateData sent to this probe is already updated
+        probe.expectMsg("SeqNo=3, StateData=List(3, 2, 1)")
+
+        fsmRef ! "4x" //changes the state to Persist4xAtOnce, also updates SeqNo although nothing is persisted
+        fsmRef ! 10 //Persist4xAtOnce = persist 10, 4x times
+        // snapshot-after = 3, but the SeqNo is not multiple of 3,
+        // as saveStateSnapshot() is called at the end of persistent event "batch" = 4x of 10's.
+        probe.expectMsg("SeqNo=8, StateData=List(10, 10, 10, 10, 3, 2, 1)")
+
+      } finally {
+        val storageLocations = List(
+          "akka.persistence.journal.leveldb.dir",
+          "akka.persistence.journal.leveldb-shared.store.dir",
+          "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(sys2.settings.config.getString(s)))
+        shutdown(sys2)
+        storageLocations.foreach(FileUtils.deleteDirectory)
+      }
+    }
   }
 }
 
@@ -544,6 +590,47 @@ object PersistentFSMSpec {
       case Event(OverrideTimeoutToInf, _) ⇒
         probe ! OverrideTimeoutToInf
         stay() forMax Duration.Inf
+    }
+  }
+
+  sealed trait SnapshotFSMState extends PersistentFSM.FSMState
+  case object PersistSingleAtOnce extends SnapshotFSMState { override def identifier: String = "PersistSingleAtOnce" }
+  case object Persist4xAtOnce extends SnapshotFSMState { override def identifier: String = "Persist4xAtOnce" }
+
+  sealed trait SnapshotFSMEvent
+  case class IntAdded(i: Int) extends SnapshotFSMEvent
+
+  object SnapshotFSM {
+    def props(probe: ActorRef) = Props(new SnapshotFSM(probe))
+  }
+
+  class SnapshotFSM(probe: ActorRef)(implicit val domainEventClassTag: ClassTag[SnapshotFSMEvent])
+    extends Actor with PersistentFSM[SnapshotFSMState, List[Int], SnapshotFSMEvent] {
+
+    override def persistenceId: String = "snapshot-fsm-test"
+
+    override def applyEvent(event: SnapshotFSMEvent, currentData: List[Int]): List[Int] = event match {
+      case IntAdded(i) ⇒ i :: currentData
+    }
+
+    startWith(PersistSingleAtOnce, Nil)
+
+    when(PersistSingleAtOnce) {
+      case Event(i: Int, _) ⇒
+        stay applying IntAdded(i)
+      case Event("4x", _) ⇒
+        goto(Persist4xAtOnce)
+      case Event(SaveSnapshotSuccess(metadata), _) ⇒
+        probe ! s"SeqNo=${metadata.sequenceNr}, StateData=${stateData}"
+        stay()
+    }
+
+    when(Persist4xAtOnce) {
+      case Event(i: Int, _) ⇒
+        stay applying (IntAdded(i), IntAdded(i), IntAdded(i), IntAdded(i))
+      case Event(SaveSnapshotSuccess(metadata), _) ⇒
+        probe ! s"SeqNo=${metadata.sequenceNr}, StateData=${stateData}"
+        stay()
     }
   }
 

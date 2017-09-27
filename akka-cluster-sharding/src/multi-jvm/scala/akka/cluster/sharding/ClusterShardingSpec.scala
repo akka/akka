@@ -460,6 +460,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         val proxy = system.actorOf(
           ShardRegion.proxyProps(
             typeName = "counter",
+            dataCenter = None,
             settings,
             coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
             extractEntityId = extractEntityId,
@@ -698,6 +699,21 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
 
   }
 
+  "demonstrate API for DC proxy" in within(50.seconds) {
+    runOn(sixth) {
+      // #proxy-dc
+      val counterProxyDcB: ActorRef = ClusterSharding(system).startProxy(
+        typeName = "Counter",
+        role = None,
+        dataCenter = Some("B"),
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
+      // #proxy-dc
+    }
+    enterBarrier("after-dc-proxy")
+
+  }
+
   "Persistent Cluster Shards" must {
     "recover entities upon restart" in within(50.seconds) {
       runOn(third, fourth, fifth) {
@@ -828,8 +844,11 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         expectMsg(ActorIdentity(3, None))
 
         //Check counter 13 is alive again
-        system.actorSelection(shard / "13") ! Identify(4)
-        expectMsgType[ActorIdentity](3 seconds).ref should not be (None)
+        val probe3 = TestProbe()
+        awaitAssert({
+          system.actorSelection(shard / "13").tell(Identify(4), probe3.ref)
+          probe3.expectMsgType[ActorIdentity](1 second).ref should not be (None)
+        }, 5 seconds, 500 millis)
       }
 
       enterBarrier("after-13")

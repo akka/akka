@@ -215,8 +215,6 @@ private[remote] class ReliableDeliverySupervisor(
   val autoResendTimer = context.system.scheduler.schedule(
     settings.SysResendTimeout, settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
 
-  private var bufferWasInUse = false
-
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
@@ -225,14 +223,12 @@ private[remote] class ReliableDeliverySupervisor(
         "Association with remote system [{}] has failed, address is now gated for [{}] ms. Reason: [{}] {}",
         remoteAddress, settings.RetryGateClosedFor.toMillis, e.getMessage, causedBy)
       uidConfirmed = false // Need confirmation of UID again
-      if (bufferWasInUse) {
-        if ((resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) && bailoutAt.isEmpty)
-          bailoutAt = Some(Deadline.now + settings.InitialSysMsgDeliveryTimeout)
-        context.become(gated(writerTerminated = false, earlyUngateRequested = false))
-        currentHandle = None
-        context.parent ! StoppedReading(self)
-        Stop
-      } else Escalate
+      if ((resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) && bailoutAt.isEmpty)
+        bailoutAt = Some(Deadline.now + settings.InitialSysMsgDeliveryTimeout)
+      context.become(gated(writerTerminated = false, earlyUngateRequested = false))
+      currentHandle = None
+      context.parent ! StoppedReading(self)
+      Stop
   }
 
   var currentHandle: Option[AkkaProtocolHandle] = handleOrActive
@@ -242,7 +238,6 @@ private[remote] class ReliableDeliverySupervisor(
 
   def reset(): Unit = {
     resendBuffer = new AckedSendBuffer[Send](settings.SysMsgBufferSize)
-    bufferWasInUse = false
     seqCounter = 0L
     bailoutAt = None
   }
@@ -265,7 +260,12 @@ private[remote] class ReliableDeliverySupervisor(
   // it serves a separator.
   // If we already have an inbound handle then UID is initially confirmed.
   // (This actor is never restarted)
-  var uidConfirmed: Boolean = uid.isDefined
+  var uidConfirmed: Boolean = uid.isDefined && (uid != refuseUid)
+
+  if (uid.isDefined && (uid == refuseUid))
+    throw new HopelessAssociation(localAddress, remoteAddress, uid,
+      new IllegalStateException(
+        s"The remote system [$remoteAddress] has a UID [${uid.get}] that has been quarantined. Association aborted."))
 
   override def postStop(): Unit = {
     // All remaining messages in the buffer has to be delivered to dead letters. It is important to clear the sequence
@@ -326,6 +326,8 @@ private[remote] class ReliableDeliverySupervisor(
 
     case s: EndpointWriter.StopReading ⇒
       writer forward s
+
+    case Ungate ⇒ // ok, not gated
   }
 
   def gated(writerTerminated: Boolean, earlyUngateRequested: Boolean): Receive = {
@@ -382,10 +384,11 @@ private[remote] class ReliableDeliverySupervisor(
     case EndpointWriter.FlushAndStop ⇒ context.stop(self)
     case EndpointWriter.StopReading(w, replyTo) ⇒
       replyTo ! EndpointWriter.StoppedReading(w)
+    case Ungate ⇒ // ok, not gated
   }
 
   private def goToIdle(): Unit = {
-    if (bufferWasInUse && maxSilenceTimer.isEmpty)
+    if (maxSilenceTimer.isEmpty)
       maxSilenceTimer = Some(context.system.scheduler.scheduleOnce(settings.QuarantineSilentSystemTimeout, self, TooLongIdle))
     context.become(idle)
   }
@@ -427,7 +430,6 @@ private[remote] class ReliableDeliverySupervisor(
   private def tryBuffer(s: Send): Unit =
     try {
       resendBuffer = resendBuffer buffer s
-      bufferWasInUse = true
     } catch {
       case NonFatal(e) ⇒ throw new HopelessAssociation(localAddress, remoteAddress, uid, e)
     }
@@ -848,7 +850,7 @@ private[remote] class EndpointWriter(
       }
     case TakeOver(newHandle, replyTo) ⇒
       // Shutdown old reader
-      handle foreach { _.disassociate() }
+      handle foreach { _.disassociate("the association was replaced by a new one", log) }
       handle = Some(newHandle)
       replyTo ! TookOver(self, newHandle)
       context.become(handoff)
@@ -873,11 +875,12 @@ private[remote] class EndpointWriter(
   }
 
   private def trySendPureAck(): Unit =
-    for (h ← handle; ack ← lastAck)
+    for (h ← handle; ack ← lastAck) {
       if (h.write(codec.constructPureAck(ack))) {
         ackDeadline = newAckDeadline
         lastAck = None
       }
+    }
 
   private def startReadEndpoint(handle: AkkaProtocolHandle): Some[ActorRef] = {
     val newReader =

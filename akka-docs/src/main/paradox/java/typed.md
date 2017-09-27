@@ -1,0 +1,1 @@
+../scala/typed.md

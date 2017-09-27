@@ -11,6 +11,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import jdocs.AbstractJavaTest;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static akka.pattern.Patterns.ask;
 
@@ -56,7 +57,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
 
     //#strategy
     private static SupervisorStrategy strategy =
-      new OneForOneStrategy(10, Duration.create("1 minute"), DeciderBuilder.
+      new OneForOneStrategy(10, Duration.create(1, TimeUnit.MINUTES), DeciderBuilder.
         match(ArithmeticException.class, e -> resume()).
         match(NullPointerException.class, e -> restart()).
         match(IllegalArgumentException.class, e -> stop()).
@@ -87,7 +88,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
 
     //#strategy2
     private static SupervisorStrategy strategy =
-      new OneForOneStrategy(10, Duration.create("1 minute"), DeciderBuilder.
+      new OneForOneStrategy(10, Duration.create(1, TimeUnit.MINUTES), DeciderBuilder.
         match(ArithmeticException.class, e -> resume()).
         match(NullPointerException.class, e -> restart()).
         match(IllegalArgumentException.class, e -> stop()).

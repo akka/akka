@@ -3,17 +3,21 @@
  */
 package akka.stream.testkit
 
-import akka.actor.{ ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
+import akka.actor.{ ActorRef, ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.stream._
 import akka.stream.impl._
-import akka.testkit.TestProbe
+import akka.testkit.{ TestActor, TestProbe }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.language.existentials
 import java.io.StringWriter
 import java.io.PrintWriter
+import java.util.concurrent.CountDownLatch
+
+import akka.testkit.TestActor.{ AutoPilot, NoAutoPilot }
 
 /**
  * Provides factory methods for various Publishers.
@@ -26,6 +30,8 @@ object TestPublisher {
   final case class Subscribe(subscription: Subscription) extends PublisherEvent
   final case class CancelSubscription(subscription: Subscription) extends PublisherEvent
   final case class RequestMore(subscription: Subscription, elements: Long) extends PublisherEvent
+
+  final object SubscriptionDone extends NoSerializationVerificationNeeded
 
   /**
    * Publisher that signals complete to subscribers, after handing a void subscription.
@@ -74,6 +80,15 @@ object TestPublisher {
 
     private val probe: TestProbe = TestProbe()
 
+    //this is a way to pause receiving message from probe until subscription is done
+    private val subscribed = new CountDownLatch(1)
+    probe.ignoreMsg { case SubscriptionDone ⇒ true }
+    probe.setAutoPilot(new TestActor.AutoPilot() {
+      override def run(sender: ActorRef, msg: Any): AutoPilot = {
+        if (msg == SubscriptionDone) subscribed.countDown()
+        this
+      }
+    })
     private val self = this.asInstanceOf[Self]
 
     /**
@@ -83,35 +98,55 @@ object TestPublisher {
       val subscription: PublisherProbeSubscription[I] = new PublisherProbeSubscription[I](subscriber, probe)
       probe.ref ! Subscribe(subscription)
       if (autoOnSubscribe) subscriber.onSubscribe(subscription)
+      probe.ref ! SubscriptionDone
+    }
+
+    def executeAfterSubscription[T](f: ⇒ T): T = {
+      subscribed.await(
+        probe.testKitSettings.DefaultTimeout.duration.length,
+        probe.testKitSettings.DefaultTimeout.duration.unit)
+      f
     }
 
     /**
      * Expect a subscription.
      */
     def expectSubscription(): PublisherProbeSubscription[I] =
-      probe.expectMsgType[Subscribe].subscription.asInstanceOf[PublisherProbeSubscription[I]]
+      executeAfterSubscription { probe.expectMsgType[Subscribe].subscription.asInstanceOf[PublisherProbeSubscription[I]] }
 
     /**
      * Expect demand from a given subscription.
      */
-    def expectRequest(subscription: Subscription, n: Int): Self = {
+    def expectRequest(subscription: Subscription, n: Int): Self = executeAfterSubscription {
       probe.expectMsg(RequestMore(subscription, n))
       self
     }
 
     /**
      * Expect no messages.
+     * NOTE! Timeout value is automatically multiplied by timeFactor.
      */
-    def expectNoMsg(): Self = {
+    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
+    def expectNoMsg(): Self = executeAfterSubscription {
       probe.expectNoMsg()
       self
     }
 
     /**
      * Expect no messages for a given duration.
+     * NOTE! Timeout value is automatically multiplied by timeFactor.
      */
-    def expectNoMsg(max: FiniteDuration): Self = {
+    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
+    def expectNoMsg(max: FiniteDuration): Self = executeAfterSubscription {
       probe.expectNoMsg(max)
+      self
+    }
+
+    /**
+     * Expect no messages for a given duration.
+     */
+    def expectNoMessage(max: FiniteDuration): Self = executeAfterSubscription {
+      probe.expectNoMessage(max)
       self
     }
 
@@ -119,10 +154,10 @@ object TestPublisher {
      * Receive messages for a given duration or until one does not match a given partial function.
      */
     def receiveWhile[T](max: Duration = Duration.Undefined, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[PublisherEvent, T]): immutable.Seq[T] =
-      probe.receiveWhile(max, idle, messages)(f.asInstanceOf[PartialFunction[AnyRef, T]])
+      executeAfterSubscription { probe.receiveWhile(max, idle, messages)(f.asInstanceOf[PartialFunction[AnyRef, T]]) }
 
     def expectEventPF[T](f: PartialFunction[PublisherEvent, T]): T =
-      probe.expectMsgPF[T]()(f.asInstanceOf[PartialFunction[Any, T]])
+      executeAfterSubscription { probe.expectMsgPF[T]()(f.asInstanceOf[PartialFunction[Any, T]]) }
 
     def getPublisher: Publisher[I] = this
 
@@ -142,12 +177,12 @@ object TestPublisher {
      * }
      * }}}
      */
-    def within[T](min: FiniteDuration, max: FiniteDuration)(f: ⇒ T): T = probe.within(min, max)(f)
+    def within[T](min: FiniteDuration, max: FiniteDuration)(f: ⇒ T): T = executeAfterSubscription { probe.within(min, max)(f) }
 
     /**
      * Same as calling `within(0 seconds, max)(f)`.
      */
-    def within[T](max: FiniteDuration)(f: ⇒ T): T = probe.within(max)(f)
+    def within[T](max: FiniteDuration)(f: ⇒ T): T = executeAfterSubscription { probe.within(max)(f) }
   }
 
   /**
@@ -534,7 +569,9 @@ object TestSubscriber {
      * Fluent DSL
      *
      * Same as `expectNoMsg(remaining)`, but correctly treating the timeFactor.
+     * NOTE! Timeout value is automatically multiplied by timeFactor.
      */
+    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
     def expectNoMsg(): Self = {
       probe.expectNoMsg()
       self
@@ -544,9 +581,21 @@ object TestSubscriber {
      * Fluent DSL
      *
      * Assert that no message is received for the specified time.
+     * NOTE! Timeout value is automatically multiplied by timeFactor.
      */
+    @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
     def expectNoMsg(remaining: FiniteDuration): Self = {
       probe.expectNoMsg(remaining)
+      self
+    }
+
+    /**
+     * Fluent DSL
+     *
+     * Assert that no message is received for the specified time.
+     */
+    def expectNoMessage(remaining: FiniteDuration): Self = {
+      probe.expectNoMessage(remaining)
       self
     }
 
@@ -735,7 +784,7 @@ private[testkit] object StreamTestKit {
     def cancel(): Unit = publisherProbe.ref ! CancelSubscription(this)
 
     def expectRequest(n: Long): Unit = publisherProbe.expectMsg(RequestMore(this, n))
-    def expectRequest(): Long = publisherProbe.expectMsgPF() {
+    def expectRequest(): Long = publisherProbe.expectMsgPF(hint = "expecting request() signal") {
       case RequestMore(sub, n) if sub eq this ⇒ n
     }
 

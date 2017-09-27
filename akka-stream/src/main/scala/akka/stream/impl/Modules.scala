@@ -79,19 +79,6 @@ import akka.util.OptionVal
 
 /**
  * INTERNAL API
- */
-@InternalApi private[akka] final class MaybeSource[Out](val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, Promise[Option[Out]]](shape) {
-
-  override def create(context: MaterializationContext) = {
-    val p = Promise[Option[Out]]()
-    new MaybePublisher[Out](p, attributes.nameOrDefault("MaybeSource"))(context.materializer.executionContext) → p
-  }
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Promise[Option[Out]]] = new MaybeSource[Out](attributes, shape)
-  override def withAttributes(attr: Attributes): SourceModule[Out, Promise[Option[Out]]] = new MaybeSource(attr, amendShape(attr))
-}
-
-/**
- * INTERNAL API
  * Creates and wraps an actor into [[org.reactivestreams.Publisher]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorPublisher]].
  */

@@ -101,6 +101,7 @@ message Gossip {
   repeated Member members = 4;
   required GossipOverview overview = 5;
   required VectorClock version = 6;
+  repeated Tombstone tombstones = 7;
 }
 
 /**
@@ -125,6 +126,11 @@ message SubjectReachability {
   required int32 addressIndex = 1;
   required ReachabilityStatus status = 3;
   required int64 version = 4;
+}
+
+message Tombstone {
+  required int32 addressIndex = 1;
+  required int64 timestamp = 2;
 }
 
 /**
@@ -223,4 +229,5 @@ message UniqueAddress {
    required uint32 maxInstancesPerNode = 2;
    required bool allowLocalRoutees = 3;
    optional string useRole = 4;
+   repeated string useRoles = 5;
  }

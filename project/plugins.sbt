@@ -15,7 +15,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.1")
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.14")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.18")
 
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
 
@@ -23,7 +23,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
 
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "1.0.0")
 
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.17")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.27")
 
 addSbtPlugin("pl.project13.sbt" % "sbt-jol" % "0.1.1")
 
@@ -38,4 +38,8 @@ addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.10")
 
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.1")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.3")
+
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.6")
+
+addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")

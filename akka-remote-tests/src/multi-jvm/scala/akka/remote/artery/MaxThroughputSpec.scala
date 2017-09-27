@@ -29,63 +29,66 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
   val barrierTimeout = 5.minutes
 
+  val cfg = ConfigFactory.parseString(s"""
+     # for serious measurements you should increase the totalMessagesFactor (20)
+     akka.test.MaxThroughputSpec.totalMessagesFactor = 10.0
+     akka.test.MaxThroughputSpec.real-message = off
+     akka.test.MaxThroughputSpec.actor-selection = off
+     akka {
+       loglevel = INFO
+       log-dead-letters = 10000
+       # avoid TestEventListener
+       loggers = ["akka.event.Logging$$DefaultLogger"]
+       testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
+       actor {
+         provider = remote
+         serialize-creators = false
+         serialize-messages = false
+
+         serializers {
+           test = "akka.remote.artery.MaxThroughputSpec$$TestSerializer"
+           test-message = "akka.remote.artery.TestMessageSerializer"
+         }
+         serialization-bindings {
+           "akka.remote.artery.MaxThroughputSpec$$FlowControl" = test
+           "akka.remote.artery.TestMessage" = test-message
+         }
+       }
+       remote.artery {
+         enabled = on
+
+         # for serious measurements when running this test on only one machine
+         # it is recommended to use external media driver
+         # See akka-remote/src/test/resources/aeron.properties
+         # advanced.embedded-media-driver = off
+         # advanced.aeron-dir = "target/aeron"
+         # on linux, use directory on ram disk, instead
+         # advanced.aeron-dir = "/dev/shm/aeron"
+
+         advanced.compression {
+           actor-refs.advertisement-interval = 2 second
+           manifests.advertisement-interval = 2 second
+         }
+
+         advanced {
+           inbound-lanes = 1
+           # buffer-pool-size = 512
+         }
+       }
+     }
+     akka.remote.default-remote-dispatcher {
+       fork-join-executor {
+         # parallelism-factor = 0.5
+         parallelism-min = 4
+         parallelism-max = 4
+       }
+       # Set to 10 by default. Might be worthwhile to experiment with.
+       # throughput = 100
+     }
+     """)
+
   commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
-       # for serious measurements you should increase the totalMessagesFactor (20)
-       akka.test.MaxThroughputSpec.totalMessagesFactor = 10.0
-       akka.test.MaxThroughputSpec.real-message = off
-       akka {
-         loglevel = INFO
-         log-dead-letters = 1000000
-         # avoid TestEventListener
-         loggers = ["akka.event.Logging$$DefaultLogger"]
-         testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
-         actor {
-           provider = remote
-           serialize-creators = false
-           serialize-messages = false
-
-           serializers {
-             test = "akka.remote.artery.MaxThroughputSpec$$TestSerializer"
-             test-message = "akka.remote.artery.TestMessageSerializer"
-           }
-           serialization-bindings {
-             "akka.remote.artery.MaxThroughputSpec$$FlowControl" = test
-             "akka.remote.artery.TestMessage" = test-message
-           }
-         }
-         remote.artery {
-           enabled = on
-
-           # for serious measurements when running this test on only one machine
-           # it is recommended to use external media driver
-           # See akka-remote/src/test/resources/aeron.properties
-           # advanced.embedded-media-driver = off
-           # advanced.aeron-dir = "target/aeron"
-           # on linux, use directory on ram disk, instead
-           # advanced.aeron-dir = "/dev/shm/aeron"
-
-           advanced.compression {
-             actor-refs.advertisement-interval = 2 second
-             manifests.advertisement-interval = 2 second
-           }
-
-           advanced {
-             inbound-lanes = 2
-             # buffer-pool-size = 512
-           }
-         }
-       }
-       akka.remote.default-remote-dispatcher {
-         fork-join-executor {
-           # parallelism-factor = 0.5
-           parallelism-min = 2
-           parallelism-max = 2
-         }
-         # Set to 10 by default. Might be worthwhile to experiment with.
-         # throughput = 100
-       }
-       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+    cfg).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   case object Run
   sealed trait Echo extends DeadLetterSuppression with JavaSerializable
@@ -94,6 +97,19 @@ object MaxThroughputSpec extends MultiNodeConfig {
   final case class Warmup(msg: AnyRef)
   final case class EndResult(totalReceived: Long) extends JavaSerializable
   final case class FlowControl(burstStartTime: Long) extends Echo
+
+  sealed trait Target {
+    def tell(msg: Any, sender: ActorRef): Unit
+    def ref: ActorRef
+  }
+
+  final case class ActorRefTarget(override val ref: ActorRef) extends Target {
+    override def tell(msg: Any, sender: ActorRef) = ref.tell(msg, sender)
+  }
+
+  final case class ActorSelectionTarget(sel: ActorSelection, override val ref: ActorRef) extends Target {
+    override def tell(msg: Any, sender: ActorRef) = sel.tell(msg, sender)
+  }
 
   def receiverProps(reporter: RateReporter, payloadSize: Int, printTaskRunnerMetrics: Boolean, numSenders: Int): Props =
     Props(new Receiver(reporter, payloadSize, printTaskRunnerMetrics, numSenders)).withDispatcher("akka.remote.default-remote-dispatcher")
@@ -135,11 +151,11 @@ object MaxThroughputSpec extends MultiNodeConfig {
     }
   }
 
-  def senderProps(mainTarget: ActorRef, targets: Array[ActorRef], testSettings: TestSettings, plotRef: ActorRef,
+  def senderProps(mainTarget: Target, targets: Array[Target], testSettings: TestSettings, plotRef: ActorRef,
                   printTaskRunnerMetrics: Boolean, reporter: BenchmarkFileReporter): Props =
     Props(new Sender(mainTarget, targets, testSettings, plotRef, printTaskRunnerMetrics, reporter))
 
-  class Sender(target: ActorRef, targets: Array[ActorRef], testSettings: TestSettings, plotRef: ActorRef, printTaskRunnerMetrics: Boolean, reporter: BenchmarkFileReporter)
+  class Sender(target: Target, targets: Array[Target], testSettings: TestSettings, plotRef: ActorRef, printTaskRunnerMetrics: Boolean, reporter: BenchmarkFileReporter)
     extends Actor {
     val numTargets = targets.size
 
@@ -159,7 +175,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
     def receive = {
       case Run ⇒
         if (compressionEnabled) {
-          target ! Warmup(payload)
+          target.tell(Warmup(payload), self)
           context.setReceiveTimeout(1.second)
           context.become(waitingForCompression)
         } else runWarmup()
@@ -167,18 +183,22 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
     def waitingForCompression: Receive = {
       case ReceivedActorRefCompressionTable(_, table) ⇒
-        if (table.dictionary.contains(target)) {
+        val ref = target match {
+          case ActorRefTarget(ref)          ⇒ ref
+          case ActorSelectionTarget(sel, _) ⇒ sel.anchor
+        }
+        if (table.dictionary.contains(ref)) {
           context.setReceiveTimeout(Duration.Undefined)
           runWarmup()
         } else
-          target ! Warmup(payload)
+          target.tell(Warmup(payload), self)
       case ReceiveTimeout ⇒
-        target ! Warmup(payload)
+        target.tell(Warmup(payload), self)
     }
 
     def runWarmup(): Unit = {
       sendBatch(warmup = true) // first some warmup
-      targets.foreach(_ ! Start(target)) // then Start, which will echo back here
+      targets.foreach(_.tell(Start(target.ref), self)) // then Start, which will echo back here
       context.become(warmup)
     }
 
@@ -222,7 +242,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
             f"${throughput * payloadSize * testSettings.senderReceiverPairs}%,.0f bytes/s (payload), " +
             f"${throughput * totalSize(context.system) * testSettings.senderReceiverPairs}%,.0f bytes/s (total" +
             (if (RARP(context.system).provider.remoteSettings.Artery.Advanced.Compression.Enabled) ",compression" else "") + "), " +
-            s"dropped ${totalMessages - totalReceived}, " +
+            (if (testSettings.senderReceiverPairs == 1) s"dropped ${totalMessages - totalReceived}, " else "") +
             s"max round-trip $maxRoundTripMillis ms, " +
             s"burst size $burstSize, " +
             s"payload size $payloadSize, " +
@@ -266,9 +286,9 @@ object MaxThroughputSpec extends MultiNodeConfig {
     def sendFlowControl(t0: Long): Unit = {
       if (remaining <= 0) {
         context.become(waitingForEndResult)
-        targets.foreach(_ ! End)
+        targets.foreach(_.tell(End, self))
       } else
-        target ! FlowControl(t0)
+        target.tell(FlowControl(t0), self)
     }
   }
 
@@ -329,6 +349,7 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
 
   val totalMessagesFactor = system.settings.config.getDouble("akka.test.MaxThroughputSpec.totalMessagesFactor")
   val realMessage = system.settings.config.getBoolean("akka.test.MaxThroughputSpec.real-message")
+  val actorSelection = system.settings.config.getBoolean("akka.test.MaxThroughputSpec.actor-selection")
 
   var plot = PlotResult()
 
@@ -353,9 +374,12 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
     super.afterAll()
   }
 
-  def identifyReceiver(name: String, r: RoleName = second): ActorRef = {
-    system.actorSelection(node(r) / "user" / name) ! Identify(None)
-    expectMsgType[ActorIdentity](10.seconds).ref.get
+  def identifyReceiver(name: String, r: RoleName = second): Target = {
+    val sel = system.actorSelection(node(r) / "user" / name)
+    sel ! Identify(None)
+    val ref = expectMsgType[ActorIdentity](10.seconds).ref.get
+    if (actorSelection) ActorSelectionTarget(sel, ref)
+    else ActorRefTarget(ref)
   }
 
   val scenarios = List(
@@ -382,7 +406,7 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
       realMessage),
     TestSettings(
       testName = "1-to-1-size-10k",
-      totalMessages = adjustedTotalMessages(10000),
+      totalMessages = adjustedTotalMessages(5000),
       burstSize = 1000,
       payloadSize = 10000,
       senderReceiverPairs = 1,
@@ -403,13 +427,14 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
 
     runOn(second) {
       val rep = reporter(testName)
-      for (n ← 1 to senderReceiverPairs) {
-        val receiver = system.actorOf(
+      val receivers = (1 to senderReceiverPairs).map { n ⇒
+        system.actorOf(
           receiverProps(rep, payloadSize, printTaskRunnerMetrics = n == 1, senderReceiverPairs),
           receiverName + n)
       }
       enterBarrier(receiverName + "-started")
       enterBarrier(testName + "-done")
+      receivers.foreach(_ ! PoisonPill)
       rep.halt()
     }
 
@@ -430,12 +455,11 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
       }
       senders.foreach {
         case (snd, terminationProbe, plotProbe) ⇒
+          terminationProbe.expectTerminated(snd, barrierTimeout)
           if (snd == senders.head._1) {
-            terminationProbe.expectTerminated(snd, barrierTimeout)
             val plotResult = plotProbe.expectMsgType[PlotResult]
             plot = plot.addAll(plotResult)
-          } else
-            terminationProbe.expectTerminated(snd, 10.seconds)
+          }
       }
       enterBarrier(testName + "-done")
     }

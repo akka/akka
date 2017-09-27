@@ -46,10 +46,10 @@ private[remote] object FlightRecorderEvents {
   // Compression events
   val Compression_CompressedActorRef = 90
   val Compression_AllocatedActorRefCompressionId = 91
-  val Compression_CompressedManifest = 91
-  val Compression_AllocatedManifestCompressionId = 92
-  val Compression_Inbound_RunActorRefAdvertisement = 93
-  val Compression_Inbound_RunClassManifestAdvertisement = 94
+  val Compression_CompressedManifest = 92
+  val Compression_AllocatedManifestCompressionId = 93
+  val Compression_Inbound_RunActorRefAdvertisement = 94
+  val Compression_Inbound_RunClassManifestAdvertisement = 95
 
   // Used for presentation of the entries in the flight recorder
   lazy val eventDictionary = Map(
@@ -92,7 +92,7 @@ private[remote] object FlightRecorderEvents {
     Compression_CompressedManifest → "Compression: Compressed manifest",
     Compression_AllocatedManifestCompressionId → "Compression: Allocated manifest compression id",
     Compression_Inbound_RunActorRefAdvertisement → "InboundCompression: Run class manifest compression advertisement",
-    Compression_Inbound_RunClassManifestAdvertisement → "InboundCompression: Run class manifest compression advertisement"
-  ).map { case (int, str) ⇒ int.toLong → str }
+    Compression_Inbound_RunClassManifestAdvertisement → "InboundCompression: Run class manifest compression advertisement")
+    .map { case (int, str) ⇒ int.toLong → str }
 
 }

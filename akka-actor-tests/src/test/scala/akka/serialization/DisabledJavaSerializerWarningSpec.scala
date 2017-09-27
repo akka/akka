@@ -3,9 +3,12 @@
  */
 package akka.serialization
 
+import java.nio.{ ByteBuffer, ByteOrder }
+
+import akka.actor.ExtendedActorSystem
+
 import scala.concurrent.duration._
 import akka.testkit._
-import akka.testkit.TestEvent._
 
 object DisabledJavaSerializerWarningSpec {
   final case class Msg(s: String)
@@ -39,6 +42,17 @@ class DisabledJavaSerializerWarningSpec extends AkkaSpec(
         val echo = system.actorOf(TestActors.echoActorProps)
         echo ! Msg("a") // Msg is in the akka package
         expectMsg(Msg("a"))
+      }
+    }
+
+    "log and throw exception for erroneous incoming messages when Java Serialization is off" in {
+      EventFilter.warning(start = "Incoming message attempted to use Java Serialization", occurrences = 1).intercept {
+        intercept[DisabledJavaSerializer.JavaSerializationException] {
+          val byteBuffer = ByteBuffer.allocate(128).order(ByteOrder.LITTLE_ENDIAN)
+          val esys = system.asInstanceOf[ExtendedActorSystem]
+          val dser = DisabledJavaSerializer(esys)
+          dser.fromBinary(byteBuffer, "")
+        }
       }
     }
 

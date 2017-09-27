@@ -6,6 +6,7 @@ import akka.actor.ActorSystem;
 //#imports
 import akka.dispatch.Futures;
 import akka.japi.Option;
+import akka.japi.Pair;
 import akka.japi.Predicate;
 import akka.japi.function.Procedure;
 import akka.stream.*;
@@ -21,13 +22,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
-import scala.Tuple2;
+import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Promise;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -570,7 +572,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
 
 
   //#materialized
-  public class FirstValue<A> extends GraphStageWithMaterializedValue<FlowShape<A, A>, CompletionStage<A>> {
+  public class FirstValue<A> extends AbstractGraphStageWithMaterializedValue<FlowShape<A, A>, CompletionStage<A>> {
 
     public final Inlet<A> in = Inlet.create("FirstValue.in");
     public final Outlet<A> out = Outlet.create("FirstValue.out");
@@ -582,8 +584,8 @@ public class GraphStageDocTest extends AbstractJavaTest {
     }
 
     @Override
-    public Tuple2<GraphStageLogic, CompletionStage<A>> createLogicAndMaterializedValue(Attributes inheritedAttributes) {
-      Promise<A> promise = Futures.promise();
+    public Pair<GraphStageLogic, CompletionStage<A>> createLogicAndMaterializedValuePair(Attributes inheritedAttributes) {
+      CompletableFuture<A> promise = new CompletableFuture<>();
 
       GraphStageLogic logic = new GraphStageLogic(shape) {
         {
@@ -591,7 +593,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
             @Override
             public void onPush() {
               A elem = grab(in);
-              promise.success(elem);
+              promise.complete(elem);
               push(out, elem);
 
               // replace handler with one just forwarding
@@ -612,8 +614,8 @@ public class GraphStageDocTest extends AbstractJavaTest {
           });
         }
       };
-
-      return new Tuple2(logic, promise.future());
+      
+      return new Pair<>(logic, promise);
     }
   }
   //#materialized

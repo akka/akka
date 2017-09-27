@@ -1,0 +1,29 @@
+# #21732Migrate JavaSource to GraphStage
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.FileSource")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.newInstance")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.FileSource.withAttributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.attributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.label")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.this")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FilePublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FilePublisher$Continue$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FilePublisher")
+
+# Cleanup from left-overs from old materializer.
+# Methods are not used from inside akka. It's technically a binary incompatible because methods were public before.
+# It would break user code which called `copyFromPorts` explicitly. This seems highly unlikely as these methods were
+# thought to be used only from inside the old materializer.
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.FanInShape.copyFromPorts")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.FanOutShape.copyFromPorts")
+
+# #22710 overloaded Flow.interleave()-related methods
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.interleaveGraph")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.interleaveMat")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.interleaveGraph")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.interleaveGraph")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph$default$3")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleave")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.interleaveGraph")

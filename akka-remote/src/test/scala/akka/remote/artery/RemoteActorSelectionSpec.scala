@@ -38,10 +38,10 @@ class RemoteActorSelectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
     // TODO fails with not receiving the localGrandchild value, seems to go to dead letters
     "select actors across node boundaries" ignore {
 
-      val remotePort = SocketUtil.temporaryServerAddress(udp = true).getPort
+      val remotePort = SocketUtil.temporaryLocalPort(udp = true)
       val remoteSysName = "remote-" + system.name
 
-      val localPort = SocketUtil.temporaryServerAddress(udp = true).getPort
+      val localPort = SocketUtil.temporaryLocalPort(udp = true)
       val localSysName = "local-" + system.name
 
       def config(port: Int) =

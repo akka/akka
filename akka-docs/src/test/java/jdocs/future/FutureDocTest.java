@@ -11,6 +11,8 @@ import scala.concurrent.Future;
 import scala.concurrent.Await;
 import scala.concurrent.Promise;
 import akka.util.Timeout;
+
+
 //#imports1
 
 //#imports2
@@ -19,27 +21,39 @@ import akka.japi.Function;
 import java.util.concurrent.Callable;
 import static akka.dispatch.Futures.future;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
+
 //#imports2
 
 //#imports3
 import static akka.dispatch.Futures.sequence;
+
+
 //#imports3
 
 //#imports4
 import static akka.dispatch.Futures.traverse;
+
+
 //#imports4
 
 //#imports5
 import akka.japi.Function2;
 import static akka.dispatch.Futures.fold;
+
+
 //#imports5
 
 //#imports6
 import static akka.dispatch.Futures.reduce;
+
+
 //#imports6
 
 //#imports7
 import static akka.pattern.Patterns.after;
+
+
 import java.util.Arrays;
 //#imports7
 

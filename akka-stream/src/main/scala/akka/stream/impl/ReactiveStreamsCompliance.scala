@@ -109,12 +109,14 @@ import org.reactivestreams.{ Subscriber, Subscription }
   }
 
   final def tryRequest(subscription: Subscription, demand: Long): Unit = {
+    if (subscription eq null) throw new IllegalStateException("Subscription must be not null on request() call, rule 1.3")
     try subscription.request(demand) catch {
       case NonFatal(t) ⇒ throw new SignalThrewException("It is illegal to throw exceptions from request(), rule 3.16", t)
     }
   }
 
   final def tryCancel(subscription: Subscription): Unit = {
+    if (subscription eq null) throw new IllegalStateException("Subscription must be not null on cancel() call, rule 1.3")
     try subscription.cancel() catch {
       case NonFatal(t) ⇒ throw new SignalThrewException("It is illegal to throw exceptions from cancel(), rule 3.15", t)
     }

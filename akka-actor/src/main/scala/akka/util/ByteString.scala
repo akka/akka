@@ -61,11 +61,47 @@ object ByteString {
   def fromArray(array: Array[Byte]): ByteString = apply(array)
 
   /**
+   * Unsafe API: Use only in situations you are completely confident that this is what
+   * you need, and that you understand the implications documented below.
+   *
+   * Creates a ByteString without copying the passed in byte array, unlike other factory
+   * methods defined on ByteString. This method of creating a ByteString saves one array
+   * copy and allocation and therefore can lead to better performance, however it also means
+   * that one MUST NOT modify the passed in array, or unexpected immutable data structure
+   * contract-breaking behaviour will manifest itself.
+   *
+   * This API is intended for users who have obtained an byte array from some other API, and
+   * want wrap it into an ByteArray, and from there on only use that reference (the ByteString)
+   * to operate on the wrapped data. For all other intents and purposes, please use the usual
+   * apply and create methods - which provide the immutability guarantees by copying the array.
+   *
+   */
+  def fromArrayUnsafe(array: Array[Byte]): ByteString = ByteString1C(array)
+
+  /**
    * Creates a new ByteString by copying length bytes starting at offset from
    * an Array.
    */
   def fromArray(array: Array[Byte], offset: Int, length: Int): ByteString =
     CompactByteString.fromArray(array, offset, length)
+
+  /**
+   * Unsafe API: Use only in situations you are completely confident that this is what
+   * you need, and that you understand the implications documented below.
+   *
+   * Creates a ByteString without copying the passed in byte array, unlike other factory
+   * methods defined on ByteString. This method of creating a ByteString saves one array
+   * copy and allocation and therefore can lead to better performance, however it also means
+   * that one MUST NOT modify the passed in array, or unexpected immutable data structure
+   * contract-breaking behaviour will manifest itself.
+   *
+   * This API is intended for users who have obtained an byte array from some other API, and
+   * want wrap it into an ByteArray, and from there on only use that reference (the ByteString)
+   * to operate on the wrapped data. For all other intents and purposes, please use the usual
+   * apply and create methods - which provide the immutability guarantees by copying the array.
+   *
+   */
+  def fromArrayUnsafe(array: Array[Byte], offset: Int, length: Int): ByteString = ByteString1(array, offset, length)
 
   /**
    * JAVA API

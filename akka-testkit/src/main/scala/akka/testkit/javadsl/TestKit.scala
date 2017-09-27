@@ -7,8 +7,7 @@ import java.util.function.{ Function ⇒ JFunction, Supplier }
 import java.util.{ List ⇒ JList }
 
 import akka.actor._
-import akka.japi.JavaPartialFunction
-import akka.testkit.{ TestActor, TestProbe, _ }
+import akka.testkit.{ TestActor, TestDuration, TestProbe }
 
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
@@ -110,9 +109,9 @@ class TestKit(system: ActorSystem) {
    * function returns true.
    */
   def ignoreMsg(pf: JFunction[Any, Boolean]): Unit = {
-    tp.ignoreMsg(new JavaPartialFunction[Any, Boolean] {
+    tp.ignoreMsg(new CachingPartialFunction[Any, Boolean] {
       @throws(classOf[Exception])
-      override def apply(x: Any, isCheck: Boolean): Boolean = pf.apply(x)
+      override def `match`(x: Any): Boolean = pf.apply(x)
     })
   }
 
@@ -190,9 +189,9 @@ class TestKit(system: ActorSystem) {
   def awaitCond(max: Duration, interval: Duration, message: String, p: Supplier[Boolean]): Unit =
     tp.awaitCond(p.get, max, interval, message)
 
-  def awaitAssert(a: Supplier[Any]): Unit = tp.awaitAssert(a.get)
+  def awaitAssert[A](a: Supplier[A]): A = tp.awaitAssert(a.get)
 
-  def awaitAssert(max: Duration, a: Supplier[Any]): Unit = tp.awaitAssert(a.get, max)
+  def awaitAssert[A](max: Duration, a: Supplier[A]): A = tp.awaitAssert(a.get, max)
 
   /**
    * Evaluate the given assert every `interval` until it does not throw an exception.
@@ -201,7 +200,7 @@ class TestKit(system: ActorSystem) {
    * Note that the timeout is scaled using Duration.dilated,
    * which uses the configuration entry "akka.test.timefactor".
    */
-  def awaitAssert(max: Duration, interval: Duration, a: Supplier[Any]): Unit = tp.awaitAssert(a.get, max, interval)
+  def awaitAssert[A](max: Duration, interval: Duration, a: Supplier[A]): A = tp.awaitAssert(a.get, max, interval)
 
   /**
    * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
@@ -245,9 +244,9 @@ class TestKit(system: ActorSystem) {
    * processing.
    */
   def expectMsgPF[T](hint: String, f: JFunction[Any, T]): T = {
-    tp.expectMsgPF(hint = hint)(new JavaPartialFunction[Any, T] {
+    tp.expectMsgPF(hint = hint)(new CachingPartialFunction[Any, T] {
       @throws(classOf[Exception])
-      override def apply(x: Any, isCheck: Boolean): T = f.apply(x)
+      override def `match`(x: Any): T = f.apply(x)
     })
   }
 
@@ -260,9 +259,9 @@ class TestKit(system: ActorSystem) {
    * processing.
    */
   def expectMsgPF[T](max: Duration, hint: String, f: JFunction[Any, T]): T = {
-    tp.expectMsgPF(max, hint)(new JavaPartialFunction[Any, T] {
+    tp.expectMsgPF(max, hint)(new CachingPartialFunction[Any, T] {
       @throws(classOf[Exception])
-      override def apply(x: Any, isCheck: Boolean): T = f.apply(x)
+      override def `match`(x: Any): T = f.apply(x)
     })
   }
 
@@ -335,13 +334,22 @@ class TestKit(system: ActorSystem) {
 
   /**
    * Receive one message from the test actor and assert that it is the Terminated message of the given ActorRef.
+   * Before calling this method, you have to `watch` the target actor ref.
    * Wait time is bounded by the given duration, with an AssertionFailure being thrown in case of timeout.
+   *
+   * @param max wait no more than max time, otherwise throw AssertionFailure
+   * @param target the actor ref expected to be Terminated
+   * @return the received Terminated message
    */
   def expectTerminated(max: Duration, target: ActorRef): Terminated = tp.expectTerminated(target, max)
 
   /**
    * Receive one message from the test actor and assert that it is the Terminated message of the given ActorRef.
+   * Before calling this method, you have to `watch` the target actor ref.
    * Wait time is bounded by the given duration, with an AssertionFailure being thrown in case of timeout.
+   *
+   * @param target the actor ref expected to be Terminated
+   * @return the received Terminated message
    */
   def expectTerminated(target: ActorRef): Terminated = tp.expectTerminated(target)
 
@@ -354,9 +362,9 @@ class TestKit(system: ActorSystem) {
    *         partial function returned true
    */
   def fishForMessage(max: Duration, hint: String, f: JFunction[Any, Boolean]): Any = {
-    tp.fishForMessage(max, hint)(new JavaPartialFunction[Any, Boolean] {
+    tp.fishForMessage(max, hint)(new CachingPartialFunction[Any, Boolean] {
       @throws(classOf[Exception])
-      override def apply(x: Any, isCheck: Boolean): Boolean = f.apply(x)
+      override def `match`(x: Any): Boolean = f.apply(x)
     })
   }
 
@@ -364,9 +372,9 @@ class TestKit(system: ActorSystem) {
    * Same as `fishForMessage`, but gets a different partial function and returns properly typed message.
    */
   def fishForSpecificMessage[T](max: Duration, hint: String, f: JFunction[Any, T]): T = {
-    tp.fishForSpecificMessage(max, hint)(new JavaPartialFunction[Any, T] {
+    tp.fishForSpecificMessage(max, hint)(new CachingPartialFunction[Any, T] {
       @throws(classOf[Exception])
-      override def apply(x: Any, isCheck: Boolean): T = f.apply(x)
+      override def `match`(x: Any): T = f.apply(x)
     })
   }
 
@@ -404,16 +412,16 @@ class TestKit(system: ActorSystem) {
    *
    */
   def receiveWhile[T](max: Duration, idle: Duration, messages: Int, f: JFunction[AnyRef, T]): JList[T] = {
-    tp.receiveWhile(max, idle, messages)(new JavaPartialFunction[AnyRef, T] {
+    tp.receiveWhile(max, idle, messages)(new CachingPartialFunction[AnyRef, T] {
       @throws(classOf[Exception])
-      override def apply(x: AnyRef, isCheck: Boolean): T = f.apply(x)
+      override def `match`(x: AnyRef): T = f.apply(x)
     }).asJava
   }
 
   def receiveWhile[T](max: Duration, f: JFunction[AnyRef, T]): JList[T] = {
-    tp.receiveWhile(max = max)(new JavaPartialFunction[AnyRef, T] {
+    tp.receiveWhile(max = max)(new CachingPartialFunction[AnyRef, T] {
       @throws(classOf[Exception])
-      override def apply(x: AnyRef, isCheck: Boolean): T = f.apply(x)
+      override def `match`(x: AnyRef): T = f.apply(x)
     }).asJava
   }
 
@@ -483,4 +491,29 @@ object TestKit {
     shutdownActorSystem(actorSystem, 10.seconds, verifySystemShutdown)
   }
 
+}
+
+/**
+ * INTERNAL API
+ *
+ * This is a specialized variant of PartialFunction which is <b><i>only
+ * applicable if you know that `isDefinedAt(x)` is always called before
+ * `apply(x)`—with the same `x` of course.</i></b>
+ *
+ * `match(x)` will be called for `isDefinedAt(x)` only, and its semantics
+ * are the same as for [[akka.japi.JavaPartialFunction]] (apart from the
+ * missing because unneeded boolean argument).
+ *
+ * This class is used internal to [[akka.testkit.javadsl.TestKit]] and
+ * should not be extended by client code directly.
+ */
+private abstract class CachingPartialFunction[A, B] extends scala.runtime.AbstractPartialFunction[A, B] {
+  import akka.japi.JavaPartialFunction._
+
+  @throws(classOf[Exception])
+  def `match`(x: A): B
+
+  var cache: B = _
+  final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
+  final override def apply(x: A): B = cache
 }

@@ -24,7 +24,7 @@ A chat room is available for all questions related to developing and contributin
 
 ## Source Code
 
-Akka uses Git and is hosted at [Github akka/akka](http://github.com/akka/akka).
+Akka uses Git and is hosted at [Github akka/akka](https://github.com/akka/akka).
 
 ## Releases Repository
 
@@ -62,9 +62,9 @@ libraryDependencies += "com.typesafe.akka" % "akka-remote_$scala.binary_version$
 ```
 @@@
 
-### maven definition of snapshot repository
+### Maven definition of snapshot repository
 
-Make sure that you add the repository to the maven repositories in pom.xml:
+Make sure that you add the repository to the Maven repositories in pom.xml:
 
 ```
 <repositories>

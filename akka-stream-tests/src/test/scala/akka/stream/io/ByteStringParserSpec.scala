@@ -7,14 +7,14 @@ import akka.stream.impl.io.ByteStringParser
 import akka.stream.impl.io.ByteStringParser.{ ByteReader, ParseResult, ParseStep }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.stage.GraphStageLogic
-import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.{ ActorMaterializer, Attributes, ThrottleMode }
 import akka.util.ByteString
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ByteStringParserSpec extends StreamSpec() {
+class ByteStringParserSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
 
   "ByteStringParser" must {
@@ -108,6 +108,51 @@ class ByteStringParserSpec extends StreamSpec() {
         3.seconds)).getMessage shouldBe "Parsing logic didn't produce result after 10 steps. " +
         "Aborting processing to avoid infinite cycles. In the unlikely case that the parsing logic needs more recursion, " +
         "override ParsingLogic.recursionLimit."
+    }
+
+    "complete eagerly" in {
+      object DummyParser extends ByteStringParser[ByteString] {
+        def createLogic(inheritedAttributes: Attributes) = new ParsingLogic {
+          startWith(new ParseStep[ByteString] {
+            def parse(reader: ByteReader) = ParseResult(Some(reader.takeAll()), this)
+          })
+        }
+      }
+
+      val in = TestPublisher.probe[ByteString]()
+      val out = TestSubscriber.probe[ByteString]()
+      Source.fromPublisher(in).via(DummyParser).runWith(Sink.fromSubscriber(out))
+
+      out.request(1L)
+      in.expectRequest()
+      in.sendNext(ByteString("aha!"))
+      out.expectNext()
+      // no new pull
+      in.sendComplete()
+      out.expectComplete()
+    }
+
+    "fail eagerly on truncation" in {
+      object DummyParser extends ByteStringParser[ByteString] {
+        def createLogic(inheritedAttributes: Attributes) = new ParsingLogic {
+          startWith(new ParseStep[ByteString] {
+            // take more data than there is in first chunk
+            def parse(reader: ByteReader) = ParseResult(Some(reader.take(5)), this, false)
+          })
+        }
+      }
+
+      val in = TestPublisher.probe[ByteString]()
+      val out = TestSubscriber.probe[ByteString]()
+      Source.fromPublisher(in).via(DummyParser).runWith(Sink.fromSubscriber(out))
+
+      out.request(1L)
+      in.expectRequest()
+      in.sendNext(ByteString("aha!"))
+      out.expectNoMsg(100.millis)
+      // no new pull
+      in.sendComplete()
+      out.expectError() shouldBe an[IllegalStateException]
     }
   }
 

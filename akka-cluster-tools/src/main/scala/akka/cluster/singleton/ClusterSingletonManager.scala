@@ -5,6 +5,7 @@
 package akka.cluster.singleton
 
 import com.typesafe.config.Config
+
 import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.actor.Actor
@@ -25,11 +26,14 @@ import akka.AkkaException
 import akka.actor.NoSerializationVerificationNeeded
 import akka.cluster.UniqueAddress
 import akka.cluster.ClusterEvent
+
 import scala.concurrent.Promise
 import akka.Done
 import akka.actor.CoordinatedShutdown
+import akka.annotation.DoNotInherit
 import akka.pattern.ask
 import akka.util.Timeout
+import akka.cluster.ClusterSettings
 
 object ClusterSingletonManagerSettings {
 
@@ -256,10 +260,10 @@ object ClusterSingletonManager {
       }
       override def postStop(): Unit = cluster.unsubscribe(self)
 
-      def matchingRole(member: Member): Boolean = role match {
-        case None    ⇒ true
-        case Some(r) ⇒ member.hasRole(r)
-      }
+      private val selfDc = ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
+
+      def matchingRole(member: Member): Boolean =
+        member.hasRole(selfDc) && role.forall(member.hasRole)
 
       def trackChange(block: () ⇒ Unit): Unit = {
         val before = membersByAge.headOption
@@ -394,6 +398,8 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * Use factory method [[ClusterSingletonManager#props]] to create the
  * [[akka.actor.Props]] for the actor.
  *
+ * Not intended for subclassing by user code.
+ *
  *
  * @param singletonProps [[akka.actor.Props]] of the singleton actor instance.
  *
@@ -407,6 +413,7 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *
  * @param settings see [[ClusterSingletonManagerSettings]]
  */
+@DoNotInherit
 class ClusterSingletonManager(
   singletonProps:     Props,
   terminationMessage: Any,
@@ -678,6 +685,11 @@ class ClusterSingletonManager(
 
     case Event(HandOverToMe, OldestData(singleton, singletonTerminated)) ⇒
       gotoHandingOver(singleton, singletonTerminated, Some(sender()))
+
+    case Event(TakeOverFromMe, _) ⇒
+      // already oldest, so confirm and continue like that
+      sender() ! HandOverToMe
+      stay
 
     case Event(Terminated(ref), d @ OldestData(singleton, _)) if ref == singleton ⇒
       stay using d.copy(singletonTerminated = true)

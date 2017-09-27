@@ -17,12 +17,16 @@ offered using distinct IO extensions described below.
 
 ### Simple Send
 
-@@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #sender }
+Scala
+:  @@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #sender }
+
+Java
+:  @@snip [UdpDocTest.java]($code$/java/jdocs/io/UdpDocTest.java) { #sender }
 
 The simplest form of UDP usage is to just send datagrams without the need of
 getting a reply. To this end a “simple sender” facility is provided as
 demonstrated above. The UDP extension is queried using the
-`SimpleSender` message, which is answered by a `SimpleSenderReady`
+@scala[`SimpleSender`]@java[`UdpMessage.simpleSender`] message, which is answered by a `SimpleSenderReady`
 notification. The sender of this message is the newly created sender actor
 which from this point onward can be used to send datagrams to arbitrary
 destinations; in this example it will just send any UTF-8 encoded
@@ -38,23 +42,27 @@ want to close the ephemeral port the sender is bound to.
 
 ### Bind (and Send)
 
-@@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #listener }
+Scala
+:  @@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #listener }
+
+Java
+:  @@snip [UdpDocTest.java]($code$/java/jdocs/io/UdpDocTest.java) { #listener }
 
 If you want to implement a UDP server which listens on a socket for incoming
-datagrams then you need to use the `Bind` command as shown above. The
+datagrams then you need to use the @scala[`Bind`]@java[`UdpMessage.bind`] message as shown above. The
 local address specified may have a zero port in which case the operating system
 will automatically choose a free port and assign it to the new socket. Which
 port was actually bound can be found out by inspecting the `Bound`
 message.
 
 The sender of the `Bound` message is the actor which manages the new
-socket. Sending datagrams is achieved by using the `Send` message type
-and the socket can be closed by sending a `Unbind` command, in which
+socket. Sending datagrams is achieved by using the @scala[`Send`]@java[`UdpMessage.send`] message
+and the socket can be closed by sending a @scala[`Unbind`]@java[`UdpMessage.unbind`] message, in which
 case the socket actor will reply with a `Unbound` notification.
 
 Received datagrams are sent to the actor designated in the `Bind`
 message, whereas the `Bound` message will be sent to the sender of the
-`Bind`.
+@scala[`Bind`]@java[`UdpMessage.bind`].
 
 ## Connected UDP
 
@@ -63,11 +71,15 @@ bind-and-send service we saw earlier, but the main difference is that a
 connection is only able to send to the `remoteAddress` it was connected to,
 and will receive datagrams only from that address.
 
-@@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #connected }
+Scala
+:  @@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #connected }
+
+Java
+:  @@snip [UdpDocTest.java]($code$/java/jdocs/io/UdpDocTest.java) { #connected }
 
 Consequently the example shown here looks quite similar to the previous one,
 the biggest difference is the absence of remote address information in
-`Send` and `Received` messages.
+@scala[`Send`]@java[`UdpMessage.send`] and `Received` messages.
 
 @@@ note
 
@@ -86,15 +98,27 @@ Akka provides a way to control various options of `DatagramChannel` through the
 how to setup a receiver of multicast messages using IPv6 protocol.
 
 To select a Protocol Family you must extend `akka.io.Inet.DatagramChannelCreator`
-class which extends `akka.io.Inet.SocketOption`. Provide custom logic
+class which @scala[extends]@java[implements] `akka.io.Inet.SocketOption`. Provide custom logic
 for opening a datagram channel by overriding `create` method.
 
-@@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #inet6-protocol-family }
+Scala
+:  @@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #inet6-protocol-family }
+
+Java
+:  @@snip [JavaUdpMulticast.java]($code$/java/jdocs/io/JavaUdpMulticast.java) { #inet6-protocol-family }
 
 Another socket option will be needed to join a multicast group.
 
-@@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #multicast-group }
+Scala
+:  @@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #multicast-group }
 
-Socket options must be provided to `UdpMessage.Bind` message.
+Java
+:  @@snip [JavaUdpMulticast.java]($code$/java/jdocs/io/JavaUdpMulticast.java) { #multicast-group }
 
-@@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #bind }
+Socket options must be provided to @scala[`UdpMessage.Bind`]@java[`UdpMessage.bind`] message.
+
+Scala
+:  @@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #bind }
+
+Java
+:  @@snip [JavaUdpMulticast.java]($code$/java/jdocs/io/JavaUdpMulticast.java) { #bind }

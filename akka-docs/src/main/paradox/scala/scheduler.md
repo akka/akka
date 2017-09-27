@@ -10,6 +10,10 @@ You can schedule sending of messages to actors and execution of tasks
 (functions or Runnable).  You will get a `Cancellable` back that you can call
 `cancel` on to cancel the execution of the scheduled operation.
 
+When scheduling periodic or single messages in an actor to itself it is recommended to
+use the @ref:[Actor Timers](actors.md#actors-timers) instead of using the `Scheduler`
+directly.
+
 The scheduler in Akka is designed for high-throughput of thousands up to millions 
 of triggers. The prime use-case being triggering Actor receive timeouts, Future timeouts,
 circuit breakers and other time dependent events which happen all-the-time and in many 
@@ -36,11 +40,35 @@ by the `akka.scheduler.tick-duration` configuration property.
 
 ## Some examples
 
-@@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #imports1 #schedule-one-off-message }
+Scala
+:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #imports1 }
 
-@@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-thunk }
+Java
+:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #imports1 }
 
-@@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-recurring }
+Schedule to send the "foo"-message to the testActor after 50ms:
+
+Scala
+:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-message } 
+
+Java
+:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-message }
+
+Schedule a @scala[function]@java[`Runnable`], that sends the current time to the testActor, to be executed after 50ms:
+
+Scala
+:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-thunk }
+
+Java
+:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-thunk }
+
+Schedule to send the "Tick"-message to the `tickActor` after 0ms repeating every 50ms:
+
+Scala
+:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-recurring }
+
+Java
+:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-recurring }
 
 @@@ warning
 
@@ -71,7 +99,11 @@ The actual scheduler implementation is loaded reflectively upon
 different one using the `akka.scheduler.implementation` configuration
 property. The referenced class must implement the following interface:
 
-@@snip [Scheduler.scala]($akka$/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #scheduler }
+Scala
+:  @@snip [Scheduler.scala]($akka$/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #scheduler }
+
+Java
+:  @@snip [AbstractScheduler.java]($akka$/akka-actor/src/main/java/akka/actor/AbstractScheduler.java) { #scheduler }
 
 ## The Cancellable interface
 

@@ -13,8 +13,8 @@ import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWi
 import akka.protobuf.{ ByteString, MessageLite }
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.Deadline
 import java.io.NotSerializableException
 
@@ -166,8 +166,11 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     builder.setAllowLocalRoutees(settings.allowLocalRoutees)
       .setMaxInstancesPerNode(settings.maxInstancesPerNode)
       .setTotalInstances(settings.totalInstances)
+      .addAllUseRoles(settings.useRoles.asJava)
 
+    // for backwards compatibility
     settings.useRole.foreach(builder.setUseRole)
+
     builder.build()
   }
 
@@ -244,7 +247,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
 
   private def gossipToProto(gossip: Gossip): cm.Gossip.Builder = {
     val allMembers = gossip.members.toVector
-    val allAddresses: Vector[UniqueAddress] = allMembers.map(_.uniqueAddress)
+    val allAddresses: Vector[UniqueAddress] = allMembers.map(_.uniqueAddress) ++ gossip.tombstones.keys
     val addressMapping = allAddresses.zipWithIndex.toMap
     val allRoles = allMembers.foldLeft(Set.empty[String])((acc, m) ⇒ acc union m.roles).to[Vector]
     val roleMapping = allRoles.zipWithIndex.toMap
@@ -271,6 +274,12 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       }
     }
 
+    def tombstoneToProto(t: (UniqueAddress, Long)): cm.Tombstone =
+      cm.Tombstone.newBuilder()
+        .setAddressIndex(mapUniqueAddress(t._1))
+        .setTimestamp(t._2)
+        .build()
+
     val reachability = reachabilityToProto(gossip.overview.reachability)
     val members = gossip.members.map(memberToProto)
     val seen = gossip.overview.seen.map(mapUniqueAddress)
@@ -279,8 +288,12 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       addAllObserverReachability(reachability.map(_.build).asJava)
 
     cm.Gossip.newBuilder().addAllAllAddresses(allAddresses.map(uniqueAddressToProto(_).build).asJava).
-      addAllAllRoles(allRoles.asJava).addAllAllHashes(allHashes.asJava).addAllMembers(members.map(_.build).asJava).
-      setOverview(overview).setVersion(vectorClockToProto(gossip.version, hashMapping))
+      addAllAllRoles(allRoles.asJava)
+      .addAllAllHashes(allHashes.asJava)
+      .addAllMembers(members.map(_.build).asJava)
+      .setOverview(overview)
+      .setVersion(vectorClockToProto(gossip.version, hashMapping))
+      .addAllTombstones(gossip.tombstones.map(tombstoneToProto).asJava)
   }
 
   private def vectorClockToProto(version: VectorClock, hashMapping: Map[String, Int]): cm.VectorClock.Builder = {
@@ -336,15 +349,35 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
 
     def memberFromProto(member: cm.Member) =
       new Member(addressMapping(member.getAddressIndex), member.getUpNumber, memberStatusFromInt(member.getStatus.getNumber),
-        member.getRolesIndexesList.asScala.map(roleMapping(_))(breakOut))
+        rolesFromProto(member.getRolesIndexesList.asScala))
+
+    def rolesFromProto(roleIndexes: Seq[Integer]): Set[String] = {
+      var containsDc = false
+      var roles = Set.empty[String]
+
+      for {
+        roleIndex ← roleIndexes
+        role = roleMapping(roleIndex)
+      } {
+        if (role.startsWith(ClusterSettings.DcRolePrefix)) containsDc = true
+        roles += role
+      }
+
+      if (!containsDc) roles + (ClusterSettings.DcRolePrefix + "default")
+      else roles
+    }
+
+    def tombstoneFromProto(tombstone: cm.Tombstone): (UniqueAddress, Long) =
+      (addressMapping(tombstone.getAddressIndex), tombstone.getTimestamp)
 
     val members: immutable.SortedSet[Member] = gossip.getMembersList.asScala.map(memberFromProto)(breakOut)
 
     val reachability = reachabilityFromProto(gossip.getOverview.getObserverReachabilityList.asScala)
     val seen: Set[UniqueAddress] = gossip.getOverview.getSeenList.asScala.map(addressMapping(_))(breakOut)
     val overview = GossipOverview(seen, reachability)
+    val tombstones: Map[UniqueAddress, Long] = gossip.getTombstonesList.asScala.map(tombstoneFromProto)(breakOut)
 
-    Gossip(members, overview, vectorClockFromProto(gossip.getVersion, hashMapping))
+    Gossip(members, overview, vectorClockFromProto(gossip.getVersion, hashMapping), tombstones)
   }
 
   private def vectorClockFromProto(version: cm.VectorClock, hashMapping: immutable.Seq[String]) = {
@@ -378,11 +411,12 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
   }
 
   private def clusterRouterPoolSettingsFromProto(crps: cm.ClusterRouterPoolSettings): ClusterRouterPoolSettings = {
+    // For backwards compatibility, useRoles is the combination of getUseRole and getUseRolesList
     ClusterRouterPoolSettings(
       totalInstances = crps.getTotalInstances,
       maxInstancesPerNode = crps.getMaxInstancesPerNode,
       allowLocalRoutees = crps.getAllowLocalRoutees,
-      useRole = if (crps.hasUseRole) Some(crps.getUseRole) else None
+      useRoles = if (crps.hasUseRole) { crps.getUseRolesList.asScala.toSet + crps.getUseRole } else { crps.getUseRolesList.asScala.toSet }
     )
   }
 

@@ -168,7 +168,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         writer.expectMsg(Ack)
         pullFromServerSide(remaining = 8, into = buffer)
         buffer.flip()
-        buffer.limit should ===(8)
+        buffer.limit() should ===(8)
 
         // not reply to write commander for writes without Ack
         val unackedWrite = Write(ByteString("morestuff!"))
@@ -198,7 +198,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         writer.send(connectionActor, write)
         pullFromServerSide(remaining = bufferSize, into = buffer)
         buffer.flip()
-        buffer.limit should ===(bufferSize)
+        buffer.limit() should ===(bufferSize)
 
         ByteString(buffer) should ===(testData)
       }
@@ -828,8 +828,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     "report abort before handler is registered (reproducer from #15033)" in {
       // This test needs the OP_CONNECT workaround on Windows, see original report #15033 and parent ticket #15766
 
-      val port = SocketUtil.temporaryServerAddress().getPort
-      val bindAddress = new InetSocketAddress(port)
+      val bindAddress = SocketUtil.temporaryServerAddress()
       val serverSocket = new ServerSocket(bindAddress.getPort, 100, bindAddress.getAddress)
       val connectionProbe = TestProbe()
 
@@ -911,6 +910,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       new ChannelRegistration {
         def enableInterest(op: Int): Unit = interestCallReceiver.ref ! op
         def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op
+        def cancel(): Unit = ()
       }
 
     def createConnectionActorWithoutRegistration(

@@ -100,7 +100,7 @@ object Recovery {
    * Convenience method for skipping recovery in [[PersistentActor]].
    * @see [[Recovery]]
    */
-  val none: Recovery = Recovery(toSequenceNr = 0L)
+  val none: Recovery = Recovery(toSequenceNr = 0L, fromSnapshot = SnapshotSelectionCriteria.None)
 }
 
 final class RecoveryTimedOut(message: String) extends RuntimeException(message) with NoStackTrace
@@ -530,3 +530,7 @@ abstract class AbstractPersistentActor extends AbstractActor with Eventsourced {
 
 }
 
+/**
+ * Java API: Combination of [[AbstractPersistentActor]] and [[akka.actor.AbstractActorWithTimers]].
+ */
+abstract class AbstractPersistentActorWithTimers extends AbstractPersistentActor with Timers

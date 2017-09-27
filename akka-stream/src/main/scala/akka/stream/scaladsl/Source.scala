@@ -162,8 +162,9 @@ final class Source[+Out, +Mat](
   def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
 
   /**
-   * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
+   * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
    */
+  @deprecated("Use `Source.combine` on companion object instead", "2.5.5")
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
@@ -275,7 +276,7 @@ object Source {
    * Streams the elements of an asynchronous source once its given `completion` stage completes.
    * If the `completion` fails the stream is failed with that exception.
    */
-  def fromSourceCompletionStage[T, M](completion: CompletionStage[Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
+  def fromSourceCompletionStage[T, M](completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -355,16 +356,13 @@ object Source {
    * with None.
    */
   def maybe[T]: Source[T, Promise[Option[T]]] =
-    fromGraph(new MaybeSource[T](DefaultAttributes.maybeSource, shape("MaybeSource")))
+    Source.fromGraph(MaybeSource.asInstanceOf[Graph[SourceShape[T], Promise[Option[T]]]])
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
    */
   def failed[T](cause: Throwable): Source[T, NotUsed] =
-    fromGraph(new PublisherSource(
-      ErrorPublisher(cause, "FailedSource")[T],
-      DefaultAttributes.failedSource,
-      shape("FailedSource")))
+    Source.fromGraph(new FailedSource[T](cause))
 
   /**
    * Creates a `Source` that is not materialized until there is downstream demand, when the source gets materialized
@@ -432,7 +430,7 @@ object Source {
   }
 
   /**
-   * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
+   * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit b ⇒
@@ -493,8 +491,6 @@ object Source {
    * for downstream demand unless there is another message waiting for downstream demand, in that case
    * offer result will be completed according to the overflow strategy.
    *
-   * SourceQueue that current source is materialized to is for single thread usage only.
-   *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
@@ -522,6 +518,8 @@ object Source {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * @param create - function that is called on stream start and creates/opens resource.
    * @param read - function that reads data from opened resource. It is called each time backpressure signal
    *             is received. Stream calls close and completes when `read` returns None.
@@ -542,6 +540,8 @@ object Source {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * @param create - function that is called on stream start and creates/opens resource.
    * @param read - function that reads data from opened resource. It is called each time backpressure signal

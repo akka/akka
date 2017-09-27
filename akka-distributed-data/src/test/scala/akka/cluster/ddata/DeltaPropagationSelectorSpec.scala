@@ -9,6 +9,7 @@ import akka.cluster.ddata.Key.KeyId
 import akka.cluster.ddata.Replicator.Internal.DataEnvelope
 import akka.cluster.ddata.Replicator.Internal.Delta
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation
+import akka.cluster.ddata.Replicator.Internal.DeltaPropagation.NoDeltaPlaceholder
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
@@ -22,6 +23,7 @@ object DeltaPropagationSelectorSpec {
       DeltaPropagation(selfUniqueAddress, false, deltas.mapValues {
         case (d, fromSeqNr, toSeqNr) ⇒ Delta(DataEnvelope(d), fromSeqNr, toSeqNr)
       })
+    override def maxDeltaSize: Int = 10
   }
 
   val deltaA = GSet.empty[String] + "a"
@@ -156,6 +158,21 @@ class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheck
       selector.collectPropagations() should ===(Map(nodes(1) → expected5))
 
       selector.collectPropagations() should ===(Map.empty[Address, DeltaPropagation])
+    }
+
+    "discard too large deltas" in {
+      val selector = new TestSelector(selfUniqueAddress, nodes.take(3)) {
+        override def nodesSliceSize(allNodesSize: Int): Int = 1
+      }
+      var data = PNCounterMap.empty[String]
+      (1 to 1000).foreach { n ⇒
+        val d = data.resetDelta.increment(selfUniqueAddress, (n % 2).toString, 1)
+        selector.update("A", d.delta.get)
+        data = d
+      }
+      val expected = DeltaPropagation(selfUniqueAddress, false, Map(
+        "A" → Delta(DataEnvelope(NoDeltaPlaceholder), 1L, 1000L)))
+      selector.collectPropagations() should ===(Map(nodes(0) → expected))
     }
 
     "calcualte right slice size" in {

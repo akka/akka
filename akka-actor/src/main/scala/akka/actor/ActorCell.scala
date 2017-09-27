@@ -153,6 +153,14 @@ trait ActorContext extends ActorRefFactory {
   def watch(subject: ActorRef): ActorRef
 
   /**
+   * Registers this actor as a Monitor for the provided ActorRef.
+   * This actor will receive the specified message when watched
+   * actor is terminated.
+   * @return the provided ActorRef
+   */
+  def watchWith(subject: ActorRef, msg: Any): ActorRef
+
+  /**
    * Unregisters this actor as Monitor for the provided ActorRef.
    * @return the provided ActorRef
    */

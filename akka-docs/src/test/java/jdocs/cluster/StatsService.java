@@ -13,7 +13,10 @@ import akka.actor.AbstractActor;
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope;
 import akka.routing.FromConfig;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 //#service
 public class StatsService extends AbstractActor {
@@ -55,11 +58,11 @@ abstract class StatsService2 extends AbstractActor {
   Iterable<String> routeesPaths = Collections
     .singletonList("/user/statsWorker");
   boolean allowLocalRoutees = true;
-  String useRole = "compute";
+  Set<String> useRoles = new HashSet<>(Arrays.asList("compute"));
   ActorRef workerRouter = getContext().actorOf(
     new ClusterRouterGroup(new ConsistentHashingGroup(routeesPaths),
       new ClusterRouterGroupSettings(totalInstances, routeesPaths,
-        allowLocalRoutees, useRole)).props(), "workerRouter2");
+        allowLocalRoutees, useRoles)).props(), "workerRouter2");
   //#router-lookup-in-code
 }
 
@@ -69,11 +72,11 @@ abstract class StatsService3 extends AbstractActor {
   int totalInstances = 100;
   int maxInstancesPerNode = 3;
   boolean allowLocalRoutees = false;
-  String useRole = "compute";
+  Set<String> useRoles = new HashSet<>(Arrays.asList("compute"));
   ActorRef workerRouter = getContext().actorOf(
     new ClusterRouterPool(new ConsistentHashingPool(0),
       new ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode,
-        allowLocalRoutees, useRole)).props(Props
+        allowLocalRoutees, useRoles)).props(Props
           .create(StatsWorker.class)), "workerRouter3");
   //#router-deploy-in-code
 }

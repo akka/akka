@@ -4,21 +4,15 @@
 
 package akka.remote.artery
 
-import java.nio.charset.Charset
 import java.nio.{ ByteBuffer, ByteOrder }
 
-import akka.actor.{ ActorPath, ActorRef, Address, ChildActorPath }
+import akka.actor.ActorRef
 import akka.io.DirectByteBufferPool
-import akka.remote.artery.compress.CompressionProtocol._
-import akka.remote.artery.compress.{ CompressionTable, InboundCompressions }
+import akka.remote.artery.compress.{ CompressionTable, InboundCompressions, NoInboundCompressions }
 import akka.serialization.Serialization
+import akka.util.{ OptionVal, Unsafe }
+
 import org.agrona.concurrent.{ ManyToManyConcurrentArrayQueue, UnsafeBuffer }
-import akka.util.{ ByteString, CompactByteString, OptionVal, Unsafe }
-
-import akka.remote.artery.compress.NoInboundCompressions
-import akka.util.ByteString.ByteString1C
-
-import scala.annotation.tailrec
 
 /**
  * INTERNAL API
@@ -89,11 +83,6 @@ private[remote] object EnvelopeBuffer {
   // EITHER metadata followed by literals directly OR literals directly in this spot.
   // Mode depends on the `MetadataPresentFlag`.
   val MetadataContainerAndLiteralSectionOffset = 28 // Int
-
-  val UsAscii = Charset.forName("US-ASCII")
-
-  // accessing the internal char array of String when writing literal strings to ByteBuffer
-  val StringValueFieldOffset = Unsafe.instance.objectFieldOffset(classOf[String].getDeclaredField("value"))
 }
 
 /** INTERNAL API */
@@ -377,12 +366,11 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     // Write fixed length parts
     byteBuffer.put(VersionOffset, header.version)
     byteBuffer.put(FlagsOffset, header.flags)
-    byteBuffer.putLong(UidOffset, header.uid)
-    byteBuffer.putInt(SerializerOffset, header.serializer)
-
     // compression table version numbers
     byteBuffer.put(ActorRefCompressionTableVersionOffset, header.outboundActorRefCompression.version)
     byteBuffer.put(ClassManifestCompressionTableVersionOffset, header.outboundClassManifestCompression.version)
+    byteBuffer.putLong(UidOffset, header.uid)
+    byteBuffer.putInt(SerializerOffset, header.serializer)
 
     // maybe write some metadata
     // after metadata is written (or not), buffer is at correct position to continue writing literals
@@ -421,12 +409,11 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     // Read fixed length parts
     header.setVersion(byteBuffer.get(VersionOffset))
     header.setFlags(byteBuffer.get(FlagsOffset))
-    header.setUid(byteBuffer.getLong(UidOffset))
-    header.setSerializer(byteBuffer.getInt(SerializerOffset))
-
     // compression table versions (stored in the Tag)
     header._inboundActorRefCompressionTableVersion = byteBuffer.get(ActorRefCompressionTableVersionOffset)
     header._inboundClassManifestCompressionTableVersion = byteBuffer.get(ClassManifestCompressionTableVersionOffset)
+    header.setUid(byteBuffer.getLong(UidOffset))
+    header.setSerializer(byteBuffer.getInt(SerializerOffset))
 
     byteBuffer.position(MetadataContainerAndLiteralSectionOffset)
     if (header.flag(MetadataPresentFlag)) {
@@ -471,7 +458,8 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     else s
 
   private def readLiteral(): String = {
-    val length = byteBuffer.getShort
+    // Up-cast to Int to avoid up-casting 4 times.
+    val length = byteBuffer.getShort.asInstanceOf[Int]
     if (length == 0) ""
     else {
       ensureLiteralCharsLength(length)
@@ -494,20 +482,11 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
       throw new IllegalArgumentException("Literals longer than 65535 cannot be encoded in the envelope")
 
     byteBuffer.putInt(tagOffset, byteBuffer.position())
-
-    if (length == 0) {
-      byteBuffer.putShort(0)
-    } else {
-      byteBuffer.putShort(length.toShort)
+    byteBuffer.putShort(length.toShort)
+    if (length > 0) {
       ensureLiteralCharsLength(length)
       val bytes = literalBytes
-      val chars = Unsafe.instance.getObject(literal, StringValueFieldOffset).asInstanceOf[Array[Char]]
-      var i = 0
-      while (i < length) {
-        // UsAscii
-        bytes(i) = chars(i).asInstanceOf[Byte]
-        i += 1
-      }
+      Unsafe.copyUSAsciiStrToBytes(literal, bytes)
       byteBuffer.put(bytes, 0, length)
     }
   }

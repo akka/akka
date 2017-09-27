@@ -49,16 +49,20 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
   nodeConfig(first, second, third, fourth, fifth, sixth)(
     ConfigFactory.parseString("akka.cluster.roles =[worker]"))
 
+  //#singleton-message-classes
   object PointToPointChannel {
+    case object UnregistrationOk
+    //#singleton-message-classes
     case object RegisterConsumer
     case object UnregisterConsumer
     case object RegistrationOk
     case object UnexpectedRegistration
-    case object UnregistrationOk
     case object UnexpectedUnregistration
     case object Reset
     case object ResetOk
+    //#singleton-message-classes
   }
+  //#singleton-message-classes
 
   /**
    * This channel is extremely strict with regards to
@@ -105,12 +109,14 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     }
   }
 
+  //#singleton-message-classes
   object Consumer {
     case object End
     case object GetCurrent
     case object Ping
     case object Pong
   }
+  //#singleton-message-classes
 
   /**
    * The Singleton actor
@@ -136,8 +142,8 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
       case n: Int ⇒
         current = n
         delegateTo ! n
-      case x @ (RegistrationOk | UnexpectedRegistration) ⇒
-        delegateTo ! x
+      case message @ (RegistrationOk | UnexpectedRegistration) ⇒
+        delegateTo ! message
       case GetCurrent ⇒
         sender() ! current
       //#consumer-end
@@ -222,12 +228,26 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   def createSingletonProxy(): ActorRef = {
     //#create-singleton-proxy
-    system.actorOf(
+    val proxy = system.actorOf(
       ClusterSingletonProxy.props(
         singletonManagerPath = "/user/consumer",
         settings = ClusterSingletonProxySettings(system).withRole("worker")),
       name = "consumerProxy")
     //#create-singleton-proxy
+    proxy
+  }
+
+  def createSingletonProxyDc(): ActorRef = {
+    //#create-singleton-proxy-dc
+    val proxyDcB = system.actorOf(
+      ClusterSingletonProxy.props(
+        singletonManagerPath = "/user/consumer",
+        settings = ClusterSingletonProxySettings(system)
+          .withRole("worker")
+          .withDataCenter("B")),
+      name = "consumerProxyDcB")
+    //#create-singleton-proxy-dc
+    proxyDcB
   }
 
   def verifyProxyMsg(oldest: RoleName, proxyNode: RoleName, msg: Int): Unit = {

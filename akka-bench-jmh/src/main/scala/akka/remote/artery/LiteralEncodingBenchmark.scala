@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
+import akka.util.Unsafe
 import org.openjdk.jmh.annotations._
 
 @State(Scope.Benchmark)
@@ -22,8 +23,6 @@ class LiteralEncodingBenchmark {
   private val buffer = ByteBuffer.allocate(128).order(ByteOrder.LITTLE_ENDIAN)
   private val literalChars = Array.ofDim[Char](64)
   private val literalBytes = Array.ofDim[Byte](64)
-  private val unsafe = akka.util.Unsafe.instance
-  private val stringValueFieldOffset = unsafe.objectFieldOffset(classOf[String].getDeclaredField("value"))
 
   @Benchmark
   def getBytesNewArray(): String = {
@@ -84,18 +83,13 @@ class LiteralEncodingBenchmark {
     val length = str.length()
     // write
     buffer.clear()
-    val chars = unsafe.getObject(str, stringValueFieldOffset).asInstanceOf[Array[Char]]
-    var i = 0
-    while (i < length) {
-      literalBytes(i) = chars(i).asInstanceOf[Byte]
-      i += 1
-    }
+    Unsafe.copyUSAsciiStrToBytes(str, literalBytes)
     buffer.put(literalBytes, 0, length)
     buffer.flip()
 
     // read
     buffer.get(literalBytes, 0, length)
-    i = 0
+    var i = 0
     while (i < length) {
       // UsAscii
       literalChars(i) = literalBytes(i).asInstanceOf[Char]

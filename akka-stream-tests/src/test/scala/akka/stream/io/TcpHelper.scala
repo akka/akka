@@ -12,7 +12,7 @@ import akka.testkit.{ TestKitBase, TestProbe }
 import akka.util.ByteString
 import java.net.InetSocketAddress
 import scala.collection.immutable.Queue
-import akka.stream.testkit.TestUtils.temporaryServerAddress
+import akka.testkit.SocketUtil.temporaryServerAddress
 
 import scala.concurrent.duration._
 

@@ -9,11 +9,44 @@ import akka.annotation.InternalApi
 import akka.persistence.fsm.PersistentFSM.FSMState
 import akka.persistence.serialization.Message
 import akka.persistence.{ PersistentActor, RecoveryCompleted, SnapshotOffer }
+import com.typesafe.config.Config
 
 import scala.annotation.varargs
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+
+/**
+ * SnapshotAfter Extension Id and factory for creating SnapshotAfter extension
+ */
+private[akka] object SnapshotAfter extends ExtensionId[SnapshotAfter] with ExtensionIdProvider {
+  override def get(system: ActorSystem): SnapshotAfter = super.get(system)
+
+  override def lookup = SnapshotAfter
+
+  override def createExtension(system: ExtendedActorSystem): SnapshotAfter = new SnapshotAfter(system.settings.config)
+}
+
+/**
+ * SnapshotAfter enables PersistentFSM to take periodical snapshot.
+ * See `akka.persistence.fsm.snapshot-after` for configuration options.
+ */
+private[akka] class SnapshotAfter(config: Config) extends Extension {
+  val key = "akka.persistence.fsm.snapshot-after"
+  val snapshotAfterValue = config.getString(key).toLowerCase match {
+    case "off" ⇒ None
+    case _     ⇒ Some(config.getInt(key))
+  }
+
+  /**
+   * Function that takes lastSequenceNr as the param, and returns whether the passed
+   * sequence number should trigger auto snapshot or not
+   */
+  val isSnapshotAfterSeqNo: Long ⇒ Boolean = snapshotAfterValue match {
+    case Some(snapShotAfterValue) ⇒ seqNo: Long ⇒ seqNo % snapShotAfterValue == 0
+    case None ⇒ seqNo: Long ⇒ false //always false, if snapshotAfter is not specified in config
+  }
+}
 
 /**
  * A FSM implementation with persistent state.
@@ -112,20 +145,29 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
       var nextData: D = stateData
       var handlersExecutedCounter = 0
 
+      val snapshotAfterExtension = SnapshotAfter.get(context.system)
+      var doSnapshot: Boolean = false
+
       def applyStateOnLastHandler() = {
         handlersExecutedCounter += 1
         if (handlersExecutedCounter == eventsToPersist.size) {
           super.applyState(nextState using nextData)
           currentStateTimeout = nextState.timeout
           nextState.afterTransitionDo(stateData)
+          if (doSnapshot) {
+            log.info("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
+            saveStateSnapshot()
+          }
         }
       }
 
       persistAll[Any](eventsToPersist) {
         case domainEventTag(event) ⇒
           nextData = applyEvent(event, nextData)
+          doSnapshot = doSnapshot || snapshotAfterExtension.isSnapshotAfterSeqNo(lastSequenceNr)
           applyStateOnLastHandler()
         case StateChangeEvent(stateIdentifier, timeout) ⇒
+          doSnapshot = doSnapshot || snapshotAfterExtension.isSnapshotAfterSeqNo(lastSequenceNr)
           applyStateOnLastHandler()
       }
     }
@@ -152,8 +194,7 @@ object PersistentFSM {
    * @param stateIdentifier FSM state identifier
    * @param timeout FSM state timeout
    */
-  @InternalApi
-  private[persistence] case class StateChangeEvent(stateIdentifier: String, timeout: Option[FiniteDuration]) extends PersistentFsmEvent
+  case class StateChangeEvent(stateIdentifier: String, timeout: Option[FiniteDuration]) extends PersistentFsmEvent
 
   /**
    * FSM state and data snapshot
@@ -247,9 +288,9 @@ object PersistentFSM {
   /**
    * INTERNAL API
    */
-  // FIXME: what about the cancellable?
   @InternalApi
-  private[persistence] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext)
+  private[persistence] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int,
+                                              owner: AnyRef)(context: ActorContext)
     extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
     private val scheduler = context.system.scheduler

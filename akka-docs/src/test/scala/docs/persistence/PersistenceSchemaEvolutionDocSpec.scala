@@ -4,8 +4,11 @@
 
 package docs.persistence
 
+import java.io.NotSerializableException
+
 import scala.language.reflectiveCalls
 import java.nio.charset.Charset
+
 import akka.actor.ActorSystem
 import akka.persistence.journal.{ EventAdapter, EventSeq }
 import akka.serialization.{ SerializationExtension, SerializerWithStringManifest }
@@ -13,6 +16,7 @@ import akka.testkit.TestKit
 import com.typesafe.config._
 import org.scalatest.WordSpec
 import spray.json.JsObject
+
 import scala.concurrent.duration._
 import docs.persistence.proto.FlightAppModels
 
@@ -82,7 +86,7 @@ class ProtobufReadOptional {
           // use generated protobuf serializer
           seatReserved(FlightAppModels.SeatReserved.parseFrom(bytes))
         case _ =>
-          throw new IllegalArgumentException("Unable to handle manifest: " + manifest)
+          throw new NotSerializableException("Unable to handle manifest: " + manifest)
       }
 
     override def toBinary(o: AnyRef): Array[Byte] = o match {
@@ -197,7 +201,7 @@ object SimplestCustomSerializer {
           val nameAndSurname = new String(bytes, Utf8)
           val Array(name, surname) = nameAndSurname.split("[|]")
           Person(name, surname)
-        case _ => throw new IllegalArgumentException(
+        case _ => throw new NotSerializableException(
           s"Unable to deserialize from bytes, manifest was: $manifest! Bytes length: " +
             bytes.length)
       }
@@ -317,7 +321,7 @@ class RenamedEventAwareSerializer extends SerializerWithStringManifest {
     manifest match {
       case OldPayloadClassName => SamplePayload(new String(bytes, Utf8))
       case MyPayloadClassName  => SamplePayload(new String(bytes, Utf8))
-      case other               => throw new Exception(s"unexpected manifest [$other]")
+      case other               => throw new NotSerializableException(s"unexpected manifest [$other]")
     }
 }
 //#string-serializer-handle-rename

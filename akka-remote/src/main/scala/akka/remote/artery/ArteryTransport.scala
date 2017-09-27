@@ -49,7 +49,6 @@ import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
 import akka.stream.Materializer
 import akka.stream.SharedKillSwitch
-import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
@@ -65,8 +64,6 @@ import org.agrona.ErrorHandler
 import org.agrona.IoUtil
 import org.agrona.concurrent.BackoffIdleStrategy
 import akka.remote.artery.Decoder.InboundCompressionAccess
-import akka.remote.transport.TestTransport
-import com.typesafe.config.ConfigFactory
 
 /**
  * INTERNAL API
@@ -609,7 +606,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   // TODO Add FR Events
   private def startAeronErrorLog(): Unit = {
-    areonErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE))
+    areonErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE), log)
     val lastTimestamp = new AtomicLong(0L)
     import system.dispatcher
     aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
@@ -729,34 +726,36 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
       } else {
         val hubKillSwitch = KillSwitches.shared("hubKillSwitch")
-        val source: Source[(OptionVal[InternalActorRef], InboundEnvelope), (ResourceLifecycle, InboundCompressionAccess)] =
+        val source: Source[InboundEnvelope, (ResourceLifecycle, InboundCompressionAccess)] =
           aeronSource(ordinaryStreamId, envelopeBufferPool)
             .via(hubKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
-            .map(env ⇒ (env.recipient, env))
 
-        val (resourceLife, compressionAccess, broadcastHub) =
-          source
-            .toMat(BroadcastHub.sink(bufferSize = settings.Advanced.InboundBroadcastHubBufferSize))({ case ((a, b), c) ⇒ (a, b, c) })
-            .run()(materializer)
-
-        // select lane based on destination, to preserve message order
-        def shouldUseLane(recipient: OptionVal[ActorRef], targetLane: Int): Boolean =
-          recipient match {
-            case OptionVal.Some(r) ⇒ math.abs(r.path.uid) % inboundLanes == targetLane
-            case OptionVal.None    ⇒ 0 == targetLane
+        // Select lane based on destination to preserve message order,
+        // Also include the uid of the sending system in the hash to spread
+        // "hot" destinations, e.g. ActorSelection anchor.
+        val partitioner: InboundEnvelope ⇒ Int = env ⇒ {
+          env.recipient match {
+            case OptionVal.Some(r) ⇒
+              val a = r.path.uid
+              val b = env.originUid
+              val hashA = 23 + a
+              val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
+              math.abs(hash) % inboundLanes
+            case OptionVal.None ⇒ 0
           }
+        }
+
+        val (resourceLife, compressionAccess, hub) =
+          source
+            .toMat(Sink.fromGraph(new FixedSizePartitionHub[InboundEnvelope](partitioner, inboundLanes,
+              settings.Advanced.InboundHubBufferSize)))({ case ((a, b), c) ⇒ (a, b, c) })
+            .run()(materializer)
 
         val lane = inboundSink(envelopeBufferPool)
         val completedValues: Vector[Future[Done]] =
-          (0 until inboundLanes).map { laneId ⇒
-            broadcastHub
-              // TODO replace filter with "PartitionHub" when that is implemented
-              // must use a tuple here because envelope is pooled and must only be read in the selected lane
-              // otherwise, the lane that actually processes it might have already released it.
-              .collect { case (recipient, env) if shouldUseLane(recipient, laneId) ⇒ env }
-              .toMat(lane)(Keep.right)
-              .run()(materializer)
+          (0 until inboundLanes).map { _ ⇒
+            hub.toMat(lane)(Keep.right).run()(materializer)
           }(collection.breakOut)
 
         import system.dispatcher

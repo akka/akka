@@ -57,19 +57,21 @@ final class Flow[-In, +Out, +Mat](
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    * {{{
-   *     +----------------------------+
-   *     | Resulting Sink             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | flow | ~Out~> | sink |  |
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
+   *     +------------------------------+
+   *     | Resulting Sink[In, Mat]      |
+   *     |                              |
+   *     |  +------+          +------+  |
+   *     |  |      |          |      |  |
+   * In ~~> | flow | ~~Out~~> | sink |  |
+   *     |  |   Mat|          |     M|  |
+   *     |  +------+          +------+  |
+   *     +------------------------------+
    * }}}
    * The materialized value of the combined [[Sink]] will be the materialized
    * value of the current flow (ignoring the given Sink’s value), use
    * [[Flow#toMat[Mat2* toMat]] if a different strategy is needed.
+   *
+   * See also [[toMat]] when access to materialized values of the parameter is needed.
    */
   def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Sink[In, Mat] = toMat(sink)(Keep.left)
 
@@ -77,12 +79,12 @@ final class Flow[-In, +Out, +Mat](
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    * {{{
    *     +----------------------------+
-   *     | Resulting Sink             |
+   *     | Resulting Sink[In, M2]     |
    *     |                            |
    *     |  +------+        +------+  |
    *     |  |      |        |      |  |
    * In ~~> | flow | ~Out~> | sink |  |
-   *     |  |      |        |      |  |
+   *     |  |   Mat|        |     M|  |
    *     |  +------+        +------+  |
    *     +----------------------------+
    * }}}
@@ -316,10 +318,25 @@ object Flow {
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
    * will be sent to the Sink and the Flow's output will come from the Source.
    *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +----------------------------------------------+
+   *     | Resulting Flow[I, O, NotUsed]                |
+   *     |                                              |
+   *     |  +---------+                  +-----------+  |
+   *     |  |         |                  |           |  |
+   * I  ~~> | Sink[I] | [no-connection!] | Source[O] | ~~> O
+   *     |  |         |                  |           |  |
+   *     |  +---------+                  +-----------+  |
+   *     +----------------------------------------------+
+   * }}}
+   *
    * The completion of the Sink and Source sides of a Flow constructed using
    * this method are independent. So if the Sink receives a completion signal,
    * the Source side will remain unaware of that. If you are looking to couple
    * the termination signals of the two sides use `Flow.fromSinkAndSourceCoupled` instead.
+   *
+   * See also [[fromSinkAndSourceMat]] when access to materialized values of the parameters is needed.
    */
   def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     fromSinkAndSourceMat(sink, source)(Keep.none)
@@ -327,6 +344,19 @@ object Flow {
   /**
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
    * will be sent to the Sink and the Flow's output will come from the Source.
+   *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +-------------------------------------------------------+
+   *     | Resulting Flow[I, O, M]                              |
+   *     |                                                      |
+   *     |  +-------------+                  +---------------+  |
+   *     |  |             |                  |               |  |
+   * I  ~~> | Sink[I, M1] | [no-connection!] | Source[O, M2] | ~~> O
+   *     |  |             |                  |               |  |
+   *     |  +-------------+                  +---------------+  |
+   *     +------------------------------------------------------+
+   * }}}
    *
    * The completion of the Sink and Source sides of a Flow constructed using
    * this method are independent. So if the Sink receives a completion signal,
@@ -342,6 +372,19 @@ object Flow {
   /**
    * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
    * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +---------------------------------------------+
+   *     | Resulting Flow[I, O, NotUsed]               |
+   *     |                                             |
+   *     |  +---------+                 +-----------+  |
+   *     |  |         |                 |           |  |
+   * I  ~~> | Sink[I] | ~~~(coupled)~~~ | Source[O] | ~~> O
+   *     |  |         |                 |           |  |
+   *     |  +---------+                 +-----------+  |
+   *     +---------------------------------------------+
+   * }}}
    *
    * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
    * however the Sink will also be completed. The table below illustrates the effects in detail:
@@ -384,6 +427,7 @@ object Flow {
    *   </tr>
    * </table>
    *
+   * See also [[fromSinkAndSourceCoupledMat]] when access to materialized values of the parameters is needed.
    */
   def fromSinkAndSourceCoupled[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     fromSinkAndSourceCoupledMat(sink, source)(Keep.none)
@@ -391,6 +435,19 @@ object Flow {
   /**
    * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
    * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * The resulting flow can be visualized as:
+   * {{{
+   *     +-----------------------------------------------------+
+   *     | Resulting Flow[I, O, M]                             |
+   *     |                                                     |
+   *     |  +-------------+                 +---------------+  |
+   *     |  |             |                 |               |  |
+   * I  ~~> | Sink[I, M1] | ~~~(coupled)~~~ | Source[O, M2] | ~~> O
+   *     |  |             |                 |               |  |
+   *     |  +-------------+                 +---------------+  |
+   *     +-----------------------------------------------------+
+   * }}}
    *
    * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
    * however the Sink will also be completed. The table on [[Flow.fromSinkAndSourceCoupled]]
@@ -474,19 +531,21 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Transform this [[Flow]] by appending the given processing steps.
    * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
+   *     +---------------------------------+
+   *     | Resulting Flow[In, T, Mat]  |
+   *     |                                 |
+   *     |  +------+             +------+  |
+   *     |  |      |             |      |  |
+   * In ~~> | this |  ~~Out~~>   | flow | ~~> T
+   *     |  |   Mat|             |     M|  |
+   *     |  +------+             +------+  |
+   *     +---------------------------------+
    * }}}
    * The materialized value of the combined [[Flow]] will be the materialized
    * value of the current flow (ignoring the other Flow’s value), use
    * [[Flow#viaMat viaMat]] if a different strategy is needed.
+   *
+   * See also [[FlowOpsMat.viaMat]] when access to materialized values of the parameter is needed.
    */
   def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T]
 
@@ -536,7 +595,9 @@ trait FlowOps[+Out, +Mat] {
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
-   * attempt to recover at all. Passing -1 will behave exactly the same as  `recoverWith`.
+   * attempt to recover at all.
+   *
+   * A negative `attempts` number is interpreted as "infinite", which results in the exact same behavior as `recoverWith`.
    *
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
@@ -585,6 +646,8 @@ trait FlowOps[+Out, +Mat] {
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the mapping function returns an element
    *
    * '''Backpressures when''' downstream backpressures
@@ -626,6 +689,8 @@ trait FlowOps[+Out, +Mat] {
    * The returned `Iterable` MUST NOT contain `null` values,
    * as they are illegal as stream elements - according to the Reactive Streams specification.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the mapping function returns an element or there are still remaining elements
    * from the previously calculated collection
    *
@@ -659,6 +724,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * The function `f` is always invoked on the elements in the order they arrive.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the Future returned by the provided function finishes for the next element in sequence
    *
    * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream
@@ -691,6 +758,8 @@ trait FlowOps[+Out, +Mat] {
    * The function `f` is always invoked on the elements in the order they arrive (even though the result of the futures
    * returned by `f` might be emitted in a different order).
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' any of the Futures returned by the provided function complete
    *
    * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
@@ -706,6 +775,8 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Only pass on those elements that satisfy the given predicate.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the given predicate returns true for the element
    *
    * '''Backpressures when''' the given predicate returns true for the element and downstream backpressures
@@ -718,6 +789,8 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * Only pass on those elements that NOT satisfy the given predicate.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the given predicate returns false for the element
    *
@@ -760,6 +833,8 @@ trait FlowOps[+Out, +Mat] {
    * The stream will be completed without producing any elements if predicate is false for
    * the first stream element.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the predicate is true
    *
    * '''Backpressures when''' downstream backpressures
@@ -776,6 +851,8 @@ trait FlowOps[+Out, +Mat] {
    * Discard elements at the beginning of the stream while predicate is true.
    * All elements will be taken after predicate returns false first time.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' predicate returned false and for all following stream elements
    *
    * '''Backpressures when''' predicate returned false and downstream backpressures
@@ -790,6 +867,8 @@ trait FlowOps[+Out, +Mat] {
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the provided partial function is defined for the element
    *
@@ -850,6 +929,8 @@ trait FlowOps[+Out, +Mat] {
    * requested from upstream publishers that will then not be processed downstream
    * of this step.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' upstream emits and the accumulated cost has not reached max
    *
    * '''Backpressures when''' downstream backpressures
@@ -891,6 +972,8 @@ trait FlowOps[+Out, +Mat] {
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
    * the stream will continue.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the function scanning the element returns a new element
    *
    * '''Backpressures when''' downstream backpressures
@@ -917,6 +1000,8 @@ trait FlowOps[+Out, +Mat] {
    * [[akka.stream.Supervision.Resume]] current value starts at the previous
    * current value, or zero when it doesn't have one, and the stream will continue.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' the future returned by f` completes
    *
    * '''Backpressures when''' downstream backpressures
@@ -938,6 +1023,8 @@ trait FlowOps[+Out, +Mat] {
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
    * the stream will continue.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' upstream completes
    *
    * '''Backpressures when''' downstream backpressures
@@ -954,6 +1041,8 @@ trait FlowOps[+Out, +Mat] {
    * Similar to `fold` but with an asynchronous function.
    * Applies the given function towards its current and next value,
    * yielding the next current value.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * If the function `f` returns a failure and the supervision decision is
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
@@ -980,6 +1069,8 @@ trait FlowOps[+Out, +Mat] {
    * the reduce stage will fail its downstream with a [[NoSuchElementException]],
    * which is semantically in-line with that Scala's standard library collections
    * do in such situations.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' upstream completes
    *
@@ -1203,6 +1294,8 @@ trait FlowOps[+Out, +Mat] {
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' downstream stops backpressuring and there is a conflated element available
    *
    * '''Backpressures when''' never
@@ -1230,6 +1323,8 @@ trait FlowOps[+Out, +Mat] {
    * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
    *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
    * '''Emits when''' downstream stops backpressuring and there is a conflated element available
    *
    * '''Backpressures when''' never
@@ -1251,6 +1346,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * This only rolls up elements if the upstream is faster, but if the downstream is faster it will not
    * duplicate elements.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' downstream stops backpressuring and there is an aggregated element available
    *
@@ -1333,10 +1430,12 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Emits when''' downstream stops backpressuring and there is a pending element in the buffer
    *
-   * '''Backpressures when''' depending on OverflowStrategy
-   *  * Backpressure - backpressures when buffer is full
-   *  * DropHead, DropTail, DropBuffer - never backpressures
-   *  * Fail - fails the stream if buffer gets full
+   * '''Backpressures when''' downstream backpressures or depending on OverflowStrategy:
+   *  <ul>
+   *    <li>Backpressure - backpressures when buffer is full</li>
+   *    <li>DropHead, DropTail, DropBuffer - never backpressures</li>
+   *    <li>Fail - fails the stream if buffer gets full</li>
+   *  </ul>
    *
    * '''Completes when''' upstream completes and buffered elements have been drained
    *
@@ -1399,6 +1498,8 @@ trait FlowOps[+Out, +Mat] {
    * the element is dropped and the stream and substreams continue.
    *
    * Function `f`  MUST NOT return `null`. This will throw exception and trigger supervision decision mechanism.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' an element for which the grouping function returns a group that has not yet been created.
    * Emits the new group
@@ -1697,7 +1798,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
    *
    * '''Completes when''' upstream completes
    *
@@ -1733,7 +1834,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
-   * '''Backpressures when''' downstream backpressures
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
    *
    * '''Completes when''' upstream completes
    *
@@ -1778,6 +1879,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * Uses implicit [[LoggingAdapter]] if available, otherwise uses an internally created one,
    * which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the mapping function returns an element
    *
@@ -1865,7 +1968,7 @@ trait FlowOps[+Out, +Mat] {
    * Source(List(1, 2, 3)).interleave(List(4, 5, 6, 7), 2) // 1, 2, 4, 5, 3, 6, 7
    * }}}
    *
-   * After one of upstreams is complete than all the rest elements will be emitted from the second one
+   * After one of upstreams is complete then all the rest elements will be emitted from the second one
    *
    * If it gets error from one of upstreams - stream completes with failure.
    *
@@ -1879,13 +1982,37 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int): Repr[U] =
-    via(interleaveGraph(that, segmentSize))
+    interleave(that, segmentSize, eagerClose = false)
+
+  /**
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that`
+   * source, then repeat process.
+   *
+   * If eagerClose is false and one of the upstreams complete the elements from the other upstream will continue passing
+   * through the interleave stage. If eagerClose is true and one of the upstream complete interleave will cancel the
+   * other upstream and complete itself.
+   *
+   * If it gets error from one of upstreams - stream completes with failure.
+   *
+   * '''Emits when''' element is available from the currently consumed upstream
+   *
+   * '''Backpressures when''' downstream backpressures. Signal to current
+   * upstream, switch to next upstream when received `segmentSize` elements
+   *
+   * '''Completes when''' the [[Flow]] and given [[Source]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int, eagerClose: Boolean): Repr[U] =
+    via(interleaveGraph(that, segmentSize, eagerClose))
 
   protected def interleaveGraph[U >: Out, M](
     that:        Graph[SourceShape[U], M],
-    segmentSize: Int): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    segmentSize: Int,
+    eagerClose:  Boolean                  = false): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.create(that) { implicit b ⇒ r ⇒
-      val interleave = b.add(Interleave[U](2, segmentSize))
+      val interleave = b.add(Interleave[U](2, segmentSize, eagerClose))
       r ~> interleave.in(1)
       FlowShape(interleave.in(0), interleave.out)
     }
@@ -2039,19 +2166,22 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    * {{{
-   *     +----------------------------+
-   *     | Resulting Sink             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | flow | ~Out~> | sink |  |
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
+   *     +------------------------------+
+   *     | Resulting Sink[In, Mat]      |
+   *     |                              |
+   *     |  +------+          +------+  |
+   *     |  |      |          |      |  |
+   * In ~~> | flow | ~~Out~~> | sink |  |
+   *     |  |   Mat|          |     M|  |
+   *     |  +------+          +------+  |
+   *     +------------------------------+
    * }}}
+   *
    * The materialized value of the combined [[Sink]] will be the materialized
    * value of the current flow (ignoring the given Sink’s value), use
    * [[Flow#toMat[Mat2* toMat]] if a different strategy is needed.
+   *
+   * See also [[FlowOpsMat.toMat]] when access to materialized values of the parameter is needed.
    */
   def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed
 
@@ -2120,15 +2250,15 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
   /**
    * Transform this [[Flow]] by appending the given processing steps.
    * {{{
-   *     +----------------------------+
-   *     | Resulting Flow             |
-   *     |                            |
-   *     |  +------+        +------+  |
-   *     |  |      |        |      |  |
-   * In ~~> | this | ~Out~> | flow | ~~> T
-   *     |  |      |        |      |  |
-   *     |  +------+        +------+  |
-   *     +----------------------------+
+   *     +---------------------------------+
+   *     | Resulting Flow[In, T, M2]       |
+   *     |                                 |
+   *     |  +------+            +------+   |
+   *     |  |      |            |      |   |
+   * In ~~> | this |  ~~Out~~>  | flow |  ~~> T
+   *     |  |   Mat|            |     M|   |
+   *     |  +------+            +------+   |
+   *     +---------------------------------+
    * }}}
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting Flow.
@@ -2199,7 +2329,7 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
    * then repeat process.
    *
-   * After one of upstreams is complete than all the rest elements will be emitted from the second one
+   * After one of upstreams is complete then all the rest elements will be emitted from the second one
    *
    * If it gets error from one of upstreams - stream completes with failure.
    *
@@ -2209,7 +2339,26 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
   def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
-    viaMat(interleaveGraph(that, request))(matF)
+    interleaveMat(that, request, eagerClose = false)(matF)
+
+  /**
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
+   *
+   * If eagerClose is false and one of the upstreams complete the elements from the other upstream will continue passing
+   * through the interleave stage. If eagerClose is true and one of the upstream complete interleave will cancel the
+   * other upstream and complete itself.
+   *
+   * If it gets error from one of upstreams - stream completes with failure.
+   *
+   * @see [[#interleave]].
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int, eagerClose: Boolean)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
+    viaMat(interleaveGraph(that, request, eagerClose))(matF)
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
