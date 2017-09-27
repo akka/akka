@@ -43,3 +43,7 @@ addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.3")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.6")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
+
+
+// multi-release-jars, needs sbt 1.0 though
+addSbtPlugin("com.lightbend.sbt" % "sbt-multi-release-jar" % "0.1.0")
