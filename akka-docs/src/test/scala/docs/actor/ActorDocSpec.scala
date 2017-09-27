@@ -3,6 +3,7 @@
  */
 package docs.actor
 
+import akka.actor.Kill
 import jdocs.actor.ImmutableMessage
 
 import language.postfixOps
@@ -586,13 +587,28 @@ class ActorDocSpec extends AkkaSpec("""
         }
       }
       //#watch
+
       val victim = system.actorOf(Props(classOf[WatchActor], this))
       implicit val sender = testActor
-      //#kill
       victim ! "kill"
       expectMsg("finished")
-      //#kill
     }
+  }
+
+  "using Kill" in {
+    val victim = system.actorOf(TestActors.echoActorProps)
+    implicit val sender = testActor
+    val context = this
+
+    //#kill
+    context.watch(victim) // watch the Actor to receive Terminated message once it dies
+
+    victim ! Kill
+
+    expectMsgPF(hint = "expecting victim to terminate") {
+      case Terminated(v) if v == victim => v // the Actor has indeed terminated 
+    }
+    //#kill
   }
 
   "demonstrate ActorSelection" in {
