@@ -113,7 +113,7 @@ object UnidocRoot extends AutoPlugin {
       .getOrElse(sbtunidoc.ScalaUnidocPlugin)
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
-      javacOptions in (JavaUnidoc, unidoc) ++= Seq("-Xdoclint:none"),
+      javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none"),
       // genjavadoc needs to generate synthetic methods since the java code uses them
       scalacOptions += "-P:genjavadoc:suppressSynthetic=false"
     )).getOrElse(Nil)
