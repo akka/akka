@@ -1014,6 +1014,28 @@ Scala
 Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #poison-pill }
 
+<a id="killing-actors"></a>
+### Killing an Actor
+
+You can also "kill" an actor by sending a `Kill` message. Unlike `PoisonPill` this will cause 
+the actor to throw a `ActorKilledException`, triggering a failure. The actor will
+suspend operation and its supervisor will be asked how to handle the failure,
+which may mean resuming the actor, restarting it or terminating it completely.
+See @ref:[What Supervision Means](general/supervision.md#supervision-directives) for more information.
+
+Use `Kill` like this:
+
+Scala
+:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #kill }
+
+Java
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #kill }
+
+In general though it is not recommended to overly rely on either `PoisonPill` or `Kill` in 
+designing your actor interactions, as often times a protocol-level message like `PleaseCleanupAndStop`
+which the actor knows how to handle is encouraged. The messages are there for being able to stop actors
+over which design you do not have control over.
+
 ### Graceful Stop
 
 `gracefulStop` is useful if you need to wait for termination or compose ordered
@@ -1272,22 +1294,6 @@ then you should use the @scala[`UnboundedStash` trait] @java[`AbstractActorWithU
 
 @@@
 
-<a id="killing-actors"></a>
-## Killing an Actor
-
-You can kill an actor by sending a `Kill` message. This will cause the actor
-to throw a `ActorKilledException`, triggering a failure. The actor will
-suspend operation and its supervisor will be asked how to handle the failure,
-which may mean resuming the actor, restarting it or terminating it completely.
-See @ref:[What Supervision Means](general/supervision.md#supervision-directives) for more information.
-
-Use `Kill` like this:
-
-Scala
-:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #kill }
-
-Java
-:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #kill }
 
 ## Actors and exceptions
 

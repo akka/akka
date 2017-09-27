@@ -789,8 +789,10 @@ public class ActorDocTest extends AbstractJavaTest {
         watch(victim);
         //#kill
         victim.tell(akka.actor.Kill.getInstance(), ActorRef.noSender());
-        //#kill
+        
+        // expecting the actor to indeed terminate:
         expectTerminated(Duration.create(3, TimeUnit.SECONDS), victim);
+        //#kill
       }
     };
   }
