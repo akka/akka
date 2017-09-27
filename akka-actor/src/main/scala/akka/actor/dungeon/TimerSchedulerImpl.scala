@@ -94,7 +94,6 @@ import akka.util.OptionVal
           OptionVal.None // message should be ignored
         } else if (timerMsg.generation == t.generation) {
           // valid timer
-          log.debug("Received timer [{}]", timerMsg.key)
           if (!t.repeat)
             timers -= t.key
           OptionVal.Some(t.msg.asInstanceOf[AnyRef])
