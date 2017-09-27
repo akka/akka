@@ -104,18 +104,6 @@ will be discarded if downstream is terminated.
 whatever happens first. Empty groups will not be emitted if no elements are received from upstream. The last group
 before end-of-stream will contain the buffered elements since the previously emitted group.
 
-The output may look like this:
-
-```
-Thread-0 Emitted 1 Future(Success(Enqueued))
-Thread-0 Emitted 1 Future(Success(Enqueued))
-scala-execution-context-global-16 simulating delay, Vector(1, 1)
-Thread-0 Emitted 1 Future(Success(Enqueued))
-Thread-0 Emitted 1 Future(Success(Enqueued))
-Thread-0 Emitted 1 Future(Success(Enqueued))
-scala-execution-context-global-17 simulating delay, Vector(1, 1)
-```
-
 `SourceQueue.offer` returns `Future[QueueOfferResult]` which completes with `QueueOfferResult.Enqueued`
 if element was added to buffer or sent downstream. It completes with `QueueOfferResult.Dropped` if element 
 was dropped. Can also complete  with `QueueOfferResult.Failure` - when stream failed or 
