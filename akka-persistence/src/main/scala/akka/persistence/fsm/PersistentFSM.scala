@@ -151,7 +151,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
       def applyStateOnLastHandler() = {
         handlersExecutedCounter += 1
         if (handlersExecutedCounter == eventsToPersist.size) {
-          super.applyState(nextState using nextData)
+          super.applyState(nextState.copy(stateData = nextData))
           currentStateTimeout = nextState.timeout
           nextState.afterTransitionDo(stateData)
           if (doSnapshot) {
@@ -366,11 +366,9 @@ object PersistentFSM {
       copy(replies = replyValue :: replies)
     }
 
-    /**
-     * Modify state transition descriptor with new state data. The data will be
-     * set when transitioning to the new state.
-     */
     @InternalApi
+    @Deprecated
+    @deprecated("Internal API easily to be confused with regular FSM's using. Use regular events (`applying`). Internally, `copy` can be used instead.", "2.5.5")
     private[akka] def using(@deprecatedName('nextStateDate) nextStateData: D): State[S, D, E] = {
       copy(stateData = nextStateData)
     }
