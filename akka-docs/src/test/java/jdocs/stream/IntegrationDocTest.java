@@ -6,6 +6,7 @@ package jdocs.stream;
 
 import akka.NotUsed;
 import akka.actor.*;
+import akka.japi.function.Function;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.TestProbe;
@@ -308,7 +309,67 @@ public class IntegrationDocTest extends AbstractJavaTest {
     }
   }
   //#ask-actor
-  
+
+  class ActorWithBackPressureExample {
+      //#actorref-with-ack
+      String initMessage = "start";
+      String onCompleteMessage = "done";
+      String ackMessage = "ack";
+
+      class ActorWithBackPressure extends AbstractActor{
+          @Override
+          public Receive createReceive() {
+              return receiveBuilder().matchEquals(initMessage,s -> {
+                  getSender().tell(ackMessage,getSelf());
+                  System.out.println(initMessage);
+              }).matchEquals(Integer.class,number -> {
+                  getSender().tell(ackMessage,getSelf());
+                  System.out.println("processing "+number);
+              }).matchEquals(onCompleteMessage,s -> {
+                  getSender().tell(onCompleteMessage,getSelf());
+                  System.out.println(onCompleteMessage);
+              }).build();
+          }
+      }
+
+      public void start(){
+          Function<Throwable, Object> onFailure = Throwable::getMessage;
+          ActorRef actor = system.actorOf(Props.create(ActorWithBackPressure.class));
+          Sink<Integer,NotUsed> sink = Sink.actorRefWithAck(actor,initMessage,ackMessage,onCompleteMessage,onFailure);
+
+          Source.from(Arrays.asList(1, 2, 3)).toMat(sink, Keep.right());
+      }
+      //#actorref-with-ack
+  }
+
+  //#source-queue
+  static class SourceQueueActor extends AbstractActor{
+      int bufferSize = 10;
+      OverflowStrategy overflowStrategy = OverflowStrategy.dropHead();
+      final Materializer mat = ActorMaterializer.create(system);
+      SourceQueueWithComplete<Object> sourceQueue = Source.queue(bufferSize,overflowStrategy).to(Sink.head()).run(mat);
+
+      @Override
+      public Receive createReceive() {
+          return receiveBuilder().matchEquals(Integer.class,number -> {
+              sourceQueue.offer(number).whenComplete((result,e)-> {
+                  try {
+                      if (result == QueueOfferResult.enqueued()) {
+                          getSender().tell(number+" Enqueued",getSelf());
+                      }
+                      if (result == QueueOfferResult.dropped()) {
+                          getSender().tell(number+" Dropped",getSelf());
+                      }
+                  } catch(Exception ex) {
+                      getSender().tell(number+" Failed with ${err.getMessage}",getSelf());
+
+                  }
+              });
+          }).build();
+      }
+  }
+  //#source-queue
+
   @SuppressWarnings("unchecked")
   @Test
   public void mapAsyncPlusAsk() throws Exception {

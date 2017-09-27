@@ -142,20 +142,21 @@ object IntegrationDocSpec {
           sender() ! ackMessage
           println(initMessage)
         }
+        case msg: Int ⇒{
+          sender() ! ackMessage
+          println(s"processing $msg")
+        }
         case `onCompleteMessage` ⇒{
           sender() ! onCompleteMessage
           println(onCompleteMessage)
-        }
-        case msg: Int ⇒{
-          println(s"processing $msg")
-          sender() ! ackMessage
         }
       }
     }
 
     val actor = system.actorOf(Props[ActorWithBackPressure])
 
-    Source(List(1, 2, 3)).runWith(
+    Source(List(1, 2, 3))
+      .runWith(
       Sink.actorRefWithAck(actor, initMessage, ackMessage, onCompleteMessage))
 
     //#actorref-with-ack

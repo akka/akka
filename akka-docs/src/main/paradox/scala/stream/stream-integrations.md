@@ -63,6 +63,9 @@ message after each stream element to make back-pressure work.
 Scala
 :   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #actorref-with-ack }
 
+Java
+:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #actorref-with-ack }
+
 actorRefWithAck Sends the elements of the stream to the given `ActorWithBackPressure` that sends back back-pressure signal.
 
 First element is always `onInitMessage`, then stream is waiting for acknowledgement message, `ackMessage` from the
@@ -105,6 +108,9 @@ buffer is full.
 
 Scala
 :   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #source-queue }
+
+Java
+:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #source-queue }
 
 Using `Source.queue` you can push elements to the queue and they will be emitted to the stream if there is
 demand from downstream, otherwise they will be buffered until request for demand is received. Elements in the buffer
