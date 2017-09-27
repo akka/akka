@@ -10,9 +10,9 @@ import akka.testkit.AkkaSpec
 import akka.stream.scaladsl._
 import akka.stream._
 
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import akka.testkit.TestProbe
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ ActorRef, ActorSystem }
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.Props
@@ -20,7 +20,8 @@ import akka.util.Timeout
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.stream.scaladsl.Flow
-import akka.stream.QueueOfferResult.{Dropped, Enqueued, Failure, QueueClosed}
+import akka.stream.QueueOfferResult.{ Dropped, Enqueued, Failure, QueueClosed }
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object IntegrationDocSpec {
   import TwitterStreamQuickstartDocSpec._
@@ -138,15 +139,15 @@ object IntegrationDocSpec {
 
     class ActorWithBackPressure() extends Actor {
       def receive = {
-        case `initMessage` ⇒{
+        case `initMessage` ⇒ {
           sender() ! ackMessage
           println(initMessage)
         }
-        case msg: Int ⇒{
+        case msg: Int ⇒ {
           sender() ! ackMessage
           println(s"processing $msg")
         }
-        case `onCompleteMessage` ⇒{
+        case `onCompleteMessage` ⇒ {
           sender() ! onCompleteMessage
           println(onCompleteMessage)
         }
@@ -157,14 +158,14 @@ object IntegrationDocSpec {
 
     Source(List(1, 2, 3))
       .runWith(
-      Sink.actorRefWithAck(actor, initMessage, ackMessage, onCompleteMessage))
+        Sink.actorRefWithAck(actor, initMessage, ackMessage, onCompleteMessage))
 
     //#actorref-with-ack
 
   }
 
   //#source-queue
-  class SourceQueueActor extends Actor{
+  class SourceQueueActor extends Actor {
     implicit val system = ActorSystem("SourceQueue")
     implicit val materializer = ActorMaterializer()
     private val bufferSize = 10
@@ -173,8 +174,8 @@ object IntegrationDocSpec {
     private val sourceQueue = Source.queue[Int](bufferSize, overFlowStrategy).to(Sink.head).run()
 
     override def receive: Receive = {
-      case number:Int => {
-        sourceQueue.offer(number).collect{
+      case number: Int => {
+        sourceQueue.offer(number).collect {
           case Enqueued     => sender() ! s"$number Enqueued"
           case Dropped      => sender() ! s"$number Dropped"
           case Failure(err) => sender() ! s"$number Failed with ${err.getMessage}"
@@ -183,7 +184,7 @@ object IntegrationDocSpec {
       }
     }
   }
-    //#source-queue
+  //#source-queue
 }
 
 class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
