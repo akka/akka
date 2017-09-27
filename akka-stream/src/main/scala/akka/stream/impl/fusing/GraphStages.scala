@@ -323,7 +323,8 @@ import scala.util.control.NonFatal
               // we used to try to materialize the "inner" source here just to get
               // the materialized value, but that is not safe and may cause the graph shell
               // to leak/stay alive after the stage completes
-              materialized.tryFailure(new RuntimeException("Stream finished before future source completed"))
+
+              materialized.tryFailure(new StreamDetachedException("Stream finished before future source completed"))
             }
 
             super.onDownstreamFinish()

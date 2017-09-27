@@ -182,13 +182,16 @@ object Source {
 
   /**
    * Streams the elements of the given future source once it successfully completes.
-   * If the future fails the stream is failed.
+   * If the [[Future]] fails the stream is failed with the exception from the future. If downstream cancels before the
+   * stream completes the materialized [[Future]] will be failed with a [[StreamDetachedException]].
    */
   def fromFutureSource[T, M](future: Future[_ <: Graph[SourceShape[T], M]]): javadsl.Source[T, Future[M]] = new Source(scaladsl.Source.fromFutureSource(future))
 
   /**
-   * Streams the elements of an asynchronous source once its given `completion` stage completes.
-   * If the `completion` fails the stream is failed with that exception.
+   * Streams the elements of an asynchronous source once its given [[CompletionStage]] completes.
+   * If the [[CompletionStage]] fails the stream is failed with the exception from the future.
+   * If downstream cancels before the stream completes the materialized [[CompletionStage]] will be failed
+   * with a [[StreamDetachedException]]
    */
   def fromSourceCompletionStage[T, M](completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): javadsl.Source[T, CompletionStage[M]] =
     new Source(scaladsl.Source.fromSourceCompletionStage(completion))
