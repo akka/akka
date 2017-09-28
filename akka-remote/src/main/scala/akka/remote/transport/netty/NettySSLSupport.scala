@@ -21,10 +21,13 @@ import scala.util.Try
 import java.nio.file.Files
 import java.nio.file.Paths
 
+import akka.actor.setup.ActorSystemSetup
+import akka.remote.security.setup.CryptoServiceProviderSetup
+
 /**
  * INTERNAL API
  */
-private[akka] class SSLSettings(config: Config) {
+private[akka] class SSLSettings(config: Config, setup: ActorSystemSetup) {
   import config.{ getBoolean, getString, getStringList }
 
   val SSLKeyStore = getString("key-store")
@@ -41,6 +44,8 @@ private[akka] class SSLSettings(config: Config) {
   val SSLRandomNumberGenerator = getString("random-number-generator")
 
   val SSLRequireMutualAuthentication = getBoolean("require-mutual-authentication")
+
+  val cryptoServiceProviderSetup = setup.get[CryptoServiceProviderSetup]
 
   private val sslContext = new AtomicReference[SSLContext]()
   @tailrec final def getOrCreateContext(log: MarkerLoggingAdapter): SSLContext =
@@ -61,16 +66,37 @@ private[akka] class SSLSettings(config: Config) {
         keyStore
       }
 
-      val keyManagers = {
-        val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-        factory.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray)
-        factory.getKeyManagers
+      def create[T](trustManagerFactory: T)(initializer: (T) ⇒ Unit) = {
+        initializer(trustManagerFactory)
+        trustManagerFactory
       }
-      val trustManagers = {
-        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-        trustManagerFactory.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword))
+
+      def createTrustManagers = {
+        val trustManagerFactory = cryptoServiceProviderSetup match {
+          case None ⇒
+            create(TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm))(_.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword)))
+          case Some(CryptoServiceProviderSetup(provider, _, None)) ⇒
+            create(TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm, provider))(_.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword)))
+          case Some(CryptoServiceProviderSetup(provider, _, Some(trustManagerFactoryParameters))) ⇒
+            create(TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm, provider))(_.init(trustManagerFactoryParameters))
+        }
         trustManagerFactory.getTrustManagers
       }
+
+      def createKeyManagers = {
+        val factory = cryptoServiceProviderSetup match {
+          case None ⇒
+            create(KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm))(_.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray))
+          case Some(CryptoServiceProviderSetup(provider, None, _)) ⇒
+            create(KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm, provider))(_.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray))
+          case Some(CryptoServiceProviderSetup(provider, Some(keyManagerFactoryParameters), _)) ⇒
+            create(KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm, provider))(_.init(keyManagerFactoryParameters))
+        }
+        factory.getKeyManagers
+      }
+
+      val keyManagers = createKeyManagers
+      val trustManagers = createTrustManagers
       val rng = createSecureRandom(log)
 
       val ctx = SSLContext.getInstance(SSLProtocol)

@@ -7,6 +7,7 @@ package akka.remote
 import java.security.NoSuchAlgorithmException
 
 import akka.actor._
+import akka.actor.setup.ActorSystemSetup
 import akka.event.NoMarkerLogging
 import akka.pattern.ask
 import akka.remote.Configuration.{ CipherConfig, getCipherConfig }
@@ -61,7 +62,7 @@ object Configuration {
 
       val config = ConfigFactory.parseString(conf.format(localPort, trustStore, keyStore, cipher, enabled.mkString(", ")))
       val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty.ssl.security")
-      val settings = new SSLSettings(fullConfig)
+      val settings = new SSLSettings(fullConfig, ActorSystemSetup.empty)
 
       val rng = settings.createSecureRandom(NoMarkerLogging)
 
