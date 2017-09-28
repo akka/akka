@@ -27,6 +27,5 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
 // addSbtPlugin("com.lightbend.sbt" % "sbt-multi-release-jar" % "0.1.0") // we don't actually use it so far
 
 // for advanced PR validation features
-// version with sbt 1.0 support is in snapshots for now
-//resolvers += Resolver.sonatypeRepo("snapshots")
-//addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.3-SNAPSHOT") // TODO
+resolvers += Resolver.url("2m-sbt-plugin-releases", url("https://dl.bintray.com/2m/sbt-plugins/"))(Resolver.ivyStylePatterns)
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2+23-5c795699")
