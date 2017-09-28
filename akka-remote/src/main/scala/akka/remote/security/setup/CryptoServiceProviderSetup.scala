@@ -5,29 +5,38 @@ import javax.net.ssl.ManagerFactoryParameters
 
 import akka.actor.setup.Setup
 
-// TODO should be one Setup per Provider, with a common trait
-case class CryptoServiceProviderSetup(
-  provider:                      Provider,
-  keyManagerFactoryParameters:   Option[KeyManagerFactoryParameters],
-  trustManagerFactoryParameters: Option[TrustManagerFactoryParameters]) extends Setup
-
-object CryptoServiceProviderSetup {
-  class Builder(provider: Provider) {
-    var keyManagerFactoryParameters: Option[KeyManagerFactoryParameters] = None
-    var trustManagerFactoryParameters: Option[TrustManagerFactoryParameters] = None
-    def withTrustManagerFactoryParameters(trustManagerFactoryParameters: TrustManagerFactoryParameters): Builder = {
-      this.trustManagerFactoryParameters = Some(trustManagerFactoryParameters)
-      this
-    }
-    def withKeyManagerFactoryParameters(keyManagerFactoryParameters: KeyManagerFactoryParameters): Builder = {
-      this.keyManagerFactoryParameters = Some(keyManagerFactoryParameters)
-      this
-    }
-    def build(): CryptoServiceProviderSetup = CryptoServiceProviderSetup(provider, keyManagerFactoryParameters, trustManagerFactoryParameters)
-  }
-
-  def builder(provider: Provider): Builder = new Builder(provider)
+abstract class CryptoServiceProviderSetup extends Setup {
+  def provider: Provider
 }
 
-trait KeyManagerFactoryParameters extends ManagerFactoryParameters
-trait TrustManagerFactoryParameters extends ManagerFactoryParameters
+case class KeyManagerFactorySetup(provider: Provider, keyManagerFactoryParameters: Option[ManagerFactoryParameters])
+  extends CryptoServiceProviderSetup
+
+object KeyManagerFactorySetup {
+  /**
+   * Java API
+   */
+  def create(provider: Provider): KeyManagerFactorySetup = KeyManagerFactorySetup(provider, None)
+
+  /**
+   * Java API
+   */
+  def create(keyManagerFactoryProvider: Provider, keyManagerFactoryParameters: ManagerFactoryParameters): KeyManagerFactorySetup =
+    KeyManagerFactorySetup(keyManagerFactoryProvider, Some(keyManagerFactoryParameters))
+}
+
+case class TrustManagerFactorySetup(provider: Provider, trustManagerFactoryParameters: Option[ManagerFactoryParameters])
+  extends CryptoServiceProviderSetup
+
+object TrustManagerFactorySetup {
+  /**
+   * Java API
+   */
+  def create(provider: Provider): TrustManagerFactorySetup = TrustManagerFactorySetup(provider, None)
+
+  /**
+   * Java API
+   */
+  def create(trustManagerFactoryProvider: Provider, trustManagerFactoryParameters: ManagerFactoryParameters): TrustManagerFactorySetup =
+    TrustManagerFactorySetup(trustManagerFactoryProvider, Some(trustManagerFactoryParameters))
+}

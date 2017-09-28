@@ -22,7 +22,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 import akka.actor.setup.ActorSystemSetup
-import akka.remote.security.setup.CryptoServiceProviderSetup
+import akka.remote.security.setup.{ KeyManagerFactorySetup, TrustManagerFactorySetup }
 
 /**
  * INTERNAL API
@@ -45,7 +45,8 @@ private[akka] class SSLSettings(config: Config, setup: ActorSystemSetup) {
 
   val SSLRequireMutualAuthentication = getBoolean("require-mutual-authentication")
 
-  val cryptoServiceProviderSetup = setup.get[CryptoServiceProviderSetup]
+  val keyManagerFactorySetup = setup.get[KeyManagerFactorySetup]
+  val trustManagerFactorySetup = setup.get[TrustManagerFactorySetup]
 
   private val sslContext = new AtomicReference[SSLContext]()
   @tailrec final def getOrCreateContext(log: MarkerLoggingAdapter): SSLContext =
@@ -72,24 +73,24 @@ private[akka] class SSLSettings(config: Config, setup: ActorSystemSetup) {
       }
 
       def createTrustManagers = {
-        val trustManagerFactory = cryptoServiceProviderSetup match {
+        val trustManagerFactory = trustManagerFactorySetup match {
           case None ⇒
             create(TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm))(_.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword)))
-          case Some(CryptoServiceProviderSetup(provider, _, None)) ⇒
+          case Some(TrustManagerFactorySetup(provider, None)) ⇒
             create(TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm, provider))(_.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword)))
-          case Some(CryptoServiceProviderSetup(provider, _, Some(trustManagerFactoryParameters))) ⇒
+          case Some(TrustManagerFactorySetup(provider, Some(trustManagerFactoryParameters))) ⇒
             create(TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm, provider))(_.init(trustManagerFactoryParameters))
         }
         trustManagerFactory.getTrustManagers
       }
 
       def createKeyManagers = {
-        val factory = cryptoServiceProviderSetup match {
+        val factory = keyManagerFactorySetup match {
           case None ⇒
             create(KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm))(_.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray))
-          case Some(CryptoServiceProviderSetup(provider, None, _)) ⇒
+          case Some(KeyManagerFactorySetup(provider, None)) ⇒
             create(KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm, provider))(_.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray))
-          case Some(CryptoServiceProviderSetup(provider, Some(keyManagerFactoryParameters), _)) ⇒
+          case Some(KeyManagerFactorySetup(provider, Some(keyManagerFactoryParameters))) ⇒
             create(KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm, provider))(_.init(keyManagerFactoryParameters))
         }
         factory.getKeyManagers

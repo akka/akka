@@ -1,15 +1,15 @@
 package akka.remote
 
-import java.security.{AccessController, KeyStore, PrivilegedAction, Provider}
+import java.security.{ AccessController, KeyStore, PrivilegedAction, Provider }
 import java.util.Collections
 import javax.net.ssl._
 
 import akka.actor.setup.ActorSystemSetup
 import akka.event.NoMarkerLogging
-import akka.remote.security.setup.{CryptoServiceProviderSetup, KeyManagerFactoryParameters, TrustManagerFactoryParameters}
+import akka.remote.security.setup.{ CryptoServiceProviderSetup, KeyManagerFactorySetup, TrustManagerFactorySetup }
 import akka.remote.transport.netty.SSLSettings
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfter, Inspectors, Matchers, WordSpec}
+import org.scalatest.{ BeforeAndAfter, Inspectors, Matchers, WordSpec }
 
 class CryptoServiceProviderSpec extends WordSpec with Matchers with BeforeAndAfter with Inspectors {
 
@@ -31,60 +31,73 @@ class CryptoServiceProviderSpec extends WordSpec with Matchers with BeforeAndAft
 
   private val knownFilesConfig = fileConfigString.withFallback(referenceConfig)
 
-  private val dummyManagerFactoryParameters = new ManagerFactoryParameters with KeyManagerFactoryParameters with TrustManagerFactoryParameters {}
+  private val dummyManagerFactoryParameters = new ManagerFactoryParameters {}
 
   "NettySSLHandler" when {
     "no CryptoServiceProviderSetup" should {
       "succeed" in {
-        val sslSettings = new SSLSettings(knownFilesConfig, ActorSystemSetup.empty)
-
-        sslSettings.cryptoServiceProviderSetup shouldBe None
-
-        sslSettings.getOrCreateContext(NoMarkerLogging)
+        createSSLSettingsAndCreateContext(None)
 
         forAll(Constants.properties) {
           System.getProperty(_) shouldBe null
         }
       }
     }
-    "CryptoServiceProviderSetup included" should {
-      def createSSLSettingsAndCreateContext(setup: CryptoServiceProviderSetup) = {
-        val sslSettings = new SSLSettings(
-          knownFilesConfig,
-          ActorSystemSetup.empty.and(setup)
-        )
-        sslSettings.getOrCreateContext(NoMarkerLogging)
 
-        sslSettings.cryptoServiceProviderSetup shouldBe Some(setup)
-      }
-
+    "KeyManagerFactorySetup included" should {
       "use given Provider without ManagerFactoryParameters" in {
-        createSSLSettingsAndCreateContext(CryptoServiceProviderSetup(TestProvider, None, None))
-
-        System.getProperty(Constants.keyManagerFactoryInitWithKeystore) shouldBe Constants.accessed
-        System.getProperty(Constants.keyManagerFactoryInitWithSpec) shouldBe null
-
-        System.getProperty(Constants.trustManagerFactoryInitWithKeystore) shouldBe Constants.accessed
-        System.getProperty(Constants.trustManagerFactoryInitWithSpec) shouldBe null
-      }
-      "use given Provider with ManagerFactoryParameters for KeyManagerFactory" in {
-        createSSLSettingsAndCreateContext(CryptoServiceProviderSetup(TestProvider, Some(dummyManagerFactoryParameters), None))
-
-        System.getProperty(Constants.keyManagerFactoryInitWithKeystore) shouldBe null
-        System.getProperty(Constants.keyManagerFactoryInitWithSpec) shouldBe Constants.accessed
-
-        System.getProperty(Constants.trustManagerFactoryInitWithKeystore) shouldBe Constants.accessed
-        System.getProperty(Constants.trustManagerFactoryInitWithSpec) shouldBe null
-      }
-      "use given Provider with ManagerFactoryParameters for TrustManagerFactory" in {
-        createSSLSettingsAndCreateContext(CryptoServiceProviderSetup(TestProvider, None, Some(dummyManagerFactoryParameters)))
+        createSSLSettingsAndCreateContext(Some(KeyManagerFactorySetup(TestProvider, None)))
 
         System.getProperty(Constants.keyManagerFactoryInitWithKeystore) shouldBe Constants.accessed
         System.getProperty(Constants.keyManagerFactoryInitWithSpec) shouldBe null
 
         System.getProperty(Constants.trustManagerFactoryInitWithKeystore) shouldBe null
+        System.getProperty(Constants.trustManagerFactoryInitWithSpec) shouldBe null
+      }
+      "use given Provider with ManagerFactoryParameters" in {
+        createSSLSettingsAndCreateContext(Some(KeyManagerFactorySetup(TestProvider, Some(dummyManagerFactoryParameters))))
+
+        System.getProperty(Constants.keyManagerFactoryInitWithKeystore) shouldBe null
+        System.getProperty(Constants.keyManagerFactoryInitWithSpec) shouldBe Constants.accessed
+
+        System.getProperty(Constants.trustManagerFactoryInitWithKeystore) shouldBe null
+        System.getProperty(Constants.trustManagerFactoryInitWithSpec) shouldBe null
+      }
+    }
+    "TrustManagerFactorySetup included" should {
+      "use given Provider without ManagerFactoryParameters" in {
+        createSSLSettingsAndCreateContext(Some(TrustManagerFactorySetup(TestProvider, None)))
+
+        System.getProperty(Constants.keyManagerFactoryInitWithKeystore) shouldBe null
+        System.getProperty(Constants.keyManagerFactoryInitWithSpec) shouldBe null
+
+        System.getProperty(Constants.trustManagerFactoryInitWithKeystore) shouldBe Constants.accessed
+        System.getProperty(Constants.trustManagerFactoryInitWithSpec) shouldBe null
+      }
+      "use given Provider with ManagerFactoryParameters" in {
+        createSSLSettingsAndCreateContext(Some(TrustManagerFactorySetup(TestProvider, Some(dummyManagerFactoryParameters))))
+
+        System.getProperty(Constants.keyManagerFactoryInitWithKeystore) shouldBe null
+        System.getProperty(Constants.keyManagerFactoryInitWithSpec) shouldBe null
+
+        System.getProperty(Constants.trustManagerFactoryInitWithKeystore) shouldBe null
         System.getProperty(Constants.trustManagerFactoryInitWithSpec) shouldBe Constants.accessed
       }
+    }
+  }
+
+  private def createSSLSettingsAndCreateContext(setup: Option[CryptoServiceProviderSetup]) = {
+    val sslSettings = new SSLSettings(
+      knownFilesConfig,
+      setup.map(ActorSystemSetup.empty.and).getOrElse(ActorSystemSetup.empty)
+    )
+    sslSettings.getOrCreateContext(NoMarkerLogging)
+
+    setup match {
+      case Some(_: KeyManagerFactorySetup)   ⇒ sslSettings.keyManagerFactorySetup shouldBe setup
+      case Some(_: TrustManagerFactorySetup) ⇒ sslSettings.trustManagerFactorySetup shouldBe setup
+      case Some(unexpected)                  ⇒ fail(s"Unexpected setup type $unexpected")
+      case None                              ⇒
     }
   }
 }
