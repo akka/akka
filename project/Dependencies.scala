@@ -20,23 +20,22 @@ object Dependencies {
   val aeronVersion = "1.3.0"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.11", "2.12.3"),
+    // crossScalaVersions := Seq("2.11.11", "2.12.3"), // FIXME make sure JDK9 stuff only is detected when we use Scala 2.12 https://github.com/sbt/sbt-multi-release-jar/issues/9
+    crossScalaVersions := Seq("2.12.3"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 12 => "1.13.5" // does not work for 2.11
-        case _                       => "1.13.2"
-      }
-    ),
+        case Some((2, n)) if n >= 12 ⇒ "1.13.4" // does not work for 2.11
+        case _ ⇒ "1.13.2"
+      }),
     scalaTestVersion := "3.0.4",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 12 => "0.8.0"
         case _                       => "0.7.0"
       }
-    }
-  )
+    })
 
   object Compile {
     // Compile
@@ -157,7 +156,7 @@ object Dependencies {
 
   val persistenceQuery = l ++= Seq(Test.scalatest.value, Test.junit, Test.commonsIo)
 
-  val persistenceTck = l ++= Seq(Test.scalatest.value.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
+  val persistenceTck = l ++= Seq(Test.scalatest.value.withConfigurations(Some("compile")), Test.junit.withConfigurations(Some("compile")))
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 

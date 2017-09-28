@@ -6,3 +6,4 @@ OSGi.clusterSharding
 Dependencies.clusterSharding
 
 enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
+enablePlugins(MultiNode)
