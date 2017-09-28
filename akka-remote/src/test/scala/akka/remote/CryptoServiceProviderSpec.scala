@@ -103,11 +103,10 @@ class CryptoServiceProviderSpec extends WordSpec with Matchers with BeforeAndAft
 }
 
 object TestProvider extends Provider("test-provider", 1.0d, "test provider") { outer ⇒
-  AccessController.doPrivileged(new PrivilegedAction[outer.type] {
+  AccessController.doPrivileged(new PrivilegedAction[Unit] {
     override def run() = {
       putService(new Provider.Service(outer, "KeyManagerFactory", KeyManagerFactory.getDefaultAlgorithm, classOf[SpyKeyManagerFactorySpi].getCanonicalName, Collections.emptyList(), Collections.emptyMap()))
       putService(new Provider.Service(outer, "TrustManagerFactory", TrustManagerFactory.getDefaultAlgorithm, classOf[SpyTrustManagerFactorySpi].getCanonicalName, Collections.emptyList(), Collections.emptyMap()))
-      outer
     }
   })
 }
