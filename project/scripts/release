@@ -159,7 +159,7 @@ if [ $# != "1" ]; then
   fail "A release version must be specified"
 fi
 
-declare -r java_version="$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')"
+declare -r java_version="$(java -version 2>&1 | awk -F '"' '/version/ {print $2}' | sed -e 's/-Debian//')"
 if [ "$java_version" != "9" ]; then
   echo "Detected java version: $java_version"
   fail "Akka MUST be released using JDK 9, in order to support j.u.c.Flow interfaces in Akka Streams"
