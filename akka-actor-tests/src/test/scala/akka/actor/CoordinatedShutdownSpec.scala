@@ -3,14 +3,17 @@
  */
 package akka.actor
 
+import java.util
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Future
-
 import akka.Done
-import akka.testkit.AkkaSpec
-import com.typesafe.config.ConfigFactory
+import akka.testkit.{ AkkaSpec, TestKit }
+import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.CoordinatedShutdown.Phase
+
+import scala.collection.JavaConverters._
 import scala.concurrent.Promise
 import java.util.concurrent.TimeoutException
 
@@ -266,7 +269,8 @@ class CoordinatedShutdownSpec extends AkkaSpec {
     }
 
     "parse phases from config" in {
-      CoordinatedShutdown.phasesFromConfig(ConfigFactory.parseString("""
+      CoordinatedShutdown.phasesFromConfig(ConfigFactory.parseString(
+        """
         default-phase-timeout = 10s
         phases {
           a = {}
@@ -291,6 +295,94 @@ class CoordinatedShutdownSpec extends AkkaSpec {
       system.whenTerminated.isCompleted should ===(true)
     }
 
+    "add and remove user JVM hooks with run-by-jvm-shutdown-hook = off, terminate-actor-system = off" in new JvmHookTest {
+      lazy val systemName = s"CoordinatedShutdownSpec-JvmHooks-1-${System.currentTimeMillis()}"
+      lazy val systemConfig = ConfigFactory.parseString(
+        """
+          akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
+          akka.coordinated-shutdown.terminate-actor-system = off
+        """)
+
+      override def withSystemRunning(newSystem: ActorSystem): Unit = {
+        val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
+          println(s"User JVM hook from ${newSystem.name}")
+        )
+        myHooksCount should ===(2) // one user, one from system
+        cancellable.cancel()
+      }
+    }
+
+    "add and remove user JVM hooks with run-by-jvm-shutdown-hook = on, terminate-actor-system = off" in new JvmHookTest {
+      lazy val systemName = s"CoordinatedShutdownSpec-JvmHooks-2-${System.currentTimeMillis()}"
+      lazy val systemConfig = ConfigFactory.parseString(
+        """
+          akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
+          akka.coordinated-shutdown.terminate-actor-system = off
+        """)
+
+      override def withSystemRunning(newSystem: ActorSystem): Unit = {
+        val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
+          println(s"User JVM hook from ${newSystem.name}")
+        )
+        myHooksCount should ===(2) // one user, one from system
+
+        cancellable.cancel()
+      }
+    }
+
+    "add and remove user JVM hooks with run-by-jvm-shutdown-hook = on, terminate-actor-system = on" in new JvmHookTest {
+      lazy val systemName = s"CoordinatedShutdownSpec-JvmHooks-3-${System.currentTimeMillis()}"
+      lazy val systemConfig = ConfigFactory.parseString(
+        """
+          akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
+          akka.coordinated-shutdown.terminate-actor-system = on
+        """)
+
+      def withSystemRunning(newSystem: ActorSystem): Unit = {
+        val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
+          println(s"User JVM hook from ${newSystem.name}")
+        )
+        myHooksCount should ===(2) // one user, one from actor system
+        cancellable.cancel()
+      }
+
+    }
+  }
+
+  abstract class JvmHookTest {
+
+    private val initialHookCount = trixyTrixCountJvmHooks(systemName)
+    initialHookCount should ===(0)
+
+    def systemName: String
+    def systemConfig: Config
+    def withSystemRunning(system: ActorSystem): Unit
+
+    val newSystem = ActorSystem(
+      systemName,
+      ConfigFactory.parseString(
+        """
+          akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
+          akka.coordinated-shutdown.terminate-actor-system = on
+        """))
+
+    withSystemRunning(newSystem)
+
+    TestKit.shutdownActorSystem(newSystem)
+
+    trixyTrixCountJvmHooks(systemName) should ===(0)
+
+    protected def myHooksCount: Int = trixyTrixCountJvmHooks(systemName)
+
+    private def trixyTrixCountJvmHooks(systemName: String): Int = {
+      val clazz = Class.forName("java.lang.ApplicationShutdownHooks")
+      val field = clazz.getDeclaredField("hooks")
+      field.setAccessible(true)
+      clazz.synchronized {
+        val hooks = field.get(null).asInstanceOf[util.IdentityHashMap[Thread, Thread]]
+        hooks.values().asScala.count(_.getName.startsWith(systemName))
+      }
+    }
   }
 
 }
