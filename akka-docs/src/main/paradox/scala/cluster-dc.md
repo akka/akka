@@ -3,6 +3,15 @@
 This chapter describes how @ref[Akka Cluster](cluster-usage.md) can be used across
 multiple data centers, availability zones or regions.
 
+The reason for making the Akka Cluster aware of data center boundaries is that
+communication across data centers typically has much higher latency and higher failure
+rate than communication between nodes in the same data center.
+
+However, the grouping of nodes is not limited to the physical boundaries of data centers,
+even though that is the primary use case. It could also be used as a logical grouping
+for other reasons, such as isolation of certain nodes to improve stability or splitting
+up a large cluster into smaller groups of nodes for better scalability.
+
 ## Motivation
 
 There can be many reasons for using more than one data center, such as:
@@ -16,7 +25,7 @@ data centers but that may result in problems like:
 
 * Management of Cluster membership is stalled during network partitions as described in a 
   separate section below. This means that nodes would not be able to be added and removed 
-  during network partitions across data centers.  
+  during network partitions across data centers.
 * More frequent false positive failure detection for network connections across data centers.
   It's not possible to have different settings for the failure detection within vs. across
   data centers.
@@ -159,18 +168,22 @@ as explained above, Cluster Sharding is also per data center. Each data center w
 and regions, isolated from other data centers. If you start an entity type with the same name on all 
 nodes and you have defined 3 different data centers and then send messages to the same entity id to
 sharding regions in all data centers you will end up with 3 active entity instances for that entity id,
-one in each data center. 
+one in each data center. This is because the region/coordinator is only aware of its own data center
+and will activate the entity there. It's unaware of the existence of corresponding entitiy in the 
+other data centers.
 
 Especially when used together with Akka Persistence that is based on the single-writer principle
 it is important to avoid running the same entity at multiple locations at the same time with a
-shared data store. Lightbend's Akka Team is working on a solution that will support multiple active
-entities that will work nicely together with Cluster Sharding across multiple data centers.
+shared data store. That would result in corrupt data since the events stored by different instances
+may be interleaved and would be interpreted differently in a later replay. Lightbend's Akka Team 
+is working on a solution that will support multiple active entities that will work nicely together 
+with Cluster Sharding across multiple data centers.
 
 If you need global entities you have to pick one data center to host that entity type and only start
 `ClusterSharding` on nodes of that data center. If the data center is unreachable from another data center the
 entities are inaccessible, which is a reasonable trade-off when selecting consistency over availability.
 
-The Cluster Sharding proxy is by default routing messages to the shard regions in the own data center, but
+The Cluster Sharding proxy is by default routing messages to the shard regions in their own data center, but
 it can be started with a `data-center` parameter to define that it should route messages to a shard region
 located in another data center. That is useful for example when having global entities in one data center and 
 accessing them from other data centers.
