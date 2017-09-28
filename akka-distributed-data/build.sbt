@@ -5,4 +5,4 @@ Formatting.formatSettings
 OSGi.distributedData
 Dependencies.distributedData
 
-enablePlugins(MultiNodeScalaTest)
+enablePlugins(akka.Unidoc, MultiNodeScalaTest)

@@ -6,3 +6,5 @@ OSGi.osgi
 Dependencies.osgi
 
 parallelExecution in Test := false
+
+enablePlugins(akka.Unidoc)

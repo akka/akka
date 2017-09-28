@@ -6,3 +6,5 @@ OSGi.testkit
 Dependencies.testkit // to fix scaladoc generation
 
 initialCommands += "import akka.testkit._"
+
+enablePlugins(akka.Unidoc)

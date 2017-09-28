@@ -10,4 +10,4 @@ unmanagedSourceDirectories in Compile += {
   (scalaSource in Compile).value.getParentFile / s"scala-$ver"
 }
 
-enablePlugins(spray.boilerplate.BoilerplatePlugin)
+enablePlugins(akka.Unidoc, spray.boilerplate.BoilerplatePlugin)

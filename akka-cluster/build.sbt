@@ -9,4 +9,4 @@ Dependencies.cluster
 // disable parallel tests
 parallelExecution in Test := false
 
-enablePlugins(MultiNodeScalaTest)
+enablePlugins(akka.Unidoc, MultiNodeScalaTest)

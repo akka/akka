@@ -16,5 +16,5 @@ description := """|
                   |support for these modules.
                   |""".stripMargin
 
-enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
+enablePlugins(akka.Unidoc, MultiNode, ScaladocNoVerificationOfDiagrams)
 disablePlugins(MimaPlugin)
