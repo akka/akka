@@ -252,7 +252,7 @@ trap signal_bail_out SIGHUP SIGINT SIGTERM
 
 # try to run a command or otherwise bail out
 function try {
-  "$@" || bail_out "Failed to create release"
+  "$@" || bail_out "Failed to create release while running command '$@'"
 }
 
 echolog "Creating release ${version} ..."
