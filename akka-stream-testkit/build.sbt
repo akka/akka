@@ -4,3 +4,5 @@ AkkaBuild.defaultSettings
 Formatting.formatSettings
 OSGi.streamTestkit
 Dependencies.streamTestkit
+
+enablePlugins(akka.Unidoc)

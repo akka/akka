@@ -6,3 +6,5 @@ OSGi.remote
 Dependencies.remote
 
 parallelExecution in Test := false
+
+enablePlugins(akka.Unidoc)

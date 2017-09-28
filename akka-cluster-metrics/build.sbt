@@ -9,4 +9,4 @@ Dependencies.clusterMetrics
 
 parallelExecution in Test := false
 
-enablePlugins(MultiNodeScalaTest)
+enablePlugins(akka.Unidoc, MultiNodeScalaTest)

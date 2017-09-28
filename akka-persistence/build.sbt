@@ -6,3 +6,5 @@ OSGi.persistence
 Dependencies.persistence
 
 fork in Test := true
+
+enablePlugins(akka.Unidoc)

@@ -5,5 +5,4 @@ Formatting.formatSettings
 OSGi.clusterSharding
 Dependencies.clusterSharding
 
-enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
-enablePlugins(MultiNode)
+enablePlugins(akka.Unidoc, MultiNode, ScaladocNoVerificationOfDiagrams)
