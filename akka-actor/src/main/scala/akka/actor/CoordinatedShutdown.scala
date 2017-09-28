@@ -6,30 +6,31 @@ package akka.actor
 import scala.concurrent.duration._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
-
 import akka.Done
 import com.typesafe.config.Config
+
 import scala.concurrent.duration.FiniteDuration
 import scala.annotation.tailrec
 import com.typesafe.config.ConfigFactory
 import akka.pattern.after
-import java.util.concurrent.TimeoutException
+
 import scala.util.control.NonFatal
 import akka.event.Logging
 import akka.dispatch.ExecutionContexts
+
 import scala.util.Try
 import scala.concurrent.Await
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
-import java.util.concurrent.CompletionStage
 import java.util.Optional
+
+import akka.util.OptionVal
 
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
   /**
@@ -110,6 +111,15 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     val coord = new CoordinatedShutdown(system, phases)
     initPhaseActorSystemTerminate(system, conf, coord)
     initJvmHook(system, conf, coord)
+    // Avoid leaking actor system references when system is terminated before JVM is #23384
+    system.registerOnTermination {
+      coord.actorSystemJvmHook match {
+        case OptionVal.Some(cancellable) if !runningJvmHook && !cancellable.isCancelled ⇒
+          cancellable.cancel()
+          coord.actorSystemJvmHook = OptionVal.None
+        case _ ⇒
+      }
+    }
     coord
   }
 
@@ -151,7 +161,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   private def initJvmHook(system: ActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
     val runByJvmShutdownHook = conf.getBoolean("run-by-jvm-shutdown-hook")
     if (runByJvmShutdownHook) {
-      coord.addJvmShutdownHook {
+      coord.actorSystemJvmHook = OptionVal.Some(coord.addCancellableJvmShutdownHook {
         runningJvmHook = true // avoid System.exit from PhaseActorSystemTerminate task
         if (!system.whenTerminated.isCompleted) {
           coord.log.info("Starting coordinated shutdown from JVM shutdown hook")
@@ -166,7 +176,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
                 e.getMessage)
           }
         }
-      }
+      })
     }
   }
 
@@ -247,6 +257,7 @@ final class CoordinatedShutdown private[akka] (
   private val runPromise = Promise[Done]()
 
   private var _jvmHooksLatch = new AtomicReference[CountDownLatch](new CountDownLatch(0))
+  @volatile private var actorSystemJvmHook: OptionVal[Cancellable] = OptionVal.None
 
   /**
    * INTERNAL API
@@ -436,33 +447,88 @@ final class CoordinatedShutdown private[akka] (
    * concurrently, but they are running before Akka internal shutdown
    * hooks, e.g. those shutting down Artery.
    */
-  @tailrec def addJvmShutdownHook[T](hook: ⇒ T): Unit = {
+  def addJvmShutdownHook[T](hook: ⇒ T): Unit = addCancellableJvmShutdownHook(hook)
+
+  /**
+   * Scala API: Add a JVM shutdown hook that will be run when the JVM process
+   * begins its shutdown sequence. Added hooks may run in any order
+   * concurrently, but they are running before Akka internal shutdown
+   * hooks, e.g. those shutting down Artery.
+   *
+   * The returned ``Cancellable`` makes it possible to de-register the hook. For example
+   * on actor system shutdown to avoid leaking references to the actor system in tests.
+   *
+   * For shutdown hooks that does not have any requirements on running before the Akka
+   * shutdown hooks the standard library JVM shutdown hooks APIs are better suited.
+   */
+  @tailrec def addCancellableJvmShutdownHook[T](hook: ⇒ T): Cancellable = {
     if (!runStarted.get) {
       val currentLatch = _jvmHooksLatch.get
       val newLatch = new CountDownLatch(currentLatch.getCount.toInt + 1)
       if (_jvmHooksLatch.compareAndSet(currentLatch, newLatch)) {
-        try Runtime.getRuntime.addShutdownHook(new Thread {
+        val thread = new Thread {
           override def run(): Unit = {
             try hook finally _jvmHooksLatch.get.countDown()
           }
-        }) catch {
+        }
+        thread.setName(s"${system.name}-shutdown-hook-${newLatch.getCount}")
+        try {
+          Runtime.getRuntime.addShutdownHook(thread)
+          new Cancellable {
+            @volatile var cancelled = false
+            def cancel(): Boolean = {
+              try {
+                if (Runtime.getRuntime.removeShutdownHook(thread)) {
+                  cancelled = true
+                  _jvmHooksLatch.get.countDown()
+                  true
+                } else {
+                  false
+                }
+              } catch {
+                case _: IllegalStateException ⇒
+                  // shutdown already in progress
+                  false
+              }
+            }
+            def isCancelled: Boolean = cancelled
+          }
+        } catch {
           case e: IllegalStateException ⇒
             // Shutdown in progress, if CoordinatedShutdown is created via a JVM shutdown hook (Artery)
             log.warning("Could not addJvmShutdownHook, due to: {}", e.getMessage)
             _jvmHooksLatch.get.countDown()
+            Cancellable.alreadyCancelled
         }
       } else
-        addJvmShutdownHook(hook) // lost CAS, retry
+        addCancellableJvmShutdownHook(hook) // lost CAS, retry
+    } else {
+      Cancellable.alreadyCancelled
     }
   }
+
+  /**
+   * Java API: Add a JVM shutdown hook that will be run when the JVM process
+   * begins its shutdown sequence. Added hooks may run in any order
+   * concurrently, but they are running before Akka internal shutdown
+   * hooks, e.g. those shutting down Artery.
+   */
+  def addJvmShutdownHook(hook: Runnable): Unit =
+    addJvmShutdownHook(hook.run())
 
   /**
    * Java API: Add a JVM shutdown hook that will be run when the JVM process
    * begins its shutdown sequence. Added hooks may run in an order
    * concurrently, but they are running before Akka internal shutdown
    * hooks, e.g. those shutting down Artery.
+   *
+   * The returned ``Cancellable`` makes it possible to de-register the hook. For example
+   * on actor system shutdown to avoid leaking references to the actor system in tests.
+   *
+   * For shutdown hooks that does not have any requirements on running before the Akka
+   * shutdown hooks the standard library JVM shutdown hooks APIs are better suited.
    */
-  def addJvmShutdownHook(hook: Runnable): Unit =
-    addJvmShutdownHook(hook.run())
+  def addCancellableJvmShutdownHook(hook: Runnable): Cancellable =
+    addCancellableJvmShutdownHook(hook.run())
 
 }
