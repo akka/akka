@@ -310,7 +310,8 @@ if [ ! $no_mima ] && [ $dry_run ]; then
   echodry "Finished migration manager report"
 fi
 
-try sbt whitesourceCheckPolicies
+# FIXME whitesource does not work with jdk9, https://github.com/whitesource/agents/issues/13
+# try sbt whitesourceCheckPolicies
 
 # commit and tag this release
 echolog "Committing and tagging..."
@@ -355,13 +356,14 @@ else
   important git push origin --tags
 fi
 
-echolog "Uploading whitesource report"
-if [ $dry_run ]; then
-  echodry "Not actually uploading whitesource report. Commands:"
-  echodry "  sbt whitesourceUpdate"
-else
-  important sbt whitesourceUpdate
-fi
+# FIXME whitesource does not work with jdk9, https://github.com/whitesource/agents/issues/13
+#echolog "Uploading whitesource report"
+#if [ $dry_run ]; then
+#  echodry "Not actually uploading whitesource report. Commands:"
+#  echodry "  sbt whitesourceUpdate"
+#else
+#  important sbt whitesourceUpdate
+#fi
 
 # push the release to the server
 echolog "Pushing ${release_dir} to ${publish_path} ..."
