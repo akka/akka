@@ -28,6 +28,5 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
 // JDK9 features support via Multi-Release JARs
 addSbtPlugin("com.lightbend.sbt" % "sbt-multi-release-jar" % "0.1.2")
 
-// version with sbt 1.0 support is in snapshots for now
-//resolvers += Resolver.sonatypeRepo("snapshots")
-//addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.3-SNAPSHOT") // TODO
+// for advanced PR validation features
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.0")
