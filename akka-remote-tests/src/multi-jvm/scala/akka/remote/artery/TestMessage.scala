@@ -15,12 +15,12 @@ object TestMessage {
 }
 
 final case class TestMessage(
-  id:          Long,
-  name:        String,
-  status:      Boolean,
+  id: Long,
+  name: String,
+  status: Boolean,
   description: String,
-  payload:     Array[Byte],
-  items:       Vector[TestMessage.Item])
+  payload: Array[Byte],
+  items: Vector[TestMessage.Item])
 
 class TestMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest {
 

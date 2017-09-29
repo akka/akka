@@ -22,7 +22,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
       def failingCall(): Boolean =
         Await.result(breaker.withCircuitBreaker(Future(throw new RuntimeException("FAIL"))) recover {
           case _: CircuitBreakerOpenException ⇒ true
-          case _                              ⇒ false
+          case _ ⇒ false
         }, remainingOrDefault)
 
       // fire some failing calls

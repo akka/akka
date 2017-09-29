@@ -23,17 +23,17 @@ object Mailboxes {
 }
 
 private[akka] class Mailboxes(
-  val settings:    ActorSystem.Settings,
+  val settings: ActorSystem.Settings,
   val eventStream: EventStream,
-  dynamicAccess:   DynamicAccess,
-  deadLetters:     ActorRef) {
+  dynamicAccess: DynamicAccess,
+  deadLetters: ActorRef) {
 
   import Mailboxes._
 
   val deadLetterMailbox: Mailbox = new Mailbox(new MessageQueue {
     def enqueue(receiver: ActorRef, envelope: Envelope): Unit = envelope.message match {
       case _: DeadLetter ⇒ // actor subscribing to DeadLetter, drop it
-      case msg           ⇒ deadLetters.tell(DeadLetter(msg, envelope.sender, receiver), envelope.sender)
+      case msg ⇒ deadLetters.tell(DeadLetter(msg, envelope.sender, receiver), envelope.sender)
     }
     def dequeue() = null
     def hasMessages = false
@@ -82,7 +82,7 @@ private[akka] class Mailboxes(
     Reflect.findMarker(actorClass, rmqClass) match {
       case t: ParameterizedType ⇒ t.getActualTypeArguments.head match {
         case c: Class[_] ⇒ c
-        case x           ⇒ throw new IllegalArgumentException(s"no wildcard type allowed in RequireMessageQueue argument (was [$x])")
+        case x ⇒ throw new IllegalArgumentException(s"no wildcard type allowed in RequireMessageQueue argument (was [$x])")
       }
     }
 
@@ -92,7 +92,7 @@ private[akka] class Mailboxes(
 
   def getMailboxRequirement(config: Config) = config.getString("mailbox-requirement") match {
     case NoMailboxRequirement ⇒ classOf[MessageQueue]
-    case x                    ⇒ dynamicAccess.getClassFor[AnyRef](x).get
+    case x ⇒ dynamicAccess.getClassFor[AnyRef](x).get
   }
 
   def getProducedMessageQueueType(mailboxType: MailboxType): Class[_] = {
@@ -168,7 +168,7 @@ private[akka] class Mailboxes(
 
   private def lookupId(queueType: Class[_]): String =
     mailboxBindings.get(queueType) match {
-      case None    ⇒ throw new ConfigurationException(s"Mailbox Mapping for [${queueType}] not configured")
+      case None ⇒ throw new ConfigurationException(s"Mailbox Mapping for [${queueType}] not configured")
       case Some(s) ⇒ s
     }
 
@@ -179,7 +179,7 @@ private[akka] class Mailboxes(
         val newConfigurator = id match {
           // TODO RK remove these two for Akka 2.3
           case "unbounded" ⇒ UnboundedMailbox()
-          case "bounded"   ⇒ new BoundedMailbox(settings, config(id))
+          case "bounded" ⇒ new BoundedMailbox(settings, config(id))
           case _ ⇒
             if (!settings.config.hasPath(id)) throw new ConfigurationException(s"Mailbox Type [${id}] not configured")
             val conf = config(id)
@@ -212,7 +212,7 @@ private[akka] class Mailboxes(
         }
 
         mailboxTypeConfigurators.putIfAbsent(id, newConfigurator) match {
-          case null     ⇒ newConfigurator
+          case null ⇒ newConfigurator
           case existing ⇒ existing
         }
 

@@ -38,7 +38,7 @@ trait Timers extends Actor {
       case timerMsg: TimerSchedulerImpl.TimerMsg ⇒
         _timers.interceptTimerMsg(timerMsg) match {
           case OptionVal.Some(m) ⇒ super.aroundReceive(receive, m)
-          case OptionVal.None    ⇒ // discard
+          case OptionVal.None ⇒ // discard
         }
       case _ ⇒
         super.aroundReceive(receive, msg)

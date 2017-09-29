@@ -59,7 +59,7 @@ object ScalaUdpDocSpec {
         //#listener
         socket ! Udp.Send(data, remote) // example server echoes back
         nextActor ! processed
-      case Udp.Unbind  => socket ! Udp.Unbind
+      case Udp.Unbind => socket ! Udp.Unbind
       case Udp.Unbound => context.stop(self)
     }
   }

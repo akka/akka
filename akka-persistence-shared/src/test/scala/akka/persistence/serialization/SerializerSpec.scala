@@ -381,8 +381,8 @@ class MyPayloadSerializer extends Serializer {
 
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = manifest match {
     case Some(MyPayloadClass) ⇒ MyPayload(s"${new String(bytes, UTF_8)}.")
-    case Some(c)              ⇒ throw new Exception(s"unexpected manifest ${c}")
-    case None                 ⇒ throw new Exception("no manifest")
+    case Some(c) ⇒ throw new Exception(s"unexpected manifest ${c}")
+    case None ⇒ throw new Exception("no manifest")
   }
 }
 
@@ -423,8 +423,8 @@ class MySnapshotSerializer extends Serializer {
 
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = manifest match {
     case Some(MySnapshotClass) ⇒ MySnapshot(s"${new String(bytes, UTF_8)}.")
-    case Some(c)               ⇒ throw new Exception(s"unexpected manifest ${c}")
-    case None                  ⇒ throw new Exception("no manifest")
+    case Some(c) ⇒ throw new Exception(s"unexpected manifest ${c}")
+    case None ⇒ throw new Exception("no manifest")
   }
 }
 

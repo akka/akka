@@ -104,14 +104,14 @@ private[remote] object Association {
  * remote address.
  */
 private[remote] class Association(
-  val transport:               ArteryTransport,
-  val materializer:            Materializer,
-  val controlMaterializer:     Materializer,
-  override val remoteAddress:  Address,
+  val transport: ArteryTransport,
+  val materializer: Materializer,
+  val controlMaterializer: Materializer,
+  override val remoteAddress: Address,
   override val controlSubject: ControlMessageSubject,
-  largeMessageDestinations:    WildcardIndex[NotUsed],
+  largeMessageDestinations: WildcardIndex[NotUsed],
   priorityMessageDestinations: WildcardIndex[NotUsed],
-  outboundEnvelopePool:        ObjectPool[ReusableOutboundEnvelope])
+  outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope])
   extends AbstractAssociation with OutboundContext {
   import Association._
   import FlightRecorderEvents._
@@ -194,7 +194,7 @@ private[remote] class Association(
   private def clearInboundCompression(originUid: Long): Unit =
     transport.inboundCompressionAccess match {
       case OptionVal.Some(access) ⇒ access.closeCompressionFor(originUid)
-      case _                      ⇒ // do nothing
+      case _ ⇒ // do nothing
     }
 
   private def timeoutAfter[T](f: Future[T], timeout: FiniteDuration, e: ⇒ Throwable): Future[T] = {
@@ -211,7 +211,7 @@ private[remote] class Association(
       case OptionVal.None ⇒
         controlQueue match {
           case w: LazyQueueWrapper ⇒ w.runMaterialize()
-          case _                   ⇒
+          case _ ⇒
         }
         // the outboundControlIngress may be accessed before the stream is materialized
         // using CountDownLatch to make sure that materialization is completed
@@ -661,7 +661,7 @@ private[remote] class Association(
   }
 
   private def attachStreamRestart(streamName: String, queueIndex: Int, queueCapacity: Int,
-                                  streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
+    streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
 
     def lazyRestart(): Unit = {
       outboundCompressionAccess = Vector.empty
@@ -699,7 +699,7 @@ private[remote] class Association(
         if (queueIndex == ControlQueueIndex) {
           cause match {
             case _: HandshakeTimeoutException ⇒ // ok, quarantine not possible without UID
-            case _                            ⇒ quarantine("Outbound control stream restarted")
+            case _ ⇒ quarantine("Outbound control stream restarted")
           }
         }
 

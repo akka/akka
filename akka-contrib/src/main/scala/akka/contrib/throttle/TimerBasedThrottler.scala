@@ -111,9 +111,9 @@ private[throttle] object TimerBasedThrottler {
 
   // The data of the FSM
   final case class Data(
-    target:                Option[ActorRef],
+    target: Option[ActorRef],
     callsLeftInThisPeriod: Int,
-    queue:                 Q[Message])
+    queue: Q[Message])
 }
 
 /**

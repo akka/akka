@@ -53,9 +53,9 @@ private[remote] object SystemMessageDelivery {
  */
 private[remote] class SystemMessageDelivery(
   outboundContext: OutboundContext,
-  deadLetters:     ActorRef,
-  resendInterval:  FiniteDuration,
-  maxBufferSize:   Int)
+  deadLetters: ActorRef,
+  resendInterval: FiniteDuration,
+  maxBufferSize: Int)
   extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
 
   import SystemMessageDelivery._
@@ -92,7 +92,7 @@ private[remote] class SystemMessageDelivery(
 
         outboundContext.controlSubject.stopped.onComplete {
           getAsyncCallback[Try[Done]] {
-            case Success(_)     ⇒ completeStage()
+            case Success(_) ⇒ completeStage()
             case Failure(cause) ⇒ failStage(cause)
           }.invoke
         }
@@ -127,9 +127,9 @@ private[remote] class SystemMessageDelivery(
       // ControlMessageObserver, external call
       override def notify(inboundEnvelope: InboundEnvelope): Unit = {
         inboundEnvelope.message match {
-          case ack: Ack   ⇒ if (ack.from.address == remoteAddress) ackCallback.invoke(ack)
+          case ack: Ack ⇒ if (ack.from.address == remoteAddress) ackCallback.invoke(ack)
           case nack: Nack ⇒ if (nack.from.address == remoteAddress) nackCallback.invoke(nack)
-          case _          ⇒ // not interested
+          case _ ⇒ // not interested
         }
       }
 
@@ -281,7 +281,7 @@ private[remote] class SystemMessageAcker(inboundContext: InboundContext) extends
         env.message match {
           case sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo) ⇒
             val expectedSeqNo = sequenceNumbers.get(ackReplyTo) match {
-              case None        ⇒ 1L
+              case None ⇒ 1L
               case Some(seqNo) ⇒ seqNo
             }
             if (n == expectedSeqNo) {

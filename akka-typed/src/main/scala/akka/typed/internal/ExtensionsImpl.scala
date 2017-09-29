@@ -74,7 +74,7 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
 
   final override def registerExtension[T <: Extension](ext: ExtensionId[T]): T =
     findExtension(ext) match {
-      case null     ⇒ createExtensionInstance(ext)
+      case null ⇒ createExtensionInstance(ext)
       case existing ⇒ existing.asInstanceOf[T]
     }
 
@@ -115,6 +115,6 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
       c.await()
       findExtension(ext)
     case t: Throwable ⇒ throw t //Initialization failed, throw same again
-    case other        ⇒ other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
+    case other ⇒ other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
   }
 }

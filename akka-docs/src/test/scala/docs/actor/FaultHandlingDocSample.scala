@@ -178,7 +178,7 @@ class CounterService extends Actor {
       for ((replyTo, msg) <- backlog) c.tell(msg, sender = replyTo)
       backlog = IndexedSeq.empty
 
-    case msg: Increment       => forwardOrPlaceInBacklog(msg)
+    case msg: Increment => forwardOrPlaceInBacklog(msg)
 
     case msg: GetCurrentCount => forwardOrPlaceInBacklog(msg)
 
@@ -274,7 +274,7 @@ class Storage extends Actor {
 
   def receive = LoggingReceive {
     case Store(Entry(key, count)) => db.save(key, count)
-    case Get(key)                 => sender() ! Entry(key, db.load(key).getOrElse(0L))
+    case Get(key) => sender() ! Entry(key, db.load(key).getOrElse(0L))
   }
 }
 

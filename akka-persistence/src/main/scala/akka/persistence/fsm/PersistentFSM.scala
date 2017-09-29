@@ -35,7 +35,7 @@ private[akka] class SnapshotAfter(config: Config) extends Extension {
   val key = "akka.persistence.fsm.snapshot-after"
   val snapshotAfterValue = config.getString(key).toLowerCase match {
     case "off" ⇒ None
-    case _     ⇒ Some(config.getInt(key))
+    case _ ⇒ Some(config.getInt(key))
   }
 
   /**
@@ -290,7 +290,7 @@ object PersistentFSM {
    */
   @InternalApi
   private[persistence] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int,
-                                              owner: AnyRef)(context: ActorContext)
+    owner: AnyRef)(context: ActorContext)
     extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
     private val scheduler = context.system.scheduler
@@ -329,13 +329,13 @@ object PersistentFSM {
    * to be executed after FSM moves to the new state (also triggered when staying in the same state)
    */
   final case class State[S, D, E](
-    stateName:         S,
-    stateData:         D,
-    timeout:           Option[FiniteDuration] = None,
-    stopReason:        Option[Reason]         = None,
-    replies:           List[Any]              = Nil,
-    domainEvents:      Seq[E]                 = Nil,
-    afterTransitionDo: D ⇒ Unit               = { _: D ⇒ })(private[akka] val notifies: Boolean = true) {
+    stateName: S,
+    stateData: D,
+    timeout: Option[FiniteDuration] = None,
+    stopReason: Option[Reason] = None,
+    replies: List[Any] = Nil,
+    domainEvents: Seq[E] = Nil,
+    afterTransitionDo: D ⇒ Unit = { _: D ⇒ })(private[akka] val notifies: Boolean = true) {
 
     /**
      * Copy object and update values if needed.
@@ -354,7 +354,7 @@ object PersistentFSM {
      */
     def forMax(timeout: Duration): State[S, D, E] = timeout match {
       case f: FiniteDuration ⇒ copy(timeout = Some(f))
-      case _                 ⇒ copy(timeout = PersistentFSM.SomeMaxFiniteDuration) // we need to differentiate "not set" from disabled
+      case _ ⇒ copy(timeout = PersistentFSM.SomeMaxFiniteDuration) // we need to differentiate "not set" from disabled
     }
 
     /**

@@ -205,8 +205,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
       channel.write(msg)
       val token = msg match {
         case EnterBarrier(barrier, timeout) ⇒ Some(barrier → sender())
-        case GetAddress(node)               ⇒ Some(node.name → sender())
-        case _                              ⇒ None
+        case GetAddress(node) ⇒ Some(node.name → sender())
+        case _ ⇒ None
       }
       stay using d.copy(runningOp = token)
     case Event(ToServer(op), Data(channel, Some((token, _)))) ⇒
@@ -229,7 +229,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case AddressReply(node, address) ⇒
           runningOp match {
             case Some((_, requester)) ⇒ requester ! address
-            case None                 ⇒ log.warning("did not expect {}", op)
+            case None ⇒ log.warning("did not expect {}", op)
           }
           stay using d.copy(runningOp = None)
         case t: ThrottleMsg ⇒
@@ -286,13 +286,13 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
  * INTERNAL API.
  */
 private[akka] class PlayerHandler(
-  server:                 InetSocketAddress,
+  server: InetSocketAddress,
   private var reconnects: Int,
-  backoff:                FiniteDuration,
-  poolSize:               Int,
-  fsm:                    ActorRef,
-  log:                    LoggingAdapter,
-  scheduler:              Scheduler)(implicit executor: ExecutionContext)
+  backoff: FiniteDuration,
+  poolSize: Int,
+  fsm: ActorRef,
+  log: LoggingAdapter,
+  scheduler: Scheduler)(implicit executor: ExecutionContext)
   extends SimpleChannelUpstreamHandler {
 
   import ClientFSM._

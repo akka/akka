@@ -296,9 +296,9 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    * Also asserts that nodes in the 'canNotBePartOfMemberRing' are *not* part of the cluster ring.
    */
   def awaitMembersUp(
-    numberOfMembers:          Int,
-    canNotBePartOfMemberRing: Set[Address]   = Set.empty,
-    timeout:                  FiniteDuration = 25.seconds): Unit = {
+    numberOfMembers: Int,
+    canNotBePartOfMemberRing: Set[Address] = Set.empty,
+    timeout: FiniteDuration = 25.seconds): Unit = {
     within(timeout) {
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
         awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) should not contain (a)))
@@ -343,7 +343,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         case cause: Exception ⇒
           throw new AssertionError(s"Member ${toBeRemovedAddress} was not removed within ${timeout}!", cause)
       }
-      awaiter ! PoisonPill // you've done your job, now die 
+      awaiter ! PoisonPill // you've done your job, now die
 
       enterBarrier("member-shutdown")
       markNodeAsUnavailable(toBeRemovedAddress)

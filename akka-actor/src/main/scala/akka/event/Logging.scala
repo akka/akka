@@ -105,7 +105,7 @@ trait LoggingBus extends ActorEventBus {
     }
     try {
       val defaultLoggers = system.settings.Loggers match {
-        case Nil     ⇒ classOf[DefaultLogger].getName :: Nil
+        case Nil ⇒ classOf[DefaultLogger].getName :: Nil
         case loggers ⇒ loggers
       }
       val myloggers =
@@ -165,7 +165,7 @@ trait LoggingBus extends ActorEventBus {
       unsubscribe(logger)
       logger match {
         case ref: InternalActorRef ⇒ ref.stop()
-        case _                     ⇒
+        case _ ⇒
       }
     }
     publish(Debug(simpleName(this), this.getClass, "all default loggers stopped"))
@@ -323,10 +323,10 @@ object LogSource {
   def fromAnyRef(o: AnyRef): (String, Class[_]) =
     o match {
       case c: Class[_] ⇒ apply(c)
-      case a: Actor    ⇒ apply(a)
+      case a: Actor ⇒ apply(a)
       case a: ActorRef ⇒ apply(a)
-      case s: String   ⇒ apply(s)
-      case x           ⇒ (Logging.simpleName(x), x.getClass)
+      case s: String ⇒ apply(s)
+      case x ⇒ (Logging.simpleName(x), x.getClass)
     }
 
   /**
@@ -337,10 +337,10 @@ object LogSource {
   def fromAnyRef(o: AnyRef, system: ActorSystem): (String, Class[_]) =
     o match {
       case c: Class[_] ⇒ apply(c)
-      case a: Actor    ⇒ apply(a)
+      case a: Actor ⇒ apply(a)
       case a: ActorRef ⇒ apply(a)
-      case s: String   ⇒ apply(s)
-      case x           ⇒ (Logging.simpleName(x) + "(" + system + ")", x.getClass)
+      case s: String ⇒ apply(s)
+      case x ⇒ (Logging.simpleName(x) + "(" + system + ")", x.getClass)
     }
 }
 
@@ -401,9 +401,9 @@ object Logging {
    * wrapped message.
    */
   def messageClassName(message: Any): String = message match {
-    case null                           ⇒ "null"
+    case null ⇒ "null"
     case ActorSelectionMessage(m, _, _) ⇒ s"ActorSelectionMessage(${m.getClass.getName})"
-    case m                              ⇒ m.getClass.getName
+    case m ⇒ m.getClass.getName
   }
 
   /**
@@ -457,12 +457,12 @@ object Logging {
    * "error", "warning", "info" and "debug"
    */
   def levelFor(s: String): Option[LogLevel] = Helpers.toRootLowerCase(s) match {
-    case "off"     ⇒ Some(OffLevel)
-    case "error"   ⇒ Some(ErrorLevel)
+    case "off" ⇒ Some(OffLevel)
+    case "error" ⇒ Some(ErrorLevel)
     case "warning" ⇒ Some(WarningLevel)
-    case "info"    ⇒ Some(InfoLevel)
-    case "debug"   ⇒ Some(DebugLevel)
-    case unknown   ⇒ None
+    case "info" ⇒ Some(InfoLevel)
+    case "debug" ⇒ Some(DebugLevel)
+    case unknown ⇒ None
   }
 
   /**
@@ -481,10 +481,10 @@ object Logging {
    * Returns the event class associated with the given LogLevel
    */
   def classFor(level: LogLevel): Class[_ <: LogEvent] = level match {
-    case ErrorLevel   ⇒ classOf[Error]
+    case ErrorLevel ⇒ classOf[Error]
     case WarningLevel ⇒ classOf[Warning]
-    case InfoLevel    ⇒ classOf[Info]
-    case DebugLevel   ⇒ classOf[Debug]
+    case InfoLevel ⇒ classOf[Info]
+    case DebugLevel ⇒ classOf[Debug]
   }
 
   // these type ascriptions/casts are necessary to avoid CCEs during construction while retaining correct type
@@ -717,24 +717,24 @@ object Logging {
 
   object LogEvent {
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any): LogEvent = level match {
-      case ErrorLevel   ⇒ Error(logSource, logClass, message)
+      case ErrorLevel ⇒ Error(logSource, logClass, message)
       case WarningLevel ⇒ Warning(logSource, logClass, message)
-      case InfoLevel    ⇒ Info(logSource, logClass, message)
-      case DebugLevel   ⇒ Debug(logSource, logClass, message)
+      case InfoLevel ⇒ Info(logSource, logClass, message)
+      case DebugLevel ⇒ Debug(logSource, logClass, message)
     }
 
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC): LogEvent = level match {
-      case ErrorLevel   ⇒ Error(logSource, logClass, message, mdc)
+      case ErrorLevel ⇒ Error(logSource, logClass, message, mdc)
       case WarningLevel ⇒ Warning(logSource, logClass, message, mdc)
-      case InfoLevel    ⇒ Info(logSource, logClass, message, mdc)
-      case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc)
+      case InfoLevel ⇒ Info(logSource, logClass, message, mdc)
+      case DebugLevel ⇒ Debug(logSource, logClass, message, mdc)
     }
 
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker): LogEvent = level match {
-      case ErrorLevel   ⇒ Error(logSource, logClass, message, mdc, marker)
+      case ErrorLevel ⇒ Error(logSource, logClass, message, mdc, marker)
       case WarningLevel ⇒ Warning(logSource, logClass, message, mdc, marker)
-      case InfoLevel    ⇒ Info(logSource, logClass, message, mdc, marker)
-      case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc, marker)
+      case InfoLevel ⇒ Info(logSource, logClass, message, mdc, marker)
+      case DebugLevel ⇒ Debug(logSource, logClass, message, mdc, marker)
     }
 
   }
@@ -878,11 +878,11 @@ object Logging {
     def timestamp(event: LogEvent): String = Helpers.timestamp(event.timestamp)
 
     def print(event: Any): Unit = event match {
-      case e: Error   ⇒ error(e)
+      case e: Error ⇒ error(e)
       case e: Warning ⇒ warning(e)
-      case e: Info    ⇒ info(e)
-      case e: Debug   ⇒ debug(e)
-      case e          ⇒ warning(Warning(simpleName(this), this.getClass, "received unexpected event of class " + e.getClass + ": " + e))
+      case e: Info ⇒ info(e)
+      case e: Debug ⇒ debug(e)
+      case e ⇒ warning(Warning(simpleName(this), this.getClass, "received unexpected event of class " + e.getClass + ": " + e))
     }
 
     def error(event: Error): Unit = event match {
@@ -1012,7 +1012,7 @@ object Logging {
   class DefaultLogger extends Actor with StdOutLogger with RequiresMessageQueue[LoggerMessageQueueSemantics] {
     override def receive: Receive = {
       case InitializeLogger(_) ⇒ sender() ! LoggerInitialized
-      case event: LogEvent     ⇒ print(event)
+      case event: LogEvent ⇒ print(event)
     }
   }
 
@@ -1021,7 +1021,7 @@ object Logging {
    */
   def stackTraceFor(e: Throwable): String = e match {
     case null | Error.NoCause ⇒ ""
-    case _: NoStackTrace      ⇒ s" (${e.getClass.getName}: ${e.getMessage})"
+    case _: NoStackTrace ⇒ s" (${e.getClass.getName}: ${e.getMessage})"
     case other ⇒
       val sw = new java.io.StringWriter
       val pw = new java.io.PrintWriter(sw)
@@ -1259,17 +1259,17 @@ trait LoggingAdapter {
    * @return true if the specified log level is enabled
    */
   final def isEnabled(level: Logging.LogLevel): Boolean = level match {
-    case Logging.ErrorLevel   ⇒ isErrorEnabled
+    case Logging.ErrorLevel ⇒ isErrorEnabled
     case Logging.WarningLevel ⇒ isWarningEnabled
-    case Logging.InfoLevel    ⇒ isInfoEnabled
-    case Logging.DebugLevel   ⇒ isDebugEnabled
+    case Logging.InfoLevel ⇒ isInfoEnabled
+    case Logging.DebugLevel ⇒ isDebugEnabled
   }
 
   final def notifyLog(level: Logging.LogLevel, message: String): Unit = level match {
-    case Logging.ErrorLevel   ⇒ if (isErrorEnabled) notifyError(message)
+    case Logging.ErrorLevel ⇒ if (isErrorEnabled) notifyError(message)
     case Logging.WarningLevel ⇒ if (isWarningEnabled) notifyWarning(message)
-    case Logging.InfoLevel    ⇒ if (isInfoEnabled) notifyInfo(message)
-    case Logging.DebugLevel   ⇒ if (isDebugEnabled) notifyDebug(message)
+    case Logging.InfoLevel ⇒ if (isInfoEnabled) notifyInfo(message)
+    case Logging.DebugLevel ⇒ if (isDebugEnabled) notifyDebug(message)
   }
 
   /**
@@ -1418,7 +1418,7 @@ object LogMarker {
   def extractFromMDC(mdc: MDC): Option[String] =
     mdc.get(MDCKey) match {
       case Some(v) ⇒ Some(v.toString)
-      case None    ⇒ None
+      case None ⇒ None
     }
 
   private[akka] final val Security = apply("SECURITY")
@@ -1430,10 +1430,10 @@ object LogMarker {
  * Only recommended to be used within Actors as it isn't thread safe.
  */
 class MarkerLoggingAdapter(
-  override val bus:       LoggingBus,
+  override val bus: LoggingBus,
   override val logSource: String,
-  override val logClass:  Class[_],
-  loggingFilter:          LoggingFilter)
+  override val logClass: Class[_],
+  loggingFilter: LoggingFilter)
   extends BusLogging(bus, logSource, logClass, loggingFilter) {
   // TODO when breaking binary compatibility, these marker methods should become baked into LoggingAdapter itself
 
@@ -1666,10 +1666,10 @@ class MarkerLoggingAdapter(
 }
 
 final class DiagnosticMarkerBusLoggingAdapter(
-  override val bus:       LoggingBus,
+  override val bus: LoggingBus,
   override val logSource: String,
-  override val logClass:  Class[_],
-  loggingFilter:          LoggingFilter)
+  override val logClass: Class[_],
+  loggingFilter: LoggingFilter)
   extends MarkerLoggingAdapter(bus, logSource, logClass, loggingFilter) with DiagnosticLoggingAdapter
 
 /**

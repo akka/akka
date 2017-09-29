@@ -39,9 +39,9 @@ final case class ChildRestartStats(child: ActorRef, var maxNrOfRetriesCount: Int
   def requestRestartPermission(retriesWindow: (Option[Int], Option[Int])): Boolean =
     retriesWindow match {
       case (Some(retries), _) if retries < 1 ⇒ false
-      case (Some(retries), None)             ⇒ { maxNrOfRetriesCount += 1; maxNrOfRetriesCount <= retries }
-      case (x, Some(window))                 ⇒ retriesInWindowOkay(if (x.isDefined) x.get else 1, window)
-      case (None, _)                         ⇒ true
+      case (Some(retries), None) ⇒ { maxNrOfRetriesCount += 1; maxNrOfRetriesCount <= retries }
+      case (x, Some(window)) ⇒ retriesInWindowOkay(if (x.isDefined) x.get else 1, window)
+      case (None, _) ⇒ true
     }
 
   private def retriesInWindowOkay(retries: Int, window: Int): Boolean = {
@@ -154,9 +154,9 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    */
   final val defaultDecider: Decider = {
     case _: ActorInitializationException ⇒ Stop
-    case _: ActorKilledException         ⇒ Stop
-    case _: DeathPactException           ⇒ Stop
-    case _: Exception                    ⇒ Restart
+    case _: ActorKilledException ⇒ Stop
+    case _: DeathPactException ⇒ Stop
+    case _: Exception ⇒ Restart
   }
 
   /**
@@ -230,7 +230,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
     (new ArrayBuffer[CauseDirective](in.size) /: in) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {
         case -1 ⇒ buf append ca
-        case x  ⇒ buf insert (x, ca)
+        case x ⇒ buf insert (x, ca)
       }
       buf
     }.to[immutable.IndexedSeq]
@@ -336,9 +336,9 @@ abstract class SupervisorStrategy {
         case e ⇒ e.getMessage
       }
       decision match {
-        case Resume   ⇒ publish(context, Warning(child.path.toString, getClass, logMessage))
+        case Resume ⇒ publish(context, Warning(child.path.toString, getClass, logMessage))
         case Escalate ⇒ // don't log here
-        case _        ⇒ publish(context, Error(cause, child.path.toString, getClass, logMessage))
+        case _ ⇒ publish(context, Error(cause, child.path.toString, getClass, logMessage))
       }
     }
 
@@ -384,9 +384,9 @@ abstract class SupervisorStrategy {
  * @param loggingEnabled the strategy logs the failure if this is enabled (true), by default it is enabled
  */
 case class AllForOneStrategy(
-  maxNrOfRetries:              Int      = -1,
-  withinTimeRange:             Duration = Duration.Inf,
-  override val loggingEnabled: Boolean  = true)(val decider: SupervisorStrategy.Decider)
+  maxNrOfRetries: Int = -1,
+  withinTimeRange: Duration = Duration.Inf,
+  override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
   extends SupervisorStrategy {
 
   import SupervisorStrategy._
@@ -459,9 +459,9 @@ case class AllForOneStrategy(
  * @param loggingEnabled the strategy logs the failure if this is enabled (true), by default it is enabled
  */
 case class OneForOneStrategy(
-  maxNrOfRetries:              Int      = -1,
-  withinTimeRange:             Duration = Duration.Inf,
-  override val loggingEnabled: Boolean  = true)(val decider: SupervisorStrategy.Decider)
+  maxNrOfRetries: Int = -1,
+  withinTimeRange: Duration = Duration.Inf,
+  override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
   extends SupervisorStrategy {
 
   /**

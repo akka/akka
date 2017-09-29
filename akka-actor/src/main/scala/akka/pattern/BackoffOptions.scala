@@ -71,10 +71,10 @@ object Backoff {
    *   In order to skip this additional delay pass in `0`.
    */
   def onFailure(
-    childProps:   Props,
-    childName:    String,
-    minBackoff:   FiniteDuration,
-    maxBackoff:   FiniteDuration,
+    childProps: Props,
+    childName: String,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
     randomFactor: Double): BackoffOptions =
     BackoffOptionsImpl(RestartImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
 
@@ -132,10 +132,10 @@ object Backoff {
    *   In order to skip this additional delay pass in `0`.
    */
   def onStop(
-    childProps:   Props,
-    childName:    String,
-    minBackoff:   FiniteDuration,
-    maxBackoff:   FiniteDuration,
+    childProps: Props,
+    childName: String,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
     randomFactor: Double): BackoffOptions =
     BackoffOptionsImpl(StopImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
 }
@@ -194,15 +194,15 @@ trait BackoffOptions {
 }
 
 private final case class BackoffOptionsImpl(
-  backoffType:        BackoffType          = RestartImpliesFailure,
-  childProps:         Props,
-  childName:          String,
-  minBackoff:         FiniteDuration,
-  maxBackoff:         FiniteDuration,
-  randomFactor:       Double,
-  reset:              Option[BackoffReset] = None,
-  supervisorStrategy: OneForOneStrategy    = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
-  replyWhileStopped:  Option[Any]          = None) extends BackoffOptions {
+  backoffType: BackoffType = RestartImpliesFailure,
+  childProps: Props,
+  childName: String,
+  minBackoff: FiniteDuration,
+  maxBackoff: FiniteDuration,
+  randomFactor: Double,
+  reset: Option[BackoffReset] = None,
+  supervisorStrategy: OneForOneStrategy = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
+  replyWhileStopped: Option[Any] = None) extends BackoffOptions {
 
   val backoffReset = reset.getOrElse(AutoReset(minBackoff))
 

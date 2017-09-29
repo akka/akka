@@ -174,7 +174,7 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
     }
     try {
       val defaultLoggers = system.settings.Loggers match {
-        case Nil     ⇒ classOf[DefaultLogger].getName :: Nil
+        case Nil ⇒ classOf[DefaultLogger].getName :: Nil
         case loggers ⇒ loggers
       }
       val myloggers =
@@ -230,9 +230,9 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
   }
 
   private def addLogger(
-    system:  ActorSystemImpl[Nothing],
-    clazz:   Class[_ <: Logger],
-    level:   LogLevel,
+    system: ActorSystemImpl[Nothing],
+    clazz: Class[_ <: Logger],
+    level: LogLevel,
     logName: String): (ActorRef[Logger.Command], ActorRef[LogEvent]) = {
     val name = "log" + system.loggerId() + "-" + simpleName(clazz)
     val logger = clazz.newInstance()

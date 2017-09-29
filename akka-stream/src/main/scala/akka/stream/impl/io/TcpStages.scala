@@ -30,12 +30,12 @@ import scala.concurrent.{ Future, Promise }
  * INTERNAL API
  */
 @InternalApi private[stream] class ConnectionSourceStage(
-  val tcpManager:          ActorRef,
-  val endpoint:            InetSocketAddress,
-  val backlog:             Int,
-  val options:             immutable.Traversable[SocketOption],
-  val halfClose:           Boolean,
-  val idleTimeout:         Duration,
+  val tcpManager: ActorRef,
+  val endpoint: InetSocketAddress,
+  val backlog: Int,
+  val options: immutable.Traversable[SocketOption],
+  val halfClose: Boolean,
+  val idleTimeout: Duration,
   val bindShutdownTimeout: FiniteDuration)
   extends GraphStageWithMaterializedValue[SourceShape[StreamTcp.IncomingConnection], Future[StreamTcp.ServerBinding]] {
   import ConnectionSourceStage._
@@ -124,7 +124,7 @@ import scala.concurrent.{ Future, Promise }
         // FIXME: Previous code was wrong, must add new tests
         val handler = idleTimeout match {
           case d: FiniteDuration ⇒ tcpFlow.join(TcpIdleTimeout(d, Some(connected.remoteAddress)))
-          case _                 ⇒ tcpFlow
+          case _ ⇒ tcpFlow
         }
 
         StreamTcp.IncomingConnection(
@@ -178,10 +178,10 @@ private[stream] object ConnectionSourceStage {
     def halfClose: Boolean
   }
   case class Outbound(
-    manager:             ActorRef,
-    connectCmd:          Connect,
+    manager: ActorRef,
+    connectCmd: Connect,
     localAddressPromise: Promise[InetSocketAddress],
-    halfClose:           Boolean) extends TcpRole
+    halfClose: Boolean) extends TcpRole
   case class Inbound(connection: ActorRef, halfClose: Boolean) extends TcpRole
 
   /*
@@ -222,7 +222,7 @@ private[stream] object ConnectionSourceStage {
       val sender = evt._1
       val msg = evt._2
       msg match {
-        case Terminated(_)          ⇒ failStage(new StreamTcpException("The IO manager actor (TCP) has terminated. Stopping now."))
+        case Terminated(_) ⇒ failStage(new StreamTcpException("The IO manager actor (TCP) has terminated. Stopping now."))
         case f @ CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}"))
         case c: Connected ⇒
           role.asInstanceOf[Outbound].localAddressPromise.success(c.localAddress)
@@ -241,13 +241,13 @@ private[stream] object ConnectionSourceStage {
       val sender = evt._1
       val msg = evt._2
       msg match {
-        case Terminated(_)          ⇒ failStage(new StreamTcpException("The connection actor has terminated. Stopping now."))
+        case Terminated(_) ⇒ failStage(new StreamTcpException("The connection actor has terminated. Stopping now."))
         case f @ CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}"))
-        case ErrorClosed(cause)     ⇒ failStage(new StreamTcpException(s"The connection closed with error: $cause"))
-        case Aborted                ⇒ failStage(new StreamTcpException("The connection has been aborted"))
-        case Closed                 ⇒ completeStage()
-        case ConfirmedClosed        ⇒ completeStage()
-        case PeerClosed             ⇒ complete(bytesOut)
+        case ErrorClosed(cause) ⇒ failStage(new StreamTcpException(s"The connection closed with error: $cause"))
+        case Aborted ⇒ failStage(new StreamTcpException("The connection has been aborted"))
+        case Closed ⇒ completeStage()
+        case ConfirmedClosed ⇒ completeStage()
+        case PeerClosed ⇒ complete(bytesOut)
 
         case Received(data) ⇒
           // Keep on reading even when closed. There is no "close-read-side" in TCP
@@ -338,12 +338,12 @@ private[stream] object ConnectionSourceStage {
  * INTERNAL API
  */
 @InternalApi private[stream] class OutgoingConnectionStage(
-  manager:        ActorRef,
-  remoteAddress:  InetSocketAddress,
-  localAddress:   Option[InetSocketAddress]           = None,
-  options:        immutable.Traversable[SocketOption] = Nil,
-  halfClose:      Boolean                             = true,
-  connectTimeout: Duration                            = Duration.Inf)
+  manager: ActorRef,
+  remoteAddress: InetSocketAddress,
+  localAddress: Option[InetSocketAddress] = None,
+  options: immutable.Traversable[SocketOption] = Nil,
+  halfClose: Boolean = true,
+  connectTimeout: Duration = Duration.Inf)
 
   extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {
   import TcpConnectionStage._
@@ -357,7 +357,7 @@ private[stream] object ConnectionSourceStage {
     // FIXME: A method like this would make soo much sense on Duration (i.e. toOption)
     val connTimeout = connectTimeout match {
       case x: FiniteDuration ⇒ Some(x)
-      case _                 ⇒ None
+      case _ ⇒ None
     }
 
     val localAddressPromise = Promise[InetSocketAddress]
@@ -379,7 +379,7 @@ private[stream] object ConnectionSourceStage {
   def apply(idleTimeout: FiniteDuration, remoteAddress: Option[InetSocketAddress]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
     val connectionToString = remoteAddress match {
       case Some(address) ⇒ s" on connection to [$address]"
-      case _             ⇒ ""
+      case _ ⇒ ""
     }
 
     val toNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
@@ -388,10 +388,9 @@ private[stream] object ConnectionSourceStage {
           case t: TimeoutException ⇒
             new TcpIdleTimeoutException(s"TCP idle-timeout encountered$connectionToString, no bytes passed in the last $idleTimeout", idleTimeout)
         },
-        Flow[ByteString]
-      )
+        Flow[ByteString])
     val fromNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
-      toNetTimeout.reversed // now the bottom flow transforms the exception, the top one doesn't (since that one is "fromNet") 
+      toNetTimeout.reversed // now the bottom flow transforms the exception, the top one doesn't (since that one is "fromNet")
 
     fromNetTimeout atop BidiFlow.bidirectionalIdleTimeout[ByteString, ByteString](idleTimeout) atop toNetTimeout
   }

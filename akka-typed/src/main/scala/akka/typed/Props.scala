@@ -94,8 +94,8 @@ abstract class Props private[akka] () extends Product with Serializable {
     @tailrec def rec(d: Props): T = {
       d match {
         case EmptyProps ⇒ default
-        case t: T       ⇒ t
-        case _          ⇒ rec(d.next)
+        case t: T ⇒ t
+        case _ ⇒ rec(d.next)
       }
     }
     rec(this)
@@ -113,8 +113,8 @@ abstract class Props private[akka] () extends Product with Serializable {
     @tailrec def select(d: Props, acc: List[Props]): List[Props] =
       d match {
         case EmptyProps ⇒ acc.reverse
-        case t: T       ⇒ select(d.next, (d withNext EmptyProps) :: acc)
-        case _          ⇒ select(d.next, acc)
+        case t: T ⇒ select(d.next, (d withNext EmptyProps) :: acc)
+        case _ ⇒ select(d.next, acc)
       }
     select(this, Nil)
   }
@@ -128,13 +128,13 @@ abstract class Props private[akka] () extends Product with Serializable {
     @tailrec def select(d: Props, acc: List[Props]): List[Props] =
       d match {
         case EmptyProps ⇒ acc
-        case t: T       ⇒ select(d.next, acc)
-        case _          ⇒ select(d.next, d :: acc)
+        case t: T ⇒ select(d.next, acc)
+        case _ ⇒ select(d.next, d :: acc)
       }
     @tailrec def link(l: List[Props], acc: Props): Props =
       l match {
         case d :: ds ⇒ link(ds, d withNext acc)
-        case Nil     ⇒ acc
+        case Nil ⇒ acc
       }
     link(select(this, Nil), EmptyProps)
   }

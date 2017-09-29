@@ -29,9 +29,9 @@ object ClusterMetricsStrategy {
    */
   val metricsDecider: SupervisorStrategy.Decider = {
     case _: ActorInitializationException ⇒ Stop
-    case _: ActorKilledException         ⇒ Stop
-    case _: DeathPactException           ⇒ Stop
-    case _: Throwable                    ⇒ Restart
+    case _: ActorKilledException ⇒ Stop
+    case _: DeathPactException ⇒ Stop
+    case _: Throwable ⇒ Restart
   }
 
 }

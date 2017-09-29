@@ -46,17 +46,15 @@ object RestartSource {
 
 private final class RestartWithBackoffSource[T](
   sourceFactory: () ⇒ Source[T, _],
-  minBackoff:    FiniteDuration,
-  maxBackoff:    FiniteDuration,
-  randomFactor:  Double
-) extends GraphStage[SourceShape[T]] { self ⇒
+  minBackoff: FiniteDuration,
+  maxBackoff: FiniteDuration,
+  randomFactor: Double) extends GraphStage[SourceShape[T]] { self ⇒
 
   val out = Outlet[T]("RestartWithBackoffSource.out")
 
   override def shape = SourceShape(out)
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Source", shape, minBackoff, maxBackoff, randomFactor
-  ) {
+    "Source", shape, minBackoff, maxBackoff, randomFactor) {
 
     override protected def logSource = self.getClass
 
@@ -117,18 +115,16 @@ object RestartSink {
 }
 
 private final class RestartWithBackoffSink[T](
-  sinkFactory:  () ⇒ Sink[T, _],
-  minBackoff:   FiniteDuration,
-  maxBackoff:   FiniteDuration,
-  randomFactor: Double
-) extends GraphStage[SinkShape[T]] { self ⇒
+  sinkFactory: () ⇒ Sink[T, _],
+  minBackoff: FiniteDuration,
+  maxBackoff: FiniteDuration,
+  randomFactor: Double) extends GraphStage[SinkShape[T]] { self ⇒
 
   val in = Inlet[T]("RestartWithBackoffSink.in")
 
   override def shape = SinkShape(in)
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Sink", shape, minBackoff, maxBackoff, randomFactor
-  ) {
+    "Sink", shape, minBackoff, maxBackoff, randomFactor) {
     override protected def logSource = self.getClass
 
     override protected def startGraph() = {
@@ -184,19 +180,17 @@ object RestartFlow {
 }
 
 private final class RestartWithBackoffFlow[In, Out](
-  flowFactory:  () ⇒ Flow[In, Out, _],
-  minBackoff:   FiniteDuration,
-  maxBackoff:   FiniteDuration,
-  randomFactor: Double
-) extends GraphStage[FlowShape[In, Out]] { self ⇒
+  flowFactory: () ⇒ Flow[In, Out, _],
+  minBackoff: FiniteDuration,
+  maxBackoff: FiniteDuration,
+  randomFactor: Double) extends GraphStage[FlowShape[In, Out]] { self ⇒
 
   val in = Inlet[In]("RestartWithBackoffFlow.in")
   val out = Outlet[Out]("RestartWithBackoffFlow.out")
 
   override def shape = FlowShape(in, out)
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Flow", shape, minBackoff, maxBackoff, randomFactor
-  ) {
+    "Flow", shape, minBackoff, maxBackoff, randomFactor) {
 
     var activeOutIn: Option[(SubSourceOutlet[In], SubSinkInlet[Out])] = None
 
@@ -242,12 +236,11 @@ private final class RestartWithBackoffFlow[In, Out](
  * Shared logic for all restart with backoff logics.
  */
 private abstract class RestartWithBackoffLogic[S <: Shape](
-  name:         String,
-  shape:        S,
-  minBackoff:   FiniteDuration,
-  maxBackoff:   FiniteDuration,
-  randomFactor: Double
-) extends TimerGraphStageLogicWithLogging(shape) {
+  name: String,
+  shape: S,
+  minBackoff: FiniteDuration,
+  maxBackoff: FiniteDuration,
+  randomFactor: Double) extends TimerGraphStageLogicWithLogging(shape) {
   var restartCount = 0
   var resetDeadline = minBackoff.fromNow
   // This is effectively only used for flows, if either the main inlet or outlet of this stage finishes, then we

@@ -164,10 +164,10 @@ object ActorSystem {
    */
   def apply[T](
     guardianBehavior: Behavior[T],
-    name:             String,
-    guardianProps:    Props                    = Props.empty,
-    config:           Option[Config]           = None,
-    classLoader:      Option[ClassLoader]      = None,
+    name: String,
+    guardianProps: Props = Props.empty,
+    config: Option[Config] = None,
+    classLoader: Option[ClassLoader] = None,
     executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
     Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
@@ -182,10 +182,10 @@ object ActorSystem {
    */
   def create[T](
     guardianBehavior: Behavior[T],
-    name:             String,
-    guardianProps:    Optional[Props],
-    config:           Optional[Config],
-    classLoader:      Optional[ClassLoader],
+    name: String,
+    guardianProps: Optional[Props],
+    config: Optional[Config],
+    classLoader: Optional[ClassLoader],
     executionContext: Optional[ExecutionContext]): ActorSystem[T] = {
     import scala.compat.java8.OptionConverters._
     apply(guardianBehavior, name, guardianProps.asScala.getOrElse(EmptyProps), config.asScala, classLoader.asScala, executionContext.asScala)
@@ -205,11 +205,11 @@ object ActorSystem {
    * system typed and untyped actors can coexist.
    */
   def adapter[T](name: String, guardianBehavior: Behavior[T],
-                 guardianProps:       Props                    = Props.empty,
-                 config:              Option[Config]           = None,
-                 classLoader:         Option[ClassLoader]      = None,
-                 executionContext:    Option[ExecutionContext] = None,
-                 actorSystemSettings: ActorSystemSetup         = ActorSystemSetup.empty): ActorSystem[T] = {
+    guardianProps: Props = Props.empty,
+    config: Option[Config] = None,
+    classLoader: Option[ClassLoader] = None,
+    executionContext: Option[ExecutionContext] = None,
+    actorSystemSettings: ActorSystemSetup = ActorSystemSetup.empty): ActorSystem[T] = {
 
     // TODO I'm not sure how useful this mode is for end-users. It has the limitation that untyped top level
     // actors can't be created, because we have a custom user guardian. I would imagine that if you have

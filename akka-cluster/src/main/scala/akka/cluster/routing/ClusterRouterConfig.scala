@@ -53,10 +53,10 @@ object ClusterRouterGroupSettings {
  */
 @SerialVersionUID(1L)
 final case class ClusterRouterGroupSettings(
-  totalInstances:    Int,
-  routeesPaths:      immutable.Seq[String],
+  totalInstances: Int,
+  routeesPaths: immutable.Seq[String],
   allowLocalRoutees: Boolean,
-  useRoles:          Set[String]) extends ClusterRouterSettingsBase {
+  useRoles: Set[String]) extends ClusterRouterSettingsBase {
 
   // For binary compatibility
   @deprecated("useRole has been replaced with useRoles", since = "2.5.4")
@@ -130,10 +130,10 @@ object ClusterRouterPoolSettings {
  */
 @SerialVersionUID(1L)
 final case class ClusterRouterPoolSettings(
-  totalInstances:      Int,
+  totalInstances: Int,
   maxInstancesPerNode: Int,
-  allowLocalRoutees:   Boolean,
-  useRoles:            Set[String]) extends ClusterRouterSettingsBase {
+  allowLocalRoutees: Boolean,
+  useRoles: Set[String]) extends ClusterRouterSettingsBase {
 
   // For binary compatibility
   @deprecated("useRole has been replaced with useRoles", since = "2.5.4")
@@ -180,7 +180,7 @@ final case class ClusterRouterPoolSettings(
 private[akka] object ClusterRouterSettingsBase {
   def useRoleOption(role: String): Option[String] = role match {
     case null | "" ⇒ None
-    case _         ⇒ Some(role)
+    case _ ⇒ Some(role)
   }
 
   /**
@@ -480,12 +480,12 @@ private[akka] trait ClusterRouterActor { this: RouterActor ⇒
    */
   def fullAddress(routee: Routee): Address = {
     val address = routee match {
-      case ActorRefRoutee(ref)       ⇒ ref.path.address
+      case ActorRefRoutee(ref) ⇒ ref.path.address
       case ActorSelectionRoutee(sel) ⇒ sel.anchor.path.address
     }
     address match {
       case Address(_, _, None, None) ⇒ cluster.selfAddress
-      case a                         ⇒ a
+      case a ⇒ a
     }
   }
 

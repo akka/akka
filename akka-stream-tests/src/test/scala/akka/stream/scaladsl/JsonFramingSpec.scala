@@ -39,8 +39,7 @@ class JsonFramingSpec extends AkkaSpec {
       result.futureValue shouldBe Seq(
         """{ "name" : "john" }""",
         """{ "name" : "Ég get etið gler án þess að meiða mig" }""",
-        """{ "name" : "jack" }"""
-      )
+        """{ "name" : "jack" }""")
     }
 
     "emit single json element from string" in {
@@ -275,8 +274,7 @@ class JsonFramingSpec extends AkkaSpec {
               |{
               | "key": "\\"
               | }
-              | """.stripMargin
-          ))
+              | """.stripMargin))
 
           buffer.poll().get.utf8String shouldBe """{
                                           | "key": "\\"
@@ -290,8 +288,7 @@ class JsonFramingSpec extends AkkaSpec {
               |{
               | "key": "\""
               | }
-              | """.stripMargin
-          ))
+              | """.stripMargin))
 
           buffer.poll().get.utf8String shouldBe """{
                                                   | "key": "\""
@@ -305,8 +302,7 @@ class JsonFramingSpec extends AkkaSpec {
               |{
               | "key": "\\\""
               | }
-              | """.stripMargin
-          ))
+              | """.stripMargin))
 
           buffer.poll().get.utf8String shouldBe """{
                                                   | "key": "\\\""

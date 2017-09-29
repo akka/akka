@@ -152,7 +152,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
   }
 
   def senderProps(mainTarget: Target, targets: Array[Target], testSettings: TestSettings, plotRef: ActorRef,
-                  printTaskRunnerMetrics: Boolean, reporter: BenchmarkFileReporter): Props =
+    printTaskRunnerMetrics: Boolean, reporter: BenchmarkFileReporter): Props =
     Props(new Sender(mainTarget, targets, testSettings, plotRef, printTaskRunnerMetrics, reporter))
 
   class Sender(target: Target, targets: Array[Target], testSettings: TestSettings, plotRef: ActorRef, printTaskRunnerMetrics: Boolean, reporter: BenchmarkFileReporter)
@@ -184,7 +184,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
     def waitingForCompression: Receive = {
       case ReceivedActorRefCompressionTable(_, table) ⇒
         val ref = target match {
-          case ActorRefTarget(ref)          ⇒ ref
+          case ActorRefTarget(ref) ⇒ ref
           case ActorSelectionTarget(sel, _) ⇒ sel.anchor
         }
         if (table.dictionary.contains(ref)) {
@@ -293,12 +293,12 @@ object MaxThroughputSpec extends MultiNodeConfig {
   }
 
   final case class TestSettings(
-    testName:            String,
-    totalMessages:       Long,
-    burstSize:           Int,
-    payloadSize:         Int,
+    testName: String,
+    totalMessages: Long,
+    burstSize: Int,
+    payloadSize: Int,
     senderReceiverPairs: Int,
-    realMessage:         Boolean) {
+    realMessage: Boolean) {
     // data based on measurement
     def totalSize(system: ActorSystem) = payloadSize + (if (RARP(system).provider.remoteSettings.Artery.Advanced.Compression.Enabled) 38 else 110)
   }

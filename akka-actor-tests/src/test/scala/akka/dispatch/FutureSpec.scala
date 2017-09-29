@@ -27,7 +27,7 @@ object FutureSpec {
   def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type =
     try Await.ready(awaitable, atMost) catch {
       case t: TimeoutException ⇒ throw t
-      case e if NonFatal(e)    ⇒ awaitable //swallow
+      case e if NonFatal(e) ⇒ awaitable //swallow
     }
 
   class TestActor extends Actor {
@@ -264,7 +264,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           val actor = system.actorOf(Props(new Actor {
             def receive = {
               case s: String ⇒ sender() ! s.length
-              case i: Int    ⇒ sender() ! (i * 2).toString
+              case i: Int ⇒ sender() ! (i * 2).toString
             }
           }))
 
@@ -294,7 +294,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           val actor = system.actorOf(Props(new Actor {
             def receive = {
               case Req(s: String) ⇒ sender() ! Res(s.length)
-              case Req(i: Int)    ⇒ sender() ! Res((i * 2).toString)
+              case Req(i: Int) ⇒ sender() ! Res((i * 2).toString)
             }
           }))
 
@@ -447,7 +447,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           val fs = (0 to 1000) map (i ⇒ Future(i))
           val f = compat.Future.fold(fs)(ArrayBuffer.empty[AnyRef]) {
             case (l, i) if i % 2 == 0 ⇒ l += i.asInstanceOf[AnyRef]
-            case (l, _)               ⇒ l
+            case (l, _) ⇒ l
           }
           val result = Await.result(f.mapTo[ArrayBuffer[Int]], 10000 millis).sum
 

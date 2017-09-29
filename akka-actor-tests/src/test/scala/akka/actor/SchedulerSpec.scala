@@ -184,7 +184,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       val supervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(3, 1 second)(List(classOf[Exception])))))
       val props = Props(new Actor {
         def receive = {
-          case Ping  ⇒ pingLatch.countDown()
+          case Ping ⇒ pingLatch.countDown()
           case Crash ⇒ throw new Exception("CRASH")
         }
 
@@ -561,7 +561,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           prb.ref ! ns
           try time += (lbq.get match {
             case q: LinkedBlockingQueue[Long] ⇒ q.take()
-            case _                            ⇒ 0L
+            case _ ⇒ 0L
           })
           catch {
             case _: InterruptedException ⇒ Thread.currentThread.interrupt()
@@ -573,14 +573,14 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     val driver = new Driver {
       def wakeUp(d: FiniteDuration) = lbq.get match {
         case q: LinkedBlockingQueue[Long] ⇒ q.offer(d.toNanos)
-        case _                            ⇒
+        case _ ⇒
       }
       def expectWait(): FiniteDuration = probe.expectMsgType[Long].nanos
       def probe = prb
       def step = sched.TickDuration
       def close() = lbq.getAndSet(null) match {
         case q: LinkedBlockingQueue[Long] ⇒ q.offer(0L)
-        case _                            ⇒
+        case _ ⇒
       }
     }
     driver.expectWait()

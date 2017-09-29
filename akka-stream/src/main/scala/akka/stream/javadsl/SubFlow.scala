@@ -1236,7 +1236,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * '''Cancels when''' downstream cancels
    */
   def zipWith[Out2, Out3](
-    that:    Graph[SourceShape[Out2], _],
+    that: Graph[SourceShape[Out2], _],
     combine: function.Function2[Out, Out2, Out3]): SubFlow[In, Out3, Mat] =
     new SubFlow(delegate.zipWith[Out2, Out3](that)(combinerToScala(combine)))
 
@@ -1360,7 +1360,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * '''Cancels when''' downstream cancels
    */
   def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int,
-               mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
+    mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(elements, per, maximumBurst, mode))
 
   /**
@@ -1397,7 +1397,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * '''Cancels when''' downstream cancels
    */
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
-               costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
+    costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(cost, per, maximumBurst, costCalculation.apply, mode))
 
   /**

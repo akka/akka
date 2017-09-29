@@ -76,7 +76,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
             case RoleLeaderChanged(role, leader) ⇒
               _state = _state.copy(roleLeaderMap = _state.roleLeaderMap + (role → leader))
             case stats: CurrentInternalStats ⇒ _latestStats = stats
-            case ClusterShuttingDown         ⇒
+            case ClusterShuttingDown ⇒
 
             case r: ReachableDataCenter ⇒
               _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters - r.dataCenter)

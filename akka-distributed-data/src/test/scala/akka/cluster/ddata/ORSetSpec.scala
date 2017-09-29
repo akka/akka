@@ -235,7 +235,7 @@ class ORSetSpec extends WordSpec with Matchers {
     def asAddDeltaOp(delta: Any): ORSet.AddDeltaOp[String] =
       delta match {
         case d: ORSet.AddDeltaOp[String] @unchecked ⇒ d
-        case _                                      ⇒ throw new IllegalArgumentException("Expected AddDeltaOp")
+        case _ ⇒ throw new IllegalArgumentException("Expected AddDeltaOp")
       }
 
     "work for additions" in {

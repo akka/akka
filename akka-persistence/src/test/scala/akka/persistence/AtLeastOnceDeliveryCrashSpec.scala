@@ -14,7 +14,7 @@ object AtLeastOnceDeliveryCrashSpec {
 
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 10.seconds) {
       case _: IllegalStateException ⇒ Stop
-      case t                        ⇒ super.supervisorStrategy.decider.applyOrElse(t, (_: Any) ⇒ Escalate)
+      case t ⇒ super.supervisorStrategy.decider.applyOrElse(t, (_: Any) ⇒ Escalate)
     }
 
     val crashingActor = context.actorOf(Props(new CrashingActor(testProbe)), "CrashingActor")
@@ -43,7 +43,7 @@ object AtLeastOnceDeliveryCrashSpec {
     }
 
     override def receiveCommand: Receive = {
-      case Message      ⇒ persist(Message)(_ ⇒ send())
+      case Message ⇒ persist(Message)(_ ⇒ send())
       case CrashMessage ⇒ persist(CrashMessage) { evt ⇒ }
     }
 

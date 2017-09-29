@@ -24,12 +24,12 @@ import scala.util.control.NonFatal
  * and swap out the cell ref.
  */
 private[akka] class RepointableActorRef(
-  val system:      ActorSystemImpl,
-  val props:       Props,
-  val dispatcher:  MessageDispatcher,
+  val system: ActorSystemImpl,
+  val props: Props,
+  val dispatcher: MessageDispatcher,
   val mailboxType: MailboxType,
-  val supervisor:  InternalActorRef,
-  val path:        ActorPath)
+  val supervisor: InternalActorRef,
+  val path: ActorPath)
   extends ActorRefWithCell with RepointableRef {
 
   import AbstractActorRef.{ cellOffset, lookupOffset }
@@ -108,7 +108,7 @@ private[akka] class RepointableActorRef(
         u.replaceWith(cell)
         this
       case null ⇒ throw new IllegalStateException("underlying cell is null")
-      case _    ⇒ this // this happens routinely for things which were created async=false
+      case _ ⇒ this // this happens routinely for things which were created async=false
     }
 
   /**
@@ -130,8 +130,8 @@ private[akka] class RepointableActorRef(
 
   def isStarted: Boolean = underlying match {
     case _: UnstartedCell ⇒ false
-    case null             ⇒ throw new IllegalStateException("isStarted called before initialized")
-    case _                ⇒ true
+    case null ⇒ throw new IllegalStateException("isStarted called before initialized")
+    case _ ⇒ true
   }
 
   @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") def isTerminated: Boolean = underlying.isTerminated
@@ -146,7 +146,7 @@ private[akka] class RepointableActorRef(
     if (name.hasNext) {
       name.next match {
         case ".." ⇒ getParent.getChild(name)
-        case ""   ⇒ getChild(name)
+        case "" ⇒ getChild(name)
         case other ⇒
           val (childName, uid) = ActorCell.splitNameAndUid(other)
           lookup.getChildByName(childName) match {
@@ -154,7 +154,7 @@ private[akka] class RepointableActorRef(
               crs.child.asInstanceOf[InternalActorRef].getChild(name)
             case _ ⇒ lookup match {
               case ac: ActorCell ⇒ ac.getFunctionRefOrNobody(childName, uid)
-              case _             ⇒ Nobody
+              case _ ⇒ Nobody
             }
           }
       }
@@ -178,8 +178,8 @@ private[akka] class RepointableActorRef(
 
 private[akka] class UnstartedCell(
   val systemImpl: ActorSystemImpl,
-  val self:       RepointableActorRef,
-  val props:      Props,
+  val self: RepointableActorRef,
+  val props: Props,
   val supervisor: InternalActorRef) extends Cell {
 
   /*

@@ -40,9 +40,9 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
 
   // only check that all persistenceIds are equal when there's more than one in the Seq
   if (payload match {
-    case l: List[PersistentRepr]   ⇒ l.tail.nonEmpty // avoids calling .size
+    case l: List[PersistentRepr] ⇒ l.tail.nonEmpty // avoids calling .size
     case v: Vector[PersistentRepr] ⇒ v.size > 1
-    case _                         ⇒ true // some other collection type, let's just check
+    case _ ⇒ true // some other collection type, let's just check
   }) payload.foreach { pr ⇒
     if (pr.persistenceId != payload.head.persistenceId)
       throw new IllegalArgumentException(
@@ -120,11 +120,11 @@ trait PersistentRepr extends Message {
    * Creates a new copy of this [[PersistentRepr]].
    */
   def update(
-    sequenceNr:    Long     = sequenceNr,
-    persistenceId: String   = persistenceId,
-    deleted:       Boolean  = deleted,
-    sender:        ActorRef = sender,
-    writerUuid:    String   = writerUuid): PersistentRepr
+    sequenceNr: Long = sequenceNr,
+    persistenceId: String = persistenceId,
+    deleted: Boolean = deleted,
+    sender: ActorRef = sender,
+    writerUuid: String = writerUuid): PersistentRepr
 }
 
 object PersistentRepr {
@@ -137,13 +137,13 @@ object PersistentRepr {
    * Plugin API.
    */
   def apply(
-    payload:       Any,
-    sequenceNr:    Long     = 0L,
-    persistenceId: String   = PersistentRepr.Undefined,
-    manifest:      String   = PersistentRepr.Undefined,
-    deleted:       Boolean  = false,
-    sender:        ActorRef = null,
-    writerUuid:    String   = PersistentRepr.Undefined): PersistentRepr =
+    payload: Any,
+    sequenceNr: Long = 0L,
+    persistenceId: String = PersistentRepr.Undefined,
+    manifest: String = PersistentRepr.Undefined,
+    deleted: Boolean = false,
+    sender: ActorRef = null,
+    writerUuid: String = PersistentRepr.Undefined): PersistentRepr =
     PersistentImpl(payload, sequenceNr, persistenceId, manifest, deleted, sender, writerUuid)
 
   /**
@@ -162,13 +162,13 @@ object PersistentRepr {
  * INTERNAL API.
  */
 private[persistence] final case class PersistentImpl(
-  override val payload:       Any,
-  override val sequenceNr:    Long,
+  override val payload: Any,
+  override val sequenceNr: Long,
   override val persistenceId: String,
-  override val manifest:      String,
-  override val deleted:       Boolean,
-  override val sender:        ActorRef,
-  override val writerUuid:    String) extends PersistentRepr with NoSerializationVerificationNeeded {
+  override val manifest: String,
+  override val deleted: Boolean,
+  override val sender: ActorRef,
+  override val writerUuid: String) extends PersistentRepr with NoSerializationVerificationNeeded {
 
   def withPayload(payload: Any): PersistentRepr =
     copy(payload = payload)

@@ -147,8 +147,8 @@ object MultiNodeSpec {
    * is defined as system property "multinode.host".
    */
   val selfName: String = Option(System.getProperty("multinode.host")) match {
-    case None       ⇒ throw new IllegalStateException("need system property multinode.host to be set")
-    case Some("")   ⇒ InetAddress.getLocalHost.getHostAddress
+    case None ⇒ throw new IllegalStateException("need system property multinode.host to be set")
+    case Some("") ⇒ InetAddress.getLocalHost.getHostAddress
     case Some(host) ⇒ host
   }
 
@@ -239,7 +239,7 @@ object MultiNodeSpec {
     val s = Thread.currentThread.getStackTrace.map(_.getClassName).drop(1).dropWhile(_.matches(pattern))
     val reduced = s.lastIndexWhere(_ == clazz.getName) match {
       case -1 ⇒ s
-      case z  ⇒ s drop (z + 1)
+      case z ⇒ s drop (z + 1)
     }
     reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
   }
@@ -441,7 +441,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
       import scala.collection.JavaConverters._
       ConfigFactory.parseString(deployString).root.asScala foreach {
         case (key, value: ConfigObject) ⇒ deployer.parseConfig(key, value.toConfig) foreach deployer.deploy
-        case (key, x)                   ⇒ throw new IllegalArgumentException(s"key $key must map to deployment section, not simple value $x")
+        case (key, x) ⇒ throw new IllegalArgumentException(s"key $key must map to deployment section, not simple value $x")
       }
     }
   }

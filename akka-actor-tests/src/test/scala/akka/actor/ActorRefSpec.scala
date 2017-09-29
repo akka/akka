@@ -31,7 +31,7 @@ object ActorRefSpec {
       case "complexRequest2" ⇒
         val worker = context.actorOf(Props[WorkerActor])
         worker ! ReplyTo(sender())
-      case "workDone"      ⇒ replyTo ! "complexReply"
+      case "workDone" ⇒ replyTo ! "complexReply"
       case "simpleRequest" ⇒ sender() ! "simpleReply"
     }
   }
@@ -56,9 +56,9 @@ object ActorRefSpec {
   class SenderActor(replyActor: ActorRef, latch: TestLatch) extends Actor {
 
     def receive = {
-      case "complex"  ⇒ replyActor ! "complexRequest"
+      case "complex" ⇒ replyActor ! "complexRequest"
       case "complex2" ⇒ replyActor ! "complexRequest2"
-      case "simple"   ⇒ replyActor ! "simpleRequest"
+      case "simple" ⇒ replyActor ! "simpleRequest"
       case "complexReply" ⇒ {
         latch.countDown()
       }
@@ -71,7 +71,7 @@ object ActorRefSpec {
   class OuterActor(val inner: ActorRef) extends Actor {
     def receive = {
       case "self" ⇒ sender() ! self
-      case x      ⇒ inner forward x
+      case x ⇒ inner forward x
     }
   }
 
@@ -80,7 +80,7 @@ object ActorRefSpec {
 
     def receive = {
       case "self" ⇒ sender() ! self
-      case x      ⇒ inner forward x
+      case x ⇒ inner forward x
     }
   }
 
@@ -91,7 +91,7 @@ object ActorRefSpec {
   class InnerActor extends Actor {
     def receive = {
       case "innerself" ⇒ sender() ! self
-      case other       ⇒ sender() ! other
+      case other ⇒ sender() ! other
     }
   }
 
@@ -100,7 +100,7 @@ object ActorRefSpec {
 
     def receive = {
       case "innerself" ⇒ sender() ! self
-      case other       ⇒ sender() ! other
+      case other ⇒ sender() ! other
     }
   }
 

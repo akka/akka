@@ -39,13 +39,13 @@ object ClusterShardingRememberEntitiesNewExtractorSpec {
   }
 
   val extractShardId1: ShardRegion.ExtractShardId = {
-    case id: Int                     ⇒ (id % shardCount).toString
+    case id: Int ⇒ (id % shardCount).toString
     case ShardRegion.StartEntity(id) ⇒ extractShardId1(id.toInt)
   }
 
   val extractShardId2: ShardRegion.ExtractShardId = {
     // always bump it one shard id
-    case id: Int                     ⇒ ((id + 1) % shardCount).toString
+    case id: Int ⇒ ((id + 1) % shardCount).toString
     case ShardRegion.StartEntity(id) ⇒ extractShardId2(id.toInt)
   }
 

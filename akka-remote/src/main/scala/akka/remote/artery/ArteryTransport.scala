@@ -120,9 +120,9 @@ private[remote] object AssociationState {
  * INTERNAL API
  */
 private[remote] final class AssociationState(
-  val incarnation:                Int,
+  val incarnation: Int,
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
-  val quarantined:                ImmutableLongMap[AssociationState.QuarantinedTimestamp]) {
+  val quarantined: ImmutableLongMap[AssociationState.QuarantinedTimestamp]) {
 
   import AssociationState.QuarantinedTimestamp
 
@@ -164,7 +164,7 @@ private[remote] final class AssociationState(
   def isQuarantined(): Boolean = {
     uniqueRemoteAddressValue match {
       case Some(a) ⇒ isQuarantined(a.uid)
-      case _       ⇒ false // handshake not completed yet
+      case _ ⇒ false // handshake not completed yet
     }
   }
 
@@ -174,7 +174,7 @@ private[remote] final class AssociationState(
     val a = uniqueRemoteAddressPromise.future.value match {
       case Some(Success(a)) ⇒ a
       case Some(Failure(e)) ⇒ s"Failure(${e.getMessage})"
-      case None             ⇒ "unknown"
+      case None ⇒ "unknown"
     }
     s"AssociationState($incarnation, $a)"
   }
@@ -222,7 +222,7 @@ private[remote] trait OutboundContext {
  */
 private[remote] object FlushOnShutdown {
   def props(done: Promise[Done], timeout: FiniteDuration,
-            inboundContext: InboundContext, associations: Set[Association]): Props = {
+    inboundContext: InboundContext, associations: Set[Association]): Props = {
     require(associations.nonEmpty)
     Props(new FlushOnShutdown(done, timeout, inboundContext, associations))
   }
@@ -234,7 +234,7 @@ private[remote] object FlushOnShutdown {
  * INTERNAL API
  */
 private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDuration,
-                                      inboundContext: InboundContext, associations: Set[Association]) extends Actor {
+  inboundContext: InboundContext, associations: Set[Association]) extends Actor {
 
   var remaining = Map.empty[UniqueAddress, Int]
 
@@ -246,7 +246,7 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
         val acksExpected = a.sendTerminationHint(self)
         a.associationState.uniqueRemoteAddressValue() match {
           case Some(address) ⇒ remaining += address → acksExpected
-          case None          ⇒ // Ignore, handshake was not completed on this association
+          case None ⇒ // Ignore, handshake was not completed on this association
         }
       }
       if (remaining.valuesIterator.sum == 0) {
@@ -309,7 +309,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override val log: LoggingAdapter = Logging(system, getClass.getName)
 
   val (afrFileChannel, afrFile, flightRecorder) = initializeFlightRecorder() match {
-    case None            ⇒ (None, None, None)
+    case None ⇒ (None, None, None)
     case Some((c, f, r)) ⇒ (Some(c), Some(f), Some(r))
   }
 
@@ -520,7 +520,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def aeronDir: String = mediaDriver.get match {
     case Some(driver) ⇒ driver.aeronDirectoryName
-    case None         ⇒ settings.Advanced.AeronDirectoryName
+    case None ⇒ settings.Advanced.AeronDirectoryName
   }
 
   private def stopMediaDriver(): Unit = {
@@ -574,8 +574,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       override def onError(cause: Throwable): Unit = {
         cause match {
           case e: ConductorServiceTimeoutException ⇒ handleFatalError(e)
-          case e: DriverTimeoutException           ⇒ handleFatalError(e)
-          case _: AeronTerminated                  ⇒ // already handled, via handleFatalError
+          case e: DriverTimeoutException ⇒ handleFatalError(e)
+          case _: AeronTerminated ⇒ // already handled, via handleFatalError
           case _ ⇒
             log.error(cause, s"Aeron error, ${cause.getMessage}")
         }
@@ -789,7 +789,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
     implicit val ec = materializer.executionContext
     streamCompleted.failed.foreach {
-      case ShutdownSignal     ⇒ // shutdown as expected
+      case ShutdownSignal ⇒ // shutdown as expected
       case _: AeronTerminated ⇒ // shutdown already in progress
       case cause if isShutdown ⇒
         // don't restart after shutdown, but log some details so we notice
@@ -959,7 +959,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     createOutboundSink(ordinaryStreamId, outboundContext, envelopeBufferPool)
 
   private def createOutboundSink(streamId: Int, outboundContext: OutboundContext,
-                                 bufferPool: EnvelopeBufferPool): Sink[OutboundEnvelope, (OutboundCompressionAccess, Future[Done])] = {
+    bufferPool: EnvelopeBufferPool): Sink[OutboundEnvelope, (OutboundCompressionAccess, Future[Done])] = {
 
     outboundLane(outboundContext, bufferPool)
       .toMat(aeronSink(outboundContext, streamId, bufferPool))(Keep.both)
@@ -969,7 +969,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     aeronSink(outboundContext, ordinaryStreamId, envelopeBufferPool)
 
   private def aeronSink(outboundContext: OutboundContext, streamId: Int,
-                        bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
+    bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
 
     val giveUpAfter =
       if (streamId == controlStreamId) settings.Advanced.GiveUpSystemMessageAfter
@@ -983,7 +983,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def outboundLane(
     outboundContext: OutboundContext,
-    bufferPool:      EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] = {
+    bufferPool: EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] = {
 
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
@@ -1024,7 +1024,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     messageDispatcher.dispatch(m)
     m match {
       case r: ReusableInboundEnvelope ⇒ inboundEnvelopePool.release(r)
-      case _                          ⇒
+      case _ ⇒
     }
   }
 
@@ -1043,7 +1043,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         case _: ActorSystemTerminating ⇒
           envelope.sender match {
             case OptionVal.Some(snd) ⇒ snd.tell(ActorSystemTerminatingAck(localAddress), ActorRef.noSender)
-            case OptionVal.None      ⇒ log.error("Expected sender for ActorSystemTerminating message")
+            case OptionVal.None ⇒ log.error("Expected sender for ActorSystemTerminating message")
           }
           false
         case _ ⇒ true
@@ -1130,7 +1130,7 @@ private[remote] object ArteryTransport {
 
   final case class InboundStreamMatValues(
     aeronSourceLifecycle: AeronSource.ResourceLifecycle,
-    completed:            Future[Done])
+    completed: Future[Done])
 
   def autoSelectPort(hostname: String): Int = {
     val socket = DatagramChannel.open().socket()

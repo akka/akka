@@ -61,7 +61,7 @@ object TcpHelper {
         writePending = false
         closeAfterWrite match {
           case Some(cmd) ⇒ connection ! cmd
-          case None      ⇒
+          case None ⇒
         }
       case ClientRead(count, requester) ⇒
         readTo = requester
@@ -148,7 +148,7 @@ trait TcpHelper { this: TestKitBase ⇒
       connectionActor ! PingClose(connectionProbe.ref)
       connectionProbe.fishForMessage(max) {
         case c: ConnectionClosed if p(c) ⇒ true
-        case other                       ⇒ false
+        case other ⇒ false
       }
     }
 

@@ -45,11 +45,11 @@ private[akka] final case class DaemonMsgCreate(props: Props, deploy: Deploy, pat
  * It acts as the brain of the remote that responds to system remote events (messages) and undertakes action.
  */
 private[akka] class RemoteSystemDaemon(
-  system:            ActorSystemImpl,
-  _path:             ActorPath,
-  _parent:           InternalActorRef,
-  terminator:        ActorRef,
-  _log:              MarkerLoggingAdapter,
+  system: ActorSystemImpl,
+  _path: ActorPath,
+  _parent: InternalActorRef,
+  terminator: ActorRef,
+  _log: MarkerLoggingAdapter,
   val untrustedMode: Boolean)
   extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 
@@ -117,8 +117,8 @@ private[akka] class RemoteSystemDaemon(
     val full = Vector() ++ names
     rec(full.mkString("/"), 0) match {
       case (Nobody, _) ⇒ Nobody
-      case (ref, 0)    ⇒ ref
-      case (ref, n)    ⇒ ref.getChild(full.takeRight(n).iterator)
+      case (ref, 0) ⇒ ref
+      case (ref, n) ⇒ ref.getChild(full.takeRight(n).iterator)
     }
   }
 
@@ -176,10 +176,10 @@ private[akka] class RemoteSystemDaemon(
             (acc.reverse, sel.msg)
           else {
             iter.next() match {
-              case SelectChildName(name)       ⇒ rec(name :: acc)
+              case SelectChildName(name) ⇒ rec(name :: acc)
               case SelectParent if acc.isEmpty ⇒ rec(acc)
-              case SelectParent                ⇒ rec(acc.tail)
-              case pat: SelectChildPattern     ⇒ (acc.reverse, sel.copy(elements = pat +: iter.toVector))
+              case SelectParent ⇒ rec(acc.tail)
+              case pat: SelectChildPattern ⇒ (acc.reverse, sel.copy(elements = pat +: iter.toVector))
             }
           }
         rec(Nil)

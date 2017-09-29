@@ -22,7 +22,7 @@ object LoggingDocSpec {
     }
     def receive = {
       case "test" => log.info("Received test")
-      case x      => log.warning("Received unknown message: {}", x)
+      case x => log.warning("Received unknown message: {}", x)
     }
   }
   //#my-actor
@@ -60,7 +60,7 @@ object LoggingDocSpec {
       val always = Map("requestId" -> reqId)
       val perMessage = currentMessage match {
         case r: Req => Map("visitorId" -> r.visitorId)
-        case _      => Map()
+        case _ => Map()
       }
       always ++ perMessage
     }
@@ -84,11 +84,11 @@ object LoggingDocSpec {
 
   class MyEventListener extends Actor {
     def receive = {
-      case InitializeLogger(_)                        => sender() ! LoggerInitialized
+      case InitializeLogger(_) => sender() ! LoggerInitialized
       case Error(cause, logSource, logClass, message) => // ...
-      case Warning(logSource, logClass, message)      => // ...
-      case Info(logSource, logClass, message)         => // ...
-      case Debug(logSource, logClass, message)        => // ...
+      case Warning(logSource, logClass, message) => // ...
+      case Info(logSource, logClass, message) => // ...
+      case Debug(logSource, logClass, message) => // ...
     }
   }
   //#my-event-listener
@@ -132,7 +132,7 @@ object LoggingDocSpec {
 
     class Listener extends Actor {
       def receive = {
-        case m: Jazz       => println(s"${self.path.name} is listening to: ${m.artist}")
+        case m: Jazz => println(s"${self.path.name} is listening to: ${m.artist}")
         case m: Electronic => println(s"${self.path.name} is listening to: ${m.artist}")
       }
     }

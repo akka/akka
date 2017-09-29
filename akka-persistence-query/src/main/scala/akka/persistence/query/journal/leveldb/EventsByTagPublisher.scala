@@ -20,7 +20,7 @@ import akka.persistence.journal.leveldb.LeveldbJournal.ReplayedTaggedMessage
  */
 private[akka] object EventsByTagPublisher {
   def props(tag: String, fromOffset: Long, toOffset: Long, refreshInterval: Option[FiniteDuration],
-            maxBufSize: Int, writeJournalPluginId: String): Props = {
+    maxBufSize: Int, writeJournalPluginId: String): Props = {
     refreshInterval match {
       case Some(interval) ⇒
         Props(new LiveEventsByTagPublisher(tag, fromOffset, toOffset, interval,
@@ -57,8 +57,8 @@ private[akka] abstract class AbstractEventsByTagPublisher(
 
   def init: Receive = {
     case _: Request ⇒ receiveInitialRequest()
-    case Continue   ⇒ // skip, wait for first Request
-    case Cancel     ⇒ context.stop(self)
+    case Continue ⇒ // skip, wait for first Request
+    case Cancel ⇒ context.stop(self)
   }
 
   def receiveInitialRequest(): Unit
@@ -125,7 +125,7 @@ private[akka] abstract class AbstractEventsByTagPublisher(
 private[akka] class LiveEventsByTagPublisher(
   tag: String, fromOffset: Long, override val toOffset: Long,
   refreshInterval: FiniteDuration,
-  maxBufSize:      Int, writeJournalPluginId: String)
+  maxBufSize: Int, writeJournalPluginId: String)
   extends AbstractEventsByTagPublisher(
     tag, fromOffset, maxBufSize, writeJournalPluginId) {
   import EventsByTagPublisher._

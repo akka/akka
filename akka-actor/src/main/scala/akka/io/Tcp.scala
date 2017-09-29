@@ -116,10 +116,10 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    */
   final case class Connect(
     remoteAddress: InetSocketAddress,
-    localAddress:  Option[InetSocketAddress]           = None,
-    options:       immutable.Traversable[SocketOption] = Nil,
-    timeout:       Option[FiniteDuration]              = None,
-    pullMode:      Boolean                             = false) extends Command
+    localAddress: Option[InetSocketAddress] = None,
+    options: immutable.Traversable[SocketOption] = Nil,
+    timeout: Option[FiniteDuration] = None,
+    pullMode: Boolean = false) extends Command
 
   /**
    * The Bind message is send to the TCP manager actor, which is obtained via
@@ -141,11 +141,11 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * @param options Please refer to the `Tcp.SO` object for a list of all supported options.
    */
   final case class Bind(
-    handler:      ActorRef,
+    handler: ActorRef,
     localAddress: InetSocketAddress,
-    backlog:      Int                                 = 100,
-    options:      immutable.Traversable[SocketOption] = Nil,
-    pullMode:     Boolean                             = false) extends Command
+    backlog: Int = 100,
+    options: immutable.Traversable[SocketOption] = Nil,
+    pullMode: Boolean = false) extends Command
 
   /**
    * This message must be sent to a TCP connection actor after receiving the
@@ -260,7 +260,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
     def ++:(writes: Iterable[WriteCommand]): WriteCommand =
       writes.foldRight(this) {
         case (a: SimpleWriteCommand, b) ⇒ a +: b
-        case (a: CompoundWrite, b)      ⇒ a ++: b
+        case (a: CompoundWrite, b) ⇒ a ++: b
       }
 
     /**
@@ -371,8 +371,8 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
         def hasNext: Boolean = current ne null
         def next(): SimpleWriteCommand =
           current match {
-            case null                  ⇒ Iterator.empty.next()
-            case CompoundWrite(h, t)   ⇒ { current = t; h }
+            case null ⇒ Iterator.empty.next()
+            case CompoundWrite(h, t) ⇒ { current = t; h }
             case x: SimpleWriteCommand ⇒ { current = null; x }
           }
       }
@@ -555,17 +555,17 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     val MaxDirectBufferPoolSize: Int = getInt("direct-buffer-pool-limit")
     val RegisterTimeout: Duration = getString("register-timeout") match {
       case "infinite" ⇒ Duration.Undefined
-      case x          ⇒ _config.getMillisDuration("register-timeout")
+      case x ⇒ _config.getMillisDuration("register-timeout")
     }
     val ReceivedMessageSizeLimit: Int = getString("max-received-message-size") match {
       case "unlimited" ⇒ Int.MaxValue
-      case x           ⇒ getIntBytes("max-received-message-size")
+      case x ⇒ getIntBytes("max-received-message-size")
     }
     val ManagementDispatcher: String = getString("management-dispatcher")
     val FileIODispatcher: String = getString("file-io-dispatcher")
     val TransferToLimit: Int = getString("file-io-transferTo-limit") match {
       case "unlimited" ⇒ Int.MaxValue
-      case _           ⇒ getIntBytes("file-io-transferTo-limit")
+      case _ ⇒ getIntBytes("file-io-transferTo-limit")
     }
 
     val MaxChannelsPerSelector: Int = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
@@ -574,7 +574,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
 
     val WindowsConnectionAbortWorkaroundEnabled: Boolean = getString("windows-connection-abort-workaround-enabled") match {
       case "auto" ⇒ Helpers.isWindows
-      case _      ⇒ getBoolean("windows-connection-abort-workaround-enabled")
+      case _ ⇒ getBoolean("windows-connection-abort-workaround-enabled")
     }
 
     private[this] def getIntBytes(path: String): Int = {
@@ -654,10 +654,10 @@ object TcpMessage {
    */
   def connect(
     remoteAddress: InetSocketAddress,
-    localAddress:  InetSocketAddress,
-    options:       JIterable[SocketOption],
-    timeout:       FiniteDuration,
-    pullMode:      Boolean): Command = Connect(remoteAddress, Option(localAddress), options, Option(timeout), pullMode)
+    localAddress: InetSocketAddress,
+    options: JIterable[SocketOption],
+    timeout: FiniteDuration,
+    pullMode: Boolean): Command = Connect(remoteAddress, Option(localAddress), options, Option(timeout), pullMode)
 
   /**
    * Connect to the given `remoteAddress` without binding to a local address and without
@@ -688,18 +688,18 @@ object TcpMessage {
    *                 based reading from the accepted connections.
    */
   def bind(
-    handler:  ActorRef,
+    handler: ActorRef,
     endpoint: InetSocketAddress,
-    backlog:  Int,
-    options:  JIterable[SocketOption],
+    backlog: Int,
+    options: JIterable[SocketOption],
     pullMode: Boolean): Command = Bind(handler, endpoint, backlog, options, pullMode)
   /**
    * Open a listening socket without specifying options.
    */
   def bind(
-    handler:  ActorRef,
+    handler: ActorRef,
     endpoint: InetSocketAddress,
-    backlog:  Int): Command = Bind(handler, endpoint, backlog, Nil)
+    backlog: Int): Command = Bind(handler, endpoint, backlog, Nil)
 
   /**
    * This message must be sent to a TCP connection actor after receiving the

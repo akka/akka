@@ -41,7 +41,7 @@ class BundleDelegatingClassLoader(bundle: Bundle, fallBackClassLoader: ClassLoad
       if (remaining.isEmpty) throw new ClassNotFoundException(name)
       else Try { remaining.head.loadClass(name) } match {
         case Success(cls) ⇒ cls
-        case Failure(_)   ⇒ find(remaining.tail)
+        case Failure(_) ⇒ find(remaining.tail)
       }
     }
     find(bundles)
@@ -52,7 +52,7 @@ class BundleDelegatingClassLoader(bundle: Bundle, fallBackClassLoader: ClassLoad
       if (remaining.isEmpty) getParent.getResource(name)
       else Option { remaining.head.getResource(name) } match {
         case Some(r) ⇒ r
-        case None    ⇒ find(remaining.tail)
+        case None ⇒ find(remaining.tail)
       }
     }
     find(bundles)

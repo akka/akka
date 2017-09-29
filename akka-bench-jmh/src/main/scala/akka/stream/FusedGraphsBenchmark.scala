@@ -131,8 +131,7 @@ class FusedGraphsBenchmark {
       fuse(
         testSource
           .via(identityStage)
-          .toMat(testSink)(Keep.right)
-      )
+          .toMat(testSink)(Keep.right))
 
     chainOfIdentities =
       fuse(
@@ -147,15 +146,13 @@ class FusedGraphsBenchmark {
           .via(identityStage)
           .via(identityStage)
           .via(identityStage)
-          .toMat(testSink)(Keep.right)
-      )
+          .toMat(testSink)(Keep.right))
 
     singleMap =
       fuse(
         testSource
           .map(addFunc)
-          .toMat(testSink)(Keep.right)
-      )
+          .toMat(testSink)(Keep.right))
 
     chainOfMaps =
       fuse(
@@ -170,8 +167,7 @@ class FusedGraphsBenchmark {
           .map(addFunc)
           .map(addFunc)
           .map(addFunc)
-          .toMat(testSink)(Keep.right)
-      )
+          .toMat(testSink)(Keep.right))
 
     repeatTakeMapAndFold =
       fuse(
@@ -180,15 +176,13 @@ class FusedGraphsBenchmark {
           .map(addFunc)
           .map(addFunc)
           .fold(new MutableElement(0))((acc, x) => { acc.value += x.value; acc })
-          .toMat(testSink)(Keep.right)
-      )
+          .toMat(testSink)(Keep.right))
 
     singleBuffer =
       fuse(
         testSource
           .buffer(10, OverflowStrategy.backpressure)
-          .toMat(testSink)(Keep.right)
-      )
+          .toMat(testSink)(Keep.right))
 
     chainOfBuffers =
       fuse(
@@ -203,8 +197,7 @@ class FusedGraphsBenchmark {
           .buffer(10, OverflowStrategy.backpressure)
           .buffer(10, OverflowStrategy.backpressure)
           .buffer(10, OverflowStrategy.backpressure)
-          .toMat(testSink)(Keep.right)
-      )
+          .toMat(testSink)(Keep.right))
 
     val broadcastZipFlow: Flow[MutableElement, MutableElement, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
@@ -234,23 +227,20 @@ class FusedGraphsBenchmark {
       fuse(
         testSource
           .via(broadcastZipFlow)
-          .toMat(testSink)(Keep.right)
-      )
+          .toMat(testSink)(Keep.right))
 
     balanceMerge =
       fuse(
         testSource
           .via(balanceMergeFlow)
-          .toMat(testSink)(Keep.right)
-      )
+          .toMat(testSink)(Keep.right))
 
     broadcastZipBalanceMerge =
       fuse(
         testSource
           .via(broadcastZipFlow)
           .via(balanceMergeFlow)
-          .toMat(testSink)(Keep.right)
-      )
+          .toMat(testSink)(Keep.right))
   }
 
   @Benchmark

@@ -139,8 +139,7 @@ object BenchmarkActors {
   def requireRightNumberOfCores(numCores: Int) =
     require(
       Runtime.getRuntime.availableProcessors == numCores,
-      s"Update the cores constant to ${Runtime.getRuntime.availableProcessors}"
-    )
+      s"Update the cores constant to ${Runtime.getRuntime.availableProcessors}")
 
   def benchmarkPingPongActors(numMessagesPerActorPair: Int, numActors: Int, dispatcher: String, throughPut: Int, shutdownTimeout: Duration)(implicit system: ActorSystem): Unit = {
     val numPairs = numActors / 2

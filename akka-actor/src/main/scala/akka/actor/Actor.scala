@@ -114,7 +114,7 @@ final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
 @SerialVersionUID(1L)
 final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
   @BeanProperty val existenceConfirmed: Boolean,
-  @BeanProperty val addressTerminated:  Boolean)
+  @BeanProperty val addressTerminated: Boolean)
   extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression
   with NoSerializationVerificationNeeded // local message, the remote one is DeathWatchNotification
 
@@ -240,7 +240,7 @@ object OriginalRestartException {
   def unapply(ex: PostRestartException): Option[Throwable] = {
     @tailrec def rec(ex: PostRestartException): Option[Throwable] = ex match {
       case PostRestartException(_, _, e: PostRestartException) ⇒ rec(e)
-      case PostRestartException(_, _, e)                       ⇒ Some(e)
+      case PostRestartException(_, _, e) ⇒ Some(e)
     }
     rec(ex)
   }
@@ -626,7 +626,7 @@ trait Actor {
   def unhandled(message: Any): Unit = {
     message match {
       case Terminated(dead) ⇒ throw DeathPactException(dead)
-      case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender(), self))
+      case _ ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender(), self))
     }
   }
 }

@@ -37,7 +37,7 @@ private[akka] object Buffer {
   def apply[T](size: Int, materializer: Materializer): Buffer[T] =
     materializer match {
       case m: ActorMaterializer ⇒ apply(size, m.settings.maxFixedBufferSize)
-      case _                    ⇒ apply(size, 1000000000)
+      case _ ⇒ apply(size, 1000000000)
     }
 
   def apply[T](size: Int, max: Int): Buffer[T] =

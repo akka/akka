@@ -64,7 +64,7 @@ object Agent {
     private final def withinTransaction(run: Runnable): Unit = {
       Txn.findCurrent match {
         case Some(txn) ⇒ Txn.afterCommit(_ ⇒ updater.execute(run))(txn)
-        case _         ⇒ updater.execute(run)
+        case _ ⇒ updater.execute(run)
       }
     }
 

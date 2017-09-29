@@ -25,7 +25,7 @@ class ExamplePersistentActor extends PersistentActor {
     state.size
 
   val receiveRecover: Receive = {
-    case evt: Evt                                 => updateState(evt)
+    case evt: Evt => updateState(evt)
     case SnapshotOffer(_, snapshot: ExampleState) => state = snapshot
   }
 

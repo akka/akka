@@ -65,7 +65,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
   val totalNumberOfNodes =
     System.getProperty("MultiJvm.akka.cluster.Stress.nrOfNodes") match {
-      case null  ⇒ 13
+      case null ⇒ 13
       case value ⇒ value.toInt requiring (_ >= 10, "nrOfNodes should be >= 10")
     }
 
@@ -230,8 +230,8 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   }
 
   final case class ClusterResult(
-    address:      Address,
-    duration:     Duration,
+    address: Address,
+    duration: Duration,
     clusterStats: GossipStats)
 
   final case class AggregatedClusterResult(title: String, duration: Duration, clusterStats: GossipStats)
@@ -260,7 +260,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
     def receive = {
       case PhiResult(from, phiValues) ⇒ phiValuesObservedByNode += from → phiValues
-      case StatsResult(from, stats)   ⇒ clusterStatsObservedByNode += from → stats
+      case StatsResult(from, stats) ⇒ clusterStatsObservedByNode += from → stats
       case ReportTick ⇒
         if (infolog)
           log.info(s"[${title}] in progress\n\n${formatPhi}\n\n${formatStats}")
@@ -274,7 +274,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
           context stop self
         }
       case _: CurrentClusterState ⇒
-      case ReportTo(ref)          ⇒ reportTo = ref
+      case ReportTo(ref) ⇒ reportTo = ref
     }
 
     def maxDuration = results.map(_.duration).max
@@ -282,7 +282,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     def totalGossipStats = results.foldLeft(GossipStats()) { _ :+ _.clusterStats }
 
     def format(opt: Option[Double]) = opt match {
-      case None    ⇒ "N/A"
+      case None ⇒ "N/A"
       case Some(x) ⇒ x.form
     }
 
@@ -355,7 +355,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     def phi(address: Address): Double = cluster.failureDetector match {
       case reg: DefaultFailureDetectorRegistry[Address] ⇒ reg.failureDetector(address) match {
         case Some(fd: PhiAccrualFailureDetector) ⇒ fd.phi
-        case _                                   ⇒ 0.0
+        case _ ⇒ 0.0
       }
       case _ ⇒ 0.0
     }
@@ -386,7 +386,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
         val phiSet = immutable.SortedSet.empty[PhiValue] ++ phiByNode.values
         reportTo foreach { _ ! PhiResult(cluster.selfAddress, phiSet) }
       case state: CurrentClusterState ⇒ nodes = state.members.map(_.address)
-      case memberEvent: MemberEvent   ⇒ nodes += memberEvent.member.address
+      case memberEvent: MemberEvent ⇒ nodes += memberEvent.member.address
       case ReportTo(ref) ⇒
         reportTo foreach context.unwatch
         reportTo = ref
@@ -394,7 +394,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       case Terminated(ref) ⇒
         reportTo match {
           case Some(`ref`) ⇒ reportTo = None
-          case _           ⇒
+          case _ ⇒
         }
       case Reset ⇒
         phiByNode = emptyPhiByNode
@@ -416,7 +416,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     def receive = {
       case CurrentInternalStats(gossipStats, vclockStats) ⇒
         val diff = startStats match {
-          case None        ⇒ { startStats = Some(gossipStats); gossipStats }
+          case None ⇒ { startStats = Some(gossipStats); gossipStats }
           case Some(start) ⇒ gossipStats :- start
         }
         val res = StatsResult(cluster.selfAddress, CurrentInternalStats(diff, vclockStats))
@@ -428,7 +428,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       case Terminated(ref) ⇒
         reportTo match {
           case Some(`ref`) ⇒ reportTo = None
-          case _           ⇒
+          case _ ⇒
         }
       case Reset ⇒
         startStats = None
@@ -597,8 +597,8 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       }
 
     def receive = {
-      case props: Props     ⇒ context.actorOf(props)
-      case e: Exception     ⇒ context.children foreach { _ ! e }
+      case props: Props ⇒ context.actorOf(props)
+      case e: Exception ⇒ context.children foreach { _ ! e }
       case GetChildrenCount ⇒ sender() ! ChildrenCount(context.children.size, restartCount)
       case Reset ⇒
         require(
@@ -1006,7 +1006,7 @@ abstract class StressSpec
   }
 
   def exerciseRouters(title: String, duration: FiniteDuration, batchInterval: FiniteDuration,
-                      expectDroppedMessages: Boolean, tree: Boolean): Unit =
+    expectDroppedMessages: Boolean, tree: Boolean): Unit =
     within(duration + 10.seconds) {
       nbrUsedRoles should ===(totalNumberOfNodes)
       createResultAggregator(title, expectedResults = nbrUsedRoles, includeInHistory = false)

@@ -55,7 +55,7 @@ import scala.reflect.ClassTag
   private def startTimer(key: Any, msg: T, timeout: FiniteDuration, repeat: Boolean): Unit = {
     timers.get(key) match {
       case Some(t) ⇒ cancelTimer(t)
-      case None    ⇒
+      case None ⇒
     }
     val nextGen = timerGen.next()
 
@@ -80,7 +80,7 @@ import scala.reflect.ClassTag
 
   override def cancel(key: Any): Unit = {
     timers.get(key) match {
-      case None    ⇒ // already removed/canceled
+      case None ⇒ // already removed/canceled
       case Some(t) ⇒ cancelTimer(t)
     }
   }
@@ -132,12 +132,12 @@ import scala.reflect.ClassTag
     BehaviorImpl.intercept[T, TimerMsg](
       beforeMessage = interceptTimerMsg,
       beforeSignal = (ctx, sig) ⇒ {
-      sig match {
-        case PreRestart | PostStop ⇒ cancelAll()
-        case _                     ⇒ // unhandled
-      }
-      true
-    },
+        sig match {
+          case PreRestart | PostStop ⇒ cancelAll()
+          case _ ⇒ // unhandled
+        }
+        true
+      },
       afterMessage = (ctx, msg, b) ⇒ b, // TODO optimize by using more ConstantFun
       afterSignal = (ctx, sig, b) ⇒ b,
       behavior)(ClassTag(classOf[TimerSchedulerImpl.TimerMsg]))

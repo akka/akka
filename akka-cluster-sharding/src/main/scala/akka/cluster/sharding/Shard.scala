@@ -105,15 +105,15 @@ private[akka] object Shard {
    * subclass is used, otherwise `Shard`.
    */
   def props(
-    typeName:           String,
-    shardId:            ShardRegion.ShardId,
-    entityProps:        Props,
-    settings:           ClusterShardingSettings,
-    extractEntityId:    ShardRegion.ExtractEntityId,
-    extractShardId:     ShardRegion.ExtractShardId,
+    typeName: String,
+    shardId: ShardRegion.ShardId,
+    entityProps: Props,
+    settings: ClusterShardingSettings,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
-    replicator:         ActorRef,
-    majorityMinCap:     Int): Props = {
+    replicator: ActorRef,
+    majorityMinCap: Int): Props = {
     if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
       Props(new DDataShard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId,
         handOffStopMessage, replicator, majorityMinCap)).withDeploy(Deploy.local)
@@ -135,12 +135,12 @@ private[akka] object Shard {
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 private[akka] class Shard(
-  typeName:           String,
-  shardId:            ShardRegion.ShardId,
-  entityProps:        Props,
-  settings:           ClusterShardingSettings,
-  extractEntityId:    ShardRegion.ExtractEntityId,
-  extractShardId:     ShardRegion.ExtractShardId,
+  typeName: String,
+  shardId: ShardRegion.ShardId,
+  entityProps: Props,
+  settings: ClusterShardingSettings,
+  extractEntityId: ShardRegion.ExtractEntityId,
+  extractShardId: ShardRegion.ExtractShardId,
   handOffStopMessage: Any) extends Actor with ActorLogging {
 
   import ShardRegion.{ handOffStopperProps, EntityId, Msg, Passivate, ShardInitialized }
@@ -168,18 +168,18 @@ private[akka] class Shard(
   def receive = receiveCommand
 
   def receiveCommand: Receive = {
-    case Terminated(ref)                         ⇒ receiveTerminated(ref)
-    case msg: CoordinatorMessage                 ⇒ receiveCoordinatorMessage(msg)
-    case msg: ShardCommand                       ⇒ receiveShardCommand(msg)
-    case msg: ShardRegion.StartEntity            ⇒ receiveStartEntity(msg)
-    case msg: ShardRegion.StartEntityAck         ⇒ receiveStartEntityAck(msg)
-    case msg: ShardRegionCommand                 ⇒ receiveShardRegionCommand(msg)
-    case msg: ShardQuery                         ⇒ receiveShardQuery(msg)
+    case Terminated(ref) ⇒ receiveTerminated(ref)
+    case msg: CoordinatorMessage ⇒ receiveCoordinatorMessage(msg)
+    case msg: ShardCommand ⇒ receiveShardCommand(msg)
+    case msg: ShardRegion.StartEntity ⇒ receiveStartEntity(msg)
+    case msg: ShardRegion.StartEntityAck ⇒ receiveStartEntityAck(msg)
+    case msg: ShardRegionCommand ⇒ receiveShardRegionCommand(msg)
+    case msg: ShardQuery ⇒ receiveShardQuery(msg)
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
   }
 
   def receiveShardCommand(msg: ShardCommand): Unit = msg match {
-    case RestartEntity(id)    ⇒ getEntity(id)
+    case RestartEntity(id) ⇒ getEntity(id)
     case RestartEntities(ids) ⇒ restartEntities(ids)
   }
 
@@ -205,18 +205,18 @@ private[akka] class Shard(
 
   def receiveShardRegionCommand(msg: ShardRegionCommand): Unit = msg match {
     case Passivate(stopMessage) ⇒ passivate(sender(), stopMessage)
-    case _                      ⇒ unhandled(msg)
+    case _ ⇒ unhandled(msg)
   }
 
   def receiveCoordinatorMessage(msg: CoordinatorMessage): Unit = msg match {
     case HandOff(`shardId`) ⇒ handOff(sender())
-    case HandOff(shard)     ⇒ log.warning("Shard [{}] can not hand off for another Shard [{}]", shardId, shard)
-    case _                  ⇒ unhandled(msg)
+    case HandOff(shard) ⇒ log.warning("Shard [{}] can not hand off for another Shard [{}]", shardId, shard)
+    case _ ⇒ unhandled(msg)
   }
 
   def receiveShardQuery(msg: ShardQuery): Unit = msg match {
     case GetCurrentShardState ⇒ sender() ! CurrentShardState(shardId, refById.keySet)
-    case GetShardStats        ⇒ sender() ! ShardStats(shardId, state.entities.size)
+    case GetShardStats ⇒ sender() ! ShardStats(shardId, state.entities.size)
   }
 
   def handOff(replyTo: ActorRef): Unit = handOffStopper match {
@@ -323,7 +323,7 @@ private[akka] class Shard(
     val name = URLEncoder.encode(id, "utf-8")
     context.child(name) match {
       case Some(actor) ⇒ actor.tell(payload, snd)
-      case None        ⇒ getEntity(id).tell(payload, snd)
+      case None ⇒ getEntity(id).tell(payload, snd)
     }
   }
 
@@ -343,11 +343,11 @@ private[akka] class Shard(
 
 private[akka] object RememberEntityStarter {
   def props(
-    region:    ActorRef,
-    typeName:  String,
-    shardId:   ShardRegion.ShardId,
-    ids:       Set[ShardRegion.EntityId],
-    settings:  ClusterShardingSettings,
+    region: ActorRef,
+    typeName: String,
+    shardId: ShardRegion.ShardId,
+    ids: Set[ShardRegion.EntityId],
+    settings: ClusterShardingSettings,
     requestor: ActorRef) =
     Props(new RememberEntityStarter(region, typeName, shardId, ids, settings, requestor))
 
@@ -358,11 +358,11 @@ private[akka] object RememberEntityStarter {
  * INTERNAL API: Actor responsible for starting entities when rememberEntities is enabled
  */
 private[akka] class RememberEntityStarter(
-  region:    ActorRef,
-  typeName:  String,
-  shardId:   ShardRegion.ShardId,
-  ids:       Set[ShardRegion.EntityId],
-  settings:  ClusterShardingSettings,
+  region: ActorRef,
+  typeName: String,
+  shardId: ShardRegion.ShardId,
+  ids: Set[ShardRegion.EntityId],
+  settings: ClusterShardingSettings,
   requestor: ActorRef) extends Actor with ActorLogging {
 
   import context.dispatcher
@@ -473,13 +473,13 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 private[akka] class PersistentShard(
-  typeName:              String,
-  shardId:               ShardRegion.ShardId,
-  entityProps:           Props,
+  typeName: String,
+  shardId: ShardRegion.ShardId,
+  entityProps: Props,
   override val settings: ClusterShardingSettings,
-  extractEntityId:       ShardRegion.ExtractEntityId,
-  extractShardId:        ShardRegion.ExtractShardId,
-  handOffStopMessage:    Any) extends Shard(
+  extractEntityId: ShardRegion.ExtractEntityId,
+  extractShardId: ShardRegion.ExtractShardId,
+  handOffStopMessage: Any) extends Shard(
   typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
   with RememberingShard with PersistentActor with ActorLogging {
 
@@ -511,8 +511,8 @@ private[akka] class PersistentShard(
   }
 
   override def receiveRecover: Receive = {
-    case EntityStarted(id)                 ⇒ state = state.copy(state.entities + id)
-    case EntityStopped(id)                 ⇒ state = state.copy(state.entities - id)
+    case EntityStarted(id) ⇒ state = state.copy(state.entities + id)
+    case EntityStopped(id) ⇒ state = state.copy(state.entities - id)
     case SnapshotOffer(_, snapshot: State) ⇒ state = snapshot
     case RecoveryCompleted ⇒
       restartRememberedEntities()
@@ -567,15 +567,15 @@ private[akka] class PersistentShard(
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 private[akka] class DDataShard(
-  typeName:              String,
-  shardId:               ShardRegion.ShardId,
-  entityProps:           Props,
+  typeName: String,
+  shardId: ShardRegion.ShardId,
+  entityProps: Props,
   override val settings: ClusterShardingSettings,
-  extractEntityId:       ShardRegion.ExtractEntityId,
-  extractShardId:        ShardRegion.ExtractShardId,
-  handOffStopMessage:    Any,
-  replicator:            ActorRef,
-  majorityMinCap:        Int) extends Shard(
+  extractEntityId: ShardRegion.ExtractEntityId,
+  extractShardId: ShardRegion.ExtractShardId,
+  handOffStopMessage: Any,
+  replicator: ActorRef,
+  majorityMinCap: Int) extends Shard(
   typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
   with RememberingShard with Stash with ActorLogging {
 

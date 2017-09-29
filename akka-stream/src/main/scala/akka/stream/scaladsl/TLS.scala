@@ -68,8 +68,8 @@ object TLS {
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
   def apply(
-    sslContext:   SSLContext,
-    sslConfig:    Option[AkkaSSLConfig],
+    sslContext: SSLContext,
+    sslConfig: Option[AkkaSSLConfig],
     firstSession: NegotiateNewSession, role: TLSRole,
     closing: TLSClosing = IgnoreComplete, hostInfo: Option[(String, Int)] = None): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] = {
     def theSslConfig(system: ActorSystem): AkkaSSLConfig =
@@ -78,7 +78,7 @@ object TLS {
     val createSSLEngine = { system: ActorSystem ⇒
       val engine = hostInfo match {
         case Some((hostname, port)) ⇒ sslContext.createSSLEngine(hostname, port)
-        case None                   ⇒ sslContext.createSSLEngine()
+        case None ⇒ sslContext.createSSLEngine()
       }
       val config = theSslConfig(system)
       config.sslEngineConfigurator.configure(engine, sslContext)
@@ -131,7 +131,7 @@ object TLS {
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
   def apply(
-    sslContext:   SSLContext,
+    sslContext: SSLContext,
     firstSession: NegotiateNewSession, role: TLSRole,
     closing: TLSClosing, hostInfo: Option[(String, Int)]): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     apply(sslContext, None, firstSession, role, closing, hostInfo)
@@ -146,7 +146,7 @@ object TLS {
    * protocol.
    */
   def apply(
-    sslContext:   SSLContext,
+    sslContext: SSLContext,
     firstSession: NegotiateNewSession, role: TLSRole): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     apply(sslContext, None, firstSession, role, IgnoreComplete, None)
 
@@ -163,9 +163,8 @@ object TLS {
    */
   def apply(
     createSSLEngine: () ⇒ SSLEngine, // we don't offer the internal `ActorSystem => SSLEngine` API here, see #21753
-    verifySession:   SSLSession ⇒ Try[Unit], // we don't offer the internal API that provides `ActorSystem` here, see #21753
-    closing:         TLSClosing
-  ): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    verifySession: SSLSession ⇒ Try[Unit], // we don't offer the internal API that provides `ActorSystem` here, see #21753
+    closing: TLSClosing): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     scaladsl.BidiFlow.fromGraph(TlsModule(Attributes.none, _ ⇒ createSSLEngine(), (_, session) ⇒ verifySession(session), closing))
 
   /**
@@ -178,8 +177,7 @@ object TLS {
    */
   def apply(
     createSSLEngine: () ⇒ SSLEngine, // we don't offer the internal `ActorSystem => SSLEngine` API here, see #21753
-    closing:         TLSClosing
-  ): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    closing: TLSClosing): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     apply(createSSLEngine, _ ⇒ Success(()), closing)
 }
 

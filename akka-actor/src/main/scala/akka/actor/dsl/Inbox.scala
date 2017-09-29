@@ -83,9 +83,9 @@ trait Inbox { this: ActorDSL.type ⇒
 
     var currentMsg: Any = _
     val clientPredicate: (Query) ⇒ Boolean = {
-      case _: Get          ⇒ true
+      case _: Get ⇒ true
       case Select(_, p, _) ⇒ p isDefinedAt currentMsg
-      case _               ⇒ false
+      case _ ⇒ false
     }
 
     var currentSelect: Select = _
@@ -103,7 +103,7 @@ trait Inbox { this: ActorDSL.type ⇒
           currentSelect = s
           messages.dequeueFirst(messagePredicate) match {
             case Some(msg) ⇒ sender() ! msg
-            case None      ⇒ enqueueQuery(s)
+            case None ⇒ enqueueQuery(s)
           }
           currentSelect = null
         }
@@ -124,7 +124,7 @@ trait Inbox { this: ActorDSL.type ⇒
           currentMsg = msg
           clients.dequeueFirst(clientPredicate) match {
             case Some(q) ⇒ { clientsByTimeout -= q; q.client ! msg }
-            case None    ⇒ enqueueMessage(msg)
+            case None ⇒ enqueueMessage(msg)
           }
           currentMsg = null
         }

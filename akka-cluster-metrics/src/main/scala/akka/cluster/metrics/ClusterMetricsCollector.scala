@@ -169,15 +169,15 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
   }
 
   def receive = {
-    case GossipTick                 ⇒ gossip()
-    case MetricsTick                ⇒ sample()
+    case GossipTick ⇒ gossip()
+    case MetricsTick ⇒ sample()
     case msg: MetricsGossipEnvelope ⇒ receiveGossip(msg)
     case state: CurrentClusterState ⇒ receiveState(state)
-    case MemberUp(m)                ⇒ addMember(m)
-    case MemberWeaklyUp(m)          ⇒ addMember(m)
-    case MemberRemoved(m, _)        ⇒ removeMember(m)
-    case MemberExited(m)            ⇒ removeMember(m)
-    case UnreachableMember(m)       ⇒ removeMember(m)
+    case MemberUp(m) ⇒ addMember(m)
+    case MemberWeaklyUp(m) ⇒ addMember(m)
+    case MemberRemoved(m, _) ⇒ removeMember(m)
+    case MemberExited(m) ⇒ removeMember(m)
+    case UnreachableMember(m) ⇒ removeMember(m)
     case ReachableMember(m) ⇒
       if (m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp)
         addMember(m)

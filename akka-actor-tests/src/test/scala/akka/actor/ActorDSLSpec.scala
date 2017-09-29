@@ -137,7 +137,7 @@ class ActorDSLSpec extends AkkaSpec {
           case "info" ⇒ sender() ! "A"
           case "switch" ⇒
             becomeStacked { // this will stack upon the "A" behavior
-              case "info"   ⇒ sender() ! "B"
+              case "info" ⇒ sender() ! "B"
               case "switch" ⇒ unbecome() // return to the "A" behavior
             }
           case "lobotomize" ⇒ unbecome() // OH NOES: Actor.emptyBehavior
@@ -193,7 +193,7 @@ class ActorDSLSpec extends AkkaSpec {
         //#supervise-with
         superviseWith(OneForOneStrategy() {
           case e: Exception if e.getMessage == "hello" ⇒ Stop
-          case _: Exception                            ⇒ Resume
+          case _: Exception ⇒ Resume
         })
         //#supervise-with
         val child = actor("child")(new Act {

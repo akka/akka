@@ -95,9 +95,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   /** normal connected state */
   def connected(info: ConnectionInfo): Receive =
     handleWriteMessages(info) orElse {
-      case SuspendReading    ⇒ suspendReading(info)
-      case ResumeReading     ⇒ resumeReading(info)
-      case ChannelReadable   ⇒ doRead(info, None)
+      case SuspendReading ⇒ suspendReading(info)
+      case ResumeReading ⇒ resumeReading(info)
+      case ChannelReadable ⇒ doRead(info, None)
       case cmd: CloseCommand ⇒ handleClose(info, Some(sender()), cmd.event)
     }
 
@@ -105,14 +105,14 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   def peerSentEOF(info: ConnectionInfo): Receive =
     handleWriteMessages(info) orElse {
       case cmd: CloseCommand ⇒ handleClose(info, Some(sender()), cmd.event)
-      case ResumeReading     ⇒ // ignore, no more data to read
+      case ResumeReading ⇒ // ignore, no more data to read
     }
 
   /** connection is closing but a write has to be finished first */
   def closingWithPendingWrite(info: ConnectionInfo, closeCommander: Option[ActorRef],
-                              closedEvent: ConnectionClosed): Receive = {
-    case SuspendReading  ⇒ suspendReading(info)
-    case ResumeReading   ⇒ resumeReading(info)
+    closedEvent: ConnectionClosed): Receive = {
+    case SuspendReading ⇒ suspendReading(info)
+    case ResumeReading ⇒ resumeReading(info)
     case ChannelReadable ⇒ doRead(info, closeCommander)
 
     case ChannelWritable ⇒
@@ -128,15 +128,15 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
     case WriteFileFailed(e) ⇒ handleError(info.handler, e) // rethrow exception from dispatcher task
 
-    case Abort              ⇒ handleClose(info, Some(sender()), Aborted)
+    case Abort ⇒ handleClose(info, Some(sender()), Aborted)
   }
 
   /** connection is closed on our side and we're waiting from confirmation from the other side */
   def closing(info: ConnectionInfo, closeCommander: Option[ActorRef]): Receive = {
-    case SuspendReading  ⇒ suspendReading(info)
-    case ResumeReading   ⇒ resumeReading(info)
+    case SuspendReading ⇒ suspendReading(info)
+    case ResumeReading ⇒ resumeReading(info)
     case ChannelReadable ⇒ doRead(info, closeCommander)
-    case Abort           ⇒ handleClose(info, Some(sender()), Aborted)
+    case Abort ⇒ handleClose(info, Some(sender()), Aborted)
   }
 
   def handleWriteMessages(info: ConnectionInfo): Receive = {
@@ -193,7 +193,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   /** used in subclasses to start the common machinery above once a channel is connected */
   def completeConnect(registration: ChannelRegistration, commander: ActorRef,
-                      options: immutable.Traversable[SocketOption]): Unit = {
+    options: immutable.Traversable[SocketOption]): Unit = {
     this.registration = Some(registration)
 
     // Turn off Nagle's algorithm by default
@@ -242,8 +242,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
           readBytes match {
             case `maxBufferSpace` ⇒ if (pullMode) MoreDataWaiting else innerRead(buffer, remainingLimit - maxBufferSpace)
-            case x if x >= 0      ⇒ AllRead
-            case -1               ⇒ EndOfStream
+            case x if x >= 0 ⇒ AllRead
+            case -1 ⇒ EndOfStream
             case _ ⇒
               throw new IllegalStateException("Unexpected value returned from read: " + readBytes)
           }
@@ -273,7 +273,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     else PeerClosed
 
   def handleClose(info: ConnectionInfo, closeCommander: Option[ActorRef],
-                  closedEvent: ConnectionClosed): Unit = closedEvent match {
+    closedEvent: ConnectionClosed): Unit = closedEvent match {
     case Aborted ⇒
       if (TraceLogging) log.debug("Got Abort command. RESETing connection.")
       doCloseConnection(info.handler, closeCommander, closedEvent)
@@ -326,7 +326,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     else {
       t.getMessage match {
         case null | "" ⇒ extractMsg(t.getCause)
-        case msg       ⇒ msg
+        case msg ⇒ msg
       }
     }
 
@@ -376,10 +376,10 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   def PendingWrite(commander: ActorRef, write: WriteCommand): PendingWrite = {
     @tailrec def create(head: WriteCommand, tail: WriteCommand = Write.empty): PendingWrite =
       head match {
-        case Write.empty                         ⇒ if (tail eq Write.empty) EmptyPendingWrite else create(tail)
-        case Write(data, ack) if data.nonEmpty   ⇒ PendingBufferWrite(commander, data, ack, tail)
+        case Write.empty ⇒ if (tail eq Write.empty) EmptyPendingWrite else create(tail)
+        case Write(data, ack) if data.nonEmpty ⇒ PendingBufferWrite(commander, data, ack, tail)
         case WriteFile(path, offset, count, ack) ⇒ PendingWriteFile(commander, path, offset, count, ack, tail)
-        case CompoundWrite(h, t)                 ⇒ create(h, t)
+        case CompoundWrite(h, t) ⇒ create(h, t)
         case x @ Write(_, ack) ⇒ // empty write with either an ACK or a non-standard NoACK
           if (x.wantsAck) commander ! ack
           create(tail)
@@ -403,9 +403,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   class PendingBufferWrite(
     val commander: ActorRef,
     remainingData: ByteString,
-    ack:           Any,
-    buffer:        ByteBuffer,
-    tail:          WriteCommand) extends PendingWrite {
+    ack: Any,
+    buffer: ByteBuffer,
+    tail: WriteCommand) extends PendingWrite {
 
     def doWrite(info: ConnectionInfo): PendingWrite = {
       @tailrec def writeToChannel(data: ByteString): PendingWrite = {
@@ -439,16 +439,16 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   }
 
   def PendingWriteFile(commander: ActorRef, filePath: String, offset: Long, count: Long, ack: Event,
-                       tail: WriteCommand): PendingWriteFile =
+    tail: WriteCommand): PendingWriteFile =
     new PendingWriteFile(commander, FileChannel.open(Paths.get(filePath)), offset, count, ack, tail)
 
   class PendingWriteFile(
     val commander: ActorRef,
-    fileChannel:   FileChannel,
-    offset:        Long,
-    remaining:     Long,
-    ack:           Event,
-    tail:          WriteCommand) extends PendingWrite with Runnable {
+    fileChannel: FileChannel,
+    offset: Long,
+    remaining: Long,
+    ack: Event,
+    tail: WriteCommand) extends PendingWrite with Runnable {
 
     def doWrite(info: ConnectionInfo): PendingWrite = {
       tcp.fileIoDispatcher.execute(this)
@@ -495,10 +495,10 @@ private[io] object TcpConnection {
    * Groups required connection-related data that are only available once the connection has been fully established.
    */
   final case class ConnectionInfo(
-    registration:         ChannelRegistration,
-    handler:              ActorRef,
+    registration: ChannelRegistration,
+    handler: ActorRef,
     keepOpenOnPeerClosed: Boolean,
-    useResumeWriting:     Boolean)
+    useResumeWriting: Boolean)
 
   // INTERNAL MESSAGES
 

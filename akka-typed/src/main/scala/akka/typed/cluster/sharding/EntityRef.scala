@@ -113,8 +113,7 @@ private[akka] final class AdaptedEntityRefImpl[A](shardRegion: akka.actor.ActorR
         (
           adapt.ActorRefAdapter[U](untyped.provider.deadLetters),
           Future.failed[U](new IllegalArgumentException(s"Timeout length must be positive, question not sent to [$untyped]")),
-          null
-        )
+          null)
       else {
         val a = PromiseActorRef(untyped.provider, timeout, untyped, "unknown")
         val b = adapt.ActorRefAdapter[U](a)

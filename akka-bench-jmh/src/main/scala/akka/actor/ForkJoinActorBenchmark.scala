@@ -60,8 +60,7 @@ class ForkJoinActorBenchmark {
              $mailboxConf
            }
          }
-      """
-    ))
+      """))
   }
 
   @TearDown(Level.Trial)

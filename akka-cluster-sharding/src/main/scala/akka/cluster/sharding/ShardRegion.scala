@@ -33,15 +33,15 @@ object ShardRegion {
    * Factory method for the [[akka.actor.Props]] of the [[ShardRegion]] actor.
    */
   private[akka] def props(
-    typeName:           String,
-    entityProps:        Props,
-    settings:           ClusterShardingSettings,
-    coordinatorPath:    String,
-    extractEntityId:    ShardRegion.ExtractEntityId,
-    extractShardId:     ShardRegion.ExtractShardId,
+    typeName: String,
+    entityProps: Props,
+    settings: ClusterShardingSettings,
+    coordinatorPath: String,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
-    replicator:         ActorRef,
-    majorityMinCap:     Int): Props =
+    replicator: ActorRef,
+    majorityMinCap: Int): Props =
     Props(new ShardRegion(typeName, Some(entityProps), dataCenter = None, settings, coordinatorPath, extractEntityId,
       extractShardId, handOffStopMessage, replicator, majorityMinCap)).withDeploy(Deploy.local)
 
@@ -51,14 +51,14 @@ object ShardRegion {
    * when using it in proxy only mode.
    */
   private[akka] def proxyProps(
-    typeName:        String,
-    dataCenter:      Option[DataCenter],
-    settings:        ClusterShardingSettings,
+    typeName: String,
+    dataCenter: Option[DataCenter],
+    settings: ClusterShardingSettings,
     coordinatorPath: String,
     extractEntityId: ShardRegion.ExtractEntityId,
-    extractShardId:  ShardRegion.ExtractShardId,
-    replicator:      ActorRef,
-    majorityMinCap:  Int): Props =
+    extractShardId: ShardRegion.ExtractShardId,
+    replicator: ActorRef,
+    majorityMinCap: Int): Props =
     Props(new ShardRegion(typeName, None, dataCenter, settings, coordinatorPath, extractEntityId, extractShardId,
       PoisonPill, replicator, majorityMinCap)).withDeploy(Deploy.local)
 
@@ -132,7 +132,7 @@ object ShardRegion {
     override def shardId(message: Any): String = {
       val id = message match {
         case ShardRegion.StartEntity(id) ⇒ id
-        case _                           ⇒ entityId(message)
+        case _ ⇒ entityId(message)
       }
       (math.abs(id.hashCode) % maxNumberOfShards).toString
     }
@@ -366,16 +366,16 @@ object ShardRegion {
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 private[akka] class ShardRegion(
-  typeName:           String,
-  entityProps:        Option[Props],
-  dataCenter:         Option[DataCenter],
-  settings:           ClusterShardingSettings,
-  coordinatorPath:    String,
-  extractEntityId:    ShardRegion.ExtractEntityId,
-  extractShardId:     ShardRegion.ExtractShardId,
+  typeName: String,
+  entityProps: Option[Props],
+  dataCenter: Option[DataCenter],
+  settings: ClusterShardingSettings,
+  coordinatorPath: String,
+  extractEntityId: ShardRegion.ExtractEntityId,
+  extractShardId: ShardRegion.ExtractShardId,
   handOffStopMessage: Any,
-  replicator:         ActorRef,
-  majorityMinCap:     Int) extends Actor with ActorLogging {
+  replicator: ActorRef,
+  majorityMinCap: Int) extends Actor with ActorLogging {
 
   import ShardCoordinator.Internal._
   import ShardRegion._
@@ -426,7 +426,7 @@ private[akka] class ShardRegion(
   // when using proxy the data center can be different from the own data center
   private val targetDcRole = dataCenter match {
     case Some(t) ⇒ ClusterSettings.DcRolePrefix + t
-    case None    ⇒ ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
+    case None ⇒ ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
   }
 
   def matchingRole(member: Member): Boolean =
@@ -458,17 +458,17 @@ private[akka] class ShardRegion(
   }
 
   def receive = {
-    case Terminated(ref)                         ⇒ receiveTerminated(ref)
-    case ShardInitialized(shardId)               ⇒ initializeShard(shardId, sender())
-    case evt: ClusterDomainEvent                 ⇒ receiveClusterEvent(evt)
-    case state: CurrentClusterState              ⇒ receiveClusterState(state)
-    case msg: CoordinatorMessage                 ⇒ receiveCoordinatorMessage(msg)
-    case cmd: ShardRegionCommand                 ⇒ receiveCommand(cmd)
-    case query: ShardRegionQuery                 ⇒ receiveQuery(query)
-    case msg: RestartShard                       ⇒ deliverMessage(msg, sender())
-    case msg: StartEntity                        ⇒ deliverStartEntity(msg, sender())
+    case Terminated(ref) ⇒ receiveTerminated(ref)
+    case ShardInitialized(shardId) ⇒ initializeShard(shardId, sender())
+    case evt: ClusterDomainEvent ⇒ receiveClusterEvent(evt)
+    case state: CurrentClusterState ⇒ receiveClusterState(state)
+    case msg: CoordinatorMessage ⇒ receiveCoordinatorMessage(msg)
+    case cmd: ShardRegionCommand ⇒ receiveCommand(cmd)
+    case query: ShardRegionQuery ⇒ receiveQuery(query)
+    case msg: RestartShard ⇒ deliverMessage(msg, sender())
+    case msg: StartEntity ⇒ deliverStartEntity(msg, sender())
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
-    case unknownMsg                              ⇒ log.warning("Message does not have an extractor defined in shard [{}] so it was ignored: {}", typeName, unknownMsg)
+    case unknownMsg ⇒ log.warning("Message does not have an extractor defined in shard [{}] so it was ignored: {}", typeName, unknownMsg)
   }
 
   def receiveClusterState(state: CurrentClusterState): Unit = {
@@ -498,7 +498,7 @@ private[akka] class ShardRegion(
 
     case _: MemberEvent ⇒ // these are expected, no need to warn about them
 
-    case _              ⇒ unhandled(evt)
+    case _ ⇒ unhandled(evt)
   }
 
   def receiveCoordinatorMessage(msg: CoordinatorMessage): Unit = msg match {
@@ -593,7 +593,7 @@ private[akka] class ShardRegion(
     case GetCurrentRegions ⇒
       coordinator match {
         case Some(c) ⇒ c.forward(GetCurrentRegions)
-        case None    ⇒ sender() ! CurrentRegions(Set.empty)
+        case None ⇒ sender() ! CurrentRegions(Set.empty)
       }
 
     case GetShardRegionState ⇒

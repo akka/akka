@@ -39,7 +39,7 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       val slaveProps = Props(new Actor {
 
         def receive = {
-          case Ping  ⇒ countDownLatch.countDown()
+          case Ping ⇒ countDownLatch.countDown()
           case Crash ⇒ throw new Exception("Crashing...")
         }
 
@@ -165,7 +165,7 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       val slaveProps = Props(new Actor {
 
         def receive = {
-          case Ping  ⇒ countDownLatch.countDown()
+          case Ping ⇒ countDownLatch.countDown()
           case Crash ⇒ throw new Exception("Crashing...")
         }
         override def postRestart(reason: Throwable) = {
@@ -212,7 +212,7 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       val boss = system.actorOf(Props(new Actor {
         override val supervisorStrategy = OneForOneStrategy(withinTimeRange = 1 second)(List(classOf[Throwable]))
         def receive = {
-          case p: Props      ⇒ sender() ! context.watch(context.actorOf(p))
+          case p: Props ⇒ sender() ! context.watch(context.actorOf(p))
           case t: Terminated ⇒ maxNoOfRestartsLatch.open()
         }
       }))
@@ -220,7 +220,7 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       val slaveProps = Props(new Actor {
 
         def receive = {
-          case Ping  ⇒ countDownLatch.countDown()
+          case Ping ⇒ countDownLatch.countDown()
           case Crash ⇒ throw new Exception("Crashing...")
         }
 

@@ -28,7 +28,7 @@ final case class GetAccountBalances(id: Long)
 
 final case class AccountBalances(
   accountType: AccountType,
-  balance:     Option[List[(Long, BigDecimal)]])
+  balance: Option[List[(Long, BigDecimal)]])
 
 final case class CheckingAccountBalances(balances: Option[List[(Long, BigDecimal)]])
 final case class SavingsAccountBalances(balances: Option[List[(Long, BigDecimal)]])
@@ -72,15 +72,15 @@ class AccountBalanceRetriever extends Actor with Aggregator {
 
   class AccountAggregator(
     originalSender: ActorRef,
-    id:             Long, types: Set[AccountType]) {
+    id: Long, types: Set[AccountType]) {
 
     val results =
       mutable.ArrayBuffer.empty[(AccountType, Option[List[(Long, BigDecimal)]])]
 
     if (types.size > 0)
       types foreach {
-        case Checking    ⇒ fetchCheckingAccountsBalance()
-        case Savings     ⇒ fetchSavingsAccountsBalance()
+        case Checking ⇒ fetchCheckingAccountsBalance()
+        case Savings ⇒ fetchSavingsAccountsBalance()
         case MoneyMarket ⇒ fetchMoneyMarketAccountsBalance()
       }
     else collectBalances() // Empty type list yields empty response
@@ -227,7 +227,7 @@ class WorkListSpec extends FunSuiteLike {
     // ProcessAndRemove something in the middle
     val processed = workList process {
       case TestEntry(9) ⇒ true
-      case _            ⇒ false
+      case _ ⇒ false
     }
     assert(!processed)
   }
@@ -265,19 +265,19 @@ class WorkListSpec extends FunSuiteLike {
     // ProcessAndRemove something in the middle
     assert(workList process {
       case TestEntry(2) ⇒ true
-      case _            ⇒ false
+      case _ ⇒ false
     })
 
     // ProcessAndRemove the head
     assert(workList process {
       case TestEntry(0) ⇒ true
-      case _            ⇒ false
+      case _ ⇒ false
     })
 
     // ProcessAndRemove the tail
     assert(workList process {
       case TestEntry(3) ⇒ true
-      case _            ⇒ false
+      case _ ⇒ false
     })
   }
 
@@ -291,7 +291,7 @@ class WorkListSpec extends FunSuiteLike {
   test("Process permanent entry") {
     assert(workList process {
       case TestEntry(4) ⇒ true
-      case _            ⇒ false
+      case _ ⇒ false
     })
   }
 
@@ -310,7 +310,7 @@ class WorkListSpec extends FunSuiteLike {
     val processed =
       workList process {
         case TestEntry(2) ⇒ true
-        case _            ⇒ false
+        case _ ⇒ false
       }
 
     assert(!processed)
@@ -318,7 +318,7 @@ class WorkListSpec extends FunSuiteLike {
     val processed2 =
       workList process {
         case TestEntry(5) ⇒ true
-        case _            ⇒ false
+        case _ ⇒ false
       }
 
     assert(!processed2)

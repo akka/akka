@@ -91,7 +91,7 @@ import akka.typed.scaladsl.Actor
     else {
       b match {
         case d: DeferredBehavior[T] ⇒ canonical(Behavior.undefer(d, ctx), ctx, afterException)
-        case b                      ⇒ wrap(b, afterException)
+        case b ⇒ wrap(b, afterException)
       }
     }
 
@@ -162,7 +162,7 @@ import akka.typed.scaladsl.Actor
   override def loggingEnabled: Boolean = strategy.loggingEnabled
 
   private def deadlineHasTimeLeft: Boolean = deadline match {
-    case OptionVal.None    ⇒ true
+    case OptionVal.None ⇒ true
     case OptionVal.Some(d) ⇒ d.hasTimeLeft
   }
 
@@ -195,8 +195,8 @@ import akka.typed.scaladsl.Actor
    */
   def calculateDelay(
     restartCount: Int,
-    minBackoff:   FiniteDuration,
-    maxBackoff:   FiniteDuration,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
     randomFactor: Double): FiniteDuration = {
     val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
     if (restartCount >= 30) // Duration overflow protection (> 100 years)
@@ -204,7 +204,7 @@ import akka.typed.scaladsl.Actor
     else
       maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd match {
         case f: FiniteDuration ⇒ f
-        case _                 ⇒ maxBackoff
+        case _ ⇒ maxBackoff
       }
   }
 

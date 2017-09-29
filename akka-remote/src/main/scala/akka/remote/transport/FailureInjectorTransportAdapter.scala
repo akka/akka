@@ -79,7 +79,7 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
   }
 
   protected def interceptListen(
-    listenAddress:  Address,
+    listenAddress: Address,
     listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener] = {
     log.warning("FailureInjectorTransport is active on this system. Gremlins might munch your packets.")
     listenerFuture.foreach {
@@ -106,13 +106,13 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
     case InboundAssociation(handle) if shouldDropInbound(handle.remoteAddress, ev, "notify") ⇒ //Ignore
     case _ ⇒ upstreamListener match {
       case Some(listener) ⇒ listener notify interceptInboundAssociation(ev)
-      case None           ⇒
+      case None ⇒
     }
   }
 
   def interceptInboundAssociation(ev: AssociationEvent): AssociationEvent = ev match {
     case InboundAssociation(handle) ⇒ InboundAssociation(FailureInjectorHandle(handle, this))
-    case _                          ⇒ ev
+    case _ ⇒ ev
   }
 
   def shouldDropInbound(remoteAddress: Address, instance: Any, debugMessage: String): Boolean = chaosMode(remoteAddress) match {
@@ -143,7 +143,7 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
  * INTERNAL API
  */
 private[remote] final case class FailureInjectorHandle(
-  _wrappedHandle:             AssociationHandle,
+  _wrappedHandle: AssociationHandle,
   private val gremlinAdapter: FailureInjectorTransportAdapter)
   extends AbstractTransportAdapterHandle(_wrappedHandle, FailureInjectorSchemeIdentifier)
   with HandleEventListener {

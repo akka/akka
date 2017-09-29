@@ -88,7 +88,7 @@ private[affinity] object AffinityPool {
         case Spinning ⇒
           onSpinWaitMethodHandle match {
             case OptionVal.Some(m) ⇒ m.invokeExact()
-            case OptionVal.None    ⇒
+            case OptionVal.None ⇒
           }
           turns += 1
           if (turns > maxSpins)
@@ -125,13 +125,13 @@ private[affinity] object AffinityPool {
 @InternalApi
 @ApiMayChange
 private[akka] class AffinityPool(
-  id:                      String,
-  parallelism:             Int,
-  affinityGroupSize:       Int,
-  threadFactory:           ThreadFactory,
-  idleCpuLevel:            Int,
+  id: String,
+  parallelism: Int,
+  affinityGroupSize: Int,
+  threadFactory: ThreadFactory,
+  idleCpuLevel: Int,
   final val queueSelector: QueueSelector,
-  rejectionHandler:        RejectionHandler)
+  rejectionHandler: RejectionHandler)
   extends AbstractExecutorService {
 
   if (parallelism <= 0)

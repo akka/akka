@@ -39,10 +39,8 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
   def newRemoteSystem(extraConfig: Option[String] = None, name: Option[String] = None): ActorSystem = {
     val config =
       ArterySpecSupport.newFlightRecorderConfig.withFallback(extraConfig.fold(
-        localSystem.settings.config
-      )(
-        str ⇒ ConfigFactory.parseString(str).withFallback(localSystem.settings.config)
-      ))
+        localSystem.settings.config)(
+          str ⇒ ConfigFactory.parseString(str).withFallback(localSystem.settings.config)))
 
     val remoteSystem = ActorSystem(name.getOrElse(nextGeneratedSystemName), config)
     remoteSystems = remoteSystems :+ remoteSystem

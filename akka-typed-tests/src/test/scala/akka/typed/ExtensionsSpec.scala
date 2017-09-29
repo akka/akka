@@ -68,8 +68,7 @@ class ExtensionsSpec extends TypedSpecSetup {
         val futures = (0 to 1000).map(n ⇒
           Future {
             system.registerExtension(SlowExtension)
-          }
-        )
+          })
 
         val instances = Future.sequence(futures).futureValue
 
@@ -83,8 +82,7 @@ class ExtensionsSpec extends TypedSpecSetup {
       withEmptyActorSystem("ExtensionsSpec03", Some(ConfigFactory.parseString(
         """
           akka.typed.extensions = ["akka.typed.DummyExtension1$", "akka.typed.SlowExtension$"]
-        """))
-      ) { system ⇒
+        """))) { system ⇒
         system.hasExtension(DummyExtension1) should ===(true)
         system.extension(DummyExtension1) shouldBe a[DummyExtension1]
 
@@ -130,16 +128,14 @@ class ExtensionsSpec extends TypedSpecSetup {
       intercept[RuntimeException] {
         withEmptyActorSystem(
           "ExtensionsSpec07",
-          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.typed.FailingToLoadExtension$" """))
-        ) { _ ⇒ () }
+          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.typed.FailingToLoadExtension$" """))) { _ ⇒ () }
       }
 
     def `08 fail the system if a library-extension cannot be loaded`(): Unit =
       intercept[RuntimeException] {
         withEmptyActorSystem(
           "ExtensionsSpec08",
-          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.typed.MissingExtension" """))
-        ) { _ ⇒ () }
+          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.typed.MissingExtension" """))) { _ ⇒ () }
       }
 
     def `09 load an extension implemented in Java`(): Unit =

@@ -110,7 +110,7 @@ final case class Activations()
 final case class DeActivations()
 
 class Registrar(val start: Int, val number: Int, activationsPromise: Promise[List[ActorRef]],
-                deActivationsPromise: Promise[List[ActorRef]]) extends Actor with ActorLogging {
+  deActivationsPromise: Promise[List[ActorRef]]) extends Actor with ActorLogging {
   private var actorRefs = Set[ActorRef]()
   private var activations = Set[Future[ActorRef]]()
   private var deActivations = Set[Future[ActorRef]]()

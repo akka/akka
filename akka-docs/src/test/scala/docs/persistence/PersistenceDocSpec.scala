@@ -51,7 +51,7 @@ object PersistenceDocSpec {
         case RecoveryCompleted =>
         // perform init after recovery, before any other messages
         //...
-        case evt               => //...
+        case evt => //...
       }
 
       override def receiveCommand: Receive = {
@@ -128,7 +128,7 @@ object PersistenceDocSpec {
       override def persistenceId: String = "persistence-id"
 
       override def receiveCommand: Receive = {
-        case s: String           => persist(MsgSent(s))(updateState)
+        case s: String => persist(MsgSent(s))(updateState)
         case Confirm(deliveryId) => persist(MsgConfirmed(deliveryId))(updateState)
       }
 
@@ -166,7 +166,7 @@ object PersistenceDocSpec {
 
       val snapShotInterval = 1000
       override def receiveCommand: Receive = {
-        case SaveSnapshotSuccess(metadata)         => // ...
+        case SaveSnapshotSuccess(metadata) => // ...
         case SaveSnapshotFailure(metadata, reason) => // ...
         case cmd: String =>
           persist(s"evt-$cmd") { e =>
@@ -196,8 +196,8 @@ object PersistenceDocSpec {
 
       override def receiveRecover: Receive = {
         case SnapshotOffer(metadata, offeredSnapshot) => state = offeredSnapshot
-        case RecoveryCompleted                        =>
-        case event                                    => // ...
+        case RecoveryCompleted =>
+        case event => // ...
       }
       //#snapshot-offer
 

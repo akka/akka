@@ -72,7 +72,7 @@ object ActorRef {
       case Some(Success(ref)) ⇒ ref
       // for other ActorSystem implementations, this might work, it currently doesn't work
       // for the adapted system, because the typed FutureRef cannot be watched from untyped
-      case x                  ⇒ new internal.FutureRef(FuturePath, bufferSize, f)
+      case x ⇒ new internal.FutureRef(FuturePath, bufferSize, f)
     }
 
   /**

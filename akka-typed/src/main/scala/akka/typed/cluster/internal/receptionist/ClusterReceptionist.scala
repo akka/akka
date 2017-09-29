@@ -57,8 +57,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   val clusterBehavior: Behavior[Command] = ReceptionistImpl.init(clusteredReceptionist())
 
   case class ClusterReceptionistSettings(
-    writeConsistency: WriteConsistency = Replicator.WriteLocal
-  )
+    writeConsistency: WriteConsistency = Replicator.WriteLocal)
 
   /**
    * Returns an ReceptionistImpl.ExternalInterface that synchronizes registered services with

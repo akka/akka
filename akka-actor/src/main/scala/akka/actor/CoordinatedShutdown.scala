@@ -229,7 +229,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
         tempMark += u
         phases.get(u) match {
           case Some(Phase(dependsOn, _, _)) ⇒ dependsOn.foreach(depthFirstSearch)
-          case None                         ⇒
+          case None ⇒
         }
         unmarked -= u // permanent mark
         tempMark -= u
@@ -400,7 +400,7 @@ final class CoordinatedShutdown private[akka] (
       }
 
       val remainingPhases = fromPhase match {
-        case None    ⇒ orderedPhases // all
+        case None ⇒ orderedPhases // all
         case Some(p) ⇒ orderedPhases.dropWhile(_ != p)
       }
       val done = loop(remainingPhases)

@@ -22,9 +22,9 @@ private[akka] object RemoteWatcher {
    * Factory method for `RemoteWatcher` [[akka.actor.Props]].
    */
   def props(
-    failureDetector:                FailureDetectorRegistry[Address],
-    heartbeatInterval:              FiniteDuration,
-    unreachableReaperInterval:      FiniteDuration,
+    failureDetector: FailureDetectorRegistry[Address],
+    heartbeatInterval: FiniteDuration,
+    unreachableReaperInterval: FiniteDuration,
     heartbeatExpectedResponseAfter: FiniteDuration): Props =
     Props(classOf[RemoteWatcher], failureDetector, heartbeatInterval, unreachableReaperInterval,
       heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
@@ -50,7 +50,7 @@ private[akka] object RemoteWatcher {
     def counts(watching: Int, watchingNodes: Int): Stats = Stats(watching, watchingNodes)(Set.empty, Set.empty)
   }
   final case class Stats(watching: Int, watchingNodes: Int)(
-    val watchingRefs:      Set[(ActorRef, ActorRef)],
+    val watchingRefs: Set[(ActorRef, ActorRef)],
     val watchingAddresses: Set[Address]) {
     override def toString: String = {
       def formatWatchingRefs: String =
@@ -84,9 +84,9 @@ private[akka] object RemoteWatcher {
  *
  */
 private[akka] class RemoteWatcher(
-  failureDetector:                FailureDetectorRegistry[Address],
-  heartbeatInterval:              FiniteDuration,
-  unreachableReaperInterval:      FiniteDuration,
+  failureDetector: FailureDetectorRegistry[Address],
+  heartbeatInterval: FiniteDuration,
+  unreachableReaperInterval: FiniteDuration,
   heartbeatExpectedResponseAfter: FiniteDuration)
   extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
@@ -122,14 +122,14 @@ private[akka] class RemoteWatcher(
   }
 
   def receive = {
-    case HeartbeatTick                             ⇒ sendHeartbeat()
-    case Heartbeat | ArteryHeartbeat               ⇒ receiveHeartbeat()
-    case HeartbeatRsp(uid)                         ⇒ receiveHeartbeatRsp(uid.toLong)
-    case ArteryHeartbeatRsp(uid)                   ⇒ receiveHeartbeatRsp(uid)
-    case ReapUnreachableTick                       ⇒ reapUnreachable()
-    case ExpectedFirstHeartbeat(from)              ⇒ triggerFirstHeartbeat(from)
-    case WatchRemote(watchee, watcher)             ⇒ addWatch(watchee, watcher)
-    case UnwatchRemote(watchee, watcher)           ⇒ removeWatch(watchee, watcher)
+    case HeartbeatTick ⇒ sendHeartbeat()
+    case Heartbeat | ArteryHeartbeat ⇒ receiveHeartbeat()
+    case HeartbeatRsp(uid) ⇒ receiveHeartbeatRsp(uid.toLong)
+    case ArteryHeartbeatRsp(uid) ⇒ receiveHeartbeatRsp(uid)
+    case ReapUnreachableTick ⇒ reapUnreachable()
+    case ExpectedFirstHeartbeat(from) ⇒ triggerFirstHeartbeat(from)
+    case WatchRemote(watchee, watcher) ⇒ addWatch(watchee, watcher)
+    case UnwatchRemote(watchee, watcher) ⇒ removeWatch(watchee, watcher)
     case t @ Terminated(watchee: InternalActorRef) ⇒ terminated(watchee, t.existenceConfirmed, t.addressTerminated)
 
     // test purpose

@@ -59,8 +59,8 @@ object Resizer {
     val defaultResizerConfig = parentConfig.getConfig("resizer")
     val metricsBasedResizerConfig = parentConfig.getConfig("optimal-size-exploring-resizer")
     (defaultResizerConfig.getBoolean("enabled"), metricsBasedResizerConfig.getBoolean("enabled")) match {
-      case (true, false)  ⇒ Some(DefaultResizer(defaultResizerConfig))
-      case (false, true)  ⇒ Some(OptimalSizeExploringResizer(metricsBasedResizerConfig))
+      case (true, false) ⇒ Some(DefaultResizer(defaultResizerConfig))
+      case (false, true) ⇒ Some(OptimalSizeExploringResizer(metricsBasedResizerConfig))
       case (false, false) ⇒ None
       case (true, true) ⇒
         throw new ResizerInitializationException(s"cannot enable both resizer and optimal-size-exploring-resizer", null)
@@ -126,13 +126,13 @@ case object DefaultResizer {
  */
 @SerialVersionUID(1L)
 case class DefaultResizer(
-  val lowerBound:        Int    = 1,
-  val upperBound:        Int    = 10,
-  val pressureThreshold: Int    = 1,
-  val rampupRate:        Double = 0.2,
-  val backoffThreshold:  Double = 0.3,
-  val backoffRate:       Double = 0.1,
-  val messagesPerResize: Int    = 10) extends Resizer {
+  val lowerBound: Int = 1,
+  val upperBound: Int = 10,
+  val pressureThreshold: Int = 1,
+  val rampupRate: Double = 0.2,
+  val backoffThreshold: Double = 0.3,
+  val backoffRate: Double = 0.1,
+  val messagesPerResize: Int = 10) extends Resizer {
 
   /**
    * Java API constructor for default values except bounds.
@@ -193,15 +193,15 @@ case class DefaultResizer(
         a.underlying match {
           case cell: ActorCell ⇒
             pressureThreshold match {
-              case 1          ⇒ cell.mailbox.isScheduled && cell.mailbox.hasMessages
+              case 1 ⇒ cell.mailbox.isScheduled && cell.mailbox.hasMessages
               case i if i < 1 ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
-              case threshold  ⇒ cell.mailbox.numberOfMessages >= threshold
+              case threshold ⇒ cell.mailbox.numberOfMessages >= threshold
             }
           case cell ⇒
             pressureThreshold match {
-              case 1          ⇒ cell.hasMessages
+              case 1 ⇒ cell.hasMessages
               case i if i < 1 ⇒ true // unstarted cells are always busy, for example
-              case threshold  ⇒ cell.numberOfMessages >= threshold
+              case threshold ⇒ cell.numberOfMessages >= threshold
             }
         }
       case x ⇒
@@ -246,13 +246,13 @@ case class DefaultResizer(
  * INTERNAL API
  */
 private[akka] final class ResizablePoolCell(
-  _system:           ActorSystemImpl,
-  _ref:              InternalActorRef,
-  _routerProps:      Props,
+  _system: ActorSystemImpl,
+  _ref: InternalActorRef,
+  _routerProps: Props,
   _routerDispatcher: MessageDispatcher,
-  _routeeProps:      Props,
-  _supervisor:       InternalActorRef,
-  val pool:          Pool)
+  _routeeProps: Props,
+  _supervisor: InternalActorRef,
+  val pool: Pool)
   extends RoutedActorCell(_system, _ref, _routerProps, _routerDispatcher, _routeeProps, _supervisor) {
 
   require(pool.resizer.isDefined, "RouterConfig must be a Pool with defined resizer")
@@ -297,7 +297,7 @@ private[akka] final class ResizablePoolCell(
   private def tryReportMessageCount(): Unit = {
     resizer match {
       case r: OptimalSizeExploringResizer ⇒ r.reportMessageCount(router.routees, resizeCounter.get())
-      case _                              ⇒ //ignore
+      case _ ⇒ //ignore
     }
   }
 

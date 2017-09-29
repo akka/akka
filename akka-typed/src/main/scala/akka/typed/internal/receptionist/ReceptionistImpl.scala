@@ -73,8 +73,8 @@ private[typed] object ReceptionistImpl extends ReceptionistBehaviorProvider {
     }.narrow[Command]
 
   private def behavior(
-    serviceRegistry:   LocalServiceRegistry,
-    subscriptions:     SubscriptionRegistry,
+    serviceRegistry: LocalServiceRegistry,
+    subscriptions: SubscriptionRegistry,
     externalInterface: ExternalInterface): Behavior[AllCommands] = {
 
     // Helper to create new state

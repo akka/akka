@@ -136,7 +136,7 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
 
       val filter = EventFilter.custom {
         case e: Logging.Warning ⇒ true
-        case _                  ⇒ false
+        case _ ⇒ false
       }
       system.eventStream.publish(TestEvent.Mute(filter))
       system.eventStream.subscribe(testActor, classOf[Logging.Warning])
@@ -193,8 +193,8 @@ object StageActorRefSpec {
 
         def behaviour(m: (ActorRef, Any)): Unit = {
           m match {
-            case (sender, Add(n))                ⇒ sum += n
-            case (sender, PullNow)               ⇒ pull(in)
+            case (sender, Add(n)) ⇒ sum += n
+            case (sender, PullNow) ⇒ pull(in)
             case (sender, CallInitStageActorRef) ⇒ sender ! getStageActor(behaviour).ref
             case (sender, BecomeStringEcho) ⇒
               getStageActor {

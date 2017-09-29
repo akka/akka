@@ -15,7 +15,7 @@ object ReceivePipelineSpec {
     def receive: Actor.Receive = becomeAndReply
     def becomeAndReply: Actor.Receive = {
       case "become" ⇒ context.become(justReply)
-      case m        ⇒ sender ! m
+      case m ⇒ sender ! m
     }
     def justReply: Actor.Receive = {
       case m ⇒ sender ! m
@@ -32,7 +32,7 @@ object ReceivePipelineSpec {
     var total = 0
     def receive: Actor.Receive = {
       case m: Int ⇒ total += m
-      case "get"  ⇒ sender ! total
+      case "get" ⇒ sender ! total
     }
   }
 
@@ -52,8 +52,8 @@ object ReceivePipelineSpec {
     this: ReceivePipeline ⇒
 
     pipelineInner {
-      case n: Int               ⇒ Inner(n + 10)
-      case IntList(l)           ⇒ Inner(IntList(l.map(_ + 10)))
+      case n: Int ⇒ Inner(n + 10)
+      case IntList(l) ⇒ Inner(IntList(l.map(_ + 10)))
       case "explicitly ignored" ⇒ HandledCompletely
     }
   }
@@ -62,8 +62,8 @@ object ReceivePipelineSpec {
     this: ReceivePipeline ⇒
 
     pipelineInner {
-      case i: Int             ⇒ Inner(i.toString)
-      case IntList(l)         ⇒ Inner(l.toString)
+      case i: Int ⇒ Inner(i.toString)
+      case IntList(l) ⇒ Inner(l.toString)
       case other: Iterable[_] ⇒ Inner(other.toString)
     }
   }
@@ -173,7 +173,7 @@ object PersistentReceivePipelineSpec {
 
     def becomeAndReply: Actor.Receive = {
       case "become" ⇒ context.become(justReply)
-      case m        ⇒ sender ! m
+      case m ⇒ sender ! m
     }
     def justReply: Actor.Receive = {
       case m ⇒ sender ! m
@@ -246,7 +246,7 @@ class PersistentReceivePipelineSpec(config: Config) extends AkkaSpec(config) wit
           override def unhandled(message: Any) = probeRef ! message
         }))
 
-      // 11 ( -> not handled by EvenHalverInterceptor) -> 22 but > 10 so not handled in main receive: 
+      // 11 ( -> not handled by EvenHalverInterceptor) -> 22 but > 10 so not handled in main receive:
       // original message falls back to unhandled implementation...
       replier ! 11
       probe.expectMsg(11)

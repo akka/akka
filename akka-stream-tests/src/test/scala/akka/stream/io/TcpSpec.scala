@@ -549,7 +549,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
             false
           } catch {
             case _: SocketTimeoutException ⇒ true
-            case _: SocketException        ⇒ true
+            case _: SocketException ⇒ true
           }
 
         import serverSystem.dispatcher
@@ -607,8 +607,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
                 Flow[ByteString].mapMaterializedValue { mat ⇒
                   firstClientConnected.trySuccess(())
                   mat
-                }.watchTermination()(Keep.right)
-              )(Keep.right).run()
+                }.watchTermination()(Keep.right))(Keep.right).run()
             } else {
               // just ignore it
               secondClientIgnored.trySuccess(())
@@ -671,10 +670,10 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
   }
 
   def validateServerClientCommunication(
-    testData:         ByteString,
+    testData: ByteString,
     serverConnection: ServerConnection,
-    readProbe:        TcpReadProbe,
-    writeProbe:       TcpWriteProbe): Unit = {
+    readProbe: TcpReadProbe,
+    writeProbe: TcpWriteProbe): Unit = {
     serverConnection.write(testData)
     serverConnection.read(5)
     readProbe.read(5) should be(testData)

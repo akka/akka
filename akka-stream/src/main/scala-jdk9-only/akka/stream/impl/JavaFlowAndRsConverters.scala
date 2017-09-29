@@ -13,11 +13,11 @@ import JavaFlowAndRsConverters.Implicits._
 /**
  * INTERNAL API: Provides converters between Reactive Streams (reactive-streams.org) and their Java 9+ counter-parts,
  * defined in `java.util.concurrent.Flow.*`. This API is internal because Reactive Streams will ship with such
- * adapters itself at some point, and we'd not want to duplicate that effort for users to be confused about which ones 
- * to use. These adapters are used internally by Akka Streams to convert between the standards but you should not touch 
+ * adapters itself at some point, and we'd not want to duplicate that effort for users to be confused about which ones
+ * to use. These adapters are used internally by Akka Streams to convert between the standards but you should not touch
  * them directly - use thr `JavaFlowSupport` classes instead.
- * 
- * Please note that either of these types are designed for *inter-op* and usually should not be used directly 
+ *
+ * Please note that either of these types are designed for *inter-op* and usually should not be used directly
  * in applications. The intended use case is for shared libraries, like database drivers or similar to provide
  * the inter-operable types, such that other librarie can co-operate with them directly, if that is your use case
  * and you're using the j.u.c.Flow types, use the [[akka.stream.scaladsl.JavaFlowSupport]] sources/sinks/flows instead.
@@ -62,48 +62,48 @@ private[akka] object JavaFlowAndRsConverters {
   }
 
   final def asJava[T](p: rs.Publisher[T]): Flow.Publisher[T] = p match {
-    case null                                     ⇒ null // null remains null
+    case null ⇒ null // null remains null
     case adapter: JavaFlowPublisherToRsAdapter[T] ⇒ adapter.delegate // unwrap adapter instead of wrapping again
-    case delegate                                 ⇒ new RsPublisherToJavaFlowAdapter(delegate) // adapt, it is a real Publisher
+    case delegate ⇒ new RsPublisherToJavaFlowAdapter(delegate) // adapt, it is a real Publisher
   }
   final def asRs[T](p: Flow.Publisher[T]): rs.Publisher[T] = p match {
-      case null ⇒ null // null remains null
-      case adapter: RsPublisherToJavaFlowAdapter[T] ⇒ adapter.delegate // unwrap adapter instead of wrapping again
-      case _ =>  new JavaFlowPublisherToRsAdapter[T](p)
-    }
+    case null ⇒ null // null remains null
+    case adapter: RsPublisherToJavaFlowAdapter[T] ⇒ adapter.delegate // unwrap adapter instead of wrapping again
+    case _ => new JavaFlowPublisherToRsAdapter[T](p)
+  }
 
-  final def asJava[T](s: rs.Subscription): Flow.Subscription =  s match {
+  final def asJava[T](s: rs.Subscription): Flow.Subscription = s match {
     case null ⇒ null // null remains null
     case adapter: JavaFlowSubscriptionToRsAdapter ⇒ adapter.delegate // unwrap adapter instead of wrapping again
-    case _ =>  new RsSubscriptionToJavaFlowAdapter(s)
+    case _ => new RsSubscriptionToJavaFlowAdapter(s)
   }
   final def asRs[T](s: Flow.Subscription): rs.Subscription = s match {
     case null ⇒ null // null remains null
     case adapter: RsSubscriptionToJavaFlowAdapter ⇒ adapter.delegate // unwrap adapter instead of wrapping again
-    case _ =>  new JavaFlowSubscriptionToRsAdapter(s)
+    case _ => new JavaFlowSubscriptionToRsAdapter(s)
   }
-  
-  final def asJava[T](s: rs.Subscriber[T]): Flow.Subscriber[T] = 
+
+  final def asJava[T](s: rs.Subscriber[T]): Flow.Subscriber[T] =
     s match {
       case null ⇒ null // null remains null
       case adapter: JavaFlowSubscriberToRsAdapter[T] ⇒ adapter.delegate // unwrap adapter instead of wrapping again
-      case _ =>  new RsSubscriberToJavaFlowAdapter[T](s)
+      case _ => new RsSubscriberToJavaFlowAdapter[T](s)
     }
   final def asRs[T](s: Flow.Subscriber[T]): rs.Subscriber[T] = s match {
     case null ⇒ null // null remains null
     case adapter: RsSubscriberToJavaFlowAdapter[T] ⇒ adapter.delegate // unwrap adapter instead of wrapping again
-    case _ =>  new JavaFlowSubscriberToRsAdapter[T](s)
+    case _ => new JavaFlowSubscriberToRsAdapter[T](s)
   }
 
   final def asJava[T, R](p: rs.Processor[T, R]): Flow.Processor[T, R] = p match {
-      case null ⇒ null // null remains null
-      case adapter: JavaFlowProcessorToRsAdapter[T, R] ⇒ adapter.delegate // unwrap adapter instead of wrapping again
-      case _ =>  new RsProcessorToJavaFlowAdapter[T, R](p)
-    }
+    case null ⇒ null // null remains null
+    case adapter: JavaFlowProcessorToRsAdapter[T, R] ⇒ adapter.delegate // unwrap adapter instead of wrapping again
+    case _ => new RsProcessorToJavaFlowAdapter[T, R](p)
+  }
   final def asRs[T, R](p: Flow.Processor[T, R]): rs.Processor[T, R] = p match {
     case null ⇒ null // null remains null
     case adapter: RsProcessorToJavaFlowAdapter[T, R] ⇒ adapter.delegate // unwrap adapter instead of wrapping again
-    case _ =>  new JavaFlowProcessorToRsAdapter[T, R](p)
+    case _ => new JavaFlowProcessorToRsAdapter[T, R](p)
   }
 
 }

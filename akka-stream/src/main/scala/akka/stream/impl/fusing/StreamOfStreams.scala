@@ -303,7 +303,7 @@ import scala.collection.JavaConverters._
     } catch {
       case NonFatal(ex) ⇒
         decider(ex) match {
-          case Supervision.Stop                         ⇒ fail(ex)
+          case Supervision.Stop ⇒ fail(ex)
           case Supervision.Resume | Supervision.Restart ⇒ if (!hasBeenPulled(in)) pull(in)
         }
     }
@@ -414,7 +414,7 @@ import scala.collection.JavaConverters._
 
   private val propagateSubstreamCancel = substreamCancelStrategy match {
     case SubstreamCancelStrategies.Propagate ⇒ true
-    case SubstreamCancelStrategies.Drain     ⇒ false
+    case SubstreamCancelStrategies.Drain ⇒ false
   }
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
@@ -662,7 +662,7 @@ import scala.collection.JavaConverters._
     override def preStart(): Unit =
       setCallback {
         case RequestOne ⇒ tryPull(in)
-        case Cancel     ⇒ completeStage()
+        case Cancel ⇒ completeStage()
       }
   }
 
@@ -684,7 +684,7 @@ import scala.collection.JavaConverters._
 
   def pushSubstream(elem: T): Unit = status.get match {
     case f: AsyncCallback[Any] @unchecked ⇒ f.invoke(ActorSubscriberMessage.OnNext(elem))
-    case _                                ⇒ throw new IllegalStateException("cannot push to uninitialized substream")
+    case _ ⇒ throw new IllegalStateException("cannot push to uninitialized substream")
   }
 
   def completeSubstream(): Unit = status.get match {
@@ -710,17 +710,17 @@ import scala.collection.JavaConverters._
 
     @tailrec private def setCB(cb: AsyncCallback[ActorSubscriberMessage]): Unit = {
       status.get match {
-        case null                               ⇒ if (!status.compareAndSet(null, cb)) setCB(cb)
-        case ActorSubscriberMessage.OnComplete  ⇒ completeStage()
+        case null ⇒ if (!status.compareAndSet(null, cb)) setCB(cb)
+        case ActorSubscriberMessage.OnComplete ⇒ completeStage()
         case ActorSubscriberMessage.OnError(ex) ⇒ failStage(ex)
-        case _: AsyncCallback[_]                ⇒ failStage(new IllegalStateException("Substream Source cannot be materialized more than once"))
+        case _: AsyncCallback[_] ⇒ failStage(new IllegalStateException("Substream Source cannot be materialized more than once"))
       }
     }
 
     override def preStart(): Unit = {
       val ourOwnCallback = getAsyncCallback[ActorSubscriberMessage] {
-        case ActorSubscriberMessage.OnComplete   ⇒ completeStage()
-        case ActorSubscriberMessage.OnError(ex)  ⇒ failStage(ex)
+        case ActorSubscriberMessage.OnComplete ⇒ completeStage()
+        case ActorSubscriberMessage.OnError(ex) ⇒ failStage(ex)
         case ActorSubscriberMessage.OnNext(elem) ⇒ push(out, elem.asInstanceOf[T])
       }
       setCB(ourOwnCallback)

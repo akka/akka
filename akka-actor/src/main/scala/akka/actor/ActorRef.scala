@@ -149,7 +149,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    */
   final override def equals(that: Any): Boolean = that match {
     case other: ActorRef ⇒ path.uid == other.path.uid && path == other.path
-    case _               ⇒ false
+    case _ ⇒ false
   }
 
   override def toString: String =
@@ -298,11 +298,11 @@ private[akka] case object Nobody extends MinimalActorRef {
  *  INTERNAL API
  */
 private[akka] class LocalActorRef private[akka] (
-  _system:           ActorSystemImpl,
-  _props:            Props,
-  _dispatcher:       MessageDispatcher,
-  _mailboxType:      MailboxType,
-  _supervisor:       InternalActorRef,
+  _system: ActorSystemImpl,
+  _props: Props,
+  _dispatcher: MessageDispatcher,
+  _mailboxType: MailboxType,
+  _supervisor: InternalActorRef,
   override val path: ActorPath)
   extends ActorRefWithCell with LocalRef {
 
@@ -379,8 +379,8 @@ private[akka] class LocalActorRef private[akka] (
         case l: LocalActorRef ⇒
           val next = name.next() match {
             case ".." ⇒ l.getParent
-            case ""   ⇒ l
-            case any  ⇒ l.getSingleChild(any)
+            case "" ⇒ l
+            case any ⇒ l.getSingleChild(any)
           }
           if (next == Nobody || name.isEmpty) next else rec(next, name)
         case _ ⇒
@@ -518,8 +518,8 @@ private[akka] object DeadLetterActorRef {
  */
 private[akka] class EmptyLocalActorRef(
   override val provider: ActorRefProvider,
-  override val path:     ActorPath,
-  val eventStream:       EventStream) extends MinimalActorRef {
+  override val path: ActorPath,
+  val eventStream: EventStream) extends MinimalActorRef {
 
   @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
   override private[akka] def isTerminated = true
@@ -570,14 +570,14 @@ private[akka] class EmptyLocalActorRef(
  * INTERNAL API
  */
 private[akka] class DeadLetterActorRef(
-  _provider:    ActorRefProvider,
-  _path:        ActorPath,
+  _provider: ActorRefProvider,
+  _path: ActorPath,
   _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
-    case null                ⇒ throw InvalidMessageException("Message is null")
+    case null ⇒ throw InvalidMessageException("Message is null")
     case Identify(messageId) ⇒ sender ! ActorIdentity(messageId, None)
-    case d: DeadLetter       ⇒ if (!specialHandle(d.message, d.sender)) eventStream.publish(d)
+    case d: DeadLetter ⇒ if (!specialHandle(d.message, d.sender)) eventStream.publish(d)
     case _ ⇒ if (!specialHandle(message, sender))
       eventStream.publish(DeadLetter(message, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
   }
@@ -601,10 +601,10 @@ private[akka] class DeadLetterActorRef(
  * INTERNAL API
  */
 private[akka] class VirtualPathContainer(
-  override val provider:  ActorRefProvider,
-  override val path:      ActorPath,
+  override val provider: ActorRefProvider,
+  override val path: ActorPath,
   override val getParent: InternalActorRef,
-  val log:                MarkerLoggingAdapter) extends MinimalActorRef {
+  val log: MarkerLoggingAdapter) extends MinimalActorRef {
 
   private val children = new ConcurrentHashMap[String, InternalActorRef]
 
@@ -706,10 +706,10 @@ private[akka] class VirtualPathContainer(
  * Terminated message the watched actorRef is unwatch()ed.
  */
 private[akka] final class FunctionRef(
-  override val path:     ActorPath,
+  override val path: ActorPath,
   override val provider: ActorRefProvider,
-  val eventStream:       EventStream,
-  f:                     (ActorRef, Any) ⇒ Unit) extends MinimalActorRef {
+  val eventStream: EventStream,
+  f: (ActorRef, Any) ⇒ Unit) extends MinimalActorRef {
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     f(sender, message)
@@ -717,7 +717,7 @@ private[akka] final class FunctionRef(
 
   override def sendSystemMessage(message: SystemMessage): Unit = {
     message match {
-      case w: Watch   ⇒ addWatcher(w.watchee, w.watcher)
+      case w: Watch ⇒ addWatcher(w.watchee, w.watcher)
       case u: Unwatch ⇒ remWatcher(u.watchee, u.watcher)
       case DeathWatchNotification(actorRef, _, _) ⇒
         this.!(Terminated(actorRef)(existenceConfirmed = true, addressTerminated = false))

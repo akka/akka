@@ -120,11 +120,11 @@ final case class AdaptiveLoadBalancingRoutingLogic(system: ActorSystem, metricsS
  */
 @SerialVersionUID(1L)
 final case class AdaptiveLoadBalancingPool(
-  metricsSelector:                 MetricsSelector    = MixMetricsSelector,
-  val nrOfInstances:               Int                = 0,
+  metricsSelector: MetricsSelector = MixMetricsSelector,
+  val nrOfInstances: Int = 0,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher:   String             = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher:  Boolean            = false)
+  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+  override val usePoolDispatcher: Boolean = false)
   extends Pool {
 
   def this(config: Config, dynamicAccess: DynamicAccess) =
@@ -202,9 +202,9 @@ final case class AdaptiveLoadBalancingPool(
  */
 @SerialVersionUID(1L)
 final case class AdaptiveLoadBalancingGroup(
-  metricsSelector:               MetricsSelector            = MixMetricsSelector,
-  val paths:                     immutable.Iterable[String] = Nil,
-  override val routerDispatcher: String                     = Dispatchers.DefaultDispatcherId)
+  metricsSelector: MetricsSelector = MixMetricsSelector,
+  val paths: immutable.Iterable[String] = Nil,
+  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends Group {
 
   def this(config: Config, dynamicAccess: DynamicAccess) =
@@ -221,7 +221,7 @@ final case class AdaptiveLoadBalancingGroup(
    */
   def this(
     metricsSelector: MetricsSelector,
-    routeesPaths:    java.lang.Iterable[String]) = this(paths = immutableSeq(routeesPaths))
+    routeesPaths: java.lang.Iterable[String]) = this(paths = immutableSeq(routeesPaths))
 
   override def paths(system: ActorSystem): immutable.Iterable[String] = this.paths
 
@@ -257,7 +257,7 @@ case object HeapMetricsSelector extends CapacityMetricsSelector {
     nodeMetrics.collect {
       case HeapMemory(address, _, used, committed, max) ⇒
         val capacity = max match {
-          case None    ⇒ (committed - used).toDouble / committed
+          case None ⇒ (committed - used).toDouble / committed
           case Some(m) ⇒ (m - used).toDouble / m
         }
         (address, capacity)
@@ -381,9 +381,9 @@ abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMe
 object MetricsSelector {
   def fromConfig(config: Config, dynamicAccess: DynamicAccess) =
     config.getString("metrics-selector") match {
-      case "mix"  ⇒ MixMetricsSelector
+      case "mix" ⇒ MixMetricsSelector
       case "heap" ⇒ HeapMetricsSelector
-      case "cpu"  ⇒ CpuMetricsSelector
+      case "cpu" ⇒ CpuMetricsSelector
       case "load" ⇒ SystemLoadAverageMetricsSelector
       case fqn ⇒
         val args = List(classOf[Config] → config)
@@ -460,12 +460,12 @@ private[metrics] class WeightedRoutees(routees: immutable.IndexedSeq[Routee], se
   private val buckets: Array[Int] = {
     def fullAddress(routee: Routee): Address = {
       val a = routee match {
-        case ActorRefRoutee(ref)       ⇒ ref.path.address
+        case ActorRefRoutee(ref) ⇒ ref.path.address
         case ActorSelectionRoutee(sel) ⇒ sel.anchor.path.address
       }
       a match {
         case Address(_, _, None, None) ⇒ selfAddress
-        case a                         ⇒ a
+        case a ⇒ a
       }
     }
     val buckets = new Array[Int](routees.size)
@@ -526,7 +526,7 @@ private[metrics] class AdaptiveLoadBalancingMetricsListener(routingLogic: Adapti
 
   def receive = {
     case event: ClusterMetricsChanged ⇒ routingLogic.metricsChanged(event)
-    case _                            ⇒ // ignore
+    case _ ⇒ // ignore
   }
 
 }

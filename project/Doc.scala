@@ -30,15 +30,14 @@ object Scaladoc extends AutoPlugin {
   override lazy val projectSettings = {
     inTask(doc)(Seq(
       scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
-      autoAPIMappings := CliOptions.scaladocAutoAPI.get
-    )) ++
-    Seq(validateDiagrams in Compile := true) ++
-    CliOptions.scaladocDiagramsEnabled.ifTrue(doc in Compile := {
-      val docs = (doc in Compile).value
-      if ((validateDiagrams in Compile).value)
-        scaladocVerifier(docs)
-      docs
-    })
+      autoAPIMappings := CliOptions.scaladocAutoAPI.get)) ++
+      Seq(validateDiagrams in Compile := true) ++
+      CliOptions.scaladocDiagramsEnabled.ifTrue(doc in Compile := {
+        val docs = (doc in Compile).value
+        if ((validateDiagrams in Compile).value)
+          scaladocVerifier(docs)
+        docs
+      })
   }
 
   def scaladocOptions(ver: String, base: File): List[String] = {
@@ -47,7 +46,7 @@ object Scaladoc extends AutoPlugin {
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
-  def scaladocVerifier(file: File): File= {
+  def scaladocVerifier(file: File): File = {
     @tailrec
     def findHTMLFileWithDiagram(dirs: Seq[File]): Boolean = {
       if (dirs.isEmpty) false
@@ -62,11 +61,10 @@ object Scaladoc extends AutoPlugin {
             val source = scala.io.Source.fromFile(f)(scala.io.Codec.UTF8)
             val hd = try source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
             catch {
-              case e: Exception => throw new IllegalStateException("Scaladoc verification failed for file '"+f+"'", e)
+              case e: Exception => throw new IllegalStateException("Scaladoc verification failed for file '" + f + "'", e)
             } finally source.close()
             hd
-          }
-          else false
+          } else false
         }
         hasDiagram || findHTMLFileWithDiagram(rest)
       }
@@ -89,8 +87,7 @@ object ScaladocNoVerificationOfDiagrams extends AutoPlugin {
   override def requires = Scaladoc
 
   override lazy val projectSettings = Seq(
-    Scaladoc.validateDiagrams in Compile := false
-  )
+    Scaladoc.validateDiagrams in Compile := false)
 }
 
 /**
@@ -113,10 +110,9 @@ object UnidocRoot extends AutoPlugin {
       .getOrElse(sbtunidoc.ScalaUnidocPlugin)
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
-      javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none"),
-      // genjavadoc needs to generate synthetic methods since the java code uses them
-      scalacOptions += "-P:genjavadoc:suppressSynthetic=false"
-    )).getOrElse(Nil)
+    javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none"),
+    // genjavadoc needs to generate synthetic methods since the java code uses them
+    scalacOptions += "-P:genjavadoc:suppressSynthetic=false")).getOrElse(Nil)
 
   override lazy val projectSettings = {
     def unidocRootProjectFilter(ignoreProjects: Seq[Project]) =
@@ -125,8 +121,7 @@ object UnidocRoot extends AutoPlugin {
     inTask(unidoc)(Seq(
       unidocProjectFilter in ScalaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
       unidocProjectFilter in JavaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
-      apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value
-    ))
+      apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value))
   }
 }
 

@@ -31,9 +31,9 @@ object Envelope {
 
 final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Batchable {
   final override def isBatchable: Boolean = runnable match {
-    case b: Batchable                           ⇒ b.isBatchable
+    case b: Batchable ⇒ b.isBatchable
     case _: scala.concurrent.OnCompleteRunnable ⇒ true
-    case _                                      ⇒ false
+    case _ ⇒ false
   }
 
   def run(): Unit =
@@ -72,11 +72,11 @@ private[akka] object MessageDispatcher {
         val status = if (a.isTerminated) " (terminated)" else " (alive)"
         val messages = a match {
           case r: ActorRefWithCell ⇒ " " + r.underlying.numberOfMessages + " messages"
-          case _                   ⇒ " " + a.getClass
+          case _ ⇒ " " + a.getClass
         }
         val parent = a match {
           case i: InternalActorRef ⇒ ", parent: " + i.getParent
-          case _                   ⇒ ""
+          case _ ⇒ ""
         }
         println(" -> " + a + status + messages + parent)
       }
@@ -153,7 +153,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
 
   override def reportFailure(t: Throwable): Unit = t match {
     case e: LogEventException ⇒ eventStream.publish(e.event)
-    case _                    ⇒ eventStream.publish(Error(t, getClass.getName, getClass, t.getMessage))
+    case _ ⇒ eventStream.publish(Error(t, getClass.getName, getClass, t.getMessage))
   }
 
   @tailrec
@@ -328,8 +328,8 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
   def configureExecutor(): ExecutorServiceConfigurator = {
     def configurator(executor: String): ExecutorServiceConfigurator = executor match {
       case null | "" | "fork-join-executor" ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
-      case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
-      case "affinity-pool-executor"         ⇒ new AffinityPoolConfigurator(config.getConfig("affinity-pool-executor"), prerequisites)
+      case "thread-pool-executor" ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
+      case "affinity-pool-executor" ⇒ new AffinityPoolConfigurator(config.getConfig("affinity-pool-executor"), prerequisites)
 
       case fqcn ⇒
         val args = List(
@@ -345,7 +345,7 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
 
     config.getString("executor") match {
       case "default-executor" ⇒ new DefaultExecutorServiceConfigurator(config.getConfig("default-executor"), prerequisites, configurator(config.getString("default-executor.fallback")))
-      case other              ⇒ configurator(other)
+      case other ⇒ configurator(other)
     }
   }
 }
@@ -364,9 +364,9 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
           Some(config getInt "task-queue-size") flatMap {
             case size if size > 0 ⇒
               Some(config getString "task-queue-type") map {
-                case "array"       ⇒ ThreadPoolConfig.arrayBlockingQueue(size, false) //TODO config fairness?
+                case "array" ⇒ ThreadPoolConfig.arrayBlockingQueue(size, false) //TODO config fairness?
                 case "" | "linked" ⇒ ThreadPoolConfig.linkedBlockingQueue(size)
-                case x             ⇒ throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)
+                case x ⇒ throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)
               } map { qf ⇒ (q: ThreadPoolConfigBuilder) ⇒ q.setQueueFactory(qf) }
             case _ ⇒ None
           })

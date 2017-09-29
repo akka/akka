@@ -26,6 +26,6 @@ trait EventsByPersistenceIdQuery extends ReadJournal {
    * stored events is provided by [[CurrentEventsByPersistenceIdQuery#currentEventsByPersistenceId]].
    */
   def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
-                            toSequenceNr: Long): Source[EventEnvelope, NotUsed]
+    toSequenceNr: Long): Source[EventEnvelope, NotUsed]
 
 }

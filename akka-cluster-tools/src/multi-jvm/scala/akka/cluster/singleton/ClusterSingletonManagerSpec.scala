@@ -86,7 +86,7 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
         sender() ! UnexpectedUnregistration
         context stop self
       case Reset ⇒ sender() ! ResetOk
-      case msg   ⇒ // no consumer, drop
+      case msg ⇒ // no consumer, drop
     }
 
     def active(consumer: ActorRef): Receive = {

@@ -27,7 +27,7 @@ abstract class SelectionHandlerSettings(config: Config) {
 
   val MaxChannels: Int = getString("max-channels") match {
     case "unlimited" ⇒ -1
-    case _           ⇒ getInt("max-channels") requiring (_ > 0, "max-channels must be > 0 or 'unlimited'")
+    case _ ⇒ getInt("max-channels") requiring (_ > 0, "max-channels must be > 0 or 'unlimited'")
   }
   val SelectorAssociationRetries: Int = getInt("selector-association-retries") requiring (
     _ >= 0, "selector-association-retries must be >= 0")
@@ -109,7 +109,7 @@ private[io] object SelectionHandler {
   private[io] final val connectionSupervisorStrategy: SupervisorStrategy =
     new OneForOneStrategy()(SupervisorStrategy.stoppingStrategy.decider) {
       override def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
-                              decision: SupervisorStrategy.Directive): Unit =
+        decision: SupervisorStrategy.Directive): Unit =
         if (cause.isInstanceOf[DeathPactException]) {
           try context.system.eventStream.publish {
             Logging.Debug(child.path.toString, getClass, "Closed after handler termination")
@@ -137,12 +137,12 @@ private[io] object SelectionHandler {
                 key.interestOps(key.interestOps & ~readyOps) // prevent immediate reselection by always clearing
                 val connection = key.attachment.asInstanceOf[ActorRef]
                 readyOps match {
-                  case OP_READ                   ⇒ connection ! ChannelReadable
-                  case OP_WRITE                  ⇒ connection ! ChannelWritable
-                  case OP_READ_AND_WRITE         ⇒ { connection ! ChannelWritable; connection ! ChannelReadable }
-                  case x if (x & OP_ACCEPT) > 0  ⇒ connection ! ChannelAcceptable
+                  case OP_READ ⇒ connection ! ChannelReadable
+                  case OP_WRITE ⇒ connection ! ChannelWritable
+                  case OP_READ_AND_WRITE ⇒ { connection ! ChannelWritable; connection ! ChannelReadable }
+                  case x if (x & OP_ACCEPT) > 0 ⇒ connection ! ChannelAcceptable
                   case x if (x & OP_CONNECT) > 0 ⇒ connection ! ChannelConnectable
-                  case x                         ⇒ log.warning("Invalid readyOps: [{}]", x)
+                  case x ⇒ log.warning("Invalid readyOps: [{}]", x)
                 }
               } catch {
                 case _: CancelledKeyException ⇒
@@ -246,7 +246,7 @@ private[io] object SelectionHandler {
         try tryRun()
         catch {
           case _: CancelledKeyException ⇒ // ok, can be triggered while setting interest ops
-          case NonFatal(e)              ⇒ log.error(e, "Error during selector management task: [{}]", e)
+          case NonFatal(e) ⇒ log.error(e, "Error during selector management task: [{}]", e)
         }
       }
     }
@@ -266,13 +266,13 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
   }
 
   def receive: Receive = {
-    case cmd: WorkerForCommand   ⇒ spawnChildWithCapacityProtection(cmd, SelectorAssociationRetries)
+    case cmd: WorkerForCommand ⇒ spawnChildWithCapacityProtection(cmd, SelectorAssociationRetries)
 
     case Retry(cmd, retriesLeft) ⇒ spawnChildWithCapacityProtection(cmd, retriesLeft)
 
     // since our ActorRef is never exposed to the user and we are only assigning watches to our
     // children all incoming `Terminated` events must be for a child of ours
-    case _: Terminated           ⇒ childCount -= 1
+    case _: Terminated ⇒ childCount -= 1
   }
 
   override def postStop(): Unit = registry.shutdown()
@@ -285,14 +285,14 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
     }
     new OneForOneStrategy()(stoppingDecider) {
       override def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
-                              decision: SupervisorStrategy.Directive): Unit =
+        decision: SupervisorStrategy.Directive): Unit =
         try {
           val logMessage = cause match {
             case e: ActorInitializationException if (e.getCause ne null) && (e.getCause.getMessage ne null) ⇒ e.getCause.getMessage
             case e: ActorInitializationException if e.getCause ne null ⇒
               e.getCause match {
                 case ie: java.lang.reflect.InvocationTargetException ⇒ ie.getTargetException.toString
-                case t: Throwable                                    ⇒ Logging.simpleName(t)
+                case t: Throwable ⇒ Logging.simpleName(t)
               }
             case e ⇒ e.getMessage
           }

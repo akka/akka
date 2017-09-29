@@ -80,7 +80,7 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
   def activationFutureFor(endpoint: ActorRef)(implicit timeout: Timeout, executor: ExecutionContext): Future[ActorRef] =
 
     (supervisor.ask(AwaitActivation(endpoint))(timeout)).map[ActorRef]({
-      case EndpointActivated(`endpoint`)               ⇒ endpoint
+      case EndpointActivated(`endpoint`) ⇒ endpoint
       case EndpointFailedToActivate(`endpoint`, cause) ⇒ throw cause
     })
 
@@ -93,7 +93,7 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
    */
   def deactivationFutureFor(endpoint: ActorRef)(implicit timeout: Timeout, executor: ExecutionContext): Future[ActorRef] =
     (supervisor.ask(AwaitDeActivation(endpoint))(timeout)).map[ActorRef]({
-      case EndpointDeActivated(`endpoint`)               ⇒ endpoint
+      case EndpointDeActivated(`endpoint`) ⇒ endpoint
       case EndpointFailedToDeActivate(`endpoint`, cause) ⇒ throw cause
     })
 }

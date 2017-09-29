@@ -73,7 +73,7 @@ object Serialization {
     val path = actorRef.path
     val originalSystem: ExtendedActorSystem = actorRef match {
       case a: ActorRefWithCell ⇒ a.underlying.system.asInstanceOf[ExtendedActorSystem]
-      case _                   ⇒ null
+      case _ ⇒ null
     }
     Serialization.currentTransportInformation.value match {
       case null ⇒ originalSystem match {
@@ -281,7 +281,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   private val serializerDetails: immutable.Seq[SerializerDetails] =
     (system.settings.setup.get[SerializationSetup] match {
-      case None          ⇒ Vector.empty
+      case None ⇒ Vector.empty
       case Some(setting) ⇒ setting.createSerializers(system)
     }) collect {
       case det: SerializerDetails if isDisallowedJavaSerializer(det.serializer) ⇒
@@ -342,7 +342,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     ((new ArrayBuffer[ClassSerializer](in.size) /: in) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {
         case -1 ⇒ buf append ca
-        case x  ⇒ buf insert (x, ca)
+        case x ⇒ buf insert (x, ca)
       }
       buf
     }).to[immutable.Seq]
@@ -379,7 +379,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     if (0 <= id && id < quickSerializerByIdentity.length) {
       quickSerializerByIdentity(id) match {
         case null ⇒ throw new NoSuchElementException(s"key not found: $id")
-        case ser  ⇒ ser
+        case ser ⇒ ser
       }
     } else
       serializerByIdentity(id)

@@ -217,7 +217,7 @@ class CompositionDocSpec extends AkkaSpec {
     }
 
     def f(
-      p:    Promise[Option[Int]],
+      p: Promise[Option[Int]],
       rest: (Future[OutgoingConnection], Future[String])): Future[MyClass] = {
 
       val connFuture = rest._1

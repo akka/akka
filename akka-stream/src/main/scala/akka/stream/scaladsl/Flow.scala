@@ -26,7 +26,7 @@ import akka.annotation.DoNotInherit
  */
 final class Flow[-In, +Out, +Mat](
   override val traversalBuilder: LinearTraversalBuilder,
-  override val shape:            FlowShape[In, Out])
+  override val shape: FlowShape[In, Out])
   extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
   // TODO: debug string
@@ -307,7 +307,7 @@ object Flow {
    */
   def fromGraph[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
-      case f: Flow[I, O, M]         ⇒ f
+      case f: Flow[I, O, M] ⇒ f
       case f: javadsl.Flow[I, O, M] ⇒ f.asScala
       case other ⇒ new Flow(
         LinearTraversalBuilder.fromBuilder(g.traversalBuilder, g.shape, Keep.right),
@@ -475,7 +475,7 @@ object RunnableGraph {
   def fromGraph[Mat](g: Graph[ClosedShape, Mat]): RunnableGraph[Mat] =
     g match {
       case r: RunnableGraph[Mat] ⇒ r
-      case other                 ⇒ RunnableGraph(other.traversalBuilder)
+      case other ⇒ RunnableGraph(other.traversalBuilder)
     }
 }
 /**
@@ -1841,7 +1841,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
-               costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] =
+    costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] =
     via(new Throttle(cost, per, maximumBurst, costCalculation, mode))
 
   /**
@@ -2008,9 +2008,9 @@ trait FlowOps[+Out, +Mat] {
     via(interleaveGraph(that, segmentSize, eagerClose))
 
   protected def interleaveGraph[U >: Out, M](
-    that:        Graph[SourceShape[U], M],
+    that: Graph[SourceShape[U], M],
     segmentSize: Int,
-    eagerClose:  Boolean                  = false): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    eagerClose: Boolean = false): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.create(that) { implicit b ⇒ r ⇒
       val interleave = b.add(Interleave[U](2, segmentSize, eagerClose))
       r ~> interleave.in(1)

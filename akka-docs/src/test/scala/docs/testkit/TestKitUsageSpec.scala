@@ -126,7 +126,7 @@ object TestKitUsageSpec {
   class FilteringActor(next: ActorRef) extends Actor {
     def receive = {
       case msg: String => next ! msg
-      case _           => None
+      case _ => None
     }
   }
 
@@ -137,7 +137,7 @@ object TestKitUsageSpec {
    * be bothered with the rest
    */
   class SequencingActor(next: ActorRef, head: immutable.Seq[String],
-                        tail: immutable.Seq[String]) extends Actor {
+    tail: immutable.Seq[String]) extends Actor {
     def receive = {
       case msg => {
         head foreach { next ! _ }

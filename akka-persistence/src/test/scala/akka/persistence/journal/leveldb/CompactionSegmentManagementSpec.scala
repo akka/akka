@@ -13,8 +13,7 @@ class CompactionSegmentManagementSpec extends WordSpec {
       val intervals = Map(
         "persistence_id-1" → 1L,
         "persistence_id-2" → 1L,
-        "persistence_id-3" → 1L
-      )
+        "persistence_id-3" → 1L)
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
       }
@@ -28,8 +27,7 @@ class CompactionSegmentManagementSpec extends WordSpec {
       val intervals = Map(
         "persistence_id-1" → 1L,
         "persistence_id-2" → 0L,
-        "persistence_id-3" → -1L
-      )
+        "persistence_id-3" → -1L)
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
       }
@@ -42,8 +40,7 @@ class CompactionSegmentManagementSpec extends WordSpec {
       val intervals = Map(
         "persistence_id-1" → 1L,
         "persistence_id-2" → 1L,
-        "*" → 1L
-      )
+        "*" → 1L)
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
       }

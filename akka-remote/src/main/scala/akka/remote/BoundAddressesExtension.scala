@@ -30,6 +30,6 @@ class BoundAddressesExtension(val system: ExtendedActorSystem) extends Extension
   def boundAddresses: Map[String, Set[Address]] = system.provider
     .asInstanceOf[RemoteActorRefProvider].transport match {
       case artery: ArteryTransport ⇒ Map((ArteryTransport.ProtocolName → Set(artery.bindAddress.address)))
-      case remoting: Remoting      ⇒ remoting.boundAddresses
+      case remoting: Remoting ⇒ remoting.boundAddresses
     }
 }

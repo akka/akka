@@ -75,7 +75,7 @@ object CircuitBreakerSpec {
 
   val evenNumberIsFailure: Try[Int] ⇒ Boolean = {
     case Success(i) ⇒ i % 2 == 0
-    case _          ⇒ true
+    case _ ⇒ true
   }
 }
 
@@ -344,7 +344,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
 
         val harmlessException = new TestException
         val harmlessExceptionAsSuccess: Try[String] ⇒ Boolean = {
-          case Success(_)  ⇒ false
+          case Success(_) ⇒ false
           case Failure(ex) ⇒ ex != harmlessException
         }
 
@@ -673,7 +673,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
 
         val harmlessException = new TestException
         val harmlessExceptionAsSuccess: Try[String] ⇒ Boolean = {
-          case Success(_)  ⇒ false
+          case Success(_) ⇒ false
           case Failure(ex) ⇒ ex != harmlessException
         }
 

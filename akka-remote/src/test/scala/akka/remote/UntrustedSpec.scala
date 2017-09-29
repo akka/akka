@@ -36,8 +36,8 @@ object UntrustedSpec {
 
     def receive = {
       case IdentifyReq(path) ⇒ context.actorSelection(path).tell(Identify(None), sender())
-      case StopChild(name)   ⇒ context.child(name) foreach context.stop
-      case msg               ⇒ testActor forward msg
+      case StopChild(name) ⇒ context.child(name) foreach context.stop
+      case msg ⇒ testActor forward msg
     }
   }
 

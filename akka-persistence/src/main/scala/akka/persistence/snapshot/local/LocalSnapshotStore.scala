@@ -82,9 +82,9 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
 
   override def receivePluginInternal: Receive = {
     case SaveSnapshotSuccess(metadata) ⇒ saving -= metadata
-    case _: SaveSnapshotFailure        ⇒ // ignore
-    case _: DeleteSnapshotsSuccess     ⇒ // ignore
-    case _: DeleteSnapshotsFailure     ⇒ // ignore
+    case _: SaveSnapshotFailure ⇒ // ignore
+    case _: DeleteSnapshotsSuccess ⇒ // ignore
+    case _: DeleteSnapshotsFailure ⇒ // ignore
   }
 
   private def snapshotFiles(metadata: SnapshotMetadata): immutable.Seq[File] = {
@@ -181,7 +181,7 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
     def accept(dir: File, name: String): Boolean =
       name match {
         case FilenamePattern(pid, snr, tms) ⇒ matches(pid, snr, tms)
-        case _                              ⇒ false
+        case _ ⇒ false
       }
 
   }

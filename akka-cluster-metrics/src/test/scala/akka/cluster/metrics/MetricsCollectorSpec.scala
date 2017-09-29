@@ -55,9 +55,9 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with I
       val used = metrics collectFirst { case (HeapMemoryUsed, b) ⇒ b }
       val committed = metrics collectFirst { case (HeapMemoryCommitted, b) ⇒ b }
       metrics foreach {
-        case (SystemLoadAverage, b)   ⇒ b.doubleValue should be >= (0.0)
-        case (Processors, b)          ⇒ b.intValue should be >= (0)
-        case (HeapMemoryUsed, b)      ⇒ b.longValue should be >= (0L)
+        case (SystemLoadAverage, b) ⇒ b.doubleValue should be >= (0.0)
+        case (Processors, b) ⇒ b.intValue should be >= (0)
+        case (HeapMemoryUsed, b) ⇒ b.longValue should be >= (0L)
         case (HeapMemoryCommitted, b) ⇒ b.longValue should be > (0L)
         case (HeapMemoryMax, b) ⇒
           b.longValue should be > (0L)

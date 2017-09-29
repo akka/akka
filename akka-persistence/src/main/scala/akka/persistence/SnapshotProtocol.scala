@@ -107,9 +107,9 @@ final case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
 @SerialVersionUID(1L)
 final case class SnapshotSelectionCriteria(
   maxSequenceNr: Long = Long.MaxValue,
-  maxTimestamp:  Long = Long.MaxValue,
+  maxTimestamp: Long = Long.MaxValue,
   minSequenceNr: Long = 0L,
-  minTimestamp:  Long = 0L) {
+  minTimestamp: Long = 0L) {
 
   /**
    * INTERNAL API.
@@ -146,7 +146,7 @@ object SnapshotSelectionCriteria {
    * Java API.
    */
   def create(maxSequenceNr: Long, maxTimestamp: Long,
-             minSequenceNr: Long, minTimestamp: Long) =
+    minSequenceNr: Long, minTimestamp: Long) =
     SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, minSequenceNr, minTimestamp)
 
   /**

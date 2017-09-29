@@ -41,7 +41,7 @@ object ClusterShardingRememberEntitiesSpec {
   }
 
   val extractShardId: ShardRegion.ExtractShardId = msg ⇒ msg match {
-    case id: Int                     ⇒ id.toString
+    case id: Int ⇒ id.toString
     case ShardRegion.StartEntity(id) ⇒ id
   }
 

@@ -105,14 +105,14 @@ trait ActorRefProvider {
    * the latter can be suppressed by setting ``lookupDeploy`` to ``false``.
    */
   private[akka] def actorOf(
-    system:        ActorSystemImpl,
-    props:         Props,
-    supervisor:    InternalActorRef,
-    path:          ActorPath,
+    system: ActorSystemImpl,
+    props: Props,
+    supervisor: InternalActorRef,
+    path: ActorPath,
     systemService: Boolean,
-    deploy:        Option[Deploy],
-    lookupDeploy:  Boolean,
-    async:         Boolean): InternalActorRef
+    deploy: Option[Deploy],
+    lookupDeploy: Boolean,
+    async: Boolean): InternalActorRef
 
   /**
    * INTERNAL API
@@ -395,7 +395,7 @@ private[akka] object LocalActorRefProvider {
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
     def receive = {
-      case Terminated(_)    ⇒ context.stop(self)
+      case Terminated(_) ⇒ context.stop(self)
       case StopChild(child) ⇒ context.stop(child)
     }
 
@@ -431,7 +431,7 @@ private[akka] object LocalActorRefProvider {
     }
 
     def terminating: Receive = {
-      case Terminated(a)       ⇒ stopWhenAllTerminationHooksDone(a)
+      case Terminated(a) ⇒ stopWhenAllTerminationHooksDone(a)
       case TerminationHookDone ⇒ stopWhenAllTerminationHooksDone(sender())
     }
 
@@ -460,19 +460,19 @@ private[akka] object LocalActorRefProvider {
  * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
 private[akka] class LocalActorRefProvider private[akka] (
-  _systemName:           String,
+  _systemName: String,
   override val settings: ActorSystem.Settings,
-  val eventStream:       EventStream,
-  val dynamicAccess:     DynamicAccess,
+  val eventStream: EventStream,
+  val dynamicAccess: DynamicAccess,
   override val deployer: Deployer,
-  _deadLetters:          Option[ActorPath ⇒ InternalActorRef])
+  _deadLetters: Option[ActorPath ⇒ InternalActorRef])
   extends ActorRefProvider {
 
   // this is the constructor needed for reflectively instantiating the provider
   def this(
-    _systemName:   String,
-    settings:      ActorSystem.Settings,
-    eventStream:   EventStream,
+    _systemName: String,
+    settings: ActorSystem.Settings,
+    eventStream: EventStream,
     dynamicAccess: DynamicAccess) =
     this(
       _systemName,
@@ -527,7 +527,7 @@ private[akka] class LocalActorRefProvider private[akka] (
       if (isWalking)
         message match {
           case null ⇒ throw InvalidMessageException("Message is null")
-          case _    ⇒ log.error(s"$this received unexpected message [$message]")
+          case _ ⇒ log.error(s"$this received unexpected message [$message]")
         }
 
     override def sendSystemMessage(message: SystemMessage): Unit = if (isWalking) {
@@ -536,9 +536,9 @@ private[akka] class LocalActorRefProvider private[akka] (
           log.error(ex, s"guardian $child failed, shutting down!")
           causeOfTermination.tryFailure(ex)
           child.stop()
-        case Supervise(_, _)           ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case Supervise(_, _) ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case _: DeathWatchNotification ⇒ stop()
-        case _                         ⇒ log.error(s"$this received unexpected system message [$message]")
+        case _ ⇒ log.error(s"$this received unexpected system message [$message]")
       }
     }
   }
@@ -600,9 +600,9 @@ private[akka] class LocalActorRefProvider private[akka] (
       rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
-        case "temp"        ⇒ tempContainer
+        case "temp" ⇒ tempContainer
         case "deadLetters" ⇒ deadLetters
-        case other         ⇒ extraNames.get(other).getOrElse(super.getSingleChild(other))
+        case other ⇒ extraNames.get(other).getOrElse(super.getSingleChild(other))
       }
     }
 
@@ -716,7 +716,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
-              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef = {
+    systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef = {
     props.deploy.routerConfig match {
       case NoRouter ⇒
         if (settings.DebugRouterMisconfiguration) {
@@ -732,9 +732,9 @@ private[akka] class LocalActorRefProvider private[akka] (
             case Some(d) ⇒
               (d.dispatcher, d.mailbox) match {
                 case (Deploy.NoDispatcherGiven, Deploy.NoMailboxGiven) ⇒ props
-                case (dsp, Deploy.NoMailboxGiven)                      ⇒ props.withDispatcher(dsp)
-                case (Deploy.NoMailboxGiven, mbx)                      ⇒ props.withMailbox(mbx)
-                case (dsp, mbx)                                        ⇒ props.withDispatcher(dsp).withMailbox(mbx)
+                case (dsp, Deploy.NoMailboxGiven) ⇒ props.withDispatcher(dsp)
+                case (Deploy.NoMailboxGiven, mbx) ⇒ props.withMailbox(mbx)
+                case (dsp, mbx) ⇒ props.withDispatcher(dsp).withMailbox(mbx)
               }
             case _ ⇒ props // no deployment config found
           }

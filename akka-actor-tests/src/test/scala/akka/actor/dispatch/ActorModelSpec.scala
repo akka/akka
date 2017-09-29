@@ -79,21 +79,21 @@ object ActorModelSpec {
     }
 
     def receive = {
-      case AwaitLatch(latch)            ⇒ { ack(); latch.await(); busy.switchOff(()) }
-      case Meet(sign, wait)             ⇒ { ack(); sign.countDown(); wait.await(); busy.switchOff(()) }
-      case Wait(time)                   ⇒ { ack(); Thread.sleep(time); busy.switchOff(()) }
-      case WaitAck(time, l)             ⇒ { ack(); Thread.sleep(time); l.countDown(); busy.switchOff(()) }
-      case Reply(msg)                   ⇒ { ack(); sender() ! msg; busy.switchOff(()) }
-      case TryReply(msg)                ⇒ { ack(); sender().tell(msg, null); busy.switchOff(()) }
-      case Forward(to, msg)             ⇒ { ack(); to.forward(msg); busy.switchOff(()) }
-      case CountDown(latch)             ⇒ { ack(); latch.countDown(); busy.switchOff(()) }
-      case Increment(count)             ⇒ { ack(); count.incrementAndGet(); busy.switchOff(()) }
-      case CountDownNStop(l)            ⇒ { ack(); l.countDown(); context.stop(self); busy.switchOff(()) }
-      case Restart                      ⇒ { ack(); busy.switchOff(()); throw new Exception("Restart requested") }
-      case Interrupt                    ⇒ { ack(); sender() ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(()); throw new InterruptedException("Ping!") }
-      case InterruptNicely(msg)         ⇒ { ack(); sender() ! msg; busy.switchOff(()); Thread.currentThread().interrupt() }
+      case AwaitLatch(latch) ⇒ { ack(); latch.await(); busy.switchOff(()) }
+      case Meet(sign, wait) ⇒ { ack(); sign.countDown(); wait.await(); busy.switchOff(()) }
+      case Wait(time) ⇒ { ack(); Thread.sleep(time); busy.switchOff(()) }
+      case WaitAck(time, l) ⇒ { ack(); Thread.sleep(time); l.countDown(); busy.switchOff(()) }
+      case Reply(msg) ⇒ { ack(); sender() ! msg; busy.switchOff(()) }
+      case TryReply(msg) ⇒ { ack(); sender().tell(msg, null); busy.switchOff(()) }
+      case Forward(to, msg) ⇒ { ack(); to.forward(msg); busy.switchOff(()) }
+      case CountDown(latch) ⇒ { ack(); latch.countDown(); busy.switchOff(()) }
+      case Increment(count) ⇒ { ack(); count.incrementAndGet(); busy.switchOff(()) }
+      case CountDownNStop(l) ⇒ { ack(); l.countDown(); context.stop(self); busy.switchOff(()) }
+      case Restart ⇒ { ack(); busy.switchOff(()); throw new Exception("Restart requested") }
+      case Interrupt ⇒ { ack(); sender() ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(()); throw new InterruptedException("Ping!") }
+      case InterruptNicely(msg) ⇒ { ack(); sender() ! msg; busy.switchOff(()); Thread.currentThread().interrupt() }
       case ThrowException(e: Throwable) ⇒ { ack(); busy.switchOff(()); throw e }
-      case DoubleStop                   ⇒ { ack(); context.stop(self); context.stop(self); busy.switchOff }
+      case DoubleStop ⇒ { ack(); context.stop(self); context.stop(self); busy.switchOff }
     }
   }
 
@@ -119,7 +119,7 @@ object ActorModelSpec {
         case null ⇒
           val is = new InterceptorStats
           stats.putIfAbsent(actorRef, is) match {
-            case null  ⇒ is
+            case null ⇒ is
             case other ⇒ other
           }
         case existing ⇒ existing
@@ -186,13 +186,13 @@ object ActorModelSpec {
     dispatcher.asInstanceOf[MessageDispatcherInterceptor].getStats(actorRef)
 
   def assertRefDefaultZero(actorRef: ActorRef, dispatcher: MessageDispatcher = null)(
-    suspensions:   Long = 0,
-    resumes:       Long = 0,
-    registers:     Long = 0,
-    unregisters:   Long = 0,
-    msgsReceived:  Long = 0,
+    suspensions: Long = 0,
+    resumes: Long = 0,
+    registers: Long = 0,
+    unregisters: Long = 0,
+    msgsReceived: Long = 0,
     msgsProcessed: Long = 0,
-    restarts:      Long = 0)(implicit system: ActorSystem) {
+    restarts: Long = 0)(implicit system: ActorSystem) {
     assertRef(actorRef, dispatcher)(
       suspensions,
       resumes,
@@ -204,13 +204,13 @@ object ActorModelSpec {
   }
 
   def assertRef(actorRef: ActorRef, dispatcher: MessageDispatcher = null)(
-    suspensions:   Long = statsFor(actorRef, dispatcher).suspensions.get(),
-    resumes:       Long = statsFor(actorRef, dispatcher).resumes.get(),
-    registers:     Long = statsFor(actorRef, dispatcher).registers.get(),
-    unregisters:   Long = statsFor(actorRef, dispatcher).unregisters.get(),
-    msgsReceived:  Long = statsFor(actorRef, dispatcher).msgsReceived.get(),
+    suspensions: Long = statsFor(actorRef, dispatcher).suspensions.get(),
+    resumes: Long = statsFor(actorRef, dispatcher).resumes.get(),
+    registers: Long = statsFor(actorRef, dispatcher).registers.get(),
+    unregisters: Long = statsFor(actorRef, dispatcher).unregisters.get(),
+    msgsReceived: Long = statsFor(actorRef, dispatcher).msgsReceived.get(),
     msgsProcessed: Long = statsFor(actorRef, dispatcher).msgsProcessed.get(),
-    restarts:      Long = statsFor(actorRef, dispatcher).restarts.get())(implicit system: ActorSystem) {
+    restarts: Long = statsFor(actorRef, dispatcher).restarts.get())(implicit system: ActorSystem) {
     val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].dispatcher))
     val deadline = System.currentTimeMillis + 1000
     try {
@@ -256,7 +256,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
   def awaitStarted(ref: ActorRef): Unit = {
     awaitCond(ref match {
       case r: RepointableRef ⇒ r.isStarted
-      case _                 ⇒ true
+      case _ ⇒ true
     }, 1 second, 10 millis)
   }
 
@@ -373,7 +373,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val waitTime = (20 seconds).dilated.toMillis
         val boss = system.actorOf(Props(new Actor {
           def receive = {
-            case "run"             ⇒ for (_ ← 1 to num) (context.watch(context.actorOf(props))) ! cachedMessage
+            case "run" ⇒ for (_ ← 1 to num) (context.watch(context.actorOf(props))) ! cachedMessage
             case Terminated(child) ⇒ stopLatch.countDown()
           }
         }).withDispatcher("boss"))

@@ -81,8 +81,7 @@ class AffinityPoolComparativeBenchmark {
           |     $mailboxConf
           |   }
           | }
-      """.stripMargin
-    ))
+      """.stripMargin))
   }
 
   @TearDown(Level.Trial)

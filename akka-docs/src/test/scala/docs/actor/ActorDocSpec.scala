@@ -31,7 +31,7 @@ class MyActor extends Actor {
 
   def receive = {
     case "test" => log.info("received test")
-    case _      => log.info("received unknown message")
+    case _ => log.info("received unknown message")
   }
 }
 //#my-actor
@@ -111,7 +111,7 @@ class ActorWithMessagesWrapper {
     import MyActor._
     def receive = {
       case Greeting(greeter) => log.info(s"I was greeted by $greeter.")
-      case Goodbye           => log.info("Someone said goodbye to me.")
+      case Goodbye => log.info("Someone said goodbye to me.")
     }
   }
   //#messages-in-companion
@@ -348,7 +348,7 @@ class ActorDocSpec extends AkkaSpec("""
     // TODO: convert docs to AkkaSpec(Map(...))
     val filter = EventFilter.custom {
       case e: Logging.Info => true
-      case _               => false
+      case _ => false
     }
     system.eventStream.publish(TestEvent.Mute(filter))
     system.eventStream.subscribe(testActor, classOf[Logging.Info])
@@ -606,7 +606,7 @@ class ActorDocSpec extends AkkaSpec("""
     victim ! Kill
 
     expectMsgPF(hint = "expecting victim to terminate") {
-      case Terminated(v) if v == victim => v // the Actor has indeed terminated 
+      case Terminated(v) if v == victim => v // the Actor has indeed terminated
     }
     //#kill
   }
@@ -740,11 +740,11 @@ class ActorDocSpec extends AkkaSpec("""
     //#coordinated-shutdown-addTask
     CoordinatedShutdown(system).addTask(
       CoordinatedShutdown.PhaseBeforeServiceUnbind, "someTaskName") { () =>
-      import akka.pattern.ask
-      import system.dispatcher
-      implicit val timeout = Timeout(5.seconds)
-      (someActor ? "stop").map(_ => Done)
-    }
+        import akka.pattern.ask
+        import system.dispatcher
+        implicit val timeout = Timeout(5.seconds)
+        (someActor ? "stop").map(_ => Done)
+      }
     //#coordinated-shutdown-addTask
 
     //#coordinated-shutdown-jvm-hook

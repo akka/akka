@@ -97,9 +97,9 @@ object ClusterSingletonManagerSettings {
  *   (+ `removalMargin`).
  */
 final class ClusterSingletonManagerSettings(
-  val singletonName:         String,
-  val role:                  Option[String],
-  val removalMargin:         FiniteDuration,
+  val singletonName: String,
+  val role: Option[String],
+  val removalMargin: FiniteDuration,
   val handOverRetryInterval: FiniteDuration) extends NoSerializationVerificationNeeded {
 
   def withSingletonName(name: String): ClusterSingletonManagerSettings = copy(singletonName = name)
@@ -115,9 +115,9 @@ final class ClusterSingletonManagerSettings(
     copy(handOverRetryInterval = retryInterval)
 
   private def copy(
-    singletonName:         String         = singletonName,
-    role:                  Option[String] = role,
-    removalMargin:         FiniteDuration = removalMargin,
+    singletonName: String = singletonName,
+    role: Option[String] = role,
+    removalMargin: FiniteDuration = removalMargin,
     handOverRetryInterval: FiniteDuration = handOverRetryInterval): ClusterSingletonManagerSettings =
     new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
 }
@@ -133,9 +133,9 @@ object ClusterSingletonManager {
    * Scala API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
    */
   def props(
-    singletonProps:     Props,
+    singletonProps: Props,
     terminationMessage: Any,
-    settings:           ClusterSingletonManagerSettings): Props =
+    settings: ClusterSingletonManagerSettings): Props =
     Props(new ClusterSingletonManager(singletonProps, terminationMessage, settings)).withDeploy(Deploy.local)
 
   /**
@@ -200,7 +200,7 @@ object ClusterSingletonManager {
     final case class BecomingOldestData(previousOldestOption: Option[UniqueAddress]) extends Data
     final case class OldestData(singleton: ActorRef, singletonTerminated: Boolean = false) extends Data
     final case class WasOldestData(singleton: ActorRef, singletonTerminated: Boolean,
-                                   newOldestOption: Option[UniqueAddress]) extends Data
+      newOldestOption: Option[UniqueAddress]) extends Data
     final case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef]) extends Data
     final case class StoppingData(singleton: ActorRef) extends Data
     case object EndData extends Data
@@ -305,8 +305,8 @@ object ClusterSingletonManager {
 
       def receive = {
         case state: CurrentClusterState ⇒ handleInitial(state)
-        case MemberUp(m)                ⇒ add(m)
-        case MemberRemoved(m, _)        ⇒ remove(m)
+        case MemberUp(m) ⇒ add(m)
+        case MemberRemoved(m, _) ⇒ remove(m)
         case MemberExited(m) if m.uniqueAddress != cluster.selfUniqueAddress ⇒
           remove(m)
         case SelfExiting ⇒
@@ -349,7 +349,7 @@ object ClusterSingletonManager {
       override def unhandled(msg: Any): Unit = {
         msg match {
           case _: MemberEvent ⇒ // ok, silence
-          case _              ⇒ super.unhandled(msg)
+          case _ ⇒ super.unhandled(msg)
         }
       }
 
@@ -415,9 +415,9 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  */
 @DoNotInherit
 class ClusterSingletonManager(
-  singletonProps:     Props,
+  singletonProps: Props,
   terminationMessage: Any,
-  settings:           ClusterSingletonManagerSettings)
+  settings: ClusterSingletonManagerSettings)
   extends Actor with FSM[ClusterSingletonManager.State, ClusterSingletonManager.Data] {
 
   import ClusterSingletonManager.Internal._
@@ -539,7 +539,7 @@ class ClusterSingletonManager(
       if (oldestOption == selfUniqueAddressOption) {
         logInfo("Younger observed OldestChanged: [{} -> myself]", previousOldestOption.map(_.address))
         previousOldestOption match {
-          case None                                 ⇒ gotoOldest()
+          case None ⇒ gotoOldest()
           case Some(prev) if removed.contains(prev) ⇒ gotoOldest()
           case Some(prev) ⇒
             peer(prev.address) ! HandOverToMe
@@ -832,7 +832,7 @@ class ClusterSingletonManager(
 
   onTransition {
     case BecomingOldest → _ ⇒ cancelTimer(HandOverRetryTimer)
-    case WasOldest → _      ⇒ cancelTimer(TakeOverRetryTimer)
+    case WasOldest → _ ⇒ cancelTimer(TakeOverRetryTimer)
   }
 
   onTransition {

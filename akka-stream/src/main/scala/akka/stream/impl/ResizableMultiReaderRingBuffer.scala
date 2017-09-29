@@ -16,7 +16,7 @@ import akka.annotation.InternalApi
  */
 @InternalApi private[akka] class ResizableMultiReaderRingBuffer[T](
   initialSize: Int, // constructor param, not field
-  maxSize:     Int, // constructor param, not field
+  maxSize: Int, // constructor param, not field
   val cursors: Cursors) {
   require(
     Integer.lowestOneBit(maxSize) == maxSize && 0 < maxSize && maxSize <= Int.MaxValue / 2,
@@ -125,7 +125,7 @@ import akka.annotation.InternalApi
     @tailrec def minCursor(remaining: List[Cursor], result: Int): Int =
       remaining match {
         case head :: tail ⇒ minCursor(tail, math.min(head.cursor - writeIx, result))
-        case _            ⇒ result
+        case _ ⇒ result
       }
     val newReadIx = writeIx + minCursor(cursors.cursors, 0)
     while (readIx != newReadIx) {

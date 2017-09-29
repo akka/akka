@@ -51,9 +51,9 @@ import scala.util.control.NonFatal
     Props(new ActorGraphInterpreter(shell)).withDeploy(Deploy.local)
 
   class BatchingActorInputBoundary(
-    size:             Int,
-    shell:            GraphInterpreterShell,
-    publisher:        Publisher[Any],
+    size: Int,
+    shell: GraphInterpreterShell,
+    publisher: Publisher[Any],
     internalPortName: String) extends UpstreamBoundaryStageLogic[Any] with OutHandler {
 
     final case class OnError(shell: GraphInterpreterShell, cause: Throwable) extends SimpleBoundaryEvent {
@@ -300,7 +300,7 @@ import scala.util.control.NonFatal
     def shutdown(reason: Option[Throwable]): Unit = {
       shutdownReason = OptionVal(reason.orNull)
       pendingSubscribers.getAndSet(null) match {
-        case null    ⇒ // already called earlier
+        case null ⇒ // already called earlier
         case pending ⇒ pending foreach reportSubscribeFailure
       }
     }
@@ -438,9 +438,9 @@ import scala.util.control.NonFatal
  */
 @InternalApi private[akka] final class GraphInterpreterShell(
   var connections: Array[Connection],
-  var logics:      Array[GraphStageLogic],
-  settings:        ActorMaterializerSettings,
-  val mat:         ExtendedActorMaterializer) {
+  var logics: Array[GraphStageLogic],
+  settings: ActorMaterializerSettings,
+  val mat: ExtendedActorMaterializer) {
 
   import ActorGraphInterpreter._
 
@@ -716,7 +716,7 @@ import scala.util.control.NonFatal
     while (!shortCircuitBuffer.isEmpty && currentLimit > 0 && activeInterpreters.nonEmpty)
       shortCircuitBuffer.poll() match {
         case b: BoundaryEvent ⇒ processEvent(b)
-        case Resume           ⇒ finishShellRegistration()
+        case Resume ⇒ finishShellRegistration()
       }
     if (!shortCircuitBuffer.isEmpty && currentLimit == 0) self ! Resume
   }

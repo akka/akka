@@ -17,12 +17,10 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 object ClusterSingletonSettings {
   def apply(
-    system: ActorSystem[_]
-  ): ClusterSingletonSettings = fromConfig(system.settings.config.getConfig("akka.cluster"))
+    system: ActorSystem[_]): ClusterSingletonSettings = fromConfig(system.settings.config.getConfig("akka.cluster"))
 
   def fromConfig(
-    config: Config
-  ): ClusterSingletonSettings = {
+    config: Config): ClusterSingletonSettings = {
     // TODO introduce a config namespace for typed singleton and read that?
     // currently singleton name is required and then discarded, for example
     val mgrSettings = ClusterSingletonManagerSettings(config.getConfig("singleton"))
@@ -33,18 +31,17 @@ object ClusterSingletonSettings {
       proxySettings.singletonIdentificationInterval,
       mgrSettings.removalMargin,
       mgrSettings.handOverRetryInterval,
-      proxySettings.bufferSize
-    )
+      proxySettings.bufferSize)
   }
 }
 
 final class ClusterSingletonSettings(
-  val role:                            Option[String],
-  val dataCenter:                      Option[DataCenter],
+  val role: Option[String],
+  val dataCenter: Option[DataCenter],
   val singletonIdentificationInterval: FiniteDuration,
-  val removalMargin:                   FiniteDuration,
-  val handOverRetryInterval:           FiniteDuration,
-  val bufferSize:                      Int) extends NoSerializationVerificationNeeded {
+  val removalMargin: FiniteDuration,
+  val handOverRetryInterval: FiniteDuration,
+  val bufferSize: Int) extends NoSerializationVerificationNeeded {
 
   def withRole(role: String): ClusterSingletonSettings = copy(role = Some(role))
 
@@ -61,12 +58,12 @@ final class ClusterSingletonSettings(
   def withBufferSize(bufferSize: Int): ClusterSingletonSettings = copy(bufferSize = bufferSize)
 
   private def copy(
-    role:                            Option[String]     = role,
-    dataCenter:                      Option[DataCenter] = dataCenter,
-    singletonIdentificationInterval: FiniteDuration     = singletonIdentificationInterval,
-    removalMargin:                   FiniteDuration     = removalMargin,
-    handOverRetryInterval:           FiniteDuration     = handOverRetryInterval,
-    bufferSize:                      Int                = bufferSize) =
+    role: Option[String] = role,
+    dataCenter: Option[DataCenter] = dataCenter,
+    singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
+    removalMargin: FiniteDuration = removalMargin,
+    handOverRetryInterval: FiniteDuration = handOverRetryInterval,
+    bufferSize: Int = bufferSize) =
     new ClusterSingletonSettings(role, dataCenter, singletonIdentificationInterval, removalMargin, handOverRetryInterval, bufferSize)
 
   /**
@@ -127,12 +124,11 @@ trait ClusterSingleton extends Extension {
    * @return A proxy actor that can be used to communicate with the singleton in the cluster
    */
   def spawn[A](
-    behavior:           Behavior[A],
-    singletonName:      String,
-    props:              Props,
-    settings:           ClusterSingletonSettings,
-    terminationMessage: A
-  ): ActorRef[A]
+    behavior: Behavior[A],
+    singletonName: String,
+    props: Props,
+    settings: ClusterSingletonSettings,
+    terminationMessage: A): ActorRef[A]
 
 }
 
@@ -199,9 +195,9 @@ object ClusterSingletonManagerSettings {
  *   (+ `removalMargin`).
  */
 final class ClusterSingletonManagerSettings(
-  val singletonName:         String,
-  val role:                  Option[String],
-  val removalMargin:         FiniteDuration,
+  val singletonName: String,
+  val role: Option[String],
+  val removalMargin: FiniteDuration,
   val handOverRetryInterval: FiniteDuration) extends NoSerializationVerificationNeeded {
 
   def withSingletonName(name: String): ClusterSingletonManagerSettings = copy(singletonName = name)
@@ -217,9 +213,9 @@ final class ClusterSingletonManagerSettings(
     copy(handOverRetryInterval = retryInterval)
 
   private def copy(
-    singletonName:         String         = singletonName,
-    role:                  Option[String] = role,
-    removalMargin:         FiniteDuration = removalMargin,
+    singletonName: String = singletonName,
+    role: Option[String] = role,
+    removalMargin: FiniteDuration = removalMargin,
     handOverRetryInterval: FiniteDuration = handOverRetryInterval): ClusterSingletonManagerSettings =
     new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
 }

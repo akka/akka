@@ -213,8 +213,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
 
   final def canBeScheduledForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = currentStatus match {
     case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
-    case Closed           ⇒ false
-    case _                ⇒ hasSystemMessageHint || hasSystemMessages
+    case Closed ⇒ false
+    case _ ⇒ hasSystemMessageHint || hasSystemMessages
   }
 
   override final def run(): Unit = {
@@ -248,7 +248,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    * Process the messages in the mailbox
    */
   @tailrec private final def processMailbox(
-    left:       Int  = java.lang.Math.max(dispatcher.throughput, 1),
+    left: Int = java.lang.Math.max(dispatcher.throughput, 1),
     deadlineNs: Long = if (dispatcher.isThroughputDeadlineTimeDefined == true) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0L): Unit =
     if (shouldProcessMessage) {
       val next = dequeue()
@@ -461,7 +461,7 @@ private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
 
   def hasSystemMessages: Boolean = systemQueueGet.head match {
     case null | NoMessage ⇒ false
-    case _                ⇒ true
+    case _ ⇒ true
   }
 
 }
@@ -810,7 +810,7 @@ trait ControlAwareMessageQueueSemantics extends QueueBasedMessageQueue {
 
   def enqueue(receiver: ActorRef, handle: Envelope): Unit = handle match {
     case envelope @ Envelope(_: ControlMessage, _) ⇒ controlQueue add envelope
-    case envelope                                  ⇒ queue add envelope
+    case envelope ⇒ queue add envelope
   }
 
   def dequeue(): Envelope = {
@@ -880,7 +880,7 @@ object BoundedControlAwareMailbox {
 
     override def enqueue(receiver: ActorRef, handle: Envelope): Unit = handle match {
       case envelope @ Envelope(_: ControlMessage, _) ⇒ enqueueWithTimeout(controlQueue, receiver, envelope)
-      case envelope                                  ⇒ enqueueWithTimeout(queue, receiver, envelope)
+      case envelope ⇒ enqueueWithTimeout(queue, receiver, envelope)
     }
 
     override def numberOfMessages: Int = size.get()

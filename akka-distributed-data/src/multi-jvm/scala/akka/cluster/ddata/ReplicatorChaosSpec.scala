@@ -68,10 +68,10 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
         replicator ! Get(key, ReadLocal)
         val value = expectMsgPF() {
           case g @ GetSuccess(`key`, _) ⇒ g.dataValue match {
-            case c: GCounter  ⇒ c.value
+            case c: GCounter ⇒ c.value
             case c: PNCounter ⇒ c.value
-            case c: GSet[_]   ⇒ c.elements
-            case c: ORSet[_]  ⇒ c.elements
+            case c: GSet[_] ⇒ c.elements
+            case c: ORSet[_] ⇒ c.elements
           }
         }
         value should be(expected)

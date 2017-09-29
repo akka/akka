@@ -87,7 +87,7 @@ object MetadataCarryingSpec {
     val remote = context.system.actorSelection(remotePath)
     override def receive = {
       case message if sender() == local ⇒ remote ! message
-      case message                      ⇒ local ! message
+      case message ⇒ local ! message
     }
   }
 }

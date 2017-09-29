@@ -41,7 +41,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
           def receive = {
             case "status" ⇒ this.sender() ! "OK"
-            case _        ⇒ this.context.stop(self)
+            case _ ⇒ this.context.stop(self)
           }
         })
 

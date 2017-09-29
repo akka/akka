@@ -109,8 +109,7 @@ class InmemEventAdaptersSpec extends AkkaSpec {
       val r: EventAdapter = adapters.get(classOf[ReadMeTwiceEvent])
       r.fromJournal(r.toJournal(ReadMeTwiceEvent()), "").events.map(_.toString) shouldBe Seq(
         "from-ReadMeTwiceEvent()",
-        "again-ReadMeTwiceEvent()"
-      )
+        "again-ReadMeTwiceEvent()")
     }
   }
 

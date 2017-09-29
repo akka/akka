@@ -198,7 +198,7 @@ private[typed] trait DeathWatch[T] {
   private def maintainAddressTerminatedSubscription[U](change: ARImpl = null)(block: ⇒ U): U = {
     def isNonLocal(ref: ARImpl) = ref match {
       case null ⇒ true
-      case a    ⇒ !a.isLocal
+      case a ⇒ !a.isLocal
     }
 
     if (isNonLocal(change)) {

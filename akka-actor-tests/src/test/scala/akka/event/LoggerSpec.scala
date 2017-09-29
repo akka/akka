@@ -125,7 +125,7 @@ object LoggerSpec {
       val cmim = "Current Message in MDC"
       val perMessage = currentMessage match {
         case `cmim` ⇒ Map[String, Any]("currentMsg" → cmim, "currentMsgLength" → cmim.length)
-        case _      ⇒ Map()
+        case _ ⇒ Map()
       }
       always ++ perMessage
     }
@@ -154,7 +154,7 @@ class LoggerSpec extends WordSpec with Matchers {
         if (shouldLog) {
           probe.fishForMessage(0.5.seconds.dilated) {
             case "Danger! Danger!" ⇒ true
-            case _                 ⇒ false
+            case _ ⇒ false
           }
         } else {
           probe.expectNoMsg(0.5.seconds.dilated)

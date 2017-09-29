@@ -39,12 +39,12 @@ object TestSinkStage {
    */
   def apply[T, M](
     stageUnderTest: GraphStageWithMaterializedValue[SinkShape[T], M],
-    probe:          TestProbe): Sink[T, M] = Sink.fromGraph(new TestSinkStage(stageUnderTest, probe))
+    probe: TestProbe): Sink[T, M] = Sink.fromGraph(new TestSinkStage(stageUnderTest, probe))
 }
 
 private[testkit] class TestSinkStage[T, M](
   stageUnderTest: GraphStageWithMaterializedValue[SinkShape[T], M],
-  probe:          TestProbe)
+  probe: TestProbe)
   extends GraphStageWithMaterializedValue[SinkShape[T], M] {
 
   val in = Inlet[T]("testSinkStage.in")
@@ -104,13 +104,13 @@ object TestSourceStage {
    */
   def apply[T, M](
     stageUnderTest: GraphStageWithMaterializedValue[SourceShape[T], M],
-    probe:          TestProbe): Source[T, M] =
+    probe: TestProbe): Source[T, M] =
     Source.fromGraph(new TestSourceStage(stageUnderTest, probe))
 }
 
 private[testkit] class TestSourceStage[T, M](
   stageUnderTest: GraphStageWithMaterializedValue[SourceShape[T], M],
-  probe:          TestProbe)
+  probe: TestProbe)
   extends GraphStageWithMaterializedValue[SourceShape[T], M] {
 
   val out = Outlet[T]("testSourceStage.out")

@@ -19,7 +19,7 @@ object FSMTransitionSpec {
     startWith(0, 0)
     when(0) {
       case Event("stay", _) ⇒ stay()
-      case Event(_, _)      ⇒ goto(0)
+      case Event(_, _) ⇒ goto(0)
     }
     onTransition { case from → to ⇒ target ! (from → to) }
 

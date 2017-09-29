@@ -43,8 +43,7 @@ class PartitionHubBenchmark {
         parallelism-factor = 1
       }
     }
-    """
-  )
+    """)
 
   implicit val system = ActorSystem("PartitionHubBenchmark", config)
 
@@ -80,8 +79,7 @@ class PartitionHubBenchmark {
     val source = testSource
       .runWith(PartitionHub.sink[java.lang.Integer](
         (size, elem) => elem.intValue % NumberOfStreams,
-        startAfterNrOfConsumers = NumberOfStreams, bufferSize = BufferSize
-      ))(materializer)
+        startAfterNrOfConsumers = NumberOfStreams, bufferSize = BufferSize))(materializer)
 
     for (_ <- 0 until NumberOfStreams)
       source.runWith(new LatchSink(N / NumberOfStreams, latch))(materializer)
@@ -102,9 +100,7 @@ class PartitionHubBenchmark {
       .runWith(
         Sink.fromGraph(new FixedSizePartitionHub(
           _.intValue % NumberOfStreams,
-          lanes = NumberOfStreams, bufferSize = BufferSize
-        ))
-      )(materializer)
+          lanes = NumberOfStreams, bufferSize = BufferSize)))(materializer)
 
     for (_ <- 0 until NumberOfStreams)
       source.runWith(new LatchSink(N / NumberOfStreams, latch))(materializer)

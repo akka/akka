@@ -215,9 +215,9 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
 
   def nameMatch(scalaName: String, javaName: String): Boolean =
     (scalaName, javaName) match {
-      case (s, j) if s == j                        ⇒ true
+      case (s, j) if s == j ⇒ true
       case t if `scala -> java aliases` contains t ⇒ true
-      case t                                       ⇒ false
+      case t ⇒ false
     }
 
   /**
@@ -233,9 +233,9 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
 
   def typeMatch(scalaParams: List[Class[_]], javaParams: List[Class[_]]): Boolean =
     (scalaParams.toList, javaParams.toList) match {
-      case (s, j) if s == j                     ⇒ true
+      case (s, j) if s == j ⇒ true
       case (s, j) if s.zip(j).forall(typeMatch) ⇒ true
-      case _                                    ⇒ false
+      case _ ⇒ false
     }
 
   def typeMatch(p: (Class[_], Class[_])): Boolean =

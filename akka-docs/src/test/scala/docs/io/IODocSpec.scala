@@ -58,7 +58,7 @@ class SimplisticHandler extends Actor {
   import Tcp._
   def receive = {
     case Received(data) => sender() ! Write(data)
-    case PeerClosed     => context stop self
+    case PeerClosed => context stop self
   }
 }
 //#simplistic-handler

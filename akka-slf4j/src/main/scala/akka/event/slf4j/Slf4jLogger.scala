@@ -111,7 +111,7 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
       case m: LogEventWithMarker ⇒
         m.marker match {
           case slf4jMarker: Slf4jLogMarker ⇒ slf4jMarker.marker
-          case marker                      ⇒ MarkerFactory.getMarker(marker.name)
+          case marker ⇒ MarkerFactory.getMarker(marker.name)
         }
       case _ ⇒ null
     }

@@ -182,10 +182,10 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   "Java collector Sink" must {
 
     class TestCollector(
-      _supplier:    () ⇒ Supplier[Array[Int]],
+      _supplier: () ⇒ Supplier[Array[Int]],
       _accumulator: () ⇒ BiConsumer[Array[Int], Int],
-      _combiner:    () ⇒ BinaryOperator[Array[Int]],
-      _finisher:    () ⇒ function.Function[Array[Int], Int]) extends Collector[Int, Array[Int], Int] {
+      _combiner: () ⇒ BinaryOperator[Array[Int]],
+      _finisher: () ⇒ function.Function[Array[Int], Int]) extends Collector[Int, Array[Int], Int] {
       override def supplier(): Supplier[Array[Int]] = _supplier()
       override def combiner(): BinaryOperator[Array[Int]] = _combiner()
       override def finisher(): function.Function[Array[Int], Int] = _finisher()

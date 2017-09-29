@@ -32,11 +32,11 @@ private[akka] object FlightRecorderReader {
   case object Snapshot extends LogState
 
   case class SectionParameters(
-    offset:           Long,
-    sectionSize:      Long,
-    logSize:          Long,
-    window:           Long,
-    recordSize:       Long,
+    offset: Long,
+    sectionSize: Long,
+    logSize: Long,
+    window: Long,
+    recordSize: Long,
     entriesPerRecord: Long) {
     override def toString: String =
       s"""
@@ -251,10 +251,10 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
 
   private def readLog(id: Int, offset: Long, sectionParameters: SectionParameters): Log = {
     val state = fileBuffer.getLong(offset + RollingEventLogSection.LogStateOffset) match {
-      case RollingEventLogSection.Empty    ⇒ Empty
-      case RollingEventLogSection.Live     ⇒ Live
+      case RollingEventLogSection.Empty ⇒ Empty
+      case RollingEventLogSection.Live ⇒ Live
       case RollingEventLogSection.Snapshot ⇒ Snapshot
-      case other                           ⇒ throw new IOException(s"Unrecognized log state: $other in log at offset $offset")
+      case other ⇒ throw new IOException(s"Unrecognized log state: $other in log at offset $offset")
     }
     Log(sectionParameters, offset, id, state, fileBuffer.getLong(offset + RollingEventLogSection.HeadPointerOffset))
   }

@@ -34,7 +34,7 @@ final class RemoteSettings(val config: Config) {
     case "on" ⇒ Logging.DebugLevel
     case other ⇒ Logging.levelFor(other) match {
       case Some(level) ⇒ level
-      case None        ⇒ throw new ConfigurationException("Logging level must be one of (on, off, debug, info, warning, error)")
+      case None ⇒ throw new ConfigurationException("Logging level must be one of (on, off, debug, info, warning, error)")
     }
   }
 
@@ -68,7 +68,7 @@ final class RemoteSettings(val config: Config) {
     val key = "akka.remote.log-buffer-size-exceeding"
     config.getString(key).toLowerCase match {
       case "off" | "false" ⇒ Int.MaxValue
-      case _               ⇒ config.getInt(key)
+      case _ ⇒ config.getInt(key)
     }
   }
 

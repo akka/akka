@@ -49,7 +49,7 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
 
       registry.logSnapshot.exists {
         case ListenAttempt(address) ⇒ address == addressATest
-        case _                      ⇒ false
+        case _ ⇒ false
       } should ===(true)
     }
 

@@ -67,7 +67,7 @@ abstract class ActorSelection extends Serializable {
     val p = Promise[ActorRef]()
     this.ask(Identify(None)) onComplete {
       case Success(ActorIdentity(_, Some(ref))) ⇒ p.success(ref)
-      case _                                    ⇒ p.failure(ActorNotFound(this))
+      case _ ⇒ p.failure(ActorNotFound(this))
     }
     p.future
   }
@@ -125,7 +125,7 @@ abstract class ActorSelection extends Serializable {
   def toSerializationFormat: String = {
     val anchorPath = anchor match {
       case a: ActorRefWithCell ⇒ anchor.path.toStringWithAddress(a.provider.getDefaultAddress)
-      case _                   ⇒ anchor.path.toString
+      case _ ⇒ anchor.path.toString
     }
 
     val builder = new java.lang.StringBuilder()
@@ -140,7 +140,7 @@ abstract class ActorSelection extends Serializable {
 
   override def equals(obj: Any): Boolean = obj match {
     case s: ActorSelection ⇒ this.anchor == s.anchor && this.path == s.path
-    case _                 ⇒ false
+    case _ ⇒ false
   }
 
   override lazy val hashCode: Int = {
@@ -273,14 +273,14 @@ trait ScalaActorSelection {
  */
 @SerialVersionUID(2L) // it has protobuf serialization in akka-remote
 private[akka] final case class ActorSelectionMessage(
-  msg:            Any,
-  elements:       immutable.Iterable[SelectionPathElement],
+  msg: Any,
+  elements: immutable.Iterable[SelectionPathElement],
   wildcardFanOut: Boolean)
   extends AutoReceivedMessage with PossiblyHarmful {
 
   def identifyRequest: Option[Identify] = msg match {
     case x: Identify ⇒ Some(x)
-    case _           ⇒ None
+    case _ ⇒ None
   }
 }
 

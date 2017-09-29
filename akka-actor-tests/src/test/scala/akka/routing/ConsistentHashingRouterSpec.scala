@@ -33,7 +33,7 @@ object ConsistentHashingRouterSpec {
   class Echo extends Actor {
     def receive = {
       case x: ConsistentHashableEnvelope ⇒ sender() ! s"Unexpected envelope: $x"
-      case _                             ⇒ sender() ! self
+      case _ ⇒ sender() ! self
     }
   }
 

@@ -22,9 +22,9 @@ private[cluster] object ClusterRemoteWatcher {
    * Factory method for `ClusterRemoteWatcher` [[akka.actor.Props]].
    */
   def props(
-    failureDetector:                FailureDetectorRegistry[Address],
-    heartbeatInterval:              FiniteDuration,
-    unreachableReaperInterval:      FiniteDuration,
+    failureDetector: FailureDetectorRegistry[Address],
+    heartbeatInterval: FiniteDuration,
+    unreachableReaperInterval: FiniteDuration,
     heartbeatExpectedResponseAfter: FiniteDuration): Props =
     Props(classOf[ClusterRemoteWatcher], failureDetector, heartbeatInterval, unreachableReaperInterval,
       heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
@@ -42,9 +42,9 @@ private[cluster] object ClusterRemoteWatcher {
  * of the cluster and then later becomes cluster member.
  */
 private[cluster] class ClusterRemoteWatcher(
-  failureDetector:                FailureDetectorRegistry[Address],
-  heartbeatInterval:              FiniteDuration,
-  unreachableReaperInterval:      FiniteDuration,
+  failureDetector: FailureDetectorRegistry[Address],
+  heartbeatInterval: FiniteDuration,
+  unreachableReaperInterval: FiniteDuration,
   heartbeatExpectedResponseAfter: FiniteDuration)
   extends RemoteWatcher(
     failureDetector,
@@ -77,10 +77,10 @@ private[cluster] class ClusterRemoteWatcher(
       clusterNodes = state.members.collect { case m if m.address != selfAddress ⇒ m.address }
       clusterNodes foreach takeOverResponsibility
       unreachable = unreachable diff clusterNodes
-    case MemberUp(m)                          ⇒ memberUp(m)
-    case MemberWeaklyUp(m)                    ⇒ memberUp(m)
-    case MemberRemoved(m, previousStatus)     ⇒ memberRemoved(m, previousStatus)
-    case _: MemberEvent                       ⇒ // not interesting
+    case MemberUp(m) ⇒ memberUp(m)
+    case MemberWeaklyUp(m) ⇒ memberUp(m)
+    case MemberRemoved(m, previousStatus) ⇒ memberRemoved(m, previousStatus)
+    case _: MemberEvent ⇒ // not interesting
     case DelayedQuarantine(m, previousStatus) ⇒ delayedQuarantine(m, previousStatus)
   }
 

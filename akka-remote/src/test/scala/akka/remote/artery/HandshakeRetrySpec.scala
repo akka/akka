@@ -35,8 +35,7 @@ class HandshakeRetrySpec extends ArteryMultiNodeSpec(HandshakeRetrySpec.commonCo
 
       val systemB = newRemoteSystem(
         name = Some("systemB"),
-        extraConfig = Some(s"akka.remote.artery.canonical.port = $portB")
-      )
+        extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
       systemB.actorOf(TestActors.echoActorProps, "echo")
 
       expectMsg("hello")

@@ -275,7 +275,7 @@ class BehaviorSpec extends TypedSpec {
         monitor ! state
         SActor.same
       case (ctx, Stop) ⇒ SActor.stopped
-      case (_, _)      ⇒ SActor.unhandled
+      case (_, _) ⇒ SActor.unhandled
     } onSignal {
       case (ctx, signal) ⇒
         monitor ! GotSignal(signal)
@@ -311,7 +311,7 @@ class BehaviorSpec extends TypedSpec {
         case (_, GetState()) ⇒
           monitor ! state
           SActor.same
-        case (_, Stop)       ⇒ SActor.stopped
+        case (_, Stop) ⇒ SActor.stopped
         case (_, _: AuxPing) ⇒ SActor.unhandled
       } onSignal {
         case (ctx, signal) ⇒
@@ -347,7 +347,7 @@ class BehaviorSpec extends TypedSpec {
             case GetState() ⇒
               monitor ! state
               SActor.same
-            case Stop       ⇒ SActor.stopped
+            case Stop ⇒ SActor.stopped
             case _: AuxPing ⇒ SActor.unhandled
           }
       } onSignal {
@@ -382,7 +382,7 @@ class BehaviorSpec extends TypedSpec {
           case GetState() ⇒
             monitor ! state
             SActor.same
-          case Stop       ⇒ SActor.stopped
+          case Stop ⇒ SActor.stopped
           case _: AuxPing ⇒ SActor.unhandled
         }
       }
@@ -418,7 +418,7 @@ class BehaviorSpec extends TypedSpec {
               case GetState() ⇒
                 monitor ! state
                 this
-              case Stop       ⇒ SActor.stopped
+              case Stop ⇒ SActor.stopped
               case _: AuxPing ⇒ SActor.unhandled
             }
           }
@@ -528,7 +528,7 @@ class BehaviorSpec extends TypedSpec {
           case GetState() ⇒
             monitor ! state
             SActor.same
-          case Stop       ⇒ SActor.stopped
+          case Stop ⇒ SActor.stopped
           case _: AuxPing ⇒ SActor.unhandled
         }),
         fs((ctx, sig) ⇒ {
@@ -563,7 +563,7 @@ class BehaviorSpec extends TypedSpec {
             case GetState() ⇒
               monitor ! state
               SActor.same
-            case Stop       ⇒ SActor.stopped
+            case Stop ⇒ SActor.stopped
             case _: AuxPing ⇒ SActor.unhandled
           })
       }

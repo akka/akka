@@ -141,7 +141,7 @@ private[cluster] object InternalClusterAction {
 
   sealed trait SubscriptionMessage
   final case class Subscribe(subscriber: ActorRef, initialStateMode: SubscriptionInitialStateMode,
-                             to: Set[Class[_]]) extends SubscriptionMessage
+    to: Set[Class[_]]) extends SubscriptionMessage
   final case class Unsubscribe(subscriber: ActorRef, to: Option[Class[_]])
     extends SubscriptionMessage with DeadLetterSuppression
   /**
@@ -433,7 +433,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   private def resetJoinSeedNodesDeadline(): Unit = {
     joinSeedNodesDeadline = ShutdownAfterUnsuccessfulJoinSeedNodes match {
       case d: FiniteDuration ⇒ Some(Deadline.now + d)
-      case _                 ⇒ None // off
+      case _ ⇒ None // off
     }
   }
 
@@ -469,21 +469,21 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
   def initialized: Actor.Receive = ({
     case msg: GossipEnvelope ⇒ receiveGossip(msg)
-    case msg: GossipStatus   ⇒ receiveGossipStatus(msg)
-    case GossipTick          ⇒ gossipTick()
-    case GossipSpeedupTick   ⇒ gossipSpeedupTick()
+    case msg: GossipStatus ⇒ receiveGossipStatus(msg)
+    case GossipTick ⇒ gossipTick()
+    case GossipSpeedupTick ⇒ gossipSpeedupTick()
     case ReapUnreachableTick ⇒ reapUnreachableMembers()
-    case LeaderActionsTick   ⇒ leaderActions()
-    case PublishStatsTick    ⇒ publishInternalStats()
+    case LeaderActionsTick ⇒ leaderActions()
+    case PublishStatsTick ⇒ publishInternalStats()
     case InitJoin ⇒
       logInfo("Received InitJoin message from [{}] to [{}]", sender(), selfAddress)
       initJoin()
-    case Join(node, roles)                ⇒ joining(node, roles)
-    case ClusterUserAction.Down(address)  ⇒ downing(address)
+    case Join(node, roles) ⇒ joining(node, roles)
+    case ClusterUserAction.Down(address) ⇒ downing(address)
     case ClusterUserAction.Leave(address) ⇒ leaving(address)
-    case SendGossipTo(address)            ⇒ sendGossipTo(address)
-    case msg: SubscriptionMessage         ⇒ publisher forward msg
-    case QuarantinedEvent(address, uid)   ⇒ quarantined(UniqueAddress(address, uid))
+    case SendGossipTo(address) ⇒ sendGossipTo(address)
+    case msg: SubscriptionMessage ⇒ publisher forward msg
+    case QuarantinedEvent(address, uid) ⇒ quarantined(UniqueAddress(address, uid))
     case ClusterUserAction.JoinTo(address) ⇒
       logInfo("Trying to join [{}] when already part of a cluster, ignoring", address)
     case JoinSeedNodes(seedNodes) ⇒
@@ -502,11 +502,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def receive = uninitialized
 
   override def unhandled(message: Any): Unit = message match {
-    case _: Tick             ⇒
-    case _: GossipEnvelope   ⇒
-    case _: GossipStatus     ⇒
+    case _: Tick ⇒
+    case _: GossipEnvelope ⇒
+    case _: GossipStatus ⇒
     case _: ExitingConfirmed ⇒
-    case other               ⇒ super.unhandled(other)
+    case other ⇒ super.unhandled(other)
   }
 
   def initJoin(): Unit = {
@@ -570,7 +570,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       } else {
         val joinDeadline = RetryUnsuccessfulJoinAfter match {
           case d: FiniteDuration ⇒ Some(Deadline.now + d)
-          case _                 ⇒ None
+          case _ ⇒ None
         }
         context.become(tryingToJoin(address, joinDeadline))
         clusterCore(address) ! Join(selfUniqueAddress, cluster.selfRoles)
@@ -798,9 +798,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       log.debug("Cluster Node [{}] - Ignoring received gossip status from unknown [{}]", selfAddress, from)
     else {
       (status.version compareTo latestGossip.version) match {
-        case VectorClock.Same  ⇒ // same version
+        case VectorClock.Same ⇒ // same version
         case VectorClock.After ⇒ gossipStatusTo(from, sender()) // remote is newer
-        case _                 ⇒ gossipTo(from, sender()) // conflicting or local is newer
+        case _ ⇒ gossipTo(from, sender()) // conflicting or local is newer
       }
     }
   }
@@ -905,10 +905,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
       if (statsEnabled) {
         gossipStats = gossipType match {
-          case Merge   ⇒ gossipStats.incrementMergeCount
-          case Same    ⇒ gossipStats.incrementSameCount
-          case Newer   ⇒ gossipStats.incrementNewerCount
-          case Older   ⇒ gossipStats.incrementOlderCount
+          case Merge ⇒ gossipStats.incrementMergeCount
+          case Same ⇒ gossipStats.incrementSameCount
+          case Newer ⇒ gossipStats.incrementNewerCount
+          case Older ⇒ gossipStats.incrementOlderCount
           case Ignored ⇒ gossipStats // included in receivedGossipCount
         }
       }
@@ -1424,7 +1424,7 @@ private[cluster] class OnMemberStatusChangedListener(callback: Runnable, status:
   import ClusterEvent._
   private val cluster = Cluster(context.system)
   private val to = status match {
-    case Up      ⇒ classOf[MemberUp]
+    case Up ⇒ classOf[MemberUp]
     case Removed ⇒ classOf[MemberRemoved]
     case other ⇒ throw new IllegalArgumentException(
       s"Expected Up or Removed in OnMemberStatusChangedListener, got [$other]")
@@ -1470,10 +1470,10 @@ private[cluster] class OnMemberStatusChangedListener(callback: Runnable, status:
 @SerialVersionUID(1L)
 private[cluster] final case class GossipStats(
   receivedGossipCount: Long = 0L,
-  mergeCount:          Long = 0L,
-  sameCount:           Long = 0L,
-  newerCount:          Long = 0L,
-  olderCount:          Long = 0L) {
+  mergeCount: Long = 0L,
+  sameCount: Long = 0L,
+  newerCount: Long = 0L,
+  olderCount: Long = 0L) {
 
   def incrementMergeCount(): GossipStats =
     copy(mergeCount = mergeCount + 1, receivedGossipCount = receivedGossipCount + 1)
@@ -1513,5 +1513,5 @@ private[cluster] final case class GossipStats(
 @SerialVersionUID(1L)
 private[cluster] final case class VectorClockStats(
   versionSize: Int = 0,
-  seenLatest:  Int = 0)
+  seenLatest: Int = 0)
 

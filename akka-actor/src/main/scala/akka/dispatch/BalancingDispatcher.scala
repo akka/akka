@@ -32,14 +32,14 @@ import scala.concurrent.duration.FiniteDuration
  */
 @deprecated("Use BalancingPool instead of BalancingDispatcher", "2.3")
 private[akka] class BalancingDispatcher(
-  _configurator:                   MessageDispatcherConfigurator,
-  _id:                             String,
-  throughput:                      Int,
-  throughputDeadlineTime:          Duration,
-  _mailboxType:                    MailboxType,
+  _configurator: MessageDispatcherConfigurator,
+  _id: String,
+  throughput: Int,
+  throughputDeadlineTime: Duration,
+  _mailboxType: MailboxType,
   _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-  _shutdownTimeout:                FiniteDuration,
-  attemptTeamWork:                 Boolean)
+  _shutdownTimeout: FiniteDuration,
+  attemptTeamWork: Boolean)
   extends Dispatcher(_configurator, _id, throughput, throughputDeadlineTime, _executorServiceFactoryProvider, _shutdownTimeout) {
 
   /**
@@ -97,7 +97,7 @@ private[akka] class BalancingDispatcher(
           && i.hasNext
           && (executorService.executor match {
             case lm: LoadMetrics ⇒ lm.atFullThrottle == false
-            case other           ⇒ true
+            case other ⇒ true
           })
           && !registerForExecution(i.next.mailbox, false, false))
           scheduleOne(i)

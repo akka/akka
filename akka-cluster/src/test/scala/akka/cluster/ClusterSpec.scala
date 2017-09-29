@@ -223,8 +223,7 @@ akka.loglevel=DEBUG
              akka.cluster.jmx.multi-mbeans-in-same-jvm = on
              akka.remote.netty.tcp.port = ${port}
              akka.remote.artery.canonical.port = ${port}
-          """
-      ).withFallback(ConfigFactory.parseString(ClusterSpec.config))
+          """).withFallback(ConfigFactory.parseString(ClusterSpec.config))
 
       val sys1 = ActorSystem("ClusterSpec4", getConfig(2552))
       val sys2 = ActorSystem("ClusterSpec4", getConfig(2553))

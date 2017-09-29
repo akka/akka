@@ -61,7 +61,7 @@ object Replicator {
    * or maintain local correlation data structures.
    */
   final case class Get[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency,
-                                            replyTo: ActorRef[GetResponse[A]], request: Option[Any] = None) extends Command
+    replyTo: ActorRef[GetResponse[A]], request: Option[Any] = None) extends Command
 
   /**
    * Reply from `Get`. The data value is retrieved with [[#get]] using the typed key.
@@ -100,12 +100,12 @@ object Replicator {
      * Convenience for `ask`.
      */
     def apply[A <: ReplicatedData](key: Key[A], initial: A,
-                                   writeConsistency: WriteConsistency)(modify: A ⇒ A): ActorRef[UpdateResponse[A]] ⇒ Update[A] =
+      writeConsistency: WriteConsistency)(modify: A ⇒ A): ActorRef[UpdateResponse[A]] ⇒ Update[A] =
       (replyTo ⇒ Update(key, writeConsistency, replyTo, None)(modifyWithInitial(initial, modify)))
 
     private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A ⇒ A): Option[A] ⇒ A = {
       case Some(data) ⇒ modify(data)
-      case None       ⇒ modify(initial)
+      case None ⇒ modify(initial)
     }
   }
 
@@ -126,8 +126,8 @@ object Replicator {
    * for example not access `sender()` reference of an enclosing actor.
    */
   final case class Update[A <: ReplicatedData](key: Key[A], writeConsistency: WriteConsistency,
-                                               replyTo: ActorRef[UpdateResponse[A]],
-                                               request: Option[Any])(val modify: Option[A] ⇒ A)
+    replyTo: ActorRef[UpdateResponse[A]],
+    request: Option[Any])(val modify: Option[A] ⇒ A)
     extends Command with NoSerializationVerificationNeeded {
   }
 
@@ -212,7 +212,7 @@ object Replicator {
    * or maintain local correlation data structures.
    */
   final case class Delete[A <: ReplicatedData](key: Key[A], consistency: WriteConsistency,
-                                               replyTo: ActorRef[DeleteResponse[A]], request: Option[Any])
+    replyTo: ActorRef[DeleteResponse[A]], request: Option[Any])
     extends Command with NoSerializationVerificationNeeded
 
   type DeleteResponse[A <: ReplicatedData] = dd.Replicator.DeleteResponse[A]

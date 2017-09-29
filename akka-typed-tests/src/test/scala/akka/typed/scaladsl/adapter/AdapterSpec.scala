@@ -21,7 +21,7 @@ object AdapterSpec {
 
   class Untyped1 extends untyped.Actor {
     def receive = {
-      case "ping"     ⇒ sender() ! "pong"
+      case "ping" ⇒ sender() ! "pong"
       case t: ThrowIt ⇒ throw t
     }
   }

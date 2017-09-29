@@ -48,7 +48,7 @@ object ORMultiMap {
    */
   def unapply[A, B <: ReplicatedData](value: Any): Option[Map[A, Set[B]]] = value match {
     case m: ORMultiMap[A, B] @unchecked ⇒ Some(m.entries)
-    case _                              ⇒ None
+    case _ ⇒ None
   }
 }
 
@@ -60,7 +60,7 @@ object ORMultiMap {
  */
 @SerialVersionUID(1L)
 final class ORMultiMap[A, B] private[akka] (
-  private[akka] val underlying:      ORMap[A, ORSet[B]],
+  private[akka] val underlying: ORMap[A, ORSet[B]],
   private[akka] val withValueDeltas: Boolean)
   extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
 
@@ -276,7 +276,7 @@ final class ORMultiMap[A, B] private[akka] (
 
   override def equals(o: Any): Boolean = o match {
     case other: ORMultiMap[_, _] ⇒ underlying == other.underlying
-    case _                       ⇒ false
+    case _ ⇒ false
   }
 
   override def hashCode: Int = underlying.hashCode

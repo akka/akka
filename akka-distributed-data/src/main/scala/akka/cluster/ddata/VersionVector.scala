@@ -327,7 +327,7 @@ final case class ManyVersionVector(versions: TreeMap[UniqueAddress, Long]) exten
   /** INTERNAL API */
   @InternalApi private[akka] override def versionAt(node: UniqueAddress): Long = versions.get(node) match {
     case Some(v) ⇒ v
-    case None    ⇒ Timestamp.Zero
+    case None ⇒ Timestamp.Zero
   }
 
   /** INTERNAL API */

@@ -148,7 +148,7 @@ object AddressFromURIString {
    */
   def apply(addr: String): Address = addr match {
     case AddressFromURIString(address) ⇒ address
-    case _                             ⇒ throw new MalformedURLException(addr)
+    case _ ⇒ throw new MalformedURLException(addr)
   }
 
   /**

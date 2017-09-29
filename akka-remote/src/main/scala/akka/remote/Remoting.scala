@@ -221,7 +221,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   override def send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef): Unit = endpointManager match {
     case Some(manager) ⇒ manager.tell(Send(message, senderOption, recipient), sender = senderOption getOrElse Actor.noSender)
-    case None          ⇒ throw new RemoteTransportExceptionNoStackTrace("Attempted to send remote message but Remoting is not running.", null)
+    case None ⇒ throw new RemoteTransportExceptionNoStackTrace("Attempted to send remote message but Remoting is not running.", null)
   }
 
   override def managementCommand(cmd: Any): Future[Boolean] = endpointManager match {
@@ -276,7 +276,7 @@ private[remote] object EndpointManager {
   case object Prune extends NoSerializationVerificationNeeded
   final case class ListensResult(
     addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]],
-    results:          Seq[(AkkaProtocolTransport, Address, Promise[AssociationEventListener])])
+    results: Seq[(AkkaProtocolTransport, Address, Promise[AssociationEventListener])])
     extends NoSerializationVerificationNeeded
   final case class ListensFailure(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]], cause: Throwable)
     extends NoSerializationVerificationNeeded
@@ -326,7 +326,7 @@ private[remote] object EndpointManager {
     def registerWritableEndpointUid(remoteAddress: Address, uid: Int): Unit = {
       addressToWritable.get(remoteAddress) match {
         case Some(Pass(ep, _)) ⇒ addressToWritable += remoteAddress → Pass(ep, Some(uid))
-        case other             ⇒
+        case other ⇒
       }
     }
 
@@ -345,7 +345,7 @@ private[remote] object EndpointManager {
         val address = writableToAddress(endpoint)
         addressToWritable.get(address) match {
           case Some(policy) if policy.isTombstone ⇒ // There is already a tombstone directive, leave it there
-          case _                                  ⇒ addressToWritable -= address
+          case _ ⇒ addressToWritable -= address
         }
         writableToAddress -= endpoint
         // leave the refuseUid
@@ -360,7 +360,7 @@ private[remote] object EndpointManager {
 
     def hasWritableEndpointFor(address: Address): Boolean = writableEndpointWithPolicyFor(address) match {
       case Some(_: Pass) ⇒ true
-      case _             ⇒ false
+      case _ ⇒ false
     }
 
     def readOnlyEndpointFor(address: Address): Option[(ActorRef, Int)] = addressToReadonly.get(address)
@@ -381,7 +381,7 @@ private[remote] object EndpointManager {
       // timeOfRelease is only used for garbage collection. If an address is still probed, we should report the
       // known fact that it is quarantined.
       case Some(Quarantined(uid, _)) ⇒ Some(uid)
-      case _                         ⇒ addressToRefuseUid.get(address).map { case (refuseUid, _) ⇒ refuseUid }
+      case _ ⇒ addressToRefuseUid.get(address).map { case (refuseUid, _) ⇒ refuseUid }
     }
 
     /**
@@ -735,9 +735,9 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   }
 
   def flushing: Receive = {
-    case s: Send                                   ⇒ extendedSystem.deadLetters ! s
+    case s: Send ⇒ extendedSystem.deadLetters ! s
     case InboundAssociation(h: AkkaProtocolHandle) ⇒ h.disassociate(AssociationHandle.Shutdown)
-    case Terminated(_)                             ⇒ // why should we care now?
+    case Terminated(_) ⇒ // why should we care now?
   }
 
   def handleInboundAssociation(ia: InboundAssociation, writerIsIdle: Boolean): Unit = ia match {
@@ -748,7 +748,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         endpoint ! EndpointWriter.TakeOver(handle, self)
         endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
           case Some(Pass(ep, _)) ⇒ ep ! ReliableDeliverySupervisor.Ungate
-          case _                 ⇒
+          case _ ⇒
         }
       case None ⇒
         if (endpoints.isQuarantined(handle.remoteAddress, handle.handshakeInfo.uid))
@@ -872,12 +872,12 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   }
 
   private def createEndpoint(
-    remoteAddress:    Address,
-    localAddress:     Address,
-    transport:        AkkaProtocolTransport,
+    remoteAddress: Address,
+    localAddress: Address,
+    transport: AkkaProtocolTransport,
     endpointSettings: RemoteSettings,
-    handleOption:     Option[AkkaProtocolHandle],
-    writing:          Boolean): ActorRef = {
+    handleOption: Option[AkkaProtocolHandle],
+    writing: Boolean): ActorRef = {
     require(transportMapping contains localAddress, "Transport mapping is not defined for the address")
     // refuseUid is ignored for read-only endpoints since the UID of the remote system is already known and has passed
     // quarantine checks

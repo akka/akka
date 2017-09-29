@@ -35,12 +35,12 @@ object Deploy {
  */
 @SerialVersionUID(2L)
 final case class Deploy(
-  path:         String       = "",
-  config:       Config       = ConfigFactory.empty,
+  path: String = "",
+  config: Config = ConfigFactory.empty,
   routerConfig: RouterConfig = NoRouter,
-  scope:        Scope        = NoScopeGiven,
-  dispatcher:   String       = Deploy.NoDispatcherGiven,
-  mailbox:      String       = Deploy.NoMailboxGiven) {
+  scope: Scope = NoScopeGiven,
+  dispatcher: String = Deploy.NoDispatcherGiven,
+  mailbox: String = Deploy.NoMailboxGiven) {
 
   /**
    * Java API to create a Deploy with the given RouterConfig
@@ -141,9 +141,9 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
     }.toMap
 
   config.root.asScala flatMap {
-    case ("default", _)             ⇒ None
+    case ("default", _) ⇒ None
     case (key, value: ConfigObject) ⇒ parseConfig(key, value.toConfig)
-    case _                          ⇒ None
+    case _ ⇒ None
   } foreach deploy
 
   def lookup(path: ActorPath): Option[Deploy] = lookup(path.elements.drop(1))

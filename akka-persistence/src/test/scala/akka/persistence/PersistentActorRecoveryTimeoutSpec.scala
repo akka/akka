@@ -40,7 +40,7 @@ object PersistentActorRecoveryTimeoutSpec {
 
     override def receiveRecover: Receive = {
       case RecoveryCompleted ⇒ probe ! context.receiveTimeout
-      case _                 ⇒ // we don't care
+      case _ ⇒ // we don't care
     }
 
     override def receiveCommand: Receive = {

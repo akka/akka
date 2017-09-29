@@ -63,7 +63,7 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
 
   private val pluginId = self.path.name
   private val pluginType: PluginType = pluginId match {
-    case "akka.persistence.journal.proxy"        ⇒ Journal
+    case "akka.persistence.journal.proxy" ⇒ Journal
     case "akka.persistence.snapshot-store.proxy" ⇒ SnapshotStore
     case other ⇒
       throw new IllegalArgumentException("Unknown plugin type: " + other)
@@ -144,7 +144,7 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
       unstashAll()
       context.become(active(target, address == selfAddress))
     case _: ActorIdentity ⇒ // will retry after ReceiveTimeout
-    case Terminated(_)    ⇒
+    case Terminated(_) ⇒
     case ReceiveTimeout ⇒
       sendIdentify(address)
   }: Receive).orElse(init)
@@ -157,7 +157,7 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
       context.unwatch(targetJournal)
       context.become(initTimedOut)
     case Terminated(_) ⇒
-    case InitTimeout   ⇒
+    case InitTimeout ⇒
     case msg ⇒
       targetJournal forward msg
   }

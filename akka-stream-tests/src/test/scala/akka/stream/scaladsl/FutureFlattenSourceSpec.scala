@@ -70,8 +70,7 @@ class FutureFlattenSourceSpec extends StreamSpec {
       val (sourceMatVal, sinkMatVal) =
         Source.fromSourceCompletionStage(
           // can't be inferred
-          CompletableFuture.completedFuture[Graph[SourceShape[Int], String]](underlying)
-        ).toMat(Sink.seq)(Keep.both)
+          CompletableFuture.completedFuture[Graph[SourceShape[Int], String]](underlying)).toMat(Sink.seq)(Keep.both)
           .run()
 
       sourceMatVal.toCompletableFuture.get(remainingOrDefault.toMillis, TimeUnit.MILLISECONDS) should ===("foo")

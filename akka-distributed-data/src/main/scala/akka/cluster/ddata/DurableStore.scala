@@ -91,7 +91,7 @@ object DurableStore {
     override def hashCode(): Int = data.hashCode
     override def equals(o: Any): Boolean = o match {
       case other: DurableDataEnvelope ⇒ data == other.data
-      case _                          ⇒ false
+      case _ ⇒ false
     }
   }
 }
@@ -103,9 +103,9 @@ object LmdbDurableStore {
   private case object WriteBehind extends DeadLetterSuppression
 
   private final case class Lmdb(
-    env:         Env[ByteBuffer],
-    db:          Dbi[ByteBuffer],
-    keyBuffer:   ByteBuffer,
+    env: Env[ByteBuffer],
+    db: Dbi[ByteBuffer],
+    keyBuffer: ByteBuffer,
     valueBuffer: ByteBuffer)
 }
 
@@ -120,7 +120,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
 
   val writeBehindInterval = config.getString("lmdb.write-behind-interval").toLowerCase match {
     case "off" ⇒ Duration.Zero
-    case _     ⇒ config.getDuration("lmdb.write-behind-interval", MILLISECONDS).millis
+    case _ ⇒ config.getDuration("lmdb.write-behind-interval", MILLISECONDS).millis
   }
 
   val dir = config.getString("lmdb.dir") match {
@@ -274,7 +274,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       l.keyBuffer.put(key.getBytes(ByteString.UTF_8)).flip()
       l.valueBuffer.put(value).flip()
       tx match {
-        case OptionVal.None    ⇒ l.db.put(l.keyBuffer, l.valueBuffer)
+        case OptionVal.None ⇒ l.db.put(l.keyBuffer, l.valueBuffer)
         case OptionVal.Some(t) ⇒ l.db.put(t, l.keyBuffer, l.valueBuffer)
       }
     } finally {

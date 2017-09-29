@@ -93,9 +93,9 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    * message, or the manager will reply with a [[CommandFailed]] message.
    */
   final case class Bind(
-    handler:      ActorRef,
+    handler: ActorRef,
     localAddress: InetSocketAddress,
-    options:      immutable.Traversable[SocketOption] = Nil) extends Command
+    options: immutable.Traversable[SocketOption] = Nil) extends Command
 
   /**
    * Send this message to the listener actor that previously sent a [[Bound]]

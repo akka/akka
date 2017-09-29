@@ -62,9 +62,9 @@ private[cluster] object Gossip {
 @SerialVersionUID(1L)
 @InternalApi
 private[cluster] final case class Gossip(
-  members:    immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
-  overview:   GossipOverview                       = GossipOverview(),
-  version:    VectorClock                          = VectorClock(), // vector clock version
+  members: immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
+  overview: GossipOverview = GossipOverview(),
+  version: VectorClock = VectorClock(), // vector clock version
   tombstones: Map[UniqueAddress, Gossip.Timestamp] = Map.empty) {
 
   if (Cluster.isAssertInvariantsEnabled) assertInvariants()
@@ -266,8 +266,8 @@ private[cluster] final case class Gossip(
  */
 @SerialVersionUID(1L)
 private[cluster] final case class GossipOverview(
-  seen:         Set[UniqueAddress] = Set.empty,
-  reachability: Reachability       = Reachability.empty) {
+  seen: Set[UniqueAddress] = Set.empty,
+  reachability: Reachability = Reachability.empty) {
 
   override def toString =
     s"GossipOverview(reachability = [$reachability], seen = [${seen.mkString(", ")}])"
@@ -291,11 +291,11 @@ object GossipEnvelope {
  */
 @SerialVersionUID(2L)
 private[cluster] class GossipEnvelope private (
-  val from:                    UniqueAddress,
-  val to:                      UniqueAddress,
-  @volatile var g:             Gossip,
-  serDeadline:                 Deadline,
-  @transient @volatile var ser:() ⇒ Gossip) extends ClusterMessage {
+  val from: UniqueAddress,
+  val to: UniqueAddress,
+  @volatile var g: Gossip,
+  serDeadline: Deadline,
+  @transient @volatile var ser: () ⇒ Gossip) extends ClusterMessage {
 
   def gossip: Gossip = {
     deserialize()

@@ -77,7 +77,7 @@ class PersistenceEventAdapterDocSpec(config: String) extends AkkaSpec(config) {
 
         override def receiveRecover: Receive = {
           case RecoveryCompleted => // ignore...
-          case e                 => p.ref ! e
+          case e => p.ref ! e
         }
 
         override def receiveCommand: Receive = {
@@ -109,7 +109,7 @@ class PersistenceEventAdapterDocSpec(config: String) extends AkkaSpec(config) {
 
         override def receiveRecover: Receive = {
           case RecoveryCompleted => // ignore...
-          case e                 => p.ref ! e
+          case e => p.ref ! e
         }
 
         override def receiveCommand: Receive = {
@@ -220,8 +220,8 @@ class MyTaggingEventAdapter(system: ExtendedActorSystem) extends EventAdapter {
   override def toJournal(event: Any): Any = {
     event match {
       case Person(_, age) if age >= 18 => MyTaggingJournalModel(event, tags = Set("adult"))
-      case Person(_, age)              => MyTaggingJournalModel(event, tags = Set("minor"))
-      case _                           => MyTaggingJournalModel(event, tags = Set.empty)
+      case Person(_, age) => MyTaggingJournalModel(event, tags = Set("minor"))
+      case _ => MyTaggingJournalModel(event, tags = Set.empty)
     }
   }
 }

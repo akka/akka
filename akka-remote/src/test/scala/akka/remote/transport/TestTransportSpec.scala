@@ -27,7 +27,7 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
 
       registry.logSnapshot.exists {
         case ListenAttempt(address) ⇒ address == addressA
-        case _                      ⇒ false
+        case _ ⇒ false
       } should ===(true)
     }
 

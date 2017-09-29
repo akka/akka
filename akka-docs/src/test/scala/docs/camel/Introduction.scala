@@ -18,7 +18,7 @@ object Introduction {
 
       def receive = {
         case msg: CamelMessage => { /* ... */ }
-        case _                 => { /* ... */ }
+        case _ => { /* ... */ }
       }
     }
 
@@ -38,7 +38,7 @@ object Introduction {
 
       def receive = {
         case msg: CamelMessage => { /* ... */ }
-        case _                 => { /* ... */ }
+        case _ => { /* ... */ }
       }
     }
     //#Consumer
@@ -88,7 +88,7 @@ object Introduction {
 
       def receive = {
         case msg: CamelMessage => { /* ... */ }
-        case _                 => { /* ... */ }
+        case _ => { /* ... */ }
       }
     }
     val system = ActorSystem("some-system")

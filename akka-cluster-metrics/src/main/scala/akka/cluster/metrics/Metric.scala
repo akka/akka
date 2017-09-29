@@ -31,9 +31,9 @@ final case class Metric private[metrics] (name: String, value: Number, average: 
    */
   def :+(latest: Metric): Metric =
     if (this sameAs latest) average match {
-      case Some(avg)                        ⇒ copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
+      case Some(avg) ⇒ copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
       case None if latest.average.isDefined ⇒ copy(value = latest.value, average = latest.average)
-      case _                                ⇒ copy(value = latest.value)
+      case _ ⇒ copy(value = latest.value)
     }
     else this
 
@@ -42,7 +42,7 @@ final case class Metric private[metrics] (name: String, value: Number, average: 
    */
   def smoothValue: Double = average match {
     case Some(avg) ⇒ avg.value
-    case None      ⇒ value.doubleValue
+    case None ⇒ value.doubleValue
   }
 
   /**
@@ -58,7 +58,7 @@ final case class Metric private[metrics] (name: String, value: Number, average: 
   override def hashCode = name.##
   override def equals(obj: Any) = obj match {
     case other: Metric ⇒ sameAs(other)
-    case _             ⇒ false
+    case _ ⇒ false
   }
 
 }
@@ -87,7 +87,7 @@ object Metric extends MetricNumericConverter {
 
   def createEWMA(value: Double, decayFactor: Option[Double]): Option[EWMA] = decayFactor match {
     case Some(alpha) ⇒ Some(EWMA(value, alpha))
-    case None        ⇒ None
+    case None ⇒ None
   }
 
 }
@@ -207,21 +207,21 @@ object StandardMetrics {
    */
   @SerialVersionUID(1L)
   final case class Cpu(
-    address:           Address,
-    timestamp:         Long,
+    address: Address,
+    timestamp: Long,
     systemLoadAverage: Option[Double],
-    cpuCombined:       Option[Double],
-    cpuStolen:         Option[Double],
-    processors:        Int) {
+    cpuCombined: Option[Double],
+    cpuStolen: Option[Double],
+    processors: Int) {
 
     cpuCombined match {
       case Some(x) ⇒ require(0.0 <= x && x <= 1.0, s"cpuCombined must be between [0.0 - 1.0], was [$x]")
-      case None    ⇒
+      case None ⇒
     }
 
     cpuStolen match {
       case Some(x) ⇒ require(0.0 <= x && x <= 1.0, s"cpuStolen must be between [0.0 - 1.0], was [$x]")
-      case None    ⇒
+      case None ⇒
     }
 
   }
@@ -242,7 +242,7 @@ private[metrics] trait MetricNumericConverter {
    * <li>SIGAR combined CPU can occasionally return a NaN or Infinite (known bug)</li></ul>
    */
   def defined(value: Number): Boolean = convertNumber(value) match {
-    case Left(a)  ⇒ a >= 0
+    case Left(a) ⇒ a >= 0
     case Right(b) ⇒ !(b < 0.0 || b.isNaN || b.isInfinite)
   }
 
@@ -250,13 +250,13 @@ private[metrics] trait MetricNumericConverter {
    * May involve rounding or truncation.
    */
   def convertNumber(from: Any): Either[Long, Double] = from match {
-    case n: Int        ⇒ Left(n)
-    case n: Long       ⇒ Left(n)
-    case n: Double     ⇒ Right(n)
-    case n: Float      ⇒ Right(n)
-    case n: BigInt     ⇒ Left(n.longValue)
+    case n: Int ⇒ Left(n)
+    case n: Long ⇒ Left(n)
+    case n: Double ⇒ Right(n)
+    case n: Float ⇒ Right(n)
+    case n: BigInt ⇒ Left(n.longValue)
     case n: BigDecimal ⇒ Right(n.doubleValue)
-    case x             ⇒ throw new IllegalArgumentException(s"Not a number [$x]")
+    case x ⇒ throw new IllegalArgumentException(s"Not a number [$x]")
   }
 
 }
@@ -323,7 +323,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
   override def hashCode = address.##
   override def equals(obj: Any) = obj match {
     case other: NodeMetrics ⇒ sameAs(other)
-    case _                  ⇒ false
+    case _ ⇒ false
   }
 
 }

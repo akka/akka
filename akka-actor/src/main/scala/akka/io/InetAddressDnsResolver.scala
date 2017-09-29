@@ -20,12 +20,12 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
 
   // Controls the cache policy for successful lookups only
   private final val CachePolicyProp = "networkaddress.cache.ttl"
-  // Deprecated JVM property key, keeping for legacy compatibility; replaced by CachePolicyProp 
+  // Deprecated JVM property key, keeping for legacy compatibility; replaced by CachePolicyProp
   private final val CachePolicyPropFallback = "sun.net.inetaddr.ttl"
 
   // Controls the cache policy for negative lookups only
   private final val NegativeCachePolicyProp = "networkaddress.cache.negative.ttl"
-  // Deprecated JVM property key, keeping for legacy compatibility; replaced by NegativeCachePolicyProp 
+  // Deprecated JVM property key, keeping for legacy compatibility; replaced by NegativeCachePolicyProp
   private final val NegativeCachePolicyPropFallback = "sun.net.inetaddr.negative.ttl"
 
   // default values (-1 and 0 are magic numbers, trust them)
@@ -51,12 +51,12 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
     config.getString(path) match {
       case "default" ⇒
         (if (positive) cachePolicy else negativeCachePolicy) match {
-          case Never      ⇒ Never
+          case Never ⇒ Never
           case n if n > 0 ⇒ TimeUnit.SECONDS.toMillis(n)
-          case _          ⇒ Long.MaxValue // forever if negative
+          case _ ⇒ Long.MaxValue // forever if negative
         }
       case "forever" ⇒ Long.MaxValue
-      case "never"   ⇒ Never
+      case "never" ⇒ Never
       case _ ⇒ config.getDuration(path, TimeUnit.MILLISECONDS)
         .requiring(_ > 0, s"akka.io.dns.$path must be 'default', 'forever', 'never' or positive duration")
     }

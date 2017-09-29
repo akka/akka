@@ -31,7 +31,7 @@ object ThrottlerTransportAdapterSpec {
   class Echo extends Actor {
     override def receive = {
       case "ping" ⇒ sender() ! "pong"
-      case x      ⇒ sender() ! x
+      case x ⇒ sender() ! x
     }
   }
 
@@ -127,7 +127,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
 
       here ! "Cleanup"
       fishForMessage(5.seconds) {
-        case "Cleanup"           ⇒ true
+        case "Cleanup" ⇒ true
         case Lost("Blackhole 3") ⇒ false
       }
     }

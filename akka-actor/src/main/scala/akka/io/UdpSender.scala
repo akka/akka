@@ -15,10 +15,10 @@ import akka.actor._
  * INTERNAL API
  */
 private[io] class UdpSender(
-  val udp:         UdpExt,
+  val udp: UdpExt,
   channelRegistry: ChannelRegistry,
-  commander:       ActorRef,
-  options:         immutable.Traversable[SocketOption])
+  commander: ActorRef,
+  options: immutable.Traversable[SocketOption])
   extends Actor with ActorLogging with WithUdpSend with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   val channel = {
@@ -35,7 +35,7 @@ private[io] class UdpSender(
     case registration: ChannelRegistration ⇒
       options.foreach {
         case v2: Inet.SocketOptionV2 ⇒ v2.afterConnect(channel.socket)
-        case _                       ⇒
+        case _ ⇒
       }
       commander ! SimpleSenderReady
       context.become(sendHandlers(registration))

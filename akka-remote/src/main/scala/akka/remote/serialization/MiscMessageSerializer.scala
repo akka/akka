@@ -30,33 +30,33 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val EmptyConfig = ConfigFactory.empty()
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case identify: Identify                   ⇒ serializeIdentify(identify)
-    case identity: ActorIdentity              ⇒ serializeActorIdentity(identity)
-    case Some(value)                          ⇒ serializeSome(value)
-    case None                                 ⇒ ParameterlessSerializedMessage
-    case o: Optional[_]                       ⇒ serializeOptional(o)
-    case r: ActorRef                          ⇒ serializeActorRef(r)
-    case s: Status.Success                    ⇒ serializeStatusSuccess(s)
-    case f: Status.Failure                    ⇒ serializeStatusFailure(f)
-    case ex: ActorInitializationException     ⇒ serializeActorInitializationException(ex)
-    case t: Throwable                         ⇒ throwableSupport.serializeThrowable(t)
-    case PoisonPill                           ⇒ ParameterlessSerializedMessage
-    case Kill                                 ⇒ ParameterlessSerializedMessage
-    case RemoteWatcher.Heartbeat              ⇒ ParameterlessSerializedMessage
-    case hbrsp: RemoteWatcher.HeartbeatRsp    ⇒ serializeHeartbeatRsp(hbrsp)
-    case rs: RemoteScope                      ⇒ serializeRemoteScope(rs)
-    case LocalScope                           ⇒ ParameterlessSerializedMessage
-    case c: Config                            ⇒ serializeConfig(c)
-    case dr: DefaultResizer                   ⇒ serializeDefaultResizer(dr)
-    case fc: FromConfig                       ⇒ serializeFromConfig(fc)
-    case bp: BalancingPool                    ⇒ serializeBalancingPool(bp)
-    case bp: BroadcastPool                    ⇒ serializeBroadcastPool(bp)
-    case rp: RandomPool                       ⇒ serializeRandomPool(rp)
-    case rrp: RoundRobinPool                  ⇒ serializeRoundRobinPool(rrp)
+    case identify: Identify ⇒ serializeIdentify(identify)
+    case identity: ActorIdentity ⇒ serializeActorIdentity(identity)
+    case Some(value) ⇒ serializeSome(value)
+    case None ⇒ ParameterlessSerializedMessage
+    case o: Optional[_] ⇒ serializeOptional(o)
+    case r: ActorRef ⇒ serializeActorRef(r)
+    case s: Status.Success ⇒ serializeStatusSuccess(s)
+    case f: Status.Failure ⇒ serializeStatusFailure(f)
+    case ex: ActorInitializationException ⇒ serializeActorInitializationException(ex)
+    case t: Throwable ⇒ throwableSupport.serializeThrowable(t)
+    case PoisonPill ⇒ ParameterlessSerializedMessage
+    case Kill ⇒ ParameterlessSerializedMessage
+    case RemoteWatcher.Heartbeat ⇒ ParameterlessSerializedMessage
+    case hbrsp: RemoteWatcher.HeartbeatRsp ⇒ serializeHeartbeatRsp(hbrsp)
+    case rs: RemoteScope ⇒ serializeRemoteScope(rs)
+    case LocalScope ⇒ ParameterlessSerializedMessage
+    case c: Config ⇒ serializeConfig(c)
+    case dr: DefaultResizer ⇒ serializeDefaultResizer(dr)
+    case fc: FromConfig ⇒ serializeFromConfig(fc)
+    case bp: BalancingPool ⇒ serializeBalancingPool(bp)
+    case bp: BroadcastPool ⇒ serializeBroadcastPool(bp)
+    case rp: RandomPool ⇒ serializeRandomPool(rp)
+    case rrp: RoundRobinPool ⇒ serializeRoundRobinPool(rrp)
     case sgp: ScatterGatherFirstCompletedPool ⇒ serializeScatterGatherFirstCompletedPool(sgp)
-    case tp: TailChoppingPool                 ⇒ serializeTailChoppingPool(tp)
-    case rrc: RemoteRouterConfig              ⇒ serializeRemoteRouterConfig(rrc)
-    case _                                    ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
+    case tp: TailChoppingPool ⇒ serializeTailChoppingPool(tp)
+    case rrc: RemoteRouterConfig ⇒ serializeRemoteRouterConfig(rrc)
+    case _ ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
   private def serializeIdentify(identify: Identify): Array[Byte] =
@@ -195,10 +195,10 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   }
 
   private def buildGenericRoutingPool(
-    nrOfInstances:     Int,
-    routerDispatcher:  String,
+    nrOfInstances: Int,
+    routerDispatcher: String,
     usePoolDispatcher: Boolean,
-    resizer:           Option[Resizer]): WireFormats.GenericRoutingPool = {
+    resizer: Option[Resizer]): WireFormats.GenericRoutingPool = {
     val builder = WireFormats.GenericRoutingPool.newBuilder()
     builder.setNrOfInstances(nrOfInstances)
     if (routerDispatcher != Dispatchers.DefaultDispatcherId) {
@@ -212,13 +212,13 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   }
 
   private def timeUnitToWire(unit: TimeUnit): WireFormats.TimeUnit = unit match {
-    case TimeUnit.NANOSECONDS  ⇒ WireFormats.TimeUnit.NANOSECONDS
+    case TimeUnit.NANOSECONDS ⇒ WireFormats.TimeUnit.NANOSECONDS
     case TimeUnit.MICROSECONDS ⇒ WireFormats.TimeUnit.MICROSECONDS
     case TimeUnit.MILLISECONDS ⇒ WireFormats.TimeUnit.MILLISECONDS
-    case TimeUnit.SECONDS      ⇒ WireFormats.TimeUnit.SECONDS
-    case TimeUnit.MINUTES      ⇒ WireFormats.TimeUnit.MINUTES
-    case TimeUnit.HOURS        ⇒ WireFormats.TimeUnit.HOURS
-    case TimeUnit.DAYS         ⇒ WireFormats.TimeUnit.DAYS
+    case TimeUnit.SECONDS ⇒ WireFormats.TimeUnit.SECONDS
+    case TimeUnit.MINUTES ⇒ WireFormats.TimeUnit.MINUTES
+    case TimeUnit.HOURS ⇒ WireFormats.TimeUnit.HOURS
+    case TimeUnit.DAYS ⇒ WireFormats.TimeUnit.DAYS
   }
 
   private def buildFiniteDuration(duration: FiniteDuration): WireFormats.FiniteDuration = {
@@ -294,36 +294,35 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     RoundRobinPoolManifest → deserializeRoundRobinPool,
     ScatterGatherPoolManifest → deserializeScatterGatherPool,
     TailChoppingPoolManifest → deserializeTailChoppingPool,
-    RemoteRouterConfigManifest → deserializeRemoteRouterConfig
-  )
+    RemoteRouterConfigManifest → deserializeRemoteRouterConfig)
 
   override def manifest(o: AnyRef): String =
     o match {
-      case _: Identify                        ⇒ IdentifyManifest
-      case _: ActorIdentity                   ⇒ ActorIdentityManifest
-      case _: Option[Any]                     ⇒ OptionManifest
-      case _: Optional[_]                     ⇒ OptionalManifest
-      case _: ActorRef                        ⇒ ActorRefManifest
-      case _: Status.Success                  ⇒ StatusSuccessManifest
-      case _: Status.Failure                  ⇒ StatusFailureManifest
-      case _: ActorInitializationException    ⇒ ActorInitializationExceptionManifest
-      case _: Throwable                       ⇒ ThrowableManifest
-      case PoisonPill                         ⇒ PoisonPillManifest
-      case Kill                               ⇒ KillManifest
-      case RemoteWatcher.Heartbeat            ⇒ RemoteWatcherHBManifest
-      case _: RemoteWatcher.HeartbeatRsp      ⇒ RemoteWatcherHBRespManifest
-      case LocalScope                         ⇒ LocalScopeManifest
-      case _: RemoteScope                     ⇒ RemoteScopeManifest
-      case _: Config                          ⇒ ConfigManifest
-      case _: FromConfig                      ⇒ FromConfigManifest
-      case _: DefaultResizer                  ⇒ DefaultResizerManifest
-      case _: BalancingPool                   ⇒ BalancingPoolManifest
-      case _: BroadcastPool                   ⇒ BroadcastPoolManifest
-      case _: RandomPool                      ⇒ RandomPoolManifest
-      case _: RoundRobinPool                  ⇒ RoundRobinPoolManifest
+      case _: Identify ⇒ IdentifyManifest
+      case _: ActorIdentity ⇒ ActorIdentityManifest
+      case _: Option[Any] ⇒ OptionManifest
+      case _: Optional[_] ⇒ OptionalManifest
+      case _: ActorRef ⇒ ActorRefManifest
+      case _: Status.Success ⇒ StatusSuccessManifest
+      case _: Status.Failure ⇒ StatusFailureManifest
+      case _: ActorInitializationException ⇒ ActorInitializationExceptionManifest
+      case _: Throwable ⇒ ThrowableManifest
+      case PoisonPill ⇒ PoisonPillManifest
+      case Kill ⇒ KillManifest
+      case RemoteWatcher.Heartbeat ⇒ RemoteWatcherHBManifest
+      case _: RemoteWatcher.HeartbeatRsp ⇒ RemoteWatcherHBRespManifest
+      case LocalScope ⇒ LocalScopeManifest
+      case _: RemoteScope ⇒ RemoteScopeManifest
+      case _: Config ⇒ ConfigManifest
+      case _: FromConfig ⇒ FromConfigManifest
+      case _: DefaultResizer ⇒ DefaultResizerManifest
+      case _: BalancingPool ⇒ BalancingPoolManifest
+      case _: BroadcastPool ⇒ BroadcastPoolManifest
+      case _: RandomPool ⇒ RandomPoolManifest
+      case _: RoundRobinPool ⇒ RoundRobinPoolManifest
       case _: ScatterGatherFirstCompletedPool ⇒ ScatterGatherPoolManifest
-      case _: TailChoppingPool                ⇒ TailChoppingPoolManifest
-      case _: RemoteRouterConfig              ⇒ RemoteRouterConfigManifest
+      case _: TailChoppingPool ⇒ TailChoppingPoolManifest
+      case _: RemoteRouterConfig ⇒ RemoteRouterConfigManifest
       case _ ⇒
         throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
     }
@@ -405,8 +404,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private def deserializeRemoteScope(bytes: Array[Byte]): RemoteScope = {
     val rs = WireFormats.RemoteScope.parseFrom(bytes)
     RemoteScope(
-      deserializeAddressData(rs.getNode)
-    )
+      deserializeAddressData(rs.getNode))
   }
 
   private def deserializeConfig(bytes: Array[Byte]): Config = {
@@ -420,8 +418,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       val fc = WireFormats.FromConfig.parseFrom(bytes)
       FromConfig(
         resizer = if (fc.hasResizer) Some(payloadSupport.deserializePayload(fc.getResizer).asInstanceOf[Resizer]) else None,
-        routerDispatcher = if (fc.hasRouterDispatcher) fc.getRouterDispatcher else Dispatchers.DefaultDispatcherId
-      )
+        routerDispatcher = if (fc.hasRouterDispatcher) fc.getRouterDispatcher else Dispatchers.DefaultDispatcherId)
     }
 
   private def deserializeBalancingPool(bytes: Array[Byte]): BalancingPool = {
@@ -436,11 +433,10 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     BroadcastPool(
       nrOfInstances = bp.getNrOfInstances,
       resizer =
-      if (bp.hasResizer) Some(payloadSupport.deserializePayload(bp.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (bp.hasResizer) Some(payloadSupport.deserializePayload(bp.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (bp.hasRouterDispatcher) bp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
-      usePoolDispatcher = bp.getUsePoolDispatcher
-    )
+      usePoolDispatcher = bp.getUsePoolDispatcher)
   }
 
   private def deserializeRandomPool(bytes: Array[Byte]): RandomPool = {
@@ -448,11 +444,10 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     RandomPool(
       nrOfInstances = rp.getNrOfInstances,
       resizer =
-      if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (rp.hasRouterDispatcher) rp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
-      usePoolDispatcher = rp.getUsePoolDispatcher
-    )
+      usePoolDispatcher = rp.getUsePoolDispatcher)
   }
 
   private def deserializeRoundRobinPool(bytes: Array[Byte]): RoundRobinPool = {
@@ -460,11 +455,10 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     RoundRobinPool(
       nrOfInstances = rp.getNrOfInstances,
       resizer =
-      if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (rp.hasRouterDispatcher) rp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
-      usePoolDispatcher = rp.getUsePoolDispatcher
-    )
+      usePoolDispatcher = rp.getUsePoolDispatcher)
   }
 
   private def deserializeScatterGatherPool(bytes: Array[Byte]): ScatterGatherFirstCompletedPool = {
@@ -472,13 +466,12 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     ScatterGatherFirstCompletedPool(
       nrOfInstances = sgp.getGeneric.getNrOfInstances,
       resizer =
-      if (sgp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(sgp.getGeneric.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (sgp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(sgp.getGeneric.getResizer).asInstanceOf[Resizer])
+        else None,
       within = deserializeFiniteDuration(sgp.getWithin),
       routerDispatcher =
         if (sgp.getGeneric.hasRouterDispatcher) sgp.getGeneric.getRouterDispatcher
-        else Dispatchers.DefaultDispatcherId
-    )
+        else Dispatchers.DefaultDispatcherId)
   }
 
   private def deserializeTailChoppingPool(bytes: Array[Byte]): TailChoppingPool = {
@@ -486,21 +479,19 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     TailChoppingPool(
       nrOfInstances = tcp.getGeneric.getNrOfInstances,
       resizer =
-      if (tcp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(tcp.getGeneric.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (tcp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(tcp.getGeneric.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (tcp.getGeneric.hasRouterDispatcher) tcp.getGeneric.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
       usePoolDispatcher = tcp.getGeneric.getUsePoolDispatcher,
       within = deserializeFiniteDuration(tcp.getWithin),
-      interval = deserializeFiniteDuration(tcp.getInterval)
-    )
+      interval = deserializeFiniteDuration(tcp.getInterval))
   }
 
   private def deserializeRemoteRouterConfig(bytes: Array[Byte]): RemoteRouterConfig = {
     val rrc = WireFormats.RemoteRouterConfig.parseFrom(bytes)
     RemoteRouterConfig(
       local = payloadSupport.deserializePayload(rrc.getLocal).asInstanceOf[Pool],
-      nodes = rrc.getNodesList.asScala.map(deserializeAddressData)
-    )
+      nodes = rrc.getNodesList.asScala.map(deserializeAddressData))
   }
 
   private def deserializeDefaultResizer(bytes: Array[Byte]): DefaultResizer = {
@@ -512,32 +503,29 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       rampupRate = dr.getRampupRate,
       backoffThreshold = dr.getBackoffThreshold,
       backoffRate = dr.getBackoffRate,
-      messagesPerResize = dr.getMessagesPerResize
-    )
+      messagesPerResize = dr.getMessagesPerResize)
   }
 
   private def deserializeTimeUnit(unit: WireFormats.TimeUnit): TimeUnit = unit match {
-    case WireFormats.TimeUnit.NANOSECONDS  ⇒ TimeUnit.NANOSECONDS
+    case WireFormats.TimeUnit.NANOSECONDS ⇒ TimeUnit.NANOSECONDS
     case WireFormats.TimeUnit.MICROSECONDS ⇒ TimeUnit.MICROSECONDS
     case WireFormats.TimeUnit.MILLISECONDS ⇒ TimeUnit.MILLISECONDS
-    case WireFormats.TimeUnit.SECONDS      ⇒ TimeUnit.SECONDS
-    case WireFormats.TimeUnit.MINUTES      ⇒ TimeUnit.MINUTES
-    case WireFormats.TimeUnit.HOURS        ⇒ TimeUnit.HOURS
-    case WireFormats.TimeUnit.DAYS         ⇒ TimeUnit.DAYS
+    case WireFormats.TimeUnit.SECONDS ⇒ TimeUnit.SECONDS
+    case WireFormats.TimeUnit.MINUTES ⇒ TimeUnit.MINUTES
+    case WireFormats.TimeUnit.HOURS ⇒ TimeUnit.HOURS
+    case WireFormats.TimeUnit.DAYS ⇒ TimeUnit.DAYS
   }
 
   private def deserializeFiniteDuration(duration: WireFormats.FiniteDuration): FiniteDuration =
     FiniteDuration(
       duration.getValue,
-      deserializeTimeUnit(duration.getUnit)
-    )
+      deserializeTimeUnit(duration.getUnit))
 
   private def deserializeAddressData(address: WireFormats.AddressData): Address = {
     Address(
       address.getProtocol,
       address.getSystem,
       address.getHostname,
-      address.getPort
-    )
+      address.getPort)
   }
 }

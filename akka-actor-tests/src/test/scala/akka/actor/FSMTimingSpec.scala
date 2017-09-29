@@ -153,12 +153,12 @@ object FSMTimingSpec {
 
   def suspend(actorRef: ActorRef): Unit = actorRef match {
     case l: ActorRefWithCell ⇒ l.suspend()
-    case _                   ⇒
+    case _ ⇒
   }
 
   def resume(actorRef: ActorRef): Unit = actorRef match {
     case l: ActorRefWithCell ⇒ l.resume(causedByFailure = null)
-    case _                   ⇒
+    case _ ⇒
   }
 
   trait State
@@ -201,7 +201,7 @@ object FSMTimingSpec {
     }
     when(TestStateTimeout, stateTimeout = 800.millis.dilated) {
       case Event(StateTimeout, _) ⇒ goto(Initial)
-      case Event(Cancel, _)       ⇒ goto(Initial) replying (Cancel)
+      case Event(Cancel, _) ⇒ goto(Initial) replying (Cancel)
     }
     when(TestSingleTimer) {
       case Event(Tick, _) ⇒

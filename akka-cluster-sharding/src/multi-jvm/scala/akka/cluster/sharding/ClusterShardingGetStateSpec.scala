@@ -21,7 +21,7 @@ object ClusterShardingGetStateSpec {
   class ShardedActor extends Actor with ActorLogging {
     log.info(self.path.toString)
     def receive = {
-      case Stop    ⇒ context.stop(self)
+      case Stop ⇒ context.stop(self)
       case _: Ping ⇒ sender() ! Pong
     }
   }

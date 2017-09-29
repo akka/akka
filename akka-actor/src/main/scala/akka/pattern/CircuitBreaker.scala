@@ -61,7 +61,7 @@ object CircuitBreaker {
 
   private val exceptionAsFailure: Try[_] ⇒ Boolean = {
     case _: Success[_] ⇒ false
-    case _             ⇒ true
+    case _ ⇒ true
   }
 
   private def exceptionAsFailureJava[T]: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean] =
@@ -76,7 +76,7 @@ object CircuitBreaker {
 
   protected def convertJavaFailureFnToScala[T](javaFn: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]): Try[T] ⇒ Boolean = {
     val failureFnInScala: Try[T] ⇒ Boolean = {
-      case Success(t)   ⇒ javaFn(Optional.of(t), Optional.empty())
+      case Success(t) ⇒ javaFn(Optional.of(t), Optional.empty())
       case Failure(err) ⇒ javaFn(Optional.empty(), Optional.of(err))
     }
     failureFnInScala
@@ -103,11 +103,11 @@ object CircuitBreaker {
  * @param executor [[scala.concurrent.ExecutionContext]] used for execution of state transition listeners
  */
 class CircuitBreaker(
-  scheduler:                Scheduler,
-  maxFailures:              Int,
-  callTimeout:              FiniteDuration,
-  val resetTimeout:         FiniteDuration,
-  maxResetTimeout:          FiniteDuration,
+  scheduler: Scheduler,
+  maxFailures: Int,
+  callTimeout: FiniteDuration,
+  val resetTimeout: FiniteDuration,
+  maxResetTimeout: FiniteDuration,
   exponentialBackoffFactor: Double)(implicit executor: ExecutionContext) extends AbstractCircuitBreaker {
 
   require(exponentialBackoffFactor >= 1.0, "factor must be >= 1.0")
@@ -241,7 +241,7 @@ class CircuitBreaker(
    *   `scala.concurrent.TimeoutException` if the call timed out
    */
   def callWithCircuitBreakerCS[T](
-    body:            Callable[CompletionStage[T]],
+    body: Callable[CompletionStage[T]],
     defineFailureFn: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]): CompletionStage[T] =
     FutureConverters.toJava[T](callWithCircuitBreaker(new Callable[Future[T]] {
       override def call(): Future[T] = FutureConverters.toScala(body.call())
@@ -939,7 +939,7 @@ class CircuitBreaker(
       }
       val nextResetTimeout = currentResetTimeout * exponentialBackoffFactor match {
         case f: FiniteDuration ⇒ f
-        case _                 ⇒ currentResetTimeout
+        case _ ⇒ currentResetTimeout
       }
 
       if (nextResetTimeout < maxResetTimeout)
@@ -965,5 +965,5 @@ class CircuitBreaker(
  */
 class CircuitBreakerOpenException(
   val remainingDuration: FiniteDuration,
-  message:               String         = "Circuit Breaker is open; calls are failing fast")
+  message: String = "Circuit Breaker is open; calls are failing fast")
   extends AkkaException(message) with NoStackTrace

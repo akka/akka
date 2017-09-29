@@ -228,7 +228,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       deployment.get.scope should ===(NoScopeGiven)
       expected match {
         case pool: Pool ⇒ deployment.get.routerConfig.asInstanceOf[Pool].resizer should ===(pool.resizer)
-        case _          ⇒
+        case _ ⇒
       }
     }
   }

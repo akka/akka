@@ -83,11 +83,11 @@ object LatencySpec extends MultiNodeConfig {
   }
 
   def receiverProps(reporter: RateReporter, settings: TestSettings, totalMessages: Int,
-                    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef, BenchmarkFileReporter: BenchmarkFileReporter): Props =
+    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef, BenchmarkFileReporter: BenchmarkFileReporter): Props =
     Props(new Receiver(reporter, settings, totalMessages, sendTimes, histogram, plotsRef, BenchmarkFileReporter))
 
   class Receiver(reporter: RateReporter, settings: TestSettings, totalMessages: Int,
-                 sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef, BenchmarkFileReporter: BenchmarkFileReporter) extends Actor {
+    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef, BenchmarkFileReporter: BenchmarkFileReporter) extends Actor {
     import settings._
 
     var count = 0
@@ -150,10 +150,10 @@ object LatencySpec extends MultiNodeConfig {
   }
 
   final case class TestSettings(
-    testName:    String,
+    testName: String,
     messageRate: Int, // msg/s
     payloadSize: Int,
-    repeat:      Int,
+    repeat: Int,
     realMessage: Boolean)
 
 }

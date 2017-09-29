@@ -75,8 +75,7 @@ class RemoteRouterSpec extends AkkaSpec(ConfigFactory.parseString("""
           target.nodes = ["akka://${sysName}@localhost:${port}"]
         }
       }
-    }"""
-  ).withFallback(ArterySpecSupport.newFlightRecorderConfig)
+    }""").withFallback(ArterySpecSupport.newFlightRecorderConfig)
     .withFallback(system.settings.config)
 
   val masterSystem = ActorSystem("Master" + sysName, conf)

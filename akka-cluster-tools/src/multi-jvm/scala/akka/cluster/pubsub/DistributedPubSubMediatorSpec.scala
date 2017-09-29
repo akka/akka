@@ -50,14 +50,14 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     import DistributedPubSubMediator._
 
     def receive = {
-      case Whisper(path, msg)        ⇒ mediator ! Send(path, msg, localAffinity = true)
-      case Talk(path, msg)           ⇒ mediator ! SendToAll(path, msg)
-      case TalkToOthers(path, msg)   ⇒ mediator ! SendToAll(path, msg, allButSelf = true)
-      case Shout(topic, msg)         ⇒ mediator ! Publish(topic, msg)
+      case Whisper(path, msg) ⇒ mediator ! Send(path, msg, localAffinity = true)
+      case Talk(path, msg) ⇒ mediator ! SendToAll(path, msg)
+      case TalkToOthers(path, msg) ⇒ mediator ! SendToAll(path, msg, allButSelf = true)
+      case Shout(topic, msg) ⇒ mediator ! Publish(topic, msg)
       case ShoutToGroups(topic, msg) ⇒ mediator ! Publish(topic, msg, true)
-      case JoinGroup(topic, group)   ⇒ mediator ! Subscribe(topic, Some(group), self)
-      case ExitGroup(topic, group)   ⇒ mediator ! Unsubscribe(topic, Some(group), self)
-      case msg                       ⇒ testActor ! msg
+      case JoinGroup(topic, group) ⇒ mediator ! Subscribe(topic, Some(group), self)
+      case ExitGroup(topic, group) ⇒ mediator ! Unsubscribe(topic, Some(group), self)
+      case msg ⇒ testActor ! msg
     }
   }
 

@@ -88,13 +88,11 @@ class CodecBenchmark {
        actor.serialization-identifiers { "${classOf[DummyMessageSerializer].getName}" = 4711 }
        actor.serialization-bindings {"${classOf[DummyMessage].getName}" = codec-benchmark }
     }
-    """
-    )
+    """)
     val config = configType match {
       case RemoteInstrument =>
         ConfigFactory.parseString(
-          s"""akka.remote.artery.advanced.instruments = [ "${classOf[DummyRemoteInstrument].getName}" ]"""
-        ).withFallback(commonConfig)
+          s"""akka.remote.artery.advanced.instruments = [ "${classOf[DummyRemoteInstrument].getName}" ]""").withFallback(commonConfig)
       case _ =>
         commonConfig
     }
@@ -107,8 +105,7 @@ class CodecBenchmark {
 
     uniqueLocalAddress = UniqueAddress(
       system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
-      AddressUidExtension(system).longAddressUid
-    )
+      AddressUidExtension(system).longAddressUid)
 
     val actorOnSystemA = system.actorOf(Props.empty, "a")
     senderStringA = actorOnSystemA.path.toSerializationFormatWithAddress(uniqueLocalAddress.address)

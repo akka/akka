@@ -117,7 +117,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       case aQueue: BlockingQueue[_] ⇒
         config match {
           case BoundedMailbox(capacity, _) ⇒ aQueue.remainingCapacity should ===(capacity)
-          case UnboundedMailbox()          ⇒ aQueue.remainingCapacity should ===(Int.MaxValue)
+          case UnboundedMailbox() ⇒ aQueue.remainingCapacity should ===(Int.MaxValue)
         }
       case _ ⇒
     }
@@ -126,10 +126,10 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
   }
 
   def testEnqueueDequeue(
-    config:   MailboxType,
-    enqueueN: Int         = 10000,
-    dequeueN: Int         = 10000,
-    parallel: Boolean     = true): Unit = within(10 seconds) {
+    config: MailboxType,
+    enqueueN: Int = 10000,
+    dequeueN: Int = 10000,
+    parallel: Boolean = true): Unit = within(10 seconds) {
     val q = factory(config)
     ensureInitialMailboxState(config, q)
 
@@ -183,7 +183,7 @@ class DefaultMailboxSpec extends MailboxSpec {
   lazy val name = "The default mailbox implementation"
   def factory = {
     case u: UnboundedMailbox ⇒ u.create(None, None)
-    case b: BoundedMailbox   ⇒ b.create(None, None)
+    case b: BoundedMailbox ⇒ b.create(None, None)
   }
 }
 
@@ -191,7 +191,7 @@ class PriorityMailboxSpec extends MailboxSpec {
   val comparator = PriorityGenerator(_.##)
   lazy val name = "The priority mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    ⇒ new UnboundedPriorityMailbox(comparator).create(None, None)
+    case UnboundedMailbox() ⇒ new UnboundedPriorityMailbox(comparator).create(None, None)
     case BoundedMailbox(capacity, pushTimeOut) ⇒ new BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(None, None)
   }
 }
@@ -200,7 +200,7 @@ class StablePriorityMailboxSpec extends MailboxSpec {
   val comparator = PriorityGenerator(_.##)
   lazy val name = "The stable priority mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    ⇒ new UnboundedStablePriorityMailbox(comparator).create(None, None)
+    case UnboundedMailbox() ⇒ new UnboundedStablePriorityMailbox(comparator).create(None, None)
     case BoundedMailbox(capacity, pushTimeOut) ⇒ new BoundedStablePriorityMailbox(comparator, capacity, pushTimeOut).create(None, None)
   }
 }
@@ -208,7 +208,7 @@ class StablePriorityMailboxSpec extends MailboxSpec {
 class ControlAwareMailboxSpec extends MailboxSpec {
   lazy val name = "The control aware mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    ⇒ new UnboundedControlAwareMailbox().create(None, None)
+    case UnboundedMailbox() ⇒ new UnboundedControlAwareMailbox().create(None, None)
     case BoundedMailbox(capacity, pushTimeOut) ⇒ new BoundedControlAwareMailbox(capacity, pushTimeOut).create(None, None)
   }
 }
@@ -223,7 +223,7 @@ object CustomMailboxSpec {
   class MyMailboxType(settings: ActorSystem.Settings, config: Config) extends MailboxType {
     override def create(owner: Option[ActorRef], system: Option[ActorSystem]) = owner match {
       case Some(o) ⇒ new MyMailbox(o)
-      case None    ⇒ throw new Exception("no mailbox owner given")
+      case None ⇒ throw new Exception("no mailbox owner given")
     }
   }
 
@@ -238,7 +238,7 @@ class CustomMailboxSpec extends AkkaSpec(CustomMailboxSpec.config) {
       val actor = system.actorOf(Props.empty.withDispatcher("my-dispatcher"))
       awaitCond(actor match {
         case r: RepointableRef ⇒ r.isStarted
-        case _                 ⇒ true
+        case _ ⇒ true
       }, 1 second, 10 millis)
       val queue = actor.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].mailbox.messageQueue
       queue.getClass should ===(classOf[CustomMailboxSpec.MyMailbox])
@@ -250,7 +250,7 @@ class SingleConsumerOnlyMailboxSpec extends MailboxSpec {
   lazy val name = "The single-consumer-only mailbox implementation"
   override def maxConsumers = 1
   def factory = {
-    case u: UnboundedMailbox             ⇒ SingleConsumerOnlyUnboundedMailbox().create(None, None)
+    case u: UnboundedMailbox ⇒ SingleConsumerOnlyUnboundedMailbox().create(None, None)
     case b @ BoundedMailbox(capacity, _) ⇒ NonBlockingBoundedMailbox(capacity).create(None, None)
   }
 }
@@ -288,7 +288,7 @@ class SingleConsumerOnlyMailboxVerificationSpec extends AkkaSpec(SingleConsumerO
           }
         }).withDispatcher(dispatcherId)))
       def receive = {
-        case Ping                  ⇒ a.tell(Ping, b)
+        case Ping ⇒ a.tell(Ping, b)
         case Terminated(`a` | `b`) ⇒ if (context.children.isEmpty) context stop self
       }
     }))

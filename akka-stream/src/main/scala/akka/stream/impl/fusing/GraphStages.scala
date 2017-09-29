@@ -28,9 +28,9 @@ import scala.concurrent.{ Future, Promise }
  */
 // TODO: Fix variance issues
 @InternalApi private[akka] final case class GraphStageModule[+S <: Shape @uncheckedVariance, +M](
-  shape:      S,
+  shape: S,
   attributes: Attributes,
-  stage:      GraphStageWithMaterializedValue[S, M]) extends AtomicModule[S, M] {
+  stage: GraphStageWithMaterializedValue[S, M]) extends AtomicModule[S, M] {
 
   override def withAttributes(attributes: Attributes): AtomicModule[S, M] =
     if (attributes ne this.attributes) new GraphStageModule(shape, attributes, stage)
@@ -155,7 +155,7 @@ import scala.concurrent.{ Future, Promise }
   private class FlowMonitorImpl[T] extends AtomicReference[Any](Initialized) with FlowMonitor[T] {
     override def state = get match {
       case s: StreamState[_] ⇒ s.asInstanceOf[StreamState[T]]
-      case msg               ⇒ Received(msg.asInstanceOf[T])
+      case msg ⇒ Received(msg.asInstanceOf[T])
     }
   }
 
@@ -195,7 +195,7 @@ import scala.concurrent.{ Future, Promise }
         override def postStop(): Unit = {
           monitor.state match {
             case Finished | _: Failed ⇒
-            case _                    ⇒ monitor.set(Failed(new AbruptStageTerminationException(this)))
+            case _ ⇒ monitor.set(Failed(new AbruptStageTerminationException(this)))
           }
         }
 

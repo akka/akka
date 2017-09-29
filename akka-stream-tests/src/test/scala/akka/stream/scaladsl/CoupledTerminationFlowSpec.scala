@@ -162,11 +162,11 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
     }
     val assertCompleteAndCancel = () ⇒ {
       probe.expectMsgPF() {
-        case Success(v)        ⇒ // good
+        case Success(v) ⇒ // good
         case "cancel-received" ⇒ // good
       }
       probe.expectMsgPF() {
-        case Success(v)        ⇒ // good
+        case Success(v) ⇒ // good
         case "cancel-received" ⇒ // good
       }
     }
@@ -177,11 +177,11 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
     }
     val assertErrorAndCancel = () ⇒ {
       probe.expectMsgPF() {
-        case Failure(ex)       ⇒ // good
+        case Failure(ex) ⇒ // good
         case "cancel-received" ⇒ // good
       }
       probe.expectMsgPF() {
-        case Failure(ex)       ⇒ // good
+        case Failure(ex) ⇒ // good
         case "cancel-received" ⇒ // good
       }
     }

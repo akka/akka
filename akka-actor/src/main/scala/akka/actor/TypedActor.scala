@@ -44,7 +44,7 @@ trait TypedActorFactory {
    */
   def stop(proxy: AnyRef): Boolean = getActorRefFor(proxy) match {
     case null ⇒ false
-    case ref  ⇒ ref.asInstanceOf[InternalActorRef].stop; true
+    case ref ⇒ ref.asInstanceOf[InternalActorRef].stop; true
   }
 
   /**
@@ -53,7 +53,7 @@ trait TypedActorFactory {
    */
   def poisonPill(proxy: AnyRef): Boolean = getActorRefFor(proxy) match {
     case null ⇒ false
-    case ref  ⇒ ref ! PoisonPill; true
+    case ref ⇒ ref ! PoisonPill; true
   }
 
   /**
@@ -140,14 +140,14 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      */
     def apply(instance: AnyRef): AnyRef = try {
       parameters match {
-        case null                     ⇒ method.invoke(instance)
+        case null ⇒ method.invoke(instance)
         case args if args.length == 0 ⇒ method.invoke(instance)
-        case args                     ⇒ method.invoke(instance, args: _*)
+        case args ⇒ method.invoke(instance, args: _*)
       }
     } catch { case i: InvocationTargetException ⇒ throw i.getTargetException }
 
     @throws(classOf[ObjectStreamException]) private def writeReplace(): AnyRef = parameters match {
-      case null                 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null)
+      case null ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null)
       case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array())
       case ps ⇒
         val serialization = SerializationExtension(akka.serialization.JavaSerializer.currentSystem.value)
@@ -179,7 +179,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }")
       val serialization = SerializationExtension(system)
       MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
-        case null               ⇒ null
+        case null ⇒ null
         case a if a.length == 0 ⇒ Array[AnyRef]()
         case a ⇒
           val deserializedParameters: Array[AnyRef] = new Array[AnyRef](a.length) //Mutable for the sake of sanity
@@ -252,13 +252,13 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
 
     override def supervisorStrategy: SupervisorStrategy = me match {
       case l: Supervisor ⇒ l.supervisorStrategy
-      case _             ⇒ super.supervisorStrategy
+      case _ ⇒ super.supervisorStrategy
     }
 
     override def preStart(): Unit = withContext {
       me match {
         case l: PreStart ⇒ l.preStart()
-        case _           ⇒ super.preStart()
+        case _ ⇒ super.preStart()
       }
     }
 
@@ -266,7 +266,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       withContext {
         me match {
           case l: PostStop ⇒ l.postStop()
-          case _           ⇒ super.postStop()
+          case _ ⇒ super.postStop()
         }
       }
     } finally {
@@ -281,14 +281,14 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     override def preRestart(reason: Throwable, message: Option[Any]): Unit = withContext {
       me match {
         case l: PreRestart ⇒ l.preRestart(reason, message)
-        case _             ⇒ context.children foreach context.stop //Can't be super.preRestart(reason, message) since that would invoke postStop which would set the actorVar to DL and proxyVar to null
+        case _ ⇒ context.children foreach context.stop //Can't be super.preRestart(reason, message) since that would invoke postStop which would set the actorVar to DL and proxyVar to null
       }
     }
 
     override def postRestart(reason: Throwable): Unit = withContext {
       me match {
         case l: PostRestart ⇒ l.postRestart(reason)
-        case _              ⇒ super.postRestart(reason)
+        case _ ⇒ super.postRestart(reason)
       }
     }
 
@@ -311,11 +311,11 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
               case f: Future[_] if m.returnsFuture ⇒
                 implicit val dispatcher = context.dispatcher
                 f onComplete {
-                  case Success(null)   ⇒ s ! NullResponse
+                  case Success(null) ⇒ s ! NullResponse
                   case Success(result) ⇒ s ! result
-                  case Failure(f)      ⇒ s ! Status.Failure(f)
+                  case Failure(f) ⇒ s ! Status.Failure(f)
                 }
-              case null   ⇒ s ! NullResponse
+              case null ⇒ s ! NullResponse
               case result ⇒ s ! result
             }
           } catch {
@@ -409,7 +409,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     @throws(classOf[Throwable])
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
       case "toString" ⇒ actor.toString
-      case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == extension.getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
+      case "equals" ⇒ (args.length == 1 && (proxy eq args(0)) || actor == extension.getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
         implicit val dispatcher = extension.system.dispatcher
@@ -419,7 +419,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
             actor ! m; null //Null return value
           case m if m.returnsFuture ⇒ ask(actor, m)(timeout) map {
             case NullResponse ⇒ null
-            case other        ⇒ other
+            case other ⇒ other
           }
           case m if m.returnsJOption || m.returnsOption ⇒
             val f = ask(actor, m)(timeout)
@@ -431,7 +431,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
             }
           case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration) match {
             case NullResponse ⇒ null
-            case other        ⇒ other.asInstanceOf[AnyRef]
+            case other ⇒ other.asInstanceOf[AnyRef]
           }
         }
     }
@@ -523,11 +523,11 @@ object TypedProps {
 @SerialVersionUID(1L)
 final case class TypedProps[T <: AnyRef] protected[TypedProps] (
   interfaces: immutable.Seq[Class[_]],
-  creator:    () ⇒ T,
-  dispatcher: String                  = TypedProps.defaultDispatcherId,
-  deploy:     Deploy                  = Props.defaultDeploy,
-  timeout:    Option[Timeout]         = TypedProps.defaultTimeout,
-  loader:     Option[ClassLoader]     = TypedProps.defaultLoader) {
+  creator: () ⇒ T,
+  dispatcher: String = TypedProps.defaultDispatcherId,
+  deploy: Deploy = Props.defaultDeploy,
+  timeout: Option[Timeout] = TypedProps.defaultTimeout,
+  loader: Option[ClassLoader] = TypedProps.defaultLoader) {
 
   /**
    * Uses the supplied class as the factory for the TypedActor implementation,
@@ -650,7 +650,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
    * Retrieves the underlying ActorRef for the supplied TypedActor proxy, or null if none found
    */
   def getActorRefFor(proxy: AnyRef): ActorRef = invocationHandlerFor(proxy) match {
-    case null    ⇒ null
+    case null ⇒ null
     case handler ⇒ handler.actor
   }
 
@@ -688,9 +688,9 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
     if ((typedActor ne null) && classOf[Proxy].isAssignableFrom(typedActor.getClass) && Proxy.isProxyClass(typedActor.getClass)) typedActor match {
       case null ⇒ null
       case other ⇒ Proxy.getInvocationHandler(other) match {
-        case null                                 ⇒ null
+        case null ⇒ null
         case handler: TypedActorInvocationHandler ⇒ handler
-        case _                                    ⇒ null
+        case _ ⇒ null
       }
     }
     else null

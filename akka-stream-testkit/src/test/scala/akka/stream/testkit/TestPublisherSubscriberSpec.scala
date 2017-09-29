@@ -40,7 +40,7 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
       upstreamSubscription.sendComplete()
       downstream.expectEventPF {
         case OnComplete ⇒
-        case _          ⇒ fail()
+        case _ ⇒ fail()
       }
     }
 

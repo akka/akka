@@ -36,8 +36,8 @@ object BidiFlowDocSpec {
     implicit val order = ByteOrder.LITTLE_ENDIAN
     val it = bytes.iterator
     it.getByte match {
-      case 1     => Ping(it.getInt)
-      case 2     => Pong(it.getInt)
+      case 1 => Ping(it.getInt)
+      case 2 => Pong(it.getInt)
       case other => throw new RuntimeException(s"parse error: expected 1|2 got $other")
     }
     //#implementation-details-elided

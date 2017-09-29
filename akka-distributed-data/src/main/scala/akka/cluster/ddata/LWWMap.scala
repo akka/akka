@@ -125,7 +125,7 @@ final class LWWMap[A, B] private[akka] (
   @InternalApi private[akka] def put(node: UniqueAddress, key: A, value: B, clock: Clock[B]): LWWMap[A, B] = {
     val newRegister = underlying.get(key) match {
       case Some(r) ⇒ r.withValue(node, value, clock)
-      case None    ⇒ LWWRegister(node, value, clock)
+      case None ⇒ LWWRegister(node, value, clock)
     }
     new LWWMap(underlying.put(node, key, newRegister))
   }
@@ -180,7 +180,7 @@ final class LWWMap[A, B] private[akka] (
 
   override def equals(o: Any): Boolean = o match {
     case other: LWWMap[_, _] ⇒ underlying == other.underlying
-    case _                   ⇒ false
+    case _ ⇒ false
   }
 
   override def hashCode: Int = underlying.hashCode

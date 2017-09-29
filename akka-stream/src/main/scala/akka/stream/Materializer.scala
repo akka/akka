@@ -99,6 +99,6 @@ private[akka] object NoMaterializer extends Materializer {
  * Context parameter to the `create` methods of sources and sinks.
  */
 case class MaterializationContext(
-  materializer:        Materializer,
+  materializer: Materializer,
   effectiveAttributes: Attributes,
-  islandName:          String)
+  islandName: String)

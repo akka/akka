@@ -29,10 +29,10 @@ private[camel] class CamelSupervisor extends Actor with CamelSupport {
   }
 
   def receive = {
-    case AddWatch(actorRef)     ⇒ context.watch(actorRef)
-    case Terminated(actorRef)   ⇒ registry ! DeRegister(actorRef)
+    case AddWatch(actorRef) ⇒ context.watch(actorRef)
+    case Terminated(actorRef) ⇒ registry ! DeRegister(actorRef)
     case msg: ActivationMessage ⇒ activationTracker forward msg
-    case msg                    ⇒ registry forward (msg)
+    case msg ⇒ registry forward (msg)
   }
 }
 
@@ -98,7 +98,7 @@ private[camel] class Registry(activationTracker: ActorRef) extends Actor with Ca
 
   class RegistryLogStrategy()(_decider: SupervisorStrategy.Decider) extends OneForOneStrategy()(_decider) {
     override def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
-                            decision: SupervisorStrategy.Directive): Unit =
+      decision: SupervisorStrategy.Directive): Unit =
       cause match {
         case _: ActorActivationException | _: ActorDeActivationException ⇒
           try context.system.eventStream.publish {

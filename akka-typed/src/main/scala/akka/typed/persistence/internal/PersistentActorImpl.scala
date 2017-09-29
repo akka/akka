@@ -129,7 +129,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
   }
 
   def applySideEffect(effect: ChainableEffect[_, S]): Unit = effect match {
-    case Stop()                ⇒ context.stop(self)
+    case Stop() ⇒ context.stop(self)
     case SideEffect(callbacks) ⇒ callbacks.apply(state)
   }
 }

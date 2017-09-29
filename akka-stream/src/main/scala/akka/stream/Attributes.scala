@@ -36,9 +36,9 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   private[stream] def isAsync: Boolean = {
     attributeList.nonEmpty && attributeList.exists {
-      case AsyncBoundary                 ⇒ true
+      case AsyncBoundary ⇒ true
       case ActorAttributes.Dispatcher(_) ⇒ true
-      case _                             ⇒ false
+      case _ ⇒ false
     }
   }
 
@@ -115,7 +115,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   def get[T <: Attribute: ClassTag](default: T): T =
     get[T] match {
       case Some(a) ⇒ a
-      case None    ⇒ default
+      case None ⇒ default
     }
 
   /**
@@ -125,7 +125,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   def getFirst[T <: Attribute: ClassTag](default: T): T = {
     getFirst[T] match {
       case Some(a) ⇒ a
-      case None    ⇒ default
+      case None ⇒ default
     }
   }
 
@@ -195,8 +195,8 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   def nameOrDefault(default: String = "unnamed"): String = {
     @tailrec def find(attrs: List[Attribute]): String = attrs match {
       case Attributes.Name(name) :: _ ⇒ name
-      case _ :: tail                  ⇒ find(tail)
-      case Nil                        ⇒ default
+      case _ :: tail ⇒ find(tail)
+      case Nil ⇒ default
     }
     find(attributeList)
   }

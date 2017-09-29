@@ -47,11 +47,11 @@ trait Scheduler {
    */
   final def schedule(
     initialDelay: FiniteDuration,
-    interval:     FiniteDuration,
-    receiver:     ActorRef,
-    message:      Any)(implicit
+    interval: FiniteDuration,
+    receiver: ActorRef,
+    message: Any)(implicit
     executor: ExecutionContext,
-                       sender: ActorRef = Actor.noSender): Cancellable =
+    sender: ActorRef = Actor.noSender): Cancellable =
     schedule(initialDelay, interval, new Runnable {
       def run = {
         receiver ! message
@@ -77,7 +77,7 @@ trait Scheduler {
    */
   final def schedule(
     initialDelay: FiniteDuration,
-    interval:     FiniteDuration)(f: ⇒ Unit)(
+    interval: FiniteDuration)(f: ⇒ Unit)(
     implicit
     executor: ExecutionContext): Cancellable =
     schedule(initialDelay, interval, new Runnable { override def run = f })
@@ -103,8 +103,8 @@ trait Scheduler {
    */
   def schedule(
     initialDelay: FiniteDuration,
-    interval:     FiniteDuration,
-    runnable:     Runnable)(implicit executor: ExecutionContext): Cancellable
+    interval: FiniteDuration,
+    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a message to be sent once with a delay, i.e. a time period that has
@@ -116,11 +116,11 @@ trait Scheduler {
    * Java & Scala API
    */
   final def scheduleOnce(
-    delay:    FiniteDuration,
+    delay: FiniteDuration,
     receiver: ActorRef,
-    message:  Any)(implicit
+    message: Any)(implicit
     executor: ExecutionContext,
-                   sender: ActorRef = Actor.noSender): Cancellable =
+    sender: ActorRef = Actor.noSender): Cancellable =
     scheduleOnce(delay, new Runnable {
       override def run = receiver ! message
     })
@@ -149,7 +149,7 @@ trait Scheduler {
    * Java & Scala API
    */
   def scheduleOnce(
-    delay:    FiniteDuration,
+    delay: FiniteDuration,
     runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**

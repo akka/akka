@@ -468,19 +468,19 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 
   @tailrec // Returns false if the Promise is already completed
   private[this] final def addWatcher(watcher: ActorRef): Boolean = watchedBy match {
-    case null  ⇒ false
+    case null ⇒ false
     case other ⇒ updateWatchedBy(other, other + watcher) || addWatcher(watcher)
   }
 
   @tailrec
   private[this] final def remWatcher(watcher: ActorRef): Unit = watchedBy match {
-    case null  ⇒ ()
+    case null ⇒ ()
     case other ⇒ if (!updateWatchedBy(other, other - watcher)) remWatcher(watcher)
   }
 
   @tailrec
   private[this] final def clearWatchers(): Set[ActorRef] = watchedBy match {
-    case null  ⇒ ActorCell.emptyActorRefSet
+    case null ⇒ ActorCell.emptyActorRefSet
     case other ⇒ if (!updateWatchedBy(other, null)) clearWatchers() else other
   }
 
@@ -515,7 +515,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
           p
         } finally { setState(p) }
       } else path
-    case p: ActorPath       ⇒ p
+    case p: ActorPath ⇒ p
     case StoppedWithPath(p) ⇒ p
     case Stopped ⇒
       // even if we are already stopped we still need to produce a proper path
@@ -532,12 +532,12 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
         message match {
           case Status.Success(r) ⇒ Success(r)
           case Status.Failure(f) ⇒ Failure(f)
-          case other             ⇒ Success(other)
+          case other ⇒ Success(other)
         }))) provider.deadLetters ! message
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
-    case _: Terminate                      ⇒ stop()
+    case _: Terminate ⇒ stop()
     case DeathWatchNotification(a, ec, at) ⇒ this.!(Terminated(a)(existenceConfirmed = ec, addressTerminated = at))
     case Watch(watchee, watcher) ⇒
       if (watchee == this && watcher != this) {
@@ -554,7 +554,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
   override private[akka] def isTerminated: Boolean = state match {
     case Stopped | _: StoppedWithPath ⇒ true
-    case _                            ⇒ false
+    case _ ⇒ false
   }
 
   @tailrec
@@ -576,7 +576,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
       case p: ActorPath ⇒
         if (updateState(p, StoppedWithPath(p))) { try ensureCompleted() finally provider.unregisterTempActor(p) } else stop()
       case Stopped | _: StoppedWithPath ⇒ // already stopped
-      case Registering                  ⇒ stop() // spin until registration is completed before stopping
+      case Registering ⇒ stop() // spin until registration is completed before stopping
     }
   }
 }

@@ -47,11 +47,11 @@ object DistributedPubSubSettings {
     new DistributedPubSubSettings(
       role = roleOption(config.getString("role")),
       routingLogic = config.getString("routing-logic") match {
-        case "random"             ⇒ RandomRoutingLogic()
-        case "round-robin"        ⇒ RoundRobinRoutingLogic()
+        case "random" ⇒ RandomRoutingLogic()
+        case "round-robin" ⇒ RoundRobinRoutingLogic()
         case "consistent-hashing" ⇒ throw new IllegalArgumentException(s"'consistent-hashing' routing logic can't be used by the pub-sub mediator")
-        case "broadcast"          ⇒ BroadcastRoutingLogic()
-        case other                ⇒ throw new IllegalArgumentException(s"Unknown 'routing-logic': [$other]")
+        case "broadcast" ⇒ BroadcastRoutingLogic()
+        case other ⇒ throw new IllegalArgumentException(s"Unknown 'routing-logic': [$other]")
       },
       gossipInterval = config.getDuration("gossip-interval", MILLISECONDS).millis,
       removedTimeToLive = config.getDuration("removed-time-to-live", MILLISECONDS).millis,
@@ -88,20 +88,20 @@ object DistributedPubSubSettings {
  * @param sendToDeadLettersWhenNoSubscribers When a message is published to a topic with no subscribers send it to the dead letters.
  */
 final class DistributedPubSubSettings(
-  val role:                               Option[String],
-  val routingLogic:                       RoutingLogic,
-  val gossipInterval:                     FiniteDuration,
-  val removedTimeToLive:                  FiniteDuration,
-  val maxDeltaElements:                   Int,
+  val role: Option[String],
+  val routingLogic: RoutingLogic,
+  val gossipInterval: FiniteDuration,
+  val removedTimeToLive: FiniteDuration,
+  val maxDeltaElements: Int,
   val sendToDeadLettersWhenNoSubscribers: Boolean) extends NoSerializationVerificationNeeded {
 
   @deprecated("Use the other constructor instead.", "2.5.5")
   def this(
-    role:              Option[String],
-    routingLogic:      RoutingLogic,
-    gossipInterval:    FiniteDuration,
+    role: Option[String],
+    routingLogic: RoutingLogic,
+    gossipInterval: FiniteDuration,
     removedTimeToLive: FiniteDuration,
-    maxDeltaElements:  Int) {
+    maxDeltaElements: Int) {
     this(role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements, sendToDeadLettersWhenNoSubscribers = true)
   }
 
@@ -129,12 +129,12 @@ final class DistributedPubSubSettings(
     copy(sendToDeadLettersWhenNoSubscribers = sendToDeadLetterWhenNoSubscribers)
 
   private def copy(
-    role:                               Option[String] = role,
-    routingLogic:                       RoutingLogic   = routingLogic,
-    gossipInterval:                     FiniteDuration = gossipInterval,
-    removedTimeToLive:                  FiniteDuration = removedTimeToLive,
-    maxDeltaElements:                   Int            = maxDeltaElements,
-    sendToDeadLettersWhenNoSubscribers: Boolean        = sendToDeadLettersWhenNoSubscribers): DistributedPubSubSettings =
+    role: Option[String] = role,
+    routingLogic: RoutingLogic = routingLogic,
+    gossipInterval: FiniteDuration = gossipInterval,
+    removedTimeToLive: FiniteDuration = removedTimeToLive,
+    maxDeltaElements: Int = maxDeltaElements,
+    sendToDeadLettersWhenNoSubscribers: Boolean = sendToDeadLettersWhenNoSubscribers): DistributedPubSubSettings =
     new DistributedPubSubSettings(role, routingLogic, gossipInterval, removedTimeToLive, maxDeltaElements, sendToDeadLettersWhenNoSubscribers)
 }
 
@@ -231,7 +231,7 @@ object DistributedPubSubMediator {
 
     @SerialVersionUID(1L)
     final case class Bucket(
-      owner:   Address,
+      owner: Address,
       version: Long,
       content: TreeMap[String, ValueHolder])
 
@@ -364,7 +364,7 @@ object DistributedPubSubMediator {
           bufferOr(mkKey(self.path / encGroup), msg, sender()) {
             context.child(encGroup) match {
               case Some(g) ⇒ g forward msg
-              case None    ⇒ newGroupActor(encGroup) forward msg
+              case None ⇒ newGroupActor(encGroup) forward msg
             }
           }
           pruneDeadline = None
@@ -373,7 +373,7 @@ object DistributedPubSubMediator {
           bufferOr(mkKey(self.path / encGroup), msg, sender()) {
             context.child(encGroup) match {
               case Some(g) ⇒ g forward msg
-              case None    ⇒ // no such group here
+              case None ⇒ // no such group here
             }
           }
         case msg: Subscribed ⇒
@@ -419,8 +419,8 @@ object DistributedPubSubMediator {
      */
     def wrapIfNeeded: Any ⇒ Any = {
       case msg: RouterEnvelope ⇒ MediatorRouterEnvelope(msg)
-      case null                ⇒ throw InvalidMessageException("Message must not be null")
-      case msg: Any            ⇒ msg
+      case null ⇒ throw InvalidMessageException("Message must not be null")
+      case msg: Any ⇒ msg
     }
   }
 }
@@ -606,7 +606,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
       bufferOr(mkKey(self.path / encTopic), msg, sender()) {
         context.child(encTopic) match {
           case Some(t) ⇒ t forward msg
-          case None    ⇒ newTopicActor(encTopic) forward msg
+          case None ⇒ newTopicActor(encTopic) forward msg
         }
       }
 
@@ -633,7 +633,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
       bufferOr(mkKey(self.path / encTopic), msg, sender()) {
         context.child(encTopic) match {
           case Some(t) ⇒ t forward msg
-          case None    ⇒ // no such topic here
+          case None ⇒ // no such topic here
         }
       }
 
@@ -672,7 +672,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
 
     case GossipTick ⇒ gossip()
 
-    case Prune      ⇒ prune()
+    case Prune ⇒ prune()
 
     case Terminated(a) ⇒
       val key = mkKey(a)

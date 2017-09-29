@@ -44,7 +44,7 @@ private[typed] trait ActorRefImpl[-T] extends ActorRef[T] {
    */
   final override def equals(that: Any): Boolean = that match {
     case other: ActorRef[_] ⇒ path.uid == other.path.uid && path == other.path
-    case _                  ⇒ false
+    case _ ⇒ false
   }
 
   override def toString: String = s"Actor[${path}#${path.uid}]"
@@ -80,8 +80,8 @@ private[typed] object BlackholeActorRef
  * This reference cannot watch other references.
  */
 private[typed] final class FunctionRef[-T](
-  _path:      a.ActorPath,
-  send:       (T, FunctionRef[T]) ⇒ Unit,
+  _path: a.ActorPath,
+  send: (T, FunctionRef[T]) ⇒ Unit,
   _terminate: FunctionRef[T] ⇒ Unit)
   extends WatchableRef[T](_path) {
 
@@ -93,12 +93,12 @@ private[typed] final class FunctionRef[-T](
     else () // we don’t have deadLetters available
 
   override def sendSystem(signal: SystemMessage): Unit = signal match {
-    case Create()                           ⇒ // nothing to do
+    case Create() ⇒ // nothing to do
     case DeathWatchNotification(ref, cause) ⇒ // we’re not watching, and we’re not a parent either
-    case Terminate()                        ⇒ doTerminate()
-    case Watch(watchee, watcher)            ⇒ if (watchee == this && watcher != this) addWatcher(watcher.sorryForNothing)
-    case Unwatch(watchee, watcher)          ⇒ if (watchee == this && watcher != this) remWatcher(watcher.sorryForNothing)
-    case NoMessage                          ⇒ // nothing to do
+    case Terminate() ⇒ doTerminate()
+    case Watch(watchee, watcher) ⇒ if (watchee == this && watcher != this) addWatcher(watcher.sorryForNothing)
+    case Unwatch(watchee, watcher) ⇒ if (watchee == this && watcher != this) remWatcher(watcher.sorryForNothing)
+    case NoMessage ⇒ // nothing to do
   }
 
   override def isLocal = true
@@ -189,7 +189,7 @@ private[typed] class FutureRef[-T](_path: a.ActorPath, bufferSize: Int, f: Futur
     val old = unsafe.getAndSetObject(this, targetOffset, Right(BlackholeActorRef))
     old match {
       case Right(target: ActorRef[_]) ⇒ target.sorry.sendSystem(Unwatch(target, this))
-      case _                          ⇒ // nothing to do
+      case _ ⇒ // nothing to do
     }
   }
 
@@ -208,10 +208,10 @@ private[typed] class FutureRef[-T](_path: a.ActorPath, bufferSize: Int, f: Futur
     case DeathWatchNotification(ref, cause) ⇒
       _target = Right(BlackholeActorRef) // avoid sending Unwatch() in this case
       doTerminate() // this can only be the result of watching the target
-    case Terminate()               ⇒ doTerminate()
-    case Watch(watchee, watcher)   ⇒ if (watchee == this && watcher != this) addWatcher(watcher.sorryForNothing)
+    case Terminate() ⇒ doTerminate()
+    case Watch(watchee, watcher) ⇒ if (watchee == this && watcher != this) addWatcher(watcher.sorryForNothing)
     case Unwatch(watchee, watcher) ⇒ if (watchee == this && watcher != this) remWatcher(watcher.sorryForNothing)
-    case NoMessage                 ⇒ // nothing to do
+    case NoMessage ⇒ // nothing to do
   }
 
   override def isLocal = true

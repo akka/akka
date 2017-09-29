@@ -14,20 +14,18 @@ object DeviceGroupQuery {
 
   def props(
     actorToDeviceId: Map[ActorRef, String],
-    requestId:       Long,
-    requester:       ActorRef,
-    timeout:         FiniteDuration
-  ): Props = {
+    requestId: Long,
+    requester: ActorRef,
+    timeout: FiniteDuration): Props = {
     Props(new DeviceGroupQuery(actorToDeviceId, requestId, requester, timeout))
   }
 }
 
 class DeviceGroupQuery(
   actorToDeviceId: Map[ActorRef, String],
-  requestId:       Long,
-  requester:       ActorRef,
-  timeout:         FiniteDuration
-) extends Actor with ActorLogging {
+  requestId: Long,
+  requester: ActorRef,
+  timeout: FiniteDuration) extends Actor with ActorLogging {
   import DeviceGroupQuery._
   import context.dispatcher
   val queryTimeoutTimer = context.system.scheduler.scheduleOnce(timeout, self, CollectionTimeout)
@@ -47,18 +45,16 @@ class DeviceGroupQuery(
   override def receive: Receive =
     waitingForReplies(
       Map.empty,
-      actorToDeviceId.keySet
-    )
+      actorToDeviceId.keySet)
 
   def waitingForReplies(
     repliesSoFar: Map[String, DeviceGroup.TemperatureReading],
-    stillWaiting: Set[ActorRef]
-  ): Receive = {
+    stillWaiting: Set[ActorRef]): Receive = {
     case Device.RespondTemperature(0, valueOption) =>
       val deviceActor = sender()
       val reading = valueOption match {
         case Some(value) => DeviceGroup.Temperature(value)
-        case None        => DeviceGroup.TemperatureNotAvailable
+        case None => DeviceGroup.TemperatureNotAvailable
       }
       receivedResponse(deviceActor, reading, stillWaiting, repliesSoFar)
 
@@ -78,11 +74,10 @@ class DeviceGroupQuery(
   }
 
   def receivedResponse(
-    deviceActor:  ActorRef,
-    reading:      DeviceGroup.TemperatureReading,
+    deviceActor: ActorRef,
+    reading: DeviceGroup.TemperatureReading,
     stillWaiting: Set[ActorRef],
-    repliesSoFar: Map[String, DeviceGroup.TemperatureReading]
-  ): Unit = {
+    repliesSoFar: Map[String, DeviceGroup.TemperatureReading]): Unit = {
     val deviceId = actorToDeviceId(deviceActor)
     val newStillWaiting = stillWaiting - deviceActor
 

@@ -21,7 +21,7 @@ import scala.concurrent.ExecutionContextExecutor
   override def getChild(name: String): Optional[ActorRef[Void]] =
     child(name) match {
       case Some(c) ⇒ Optional.of(c.upcast[Void])
-      case None    ⇒ Optional.empty()
+      case None ⇒ Optional.empty()
     }
 
   override def getChildren: java.util.List[akka.typed.ActorRef[Void]] = {

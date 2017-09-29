@@ -181,13 +181,13 @@ object GraphStageLogic {
    * Minimal actor to work with other actors and watch them in a synchronous ways
    */
   final class StageActor(
-    materializer:     ActorMaterializer,
+    materializer: ActorMaterializer,
     getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
-    initialReceive:   StageActorRef.Receive) {
+    initialReceive: StageActorRef.Receive) {
 
     private val callback = getAsyncCallback(internalReceive)
     private def cell = materializer.supervisor match {
-      case ref: LocalActorRef                        ⇒ ref.underlying
+      case ref: LocalActorRef ⇒ ref.underlying
       case ref: RepointableActorRef if ref.isStarted ⇒ ref.underlying.asInstanceOf[ActorCell]
       case unknown ⇒
         throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
@@ -422,7 +422,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private def getNonEmittingHandler(out: Outlet[_]): OutHandler =
     getHandler(out) match {
       case e: Emitting[_] ⇒ e.previous
-      case other          ⇒ other
+      case other ⇒ other
     }
 
   /**
@@ -512,7 +512,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed)) {
         connection.slot match {
           case Failed(_, elem) ⇒ elem.asInstanceOf[AnyRef] ne Empty
-          case _               ⇒ false // This can only be Empty actually (if a cancel was concurrent with a failure)
+          case _ ⇒ false // This can only be Empty actually (if a cancel was concurrent with a failure)
         }
       } else false
     }
@@ -568,7 +568,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def complete[T](out: Outlet[T]): Unit =
     getHandler(out) match {
       case e: Emitting[_] ⇒ e.addFollowUp(new EmittingCompletion(e.out, e.previous))
-      case _              ⇒ interpreter.complete(conn(out))
+      case _ ⇒ interpreter.complete(conn(out))
     }
 
   /**
@@ -587,7 +587,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         interpreter.cancel(portToConn(i))
       else handlers(i) match {
         case e: Emitting[_] ⇒ e.addFollowUp(new EmittingCompletion(e.out, e.previous))
-        case _              ⇒ interpreter.complete(portToConn(i))
+        case _ ⇒ interpreter.complete(portToConn(i))
       }
       i += 1
     }
@@ -847,13 +847,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def abortEmitting(out: Outlet[_]): Unit =
     getHandler(out) match {
       case e: Emitting[_] ⇒ setHandler(out, e.previous)
-      case _              ⇒
+      case _ ⇒
     }
 
   private def setOrAddEmitting[T](out: Outlet[T], next: Emitting[T]): Unit =
     getHandler(out) match {
       case e: Emitting[_] ⇒ e.asInstanceOf[Emitting[T]].addFollowUp(next)
-      case _              ⇒ setHandler(out, next)
+      case _ ⇒ setHandler(out, next)
     }
 
   private abstract class Emitting[T](val out: Outlet[T], val previous: OutHandler, andThen: () ⇒ Unit) extends OutHandler {
@@ -961,8 +961,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * `doPull` instructs to perform one initial pull on the `from` port.
    */
   final protected def passAlong[Out, In <: Out](from: Inlet[In], to: Outlet[Out],
-                                                doFinish: Boolean = true, doFail: Boolean = true,
-                                                doPull: Boolean = false): Unit = {
+    doFinish: Boolean = true, doFail: Boolean = true,
+    doPull: Boolean = false): Unit = {
     class PassAlongHandler extends InHandler with (() ⇒ Unit) {
       override def apply(): Unit = tryPull(from)
       override def onPush(): Unit = {
@@ -1012,7 +1012,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private var _stageActor: StageActor = _
   final def stageActor: StageActor = _stageActor match {
     case null ⇒ throw StageActorRefNotInitializedException()
-    case ref  ⇒ ref
+    case ref ⇒ ref
   }
 
   /**
@@ -1290,9 +1290,9 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
    * adding the new timer.
    */
   final protected def schedulePeriodicallyWithInitialDelay(
-    timerKey:     Any,
+    timerKey: Any,
     initialDelay: FiniteDuration,
-    interval:     FiniteDuration): Unit = {
+    interval: FiniteDuration): Unit = {
     cancelTimer(timerKey)
     val id = timerIdGen.next()
     val task = interpreter.materializer.schedulePeriodically(initialDelay, interval, new Runnable {
@@ -1453,9 +1453,9 @@ private[akka] trait CallbackWrapper[T] extends AsyncCallback[T] {
 
   override def invoke(arg: T): Unit = locked {
     callbackState.get() match {
-      case Initialized(cb)          ⇒ cb(arg)
+      case Initialized(cb) ⇒ cb(arg)
       case list @ NotInitialized(l) ⇒ callbackState.compareAndSet(list, NotInitialized(arg :: l))
-      case Stopped(cb)              ⇒ cb(arg)
+      case Stopped(cb) ⇒ cb(arg)
     }
   }
 

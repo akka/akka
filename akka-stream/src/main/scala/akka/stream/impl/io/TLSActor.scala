@@ -29,11 +29,11 @@ import scala.util.{ Failure, Success, Try }
 @InternalApi private[stream] object TLSActor {
 
   def props(
-    settings:        ActorMaterializerSettings,
+    settings: ActorMaterializerSettings,
     createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-    verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-    closing:         TLSClosing,
-    tracing:         Boolean                               = false): Props =
+    verifySession: (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+    closing: TLSClosing,
+    tracing: Boolean = false): Props =
     Props(new TLSActor(settings, createSSLEngine, verifySession, closing, tracing)).withDeploy(Deploy.local)
 
   final val TransportIn = 0
@@ -47,11 +47,11 @@ import scala.util.{ Failure, Success, Try }
  * INTERNAL API.
  */
 @InternalApi private[stream] class TLSActor(
-  settings:        ActorMaterializerSettings,
+  settings: ActorMaterializerSettings,
   createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-  verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-  closing:         TLSClosing,
-  tracing:         Boolean)
+  verifySession: (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+  closing: TLSClosing,
+  tracing: Boolean)
   extends Actor with ActorLogging with Pump {
 
   import TLSActor._
@@ -94,7 +94,7 @@ import scala.util.{ Failure, Success, Try }
         buffer = inputBunch.dequeue(idx) match {
           // this class handles both UserIn and TransportIn
           case bs: ByteString ⇒ bs
-          case SendBytes(bs)  ⇒ bs
+          case SendBytes(bs) ⇒ bs
           case n: NegotiateNewSession ⇒
             setNewSessionParameters(n)
             ByteString.empty
@@ -464,7 +464,7 @@ import scala.util.{ Failure, Success, Try }
       case Some(TLSClientAuth.None) ⇒ engine.setNeedClientAuth(false)
       case Some(TLSClientAuth.Want) ⇒ engine.setWantClientAuth(true)
       case Some(TLSClientAuth.Need) ⇒ engine.setNeedClientAuth(true)
-      case _                        ⇒ // do nothing
+      case _ ⇒ // do nothing
     }
 
     sessionParameters.sslParameters.foreach(engine.setSSLParameters)

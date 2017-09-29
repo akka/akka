@@ -125,11 +125,11 @@ private[remote] object RollingEventLogSection {
  * INTERNAL API
  */
 private[remote] class RollingEventLogSection(
-  fileChannel:   FileChannel,
-  offset:        Long,
-  entryCount:    Long,
+  fileChannel: FileChannel,
+  offset: Long,
+  entryCount: Long,
   logBufferSize: Long,
-  recordSize:    Int) {
+  recordSize: Int) {
   import RollingEventLogSection._
 
   require(entryCount > 0, "entryCount must be greater than 0")
@@ -343,7 +343,7 @@ private[remote] class FlightRecorder(val fileChannel: FileChannel) extends Atomi
   def close(): Unit = {
     getAndSet(ShutDown) match {
       case SnapshotInProgress(latch) ⇒ latch.await(3, TimeUnit.SECONDS)
-      case _                         ⇒ // Nothing to unlock
+      case _ ⇒ // Nothing to unlock
     }
     alertLogs.close()
     hiFreqLogs.close()

@@ -63,10 +63,10 @@ object ClusterEvent {
   object CurrentClusterState extends AbstractFunction5[immutable.SortedSet[Member], Set[Member], Set[Address], Option[Address], Map[String, Option[Address]], CurrentClusterState] {
 
     def apply(
-      members:       immutable.SortedSet[Member]  = immutable.SortedSet.empty,
-      unreachable:   Set[Member]                  = Set.empty,
-      seenBy:        Set[Address]                 = Set.empty,
-      leader:        Option[Address]              = None,
+      members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
+      unreachable: Set[Member] = Set.empty,
+      seenBy: Set[Address] = Set.empty,
+      leader: Option[Address] = None,
       roleLeaderMap: Map[String, Option[Address]] = Map.empty): CurrentClusterState =
       new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap)
 
@@ -87,21 +87,21 @@ object ClusterEvent {
    */
   @SerialVersionUID(2)
   final class CurrentClusterState(
-    val members:                immutable.SortedSet[Member],
-    val unreachable:            Set[Member],
-    val seenBy:                 Set[Address],
-    val leader:                 Option[Address],
-    val roleLeaderMap:          Map[String, Option[Address]],
+    val members: immutable.SortedSet[Member],
+    val unreachable: Set[Member],
+    val seenBy: Set[Address],
+    val leader: Option[Address],
+    val roleLeaderMap: Map[String, Option[Address]],
     val unreachableDataCenters: Set[DataCenter])
     extends Product5[immutable.SortedSet[Member], Set[Member], Set[Address], Option[Address], Map[String, Option[Address]]]
     with Serializable {
 
     // for binary compatibility
     def this(
-      members:       immutable.SortedSet[Member]  = immutable.SortedSet.empty,
-      unreachable:   Set[Member]                  = Set.empty,
-      seenBy:        Set[Address]                 = Set.empty,
-      leader:        Option[Address]              = None,
+      members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
+      unreachable: Set[Member] = Set.empty,
+      seenBy: Set[Address] = Set.empty,
+      leader: Option[Address] = None,
       roleLeaderMap: Map[String, Option[Address]] = Map.empty) =
       this(members, unreachable, seenBy, leader, roleLeaderMap, Set.empty)
 
@@ -177,10 +177,10 @@ object ClusterEvent {
 
     // for binary compatibility (used to be a case class)
     def copy(
-      members:       immutable.SortedSet[Member]  = this.members,
-      unreachable:   Set[Member]                  = this.unreachable,
-      seenBy:        Set[Address]                 = this.seenBy,
-      leader:        Option[Address]              = this.leader,
+      members: immutable.SortedSet[Member] = this.members,
+      unreachable: Set[Member] = this.unreachable,
+      seenBy: Set[Address] = this.seenBy,
+      leader: Option[Address] = this.leader,
       roleLeaderMap: Map[String, Option[Address]] = this.roleLeaderMap) =
       new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap, unreachableDataCenters)
 
@@ -443,11 +443,11 @@ object ClusterEvent {
           newMember
       }
       val memberEvents = (newMembers ++ changedMembers) collect {
-        case m if m.status == Joining  ⇒ MemberJoined(m)
+        case m if m.status == Joining ⇒ MemberJoined(m)
         case m if m.status == WeaklyUp ⇒ MemberWeaklyUp(m)
-        case m if m.status == Up       ⇒ MemberUp(m)
-        case m if m.status == Leaving  ⇒ MemberLeft(m)
-        case m if m.status == Exiting  ⇒ MemberExited(m)
+        case m if m.status == Up ⇒ MemberUp(m)
+        case m if m.status == Leaving ⇒ MemberLeft(m)
+        case m if m.status == Exiting ⇒ MemberExited(m)
         // no events for other transitions
       }
 
@@ -533,12 +533,12 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   }
 
   def receive = {
-    case PublishChanges(newState)            ⇒ publishChanges(newState)
-    case currentStats: CurrentInternalStats  ⇒ publishInternalStats(currentStats)
-    case SendCurrentClusterState(receiver)   ⇒ sendCurrentClusterState(receiver)
+    case PublishChanges(newState) ⇒ publishChanges(newState)
+    case currentStats: CurrentInternalStats ⇒ publishInternalStats(currentStats)
+    case SendCurrentClusterState(receiver) ⇒ sendCurrentClusterState(receiver)
     case Subscribe(subscriber, initMode, to) ⇒ subscribe(subscriber, initMode, to)
-    case Unsubscribe(subscriber, to)         ⇒ unsubscribe(subscriber, to)
-    case PublishEvent(event)                 ⇒ publish(event)
+    case Unsubscribe(subscriber, to) ⇒ unsubscribe(subscriber, to)
+    case PublishEvent(event) ⇒ publish(event)
   }
 
   def eventStream: EventStream = context.system.eventStream
@@ -584,7 +584,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   }
 
   def unsubscribe(subscriber: ActorRef, to: Option[Class[_]]): Unit = to match {
-    case None    ⇒ eventStream.unsubscribe(subscriber)
+    case None ⇒ eventStream.unsubscribe(subscriber)
     case Some(c) ⇒ eventStream.unsubscribe(subscriber, c)
   }
 

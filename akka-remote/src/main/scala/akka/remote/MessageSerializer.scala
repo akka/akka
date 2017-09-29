@@ -71,7 +71,7 @@ private[akka] object MessageSerializer {
 
     def manifest: String = serializer match {
       case ser: SerializerWithStringManifest ⇒ ser.manifest(message)
-      case _                                 ⇒ if (serializer.includeManifest) message.getClass.getName else ""
+      case _ ⇒ if (serializer.includeManifest) message.getClass.getName else ""
     }
 
     serializer match {
@@ -87,7 +87,7 @@ private[akka] object MessageSerializer {
   }
 
   def deserializeForArtery(system: ExtendedActorSystem, originUid: Long, serialization: Serialization,
-                           serializer: Int, classManifest: String, envelope: EnvelopeBuffer): AnyRef = {
+    serializer: Int, classManifest: String, envelope: EnvelopeBuffer): AnyRef = {
     serialization.deserializeByteBuffer(envelope.byteBuffer, serializer, classManifest)
   }
 }

@@ -131,7 +131,7 @@ object StepWise {
 
   private def run[T](ctx: scaladsl.ActorContext[Any], ops: List[AST], value: Any): Behavior[Any] =
     ops match {
-      case Thunk(f) :: tail  ⇒ run(ctx, tail, f())
+      case Thunk(f) :: tail ⇒ run(ctx, tail, f())
       case ThunkV(f) :: tail ⇒ run(ctx, tail, f(value))
       case Message(t, f, trace) :: tail ⇒
         ctx.setReceiveTimeout(t, ReceiveTimeout)
@@ -197,7 +197,7 @@ object StepWise {
         ctx.setReceiveTimeout(t, ReceiveTimeout)
         immutable[Any] {
           case (_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for termination")
-          case other               ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
+          case other ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
         } onSignal {
           case (_, PostStop) ⇒
             // ignore PostStop here

@@ -174,8 +174,7 @@ abstract class UnreachableNodeJoinsAgainSpec
               akka.remote.netty.tcp {
                 hostname = ${victimAddress.host.get}
                 port = ${victimAddress.port.get}
-              }"""
-          ).withFallback(system.settings.config)
+              }""").withFallback(system.settings.config)
 
         Await.ready(system.whenTerminated, 10 seconds)
 

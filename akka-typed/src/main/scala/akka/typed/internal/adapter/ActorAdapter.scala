@@ -64,8 +64,8 @@ import akka.util.OptionVal
 
   override def unhandled(msg: Any): Unit = msg match {
     case Terminated(ref) ⇒ throw a.DeathPactException(toUntyped(ref))
-    case msg: Signal     ⇒ // that's ok
-    case other           ⇒ super.unhandled(other)
+    case msg: Signal ⇒ // that's ok
+    case other ⇒ super.unhandled(other)
   }
 
   override val supervisorStrategy = a.OneForOneStrategy() {
@@ -92,12 +92,12 @@ import akka.util.OptionVal
 
   override def postStop(): Unit = {
     behavior match {
-      case null                   ⇒ // skip PostStop
+      case null ⇒ // skip PostStop
       case _: DeferredBehavior[_] ⇒
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
       case s: StoppedBehavior[_] ⇒ s.postStop match {
         case OptionVal.Some(postStop) ⇒ Behavior.interpretSignal(postStop, ctx, PostStop)
-        case OptionVal.None           ⇒ // no postStop behavior defined
+        case OptionVal.None ⇒ // no postStop behavior defined
       }
       case b ⇒ Behavior.interpretSignal(b, ctx, PostStop)
     }

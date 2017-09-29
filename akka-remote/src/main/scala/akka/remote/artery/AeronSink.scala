@@ -40,11 +40,11 @@ private[remote] object AeronSink {
   private val TimerCheckMask = TimerCheckPeriod - 1
 
   private final class OfferTask(pub: Publication, var buffer: UnsafeBuffer, var msgSize: Int, onOfferSuccess: AsyncCallback[Unit],
-                                giveUpAfter: Duration, onGiveUp: AsyncCallback[Unit], onPublicationClosed: AsyncCallback[Unit])
+    giveUpAfter: Duration, onGiveUp: AsyncCallback[Unit], onPublicationClosed: AsyncCallback[Unit])
     extends (() ⇒ Boolean) {
     val giveUpAfterNanos = giveUpAfter match {
       case f: FiniteDuration ⇒ f.toNanos
-      case _                 ⇒ -1L
+      case _ ⇒ -1L
     }
     var n = 0L
     var startTime = 0L
@@ -80,12 +80,12 @@ private[remote] object AeronSink {
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
 private[remote] class AeronSink(
-  channel:        String,
-  streamId:       Int,
-  aeron:          Aeron,
-  taskRunner:     TaskRunner,
-  pool:           EnvelopeBufferPool,
-  giveUpAfter:    Duration,
+  channel: String,
+  streamId: Int,
+  aeron: Aeron,
+  taskRunner: TaskRunner,
+  pool: EnvelopeBufferPool,
+  giveUpAfter: Duration,
   flightRecorder: EventSink)
   extends GraphStageWithMaterializedValue[SinkShape[EnvelopeBuffer], Future[Done]] {
   import AeronSink._

@@ -51,12 +51,12 @@ import akka.util.Helpers.ConfigOps
  *   purposes. It is only used for measuring intervals (duration).
  */
 class PhiAccrualFailureDetector(
-  val threshold:                Double,
-  val maxSampleSize:            Int,
-  val minStdDeviation:          FiniteDuration,
+  val threshold: Double,
+  val maxSampleSize: Int,
+  val minStdDeviation: FiniteDuration,
   val acceptableHeartbeatPause: FiniteDuration,
-  val firstHeartbeatEstimate:   FiniteDuration,
-  eventStream:                  Option[EventStream])(
+  val firstHeartbeatEstimate: FiniteDuration,
+  eventStream: Option[EventStream])(
   implicit
   clock: Clock) extends FailureDetector {
 
@@ -64,11 +64,11 @@ class PhiAccrualFailureDetector(
    * Constructor without eventStream to support backwards compatibility
    */
   def this(
-    threshold:                Double,
-    maxSampleSize:            Int,
-    minStdDeviation:          FiniteDuration,
+    threshold: Double,
+    maxSampleSize: Int,
+    minStdDeviation: FiniteDuration,
     acceptableHeartbeatPause: FiniteDuration,
-    firstHeartbeatEstimate:   FiniteDuration)(implicit clock: Clock) =
+    firstHeartbeatEstimate: FiniteDuration)(implicit clock: Clock) =
     this(
       threshold, maxSampleSize, minStdDeviation, acceptableHeartbeatPause, firstHeartbeatEstimate, None)(clock)
 
@@ -218,9 +218,9 @@ private[akka] object HeartbeatHistory {
  * for empty HeartbeatHistory, i.e. throws ArithmeticException.
  */
 private[akka] final case class HeartbeatHistory private (
-  maxSampleSize:      Int,
-  intervals:          immutable.IndexedSeq[Long],
-  intervalSum:        Long,
+  maxSampleSize: Int,
+  intervals: immutable.IndexedSeq[Long],
+  intervalSum: Long,
   squaredIntervalSum: Long) {
 
   // Heartbeat histories are created trough the firstHeartbeat variable of the PhiAccrualFailureDetector

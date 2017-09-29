@@ -130,17 +130,17 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
       //#update-response1
       case UpdateSuccess(Counter1Key, req) => // ok
       //#update-response1
-      case unexpected                      => fail("Unexpected response: " + unexpected)
+      case unexpected => fail("Unexpected response: " + unexpected)
     }
 
     probe.expectMsgType[UpdateResponse[_]] match {
       //#update-response2
-      case UpdateSuccess(Set1Key, req)  => // ok
-      case UpdateTimeout(Set1Key, req)  =>
+      case UpdateSuccess(Set1Key, req) => // ok
+      case UpdateTimeout(Set1Key, req) =>
       // write to 3 nodes failed within 1.second
       //#update-response2
       case UpdateSuccess(Set2Key, None) =>
-      case unexpected                   => fail("Unexpected response: " + unexpected)
+      case unexpected => fail("Unexpected response: " + unexpected)
     }
   }
 
@@ -199,7 +199,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
         val value = g.get(Counter1Key).value
       case NotFound(Counter1Key, req) => // key counter1 does not exist
       //#get-response1
-      case unexpected                 => fail("Unexpected response: " + unexpected)
+      case unexpected => fail("Unexpected response: " + unexpected)
     }
 
     probe.expectMsgType[GetResponse[_]] match {
@@ -208,7 +208,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
         val elements = g.get(Set1Key).elements
       case GetFailure(Set1Key, req) =>
       // read from 3 nodes failed within 1.second
-      case NotFound(Set1Key, req)   => // key set1 does not exist
+      case NotFound(Set1Key, req) => // key set1 does not exist
       //#get-response2
       case g @ GetSuccess(Set2Key, None) =>
         val elements = g.get(Set2Key).elements

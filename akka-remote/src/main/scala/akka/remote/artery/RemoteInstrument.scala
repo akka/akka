@@ -92,8 +92,8 @@ abstract class RemoteInstrument {
  */
 private[remote] final class RemoteInstruments(
   private val system: ExtendedActorSystem,
-  private val log:    LoggingAdapter,
-  _instruments:       Vector[RemoteInstrument]) {
+  private val log: LoggingAdapter,
+  _instruments: Vector[RemoteInstrument]) {
   import RemoteInstruments._
 
   def this(system: ExtendedActorSystem, log: LoggingAdapter) = this(system, log, RemoteInstruments.create(system, log))

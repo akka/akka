@@ -34,8 +34,7 @@ class ArteryMessageSerializerSpec extends AkkaSpec {
       "SystemMessageDelivery.Ack" → SystemMessageDelivery.Ack(98765432109876L, uniqueAddress()),
       "SystemMessageDelivery.Nack" → SystemMessageDelivery.Nack(98765432109876L, uniqueAddress()),
       "RemoteWatcher.ArteryHeartbeat" → RemoteWatcher.ArteryHeartbeat,
-      "RemoteWatcher.ArteryHeartbeatRsp" → RemoteWatcher.ArteryHeartbeatRsp(Long.MaxValue)
-    ).foreach {
+      "RemoteWatcher.ArteryHeartbeatRsp" → RemoteWatcher.ArteryHeartbeatRsp(Long.MaxValue)).foreach {
         case (scenario, item) ⇒
           s"resolve serializer for $scenario" in {
             val serializer = SerializationExtension(system)

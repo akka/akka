@@ -96,7 +96,7 @@ object ActorContextSpec {
             throw ex
           case MkChild(name, mon, replyTo) ⇒
             val child = name match {
-              case None    ⇒ ctx.spawnAnonymous(Actor.supervise(subject(mon, ignorePostStop)).onFailure(SupervisorStrategy.restart))
+              case None ⇒ ctx.spawnAnonymous(Actor.supervise(subject(mon, ignorePostStop)).onFailure(SupervisorStrategy.restart))
               case Some(n) ⇒ ctx.spawn(Actor.supervise(subject(mon, ignorePostStop)).onFailure(SupervisorStrategy.restart), n)
             }
             replyTo ! Created(child)
@@ -104,7 +104,7 @@ object ActorContextSpec {
           case SetTimeout(d, replyTo) ⇒
             d match {
               case f: FiniteDuration ⇒ ctx.setReceiveTimeout(f, ReceiveTimeout)
-              case _                 ⇒ ctx.cancelReceiveTimeout()
+              case _ ⇒ ctx.cancelReceiveTimeout()
             }
             replyTo ! TimeoutSet
             Actor.same
@@ -151,7 +151,7 @@ object ActorContextSpec {
               case (_, _) ⇒ Actor.unhandled
             } onSignal {
               case (_, PostStop) if ignorePostStop ⇒ Actor.same // ignore PostStop here
-              case (_, Terminated(_))              ⇒ Actor.unhandled
+              case (_, Terminated(_)) ⇒ Actor.unhandled
               case (_, sig) ⇒
                 monitor ! GotSignal(sig)
                 Actor.same
@@ -162,7 +162,7 @@ object ActorContextSpec {
         }
     } onSignal {
       case (_, PostStop) if ignorePostStop ⇒ Actor.same // ignore PostStop here
-      case (ctx, signal)                   ⇒ monitor ! GotSignal(signal); Actor.same
+      case (ctx, signal) ⇒ monitor ! GotSignal(signal); Actor.same
     }
 
   def oldSubject(monitor: ActorRef[Monitor], ignorePostStop: Boolean): Behavior[Command] = {
@@ -184,7 +184,7 @@ object ActorContextSpec {
           throw ex
         case MkChild(name, mon, replyTo) ⇒
           val child = name match {
-            case None    ⇒ ctx.spawnAnonymous(Actor.supervise(subject(mon, ignorePostStop)).onFailure[Throwable](SupervisorStrategy.restart))
+            case None ⇒ ctx.spawnAnonymous(Actor.supervise(subject(mon, ignorePostStop)).onFailure[Throwable](SupervisorStrategy.restart))
             case Some(n) ⇒ ctx.spawn(Actor.supervise(subject(mon, ignorePostStop)).onFailure[Throwable](SupervisorStrategy.restart), n)
           }
           replyTo ! Created(child)
@@ -192,7 +192,7 @@ object ActorContextSpec {
         case SetTimeout(d, replyTo) ⇒
           d match {
             case f: FiniteDuration ⇒ ctx.setReceiveTimeout(f, ReceiveTimeout)
-            case _                 ⇒ ctx.cancelReceiveTimeout()
+            case _ ⇒ ctx.cancelReceiveTimeout()
           }
           replyTo ! TimeoutSet
           Actor.same
@@ -239,7 +239,7 @@ object ActorContextSpec {
             case _ ⇒ Actor.unhandled
           } onSignal {
             case (_, PostStop) if ignorePostStop ⇒ Actor.same // ignore PostStop here
-            case (_, Terminated(_))              ⇒ Actor.unhandled
+            case (_, Terminated(_)) ⇒ Actor.unhandled
             case (_, sig) ⇒
               monitor ! GotSignal(sig)
               Actor.same
@@ -305,10 +305,10 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
        * test procedures that stop this child.
        */
       def mkChild(
-        name:    Option[String],
+        name: Option[String],
         monitor: ActorRef[Event],
-        self:    ActorRef[Event],
-        inert:   Boolean         = false): StepWise.Steps[Event, (ActorRef[Command], ActorRef[Command])] = {
+        self: ActorRef[Event],
+        inert: Boolean = false): StepWise.Steps[Event, (ActorRef[Command], ActorRef[Command])] = {
         val s =
           startWith.keep { subj ⇒
             subj ! MkChild(name, monitor, self)

@@ -110,7 +110,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     case NonFatal(e) ⇒
       val message = e match {
         case n: NoStackTrace ⇒ "swallowing exception during message send: " + n.getMessage
-        case _               ⇒ "swallowing exception during message send" // stack trace includes message
+        case _ ⇒ "swallowing exception during message send" // stack trace includes message
       }
       system.eventStream.publish(Error(e, self.path.toString, clazz(actor), message))
   }
@@ -141,7 +141,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     val unwrappedMessage =
       (envelope.message match {
         case DeadLetter(wrapped, _, _) ⇒ wrapped
-        case other                     ⇒ other
+        case other ⇒ other
       }).asInstanceOf[AnyRef]
 
     unwrappedMessage match {
@@ -150,7 +150,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
         val deserializedMsg = serializeAndDeserializePayload(msg)
         envelope.message match {
           case dl: DeadLetter ⇒ envelope.copy(message = dl.copy(message = deserializedMsg))
-          case _              ⇒ envelope.copy(message = deserializedMsg)
+          case _ ⇒ envelope.copy(message = deserializedMsg)
         }
     }
   }

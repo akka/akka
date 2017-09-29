@@ -19,7 +19,7 @@ private[cluster] object Reachability {
 
   def create(records: immutable.Seq[Record], versions: Map[UniqueAddress, Long]): Reachability = records match {
     case r: immutable.IndexedSeq[Record] ⇒ apply(r, versions)
-    case _                               ⇒ apply(records.toVector, versions)
+    case _ ⇒ apply(records.toVector, versions)
   }
 
   @SerialVersionUID(1L)
@@ -55,7 +55,7 @@ private[cluster] object Reachability {
 @SerialVersionUID(1L)
 @InternalApi
 private[cluster] class Reachability private (
-  val records:  immutable.IndexedSeq[Reachability.Record],
+  val records: immutable.IndexedSeq[Reachability.Record],
   val versions: Map[UniqueAddress, Long]) extends Serializable {
 
   import Reachability._
@@ -77,7 +77,7 @@ private[cluster] class Reachability private (
 
         records foreach { r ⇒
           val m = mapBuilder.get(r.observer) match {
-            case None    ⇒ Map(r.subject → r)
+            case None ⇒ Map(r.subject → r)
             case Some(m) ⇒ m.updated(r.subject, r)
           }
           mapBuilder += (r.observer → m)
@@ -115,7 +115,7 @@ private[cluster] class Reachability private (
     change(observer, subject, Terminated)
 
   private def currentVersion(observer: UniqueAddress): Long = versions.get(observer) match {
-    case None    ⇒ 0
+    case None ⇒ 0
     case Some(v) ⇒ v
   }
 
@@ -216,7 +216,7 @@ private[cluster] class Reachability private (
     observerRows(observer) match {
       case None ⇒ Reachable
       case Some(observerRows) ⇒ observerRows.get(subject) match {
-        case None         ⇒ Reachable
+        case None ⇒ Reachable
         case Some(record) ⇒ record.status
       }
     }
@@ -282,7 +282,7 @@ private[cluster] class Reachability private (
 
   def recordsFrom(observer: UniqueAddress): immutable.IndexedSeq[Record] = {
     observerRows(observer) match {
-      case None       ⇒ Vector.empty
+      case None ⇒ Vector.empty
       case Some(rows) ⇒ rows.valuesIterator.toVector
     }
   }

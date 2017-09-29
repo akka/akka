@@ -32,18 +32,18 @@ object ClusterShardingFailureSpec {
     var n = 0
 
     def receive = {
-      case Get(id)    ⇒ sender() ! Value(id, n)
+      case Get(id) ⇒ sender() ! Value(id, n)
       case Add(id, i) ⇒ n += i
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case m @ Get(id)    ⇒ (id, m)
+    case m @ Get(id) ⇒ (id, m)
     case m @ Add(id, _) ⇒ (id, m)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case Get(id)    ⇒ id.charAt(0).toString
+    case Get(id) ⇒ id.charAt(0).toString
     case Add(id, _) ⇒ id.charAt(0).toString
   }
 

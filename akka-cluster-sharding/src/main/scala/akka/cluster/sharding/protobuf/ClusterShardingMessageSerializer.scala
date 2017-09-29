@@ -95,76 +95,75 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     ShardStatsManifest → { bytes ⇒ shardStatsFromBinary(bytes) },
 
     StartEntityManifest → { startEntityFromBinary(_) },
-    StartEntityAckManifest → { startEntityAckFromBinary(_) }
-  )
+    StartEntityAckManifest → { startEntityAckFromBinary(_) })
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: EntityState                ⇒ EntityStateManifest
-    case _: EntityStarted              ⇒ EntityStartedManifest
-    case _: EntityStopped              ⇒ EntityStoppedManifest
+    case _: EntityState ⇒ EntityStateManifest
+    case _: EntityStarted ⇒ EntityStartedManifest
+    case _: EntityStopped ⇒ EntityStoppedManifest
 
-    case _: State                      ⇒ CoordinatorStateManifest
-    case _: ShardRegionRegistered      ⇒ ShardRegionRegisteredManifest
+    case _: State ⇒ CoordinatorStateManifest
+    case _: ShardRegionRegistered ⇒ ShardRegionRegisteredManifest
     case _: ShardRegionProxyRegistered ⇒ ShardRegionProxyRegisteredManifest
-    case _: ShardRegionTerminated      ⇒ ShardRegionTerminatedManifest
+    case _: ShardRegionTerminated ⇒ ShardRegionTerminatedManifest
     case _: ShardRegionProxyTerminated ⇒ ShardRegionProxyTerminatedManifest
-    case _: ShardHomeAllocated         ⇒ ShardHomeAllocatedManifest
-    case _: ShardHomeDeallocated       ⇒ ShardHomeDeallocatedManifest
+    case _: ShardHomeAllocated ⇒ ShardHomeAllocatedManifest
+    case _: ShardHomeDeallocated ⇒ ShardHomeDeallocatedManifest
 
-    case _: Register                   ⇒ RegisterManifest
-    case _: RegisterProxy              ⇒ RegisterProxyManifest
-    case _: RegisterAck                ⇒ RegisterAckManifest
-    case _: GetShardHome               ⇒ GetShardHomeManifest
-    case _: ShardHome                  ⇒ ShardHomeManifest
-    case _: HostShard                  ⇒ HostShardManifest
-    case _: ShardStarted               ⇒ ShardStartedManifest
-    case _: BeginHandOff               ⇒ BeginHandOffManifest
-    case _: BeginHandOffAck            ⇒ BeginHandOffAckManifest
-    case _: HandOff                    ⇒ HandOffManifest
-    case _: ShardStopped               ⇒ ShardStoppedManifest
-    case _: GracefulShutdownReq        ⇒ GracefulShutdownReqManifest
+    case _: Register ⇒ RegisterManifest
+    case _: RegisterProxy ⇒ RegisterProxyManifest
+    case _: RegisterAck ⇒ RegisterAckManifest
+    case _: GetShardHome ⇒ GetShardHomeManifest
+    case _: ShardHome ⇒ ShardHomeManifest
+    case _: HostShard ⇒ HostShardManifest
+    case _: ShardStarted ⇒ ShardStartedManifest
+    case _: BeginHandOff ⇒ BeginHandOffManifest
+    case _: BeginHandOffAck ⇒ BeginHandOffAckManifest
+    case _: HandOff ⇒ HandOffManifest
+    case _: ShardStopped ⇒ ShardStoppedManifest
+    case _: GracefulShutdownReq ⇒ GracefulShutdownReqManifest
 
-    case _: StartEntity                ⇒ StartEntityManifest
-    case _: StartEntityAck             ⇒ StartEntityAckManifest
+    case _: StartEntity ⇒ StartEntityManifest
+    case _: StartEntityAck ⇒ StartEntityAckManifest
 
-    case GetShardStats                 ⇒ GetShardStatsManifest
-    case _: ShardStats                 ⇒ ShardStatsManifest
+    case GetShardStats ⇒ GetShardStatsManifest
+    case _: ShardStats ⇒ ShardStatsManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: State                        ⇒ compress(coordinatorStateToProto(m))
-    case ShardRegionRegistered(ref)      ⇒ actorRefMessageToProto(ref).toByteArray
+    case m: State ⇒ compress(coordinatorStateToProto(m))
+    case ShardRegionRegistered(ref) ⇒ actorRefMessageToProto(ref).toByteArray
     case ShardRegionProxyRegistered(ref) ⇒ actorRefMessageToProto(ref).toByteArray
-    case ShardRegionTerminated(ref)      ⇒ actorRefMessageToProto(ref).toByteArray
+    case ShardRegionTerminated(ref) ⇒ actorRefMessageToProto(ref).toByteArray
     case ShardRegionProxyTerminated(ref) ⇒ actorRefMessageToProto(ref).toByteArray
-    case m: ShardHomeAllocated           ⇒ shardHomeAllocatedToProto(m).toByteArray
-    case ShardHomeDeallocated(shardId)   ⇒ shardIdMessageToProto(shardId).toByteArray
+    case m: ShardHomeAllocated ⇒ shardHomeAllocatedToProto(m).toByteArray
+    case ShardHomeDeallocated(shardId) ⇒ shardIdMessageToProto(shardId).toByteArray
 
-    case Register(ref)                   ⇒ actorRefMessageToProto(ref).toByteArray
-    case RegisterProxy(ref)              ⇒ actorRefMessageToProto(ref).toByteArray
-    case RegisterAck(ref)                ⇒ actorRefMessageToProto(ref).toByteArray
-    case GetShardHome(shardId)           ⇒ shardIdMessageToProto(shardId).toByteArray
-    case m: ShardHome                    ⇒ shardHomeToProto(m).toByteArray
-    case HostShard(shardId)              ⇒ shardIdMessageToProto(shardId).toByteArray
-    case ShardStarted(shardId)           ⇒ shardIdMessageToProto(shardId).toByteArray
-    case BeginHandOff(shardId)           ⇒ shardIdMessageToProto(shardId).toByteArray
-    case BeginHandOffAck(shardId)        ⇒ shardIdMessageToProto(shardId).toByteArray
-    case HandOff(shardId)                ⇒ shardIdMessageToProto(shardId).toByteArray
-    case ShardStopped(shardId)           ⇒ shardIdMessageToProto(shardId).toByteArray
+    case Register(ref) ⇒ actorRefMessageToProto(ref).toByteArray
+    case RegisterProxy(ref) ⇒ actorRefMessageToProto(ref).toByteArray
+    case RegisterAck(ref) ⇒ actorRefMessageToProto(ref).toByteArray
+    case GetShardHome(shardId) ⇒ shardIdMessageToProto(shardId).toByteArray
+    case m: ShardHome ⇒ shardHomeToProto(m).toByteArray
+    case HostShard(shardId) ⇒ shardIdMessageToProto(shardId).toByteArray
+    case ShardStarted(shardId) ⇒ shardIdMessageToProto(shardId).toByteArray
+    case BeginHandOff(shardId) ⇒ shardIdMessageToProto(shardId).toByteArray
+    case BeginHandOffAck(shardId) ⇒ shardIdMessageToProto(shardId).toByteArray
+    case HandOff(shardId) ⇒ shardIdMessageToProto(shardId).toByteArray
+    case ShardStopped(shardId) ⇒ shardIdMessageToProto(shardId).toByteArray
     case GracefulShutdownReq(ref) ⇒
       actorRefMessageToProto(ref).toByteArray
 
-    case m: EntityState    ⇒ entityStateToProto(m).toByteArray
-    case m: EntityStarted  ⇒ entityStartedToProto(m).toByteArray
-    case m: EntityStopped  ⇒ entityStoppedToProto(m).toByteArray
+    case m: EntityState ⇒ entityStateToProto(m).toByteArray
+    case m: EntityStarted ⇒ entityStartedToProto(m).toByteArray
+    case m: EntityStopped ⇒ entityStoppedToProto(m).toByteArray
 
-    case s: StartEntity    ⇒ startEntityToByteArray(s)
+    case s: StartEntity ⇒ startEntityToByteArray(s)
     case s: StartEntityAck ⇒ startEntityAckToByteArray(s)
 
-    case GetShardStats     ⇒ Array.emptyByteArray
-    case m: ShardStats     ⇒ shardStatsToProto(m).toByteArray
+    case GetShardStats ⇒ Array.emptyByteArray
+    case m: ShardStats ⇒ shardStatsToProto(m).toByteArray
 
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")

@@ -47,7 +47,7 @@ object TestActorRefSpec {
       case "complexRequest2" ⇒
         val worker = TestActorRef(Props[WorkerActor])
         worker ! sender()
-      case "workDone"      ⇒ replyTo ! "complexReply"
+      case "workDone" ⇒ replyTo ! "complexReply"
       case "simpleRequest" ⇒ sender() ! "simpleReply"
     }
   }
@@ -58,7 +58,7 @@ object TestActorRefSpec {
         sender() ! "workDone"
         context stop self
       case replyTo: Promise[_] ⇒ replyTo.asInstanceOf[Promise[Any]].success("complexReply")
-      case replyTo: ActorRef   ⇒ replyTo ! "complexReply"
+      case replyTo: ActorRef ⇒ replyTo ! "complexReply"
     }
 
     val supervisor = context.parent
@@ -68,9 +68,9 @@ object TestActorRefSpec {
   class SenderActor(replyActor: ActorRef) extends TActor {
 
     def receiveT = {
-      case "complex"  ⇒ replyActor ! "complexRequest"
+      case "complex" ⇒ replyActor ! "complexRequest"
       case "complex2" ⇒ replyActor ! "complexRequest2"
-      case "simple"   ⇒ replyActor ! "simpleRequest"
+      case "simple" ⇒ replyActor ! "simpleRequest"
       case "complexReply" ⇒ {
         counter -= 1
       }
@@ -173,7 +173,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
           context.watch(a)
           def receive = {
             case t: Terminated ⇒ testActor forward WrappedTerminated(t)
-            case x             ⇒ testActor forward x
+            case x ⇒ testActor forward x
           }
         }))
         a.!(PoisonPill)(testActor)

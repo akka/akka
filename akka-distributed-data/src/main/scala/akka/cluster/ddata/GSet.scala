@@ -61,7 +61,7 @@ final case class GSet[A] private (elements: Set[A])(override val delta: Option[G
   def add(element: A): GSet[A] = {
     val newDelta = delta match {
       case Some(e) ⇒ Some(new GSet(e.elements + element)(None))
-      case None    ⇒ Some(new GSet[A](Set.apply[A](element))(None))
+      case None ⇒ Some(new GSet[A](Set.apply[A](element))(None))
     }
     assignAncestor(new GSet[A](elements + element)(newDelta))
   }

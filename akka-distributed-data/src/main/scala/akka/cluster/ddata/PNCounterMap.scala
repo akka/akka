@@ -161,7 +161,7 @@ final class PNCounterMap[A] private[akka] (
 
   override def equals(o: Any): Boolean = o match {
     case other: PNCounterMap[A] ⇒ underlying == other.underlying
-    case _                      ⇒ false
+    case _ ⇒ false
   }
 
   override def hashCode: Int = underlying.hashCode

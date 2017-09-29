@@ -35,7 +35,7 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
 
   private def setupStream(
     outboundContext: OutboundContext, timeout: FiniteDuration = 5.seconds,
-    retryInterval:           FiniteDuration = 10.seconds,
+    retryInterval: FiniteDuration = 10.seconds,
     injectHandshakeInterval: FiniteDuration = 10.seconds): (TestPublisher.Probe[String], TestSubscriber.Probe[Any]) = {
 
     TestSource.probe[String]

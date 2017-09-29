@@ -35,14 +35,14 @@ private[typed] object ActorRefAdapter {
 
   def sendSystemMessage(untyped: akka.actor.InternalActorRef, signal: internal.SystemMessage): Unit =
     signal match {
-      case internal.Create()    ⇒ throw new IllegalStateException("WAT? No, seriously.")
+      case internal.Create() ⇒ throw new IllegalStateException("WAT? No, seriously.")
       case internal.Terminate() ⇒ untyped.stop()
       case internal.Watch(watchee, watcher) ⇒ untyped.sendSystemMessage(
         sysmsg.Watch(
           toUntyped(watchee),
           toUntyped(watcher)))
-      case internal.Unwatch(watchee, watcher)          ⇒ untyped.sendSystemMessage(sysmsg.Unwatch(toUntyped(watchee), toUntyped(watcher)))
+      case internal.Unwatch(watchee, watcher) ⇒ untyped.sendSystemMessage(sysmsg.Unwatch(toUntyped(watchee), toUntyped(watcher)))
       case internal.DeathWatchNotification(ref, cause) ⇒ untyped.sendSystemMessage(sysmsg.DeathWatchNotification(toUntyped(ref), true, false))
-      case internal.NoMessage                          ⇒ // just to suppress the warning
+      case internal.NoMessage ⇒ // just to suppress the warning
     }
 }

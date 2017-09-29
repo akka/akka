@@ -24,8 +24,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
 
   val defaultSelector = new GossipTargetSelector(
     reduceGossipDifferentViewProbability = 400,
-    crossDcGossipProbability = 0.2
-  )
+    crossDcGossipProbability = 0.2)
 
   "The gossip target selection" should {
 
@@ -62,8 +61,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
         Gossip(SortedSet(aDc1, bDc1, cDc1)).seen(bDc1),
         aDc1,
         aDc1.dataCenter,
-        crossDcConnections = 5
-      )
+        crossDcConnections = 5)
       val gossipTo = alwaysLocalSelector.gossipTargets(state)
 
       // a1 is self, b1 has seen so only option is c1
@@ -79,8 +77,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
         Gossip(SortedSet(aDc1, bDc1, cDc1)).seen(bDc1),
         aDc1,
         aDc1.dataCenter,
-        crossDcConnections = 5
-      )
+        crossDcConnections = 5)
       val gossipTo = alwaysLocalSelector.gossipTargets(state)
 
       // a1 is self, b1 is the only that has seen
@@ -134,8 +131,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
 
       val state = MembershipState(
         Gossip(
-          members = SortedSet(aDc1, bDc1, eDc2, fDc2, gDc3, hDc3)
-        ).seen(fDc2).seen(hDc3),
+          members = SortedSet(aDc1, bDc1, eDc2, fDc2, gDc3, hDc3)).seen(fDc2).seen(hDc3),
         aDc1,
         aDc1.dataCenter,
         crossDcConnections = 5)

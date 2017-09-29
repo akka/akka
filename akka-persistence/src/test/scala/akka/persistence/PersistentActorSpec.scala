@@ -27,12 +27,12 @@ object PersistentActorSpec {
     var askedForDelete: Option[ActorRef] = None
 
     val updateState: Receive = {
-      case Evt(data)               ⇒ events = data :: events
+      case Evt(data) ⇒ events = data :: events
       case d @ Some(ref: ActorRef) ⇒ askedForDelete = d.asInstanceOf[Some[ActorRef]]
     }
 
     val commonBehavior: Receive = {
-      case "boom"   ⇒ throw new TestException("boom")
+      case "boom" ⇒ throw new TestException("boom")
       case GetState ⇒ sender() ! events.reverse
       case Delete(toSequenceNr) ⇒
         persist(Some(sender())) { s ⇒ askedForDelete = s }
@@ -54,12 +54,12 @@ object PersistentActorSpec {
     override protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit =
       event match {
         case Evt(data) ⇒ sender() ! s"Rejected: $data"
-        case _         ⇒ super.onPersistRejected(cause, event, seqNr)
+        case _ ⇒ super.onPersistRejected(cause, event, seqNr)
       }
     override protected def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit =
       event match {
         case Evt(data) ⇒ sender() ! s"Failure: $data"
-        case _         ⇒ super.onPersistFailure(cause, event, seqNr)
+        case _ ⇒ super.onPersistFailure(cause, event, seqNr)
       }
   }
 
@@ -159,9 +159,9 @@ object PersistentActorSpec {
     }
 
     def receiveCommand: Receive = commonBehavior orElse {
-      case c: Cmd                 ⇒ handleCmd(c)
+      case c: Cmd ⇒ handleCmd(c)
       case SaveSnapshotSuccess(_) ⇒ probe ! "saved"
-      case "snap"                 ⇒ saveSnapshot(events)
+      case "snap" ⇒ saveSnapshot(events)
     }
   }
 
@@ -207,7 +207,7 @@ object PersistentActorSpec {
     override protected def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit =
       event match {
         case Evt(data) ⇒ sender() ! s"Failure: $data"
-        case _         ⇒ super.onPersistFailure(cause, event, seqNr)
+        case _ ⇒ super.onPersistFailure(cause, event, seqNr)
       }
 
   }

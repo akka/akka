@@ -123,10 +123,10 @@ private[akka] object Reflect {
         case c: Class[_] if marker isAssignableFrom c ⇒ c
         case t: ParameterizedType if marker isAssignableFrom t.getRawType.asInstanceOf[Class[_]] ⇒ t
       } match {
-        case None                       ⇒ throw new IllegalArgumentException(s"cannot find [$marker] in ancestors of [$root]")
-        case Some(c: Class[_])          ⇒ if (c == marker) c else rec(c)
+        case None ⇒ throw new IllegalArgumentException(s"cannot find [$marker] in ancestors of [$root]")
+        case Some(c: Class[_]) ⇒ if (c == marker) c else rec(c)
         case Some(t: ParameterizedType) ⇒ if (t.getRawType == marker) t else rec(t.getRawType.asInstanceOf[Class[_]])
-        case _                          ⇒ ??? // cannot happen due to collectFirst
+        case _ ⇒ ??? // cannot happen due to collectFirst
       }
     }
     rec(root)
@@ -150,7 +150,7 @@ private[akka] object Reflect {
     clearFirst(clazz.getDeclaredFields, 0) || {
       clazz.getSuperclass match {
         case null ⇒ false // clazz == classOf[AnyRef]
-        case sc   ⇒ lookupAndSetField(sc, instance, name, value)
+        case sc ⇒ lookupAndSetField(sc, instance, name, value)
       }
     }
   }
@@ -168,7 +168,7 @@ private[akka] object Reflect {
             c.getName.startsWith("akka.util.Reflect"))
       } next () match {
         case null ⇒ getClass.getClassLoader
-        case c    ⇒ c.getClassLoader
+        case c ⇒ c.getClassLoader
       }
 
     Option(Thread.currentThread.getContextClassLoader) orElse

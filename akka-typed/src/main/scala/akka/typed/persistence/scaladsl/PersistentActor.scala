@@ -17,9 +17,9 @@ object PersistentActor {
    */
   def immutable[Command, Event, State](
     persistenceId: String,
-    initialState:  State,
-    actions:       Actions[Command, Event, State],
-    applyEvent:    (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
+    initialState: State,
+    actions: Actions[Command, Event, State],
+    applyEvent: (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
     persistentEntity(_ ⇒ persistenceId, initialState, actions, applyEvent)
 
   /**
@@ -31,9 +31,9 @@ object PersistentActor {
    */
   def persistentEntity[Command, Event, State](
     persistenceIdFromActorName: String ⇒ String,
-    initialState:               State,
-    actions:                    Actions[Command, Event, State],
-    applyEvent:                 (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
+    initialState: State,
+    actions: Actions[Command, Event, State],
+    applyEvent: (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, actions, applyEvent,
       recoveryCompleted = (_, state) ⇒ state)
 
@@ -115,7 +115,7 @@ object PersistentActor {
    * INTERNAL API
    */
   @InternalApi private[akka] final class ByStateActions[Command, Event, State](
-    choice:        State ⇒ Actions[Command, Event, State],
+    choice: State ⇒ Actions[Command, Event, State],
     signalHandler: SignalHandler[Command, Event, State])
     extends Actions[Command, Event, State](
       commandHandler = (ctx, cmd, state) ⇒ choice(state).commandHandler(ctx, cmd, state),
@@ -139,7 +139,7 @@ object PersistentActor {
    */
   @DoNotInherit class Actions[Command, Event, State] private[akka] (
     val commandHandler: CommandHandler[Command, Event, State],
-    val signalHandler:  SignalHandler[Command, Event, State]) {
+    val signalHandler: SignalHandler[Command, Event, State]) {
 
     @InternalApi private[akka] def sigHandler(state: State): SignalHandler[Command, Event, State] =
       signalHandler
@@ -158,10 +158,10 @@ object PersistentActor {
 
 class PersistentBehavior[Command, Event, State](
   @InternalApi private[akka] val persistenceIdFromActorName: String ⇒ String,
-  val initialState:                                          State,
-  val actions:                                               PersistentActor.Actions[Command, Event, State],
-  val applyEvent:                                            (Event, State) ⇒ State,
-  val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ State) extends UntypedBehavior[Command] {
+  val initialState: State,
+  val actions: PersistentActor.Actions[Command, Event, State],
+  val applyEvent: (Event, State) ⇒ State,
+  val recoveryCompleted: (ActorContext[Command], State) ⇒ State) extends UntypedBehavior[Command] {
   import PersistentActor._
 
   /** INTERNAL API */
@@ -185,10 +185,10 @@ class PersistentBehavior[Command, Event, State](
   def snapshotOn(predicate: (State, Event) ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
 
   private def copy(
-    persistenceIdFromActorName: String ⇒ String                        = persistenceIdFromActorName,
-    initialState:               State                                  = initialState,
-    actions:                    Actions[Command, Event, State]         = actions,
-    applyEvent:                 (Event, State) ⇒ State                 = applyEvent,
-    recoveryCompleted:          (ActorContext[Command], State) ⇒ State = recoveryCompleted): PersistentBehavior[Command, Event, State] =
+    persistenceIdFromActorName: String ⇒ String = persistenceIdFromActorName,
+    initialState: State = initialState,
+    actions: Actions[Command, Event, State] = actions,
+    applyEvent: (Event, State) ⇒ State = applyEvent,
+    recoveryCompleted: (ActorContext[Command], State) ⇒ State = recoveryCompleted): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, actions, applyEvent, recoveryCompleted)
 }
