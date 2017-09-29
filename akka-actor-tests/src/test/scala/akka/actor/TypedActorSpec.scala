@@ -46,7 +46,7 @@ object TypedActorSpec {
         val currentItems = current.get
         val newItems = currentItems match {
           case Nil ⇒ items
-          case xs  ⇒ xs
+          case xs ⇒ xs
         }
 
         if (current.compareAndSet(currentItems, newItems.tail)) newItems.head

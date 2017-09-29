@@ -163,7 +163,7 @@ object Replicator {
 
     private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A ⇒ A): Option[A] ⇒ A = {
       case Some(data) ⇒ modify(data)
-      case None       ⇒ modify(initial)
+      case None ⇒ modify(initial)
     }
   }
   /**
@@ -180,7 +180,7 @@ object Replicator {
    * for example not access `sender()` reference of an enclosing actor.
    */
   final case class Update[A <: ReplicatedData] private (key: Key[A], writeConsistency: WriteConsistency,
-                                                        replyTo: ActorRef[UpdateResponse[A]], request: Optional[Any])(val modify: Option[A] ⇒ A)
+    replyTo: ActorRef[UpdateResponse[A]], request: Optional[Any])(val modify: Option[A] ⇒ A)
     extends Command with NoSerializationVerificationNeeded {
 
     /**
@@ -308,7 +308,7 @@ object Replicator {
    * or maintain local correlation data structures.
    */
   final case class Delete[A <: ReplicatedData](key: Key[A], consistency: WriteConsistency,
-                                               replyTo: ActorRef[DeleteResponse[A]], request: Optional[Any])
+    replyTo: ActorRef[DeleteResponse[A]], request: Optional[Any])
     extends Command with NoSerializationVerificationNeeded {
 
     def this(key: Key[A], consistency: WriteConsistency, replyTo: ActorRef[DeleteResponse[A]]) =

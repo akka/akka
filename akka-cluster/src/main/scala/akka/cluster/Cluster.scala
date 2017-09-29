@@ -40,7 +40,7 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
   private[cluster] final val isAssertInvariantsEnabled: Boolean =
     System.getProperty("akka.cluster.assert", "off").toLowerCase match {
       case "on" | "true" ⇒ true
-      case _             ⇒ false
+      case _ ⇒ false
     }
 }
 
@@ -138,7 +138,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
           system.settings.config)
       val threadFactory = system.threadFactory match {
         case tf: MonitorableThreadFactory ⇒ tf.withName(tf.name + "-cluster-scheduler")
-        case tf                           ⇒ tf
+        case tf ⇒ tf
       }
       system.dynamicAccess.createInstanceFor[Scheduler](system.settings.SchedulerClass, immutable.Seq(
         classOf[Config] → cfg,
@@ -153,11 +153,11 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         override def maxFrequency: Double = systemScheduler.maxFrequency
 
         override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration,
-                              runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
+          runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, interval, runnable)
 
         override def scheduleOnce(
-          delay:    FiniteDuration,
+          delay: FiniteDuration,
           runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay, runnable)
       }
@@ -429,7 +429,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   private def closeScheduler(): Unit = scheduler match {
     case x: Closeable ⇒ x.close()
-    case _            ⇒ // ignore, this is fine
+    case _ ⇒ // ignore, this is fine
   }
 
   /**

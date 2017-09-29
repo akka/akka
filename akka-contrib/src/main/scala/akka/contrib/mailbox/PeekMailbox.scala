@@ -29,7 +29,7 @@ class PeekMailboxExtension(val system: ExtendedActorSystem) extends Extension {
 
   def ack()(implicit context: ActorContext): Unit =
     mailboxes.get(context.self) match {
-      case null    ⇒ throw new IllegalArgumentException("Mailbox not registered for: " + context.self)
+      case null ⇒ throw new IllegalArgumentException("Mailbox not registered for: " + context.self)
       case mailbox ⇒ mailbox.ack()
     }
 }

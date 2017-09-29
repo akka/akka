@@ -9,10 +9,10 @@ import org.reactivestreams.Subscriber
  * INTERNAL API
  */
 @DoNotInherit private[akka] abstract class FanoutOutputs(
-  val maxBufferSize:     Int,
+  val maxBufferSize: Int,
   val initialBufferSize: Int,
-  self:                  ActorRef,
-  val pump:              Pump)
+  self: ActorRef,
+  val pump: Pump)
   extends DefaultOutputTransferStates
   with SubscriberManagement[Any] {
 

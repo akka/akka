@@ -99,11 +99,11 @@ final class PNCounter private[akka] (
   override def delta: Option[PNCounter] = {
     val incrementsDelta = increments.delta match {
       case Some(d) ⇒ d
-      case None    ⇒ GCounter.empty
+      case None ⇒ GCounter.empty
     }
     val decrementsDelta = decrements.delta match {
       case Some(d) ⇒ d
-      case None    ⇒ GCounter.empty
+      case None ⇒ GCounter.empty
     }
     Some(new PNCounter(incrementsDelta, decrementsDelta))
   }

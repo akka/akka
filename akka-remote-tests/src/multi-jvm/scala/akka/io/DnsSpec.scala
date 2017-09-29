@@ -36,7 +36,7 @@ class DnsSpec extends RemotingMultiNodeSpec(DnsSpec) {
   override def afterTermination(): Unit = {
     temporaryValue match {
       case Some(value) ⇒ sys.props.put("java.net.preferIPv6Addresses", value)
-      case _           ⇒ sys.props.remove("java.net.preferIPv6Addresses")
+      case _ ⇒ sys.props.remove("java.net.preferIPv6Addresses")
     }
   }
 

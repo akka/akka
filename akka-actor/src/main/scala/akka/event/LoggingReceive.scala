@@ -55,7 +55,7 @@ object LoggingReceive {
    */
   def withLabel(label: String, logLevel: LogLevel)(r: Receive)(implicit context: ActorContext): Receive = r match {
     case _: LoggingReceive ⇒ r
-    case _                 ⇒ if (context.system.settings.AddLoggingReceive) new LoggingReceive(None, r, Option(label), logLevel) else r
+    case _ ⇒ if (context.system.settings.AddLoggingReceive) new LoggingReceive(None, r, Option(label), logLevel) else r
   }
 
   /**
@@ -79,11 +79,11 @@ class LoggingReceive(source: Option[AnyRef], r: Receive, label: Option[String], 
       val message = "received " + (if (handled) "handled" else "unhandled") + " message " + o + " from " + context.sender() +
         (label match {
           case Some(l) ⇒ " in state " + l
-          case _       ⇒ ""
+          case _ ⇒ ""
         })
       val event = src match {
         case a: DiagnosticActorLogging ⇒ LogEvent(logLevel, str, clazz, message, a.log.mdc)
-        case _                         ⇒ LogEvent(logLevel, str, clazz, message)
+        case _ ⇒ LogEvent(logLevel, str, clazz, message)
       }
       context.system.eventStream.publish(event)
     }

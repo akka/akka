@@ -144,8 +144,7 @@ object JournalCompactionSpec {
       PersistenceSpec.config("leveldb", specId, extraConfig = Some(
         s"""
            | akka.persistence.journal.leveldb.compaction-intervals.$specId = $compactionInterval
-        """.stripMargin
-      ))
+        """.stripMargin))
     }
 
     def createLogger(system: ActorSystem, watcher: ActorRef): ActorRef = {

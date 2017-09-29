@@ -18,7 +18,7 @@ import akka.persistence.query.{ EventEnvelope, Sequence }
  */
 private[akka] object EventsByPersistenceIdPublisher {
   def props(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, refreshInterval: Option[FiniteDuration],
-            maxBufSize: Int, writeJournalPluginId: String): Props = {
+    maxBufSize: Int, writeJournalPluginId: String): Props = {
     refreshInterval match {
       case Some(interval) ⇒
         Props(new LiveEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, toSequenceNr, interval,
@@ -55,8 +55,8 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
 
   def init: Receive = {
     case _: Request ⇒ receiveInitialRequest()
-    case Continue   ⇒ // skip, wait for first Request
-    case Cancel     ⇒ context.stop(self)
+    case Continue ⇒ // skip, wait for first Request
+    case Cancel ⇒ context.stop(self)
   }
 
   def receiveInitialRequest(): Unit
@@ -123,7 +123,7 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
 private[akka] class LiveEventsByPersistenceIdPublisher(
   persistenceId: String, fromSequenceNr: Long, override val toSequenceNr: Long,
   refreshInterval: FiniteDuration,
-  maxBufSize:      Int, writeJournalPluginId: String)
+  maxBufSize: Int, writeJournalPluginId: String)
   extends AbstractEventsByPersistenceIdPublisher(
     persistenceId, fromSequenceNr, maxBufSize, writeJournalPluginId) {
   import EventsByPersistenceIdPublisher._

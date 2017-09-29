@@ -32,11 +32,11 @@ private[io] object TcpListener {
  * INTERNAL API
  */
 private[io] class TcpListener(
-  selectorRouter:  ActorRef,
-  tcp:             TcpExt,
+  selectorRouter: ActorRef,
+  tcp: TcpExt,
   channelRegistry: ChannelRegistry,
-  bindCommander:   ActorRef,
-  bind:            Bind)
+  bindCommander: ActorRef,
+  bind: Bind)
   extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import TcpListener._
@@ -56,13 +56,13 @@ private[io] class TcpListener(
       socket.bind(bind.localAddress, bind.backlog)
       val ret = socket.getLocalSocketAddress match {
         case isa: InetSocketAddress ⇒ isa
-        case x                      ⇒ throw new IllegalArgumentException(s"bound to unknown SocketAddress [$x]")
+        case x ⇒ throw new IllegalArgumentException(s"bound to unknown SocketAddress [$x]")
       }
       channelRegistry.register(channel, if (bind.pullMode) 0 else SelectionKey.OP_ACCEPT)
       log.debug("Successfully bound to {}", ret)
       bind.options.foreach {
         case o: Inet.SocketOptionV2 ⇒ o.afterBind(channel.socket)
-        case _                      ⇒
+        case _ ⇒
       }
       ret
     } catch {

@@ -29,10 +29,10 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
   private val proxies = new ConcurrentHashMap[String, ActorRef[_]]()
 
   override def spawn[A](
-    behavior:           Behavior[A],
-    singletonName:      String,
-    props:              Props,
-    settings:           ClusterSingletonSettings,
+    behavior: Behavior[A],
+    singletonName: String,
+    props: Props,
+    settings: ClusterSingletonSettings,
     terminationMessage: A) = {
 
     if (settings.shouldRunManager(cluster)) {

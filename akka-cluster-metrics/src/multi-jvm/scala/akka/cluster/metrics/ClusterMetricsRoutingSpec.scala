@@ -131,7 +131,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
    */
   def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
     case Address(_, _, None, None) ⇒ cluster.selfAddress
-    case a                         ⇒ a
+    case a ⇒ a
   }
 
   def startRouter(name: String): ActorRef = {

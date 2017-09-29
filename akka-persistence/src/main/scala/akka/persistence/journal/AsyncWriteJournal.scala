@@ -38,10 +38,10 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
 
   private val replayFilterMode: ReplayFilter.Mode =
     toRootLowerCase(config.getString("replay-filter.mode")) match {
-      case "off"                   ⇒ ReplayFilter.Disabled
+      case "off" ⇒ ReplayFilter.Disabled
       case "repair-by-discard-old" ⇒ ReplayFilter.RepairByDiscardOld
-      case "fail"                  ⇒ ReplayFilter.Fail
-      case "warn"                  ⇒ ReplayFilter.Warn
+      case "fail" ⇒ ReplayFilter.Fail
+      case "warn" ⇒ ReplayFilter.Warn
       case other ⇒ throw new IllegalArgumentException(
         s"invalid replay-filter.mode [$other], supported values [off, repair-by-discard-old, fail, warn]")
     }

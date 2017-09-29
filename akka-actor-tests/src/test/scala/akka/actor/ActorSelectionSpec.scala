@@ -24,12 +24,12 @@ object ActorSelectionSpec {
 
   class Node extends Actor {
     def receive = {
-      case Create(name)       ⇒ sender() ! context.actorOf(p, name)
+      case Create(name) ⇒ sender() ! context.actorOf(p, name)
       case SelectString(path) ⇒ sender() ! context.actorSelection(path)
-      case SelectPath(path)   ⇒ sender() ! context.actorSelection(path)
-      case GetSender(ref)     ⇒ ref ! sender()
+      case SelectPath(path) ⇒ sender() ! context.actorSelection(path)
+      case GetSender(ref) ⇒ ref ! sender()
       case Forward(path, msg) ⇒ context.actorSelection(path).forward(msg)
-      case msg                ⇒ sender() ! msg
+      case msg ⇒ sender() ! msg
     }
   }
 
@@ -78,7 +78,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
   def askNode(node: ActorRef, query: Query): Option[ActorRef] = {
     Await.result(node ? query, timeout.duration) match {
-      case ref: ActorRef             ⇒ Some(ref)
+      case ref: ActorRef ⇒ Some(ref)
       case selection: ActorSelection ⇒ identify(selection)
     }
   }

@@ -58,8 +58,8 @@ object SupervisorStrategy {
    *   In order to skip this additional delay pass in `0`.
    */
   def restartWithBackoff(
-    minBackoff:   FiniteDuration,
-    maxBackoff:   FiniteDuration,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
     randomFactor: Double): BackoffSupervisorStrategy =
     new Backoff(minBackoff, maxBackoff, randomFactor, resetBackoffAfter = minBackoff, loggingEnabled = true)
 
@@ -75,9 +75,9 @@ object SupervisorStrategy {
    * INTERNAL API
    */
   @InternalApi private[akka] final case class Restart(
-    maxNrOfRetries:  Int,
+    maxNrOfRetries: Int,
     withinTimeRange: FiniteDuration,
-    loggingEnabled:  Boolean) extends SupervisorStrategy {
+    loggingEnabled: Boolean) extends SupervisorStrategy {
 
     override def withLoggingEnabled(enabled: Boolean): SupervisorStrategy =
       copy(loggingEnabled = enabled)
@@ -87,11 +87,11 @@ object SupervisorStrategy {
    * INTERNAL API
    */
   @InternalApi private[akka] final case class Backoff(
-    minBackoff:        FiniteDuration,
-    maxBackoff:        FiniteDuration,
-    randomFactor:      Double,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
     resetBackoffAfter: FiniteDuration,
-    loggingEnabled:    Boolean) extends BackoffSupervisorStrategy {
+    loggingEnabled: Boolean) extends BackoffSupervisorStrategy {
 
     override def withLoggingEnabled(enabled: Boolean): SupervisorStrategy =
       copy(loggingEnabled = enabled)

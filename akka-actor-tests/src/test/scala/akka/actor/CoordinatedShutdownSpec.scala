@@ -305,8 +305,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
 
       override def withSystemRunning(newSystem: ActorSystem): Unit = {
         val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
-          println(s"User JVM hook from ${newSystem.name}")
-        )
+          println(s"User JVM hook from ${newSystem.name}"))
         myHooksCount should ===(2) // one user, one from system
         cancellable.cancel()
       }
@@ -322,8 +321,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
 
       override def withSystemRunning(newSystem: ActorSystem): Unit = {
         val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
-          println(s"User JVM hook from ${newSystem.name}")
-        )
+          println(s"User JVM hook from ${newSystem.name}"))
         myHooksCount should ===(2) // one user, one from system
 
         cancellable.cancel()
@@ -340,8 +338,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
 
       def withSystemRunning(newSystem: ActorSystem): Unit = {
         val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
-          println(s"User JVM hook from ${newSystem.name}")
-        )
+          println(s"User JVM hook from ${newSystem.name}"))
         myHooksCount should ===(2) // one user, one from actor system
         cancellable.cancel()
       }

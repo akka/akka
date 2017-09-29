@@ -19,10 +19,10 @@ import akka.io.UdpConnected._
  * INTERNAL API
  */
 private[io] class UdpConnection(
-  udpConn:         UdpConnectedExt,
+  udpConn: UdpConnectedExt,
   channelRegistry: ChannelRegistry,
-  commander:       ActorRef,
-  connect:         Connect)
+  commander: ActorRef,
+  connect: Connect)
   extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import connect._
@@ -70,15 +70,15 @@ private[io] class UdpConnection(
     case registration: ChannelRegistration ⇒
       options.foreach {
         case v2: Inet.SocketOptionV2 ⇒ v2.afterConnect(channel.socket)
-        case _                       ⇒
+        case _ ⇒
       }
       commander ! Connected
       context.become(connected(registration), discardOld = true)
   }
 
   def connected(registration: ChannelRegistration): Receive = {
-    case SuspendReading  ⇒ registration.disableInterest(OP_READ)
-    case ResumeReading   ⇒ registration.enableInterest(OP_READ)
+    case SuspendReading ⇒ registration.disableInterest(OP_READ)
+    case ResumeReading ⇒ registration.enableInterest(OP_READ)
     case ChannelReadable ⇒ doRead(registration, handler)
 
     case Disconnect ⇒

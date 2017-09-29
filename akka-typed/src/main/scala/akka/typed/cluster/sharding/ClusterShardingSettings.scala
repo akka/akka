@@ -42,9 +42,7 @@ object ClusterShardingSettings {
         untypedSettings.coordinatorSingletonSettings.singletonName,
         untypedSettings.coordinatorSingletonSettings.role,
         untypedSettings.coordinatorSingletonSettings.removalMargin,
-        untypedSettings.coordinatorSingletonSettings.handOverRetryInterval
-      )
-    )
+        untypedSettings.coordinatorSingletonSettings.handOverRetryInterval))
   }
 
   /** INTERNAL API: Indended only for internal use, it is not recommended to keep converting between the setting types */
@@ -72,14 +70,12 @@ object ClusterShardingSettings {
         updatingStateTimeout = settings.tuningParameters.updatingStateTimeout,
         entityRecoveryStrategy = settings.tuningParameters.entityRecoveryStrategy,
         entityRecoveryConstantRateStrategyFrequency = settings.tuningParameters.entityRecoveryConstantRateStrategyFrequency,
-        entityRecoveryConstantRateStrategyNumberOfEntities = settings.tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities
-      ),
+        entityRecoveryConstantRateStrategyNumberOfEntities = settings.tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities),
       new UntypedClusterSingletonManagerSettings(
         settings.coordinatorSingletonSettings.singletonName,
         settings.coordinatorSingletonSettings.role,
         settings.coordinatorSingletonSettings.removalMargin,
-        settings.coordinatorSingletonSettings.handOverRetryInterval
-      ))
+        settings.coordinatorSingletonSettings.handOverRetryInterval))
 
   }
 
@@ -98,23 +94,23 @@ object ClusterShardingSettings {
 
   // generated using kaze-class
   final class TuningParameters private (
-    val bufferSize:                                         Int,
-    val coordinatorFailureBackoff:                          FiniteDuration,
-    val entityRecoveryConstantRateStrategyFrequency:        FiniteDuration,
+    val bufferSize: Int,
+    val coordinatorFailureBackoff: FiniteDuration,
+    val entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
     val entityRecoveryConstantRateStrategyNumberOfEntities: Int,
-    val entityRecoveryStrategy:                             String,
-    val entityRestartBackoff:                               FiniteDuration,
-    val handOffTimeout:                                     FiniteDuration,
-    val keepNrOfBatches:                                    Int,
-    val leastShardAllocationMaxSimultaneousRebalance:       Int,
-    val leastShardAllocationRebalanceThreshold:             Int,
-    val rebalanceInterval:                                  FiniteDuration,
-    val retryInterval:                                      FiniteDuration,
-    val shardFailureBackoff:                                FiniteDuration,
-    val shardStartTimeout:                                  FiniteDuration,
-    val snapshotAfter:                                      Int,
-    val updatingStateTimeout:                               FiniteDuration,
-    val waitingForStateTimeout:                             FiniteDuration) {
+    val entityRecoveryStrategy: String,
+    val entityRestartBackoff: FiniteDuration,
+    val handOffTimeout: FiniteDuration,
+    val keepNrOfBatches: Int,
+    val leastShardAllocationMaxSimultaneousRebalance: Int,
+    val leastShardAllocationRebalanceThreshold: Int,
+    val rebalanceInterval: FiniteDuration,
+    val retryInterval: FiniteDuration,
+    val shardFailureBackoff: FiniteDuration,
+    val shardStartTimeout: FiniteDuration,
+    val snapshotAfter: Int,
+    val updatingStateTimeout: FiniteDuration,
+    val waitingForStateTimeout: FiniteDuration) {
 
     def this(untyped: UntypedShardingSettings.TuningParameters) {
       this(
@@ -134,8 +130,7 @@ object ClusterShardingSettings {
         updatingStateTimeout = untyped.updatingStateTimeout,
         entityRecoveryStrategy = untyped.entityRecoveryStrategy,
         entityRecoveryConstantRateStrategyFrequency = untyped.entityRecoveryConstantRateStrategyFrequency,
-        entityRecoveryConstantRateStrategyNumberOfEntities = untyped.entityRecoveryConstantRateStrategyNumberOfEntities
-      )
+        entityRecoveryConstantRateStrategyNumberOfEntities = untyped.entityRecoveryConstantRateStrategyNumberOfEntities)
 
     }
 
@@ -162,23 +157,23 @@ object ClusterShardingSettings {
     def withWaitingForStateTimeout(value: FiniteDuration): TuningParameters = copy(waitingForStateTimeout = value)
 
     private def copy(
-      bufferSize:                                         Int              = bufferSize,
-      coordinatorFailureBackoff:                          FiniteDuration   = coordinatorFailureBackoff,
-      entityRecoveryConstantRateStrategyFrequency:        FiniteDuration   = entityRecoveryConstantRateStrategyFrequency,
-      entityRecoveryConstantRateStrategyNumberOfEntities: Int              = entityRecoveryConstantRateStrategyNumberOfEntities,
-      entityRecoveryStrategy:                             java.lang.String = entityRecoveryStrategy,
-      entityRestartBackoff:                               FiniteDuration   = entityRestartBackoff,
-      handOffTimeout:                                     FiniteDuration   = handOffTimeout,
-      keepNrOfBatches:                                    Int              = keepNrOfBatches,
-      leastShardAllocationMaxSimultaneousRebalance:       Int              = leastShardAllocationMaxSimultaneousRebalance,
-      leastShardAllocationRebalanceThreshold:             Int              = leastShardAllocationRebalanceThreshold,
-      rebalanceInterval:                                  FiniteDuration   = rebalanceInterval,
-      retryInterval:                                      FiniteDuration   = retryInterval,
-      shardFailureBackoff:                                FiniteDuration   = shardFailureBackoff,
-      shardStartTimeout:                                  FiniteDuration   = shardStartTimeout,
-      snapshotAfter:                                      Int              = snapshotAfter,
-      updatingStateTimeout:                               FiniteDuration   = updatingStateTimeout,
-      waitingForStateTimeout:                             FiniteDuration   = waitingForStateTimeout): TuningParameters = new TuningParameters(
+      bufferSize: Int = bufferSize,
+      coordinatorFailureBackoff: FiniteDuration = coordinatorFailureBackoff,
+      entityRecoveryConstantRateStrategyFrequency: FiniteDuration = entityRecoveryConstantRateStrategyFrequency,
+      entityRecoveryConstantRateStrategyNumberOfEntities: Int = entityRecoveryConstantRateStrategyNumberOfEntities,
+      entityRecoveryStrategy: java.lang.String = entityRecoveryStrategy,
+      entityRestartBackoff: FiniteDuration = entityRestartBackoff,
+      handOffTimeout: FiniteDuration = handOffTimeout,
+      keepNrOfBatches: Int = keepNrOfBatches,
+      leastShardAllocationMaxSimultaneousRebalance: Int = leastShardAllocationMaxSimultaneousRebalance,
+      leastShardAllocationRebalanceThreshold: Int = leastShardAllocationRebalanceThreshold,
+      rebalanceInterval: FiniteDuration = rebalanceInterval,
+      retryInterval: FiniteDuration = retryInterval,
+      shardFailureBackoff: FiniteDuration = shardFailureBackoff,
+      shardStartTimeout: FiniteDuration = shardStartTimeout,
+      snapshotAfter: Int = snapshotAfter,
+      updatingStateTimeout: FiniteDuration = updatingStateTimeout,
+      waitingForStateTimeout: FiniteDuration = waitingForStateTimeout): TuningParameters = new TuningParameters(
       bufferSize = bufferSize,
       coordinatorFailureBackoff = coordinatorFailureBackoff,
       entityRecoveryConstantRateStrategyFrequency = entityRecoveryConstantRateStrategyFrequency,
@@ -218,12 +213,12 @@ object ClusterShardingSettings {
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
 final class ClusterShardingSettings(
-  val role:                         Option[String],
-  val rememberEntities:             Boolean,
-  val journalPluginId:              String,
-  val snapshotPluginId:             String,
-  val stateStoreMode:               ClusterShardingSettings.StateStoreMode,
-  val tuningParameters:             ClusterShardingSettings.TuningParameters,
+  val role: Option[String],
+  val rememberEntities: Boolean,
+  val journalPluginId: String,
+  val snapshotPluginId: String,
+  val stateStoreMode: ClusterShardingSettings.StateStoreMode,
+  val tuningParameters: ClusterShardingSettings.TuningParameters,
   val coordinatorSingletonSettings: ClusterSingletonManagerSettings) extends NoSerializationVerificationNeeded {
 
   import akka.typed.cluster.sharding.ClusterShardingSettings.{ StateStoreModeDData, StateStoreModePersistence }
@@ -264,13 +259,13 @@ final class ClusterShardingSettings(
     copy(coordinatorSingletonSettings = coordinatorSingletonSettings)
 
   private def copy(
-    role:                         Option[String]                           = role,
-    rememberEntities:             Boolean                                  = rememberEntities,
-    journalPluginId:              String                                   = journalPluginId,
-    snapshotPluginId:             String                                   = snapshotPluginId,
-    stateStoreMode:               ClusterShardingSettings.StateStoreMode   = stateStoreMode,
-    tuningParameters:             ClusterShardingSettings.TuningParameters = tuningParameters,
-    coordinatorSingletonSettings: ClusterSingletonManagerSettings          = coordinatorSingletonSettings): ClusterShardingSettings =
+    role: Option[String] = role,
+    rememberEntities: Boolean = rememberEntities,
+    journalPluginId: String = journalPluginId,
+    snapshotPluginId: String = snapshotPluginId,
+    stateStoreMode: ClusterShardingSettings.StateStoreMode = stateStoreMode,
+    tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
+    coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings): ClusterShardingSettings =
     new ClusterShardingSettings(
       role,
       rememberEntities,

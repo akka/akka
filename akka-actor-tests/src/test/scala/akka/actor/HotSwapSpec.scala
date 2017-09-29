@@ -81,7 +81,7 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
           case "init" ⇒ sender() ! "init"
           case "swap" ⇒ context.become({
             case "swapped" ⇒ sender() ! "swapped"
-            case "revert"  ⇒ context.unbecome()
+            case "revert" ⇒ context.unbecome()
           })
         }
       }))
@@ -105,9 +105,9 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
           case "state" ⇒ sender() ! "0"
           case "swap" ⇒
             context.become({
-              case "state"   ⇒ sender() ! "1"
+              case "state" ⇒ sender() ! "1"
               case "swapped" ⇒ sender() ! "swapped"
-              case "crash"   ⇒ throw new Exception("Crash (expected)!")
+              case "crash" ⇒ throw new Exception("Crash (expected)!")
             })
             sender() ! "swapped"
         }

@@ -92,7 +92,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
         codec.decodePdu(payload) match {
           case Heartbeat ⇒ true
-          case _         ⇒ false
+          case _ ⇒ false
         }
       case _ ⇒ false
     }
@@ -113,7 +113,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
         codec.decodePdu(payload) match {
           case Disassociate(_) ⇒ true
-          case _               ⇒ false
+          case _ ⇒ false
         }
       case _ ⇒ false
     }
@@ -188,7 +188,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
       awaitCond(registry.logSnapshot.exists {
         case DisassociateAttempt(requester, remote) ⇒ true
-        case _                                      ⇒ false
+        case _ ⇒ false
       })
     }
 
@@ -245,7 +245,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
       awaitCond(registry.logSnapshot.exists {
         case DisassociateAttempt(requester, remote) ⇒ true
-        case _                                      ⇒ false
+        case _ ⇒ false
       })
     }
 

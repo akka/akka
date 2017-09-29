@@ -31,7 +31,7 @@ class AskSpec extends AkkaSpec {
       f.isCompleted should ===(true)
       f.value.get match {
         case Failure(_: AskTimeoutException) ⇒
-        case v                               ⇒ fail(v + " was not Left(AskTimeoutException)")
+        case v ⇒ fail(v + " was not Left(AskTimeoutException)")
       }
     }
 
@@ -42,7 +42,7 @@ class AskSpec extends AkkaSpec {
       f.isCompleted should ===(true)
       f.value.get match {
         case Failure(_: AskTimeoutException) ⇒
-        case v                               ⇒ fail(v + " was not Left(AskTimeoutException)")
+        case v ⇒ fail(v + " was not Left(AskTimeoutException)")
       }
     }
 

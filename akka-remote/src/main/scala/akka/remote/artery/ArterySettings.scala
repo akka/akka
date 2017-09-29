@@ -47,11 +47,11 @@ private[akka] final class ArterySettings private (config: Config) {
     import config._
 
     val Port: Int = getString("port") match {
-      case ""    ⇒ Canonical.Port
+      case "" ⇒ Canonical.Port
       case other ⇒ getInt("port").requiring(port ⇒ 0 to 65535 contains port, "bind.port must be 0 through 65535")
     }
     val Hostname: String = getHostname("hostname", config) match {
-      case ""    ⇒ Canonical.Hostname
+      case "" ⇒ Canonical.Hostname
       case other ⇒ other
     }
   }
@@ -182,7 +182,7 @@ private[akka] object ArterySettings {
 
   def getHostname(key: String, config: Config) = config.getString(key) match {
     case "<getHostAddress>" ⇒ InetAddress.getLocalHost.getHostAddress
-    case "<getHostName>"    ⇒ InetAddress.getLocalHost.getHostName
-    case other              ⇒ other
+    case "<getHostName>" ⇒ InetAddress.getLocalHost.getHostName
+    case other ⇒ other
   }
 }

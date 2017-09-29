@@ -35,8 +35,8 @@ import akka.dispatch.AbstractNodeQueue
  * “now() + delay &lt;= nextTick” were done).
  */
 class LightArrayRevolverScheduler(
-  config:        Config,
-  log:           LoggingAdapter,
+  config: Config,
+  log: LoggingAdapter,
   threadFactory: ThreadFactory)
   extends Scheduler with Closeable {
 
@@ -89,8 +89,8 @@ class LightArrayRevolverScheduler(
 
   override def schedule(
     initialDelay: FiniteDuration,
-    delay:        FiniteDuration,
-    runnable:     Runnable)(implicit executor: ExecutionContext): Cancellable = {
+    delay: FiniteDuration,
+    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
     checkMaxDelay(roundUp(delay).toNanos)
     try new AtomicReference[Cancellable](InitialRepeatMarker) with Cancellable { self ⇒
       compareAndSet(InitialRepeatMarker, schedule(
@@ -111,7 +111,7 @@ class LightArrayRevolverScheduler(
       @tailrec private def swap(c: Cancellable): Unit = {
         get match {
           case null ⇒ if (c != null) c.cancel()
-          case old  ⇒ if (!compareAndSet(old, c)) swap(c)
+          case old ⇒ if (!compareAndSet(old, c)) swap(c)
         }
       }
 
@@ -140,8 +140,8 @@ class LightArrayRevolverScheduler(
     task ⇒
       try task.run() catch {
         case e: InterruptedException ⇒ throw e
-        case _: SchedulerException   ⇒ // ignore terminated actors
-        case NonFatal(e)             ⇒ log.error(e, "exception while executing timer task")
+        case _: SchedulerException ⇒ // ignore terminated actors
+        case NonFatal(e) ⇒ log.error(e, "exception while executing timer task")
       }
   }
 
@@ -203,7 +203,7 @@ class LightArrayRevolverScheduler(
       @tailrec def collect(q: TaskQueue, acc: Vector[TimerTask]): Vector[TimerTask] = {
         q.poll() match {
           case null ⇒ acc
-          case x    ⇒ collect(q, acc :+ x)
+          case x ⇒ collect(q, acc :+ x)
         }
       }
       ((0 until WheelSize) flatMap (i ⇒ collect(wheel(i), Vector.empty))) ++ collect(queue, Vector.empty)
@@ -318,7 +318,7 @@ object LightArrayRevolverScheduler {
     private final def extractTask(replaceWith: Runnable): Runnable =
       task match {
         case t @ (ExecutedTask | CancelledTask) ⇒ t
-        case x                                  ⇒ if (unsafe.compareAndSwapObject(this, taskOffset, x, replaceWith)) x else extractTask(replaceWith)
+        case x ⇒ if (unsafe.compareAndSwapObject(this, taskOffset, x, replaceWith)) x else extractTask(replaceWith)
       }
 
     private[akka] final def executeTask(): Boolean = extractTask(ExecutedTask) match {
@@ -329,7 +329,7 @@ object LightArrayRevolverScheduler {
           true
         } catch {
           case _: InterruptedException ⇒ { Thread.currentThread.interrupt(); false }
-          case NonFatal(e)             ⇒ { executionContext.reportFailure(e); false }
+          case NonFatal(e) ⇒ { executionContext.reportFailure(e); false }
         }
     }
 
@@ -338,7 +338,7 @@ object LightArrayRevolverScheduler {
 
     override def cancel(): Boolean = extractTask(CancelledTask) match {
       case ExecutedTask | CancelledTask ⇒ false
-      case _                            ⇒ true
+      case _ ⇒ true
     }
 
     override def isCancelled: Boolean = task eq CancelledTask

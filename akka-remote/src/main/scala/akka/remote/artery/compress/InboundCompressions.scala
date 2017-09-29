@@ -49,10 +49,10 @@ private[remote] trait InboundCompressions {
  * One per incoming Aeron stream, actual compression tables are kept per-originUid and created on demand.
  */
 private[remote] final class InboundCompressionsImpl(
-  system:         ActorSystem,
+  system: ActorSystem,
   inboundContext: InboundContext,
-  settings:       ArterySettings.Compression,
-  eventSink:      EventSink                  = IgnoreEventSink) extends InboundCompressions {
+  settings: ArterySettings.Compression,
+  eventSink: EventSink = IgnoreEventSink) extends InboundCompressions {
 
   // None is used as tombstone value after closed
   // TODO would be nice if we can cleanup the tombstones
@@ -86,20 +86,20 @@ private[remote] final class InboundCompressionsImpl(
   override def decompressActorRef(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[ActorRef] =
     actorRefsIn(originUid) match {
       case Some(a) ⇒ a.decompress(tableVersion, idx)
-      case None    ⇒ OptionVal.None
+      case None ⇒ OptionVal.None
     }
   override def hitActorRef(originUid: Long, address: Address, ref: ActorRef, n: Int): Unit = {
     if (ArterySettings.Compression.Debug) println(s"[compress] hitActorRef($originUid, $address, $ref, $n)")
     actorRefsIn(originUid) match {
       case Some(a) ⇒ a.increment(address, ref, n)
-      case None    ⇒ // closed
+      case None ⇒ // closed
     }
   }
   override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = {
     _actorRefsIns.get(originUid) match {
-      case null    ⇒ // ignore
+      case null ⇒ // ignore
       case Some(a) ⇒ a.confirmAdvertisement(tableVersion)
-      case None    ⇒ // closed
+      case None ⇒ // closed
     }
   }
   /** Send compression table advertisement over control stream. Should be called from Decoder. */
@@ -118,21 +118,21 @@ private[remote] final class InboundCompressionsImpl(
   override def decompressClassManifest(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[String] =
     classManifestsIn(originUid) match {
       case Some(a) ⇒ a.decompress(tableVersion, idx)
-      case None    ⇒ OptionVal.None
+      case None ⇒ OptionVal.None
     }
 
   override def hitClassManifest(originUid: Long, address: Address, manifest: String, n: Int): Unit = {
     if (ArterySettings.Compression.Debug) println(s"[compress] hitClassManifest($originUid, $address, $manifest, $n)")
     classManifestsIn(originUid) match {
       case Some(a) ⇒ a.increment(address, manifest, n)
-      case None    ⇒ // closed
+      case None ⇒ // closed
     }
   }
   override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = {
     _classManifestsIns.get(originUid) match {
-      case null    ⇒ // ignore
+      case null ⇒ // ignore
       case Some(a) ⇒ a.confirmAdvertisement(tableVersion)
-      case None    ⇒ // closed
+      case None ⇒ // closed
     }
   }
   /** Send compression table advertisement over control stream. Should be called from Decoder. */
@@ -161,11 +161,11 @@ private[remote] final class InboundCompressionsImpl(
  * If the association is not complete - we simply dont advertise the table, which is fine (handshake not yet complete).
  */
 private[remote] final class InboundActorRefCompression(
-  log:            LoggingAdapter,
-  settings:       ArterySettings.Compression,
-  originUid:      Long,
+  log: LoggingAdapter,
+  settings: ArterySettings.Compression,
+  originUid: Long,
   inboundContext: InboundContext,
-  heavyHitters:   TopHeavyHitters[ActorRef])
+  heavyHitters: TopHeavyHitters[ActorRef])
   extends InboundCompression[ActorRef](log, settings, originUid, inboundContext, heavyHitters) {
 
   override def decompress(tableVersion: Byte, idx: Int): OptionVal[ActorRef] =
@@ -181,11 +181,11 @@ private[remote] final class InboundActorRefCompression(
  * INTERNAL API
  */
 private[remote] final class InboundManifestCompression(
-  log:            LoggingAdapter,
-  settings:       ArterySettings.Compression,
-  originUid:      Long,
+  log: LoggingAdapter,
+  settings: ArterySettings.Compression,
+  originUid: Long,
   inboundContext: InboundContext,
-  heavyHitters:   TopHeavyHitters[String])
+  heavyHitters: TopHeavyHitters[String])
   extends InboundCompression[String](log, settings, originUid, inboundContext, heavyHitters) {
 
   override def advertiseCompressionTable(outboundContext: OutboundContext, table: CompressionTable[String]): Unit = {
@@ -223,11 +223,11 @@ private[remote] object InboundCompression {
    *                  and from there on continiously accumulates at most [[keepOldTables]] recently used tables.
    */
   final case class Tables[T](
-    oldTables:               List[DecompressionTable[T]],
-    activeTable:             DecompressionTable[T],
-    nextTable:               DecompressionTable[T],
+    oldTables: List[DecompressionTable[T]],
+    activeTable: DecompressionTable[T],
+    nextTable: DecompressionTable[T],
     advertisementInProgress: Option[CompressionTable[T]],
-    keepOldTables:           Int) {
+    keepOldTables: Int) {
 
     def selectTable(version: Int): OptionVal[DecompressionTable[T]] = {
       if (activeTable.version == version) {
@@ -279,10 +279,10 @@ private[remote] object InboundCompression {
  * Access to this class must be externally synchronised (e.g. by accessing it from only Actors or a GraphStage etc).
  */
 private[remote] abstract class InboundCompression[T >: Null](
-  val log:          LoggingAdapter,
-  val settings:     ArterySettings.Compression,
-  originUid:        Long,
-  inboundContext:   InboundContext,
+  val log: LoggingAdapter,
+  val settings: ArterySettings.Compression,
+  originUid: Long,
+  inboundContext: InboundContext,
   val heavyHitters: TopHeavyHitters[T]) {
 
   private[this] var tables: InboundCompression.Tables[T] = InboundCompression.Tables.empty

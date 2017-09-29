@@ -40,8 +40,8 @@ private[akka] object PrettyDuration {
           s"%.${precision}g %s%s".formatLocal(Locale.ROOT, value, abbreviate(unit), if (includeNanos) s" ($nanos ns)" else "")
 
         case Duration.MinusInf ⇒ s"-∞ (minus infinity)"
-        case Duration.Inf      ⇒ s"∞ (infinity)"
-        case _                 ⇒ "undefined"
+        case Duration.Inf ⇒ s"∞ (infinity)"
+        case _ ⇒ "undefined"
       }
     }
 
@@ -58,13 +58,13 @@ private[akka] object PrettyDuration {
     }
 
     def abbreviate(unit: TimeUnit): String = unit match {
-      case NANOSECONDS  ⇒ "ns"
+      case NANOSECONDS ⇒ "ns"
       case MICROSECONDS ⇒ "μs"
       case MILLISECONDS ⇒ "ms"
-      case SECONDS      ⇒ "s"
-      case MINUTES      ⇒ "min"
-      case HOURS        ⇒ "h"
-      case DAYS         ⇒ "d"
+      case SECONDS ⇒ "s"
+      case MINUTES ⇒ "min"
+      case HOURS ⇒ "h"
+      case DAYS ⇒ "d"
     }
   }
 

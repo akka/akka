@@ -131,7 +131,7 @@ private[akka] object ChildrenContainer {
 
     override def unreserve(name: String): ChildrenContainer = c.get(name) match {
       case Some(ChildNameReserved) ⇒ NormalChildrenContainer(c - name)
-      case _                       ⇒ this
+      case _ ⇒ this
     }
 
     override def toString =
@@ -164,7 +164,7 @@ private[akka] object ChildrenContainer {
       val t = toDie - child
       if (t.isEmpty) reason match {
         case Termination ⇒ TerminatedChildrenContainer
-        case _           ⇒ NormalChildrenContainer(c - child.path.name)
+        case _ ⇒ NormalChildrenContainer(c - child.path.name)
       }
       else copy(c - child.path.name, t)
     }
@@ -194,7 +194,7 @@ private[akka] object ChildrenContainer {
 
     override def unreserve(name: String): ChildrenContainer = c.get(name) match {
       case Some(ChildNameReserved) ⇒ copy(c = c - name)
-      case _                       ⇒ this
+      case _ ⇒ this
     }
 
     override def isTerminating: Boolean = reason == Termination

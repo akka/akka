@@ -30,13 +30,13 @@ object ORSet {
    */
   def unapply(a: ReplicatedData): Option[Set[Any]] = a match {
     case s: ORSet[Any] @unchecked ⇒ Some(s.elements)
-    case _                        ⇒ None
+    case _ ⇒ None
   }
 
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka]type Dot = VersionVector
+  @InternalApi private[akka] type Dot = VersionVector
 
   sealed trait DeltaOp extends ReplicatedDelta with RequiresCausalDeliveryOfDeltas with ReplicatedDataSerialization {
     type T = DeltaOp
@@ -61,7 +61,7 @@ object ORSet {
           concatElementsMap(u.elementsMap.asInstanceOf[Map[A, Dot]]),
           underlying.vvector.merge(u.vvector)))
       case _: AtomicDeltaOp[A] ⇒ DeltaGroup(Vector(this, that))
-      case DeltaGroup(ops)     ⇒ DeltaGroup(this +: ops)
+      case DeltaGroup(ops) ⇒ DeltaGroup(this +: ops)
     }
 
     private def concatElementsMap(thatMap: Map[A, Dot]): Map[A, Dot] = {
@@ -80,7 +80,7 @@ object ORSet {
 
     override def merge(that: DeltaOp): DeltaOp = that match {
       case _: AtomicDeltaOp[A] ⇒ DeltaGroup(Vector(this, that)) // keep it simple for removals
-      case DeltaGroup(ops)     ⇒ DeltaGroup(this +: ops)
+      case DeltaGroup(ops) ⇒ DeltaGroup(this +: ops)
     }
   }
 
@@ -88,7 +88,7 @@ object ORSet {
   @InternalApi private[akka] final case class FullStateDeltaOp[A](underlying: ORSet[A]) extends AtomicDeltaOp[A] {
     override def merge(that: DeltaOp): DeltaOp = that match {
       case _: AtomicDeltaOp[A] ⇒ DeltaGroup(Vector(this, that))
-      case DeltaGroup(ops)     ⇒ DeltaGroup(this +: ops)
+      case DeltaGroup(ops) ⇒ DeltaGroup(this +: ops)
     }
   }
 
@@ -102,10 +102,10 @@ object ORSet {
         // merge AddDeltaOp into last AddDeltaOp in the group, if possible
         ops.last match {
           case thisAdd: AddDeltaOp[A] ⇒ DeltaGroup(ops.dropRight(1) :+ thisAdd.merge(thatAdd))
-          case _                      ⇒ DeltaGroup(ops :+ thatAdd)
+          case _ ⇒ DeltaGroup(ops :+ thatAdd)
         }
       case DeltaGroup(thatOps) ⇒ DeltaGroup(ops ++ thatOps)
-      case _                   ⇒ DeltaGroup(ops :+ that)
+      case _ ⇒ DeltaGroup(ops :+ that)
     }
 
     override def zero: ORSet[A] = ORSet.empty
@@ -232,7 +232,7 @@ object ORSet {
     mergeDisjointKeys(keys.iterator, elementsMap, vvector, accumulator)
 
   private def mergeDisjointKeys[A](keys: Iterator[A], elementsMap: Map[A, ORSet.Dot], vvector: VersionVector,
-                                   accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] = {
+    accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] = {
     keys.foldLeft(accumulator) {
       case (acc, k) ⇒
         val dots = elementsMap(k)
@@ -279,8 +279,8 @@ object ORSet {
 @SerialVersionUID(1L)
 final class ORSet[A] private[akka] (
   private[akka] val elementsMap: Map[A, ORSet.Dot],
-  private[akka] val vvector:     VersionVector,
-  override val delta:            Option[ORSet.DeltaOp] = None)
+  private[akka] val vvector: VersionVector,
+  override val delta: Option[ORSet.DeltaOp] = None)
   extends DeltaReplicatedData
   with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
 
@@ -352,7 +352,7 @@ final class ORSet[A] private[akka] (
     val deltaDot = VersionVector(node, vvector.versionAt(node))
     val rmOp = ORSet.RemoveDeltaOp(new ORSet(Map(element → deltaDot), vvector))
     val newDelta = delta match {
-      case None    ⇒ rmOp
+      case None ⇒ rmOp
       case Some(d) ⇒ d.merge(rmOp)
     }
     assignAncestor(copy(elementsMap = elementsMap - element, delta = Some(newDelta)))
@@ -372,7 +372,7 @@ final class ORSet[A] private[akka] (
     val newFullState = new ORSet[A](elementsMap = Map.empty, vvector)
     val clearOp = ORSet.FullStateDeltaOp(newFullState)
     val newDelta = delta match {
-      case None    ⇒ clearOp
+      case None ⇒ clearOp
       case Some(d) ⇒ d.merge(clearOp)
     }
     assignAncestor(newFullState.copy(delta = Some(newDelta)))
@@ -422,13 +422,13 @@ final class ORSet[A] private[akka] (
 
   override def mergeDelta(thatDelta: ORSet.DeltaOp): ORSet[A] = {
     thatDelta match {
-      case d: ORSet.AddDeltaOp[A]       ⇒ dryMerge(d.underlying, addDeltaOp = true)
-      case d: ORSet.RemoveDeltaOp[A]    ⇒ mergeRemoveDelta(d)
+      case d: ORSet.AddDeltaOp[A] ⇒ dryMerge(d.underlying, addDeltaOp = true)
+      case d: ORSet.RemoveDeltaOp[A] ⇒ mergeRemoveDelta(d)
       case d: ORSet.FullStateDeltaOp[A] ⇒ dryMerge(d.underlying, addDeltaOp = false)
       case ORSet.DeltaGroup(ops) ⇒
         ops.foldLeft(this) {
-          case (acc, op: ORSet.AddDeltaOp[A])       ⇒ acc.dryMerge(op.underlying, addDeltaOp = true)
-          case (acc, op: ORSet.RemoveDeltaOp[A])    ⇒ acc.mergeRemoveDelta(op)
+          case (acc, op: ORSet.AddDeltaOp[A]) ⇒ acc.dryMerge(op.underlying, addDeltaOp = true)
+          case (acc, op: ORSet.RemoveDeltaOp[A]) ⇒ acc.mergeRemoveDelta(op)
           case (acc, op: ORSet.FullStateDeltaOp[A]) ⇒ acc.dryMerge(op.underlying, addDeltaOp = false)
           case (acc, op: ORSet.DeltaGroup[A]) ⇒
             throw new IllegalArgumentException("ORSet.DeltaGroup should not be nested")
@@ -447,7 +447,7 @@ final class ORSet[A] private[akka] (
         case (dotNode, dotV) ⇒
           thisDotOption match {
             case Some(thisDot) ⇒ thisDot.versionAt(dotNode) <= dotV
-            case None          ⇒ false
+            case None ⇒ false
           }
       }
       if (deleteDotsAreGreater) {
@@ -505,7 +505,7 @@ final class ORSet[A] private[akka] (
   }
 
   private def copy(elementsMap: Map[A, ORSet.Dot] = this.elementsMap, vvector: VersionVector = this.vvector,
-                   delta: Option[ORSet.DeltaOp] = this.delta): ORSet[A] =
+    delta: Option[ORSet.DeltaOp] = this.delta): ORSet[A] =
     new ORSet(elementsMap, vvector, delta)
 
   // this class cannot be a `case class` because we need different `unapply`
@@ -514,7 +514,7 @@ final class ORSet[A] private[akka] (
 
   override def equals(o: Any): Boolean = o match {
     case other: ORSet[_] ⇒ vvector == other.vvector && elementsMap == other.elementsMap
-    case _               ⇒ false
+    case _ ⇒ false
   }
 
   override def hashCode: Int = {

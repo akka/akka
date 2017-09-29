@@ -61,7 +61,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
       private val downstreamCallback: AsyncCallback[Try[ByteString]] =
         getAsyncCallback {
           case Success(elem) ⇒ onPush(elem)
-          case Failure(ex)   ⇒ failStage(ex)
+          case Failure(ex) ⇒ failStage(ex)
         }
 
       private val upstreamCallback: AsyncCallback[(AdapterToStageMessage, Promise[Unit])] =
@@ -153,10 +153,10 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 }
 
 private[akka] class OutputStreamAdapter(
-  dataQueue:        BlockingQueue[ByteString],
+  dataQueue: BlockingQueue[ByteString],
   downstreamStatus: AtomicReference[DownstreamStatus],
-  sendToStage:      (AdapterToStageMessage) ⇒ Future[Unit],
-  writeTimeout:     FiniteDuration)
+  sendToStage: (AdapterToStageMessage) ⇒ Future[Unit],
+  writeTimeout: FiniteDuration)
   extends OutputStream {
 
   var isActive = true
@@ -195,7 +195,7 @@ private[akka] class OutputStreamAdapter(
         }
       } catch {
         case e: IOException ⇒ throw e
-        case NonFatal(e)    ⇒ throw new IOException(e)
+        case NonFatal(e) ⇒ throw new IOException(e)
       })
 
   @scala.throws(classOf[IOException])

@@ -22,9 +22,9 @@ object SnapshotDirectoryFailureSpec {
     }
 
     override def receiveCommand = {
-      case s: String               ⇒ saveSnapshot(s)
+      case s: String ⇒ saveSnapshot(s)
       case SaveSnapshotSuccess(md) ⇒ probe ! md.sequenceNr
-      case other                   ⇒ probe ! other
+      case other ⇒ probe ! other
     }
   }
 }

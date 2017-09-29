@@ -24,9 +24,9 @@ object ScatterGatherFirstCompletedSpec {
   def newActor(id: Int, shudownLatch: Option[TestLatch] = None)(implicit system: ActorSystem) =
     system.actorOf(Props(new Actor {
       def receive = {
-        case Stop(None)                     ⇒ context.stop(self)
+        case Stop(None) ⇒ context.stop(self)
         case Stop(Some(_id)) if (_id == id) ⇒ context.stop(self)
-        case _id: Int if (_id == id)        ⇒
+        case _id: Int if (_id == id) ⇒
         case x ⇒ {
           Thread sleep 100 * id
           sender() ! id
@@ -50,7 +50,7 @@ class ScatterGatherFirstCompletedSpec extends AkkaSpec with DefaultTimeout with 
       val counter1 = new AtomicInteger
       val actor1 = system.actorOf(Props(new Actor {
         def receive = {
-          case "end"    ⇒ doneLatch.countDown()
+          case "end" ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
         }
       }))
@@ -58,7 +58,7 @@ class ScatterGatherFirstCompletedSpec extends AkkaSpec with DefaultTimeout with 
       val counter2 = new AtomicInteger
       val actor2 = system.actorOf(Props(new Actor {
         def receive = {
-          case "end"    ⇒ doneLatch.countDown()
+          case "end" ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
         }
       }))

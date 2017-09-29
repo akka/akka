@@ -39,7 +39,7 @@ import akka.annotation.InternalApi
   override def dispatchers: Dispatchers = new Dispatchers {
     override def lookup(selector: DispatcherSelector): ExecutionContextExecutor =
       selector match {
-        case DispatcherDefault(_)         ⇒ untyped.dispatcher
+        case DispatcherDefault(_) ⇒ untyped.dispatcher
         case DispatcherFromConfig(str, _) ⇒ untyped.dispatchers.lookup(str)
         case DispatcherFromExecutionContext(_, _) ⇒
           throw new UnsupportedOperationException("Cannot use DispatcherFromExecutionContext with ActorSystemAdapter")

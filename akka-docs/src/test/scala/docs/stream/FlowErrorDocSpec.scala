@@ -33,7 +33,7 @@ class FlowErrorDocSpec extends AkkaSpec {
     //#resume
     val decider: Supervision.Decider = {
       case _: ArithmeticException => Supervision.Resume
-      case _                      => Supervision.Stop
+      case _ => Supervision.Stop
     }
     implicit val materializer = ActorMaterializer(
       ActorMaterializerSettings(system).withSupervisionStrategy(decider))
@@ -51,7 +51,7 @@ class FlowErrorDocSpec extends AkkaSpec {
     implicit val materializer = ActorMaterializer()
     val decider: Supervision.Decider = {
       case _: ArithmeticException => Supervision.Resume
-      case _                      => Supervision.Stop
+      case _ => Supervision.Stop
     }
     val flow = Flow[Int]
       .filter(100 / _ < 50).map(elem => 100 / (5 - elem))
@@ -71,7 +71,7 @@ class FlowErrorDocSpec extends AkkaSpec {
     implicit val materializer = ActorMaterializer()
     val decider: Supervision.Decider = {
       case _: IllegalArgumentException => Supervision.Restart
-      case _                           => Supervision.Stop
+      case _ => Supervision.Stop
     }
     val flow = Flow[Int]
       .scan(0) { (acc, elem) =>
@@ -94,8 +94,7 @@ class FlowErrorDocSpec extends AkkaSpec {
     //#recover
     Source(0 to 6).map(n =>
       if (n < 5) n.toString
-      else throw new RuntimeException("Boom!")
-    ).recover {
+      else throw new RuntimeException("Boom!")).recover {
       case _: RuntimeException => "stream truncated"
     }.runForeach(println)
     //#recover
@@ -120,8 +119,7 @@ stream truncated
 
     Source(0 to 10).map(n =>
       if (n < 5) n.toString
-      else throw new RuntimeException("Boom!")
-    ).recoverWithRetries(attempts = 1, {
+      else throw new RuntimeException("Boom!")).recoverWithRetries(attempts = 1, {
       case _: RuntimeException => planB
     }).runForeach(println)
     //#recoverWithRetries

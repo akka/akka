@@ -41,13 +41,13 @@ object CircuitBreakerProxy {
    *                             into a [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] object
    */
   def props(
-    target:               ActorRef,
-    maxFailures:          Int,
-    callTimeout:          Timeout,
-    resetTimeout:         Timeout,
+    target: ActorRef,
+    maxFailures: Int,
+    callTimeout: Timeout,
+    resetTimeout: Timeout,
     circuitEventListener: Option[ActorRef],
-    failureDetector:      Any ⇒ Boolean,
-    failureMap:           CircuitOpenFailure ⇒ Any) =
+    failureDetector: Any ⇒ Boolean,
+    failureMap: CircuitOpenFailure ⇒ Any) =
     Props(new CircuitBreakerProxy(target, maxFailures, callTimeout, resetTimeout, circuitEventListener, failureDetector, failureMap))
 
   sealed trait CircuitBreakerCommand
@@ -72,8 +72,8 @@ object CircuitBreakerProxy {
 
   final case class CircuitBreakerPropsBuilder(
     maxFailures: Int, callTimeout: Timeout, resetTimeout: Timeout,
-    circuitEventListener:        Option[ActorRef]         = None,
-    failureDetector:             Any ⇒ Boolean            = { _ ⇒ false },
+    circuitEventListener: Option[ActorRef] = None,
+    failureDetector: Any ⇒ Boolean = { _ ⇒ false },
     openCircuitFailureConverter: CircuitOpenFailure ⇒ Any = identity) {
 
     def withMaxFailures(value: Int) = copy(maxFailures = value)
@@ -103,13 +103,13 @@ import akka.contrib.circuitbreaker.CircuitBreakerProxy._
 
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class CircuitBreakerProxy(
-  target:               ActorRef,
-  maxFailures:          Int,
-  callTimeout:          Timeout,
-  resetTimeout:         Timeout,
+  target: ActorRef,
+  maxFailures: Int,
+  callTimeout: Timeout,
+  resetTimeout: Timeout,
   circuitEventListener: Option[ActorRef],
-  failureDetector:      Any ⇒ Boolean,
-  failureMap:           CircuitOpenFailure ⇒ Any) extends Actor with ActorLogging with FSM[CircuitBreakerState, CircuitBreakerStateData] {
+  failureDetector: Any ⇒ Boolean,
+  failureMap: CircuitOpenFailure ⇒ Any) extends Actor with ActorLogging with FSM[CircuitBreakerState, CircuitBreakerStateData] {
 
   import CircuitBreakerInternalEvents._
   import FSM.`→`

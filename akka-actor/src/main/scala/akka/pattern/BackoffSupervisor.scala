@@ -37,10 +37,10 @@ object BackoffSupervisor {
    *   In order to skip this additional delay pass in `0`.
    */
   def props(
-    childProps:   Props,
-    childName:    String,
-    minBackoff:   FiniteDuration,
-    maxBackoff:   FiniteDuration,
+    childProps: Props,
+    childName: String,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
     randomFactor: Double): Props = {
     propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, SupervisorStrategy.defaultStrategy)
   }
@@ -67,12 +67,12 @@ object BackoffSupervisor {
    *   backoff process, only a [[OneForOneStrategy]] makes sense here.
    */
   def propsWithSupervisorStrategy(
-    childProps:   Props,
-    childName:    String,
-    minBackoff:   FiniteDuration,
-    maxBackoff:   FiniteDuration,
+    childProps: Props,
+    childName: String,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
     randomFactor: Double,
-    strategy:     SupervisorStrategy): Props = {
+    strategy: SupervisorStrategy): Props = {
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
     require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
@@ -148,8 +148,8 @@ object BackoffSupervisor {
    */
   private[akka] def calculateDelay(
     restartCount: Int,
-    minBackoff:   FiniteDuration,
-    maxBackoff:   FiniteDuration,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
     randomFactor: Double): FiniteDuration = {
     val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
     if (restartCount >= 30) // Duration overflow protection (> 100 years)
@@ -157,7 +157,7 @@ object BackoffSupervisor {
     else
       maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd match {
         case f: FiniteDuration ⇒ f
-        case _                 ⇒ maxBackoff
+        case _ ⇒ maxBackoff
       }
   }
 }
@@ -168,13 +168,13 @@ object BackoffSupervisor {
  * with `Backoff.onStop`.
  */
 final class BackoffSupervisor(
-  val childProps:        Props,
-  val childName:         String,
-  minBackoff:            FiniteDuration,
-  maxBackoff:            FiniteDuration,
-  val reset:             BackoffReset,
-  randomFactor:          Double,
-  strategy:              SupervisorStrategy,
+  val childProps: Props,
+  val childName: String,
+  minBackoff: FiniteDuration,
+  maxBackoff: FiniteDuration,
+  val reset: BackoffReset,
+  randomFactor: Double,
+  strategy: SupervisorStrategy,
   val replyWhileStopped: Option[Any])
   extends Actor with HandleBackoff {
 
@@ -196,20 +196,20 @@ final class BackoffSupervisor(
 
   // for binary compatibility with 2.4.1
   def this(
-    childProps:         Props,
-    childName:          String,
-    minBackoff:         FiniteDuration,
-    maxBackoff:         FiniteDuration,
-    randomFactor:       Double,
+    childProps: Props,
+    childName: String,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
     supervisorStrategy: SupervisorStrategy) =
     this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, supervisorStrategy, None)
 
   // for binary compatibility with 2.4.0
   def this(
-    childProps:   Props,
-    childName:    String,
-    minBackoff:   FiniteDuration,
-    maxBackoff:   FiniteDuration,
+    childProps: Props,
+    childName: String,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
     randomFactor: Double) =
     this(childProps, childName, minBackoff, maxBackoff, randomFactor, SupervisorStrategy.defaultStrategy)
 
@@ -256,7 +256,7 @@ private[akka] trait HandleBackoff { this: Actor ⇒
     case Reset ⇒
       reset match {
         case ManualReset ⇒ restartCount = 0
-        case msg         ⇒ unhandled(msg)
+        case msg ⇒ unhandled(msg)
       }
 
     case ResetRestartCount(current) ⇒
@@ -278,7 +278,7 @@ private[akka] trait HandleBackoff { this: Actor ⇒
       case Some(c) ⇒ c.forward(msg)
       case None ⇒ replyWhileStopped match {
         case Some(r) ⇒ sender ! r
-        case None    ⇒ context.system.deadLetters.forward(msg)
+        case None ⇒ context.system.deadLetters.forward(msg)
       }
     }
   }

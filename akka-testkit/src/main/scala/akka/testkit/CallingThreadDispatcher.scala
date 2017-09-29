@@ -157,7 +157,7 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
   protected[akka] override def unregister(actor: ActorCell): Unit = {
     val mbox = actor.mailbox match {
       case m: CallingThreadMailbox ⇒ Some(m)
-      case _                       ⇒ None
+      case _ ⇒ None
     }
     super.unregister(actor)
     mbox foreach CallingThreadDispatcherQueues(actor.system).unregisterQueues
@@ -166,7 +166,7 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
   protected[akka] override def suspend(actor: ActorCell) {
     actor.mailbox match {
       case m: CallingThreadMailbox ⇒ { m.suspendSwitch.switchOn; m.suspend() }
-      case m                       ⇒ m.systemEnqueue(actor.self, Suspend())
+      case m ⇒ m.systemEnqueue(actor.self, Suspend())
     }
   }
 

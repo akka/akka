@@ -69,11 +69,11 @@ object ActorCell {
  * INTERNAL API
  */
 private[typed] class ActorCell[T](
-  override val system:           ActorSystem[Nothing],
+  override val system: ActorSystem[Nothing],
   protected val initialBehavior: Behavior[T],
   override val executionContext: ExecutionContextExecutor,
-  override val mailboxCapacity:  Int,
-  val parent:                    ActorRefImpl[Nothing])
+  override val mailboxCapacity: Int,
+  val parent: ActorRefImpl[Nothing])
   extends ActorContextImpl[T] with Runnable with SupervisionMechanics[T] with DeathWatch[T] {
   import ActorCell._
 
@@ -92,7 +92,7 @@ private[typed] class ActorCell[T](
       case _ ⇒
         terminatingMap.get(n) match {
           case Some(`actor`) ⇒ terminatingMap -= n
-          case _             ⇒
+          case _ ⇒
         }
     }
   }
@@ -130,7 +130,7 @@ private[typed] class ActorCell[T](
   override def stop[U](child: ActorRef[U]): Boolean = {
     val name = child.path.name
     childrenMap.get(name) match {
-      case None                      ⇒ false
+      case None ⇒ false
       case Some(ref) if ref != child ⇒ false
       case Some(ref) ⇒
         ref.sendSystem(Terminate())
@@ -378,7 +378,7 @@ private[typed] class ActorCell[T](
 
   private def unhandled(msg: Any): Unit = msg match {
     case Terminated(ref) ⇒ fail(DeathPactException(ref))
-    case _               ⇒ // nothing to do
+    case _ ⇒ // nothing to do
   }
 
   private[this] var receiveTimeoutScheduled: Cancellable = null

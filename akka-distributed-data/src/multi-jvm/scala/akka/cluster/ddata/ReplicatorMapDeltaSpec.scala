@@ -76,8 +76,8 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
 
     def consistency(): WriteConsistency = {
       rnd.nextInt(100) match {
-        case n if n < 90  ⇒ WriteLocal
-        case n if n < 95  ⇒ writeTwo
+        case n if n < 90 ⇒ WriteLocal
+        case n if n < 95 ⇒ writeTwo
         case n if n < 100 ⇒ writeMajority
       }
     }

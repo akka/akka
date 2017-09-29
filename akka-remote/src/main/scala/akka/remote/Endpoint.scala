@@ -37,27 +37,27 @@ import akka.util.OptionVal
  */
 private[remote] trait InboundMessageDispatcher {
   def dispatch(
-    recipient:         InternalActorRef,
-    recipientAddress:  Address,
+    recipient: InternalActorRef,
+    recipientAddress: Address,
     serializedMessage: SerializedMessage,
-    senderOption:      OptionVal[ActorRef]): Unit
+    senderOption: OptionVal[ActorRef]): Unit
 }
 
 /**
  * INTERNAL API
  */
 private[remote] class DefaultMessageDispatcher(
-  private val system:   ExtendedActorSystem,
+  private val system: ExtendedActorSystem,
   private val provider: RemoteActorRefProvider,
-  private val log:      MarkerLoggingAdapter) extends InboundMessageDispatcher {
+  private val log: MarkerLoggingAdapter) extends InboundMessageDispatcher {
 
   private val remoteDaemon = provider.remoteDaemon
 
   override def dispatch(
-    recipient:         InternalActorRef,
-    recipientAddress:  Address,
+    recipient: InternalActorRef,
+    recipientAddress: Address,
     serializedMessage: SerializedMessage,
-    senderOption:      OptionVal[ActorRef]): Unit = {
+    senderOption: OptionVal[ActorRef]): Unit = {
 
     import provider.remoteSettings._
 
@@ -94,7 +94,7 @@ private[remote] class DefaultMessageDispatcher(
           case msg: PossiblyHarmful if UntrustedMode ⇒
             log.debug(LogMarker.Security, "operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}]", msg.getClass.getName)
           case msg: SystemMessage ⇒ l.sendSystemMessage(msg)
-          case msg                ⇒ l.!(msg)(sender)
+          case msg ⇒ l.!(msg)(sender)
         }
 
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal && !UntrustedMode ⇒
@@ -141,9 +141,9 @@ private[remote] final case class ShutDownAssociation(localAddress: Address, remo
  */
 @SerialVersionUID(2L)
 private[remote] final case class InvalidAssociation(
-  localAddress:       Address,
-  remoteAddress:      Address,
-  cause:              Throwable,
+  localAddress: Address,
+  remoteAddress: Address,
+  cause: Throwable,
   disassociationInfo: Option[DisassociateInfo] = None)
   extends EndpointException("Invalid address: " + remoteAddress, cause) with AssociationProblem
 
@@ -186,12 +186,12 @@ private[remote] object ReliableDeliverySupervisor {
 
   def props(
     handleOrActive: Option[AkkaProtocolHandle],
-    localAddress:   Address,
-    remoteAddress:  Address,
-    refuseUid:      Option[Int],
-    transport:      AkkaProtocolTransport,
-    settings:       RemoteSettings,
-    codec:          AkkaPduCodec,
+    localAddress: Address,
+    remoteAddress: Address,
+    refuseUid: Option[Int],
+    transport: AkkaProtocolTransport,
+    settings: RemoteSettings,
+    codec: AkkaPduCodec,
     receiveBuffers: ConcurrentHashMap[Link, ResendState]): Props =
     Props(classOf[ReliableDeliverySupervisor], handleOrActive, localAddress, remoteAddress, refuseUid, transport, settings,
       codec, receiveBuffers)
@@ -201,13 +201,13 @@ private[remote] object ReliableDeliverySupervisor {
  * INTERNAL API
  */
 private[remote] class ReliableDeliverySupervisor(
-  handleOrActive:     Option[AkkaProtocolHandle],
-  val localAddress:   Address,
-  val remoteAddress:  Address,
-  val refuseUid:      Option[Int],
-  val transport:      AkkaProtocolTransport,
-  val settings:       RemoteSettings,
-  val codec:          AkkaPduCodec,
+  handleOrActive: Option[AkkaProtocolHandle],
+  val localAddress: Address,
+  val remoteAddress: Address,
+  val refuseUid: Option[Int],
+  val transport: AkkaProtocolTransport,
+  val settings: RemoteSettings,
+  val codec: AkkaPduCodec,
   val receiveBuffers: ConcurrentHashMap[Link, ResendState]) extends Actor with ActorLogging {
   import ReliableDeliverySupervisor._
   import context.dispatcher
@@ -355,10 +355,10 @@ private[remote] class ReliableDeliverySupervisor(
         // Resending will be triggered by the incoming GotUid message after the connection finished
         goToActive()
       } else goToIdle()
-    case AttemptSysMsgRedelivery               ⇒ // Ignore
+    case AttemptSysMsgRedelivery ⇒ // Ignore
     case s @ Send(msg: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
-    case s: Send                               ⇒ context.system.deadLetters ! s
-    case EndpointWriter.FlushAndStop           ⇒ context.stop(self)
+    case s: Send ⇒ context.system.deadLetters ! s
+    case EndpointWriter.FlushAndStop ⇒ context.stop(self)
     case EndpointWriter.StopReading(w, replyTo) ⇒
       replyTo ! EndpointWriter.StoppedReading(w)
       sender() ! EndpointWriter.StoppedReading(w)
@@ -452,11 +452,11 @@ private[remote] class ReliableDeliverySupervisor(
  * INTERNAL API
  */
 private[remote] abstract class EndpointActor(
-  val localAddress:  Address,
+  val localAddress: Address,
   val remoteAddress: Address,
-  val transport:     Transport,
-  val settings:      RemoteSettings,
-  val codec:         AkkaPduCodec) extends Actor with ActorLogging {
+  val transport: Transport,
+  val settings: RemoteSettings,
+  val codec: AkkaPduCodec) extends Actor with ActorLogging {
 
   def inbound: Boolean
 
@@ -478,14 +478,14 @@ private[remote] abstract class EndpointActor(
 private[remote] object EndpointWriter {
 
   def props(
-    handleOrActive:             Option[AkkaProtocolHandle],
-    localAddress:               Address,
-    remoteAddress:              Address,
-    refuseUid:                  Option[Int],
-    transport:                  AkkaProtocolTransport,
-    settings:                   RemoteSettings,
-    codec:                      AkkaPduCodec,
-    receiveBuffers:             ConcurrentHashMap[Link, ResendState],
+    handleOrActive: Option[AkkaProtocolHandle],
+    localAddress: Address,
+    remoteAddress: Address,
+    refuseUid: Option[Int],
+    transport: AkkaProtocolTransport,
+    settings: RemoteSettings,
+    codec: AkkaPduCodec,
+    receiveBuffers: ConcurrentHashMap[Link, ResendState],
     reliableDeliverySupervisor: Option[ActorRef]): Props =
     Props(classOf[EndpointWriter], handleOrActive, localAddress, remoteAddress, refuseUid, transport, settings, codec,
       receiveBuffers, reliableDeliverySupervisor)
@@ -523,14 +523,14 @@ private[remote] object EndpointWriter {
  * INTERNAL API
  */
 private[remote] class EndpointWriter(
-  handleOrActive:                 Option[AkkaProtocolHandle],
-  localAddress:                   Address,
-  remoteAddress:                  Address,
-  refuseUid:                      Option[Int],
-  transport:                      AkkaProtocolTransport,
-  settings:                       RemoteSettings,
-  codec:                          AkkaPduCodec,
-  val receiveBuffers:             ConcurrentHashMap[Link, ResendState],
+  handleOrActive: Option[AkkaProtocolHandle],
+  localAddress: Address,
+  remoteAddress: Address,
+  refuseUid: Option[Int],
+  transport: AkkaProtocolTransport,
+  settings: RemoteSettings,
+  codec: AkkaPduCodec,
+  val receiveBuffers: ConcurrentHashMap[Link, ResendState],
   val reliableDeliverySupervisor: Option[ActorRef])
   extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) {
 
@@ -571,7 +571,7 @@ private[remote] class EndpointWriter(
   private def publishAndThrow(reason: Throwable, logLevel: Logging.LogLevel): Nothing = {
     reason match {
       case _: EndpointDisassociatedException ⇒ publishDisassociated()
-      case _                                 ⇒ publishError(reason, logLevel)
+      case _ ⇒ publishError(reason, logLevel)
     }
     throw reason
   }
@@ -628,7 +628,7 @@ private[remote] class EndpointWriter(
   }
 
   val buffering: Receive = {
-    case s: Send      ⇒ enqueueInBuffer(s)
+    case s: Send ⇒ enqueueInBuffer(s)
     case BackoffTimer ⇒ sendBufferedMessages()
     case FlushAndStop ⇒
       // Flushing is postponed after the pending writes
@@ -861,10 +861,10 @@ private[remote] class EndpointWriter(
       lastAck = Some(ack)
       if (ackDeadline.isOverdue())
         trySendPureAck()
-    case AckIdleCheckTimer   ⇒ // Ignore
+    case AckIdleCheckTimer ⇒ // Ignore
     case FlushAndStopTimeout ⇒ // ignore
-    case BackoffTimer        ⇒ // ignore
-    case other               ⇒ super.unhandled(other)
+    case BackoffTimer ⇒ // ignore
+    case other ⇒ super.unhandled(other)
   }
 
   def flushAndStop(): Unit = {
@@ -909,16 +909,16 @@ private[remote] class EndpointWriter(
 private[remote] object EndpointReader {
 
   def props(
-    localAddress:               Address,
-    remoteAddress:              Address,
-    transport:                  Transport,
-    settings:                   RemoteSettings,
-    codec:                      AkkaPduCodec,
-    msgDispatch:                InboundMessageDispatcher,
-    inbound:                    Boolean,
-    uid:                        Int,
+    localAddress: Address,
+    remoteAddress: Address,
+    transport: Transport,
+    settings: RemoteSettings,
+    codec: AkkaPduCodec,
+    msgDispatch: InboundMessageDispatcher,
+    inbound: Boolean,
+    uid: Int,
     reliableDeliverySupervisor: Option[ActorRef],
-    receiveBuffers:             ConcurrentHashMap[Link, ResendState]): Props =
+    receiveBuffers: ConcurrentHashMap[Link, ResendState]): Props =
     Props(classOf[EndpointReader], localAddress, remoteAddress, transport, settings, codec, msgDispatch, inbound,
       uid, reliableDeliverySupervisor, receiveBuffers)
 
@@ -928,16 +928,16 @@ private[remote] object EndpointReader {
  * INTERNAL API
  */
 private[remote] class EndpointReader(
-  localAddress:                   Address,
-  remoteAddress:                  Address,
-  transport:                      Transport,
-  settings:                       RemoteSettings,
-  codec:                          AkkaPduCodec,
-  msgDispatch:                    InboundMessageDispatcher,
-  val inbound:                    Boolean,
-  val uid:                        Int,
+  localAddress: Address,
+  remoteAddress: Address,
+  transport: Transport,
+  settings: RemoteSettings,
+  codec: AkkaPduCodec,
+  msgDispatch: InboundMessageDispatcher,
+  val inbound: Boolean,
+  val uid: Int,
   val reliableDeliverySupervisor: Option[ActorRef],
-  val receiveBuffers:             ConcurrentHashMap[Link, ResendState]) extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) {
+  val receiveBuffers: ConcurrentHashMap[Link, ResendState]) extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) {
 
   import EndpointWriter.{ OutboundAck, StopReading, StoppedReading }
 

@@ -281,7 +281,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
     "can extract state name" in {
       StateChangeEvent("xxx", None) match {
         case StateChangeEvent(name, _) ⇒ name should equal("xxx")
-        case _                         ⇒ fail("unable to extract state name")
+        case _ ⇒ fail("unable to extract state name")
       }
     }
 
@@ -453,7 +453,7 @@ object PersistentFSMSpec {
 
     when(LookingAround) {
       case Event("stay", _) ⇒ stay
-      case Event(e, _)      ⇒ goto(LookingAround)
+      case Event(e, _) ⇒ goto(LookingAround)
     }
 
     onTransition {
@@ -537,8 +537,8 @@ object PersistentFSMSpec {
     override def applyEvent(event: DomainEvent, cartBeforeEvent: ShoppingCart): ShoppingCart = {
       event match {
         case ItemAdded(item) ⇒ cartBeforeEvent.addItem(item)
-        case OrderExecuted   ⇒ cartBeforeEvent
-        case OrderDiscarded  ⇒ cartBeforeEvent.empty()
+        case OrderExecuted ⇒ cartBeforeEvent
+        case OrderDiscarded ⇒ cartBeforeEvent.empty()
       }
     }
     //#customer-apply-event
@@ -554,7 +554,7 @@ object PersistentFSMSpec {
 
     def receiveRecover = {
       case RecoveryCompleted ⇒ // do nothing
-      case persistentEvent   ⇒ client ! persistentEvent
+      case persistentEvent ⇒ client ! persistentEvent
     }
 
     def receiveCommand = {

@@ -97,9 +97,9 @@ class GraphDSLDocSpec extends AkkaSpec {
     // A shape represents the input and output ports of a reusable
     // processing module
     case class PriorityWorkerPoolShape[In, Out](
-      jobsIn:         Inlet[In],
+      jobsIn: Inlet[In],
       priorityJobsIn: Inlet[In],
-      resultsOut:     Outlet[Out]) extends Shape {
+      resultsOut: Outlet[Out]) extends Shape {
 
       // It is important to provide the list of all input and output
       // ports with a stable order. Duplicates are not allowed.
@@ -121,7 +121,7 @@ class GraphDSLDocSpec extends AkkaSpec {
     //#graph-dsl-components-create
     object PriorityWorkerPool {
       def apply[In, Out](
-        worker:      Flow[In, Out, Any],
+        worker: Flow[In, Out, Any],
         workerCount: Int): Graph[PriorityWorkerPoolShape[In, Out], NotUsed] = {
 
         GraphDSL.create() { implicit b =>

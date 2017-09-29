@@ -87,7 +87,7 @@ class DispatchersImpl(settings: Settings, log: LoggingAdapter, prerequisites: d.
           else throw new ConfigurationException(s"Dispatcher [$id] not configured")
 
         dispatcherConfigurators.putIfAbsent(id, newConfigurator) match {
-          case null     ⇒ newConfigurator
+          case null ⇒ newConfigurator
           case existing ⇒ existing
         }
 
@@ -126,7 +126,7 @@ class DispatchersImpl(settings: Settings, log: LoggingAdapter, prerequisites: d.
     if (!cfg.hasPath("id")) throw new ConfigurationException("Missing dispatcher 'id' property in config: " + cfg.root.render)
 
     cfg.getString("type") match {
-      case "Dispatcher"       ⇒ new DispatcherConfigurator(cfg, prerequisites)
+      case "Dispatcher" ⇒ new DispatcherConfigurator(cfg, prerequisites)
       case "PinnedDispatcher" ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
       case fqn ⇒
         val args = List(classOf[Config] → cfg)
@@ -159,7 +159,7 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
   def configureExecutor(): d.ExecutorServiceConfigurator = {
     def configurator(executor: String): d.ExecutorServiceConfigurator = executor match {
       case null | "" | "fork-join-executor" ⇒ new d.ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
-      case "thread-pool-executor"           ⇒ new d.ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
+      case "thread-pool-executor" ⇒ new d.ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case fqcn ⇒
         val args = List(
           classOf[Config] → config,
@@ -174,7 +174,7 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
 
     config.getString("executor") match {
       case "default-executor" ⇒ new d.DefaultExecutorServiceConfigurator(config.getConfig("default-executor"), prerequisites, configurator(config.getString("default-executor.fallback")))
-      case other              ⇒ configurator(other)
+      case other ⇒ configurator(other)
     }
   }
 }
@@ -189,7 +189,7 @@ class DispatcherConfigurator(config: Config, prerequisites: d.DispatcherPrerequi
 
   private val instance = ExecutionContexts.fromExecutorService(
     configureExecutor().createExecutorServiceFactory(config.getString("id"), prerequisites.threadFactory)
-    .createExecutorService)
+      .createExecutorService)
 
   /**
    * Returns the same dispatcher instance for each invocation

@@ -16,7 +16,7 @@ object CompressionTestingTools {
     def awaitResult(atMost: Duration): T = {
       Await.ready(future, atMost)
       future.value.get match {
-        case Success(t)  ⇒ t
+        case Success(t) ⇒ t
         case Failure(ex) ⇒ throw new RuntimeException("Trying to await result of failed Future, see the cause for the original problem.", ex)
       }
     }

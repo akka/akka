@@ -35,8 +35,8 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
 
   val filter = TestEvent.Mute(EventFilter.custom {
     case _: Logging.Debug ⇒ true
-    case _: Logging.Info  ⇒ true
-    case _                ⇒ false
+    case _: Logging.Info ⇒ true
+    case _ ⇒ false
   })
   appLogging.eventStream.publish(filter)
   appAuto.eventStream.publish(filter)
@@ -232,7 +232,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
 
           expectMsgAllPF(messages = 2) {
             case Logging.Debug(`sname`, `sclass`, msg: String) if msg startsWith "started" ⇒ 0
-            case Logging.Debug(_, _, msg: String) if msg startsWith "now supervising"      ⇒ 1
+            case Logging.Debug(_, _, msg: String) if msg startsWith "now supervising" ⇒ 1
           }
 
           val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
@@ -241,15 +241,15 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
 
           expectMsgAllPF(messages = 2) {
             case Logging.Debug(`aname`, `aclass`, msg: String) if msg.startsWith("started (" + classOf[TestLogActor].getName) ⇒ 0
-            case Logging.Debug(`sname`, `sclass`, msg: String) if msg == s"now supervising TestActor[$aname]"                 ⇒ 1
+            case Logging.Debug(`sname`, `sclass`, msg: String) if msg == s"now supervising TestActor[$aname]" ⇒ 1
           }
 
           EventFilter[ActorKilledException](occurrences = 1) intercept {
             actor ! Kill
             expectMsgAllPF(messages = 3) {
               case Logging.Error(_: ActorKilledException, `aname`, _, "Kill") ⇒ 0
-              case Logging.Debug(`aname`, `aclass`, "restarting")             ⇒ 1
-              case Logging.Debug(`aname`, `aclass`, "restarted")              ⇒ 2
+              case Logging.Debug(`aname`, `aclass`, "restarting") ⇒ 1
+              case Logging.Debug(`aname`, `aclass`, "restarted") ⇒ 2
             }
           }
 

@@ -115,7 +115,7 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
       // should be serialized
       val expectedPruning = pruning.filter {
         case (_, _: PruningPerformed) ⇒ true
-        case _                        ⇒ false
+        case _ ⇒ false
       }
       deserializedDurableDataEnvelope.dataEnvelope.pruning should ===(expectedPruning)
       deserializedDurableDataEnvelope.dataEnvelope.deltaVersions.size should ===(0)

@@ -132,7 +132,7 @@ import scala.util.control.NonFatal
             case pub: Publisher[_] ⇒
               getAndSet(Inert) match {
                 case Inert ⇒ // nothing to be done
-                case _     ⇒ pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
+                case _ ⇒ pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
               }
           }
         case _ ⇒
@@ -183,7 +183,7 @@ import scala.util.control.NonFatal
         case s: Subscriber[_] ⇒ // spec violation
           getAndSet(Inert) match {
             case Inert ⇒ // nothing to be done
-            case _     ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
+            case _ ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
           }
         case _ ⇒ // spec violation or cancellation race, but nothing we can do
       }
@@ -194,7 +194,7 @@ import scala.util.control.NonFatal
 
   @tailrec override final def onComplete(): Unit =
     get() match {
-      case null            ⇒ if (!compareAndSet(null, EmptyPublisher)) onComplete()
+      case null ⇒ if (!compareAndSet(null, EmptyPublisher)) onComplete()
       case s: Subscription ⇒ if (!compareAndSet(s, EmptyPublisher)) onComplete()
       case Both(s) ⇒
         set(Inert)
@@ -211,9 +211,9 @@ import scala.util.control.NonFatal
       @tailrec def rec(): Unit =
         get() match {
           case x @ (null | _: Subscription) ⇒ if (!compareAndSet(x, ErrorPublisher(ex, "failed-VirtualProcessor"))) rec()
-          case s: Subscriber[_]             ⇒ try s.onError(ex) catch { case NonFatal(_) ⇒ } finally set(Inert)
-          case Both(s)                      ⇒ try s.onError(ex) catch { case NonFatal(_) ⇒ } finally set(Inert)
-          case _                            ⇒ // spec violation or cancellation race, but nothing we can do
+          case s: Subscriber[_] ⇒ try s.onError(ex) catch { case NonFatal(_) ⇒ } finally set(Inert)
+          case Both(s) ⇒ try s.onError(ex) catch { case NonFatal(_) ⇒ } finally set(Inert)
+          case _ ⇒ // spec violation or cancellation race, but nothing we can do
         }
       rec()
       throw ex // must throw NPE, rule 2:13
@@ -231,7 +231,7 @@ import scala.util.control.NonFatal
             val ex = new IllegalStateException(noDemand)
             getAndSet(Inert) match {
               case Inert ⇒ // nothing to be done
-              case _     ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
+              case _ ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
             }
             throw ex
           case Inert | _: Publisher[_] ⇒ // nothing to be done
@@ -271,8 +271,8 @@ import scala.util.control.NonFatal
         tryCancel(real)
         VirtualProcessor.this.getAndSet(Inert) match {
           case Both(s) ⇒ rejectDueToNonPositiveDemand(s)
-          case Inert   ⇒ // another failure has won the race
-          case _       ⇒ // this cannot possibly happen, but signaling errors is impossible at this point
+          case Inert ⇒ // another failure has won the race
+          case _ ⇒ // this cannot possibly happen, but signaling errors is impossible at this point
         }
       } else {
         // NOTE: At this point, batched requests might not have been dispatched, i.e. this can reorder requests.
@@ -349,7 +349,7 @@ import scala.util.control.NonFatal
  */
 @InternalApi private[akka] final case class ProcessorModule[In, Out, Mat](
   val createProcessor: () ⇒ (Processor[In, Out], Mat),
-  attributes:          Attributes                     = DefaultAttributes.processor) extends StreamLayout.AtomicModule[FlowShape[In, Out], Mat] {
+  attributes: Attributes = DefaultAttributes.processor) extends StreamLayout.AtomicModule[FlowShape[In, Out], Mat] {
   val inPort = Inlet[In]("ProcessorModule.in")
   val outPort = Outlet[Out]("ProcessorModule.out")
   override val shape = new FlowShape(inPort, outPort)

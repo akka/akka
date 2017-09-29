@@ -53,7 +53,7 @@ object FSMActorSpec {
         }
       }
       case Event("hello", _) ⇒ stay replying "world"
-      case Event("bye", _)   ⇒ stop(FSM.Shutdown)
+      case Event("bye", _) ⇒ stop(FSM.Shutdown)
     }
 
     when(Open) {
@@ -119,7 +119,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" → true)) with I
 
       val transitionTester = system.actorOf(Props(new Actor {
         def receive = {
-          case Transition(_, _, _)                          ⇒ transitionCallBackLatch.open
+          case Transition(_, _, _) ⇒ transitionCallBackLatch.open
           case CurrentState(_, s: LockState) if s eq Locked ⇒ initialStateLatch.open // SI-5900 workaround
         }
       }))
@@ -146,9 +146,9 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" → true)) with I
       val answerLatch = TestLatch()
       val tester = system.actorOf(Props(new Actor {
         def receive = {
-          case Hello   ⇒ lock ! "hello"
+          case Hello ⇒ lock ! "hello"
           case "world" ⇒ answerLatch.open
-          case Bye     ⇒ lock ! "bye"
+          case Bye ⇒ lock ! "bye"
         }
       }))
       tester ! Hello
@@ -303,7 +303,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" → true)) with I
         startWith(1, 0)
         when(1) {
           case Event("count", c) ⇒ stay using (c + 1)
-          case Event("log", _)   ⇒ stay replying getLog
+          case Event("log", _) ⇒ stay replying getLog
         }
       })
       fsmref ! "log"

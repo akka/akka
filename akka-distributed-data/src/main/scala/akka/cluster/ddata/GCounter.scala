@@ -41,7 +41,7 @@ object GCounter {
 @SerialVersionUID(1L)
 final class GCounter private[akka] (
   private[akka] val state: Map[UniqueAddress, BigInt] = Map.empty,
-  override val delta:      Option[GCounter]           = None)
+  override val delta: Option[GCounter] = None)
   extends DeltaReplicatedData with ReplicatedDelta
   with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
 
@@ -87,10 +87,10 @@ final class GCounter private[akka] (
     else {
       val nextValue = state.get(key) match {
         case Some(v) ⇒ v + n
-        case None    ⇒ n
+        case None ⇒ n
       }
       val newDelta = delta match {
-        case None    ⇒ new GCounter(Map(key → nextValue))
+        case None ⇒ new GCounter(Map(key → nextValue))
         case Some(d) ⇒ new GCounter(d.state + (key → nextValue))
       }
       assignAncestor(new GCounter(state + (key → nextValue), Some(newDelta)))
@@ -127,7 +127,7 @@ final class GCounter private[akka] (
   override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): GCounter =
     state.get(removedNode) match {
       case Some(value) ⇒ new GCounter(state - removedNode).increment(collapseInto, value)
-      case None        ⇒ this
+      case None ⇒ this
     }
 
   override def pruningCleanup(removedNode: UniqueAddress): GCounter =
@@ -139,7 +139,7 @@ final class GCounter private[akka] (
 
   override def equals(o: Any): Boolean = o match {
     case other: GCounter ⇒ state == other.state
-    case _               ⇒ false
+    case _ ⇒ false
   }
 
   override def hashCode: Int = state.hashCode

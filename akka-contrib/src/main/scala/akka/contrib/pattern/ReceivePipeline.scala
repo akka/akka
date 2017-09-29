@@ -77,9 +77,9 @@ trait ReceivePipeline extends Actor {
 
     val zipped = pipeline.foldRight(innerReceiveHandler) { (outerInterceptor, innerHandler) ⇒
       outerInterceptor.andThen {
-        case Inner(msg)                ⇒ innerHandler(msg)
+        case Inner(msg) ⇒ innerHandler(msg)
         case InnerAndAfter(msg, after) ⇒ try innerHandler(msg) finally after(())
-        case HandledCompletely         ⇒ Done
+        case HandledCompletely ⇒ Done
       }
     }
 

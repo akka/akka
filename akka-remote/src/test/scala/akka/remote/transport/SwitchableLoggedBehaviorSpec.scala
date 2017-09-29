@@ -33,7 +33,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
       behavior.push((_) ⇒ Promise.failed(TestException).future)
       behavior(()).value match {
         case Some(Failure(`TestException`)) ⇒
-        case _                              ⇒ fail("Expected exception")
+        case _ ⇒ fail("Expected exception")
       }
     }
 
@@ -51,7 +51,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
 
       behavior(()).value match {
         case Some(Failure(e)) if e eq TestException ⇒
-        case _                                      ⇒ fail("Expected exception")
+        case _ ⇒ fail("Expected exception")
       }
     }
 

@@ -350,7 +350,7 @@ object ProducerFeatureTest {
         def process(exchange: Exchange) = {
           exchange.getIn.getBody match {
             case "fail" ⇒ throw new Exception("failure")
-            case body   ⇒ exchange.getOut.setBody("received %s" format body)
+            case body ⇒ exchange.getOut.setBody("received %s" format body)
           }
         }
       })
@@ -360,14 +360,14 @@ object ProducerFeatureTest {
   class SimpleProducer(override val endpointUri: String) extends Producer {
     override protected def transformResponse(msg: Any) = msg match {
       case m: CamelMessage ⇒ m.bodyAs[String]
-      case m: Any          ⇒ m
+      case m: Any ⇒ m
     }
   }
 
   class IntermittentErrorConsumer(override val endpointUri: String) extends Consumer {
     def receive = {
       case msg: CamelMessage if msg.bodyAs[String] == "fail" ⇒ sender() ! Failure(new Exception("fail"))
-      case msg: CamelMessage                                 ⇒ sender() ! msg
+      case msg: CamelMessage ⇒ sender() ! msg
     }
   }
 

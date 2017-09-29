@@ -76,7 +76,7 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
    */
   private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
     case Address(_, _, None, None) ⇒ cluster.selfAddress
-    case a                         ⇒ a
+    case a ⇒ a
   }
 
   "A cluster router with a consistent hashing pool" must {

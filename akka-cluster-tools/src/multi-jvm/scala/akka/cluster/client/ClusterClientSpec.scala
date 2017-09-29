@@ -346,7 +346,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
         probe.fishForMessage(10.seconds, "removal") {
           case ContactPointRemoved(`unreachableContact`) ⇒ true
-          case _                                         ⇒ false
+          case _ ⇒ false
         }
       }
       enterBarrier("after-7")
@@ -369,7 +369,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         reply.msg should be("bonjour-ack")
         val receptionistRoleName = roleName(reply.node) match {
           case Some(r) ⇒ r
-          case None    ⇒ fail("unexpected missing roleName: " + reply.node)
+          case None ⇒ fail("unexpected missing roleName: " + reply.node)
         }
         testConductor.exit(receptionistRoleName, 0).await
         remainingServerRoleNames -= receptionistRoleName
@@ -382,7 +382,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       enterBarrier("verifed-3")
       receiveWhile(2 seconds) {
         case "hi again" ⇒
-        case other      ⇒ fail("unexpected message: " + other)
+        case other ⇒ fail("unexpected message: " + other)
       }
       enterBarrier("verifed-4")
       runOn(client) {
@@ -408,7 +408,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         reply.msg should be("bonjour2-ack")
         val receptionistRoleName = roleName(reply.node) match {
           case Some(r) ⇒ r
-          case None    ⇒ fail("unexpected missing roleName: " + reply.node)
+          case None ⇒ fail("unexpected missing roleName: " + reply.node)
         }
         // shutdown all but the one that the client is connected to
         remainingServerRoleNames.foreach { r ⇒

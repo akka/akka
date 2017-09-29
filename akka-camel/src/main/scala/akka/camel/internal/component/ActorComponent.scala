@@ -50,9 +50,9 @@ private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends D
  * where <code>[actorPath]</code> refers to the actor path to the actor.
  */
 private[camel] class ActorEndpoint(
-  uri:       String,
-  comp:      ActorComponent,
-  val path:  ActorEndpointPath,
+  uri: String,
+  comp: ActorComponent,
+  val path: ActorEndpointPath,
   val camel: Camel) extends DefaultEndpoint(uri, comp) with ActorEndpointConfig {
 
   /**
@@ -147,15 +147,15 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
       val action: PartialFunction[Try[Any], Unit] =
         if (exchange.isOutCapable) {
           case Success(failure: FailureResult) ⇒ exchange.setFailure(failure)
-          case Success(msg)                    ⇒ exchange.setResponse(CamelMessage.canonicalize(msg))
-          case Failure(e: TimeoutException)    ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
-          case Failure(throwable)              ⇒ exchange.setFailure(FailureResult(throwable))
+          case Success(msg) ⇒ exchange.setResponse(CamelMessage.canonicalize(msg))
+          case Failure(e: TimeoutException) ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+          case Failure(throwable) ⇒ exchange.setFailure(FailureResult(throwable))
         } else {
-          case Success(Ack)                    ⇒ () /* no response message to set */
+          case Success(Ack) ⇒ () /* no response message to set */
           case Success(failure: FailureResult) ⇒ exchange.setFailure(failure)
-          case Success(msg)                    ⇒ exchange.setFailure(FailureResult(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, endpoint.path))))
-          case Failure(e: TimeoutException)    ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
-          case Failure(throwable)              ⇒ exchange.setFailure(FailureResult(throwable))
+          case Success(msg) ⇒ exchange.setFailure(FailureResult(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, endpoint.path))))
+          case Failure(e: TimeoutException) ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+          case Failure(throwable) ⇒ exchange.setFailure(FailureResult(throwable))
         }
 
       // FIXME #3074 how do we solve this with actorSelection?
@@ -253,6 +253,6 @@ private[camel] case object ActorEndpointPath {
    */
   def fromCamelPath(camelPath: String): ActorEndpointPath = camelPath match {
     case id if id startsWith "akka://" ⇒ new ActorEndpointPath(id.split('?')(0))
-    case _                             ⇒ throw new IllegalArgumentException("Invalid path: [%s] - should be an actorPath starting with 'akka://', optionally followed by options" format camelPath)
+    case _ ⇒ throw new IllegalArgumentException("Invalid path: [%s] - should be an actorPath starting with 'akka://', optionally followed by options" format camelPath)
   }
 }

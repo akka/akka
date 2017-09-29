@@ -27,10 +27,10 @@ object FaultHandlingDocSpec {
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-        case _: ArithmeticException      => Resume
-        case _: NullPointerException     => Restart
+        case _: ArithmeticException => Resume
+        case _: NullPointerException => Restart
         case _: IllegalArgumentException => Stop
-        case _: Exception                => Escalate
+        case _: Exception => Escalate
       }
     //#strategy
 
@@ -49,10 +49,10 @@ object FaultHandlingDocSpec {
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-        case _: ArithmeticException      => Resume
-        case _: NullPointerException     => Restart
+        case _: ArithmeticException => Resume
+        case _: NullPointerException => Restart
         case _: IllegalArgumentException => Stop
-        case _: Exception                => Escalate
+        case _: Exception => Escalate
       }
     //#strategy2
 
@@ -86,8 +86,8 @@ object FaultHandlingDocSpec {
     var state = 0
     def receive = {
       case ex: Exception => throw ex
-      case x: Int        => state = x
-      case "get"         => sender() ! state
+      case x: Int => state = x
+      case "get" => sender() ! state
     }
   }
   //#child

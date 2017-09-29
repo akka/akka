@@ -19,10 +19,10 @@ import scala.runtime.AbstractFunction2
  */
 @SerialVersionUID(1L)
 class Member private[cluster] (
-  val uniqueAddress:             UniqueAddress,
+  val uniqueAddress: UniqueAddress,
   private[cluster] val upNumber: Int, // INTERNAL API
-  val status:                    MemberStatus,
-  val roles:                     Set[String]) extends Serializable {
+  val status: MemberStatus,
+  val roles: Set[String]) extends Serializable {
 
   lazy val dataCenter: DataCenter = roles.find(_.startsWith(ClusterSettings.DcRolePrefix))
     .getOrElse(throw new IllegalStateException("DataCenter undefined, should not be possible"))
@@ -33,7 +33,7 @@ class Member private[cluster] (
   override def hashCode = uniqueAddress.##
   override def equals(other: Any) = other match {
     case m: Member ⇒ uniqueAddress == m.uniqueAddress
-    case _         ⇒ false
+    case _ ⇒ false
   }
   override def toString =
     if (dataCenter == ClusterSettings.DefaultDataCenter)
@@ -128,15 +128,15 @@ object Member {
   private[cluster] val leaderStatusOrdering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) ⇒
     (a.status, b.status) match {
       case (as, bs) if as == bs ⇒ ordering.compare(a, b) <= 0
-      case (Down, _)            ⇒ false
-      case (_, Down)            ⇒ true
-      case (Exiting, _)         ⇒ false
-      case (_, Exiting)         ⇒ true
-      case (Joining, _)         ⇒ false
-      case (_, Joining)         ⇒ true
-      case (WeaklyUp, _)        ⇒ false
-      case (_, WeaklyUp)        ⇒ true
-      case _                    ⇒ ordering.compare(a, b) <= 0
+      case (Down, _) ⇒ false
+      case (_, Down) ⇒ true
+      case (Exiting, _) ⇒ false
+      case (_, Exiting) ⇒ true
+      case (Joining, _) ⇒ false
+      case (_, Joining) ⇒ true
+      case (WeaklyUp, _) ⇒ false
+      case (_, WeaklyUp) ⇒ true
+      case _ ⇒ ordering.compare(a, b) <= 0
     }
   }
 
@@ -192,19 +192,19 @@ object Member {
       // preserve the oldest in case of different upNumber
       if (m1.isOlderThan(m2)) m1 else m2
     else (m1.status, m2.status) match {
-      case (Removed, _)  ⇒ m1
-      case (_, Removed)  ⇒ m2
-      case (Down, _)     ⇒ m1
-      case (_, Down)     ⇒ m2
-      case (Exiting, _)  ⇒ m1
-      case (_, Exiting)  ⇒ m2
-      case (Leaving, _)  ⇒ m1
-      case (_, Leaving)  ⇒ m2
-      case (Joining, _)  ⇒ m2
-      case (_, Joining)  ⇒ m1
+      case (Removed, _) ⇒ m1
+      case (_, Removed) ⇒ m2
+      case (Down, _) ⇒ m1
+      case (_, Down) ⇒ m2
+      case (Exiting, _) ⇒ m1
+      case (_, Exiting) ⇒ m2
+      case (Leaving, _) ⇒ m1
+      case (_, Leaving) ⇒ m2
+      case (Joining, _) ⇒ m2
+      case (_, Joining) ⇒ m1
       case (WeaklyUp, _) ⇒ m2
       case (_, WeaklyUp) ⇒ m1
-      case (Up, Up)      ⇒ m1
+      case (Up, Up) ⇒ m1
     }
   }
 

@@ -29,22 +29,22 @@ object AtLeastOnceDeliverySpec {
   case class Snap(deliverySnapshot: AtLeastOnceDeliverySnapshot) // typically includes some user data as well
 
   def senderProps(testActor: ActorRef, name: String,
-                  redeliverInterval: FiniteDuration, warnAfterNumberOfUnconfirmedAttempts: Int,
-                  redeliveryBurstLimit: Int,
-                  destinations:         Map[String, ActorPath],
-                  async:                Boolean, actorSelectionDelivery: Boolean = false): Props =
+    redeliverInterval: FiniteDuration, warnAfterNumberOfUnconfirmedAttempts: Int,
+    redeliveryBurstLimit: Int,
+    destinations: Map[String, ActorPath],
+    async: Boolean, actorSelectionDelivery: Boolean = false): Props =
     Props(new Sender(testActor, name, redeliverInterval, warnAfterNumberOfUnconfirmedAttempts,
       redeliveryBurstLimit, destinations, async, actorSelectionDelivery))
 
   class Sender(
-    testActor:                                         ActorRef,
-    name:                                              String,
-    override val redeliverInterval:                    FiniteDuration,
+    testActor: ActorRef,
+    name: String,
+    override val redeliverInterval: FiniteDuration,
     override val warnAfterNumberOfUnconfirmedAttempts: Int,
-    override val redeliveryBurstLimit:                 Int,
-    destinations:                                      Map[String, ActorPath],
-    async:                                             Boolean,
-    actorSelectionDelivery:                            Boolean)
+    override val redeliveryBurstLimit: Int,
+    destinations: Map[String, ActorPath],
+    async: Boolean,
+    actorSelectionDelivery: Boolean)
     extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
 
     override def persistenceId: String = name

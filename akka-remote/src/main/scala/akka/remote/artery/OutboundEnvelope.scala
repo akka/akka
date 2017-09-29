@@ -13,8 +13,8 @@ import akka.util.OptionVal
 private[remote] object OutboundEnvelope {
   def apply(
     recipient: OptionVal[RemoteActorRef],
-    message:   AnyRef,
-    sender:    OptionVal[ActorRef]): OutboundEnvelope = {
+    message: AnyRef,
+    sender: OptionVal[ActorRef]): OutboundEnvelope = {
     val env = new ReusableOutboundEnvelope
     env.init(recipient, message, sender)
   }
@@ -71,8 +71,8 @@ private[remote] final class ReusableOutboundEnvelope extends OutboundEnvelope {
 
   def init(
     recipient: OptionVal[RemoteActorRef],
-    message:   AnyRef,
-    sender:    OptionVal[ActorRef]): OutboundEnvelope = {
+    message: AnyRef,
+    sender: OptionVal[ActorRef]): OutboundEnvelope = {
     _recipient = recipient
     _message = message
     _sender = sender

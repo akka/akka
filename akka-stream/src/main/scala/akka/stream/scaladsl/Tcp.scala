@@ -33,9 +33,9 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
    * Represents an accepted incoming TCP connection.
    */
   final case class IncomingConnection(
-    localAddress:  InetSocketAddress,
+    localAddress: InetSocketAddress,
     remoteAddress: InetSocketAddress,
-    flow:          Flow[ByteString, ByteString, NotUsed]) {
+    flow: Flow[ByteString, ByteString, NotUsed]) {
 
     /**
      * Handles the connection using the given flow, which is materialized exactly once and the respective
@@ -90,12 +90,12 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  for servers, and therefore it is the default setting.
    */
   def bind(
-    interface:   String,
-    port:        Int,
-    backlog:     Int                                 = 100,
-    options:     immutable.Traversable[SocketOption] = Nil,
-    halfClose:   Boolean                             = false,
-    idleTimeout: Duration                            = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] =
+    interface: String,
+    port: Int,
+    backlog: Int = 100,
+    options: immutable.Traversable[SocketOption] = Nil,
+    halfClose: Boolean = false,
+    idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] =
     Source.fromGraph(new ConnectionSourceStage(
       IO(IoTcp)(system),
       new InetSocketAddress(interface, port),
@@ -129,13 +129,13 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  for servers, and therefore it is the default setting.
    */
   def bindAndHandle(
-    handler:     Flow[ByteString, ByteString, _],
-    interface:   String,
-    port:        Int,
-    backlog:     Int                                 = 100,
-    options:     immutable.Traversable[SocketOption] = Nil,
-    halfClose:   Boolean                             = false,
-    idleTimeout: Duration                            = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {
+    handler: Flow[ByteString, ByteString, _],
+    interface: String,
+    port: Int,
+    backlog: Int = 100,
+    options: immutable.Traversable[SocketOption] = Nil,
+    halfClose: Boolean = false,
+    idleTimeout: Duration = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {
     bind(interface, port, backlog, options, halfClose, idleTimeout).to(Sink.foreach { conn: IncomingConnection ⇒
       conn.flow.join(handler).run()
     }).run()
@@ -162,12 +162,12 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  independently whether the server is still attempting to write.
    */
   def outgoingConnection(
-    remoteAddress:  InetSocketAddress,
-    localAddress:   Option[InetSocketAddress]           = None,
-    options:        immutable.Traversable[SocketOption] = Nil,
-    halfClose:      Boolean                             = true,
-    connectTimeout: Duration                            = Duration.Inf,
-    idleTimeout:    Duration                            = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+    remoteAddress: InetSocketAddress,
+    localAddress: Option[InetSocketAddress] = None,
+    options: immutable.Traversable[SocketOption] = Nil,
+    halfClose: Boolean = true,
+    connectTimeout: Duration = Duration.Inf,
+    idleTimeout: Duration = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
     val tcpFlow = Flow.fromGraph(new OutgoingConnectionStage(
       IO(IoTcp)(system),
@@ -179,7 +179,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 
     idleTimeout match {
       case d: FiniteDuration ⇒ tcpFlow.join(TcpIdleTimeout(d, Some(remoteAddress)))
-      case _                 ⇒ tcpFlow
+      case _ ⇒ tcpFlow
     }
 
   }

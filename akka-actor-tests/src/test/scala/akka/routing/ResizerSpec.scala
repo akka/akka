@@ -230,7 +230,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         Props(new Actor {
           def receive = {
             case n: Int if n <= 0 ⇒ // done
-            case n: Int           ⇒ Thread.sleep((n millis).dilated.toMillis)
+            case n: Int ⇒ Thread.sleep((n millis).dilated.toMillis)
           }
         })))
 

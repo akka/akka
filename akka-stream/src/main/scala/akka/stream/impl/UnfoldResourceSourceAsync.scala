@@ -19,9 +19,9 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 @InternalApi private[akka] final class UnfoldResourceSourceAsync[T, S](
-  create:   () ⇒ Future[S],
+  create: () ⇒ Future[S],
   readData: (S) ⇒ Future[Option[T]],
-  close:    (S) ⇒ Future[Done]) extends GraphStage[SourceShape[T]] {
+  close: (S) ⇒ Future[Done]) extends GraphStage[SourceShape[T]] {
   val out = Outlet[T]("UnfoldResourceSourceAsync.out")
   override val shape = SourceShape(out)
   override def initialAttributes: Attributes = DefaultAttributes.unfoldResourceSourceAsync
@@ -59,14 +59,14 @@ import scala.util.control.NonFatal
           onResourceReady(close(_))
           failStage(ex)
         case Supervision.Restart ⇒ restartState()
-        case Supervision.Resume  ⇒ onPull()
+        case Supervision.Resume ⇒ onPull()
       }
     }
 
     val readCallback = getAsyncCallback[Try[Option[T]]] {
       case scala.util.Success(data) ⇒ data match {
         case Some(d) ⇒ push(out, d)
-        case None    ⇒ closeStage()
+        case None ⇒ closeStage()
       }
       case scala.util.Failure(t) ⇒ errorHandler(t)
     }.invoke _

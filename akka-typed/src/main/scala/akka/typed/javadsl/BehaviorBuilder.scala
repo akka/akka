@@ -25,8 +25,7 @@ import BehaviorBuilder._
  */
 class BehaviorBuilder[T] private (
   private val messageHandlers: List[Case[T, T]],
-  private val signalHandlers:  List[Case[T, Signal]]
-) {
+  private val signalHandlers: List[Case[T, Signal]]) {
 
   def build(): Behavior[T] = new BuiltBehavior(messageHandlers.reverse, signalHandlers.reverse)
 
@@ -54,8 +53,7 @@ class BehaviorBuilder[T] private (
     withMessage(
       `type`,
       Some((t: T) ⇒ test.test(t.asInstanceOf[M])),
-      (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M])
-    )
+      (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M]))
 
   /**
    * Add a new case to the message handling without compile time type check.
@@ -104,8 +102,7 @@ class BehaviorBuilder[T] private (
     withSignal(
       `type`,
       Some((t: Signal) ⇒ test.test(t.asInstanceOf[M])),
-      (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])
-    )
+      (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M]))
 
   /**
    * Add a new case to the signal handling without compile time type check.
@@ -248,8 +245,7 @@ object BehaviorBuilder {
 
 private class BuiltBehavior[T](
   private val messageHandlers: List[Case[T, T]],
-  private val signalHandlers:  List[Case[T, Signal]]
-) extends ExtensibleBehavior[T] {
+  private val signalHandlers: List[Case[T, Signal]]) extends ExtensibleBehavior[T] {
 
   override def receiveMessage(ctx: typed.ActorContext[T], msg: T): Behavior[T] = receive[T](ctx.asJava, msg, messageHandlers)
 

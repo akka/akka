@@ -45,8 +45,8 @@ class RecipeReduceByKey extends RecipeSpec {
       //#reduce-by-key-general
       def reduceByKey[In, K, Out](
         maximumGroupSize: Int,
-        groupKey:         (In) => K,
-        map:              (In) => Out)(reduce: (Out, Out) => Out): Flow[In, (K, Out), NotUsed] = {
+        groupKey: (In) => K,
+        map: (In) => Out)(reduce: (Out, Out) => Out): Flow[In, (K, Out), NotUsed] = {
 
         Flow[In]
           .groupBy[K](maximumGroupSize, groupKey)

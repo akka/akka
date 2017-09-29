@@ -34,8 +34,7 @@ class SendQueueBenchmark {
 
   val config = ConfigFactory.parseString(
     """
-    """
-  )
+    """)
 
   implicit val system = ActorSystem("SendQueueBenchmark", config)
 

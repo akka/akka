@@ -215,9 +215,9 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
    */
   private def maintainAddressTerminatedSubscription[T](change: ActorRef = null)(block: ⇒ T): T = {
     def isNonLocal(ref: ActorRef) = ref match {
-      case null                              ⇒ true
+      case null ⇒ true
       case a: InternalActorRef if !a.isLocal ⇒ true
-      case _                                 ⇒ false
+      case _ ⇒ false
     }
 
     if (isNonLocal(change)) {

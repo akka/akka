@@ -56,7 +56,7 @@ class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with 
       val l = localSystem.actorOf(Props(new Actor {
         def receive = {
           case (p: Props, n: String) ⇒ sender() ! context.actorOf(p, n)
-          case ActorForReq(s)        ⇒ sender() ! context.actorFor(s)
+          case ActorForReq(s) ⇒ sender() ! context.actorFor(s)
         }
       }), "looker1")
       // child is configured to be deployed on remote-sys (remoteSystem)

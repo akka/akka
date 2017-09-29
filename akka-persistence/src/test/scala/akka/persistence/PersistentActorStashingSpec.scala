@@ -21,12 +21,12 @@ object PersistentActorStashingSpec {
     var askedForDelete: Option[ActorRef] = None
 
     val updateState: Receive = {
-      case Evt(data)               ⇒ events = data :: events
+      case Evt(data) ⇒ events = data :: events
       case d @ Some(ref: ActorRef) ⇒ askedForDelete = d.asInstanceOf[Some[ActorRef]]
     }
 
     val commonBehavior: Receive = {
-      case "boom"   ⇒ throw new TestException("boom")
+      case "boom" ⇒ throw new TestException("boom")
       case GetState ⇒ sender() ! events.reverse
     }
 

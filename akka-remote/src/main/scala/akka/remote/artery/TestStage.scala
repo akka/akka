@@ -34,13 +34,13 @@ private[remote] class SharedTestState {
   def isBlackhole(from: Address, to: Address): Boolean =
     state.get.blackholes.get(from) match {
       case Some(destinations) ⇒ destinations(to)
-      case None               ⇒ false
+      case None ⇒ false
     }
 
   /** Enable blackholing between given address in given direction */
   def blackhole(a: Address, b: Address, direction: Direction): Unit =
     direction match {
-      case Direction.Send    ⇒ addBlackhole(a, b)
+      case Direction.Send ⇒ addBlackhole(a, b)
       case Direction.Receive ⇒ addBlackhole(b, a)
       case Direction.Both ⇒
         addBlackhole(a, b)
@@ -70,7 +70,7 @@ private[remote] class SharedTestState {
     val current = state.get
     val newState = current.blackholes.get(from) match {
       case Some(destinations) ⇒ current.copy(blackholes = current.blackholes.updated(from, destinations + to))
-      case None               ⇒ current.copy(blackholes = current.blackholes.updated(from, Set(to)))
+      case None ⇒ current.copy(blackholes = current.blackholes.updated(from, Set(to)))
     }
     if (!state.compareAndSet(current, newState))
       addBlackhole(from, to)
@@ -78,7 +78,7 @@ private[remote] class SharedTestState {
 
   def passThrough(a: Address, b: Address, direction: Direction): Unit =
     direction match {
-      case Direction.Send    ⇒ removeBlackhole(a, b)
+      case Direction.Send ⇒ removeBlackhole(a, b)
       case Direction.Receive ⇒ removeBlackhole(b, a)
       case Direction.Both ⇒
         removeBlackhole(a, b)
@@ -89,7 +89,7 @@ private[remote] class SharedTestState {
     val current = state.get
     val newState = current.blackholes.get(from) match {
       case Some(destinations) ⇒ current.copy(blackholes = current.blackholes.updated(from, destinations - to))
-      case None               ⇒ current
+      case None ⇒ current
     }
     if (!state.compareAndSet(current, newState))
       removeBlackhole(from, to)
@@ -101,7 +101,7 @@ private[remote] class SharedTestState {
  * INTERNAL API
  */
 private[remote] final case class TestState(
-  blackholes:        Map[Address, Set[Address]],
+  blackholes: Map[Address, Set[Address]],
   failInboundStream: Option[Throwable])
 
 /**

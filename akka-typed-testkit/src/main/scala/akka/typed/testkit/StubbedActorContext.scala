@@ -18,9 +18,9 @@ import akka.typed.internal.ActorContextImpl
  * See [[EffectfulActorContext]] for more advanced uses.
  */
 class StubbedActorContext[T](
-  val name:                     String,
+  val name: String,
   override val mailboxCapacity: Int,
-  override val system:          ActorSystem[Nothing]) extends ActorContextImpl[T] {
+  override val system: ActorSystem[Nothing]) extends ActorContextImpl[T] {
 
   val selfInbox = Inbox[T](name)
   override val self = selfInbox.ref
@@ -51,7 +51,7 @@ class StubbedActorContext[T](
    */
   override def stop[U](child: ActorRef[U]): Boolean = {
     _children.get(child.path.name) match {
-      case None        ⇒ false
+      case None ⇒ false
       case Some(inbox) ⇒ inbox.ref == child
     }
   }

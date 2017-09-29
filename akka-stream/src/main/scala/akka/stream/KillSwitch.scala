@@ -60,7 +60,7 @@ object KillSwitches {
     }
 
     private def onSwitch(mode: Try[Done]): Unit = mode match {
-      case Success(_)  ⇒ completeStage()
+      case Success(_) ⇒ completeStage()
       case Failure(ex) ⇒ failStage(ex)
     }
   }

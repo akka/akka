@@ -18,9 +18,9 @@ object FutureDocSpec {
 
   class MyActor extends Actor {
     def receive = {
-      case x: String       => sender() ! x.toUpperCase
+      case x: String => sender() ! x.toUpperCase
       case x: Int if x < 0 => sender() ! Status.Failure(new ArithmeticException("Negative values not supported"))
-      case x: Int          => sender() ! x
+      case x: Int => sender() ! x
     }
   }
 
@@ -368,7 +368,7 @@ class FutureDocSpec extends AkkaSpec {
       val future = Future { "foo" }
       //#onSuccess
       future onSuccess {
-        case "bar"     => println("Got my bar alright!")
+        case "bar" => println("Got my bar alright!")
         case x: String => println("Got some random string: " + x)
       }
       //#onSuccess
@@ -391,7 +391,7 @@ class FutureDocSpec extends AkkaSpec {
       def doSomethingOnFailure(t: Throwable) = ()
       //#onComplete
       future onComplete {
-        case Success(result)  => doSomethingOnSuccess(result)
+        case Success(result) => doSomethingOnSuccess(result)
         case Failure(failure) => doSomethingOnFailure(failure)
       }
       //#onComplete

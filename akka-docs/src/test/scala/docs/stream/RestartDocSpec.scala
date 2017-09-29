@@ -43,8 +43,7 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
         Source.fromFutureSource {
           // Make a single request with akka-http
           Http().singleRequest(HttpRequest(
-            uri = "http://example.com/eventstream"
-          ))
+            uri = "http://example.com/eventstream"))
             // Unmarshall it as a source of server sent events
             .flatMap(Unmarshal(_).to[Source[ServerSentEvent, NotUsed]])
         }

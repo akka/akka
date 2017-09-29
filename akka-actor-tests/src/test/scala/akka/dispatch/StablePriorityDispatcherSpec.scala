@@ -23,14 +23,14 @@ object StablePriorityDispatcherSpec {
 
   class Unbounded(settings: ActorSystem.Settings, config: Config) extends UnboundedStablePriorityMailbox(PriorityGenerator({
     case i: Int if i <= 100 ⇒ i // Small integers have high priority
-    case i: Int             ⇒ 101 // Don't care for other integers
-    case 'Result            ⇒ Int.MaxValue
+    case i: Int ⇒ 101 // Don't care for other integers
+    case 'Result ⇒ Int.MaxValue
   }: Any ⇒ Int))
 
   class Bounded(settings: ActorSystem.Settings, config: Config) extends BoundedStablePriorityMailbox(PriorityGenerator({
     case i: Int if i <= 100 ⇒ i // Small integers have high priority
-    case i: Int             ⇒ 101 // Don't care for other integers
-    case 'Result            ⇒ Int.MaxValue
+    case i: Int ⇒ 101 // Don't care for other integers
+    case 'Result ⇒ Int.MaxValue
   }: Any ⇒ Int), 1000, 10 seconds)
 
 }
@@ -68,7 +68,7 @@ class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec
           self.tell('Result, testActor)
 
           def receive = {
-            case i: Int  ⇒ acc += i
+            case i: Int ⇒ acc += i
             case 'Result ⇒ sender() ! acc.toList
           }
         }).withDispatcher(dispatcherKey))

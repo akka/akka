@@ -53,11 +53,11 @@ object DurableDataSpec {
       case Store(key, data, reply) ⇒
         if (failStore) reply match {
           case Some(StoreReply(_, failureMsg, replyTo)) ⇒ replyTo ! failureMsg
-          case None                                     ⇒
+          case None ⇒
         }
         else reply match {
           case Some(StoreReply(successMsg, _, replyTo)) ⇒ replyTo ! successMsg
-          case None                                     ⇒
+          case None ⇒
         }
     }
 

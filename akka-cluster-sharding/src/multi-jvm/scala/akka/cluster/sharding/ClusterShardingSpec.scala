@@ -65,25 +65,25 @@ object ClusterShardingSpec {
     }
 
     override def receiveCommand: Receive = {
-      case Increment      ⇒ persist(CounterChanged(+1))(updateState)
-      case Decrement      ⇒ persist(CounterChanged(-1))(updateState)
-      case Get(_)         ⇒ sender() ! count
+      case Increment ⇒ persist(CounterChanged(+1))(updateState)
+      case Decrement ⇒ persist(CounterChanged(-1))(updateState)
+      case Get(_) ⇒ sender() ! count
       case ReceiveTimeout ⇒ context.parent ! Passivate(stopMessage = Stop)
-      case Stop           ⇒ context.stop(self)
+      case Stop ⇒ context.stop(self)
     }
   }
   //#counter-actor
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case EntityEnvelope(id, payload) ⇒ (id.toString, payload)
-    case msg @ Get(id)               ⇒ (id.toString, msg)
+    case msg @ Get(id) ⇒ (id.toString, msg)
   }
 
   val numberOfShards = 12
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case EntityEnvelope(id, _)       ⇒ (id % numberOfShards).toString
-    case Get(id)                     ⇒ (id % numberOfShards).toString
+    case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
+    case Get(id) ⇒ (id % numberOfShards).toString
     case ShardRegion.StartEntity(id) ⇒ (id.toLong % numberOfShards).toString
   }
 
@@ -101,10 +101,10 @@ object ClusterShardingSpec {
     val counter = context.actorOf(Props[Counter], "theCounter")
 
     override val supervisorStrategy = OneForOneStrategy() {
-      case _: IllegalArgumentException     ⇒ SupervisorStrategy.Resume
+      case _: IllegalArgumentException ⇒ SupervisorStrategy.Resume
       case _: ActorInitializationException ⇒ SupervisorStrategy.Stop
-      case _: DeathPactException           ⇒ SupervisorStrategy.Stop
-      case _: Exception                    ⇒ SupervisorStrategy.Restart
+      case _: DeathPactException ⇒ SupervisorStrategy.Stop
+      case _: Exception ⇒ SupervisorStrategy.Restart
     }
 
     def receive = {
@@ -116,7 +116,7 @@ object ClusterShardingSpec {
 }
 
 abstract class ClusterShardingSpecConfig(
-  val mode:                   String,
+  val mode: String,
   val entityRecoveryStrategy: String = "all")
   extends MultiNodeConfig {
 
@@ -177,14 +177,14 @@ object ClusterShardingDocCode {
   //#counter-extractor
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case EntityEnvelope(id, payload) ⇒ (id.toString, payload)
-    case msg @ Get(id)               ⇒ (id.toString, msg)
+    case msg @ Get(id) ⇒ (id.toString, msg)
   }
 
   val numberOfShards = 100
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
-    case Get(id)               ⇒ (id % numberOfShards).toString
+    case Get(id) ⇒ (id % numberOfShards).toString
     case ShardRegion.StartEntity(id) ⇒
       // StartEntity is used by remembering entities feature
       (id.toLong % numberOfShards).toString
@@ -195,7 +195,7 @@ object ClusterShardingDocCode {
     //#extractShardId-StartEntity
     val extractShardId: ShardRegion.ExtractShardId = {
       case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
-      case Get(id)               ⇒ (id % numberOfShards).toString
+      case Get(id) ⇒ (id % numberOfShards).toString
       case ShardRegion.StartEntity(id) ⇒
         // StartEntity is used by remembering entities feature
         (id.toLong % numberOfShards).toString
@@ -946,7 +946,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
             entity ! Identify(n)
             receiveOne(3 seconds) match {
               case ActorIdentity(id, Some(_)) if id == n ⇒ count = count + 1
-              case ActorIdentity(id, None)               ⇒ //Not on the fifth shard
+              case ActorIdentity(id, None) ⇒ //Not on the fifth shard
             }
           }
           count should be >= (2)

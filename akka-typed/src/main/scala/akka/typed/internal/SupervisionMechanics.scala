@@ -48,12 +48,12 @@ private[typed] trait SupervisionMechanics[T] {
   protected def processSignal(message: SystemMessage): Boolean = {
     if (ActorCell.Debug) println(s"[${Thread.currentThread.getName}] $self processing system message $message")
     message match {
-      case Watch(watchee, watcher)      ⇒ { addWatcher(watchee.sorryForNothing, watcher.sorryForNothing); true }
-      case Unwatch(watchee, watcher)    ⇒ { remWatcher(watchee.sorryForNothing, watcher.sorryForNothing); true }
+      case Watch(watchee, watcher) ⇒ { addWatcher(watchee.sorryForNothing, watcher.sorryForNothing); true }
+      case Unwatch(watchee, watcher) ⇒ { remWatcher(watchee.sorryForNothing, watcher.sorryForNothing); true }
       case DeathWatchNotification(a, f) ⇒ watchedActorTerminated(a.sorryForNothing, f)
-      case Create()                     ⇒ create()
-      case Terminate()                  ⇒ terminate()
-      case NoMessage                    ⇒ false // only here to suppress warning
+      case Create() ⇒ create()
+      case Terminate() ⇒ terminate()
+      case NoMessage ⇒ false // only here to suppress warning
     }
   }
 
@@ -93,12 +93,12 @@ private[typed] trait SupervisionMechanics[T] {
      *
      */
     try a match {
-      case null                   ⇒ // skip PostStop
+      case null ⇒ // skip PostStop
       case _: DeferredBehavior[_] ⇒
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
       case s: StoppedBehavior[_] ⇒ s.postStop match {
         case OptionVal.Some(postStop) ⇒ Behavior.interpretSignal(postStop, ctx, PostStop)
-        case OptionVal.None           ⇒ // no postStop behavior defined
+        case OptionVal.None ⇒ // no postStop behavior defined
       }
       case _ ⇒ Behavior.interpretSignal(a, ctx, PostStop)
     } catch { case NonFatal(ex) ⇒ publish(Logging.Error(ex, self.path.toString, clazz(a), "failure during PostStop")) }

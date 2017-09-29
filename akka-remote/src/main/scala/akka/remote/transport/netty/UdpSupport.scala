@@ -23,9 +23,9 @@ private[remote] trait UdpHandlers extends CommonHandlers {
     new UdpAssociationHandle(localAddress, remoteAddress, channel, transport)
 
   override def registerListener(
-    channel:             Channel,
-    listener:            HandleEventListener,
-    msg:                 ChannelBuffer,
+    channel: Channel,
+    listener: HandleEventListener,
+    msg: ChannelBuffer,
     remoteSocketAddress: InetSocketAddress): Unit = {
     transport.udpConnectionTable.putIfAbsent(remoteSocketAddress, listener) match {
       case null ⇒ listener notify InboundPayload(ByteString(msg.array()))
@@ -81,9 +81,9 @@ private[remote] class UdpClientHandler(_transport: NettyTransport, remoteAddress
  * INTERNAL API
  */
 private[remote] class UdpAssociationHandle(
-  val localAddress:      Address,
-  val remoteAddress:     Address,
-  private val channel:   Channel,
+  val localAddress: Address,
+  val remoteAddress: Address,
+  private val channel: Channel,
   private val transport: NettyTransport) extends AssociationHandle {
 
   override val readHandlerPromise: Promise[HandleEventListener] = Promise()

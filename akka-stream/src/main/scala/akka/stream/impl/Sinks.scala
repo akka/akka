@@ -104,7 +104,7 @@ import akka.util.OptionVal
  */
 @InternalApi private[akka] final class FanoutPublisherSink[In](
   val attributes: Attributes,
-  shape:          SinkShape[In])
+  shape: SinkShape[In])
   extends SinkModule[In, Publisher[In]](shape) {
 
   override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
@@ -167,8 +167,8 @@ import akka.util.OptionVal
  * INTERNAL API
  */
 @InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any,
-                                                        val attributes: Attributes,
-                                                        shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
+  val attributes: Attributes,
+  shape: SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = {
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
@@ -354,7 +354,7 @@ import akka.util.OptionVal
 
       override def postStop(): Unit = stopCallback {
         case Pull(promise) ⇒ promise.failure(new StreamDetachedException())
-        case _             ⇒ //do nothing
+        case _ ⇒ //do nothing
       }
 
       private val callback: AsyncCallback[Output[T]] =
@@ -377,8 +377,8 @@ import akka.util.OptionVal
         promise.complete(e)
         e match {
           case Success(_: Some[_]) ⇒ //do nothing
-          case Success(None)       ⇒ completeStage()
-          case Failure(t)          ⇒ failStage(t)
+          case Success(None) ⇒ completeStage()
+          case Failure(t) ⇒ failStage(t)
         }
       }
 
@@ -485,7 +485,7 @@ import akka.util.OptionVal
           val cb: AsyncCallback[Try[Sink[T, M]]] =
             getAsyncCallback {
               case Success(sink) ⇒ initInternalSource(sink, element)
-              case Failure(e)    ⇒ failure(e)
+              case Failure(e) ⇒ failure(e)
             }
           sinkFactory(element).onComplete { cb.invoke }(ExecutionContexts.sameThreadExecutionContext)
           setHandler(in, new InHandler {
@@ -496,7 +496,7 @@ import akka.util.OptionVal
         } catch {
           case NonFatal(e) ⇒ decider(e) match {
             case Supervision.Stop ⇒ failure(e)
-            case _                ⇒ pull(in)
+            case _ ⇒ pull(in)
           }
         }
       }

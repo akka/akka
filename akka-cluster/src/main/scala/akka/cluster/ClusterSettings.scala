@@ -79,14 +79,14 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     val key = "retry-unsuccessful-join-after"
     toRootLowerCase(cc.getString(key)) match {
       case "off" ⇒ Duration.Undefined
-      case _     ⇒ cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
+      case _ ⇒ cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
     }
   }
   val ShutdownAfterUnsuccessfulJoinSeedNodes: Duration = {
     val key = "shutdown-after-unsuccessful-join-seed-nodes"
     toRootLowerCase(cc.getString(key)) match {
       case "off" ⇒ Duration.Undefined
-      case _     ⇒ cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
+      case _ ⇒ cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
     }
   }
   val PeriodicTasksInitialDelay: FiniteDuration = cc.getMillisDuration("periodic-tasks-initial-delay")
@@ -100,7 +100,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     val key = "publish-stats-interval"
     toRootLowerCase(cc.getString(key)) match {
       case "off" ⇒ Duration.Undefined
-      case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+      case _ ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
@@ -114,7 +114,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     val key = "auto-down-unreachable-after"
     toRootLowerCase(cc.getString(key)) match {
       case "off" ⇒ Duration.Undefined
-      case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+      case _ ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
@@ -128,7 +128,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     val key = "down-removal-margin"
     toRootLowerCase(cc.getString(key)) match {
       case "off" ⇒ Duration.Zero
-      case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+      case _ ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 

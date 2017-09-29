@@ -28,7 +28,7 @@ import akka.util.Helpers.ConfigOps
  */
 class DeadlineFailureDetector(
   val acceptableHeartbeatPause: FiniteDuration,
-  val heartbeatInterval:        FiniteDuration)(
+  val heartbeatInterval: FiniteDuration)(
   implicit
   clock: Clock) extends FailureDetector {
 

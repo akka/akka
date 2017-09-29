@@ -85,7 +85,7 @@ class TestProbe[M](name: String)(implicit val system: ActorSystem[_], val settin
    */
   def remaining: FiniteDuration = end match {
     case f: FiniteDuration ⇒ f - now
-    case _                 ⇒ throw new AssertionError("`remaining` may not be called outside of `within`")
+    case _ ⇒ throw new AssertionError("`remaining` may not be called outside of `within`")
   }
 
   /**
@@ -94,14 +94,14 @@ class TestProbe[M](name: String)(implicit val system: ActorSystem[_], val settin
    */
   def remainingOr(duration: FiniteDuration): FiniteDuration = end match {
     case x if x eq Duration.Undefined ⇒ duration
-    case x if !x.isFinite             ⇒ throw new IllegalArgumentException("`end` cannot be infinite")
-    case f: FiniteDuration            ⇒ f - now
+    case x if !x.isFinite ⇒ throw new IllegalArgumentException("`end` cannot be infinite")
+    case f: FiniteDuration ⇒ f - now
   }
 
   private def remainingOrDilated(max: Duration): FiniteDuration = max match {
     case x if x eq Duration.Undefined ⇒ remainingOrDefault
-    case x if !x.isFinite             ⇒ throw new IllegalArgumentException("max duration cannot be infinite")
-    case f: FiniteDuration            ⇒ f.dilated
+    case x if !x.isFinite ⇒ throw new IllegalArgumentException("max duration cannot be infinite")
+    case f: FiniteDuration ⇒ f.dilated
   }
 
   /**

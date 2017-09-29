@@ -85,7 +85,7 @@ object RemoteReDeploymentMultiJvmSpec {
     log.info(s"Started Parent on path ${self.path}")
     def receive = {
       case (p: Props, n: String) ⇒ context.actorOf(p, n)
-      case msg                   ⇒ monitor ! msg
+      case msg ⇒ monitor ! msg
     }
   }
 

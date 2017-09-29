@@ -49,7 +49,7 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
         isInitTimedOut = true
         unstashAll() // will trigger appropriate failures
       case _ if isInitTimedOut ⇒ super.aroundReceive(receive, msg)
-      case _                   ⇒ stash()
+      case _ ⇒ stash()
     }
 
   implicit def timeout: Timeout
@@ -57,13 +57,13 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
   def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
     store match {
       case Some(s) ⇒ (s ? WriteMessages(messages)).mapTo[immutable.Seq[Try[Unit]]]
-      case None    ⇒ storeNotInitialized
+      case None ⇒ storeNotInitialized
     }
 
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
     store match {
       case Some(s) ⇒ (s ? DeleteMessagesTo(persistenceId, toSequenceNr)).mapTo[Unit]
-      case None    ⇒ storeNotInitialized
+      case None ⇒ storeNotInitialized
     }
 
   def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Unit] =

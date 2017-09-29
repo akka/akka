@@ -125,28 +125,22 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
     "be serializable with no role" in {
       checkSerialization(ClusterRouterPool(
         RoundRobinPool(
-          nrOfInstances = 4
-        ),
+          nrOfInstances = 4),
         ClusterRouterPoolSettings(
           totalInstances = 2,
           maxInstancesPerNode = 5,
-          allowLocalRoutees = true
-        )
-      ))
+          allowLocalRoutees = true)))
     }
 
     "be serializable with one role" in {
       checkSerialization(ClusterRouterPool(
         RoundRobinPool(
-          nrOfInstances = 4
-        ),
+          nrOfInstances = 4),
         ClusterRouterPoolSettings(
           totalInstances = 2,
           maxInstancesPerNode = 5,
           allowLocalRoutees = true,
-          useRoles = Set("Richard, Duke of Gloucester")
-        )
-      ))
+          useRoles = Set("Richard, Duke of Gloucester"))))
     }
 
     "be serializable with many roles" in {
@@ -157,9 +151,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
           totalInstances = 2,
           maxInstancesPerNode = 5,
           allowLocalRoutees = true,
-          useRoles = Set("Richard, Duke of Gloucester", "Hongzhi Emperor", "Red Rackham")
-        )
-      ))
+          useRoles = Set("Richard, Duke of Gloucester", "Hongzhi Emperor", "Red Rackham"))))
     }
   }
 

@@ -170,7 +170,7 @@ object Actor {
    */
   def immutable[T](
     onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]],
-    onSignal:  JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
+    onSignal: JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
     new BehaviorImpl.ImmutableBehavior(
       (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
       { case (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig) })
@@ -208,8 +208,8 @@ object Actor {
    */
   def tap[T](
     onMessage: Procedure2[ActorContext[T], T],
-    onSignal:  Procedure2[ActorContext[T], Signal],
-    behavior:  Behavior[T]): Behavior[T] = {
+    onSignal: Procedure2[ActorContext[T], Signal],
+    behavior: Behavior[T]): Behavior[T] = {
     BehaviorImpl.tap(
       (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
       (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig),

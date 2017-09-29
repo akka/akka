@@ -29,7 +29,7 @@ class LocalReceptionistSpec extends TypedSpec with Eventually {
   val stoppableBehavior = Actor.immutable[Any] { (ctx, msg) ⇒
     msg match {
       case Stop ⇒ Behavior.stopped
-      case _    ⇒ Behavior.same
+      case _ ⇒ Behavior.same
     }
   }
 

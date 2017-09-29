@@ -40,7 +40,7 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
    */
   def toBinary(o: AnyRef): Array[Byte] = o match {
     case Snapshot(data) ⇒ snapshotToBinary(data.asInstanceOf[AnyRef])
-    case _              ⇒ throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
+    case _ ⇒ throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
 
   /**
@@ -103,7 +103,7 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
     // serialize actor references with full address information (defaultAddress)
     transportInformation match {
       case Some(ti) ⇒ Serialization.currentTransportInformation.withValue(ti) { serialize() }
-      case None     ⇒ serialize()
+      case None ⇒ serialize()
     }
   }
 

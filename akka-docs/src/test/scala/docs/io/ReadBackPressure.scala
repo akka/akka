@@ -54,7 +54,7 @@ object PullReadingExample {
 
     def receive = {
       case Received(data) => connection ! Write(data, Ack)
-      case Ack            => connection ! ResumeReading
+      case Ack => connection ! ResumeReading
     }
     //#pull-reading-echo
   }

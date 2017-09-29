@@ -258,7 +258,7 @@ class EventStreamSpec extends TypedSpec(EventStreamSpec.config) with Eventually 
       eventually(ref.hasSignal should ===(true))
       val unsubscriber = ref.receiveSignal() match {
         case Watch(`ref`, watcher) ⇒ watcher
-        case other                 ⇒ fail(s"expected Watch(), got $other")
+        case other ⇒ fail(s"expected Watch(), got $other")
       }
       ref.hasSomething should ===(false)
       unsubscriber.sorryForNothing.sendSystem(DeathWatchNotification(ref, null))
@@ -290,7 +290,7 @@ class EventStreamSpec extends TypedSpec(EventStreamSpec.config) with Eventually 
       eventually(ref.hasSignal should ===(true))
       val unsubscriber = ref.receiveSignal() match {
         case Watch(`ref`, watcher) ⇒ watcher
-        case other                 ⇒ fail(s"expected Watch(), got $other")
+        case other ⇒ fail(s"expected Watch(), got $other")
       }
       ref.hasSomething should ===(false)
       es.unsubscribe(ref)
@@ -307,7 +307,7 @@ class EventStreamSpec extends TypedSpec(EventStreamSpec.config) with Eventually 
       eventually(ref.hasSignal should ===(true))
       val unsubscriber = ref.receiveSignal() match {
         case Watch(`ref`, watcher) ⇒ watcher
-        case other                 ⇒ fail(s"expected Watch(), got $other")
+        case other ⇒ fail(s"expected Watch(), got $other")
       }
       ref.hasSomething should ===(false)
       es.unsubscribe(ref, classOf[Integer])

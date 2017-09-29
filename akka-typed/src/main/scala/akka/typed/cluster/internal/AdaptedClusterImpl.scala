@@ -69,7 +69,7 @@ private[akka] object AdapterClusterImpl {
         case Subscribe(subscriber: ActorRef[SelfRemoved] @unchecked, clazz) if clazz == classOf[SelfRemoved] ⇒
           seenState match {
             case BeforeUp | Up ⇒ removedSubscribers = subscriber :: removedSubscribers
-            case Removed(s)    ⇒ subscriber ! SelfRemoved(s)
+            case Removed(s) ⇒ subscriber ! SelfRemoved(s)
           }
           Actor.same
 
@@ -121,9 +121,7 @@ private[akka] object AdapterClusterImpl {
         adaptedCluster.joinSeedNodes(addresses)
         Actor.same
 
-    }
-
-  )
+    })
 
 }
 

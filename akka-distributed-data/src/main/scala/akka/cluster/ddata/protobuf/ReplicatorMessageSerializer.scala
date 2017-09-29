@@ -200,47 +200,47 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     DurableDataEnvelopeManifest → durableDataEnvelopeFromBinary)
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: DataEnvelope        ⇒ DataEnvelopeManifest
-    case _: Write               ⇒ WriteManifest
-    case WriteAck               ⇒ WriteAckManifest
-    case _: Read                ⇒ ReadManifest
-    case _: ReadResult          ⇒ ReadResultManifest
-    case _: DeltaPropagation    ⇒ DeltaPropagationManifest
-    case _: Status              ⇒ StatusManifest
-    case _: Get[_]              ⇒ GetManifest
-    case _: GetSuccess[_]       ⇒ GetSuccessManifest
+    case _: DataEnvelope ⇒ DataEnvelopeManifest
+    case _: Write ⇒ WriteManifest
+    case WriteAck ⇒ WriteAckManifest
+    case _: Read ⇒ ReadManifest
+    case _: ReadResult ⇒ ReadResultManifest
+    case _: DeltaPropagation ⇒ DeltaPropagationManifest
+    case _: Status ⇒ StatusManifest
+    case _: Get[_] ⇒ GetManifest
+    case _: GetSuccess[_] ⇒ GetSuccessManifest
     case _: DurableDataEnvelope ⇒ DurableDataEnvelopeManifest
-    case _: Changed[_]          ⇒ ChangedManifest
-    case _: NotFound[_]         ⇒ NotFoundManifest
-    case _: GetFailure[_]       ⇒ GetFailureManifest
-    case _: Subscribe[_]        ⇒ SubscribeManifest
-    case _: Unsubscribe[_]      ⇒ UnsubscribeManifest
-    case _: Gossip              ⇒ GossipManifest
-    case WriteNack              ⇒ WriteNackManifest
-    case DeltaNack              ⇒ DeltaNackManifest
+    case _: Changed[_] ⇒ ChangedManifest
+    case _: NotFound[_] ⇒ NotFoundManifest
+    case _: GetFailure[_] ⇒ GetFailureManifest
+    case _: Subscribe[_] ⇒ SubscribeManifest
+    case _: Unsubscribe[_] ⇒ UnsubscribeManifest
+    case _: Gossip ⇒ GossipManifest
+    case WriteNack ⇒ WriteNackManifest
+    case DeltaNack ⇒ DeltaNackManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: DataEnvelope        ⇒ dataEnvelopeToProto(m).toByteArray
-    case m: Write               ⇒ writeCache.getOrAdd(m)
-    case WriteAck               ⇒ writeAckBytes
-    case m: Read                ⇒ readCache.getOrAdd(m)
-    case m: ReadResult          ⇒ readResultToProto(m).toByteArray
-    case m: Status              ⇒ statusToProto(m).toByteArray
-    case m: DeltaPropagation    ⇒ deltaPropagationToProto(m).toByteArray
-    case m: Get[_]              ⇒ getToProto(m).toByteArray
-    case m: GetSuccess[_]       ⇒ getSuccessToProto(m).toByteArray
+    case m: DataEnvelope ⇒ dataEnvelopeToProto(m).toByteArray
+    case m: Write ⇒ writeCache.getOrAdd(m)
+    case WriteAck ⇒ writeAckBytes
+    case m: Read ⇒ readCache.getOrAdd(m)
+    case m: ReadResult ⇒ readResultToProto(m).toByteArray
+    case m: Status ⇒ statusToProto(m).toByteArray
+    case m: DeltaPropagation ⇒ deltaPropagationToProto(m).toByteArray
+    case m: Get[_] ⇒ getToProto(m).toByteArray
+    case m: GetSuccess[_] ⇒ getSuccessToProto(m).toByteArray
     case m: DurableDataEnvelope ⇒ durableDataEnvelopeToProto(m).toByteArray
-    case m: Changed[_]          ⇒ changedToProto(m).toByteArray
-    case m: NotFound[_]         ⇒ notFoundToProto(m).toByteArray
-    case m: GetFailure[_]       ⇒ getFailureToProto(m).toByteArray
-    case m: Subscribe[_]        ⇒ subscribeToProto(m).toByteArray
-    case m: Unsubscribe[_]      ⇒ unsubscribeToProto(m).toByteArray
-    case m: Gossip              ⇒ compress(gossipToProto(m))
-    case WriteNack              ⇒ dm.Empty.getDefaultInstance.toByteArray
-    case DeltaNack              ⇒ dm.Empty.getDefaultInstance.toByteArray
+    case m: Changed[_] ⇒ changedToProto(m).toByteArray
+    case m: NotFound[_] ⇒ notFoundToProto(m).toByteArray
+    case m: GetFailure[_] ⇒ getFailureToProto(m).toByteArray
+    case m: Subscribe[_] ⇒ subscribeToProto(m).toByteArray
+    case m: Unsubscribe[_] ⇒ unsubscribeToProto(m).toByteArray
+    case m: Gossip ⇒ compress(gossipToProto(m))
+    case WriteNack ⇒ dm.Empty.getDefaultInstance.toByteArray
+    case DeltaNack ⇒ dm.Empty.getDefaultInstance.toByteArray
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -324,10 +324,10 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def getToProto(get: Get[_]): dm.Get = {
     val consistencyValue = get.consistency match {
-      case ReadLocal       ⇒ 1
-      case ReadFrom(n, _)  ⇒ n
+      case ReadLocal ⇒ 1
+      case ReadFrom(n, _) ⇒ n
       case _: ReadMajority ⇒ 0
-      case _: ReadAll      ⇒ -1
+      case _: ReadAll ⇒ -1
     }
 
     val b = dm.Get.newBuilder().
@@ -345,10 +345,10 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val request = if (get.hasRequest()) Some(otherMessageFromProto(get.getRequest)) else None
     val timeout = Duration(get.getTimeout, TimeUnit.MILLISECONDS)
     val consistency = get.getConsistency match {
-      case 0  ⇒ ReadMajority(timeout)
+      case 0 ⇒ ReadMajority(timeout)
       case -1 ⇒ ReadAll(timeout)
-      case 1  ⇒ ReadLocal
-      case n  ⇒ ReadFrom(n, timeout)
+      case 1 ⇒ ReadLocal
+      case n ⇒ ReadFrom(n, timeout)
     }
     Get(key, consistency, request)
   }
@@ -517,7 +517,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val b = dm.ReadResult.newBuilder()
     readResult.envelope match {
       case Some(d) ⇒ b.setEnvelope(dataEnvelopeToProto(d))
-      case None    ⇒
+      case None ⇒
     }
     b.build()
   }
@@ -534,7 +534,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     // only keep the PruningPerformed entries
     val pruning = durableDataEnvelope.dataEnvelope.pruning.filter {
       case (_, _: PruningPerformed) ⇒ true
-      case _                        ⇒ false
+      case _ ⇒ false
     }
 
     val builder = dm.DurableDataEnvelope.newBuilder()

@@ -140,6 +140,6 @@ import scala.annotation.tailrec
 
   override final def equals(obj: Any): Boolean = obj match {
     case other: ImmutableIntMap ⇒ Arrays.equals(kvs, other.kvs) // No need to test `this eq obj` since this is done for the kvs arrays anyway
-    case _                      ⇒ false
+    case _ ⇒ false
   }
 }

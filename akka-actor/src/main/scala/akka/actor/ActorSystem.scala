@@ -113,10 +113,10 @@ object ProviderSelection {
  *                         `cluster`. It can also be a fully qualified class name of a provider.
  */
 final class BootstrapSetup private (
-  val classLoader:             Option[ClassLoader]       = None,
-  val config:                  Option[Config]            = None,
-  val defaultExecutionContext: Option[ExecutionContext]  = None,
-  val actorRefProvider:        Option[ProviderSelection] = None) extends Setup {
+  val classLoader: Option[ClassLoader] = None,
+  val config: Option[Config] = None,
+  val defaultExecutionContext: Option[ExecutionContext] = None,
+  val actorRefProvider: Option[ProviderSelection] = None) extends Setup {
 
   def withClassloader(classLoader: ClassLoader): BootstrapSetup =
     new BootstrapSetup(Some(classLoader), config, defaultExecutionContext, actorRefProvider)
@@ -138,12 +138,12 @@ object ActorSystem {
 
   val EnvHome: Option[String] = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
-    case value           ⇒ Some(value)
+    case value ⇒ Some(value)
   }
 
   val SystemHome: Option[String] = System.getProperty("akka.home") match {
     case null | "" ⇒ None
-    case value     ⇒ Some(value)
+    case value ⇒ Some(value)
   }
 
   val GlobalHome: Option[String] = SystemHome orElse EnvHome
@@ -280,9 +280,9 @@ object ActorSystem {
    * @see <a href="http://typesafehub.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def apply(
-    name:                    String,
-    config:                  Option[Config]           = None,
-    classLoader:             Option[ClassLoader]      = None,
+    name: String,
+    config: Option[Config] = None,
+    classLoader: Option[ClassLoader] = None,
     defaultExecutionContext: Option[ExecutionContext] = None): ActorSystem =
     apply(name, ActorSystemSetup(BootstrapSetup(classLoader, config, defaultExecutionContext)))
 
@@ -316,11 +316,11 @@ object ActorSystem {
       setup.get[BootstrapSetup]
         .flatMap(_.actorRefProvider).map(_.identifier)
         .getOrElse(getString("akka.actor.provider")) match {
-          case "local"   ⇒ classOf[LocalActorRefProvider].getName
+          case "local" ⇒ classOf[LocalActorRefProvider].getName
           // these two cannot be referenced by class as they may not be on the classpath
-          case "remote"  ⇒ "akka.remote.RemoteActorRefProvider"
+          case "remote" ⇒ "akka.remote.RemoteActorRefProvider"
           case "cluster" ⇒ "akka.cluster.ClusterActorRefProvider"
-          case fqcn      ⇒ fqcn
+          case fqcn ⇒ fqcn
         }
 
     final val SupervisorStrategyClass: String = getString("akka.actor.guardian-supervisor-strategy")
@@ -342,8 +342,8 @@ object ActorSystem {
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
     final val LogDeadLetters: Int = toRootLowerCase(config.getString("akka.log-dead-letters")) match {
       case "off" | "false" ⇒ 0
-      case "on" | "true"   ⇒ Int.MaxValue
-      case _               ⇒ config.getInt("akka.log-dead-letters")
+      case "on" | "true" ⇒ Int.MaxValue
+      case _ ⇒ config.getInt("akka.log-dead-letters")
     }
     final val LogDeadLettersDuringShutdown: Boolean = config.getBoolean("akka.log-dead-letters-during-shutdown")
 
@@ -357,7 +357,7 @@ object ActorSystem {
 
     final val Home: Option[String] = config.getString("akka.home") match {
       case "" ⇒ None
-      case x  ⇒ Some(x)
+      case x ⇒ Some(x)
     }
 
     final val SchedulerClass: String = getString("akka.scheduler.implementation")
@@ -632,12 +632,12 @@ abstract class ExtendedActorSystem extends ActorSystem {
 }
 
 private[akka] class ActorSystemImpl(
-  val name:                String,
-  applicationConfig:       Config,
-  classLoader:             ClassLoader,
+  val name: String,
+  applicationConfig: Config,
+  classLoader: ClassLoader,
   defaultExecutionContext: Option[ExecutionContext],
-  val guardianProps:       Option[Props],
-  setup:                   ActorSystemSetup) extends ExtendedActorSystem {
+  val guardianProps: Option[Props],
+  setup: ActorSystemSetup) extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))
     throw new IllegalArgumentException(
@@ -728,8 +728,8 @@ private[akka] class ActorSystemImpl(
     val sys = systemGuardian.path
     path.parent match {
       case `guard` ⇒ guardian ! StopChild(actor)
-      case `sys`   ⇒ systemGuardian ! StopChild(actor)
-      case _       ⇒ actor.asInstanceOf[InternalActorRef].stop()
+      case `sys` ⇒ systemGuardian ! StopChild(actor)
+      case _ ⇒ actor.asInstanceOf[InternalActorRef].stop()
     }
   }
 
@@ -853,7 +853,7 @@ private[akka] class ActorSystemImpl(
    */
   protected def stopScheduler(): Unit = scheduler match {
     case x: Closeable ⇒ x.close()
-    case _            ⇒
+    case _ ⇒
   }
 
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
@@ -911,7 +911,7 @@ private[akka] class ActorSystemImpl(
       immutableSeq(settings.config.getStringList(key)) foreach { fqcn ⇒
         dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil) } match {
           case Success(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup())
-          case Success(p: ExtensionId[_])      ⇒ registerExtension(p)
+          case Success(p: ExtensionId[_]) ⇒ registerExtension(p)
           case Success(other) ⇒
             if (!throwOnLoadFail) log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
             else throw new RuntimeException(s"[$fqcn] is not an 'ExtensionIdProvider' or 'ExtensionId'")
@@ -940,11 +940,11 @@ private[akka] class ActorSystemImpl(
             node.path.name + " " + Logging.simpleName(node) + " " +
             (cell match {
               case real: ActorCell ⇒ if (real.actor ne null) real.actor.getClass else "null"
-              case _               ⇒ Logging.simpleName(cell)
+              case _ ⇒ Logging.simpleName(cell)
             }) +
             (cell match {
               case real: ActorCell ⇒ " status=" + real.mailbox.currentStatus
-              case _               ⇒ ""
+              case _ ⇒ ""
             }) +
             " " + (cell.childrenRefs match {
               case ChildrenContainer.TerminatingChildrenContainer(_, toDie, reason) ⇒
@@ -983,9 +983,9 @@ private[akka] class ActorSystemImpl(
      */
     final def add(r: Runnable): Unit = {
       @tailrec def addRec(r: Runnable, p: Promise[T]): Unit = ref.get match {
-        case null                               ⇒ throw new RejectedExecutionException("ActorSystem already terminated.")
+        case null ⇒ throw new RejectedExecutionException("ActorSystem already terminated.")
         case some if ref.compareAndSet(some, p) ⇒ some.completeWith(p.future.andThen { case _ ⇒ r.run() })
-        case _                                  ⇒ addRec(r, p)
+        case _ ⇒ addRec(r, p)
       }
       addRec(r, Promise[T]())
     }

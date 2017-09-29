@@ -77,12 +77,12 @@ Distributed Data:
  */
 
 private[typed] class ActorSystemImpl[-T](
-  override val name:     String,
-  _config:               Config,
-  _cl:                   ClassLoader,
-  _ec:                   Option[ExecutionContext],
+  override val name: String,
+  _config: Config,
+  _cl: ClassLoader,
+  _ec: Option[ExecutionContext],
   _userGuardianBehavior: Behavior[T],
-  _userGuardianProps:    Props)
+  _userGuardianProps: Props)
   extends ActorSystem[T] with ActorRef[T] with ActorRefImpl[T] with ExtensionsImpl {
 
   import ActorSystemImpl._
@@ -163,7 +163,7 @@ private[typed] class ActorSystemImpl[-T](
   override val scheduler: a.Scheduler = createScheduler()
   private def closeScheduler(): Unit = scheduler match {
     case x: Closeable ⇒ x.close()
-    case _            ⇒
+    case _ ⇒
   }
 
   /**
@@ -255,7 +255,7 @@ private[typed] class ActorSystemImpl[-T](
       override def sendSystem(signal: SystemMessage): Unit = {
         signal match {
           case Watch(watchee, watcher) ⇒ watcher.sorryForNothing.sendSystem(DeathWatchNotification(watchee, null))
-          case _                       ⇒ // all good
+          case _ ⇒ // all good
         }
         eventStream.publish(DeadLetter(signal))
       }

@@ -27,13 +27,13 @@ object HashCode {
 
   def hash(seed: Int, any: Any): Int = any match {
     case value: Boolean ⇒ hash(seed, value)
-    case value: Char    ⇒ hash(seed, value)
-    case value: Short   ⇒ hash(seed, value)
-    case value: Int     ⇒ hash(seed, value)
-    case value: Long    ⇒ hash(seed, value)
-    case value: Float   ⇒ hash(seed, value)
-    case value: Double  ⇒ hash(seed, value)
-    case value: Byte    ⇒ hash(seed, value)
+    case value: Char ⇒ hash(seed, value)
+    case value: Short ⇒ hash(seed, value)
+    case value: Int ⇒ hash(seed, value)
+    case value: Long ⇒ hash(seed, value)
+    case value: Float ⇒ hash(seed, value)
+    case value: Double ⇒ hash(seed, value)
+    case value: Byte ⇒ hash(seed, value)
     case value: AnyRef ⇒
       var result = seed
       if (value eq null) result = hash(result, 0)

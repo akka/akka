@@ -34,7 +34,7 @@ class TransportAdapters(system: ExtendedActorSystem) extends Extension {
 
   def getAdapterProvider(name: String): TransportAdapterProvider = adaptersTable.get(name) match {
     case Some(provider) ⇒ provider
-    case None           ⇒ throw new IllegalArgumentException(s"There is no registered transport adapter provider with name: [${name}]")
+    case None ⇒ throw new IllegalArgumentException(s"There is no registered transport adapter provider with name: [${name}]")
   }
 }
 
@@ -69,7 +69,7 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
   protected def maximumOverhead: Int
 
   protected def interceptListen(
-    listenAddress:  Address,
+    listenAddress: Address,
     listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener]
 
   protected def interceptAssociate(remoteAddress: Address, statusPromise: Promise[AssociationHandle]): Unit
@@ -99,9 +99,9 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
   private[akka] def boundAddress: Address = wrappedTransport match {
     // Need to do like this in the backport of #15007 to 2.3.x for binary compatibility reasons
     case t: AbstractTransportAdapter ⇒ t.boundAddress
-    case t: netty.NettyTransport     ⇒ t.boundAddress
-    case t: TestTransport            ⇒ t.boundAddress
-    case _                           ⇒ null
+    case t: netty.NettyTransport ⇒ t.boundAddress
+    case t: TestTransport ⇒ t.boundAddress
+    case _ ⇒ null
   }
 
   override def associate(remoteAddress: Address): Future[AssociationHandle] = {
@@ -118,9 +118,9 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
 }
 
 abstract class AbstractTransportAdapterHandle(
-  val originalLocalAddress:  Address,
+  val originalLocalAddress: Address,
   val originalRemoteAddress: Address,
-  val wrappedHandle:         AssociationHandle,
+  val wrappedHandle: AssociationHandle,
   val addedSchemeIdentifier: String) extends AssociationHandle
   with SchemeAugmenter {
 
@@ -142,7 +142,7 @@ object ActorTransportAdapter {
   final case class ListenerRegistered(listener: AssociationEventListener) extends TransportOperation
   final case class AssociateUnderlying(remoteAddress: Address, statusPromise: Promise[AssociationHandle]) extends TransportOperation
   final case class ListenUnderlying(
-    listenAddress:    Address,
+    listenAddress: Address,
     upstreamListener: Future[AssociationEventListener]) extends TransportOperation
   final case class DisassociateUnderlying(info: DisassociateInfo = AssociationHandle.Unknown)
     extends TransportOperation with DeadLetterSuppression
@@ -164,7 +164,7 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
     (system.actorSelection("/system/transports") ? RegisterTransportActor(managerProps, managerName)).mapTo[ActorRef]
 
   override def interceptListen(
-    listenAddress:   Address,
+    listenAddress: Address,
     listenerPromise: Future[AssociationEventListener]): Future[AssociationEventListener] = {
     registerManager().map { mgr ⇒
       // Side effecting: storing the manager instance in volatile var

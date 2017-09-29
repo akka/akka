@@ -31,7 +31,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
     @throws[UnknownHostException]
     def addr: InetAddress = addrOption match {
       case Some(ipAddress) ⇒ ipAddress
-      case None            ⇒ throw new UnknownHostException(name)
+      case None ⇒ throw new UnknownHostException(name)
     }
   }
 
@@ -94,6 +94,6 @@ object IpVersionSelector {
   def getInetAddress(ipv4: Option[Inet4Address], ipv6: Option[Inet6Address]): Option[InetAddress] =
     System.getProperty("java.net.preferIPv6Addresses") match {
       case "true" ⇒ ipv6 orElse ipv4
-      case _      ⇒ ipv4 orElse ipv6
+      case _ ⇒ ipv4 orElse ipv6
     }
 }

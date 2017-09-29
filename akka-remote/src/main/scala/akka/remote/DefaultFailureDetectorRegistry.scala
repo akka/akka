@@ -23,12 +23,12 @@ class DefaultFailureDetectorRegistry[A](detectorFactory: () ⇒ FailureDetector)
 
   final override def isAvailable(resource: A): Boolean = resourceToFailureDetector.get.get(resource) match {
     case Some(r) ⇒ r.isAvailable
-    case _       ⇒ true
+    case _ ⇒ true
   }
 
   final override def isMonitoring(resource: A): Boolean = resourceToFailureDetector.get.get(resource) match {
     case Some(r) ⇒ r.isMonitoring
-    case _       ⇒ false
+    case _ ⇒ false
   }
 
   final override def heartbeat(resource: A): Unit = {

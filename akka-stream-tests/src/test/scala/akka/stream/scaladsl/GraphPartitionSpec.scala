@@ -24,8 +24,8 @@ class GraphPartitionSpec extends StreamSpec {
 
       val (s1, s2, s3) = RunnableGraph.fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) { implicit b ⇒ (sink1, sink2, sink3) ⇒
         val partition = b.add(Partition[Int](3, {
-          case g if (g > 3)  ⇒ 0
-          case l if (l < 3)  ⇒ 1
+          case g if (g > 3) ⇒ 0
+          case l if (l < 3) ⇒ 1
           case e if (e == 3) ⇒ 2
         }))
         Source(List(1, 2, 3, 4, 5)) ~> partition.in
@@ -48,7 +48,7 @@ class GraphPartitionSpec extends StreamSpec {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         val partition = b.add(Partition[String](2, {
           case s if (s.length > 4) ⇒ 0
-          case _                   ⇒ 1
+          case _ ⇒ 1
         }))
         Source(List("this", "is", "just", "another", "test")) ~> partition.in
         partition.out(0) ~> Sink.fromSubscriber(c1)

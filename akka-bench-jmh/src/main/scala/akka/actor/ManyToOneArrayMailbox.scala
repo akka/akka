@@ -45,8 +45,7 @@ class ManyToOneArrayMessageQueue(capacity: Int) extends MessageQueue with Bounde
   final def enqueue(receiver: ActorRef, handle: Envelope): Unit =
     if (!queue.add(handle))
       receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(
-        DeadLetter(handle.message, handle.sender, receiver), handle.sender
-      )
+        DeadLetter(handle.message, handle.sender, receiver), handle.sender)
 
   final def dequeue(): Envelope = queue.poll()
 

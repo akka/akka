@@ -151,7 +151,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
     @tailrec def maxRequested(remaining: Subscriptions, result: Long = 0): Long =
       remaining match {
         case head :: tail ⇒ maxRequested(tail, math.max(head.totalDemand, result))
-        case _            ⇒ result
+        case _ ⇒ result
       }
     val desired = Math.min(Int.MaxValue, Math.min(maxRequested(subscriptions), buffer.maxAvailable) - pendingFromUpstream).toInt
     if (desired > 0) {
@@ -250,7 +250,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
     @tailrec def removeFrom(remaining: Subscriptions, result: Subscriptions = Nil): Subscriptions =
       remaining match {
         case head :: tail ⇒ if (head eq subscription) tail reverse_::: result else removeFrom(tail, head :: result)
-        case _            ⇒ throw new IllegalStateException("Subscription to unregister not found")
+        case _ ⇒ throw new IllegalStateException("Subscription to unregister not found")
       }
     if (subscription.active) {
       subscriptions = removeFrom(subscriptions)

@@ -103,8 +103,8 @@ import scala.util.control.NoStackTrace
    * Called by the actor when a subscription has timed out. Expects the actual `Publisher` or `Processor` target.
    */
   protected def subscriptionTimedOut(target: Publisher[_]): Unit = subscriptionTimeoutSettings.mode match {
-    case NoopTermination   ⇒ // ignore...
-    case WarnTermination   ⇒ warn(target, subscriptionTimeoutSettings.timeout)
+    case NoopTermination ⇒ // ignore...
+    case WarnTermination ⇒ warn(target, subscriptionTimeoutSettings.timeout)
     case CancelTermination ⇒ cancel(target, subscriptionTimeoutSettings.timeout)
   }
 

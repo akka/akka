@@ -45,7 +45,7 @@ import scala.util.Random
  */
 @SerialVersionUID(1L)
 final case class TailChoppingRoutingLogic(scheduler: Scheduler, within: FiniteDuration,
-                                          interval: FiniteDuration, context: ExecutionContext) extends RoutingLogic {
+  interval: FiniteDuration, context: ExecutionContext) extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee = {
     if (routees.isEmpty) NoRoutee
     else TailChoppingRoutees(scheduler, routees, within, interval)(context)
@@ -142,11 +142,11 @@ private[akka] final case class TailChoppingRoutees(
 @SerialVersionUID(1L)
 final case class TailChoppingPool(
   val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
-  within:                          FiniteDuration,
-  interval:                        FiniteDuration,
+  within: FiniteDuration,
+  interval: FiniteDuration,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher:   String             = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher:  Boolean            = false)
+  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+  override val usePoolDispatcher: Boolean = false)
   extends Pool with PoolOverrideUnsetConfig[TailChoppingPool] {
 
   def this(config: Config) =
@@ -227,10 +227,10 @@ final case class TailChoppingPool(
  *   router management messages
  */
 final case class TailChoppingGroup(
-  val paths:                     immutable.Iterable[String],
-  within:                        FiniteDuration,
-  interval:                      FiniteDuration,
-  override val routerDispatcher: String                     = Dispatchers.DefaultDispatcherId) extends Group {
+  val paths: immutable.Iterable[String],
+  within: FiniteDuration,
+  interval: FiniteDuration,
+  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId) extends Group {
 
   def this(config: Config) =
     this(

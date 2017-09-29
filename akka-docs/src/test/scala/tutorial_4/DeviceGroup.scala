@@ -52,8 +52,7 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
     case RequestTrackDevice(groupId, deviceId) =>
       log.warning(
         "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-        groupId, this.groupId
-      )
+        groupId, this.groupId)
     //#device-group-register
     //#device-group-remove
 

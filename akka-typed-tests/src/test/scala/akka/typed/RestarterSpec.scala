@@ -130,9 +130,7 @@ class RestarterSpec extends TypedSpec {
       val behv =
         supervise(
           supervise(
-            target(inbox.ref)
-          ).onFailure[Exc2](SupervisorStrategy.resume)
-        ).onFailure[Exc3](SupervisorStrategy.restart)
+            target(inbox.ref)).onFailure[Exc2](SupervisorStrategy.resume)).onFailure[Exc3](SupervisorStrategy.restart)
       val ctx = mkCtx(behv)
       ctx.run(NextState)
       ctx.run(GetState)
@@ -305,8 +303,7 @@ class RestarterSpec extends TypedSpec {
     def `must support nesting to handle different exceptions`(): Unit = {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(
-        supervise(target(probe.ref)).onFailure[Exc2](SupervisorStrategy.resume)
-      ).onFailure[Exc3](SupervisorStrategy.restart)
+        supervise(target(probe.ref)).onFailure[Exc2](SupervisorStrategy.resume)).onFailure[Exc3](SupervisorStrategy.restart)
       val ref = start(behv)
       ref ! NextState
       ref ! GetState

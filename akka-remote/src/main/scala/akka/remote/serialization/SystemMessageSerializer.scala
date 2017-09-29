@@ -25,7 +25,7 @@ class SystemMessageSerializer(val system: ExtendedActorSystem) extends BaseSeria
         builder.setType(CREATE)
         failure match {
           case Some(throwable) ⇒ builder.setCauseData(serializeThrowable(throwable))
-          case None            ⇒ // Nothing to set
+          case None ⇒ // Nothing to set
         }
 
       case Recreate(cause) ⇒

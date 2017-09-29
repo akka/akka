@@ -58,7 +58,7 @@ class TestKit(system: ActorSystem) {
   def duration(s: String): FiniteDuration = {
     Duration.apply(s) match {
       case fd: FiniteDuration ⇒ fd
-      case _                  ⇒ throw new IllegalArgumentException("duration() is only for finite durations, use Duration.Inf() and friends")
+      case _ ⇒ throw new IllegalArgumentException("duration() is only for finite durations, use Duration.Inf() and friends")
     }
   }
 
@@ -458,8 +458,8 @@ object TestKit {
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
   def shutdownActorSystem(
-    actorSystem:          ActorSystem,
-    duration:             Duration,
+    actorSystem: ActorSystem,
+    duration: Duration,
     verifySystemShutdown: Boolean): Unit = {
 
     akka.testkit.TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)

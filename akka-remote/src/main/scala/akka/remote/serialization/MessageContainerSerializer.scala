@@ -24,7 +24,7 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case sel: ActorSelectionMessage ⇒ serializeSelection(sel)
-    case _                          ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
+    case _ ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
   import ContainerFormats.PatternType._
@@ -77,9 +77,9 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
     import scala.collection.JavaConverters._
     val elements: immutable.Iterable[SelectionPathElement] = selectionEnvelope.getPatternList.asScala.map { x ⇒
       x.getType match {
-        case CHILD_NAME    ⇒ SelectChildName(x.getMatcher)
+        case CHILD_NAME ⇒ SelectChildName(x.getMatcher)
         case CHILD_PATTERN ⇒ SelectChildPattern(x.getMatcher)
-        case PARENT        ⇒ SelectParent
+        case PARENT ⇒ SelectParent
       }
 
     }(collection.breakOut)

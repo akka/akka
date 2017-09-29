@@ -18,8 +18,8 @@ object UidClashTest {
 
   private[akka] class EvilCollidingActorRef(
     override val provider: ActorRefProvider,
-    override val path:     ActorPath,
-    val eventStream:       EventStream) extends MinimalActorRef {
+    override val path: ActorPath,
+    val eventStream: EventStream) extends MinimalActorRef {
 
     //Ignore everything
     override def isTerminated: Boolean = true
@@ -37,7 +37,7 @@ object UidClashTest {
   class RestartedActor extends Actor {
 
     def receive = {
-      case PleaseRestart   ⇒ throw new Exception("restart")
+      case PleaseRestart ⇒ throw new Exception("restart")
       case Terminated(ref) ⇒ throw new TerminatedForNonWatchedActor
       // This is the tricky part to make this test a positive one (avoid expectNoMsg).
       // Since anything enqueued in postRestart will arrive before the Terminated
@@ -46,7 +46,7 @@ object UidClashTest {
       // 2. As a response to pint, RestartedSafely is sent to self
       // 3a. if Terminated was enqueued during the restart procedure it will arrive before the RestartedSafely message
       // 3b. otherwise only the RestartedSafely message arrives
-      case PingMyself      ⇒ self ! RestartedSafely
+      case PingMyself ⇒ self ! RestartedSafely
       case RestartedSafely ⇒ context.parent ! RestartedSafely
     }
 
@@ -76,7 +76,7 @@ object UidClashTest {
     val theRestartedOne = context.actorOf(Props[RestartedActor], "theRestartedOne")
 
     def receive = {
-      case PleaseRestart   ⇒ theRestartedOne ! PleaseRestart
+      case PleaseRestart ⇒ theRestartedOne ! PleaseRestart
       case RestartedSafely ⇒ probe ! RestartedSafely
     }
   }

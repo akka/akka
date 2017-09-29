@@ -118,8 +118,8 @@ private[cluster] abstract class AutoDownBase(autoDownUnreachableAfter: FiniteDur
 
     case UnreachableMember(m) ⇒ unreachableMember(m)
 
-    case ReachableMember(m)   ⇒ remove(m.uniqueAddress)
-    case MemberRemoved(m, _)  ⇒ remove(m.uniqueAddress)
+    case ReachableMember(m) ⇒ remove(m.uniqueAddress)
+    case MemberRemoved(m, _) ⇒ remove(m.uniqueAddress)
 
     case LeaderChanged(leaderOption) ⇒
       leader = leaderOption.exists(_ == selfAddress)

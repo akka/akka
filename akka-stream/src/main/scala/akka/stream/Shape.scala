@@ -150,7 +150,7 @@ final class Outlet[T] private (val s: String) extends OutPort {
   def hasOnePort(ports: immutable.Seq[_]): Boolean = {
     ports.nonEmpty && (ports match {
       case l: List[_] ⇒ l.tail.isEmpty // assuming List is most common
-      case _          ⇒ ports.size == 1 // e.g. Vector
+      case _ ⇒ ports.size == 1 // e.g. Vector
     })
   }
 }
@@ -325,9 +325,9 @@ object SinkShape {
  * }}}
  */
 final case class BidiShape[-In1, +Out1, -In2, +Out2](
-  in1:  Inlet[In1 @uncheckedVariance],
+  in1: Inlet[In1 @uncheckedVariance],
   out1: Outlet[Out1 @uncheckedVariance],
-  in2:  Inlet[In2 @uncheckedVariance],
+  in2: Inlet[In2 @uncheckedVariance],
   out2: Outlet[Out2 @uncheckedVariance]) extends Shape {
   //#implementation-details-elided
   override val inlets: immutable.Seq[Inlet[_]] = in1 :: in2 :: Nil
@@ -350,9 +350,9 @@ object BidiShape {
 
   /** Java API */
   def of[In1, Out1, In2, Out2](
-    in1:  Inlet[In1 @uncheckedVariance],
+    in1: Inlet[In1 @uncheckedVariance],
     out1: Outlet[Out1 @uncheckedVariance],
-    in2:  Inlet[In2 @uncheckedVariance],
+    in2: Inlet[In2 @uncheckedVariance],
     out2: Outlet[Out2 @uncheckedVariance]): BidiShape[In1, Out1, In2, Out2] =
     BidiShape(in1, out1, in2, out2)
 

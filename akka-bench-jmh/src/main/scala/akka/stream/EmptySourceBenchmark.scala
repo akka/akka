@@ -34,12 +34,12 @@ class EmptySourceBenchmark {
 
   /*
     (not serious benchmark, just sanity check: run on macbook 15, late 2013)
-  
+
     While it was a PublisherSource:
      [info] EmptySourceBenchmark.empty  thrpt   10  11.219 ± 6.498  ops/ms
-     
+
     Rewrite to GraphStage:
      [info] EmptySourceBenchmark.empty  thrpt   10  17.556 ± 2.865  ops/ms
-     
+
    */
 }

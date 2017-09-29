@@ -337,7 +337,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    */
   final def nextStateData = nextState match {
     case null ⇒ throw new IllegalStateException("nextStateData is only available during onTransition")
-    case x    ⇒ x.stateData
+    case x ⇒ x.stateData
   }
 
   /*
@@ -488,8 +488,8 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
       val timeout =
         currentState.timeout match {
           case PersistentFSM.SomeMaxFiniteDuration ⇒ None
-          case x: Some[FiniteDuration]             ⇒ x
-          case None                                ⇒ stateTimeouts(currentState.stateName)
+          case x: Some[FiniteDuration] ⇒ x
+          case None ⇒ stateTimeouts(currentState.stateName)
         }
 
       if (timeout.isDefined) {
@@ -539,8 +539,8 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    */
   protected def logTermination(reason: Reason): Unit = reason match {
     case Failure(ex: Throwable) ⇒ log.error(ex, "terminating due to Failure")
-    case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
-    case _                      ⇒
+    case Failure(msg: AnyRef) ⇒ log.error(msg.toString)
+    case _ ⇒
   }
 }
 
@@ -575,10 +575,10 @@ trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: A
   private[akka] abstract override def processEvent(event: Event, source: AnyRef): Unit = {
     if (debugEvent) {
       val srcstr = source match {
-        case s: String               ⇒ s
+        case s: String ⇒ s
         case Timer(name, _, _, _, _) ⇒ "timer " + name
-        case a: ActorRef             ⇒ a.toString
-        case _                       ⇒ "unknown"
+        case a: ActorRef ⇒ a.toString
+        case _ ⇒ "unknown"
       }
       log.debug("processing {} from {} in state {}", event, srcstr, stateName)
     }
@@ -699,8 +699,8 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param stateFunctionBuilder partial function builder describing response to input
    */
   final def when(
-    stateName:            S,
-    stateTimeout:         FiniteDuration,
+    stateName: S,
+    stateTimeout: FiniteDuration,
     stateFunctionBuilder: FSMStateFunctionBuilder[S, D, E]): Unit =
     when(stateName, stateTimeout)(stateFunctionBuilder.build())
 

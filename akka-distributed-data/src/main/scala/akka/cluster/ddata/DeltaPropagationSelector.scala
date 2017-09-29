@@ -34,20 +34,20 @@ import akka.cluster.ddata.Replicator.Internal.DeltaPropagation.NoDeltaPlaceholde
 
   def currentVersion(key: KeyId): Long = deltaCounter.get(key) match {
     case Some(v) ⇒ v
-    case None    ⇒ 0L
+    case None ⇒ 0L
   }
 
   def update(key: KeyId, delta: ReplicatedData): Unit = {
     // bump the counter for each update
     val version = deltaCounter.get(key) match {
       case Some(c) ⇒ c + 1
-      case None    ⇒ 1L
+      case None ⇒ 1L
     }
     deltaCounter = deltaCounter.updated(key, version)
 
     val deltaEntriesForKey = deltaEntries.get(key) match {
       case Some(m) ⇒ m
-      case None    ⇒ TreeMap.empty[Long, ReplicatedData]
+      case None ⇒ TreeMap.empty[Long, ReplicatedData]
     }
 
     deltaEntries = deltaEntries.updated(key, deltaEntriesForKey.updated(version, delta))
@@ -144,15 +144,15 @@ import akka.cluster.ddata.Replicator.Internal.DeltaPropagation.NoDeltaPlaceholde
 
   private def deltaEntriesAfter(entries: TreeMap[Long, ReplicatedData], version: Long): TreeMap[Long, ReplicatedData] =
     entries.from(version) match {
-      case ntrs if ntrs.isEmpty             ⇒ ntrs
+      case ntrs if ntrs.isEmpty ⇒ ntrs
       case ntrs if ntrs.firstKey == version ⇒ ntrs.tail // exclude first, i.e. version j that was already sent
-      case ntrs                             ⇒ ntrs
+      case ntrs ⇒ ntrs
     }
 
   def hasDeltaEntries(key: KeyId): Boolean = {
     deltaEntries.get(key) match {
       case Some(m) ⇒ m.nonEmpty
-      case None    ⇒ false
+      case None ⇒ false
     }
   }
 

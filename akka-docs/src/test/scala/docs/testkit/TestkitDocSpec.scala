@@ -25,7 +25,7 @@ object TestKitDocSpec {
 
   class MyActor extends Actor {
     def receive = {
-      case Say42       => sender() ! 42
+      case Say42 => sender() ! 42
       case "some work" => sender() ! "some result"
     }
   }

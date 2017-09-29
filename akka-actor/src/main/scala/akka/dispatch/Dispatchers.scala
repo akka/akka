@@ -30,12 +30,12 @@ trait DispatcherPrerequisites {
  * INTERNAL API
  */
 private[akka] final case class DefaultDispatcherPrerequisites(
-  val threadFactory:           ThreadFactory,
-  val eventStream:             EventStream,
-  val scheduler:               Scheduler,
-  val dynamicAccess:           DynamicAccess,
-  val settings:                ActorSystem.Settings,
-  val mailboxes:               Mailboxes,
+  val threadFactory: ThreadFactory,
+  val eventStream: EventStream,
+  val scheduler: Scheduler,
+  val dynamicAccess: DynamicAccess,
+  val settings: ActorSystem.Settings,
+  val mailboxes: Mailboxes,
   val defaultExecutionContext: Option[ExecutionContext]) extends DispatcherPrerequisites
 
 object Dispatchers {
@@ -97,7 +97,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
           else throw new ConfigurationException(s"Dispatcher [$id] not configured")
 
         dispatcherConfigurators.putIfAbsent(id, newConfigurator) match {
-          case null     ⇒ newConfigurator
+          case null ⇒ newConfigurator
           case existing ⇒ existing
         }
 

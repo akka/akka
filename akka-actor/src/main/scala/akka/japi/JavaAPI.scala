@@ -184,7 +184,7 @@ object Option {
    */
   def fromScalaOption[T](scalaOption: scala.Option[T]): Option[T] = scalaOption match {
     case scala.Some(r) ⇒ some(r)
-    case scala.None    ⇒ none
+    case scala.None ⇒ none
   }
 
   /**

@@ -85,10 +85,10 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * All received datagrams will be sent to the designated `handler` actor.
    */
   final case class Connect(
-    handler:       ActorRef,
+    handler: ActorRef,
     remoteAddress: InetSocketAddress,
-    localAddress:  Option[InetSocketAddress]           = None,
-    options:       immutable.Traversable[SocketOption] = Nil) extends Command
+    localAddress: Option[InetSocketAddress] = None,
+    options: immutable.Traversable[SocketOption] = Nil) extends Command
 
   /**
    * Send this message to a connection actor (which had previously sent the
@@ -178,22 +178,22 @@ object UdpConnectedMessage {
    * All received datagrams will be sent to the designated `handler` actor.
    */
   def connect(
-    handler:       ActorRef,
+    handler: ActorRef,
     remoteAddress: InetSocketAddress,
-    localAddress:  InetSocketAddress,
-    options:       JIterable[SocketOption]): Command = Connect(handler, remoteAddress, Some(localAddress), options)
+    localAddress: InetSocketAddress,
+    options: JIterable[SocketOption]): Command = Connect(handler, remoteAddress, Some(localAddress), options)
   /**
    * Connect without specifying the `localAddress`.
    */
   def connect(
-    handler:       ActorRef,
+    handler: ActorRef,
     remoteAddress: InetSocketAddress,
-    options:       JIterable[SocketOption]): Command = Connect(handler, remoteAddress, None, options)
+    options: JIterable[SocketOption]): Command = Connect(handler, remoteAddress, None, options)
   /**
    * Connect without specifying the `localAddress` or `options`.
    */
   def connect(
-    handler:       ActorRef,
+    handler: ActorRef,
     remoteAddress: InetSocketAddress): Command = Connect(handler, remoteAddress, None, Nil)
 
   /**

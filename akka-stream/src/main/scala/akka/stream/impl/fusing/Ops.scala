@@ -48,7 +48,7 @@ import akka.stream.impl.Stages.DefaultAttributes
         } catch {
           case NonFatal(ex) ⇒ decider(ex) match {
             case Supervision.Stop ⇒ failStage(ex)
-            case _                ⇒ pull(in)
+            case _ ⇒ pull(in)
           }
         }
       }
@@ -82,7 +82,7 @@ import akka.stream.impl.Stages.DefaultAttributes
         } catch {
           case NonFatal(ex) ⇒ decider(ex) match {
             case Supervision.Stop ⇒ failStage(ex)
-            case _                ⇒ pull(in)
+            case _ ⇒ pull(in)
           }
         }
       }
@@ -119,7 +119,7 @@ import akka.stream.impl.Stages.DefaultAttributes
         } catch {
           case NonFatal(ex) ⇒ decider(ex) match {
             case Supervision.Stop ⇒ failStage(ex)
-            case _                ⇒ pull(in)
+            case _ ⇒ pull(in)
           }
         }
       }
@@ -174,8 +174,8 @@ import akka.stream.impl.Stages.DefaultAttributes
     } catch {
       case NonFatal(ex) ⇒
         decider(ex) match {
-          case Supervision.Stop    ⇒ onStop(ex)
-          case Supervision.Resume  ⇒ onResume(ex)
+          case Supervision.Stop ⇒ onStop(ex)
+          case Supervision.Resume ⇒ onResume(ex)
           case Supervision.Restart ⇒ onRestart(ex)
         }
         None
@@ -213,7 +213,7 @@ private[stream] object Collect {
 
     override def onPush(): Unit = withSupervision(wrappedPf) match {
       case Some(result) ⇒ result match {
-        case NotApplied             ⇒ pull(in)
+        case NotApplied ⇒ pull(in)
         case result: Out @unchecked ⇒ push(out, result)
       }
       case None ⇒ //do nothing
@@ -395,7 +395,7 @@ private[stream] object Collect {
         } catch {
           case NonFatal(ex) ⇒ decider(ex) match {
             case Resume ⇒ if (!hasBeenPulled(in)) pull(in)
-            case Stop   ⇒ failStage(ex)
+            case Stop ⇒ failStage(ex)
             case Restart ⇒
               aggregator = zero
               push(out, aggregator)
@@ -468,7 +468,7 @@ private[stream] object Collect {
 
       private def doSupervision(t: Throwable): Unit = {
         decider(t) match {
-          case Supervision.Stop   ⇒ failStage(t)
+          case Supervision.Stop ⇒ failStage(t)
           case Supervision.Resume ⇒ safePull()
           case Supervision.Restart ⇒
             onRestart(t)
@@ -481,7 +481,7 @@ private[stream] object Collect {
           current = next
           pushAndPullOrFinish(next)
         case Success(null) ⇒ doSupervision(ReactiveStreamsCompliance.elementMustNotBeNullException)
-        case Failure(t)    ⇒ doSupervision(t)
+        case Failure(t) ⇒ doSupervision(t)
       }.invoke _
 
       setHandlers(in, out, ZeroHandler)
@@ -494,14 +494,14 @@ private[stream] object Collect {
 
           eventualCurrent.value match {
             case Some(result) ⇒ futureCB(result)
-            case _            ⇒ eventualCurrent.onComplete(futureCB)(ec)
+            case _ ⇒ eventualCurrent.onComplete(futureCB)(ec)
           }
         } catch {
           case NonFatal(ex) ⇒
             decider(ex) match {
-              case Supervision.Stop    ⇒ failStage(ex)
+              case Supervision.Stop ⇒ failStage(ex)
               case Supervision.Restart ⇒ onRestart(ex)
-              case Supervision.Resume  ⇒ ()
+              case Supervision.Resume ⇒ ()
             }
             tryPull(in)
         }
@@ -539,9 +539,9 @@ private[stream] object Collect {
           aggregator = f(aggregator, elem)
         } catch {
           case NonFatal(ex) ⇒ decider(ex) match {
-            case Supervision.Stop    ⇒ failStage(ex)
+            case Supervision.Stop ⇒ failStage(ex)
             case Supervision.Restart ⇒ aggregator = zero
-            case _                   ⇒ ()
+            case _ ⇒ ()
           }
         } finally {
           if (!isClosed(in)) pull(in)
@@ -634,7 +634,7 @@ private[stream] object Collect {
             case supervision ⇒ {
               supervision match {
                 case Supervision.Restart ⇒ onRestart(ex)
-                case _                   ⇒ () // just ignore on Resume
+                case _ ⇒ () // just ignore on Resume
               }
 
               tryPull(in)
@@ -652,7 +652,7 @@ private[stream] object Collect {
       private def handleAggregatingValue(): Unit = {
         aggregating.value match {
           case Some(result) ⇒ futureCB(result) // already completed
-          case _            ⇒ aggregating.onComplete(futureCB)(ec)
+          case _ ⇒ aggregating.onComplete(futureCB)(ec)
         }
       }
 
@@ -952,7 +952,7 @@ private[stream] object Collect {
           pending = null.asInstanceOf[In]
         } catch {
           case NonFatal(ex) ⇒ decider(ex) match {
-            case Supervision.Stop    ⇒ failStage(ex)
+            case Supervision.Stop ⇒ failStage(ex)
             case Supervision.Restart ⇒ restartState()
             case Supervision.Resume ⇒
               pending = null.asInstanceOf[In]
@@ -1017,7 +1017,7 @@ private[stream] object Collect {
             agg = seed(pending)
           } catch {
             case NonFatal(ex) ⇒ decider(ex) match {
-              case Supervision.Stop   ⇒ failStage(ex)
+              case Supervision.Stop ⇒ failStage(ex)
               case Supervision.Resume ⇒
               case Supervision.Restart ⇒
                 restartState()
@@ -1106,7 +1106,7 @@ private[stream] object Collect {
     def setElem(t: Try[T]): Unit = {
       elem = t match {
         case Success(null) ⇒ Failure[T](ReactiveStreamsCompliance.elementMustNotBeNullException)
-        case other         ⇒ other
+        case other ⇒ other
       }
     }
 
@@ -1233,7 +1233,7 @@ private[stream] object Collect {
             } else buffer.enqueue(elem)
           case other ⇒
             val ex = other match {
-              case Failure(t)              ⇒ t
+              case Failure(t) ⇒ t
               case Success(s) if s == null ⇒ ReactiveStreamsCompliance.elementMustNotBeNullException
             }
             if (decider(ex) == Supervision.Stop) failStage(ex)
@@ -1250,7 +1250,7 @@ private[stream] object Collect {
           val future = f(grab(in))
           inFlight += 1
           future.value match {
-            case None    ⇒ future.onComplete(invokeFutureCB)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            case None ⇒ future.onComplete(invokeFutureCB)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
             case Some(v) ⇒ futureCompleted(v)
           }
         } catch {
@@ -1278,8 +1278,8 @@ private[stream] object Collect {
  * INTERNAL API
  */
 @InternalApi private[akka] final case class Log[T](
-  name:       String,
-  extract:    T ⇒ Any,
+  name: String,
+  extract: T ⇒ Any,
   logAdapter: Option[LoggingAdapter]) extends SimpleLinearGraphStage[T] {
 
   override def toString = "Log"
@@ -1321,7 +1321,7 @@ private[stream] object Collect {
         } catch {
           case NonFatal(ex) ⇒ decider(ex) match {
             case Supervision.Stop ⇒ failStage(ex)
-            case _                ⇒ pull(in)
+            case _ ⇒ pull(in)
           }
         }
       }
@@ -1332,7 +1332,7 @@ private[stream] object Collect {
         if (isEnabled(logLevels.onFailure))
           logLevels.onFailure match {
             case Logging.ErrorLevel ⇒ log.error(cause, "[{}] Upstream failed.", name)
-            case level              ⇒ log.log(level, "[{}] Upstream failed, cause: {}: {}", name, Logging.simpleName(cause.getClass), cause.getMessage)
+            case level ⇒ log.log(level, "[{}] Upstream failed, cause: {}: {}", name, Logging.simpleName(cause.getClass), cause.getMessage)
           }
 
         super.onUpstreamFailure(cause)
@@ -1546,7 +1546,7 @@ private[stream] object Collect {
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
     val size =
       inheritedAttributes.get[InputBuffer] match {
-        case None                        ⇒ throw new IllegalStateException(s"Couldn't find InputBuffer Attribute for $this")
+        case None ⇒ throw new IllegalStateException(s"Couldn't find InputBuffer Attribute for $this")
         case Some(InputBuffer(min, max)) ⇒ max
       }
     val delayMillis = d.toMillis
@@ -1859,7 +1859,7 @@ private[stream] object Collect {
         pushPull()
       } catch {
         case NonFatal(ex) ⇒ decider(ex) match {
-          case Supervision.Stop   ⇒ failStage(ex)
+          case Supervision.Stop ⇒ failStage(ex)
           case Supervision.Resume ⇒ if (!hasBeenPulled(in)) pull(in)
           case Supervision.Restart ⇒
             restartState()

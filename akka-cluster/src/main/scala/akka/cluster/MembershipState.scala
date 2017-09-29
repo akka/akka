@@ -31,9 +31,9 @@ import scala.util.Random
  * INTERNAL API
  */
 @InternalApi private[akka] final case class MembershipState(
-  latestGossip:       Gossip,
-  selfUniqueAddress:  UniqueAddress,
-  selfDc:             DataCenter,
+  latestGossip: Gossip,
+  selfUniqueAddress: UniqueAddress,
+  selfDc: DataCenter,
   crossDcConnections: Int) {
 
   import MembershipState._
@@ -179,7 +179,7 @@ import scala.util.Random
  */
 @InternalApi private[akka] class GossipTargetSelector(
   reduceGossipDifferentViewProbability: Double,
-  crossDcGossipProbability:             Double) {
+  crossDcGossipProbability: Double) {
 
   final def gossipTarget(state: MembershipState): Option[UniqueAddress] = {
     selectRandomNode(gossipTargets(state))
@@ -208,7 +208,7 @@ import scala.util.Random
               case m if state.validNodeForGossip(m.uniqueAddress) ⇒ m.uniqueAddress
             } match {
               case Some(addr) ⇒ Some(addr)
-              case None       ⇒ selectOtherDcNode(tail)
+              case None ⇒ selectOtherDcNode(tail)
             }
 
         }
@@ -216,7 +216,7 @@ import scala.util.Random
 
       selectOtherDcNode(otherDcs) match {
         case Some(node) ⇒ randomLocalNodes.take(n - 1) :+ node
-        case None       ⇒ randomLocalNodes.take(n)
+        case None ⇒ randomLocalNodes.take(n)
       }
 
     } else {

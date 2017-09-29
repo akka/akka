@@ -25,7 +25,7 @@ import scala.util.{ Failure, Success, Try }
  */
 final class Sink[-In, +Mat](
   override val traversalBuilder: LinearTraversalBuilder,
-  override val shape:            SinkShape[In])
+  override val shape: SinkShape[In])
   extends Graph[SinkShape[In], Mat] {
 
   // TODO: Debug string
@@ -104,7 +104,7 @@ object Sink {
    */
   def fromGraph[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
     g match {
-      case s: Sink[T, M]         ⇒ s
+      case s: Sink[T, M] ⇒ s
       case s: javadsl.Sink[T, M] ⇒ s.asScala
       case other ⇒ new Sink(
         LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
@@ -360,7 +360,7 @@ object Sink {
    * function will be sent to the destination actor.
    */
   def actorRefWithAck[T](ref: ActorRef, onInitMessage: Any, ackMessage: Any, onCompleteMessage: Any,
-                         onFailureMessage: (Throwable) ⇒ Any = Status.Failure): Sink[T, NotUsed] =
+    onFailureMessage: (Throwable) ⇒ Any = Status.Failure): Sink[T, NotUsed] =
     Sink.fromGraph(new ActorRefBackpressureSinkStage(ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage))
 
   /**

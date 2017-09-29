@@ -40,7 +40,7 @@ class UntypedProducerTest extends WordSpec with Matchers with BeforeAndAfterAll 
       val expected = CamelMessage("received test", Map(CamelMessage.MessageExchangeId → "123"))
       Await.result(future, timeout) match {
         case result: CamelMessage ⇒ result should ===(expected)
-        case unexpected           ⇒ fail("Actor responded with unexpected message:" + unexpected)
+        case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
 
     }
@@ -85,7 +85,7 @@ object UntypedProducerTest {
         def process(exchange: Exchange) = {
           exchange.getIn.getBody match {
             case "fail" ⇒ throw new Exception("failure")
-            case body   ⇒ exchange.getOut.setBody("received %s" format body)
+            case body ⇒ exchange.getOut.setBody("received %s" format body)
           }
         }
       })

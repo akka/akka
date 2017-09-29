@@ -20,9 +20,9 @@ import scala.util.Try
  * `EventAdapters` serves as a per-journal collection of bound event adapters.
  */
 class EventAdapters(
-  map:      ConcurrentHashMap[Class[_], EventAdapter],
+  map: ConcurrentHashMap[Class[_], EventAdapter],
   bindings: immutable.Seq[(Class[_], EventAdapter)],
-  log:      LoggingAdapter) {
+  log: LoggingAdapter) {
 
   /**
    * Finds the "most specific" matching adapter for the given class (i.e. it may return an adapter that can work on a
@@ -37,7 +37,7 @@ class EventAdapters(
           _._1 isAssignableFrom clazz
         } match {
           case (_, bestMatch) +: _ ⇒ bestMatch
-          case _                   ⇒ IdentityEventAdapter
+          case _ ⇒ IdentityEventAdapter
         }
         map.putIfAbsent(clazz, value) match {
           case null ⇒
@@ -71,8 +71,8 @@ private[akka] object EventAdapters {
   }
 
   private def apply(
-    system:          ExtendedActorSystem,
-    adapters:        Map[Name, FQN],
+    system: ExtendedActorSystem,
+    adapters: Map[Name, FQN],
     adapterBindings: Map[FQN, BoundAdapters]): EventAdapters = {
 
     val adapterNames = adapters.keys.toSet
@@ -144,7 +144,7 @@ private[akka] object EventAdapters {
     (new ArrayBuffer[(Class[_], T)](in.size) /: in) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {
         case -1 ⇒ buf append ca
-        case x  ⇒ buf insert (x, ca)
+        case x ⇒ buf insert (x, ca)
       }
       buf
     }.to[immutable.Seq]

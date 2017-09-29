@@ -67,8 +67,8 @@ object Framing {
    *                           the length of the size field)
    */
   def lengthField(
-    fieldLength:        Int,
-    fieldOffset:        Int,
+    fieldLength: Int,
+    fieldOffset: Int,
     maximumFrameLength: Int): Flow[ByteString, ByteString, NotUsed] =
     scaladsl.Framing.lengthField(fieldLength, fieldOffset, maximumFrameLength).asJava
 
@@ -87,10 +87,10 @@ object Framing {
    * @param byteOrder The ''ByteOrder'' to be used when decoding the field
    */
   def lengthField(
-    fieldLength:        Int,
-    fieldOffset:        Int,
+    fieldLength: Int,
+    fieldOffset: Int,
     maximumFrameLength: Int,
-    byteOrder:          ByteOrder): Flow[ByteString, ByteString, NotUsed] =
+    byteOrder: ByteOrder): Flow[ByteString, ByteString, NotUsed] =
     scaladsl.Framing.lengthField(fieldLength, fieldOffset, maximumFrameLength, byteOrder).asJava
 
   /**
@@ -113,18 +113,17 @@ object Framing {
    *
    */
   def lengthField(
-    fieldLength:        Int,
-    fieldOffset:        Int,
+    fieldLength: Int,
+    fieldOffset: Int,
     maximumFrameLength: Int,
-    byteOrder:          ByteOrder,
-    computeFrameSize:   akka.japi.function.Function2[Array[Byte], Integer, Integer]): Flow[ByteString, ByteString, NotUsed] =
+    byteOrder: ByteOrder,
+    computeFrameSize: akka.japi.function.Function2[Array[Byte], Integer, Integer]): Flow[ByteString, ByteString, NotUsed] =
     scaladsl.Framing.lengthField(
       fieldLength,
       fieldOffset,
       maximumFrameLength,
       byteOrder,
-      (a: Array[Byte], s: Int) ⇒ computeFrameSize.apply(a, s)
-    ).asJava
+      (a: Array[Byte], s: Int) ⇒ computeFrameSize.apply(a, s)).asJava
 
   /**
    * Returns a BidiFlow that implements a simple framing protocol. This is a convenience wrapper over [[Framing#lengthField]]

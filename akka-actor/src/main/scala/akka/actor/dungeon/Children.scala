@@ -34,7 +34,7 @@ private[akka] trait Children { this: ActorCell ⇒
   final def child(name: String): Option[ActorRef] = Option(getChild(name))
   final def getChild(name: String): ActorRef = childrenRefs.getByName(name) match {
     case Some(s: ChildRestartStats) ⇒ s.child
-    case _                          ⇒ null
+    case _ ⇒ null
   }
   def findChild(name: String): Optional[ActorRef] = Optional.ofNullable(getChild(name))
 
@@ -117,7 +117,7 @@ private[akka] trait Children { this: ActorCell ⇒
 
       if (actor match {
         case r: RepointableRef ⇒ r.isStarted
-        case _                 ⇒ true
+        case _ ⇒ true
       }) shallDie(actor)
     }
     actor.asInstanceOf[InternalActorRef].stop()
@@ -197,7 +197,7 @@ private[akka] trait Children { this: ActorCell ⇒
       // optimization for the non-uid case
       getChildByName(name) match {
         case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef]
-        case _                            ⇒ getFunctionRefOrNobody(name)
+        case _ ⇒ getFunctionRefOrNobody(name)
       }
     } else {
       val (childName, uid) = ActorCell.splitNameAndUid(name)
@@ -219,7 +219,7 @@ private[akka] trait Children { this: ActorCell ⇒
       case TerminatingChildrenContainer(_, _, reason) ⇒
         removeChild(child) match {
           case _: TerminatingChildrenContainer ⇒ None
-          case _                               ⇒ Some(reason)
+          case _ ⇒ Some(reason)
         }
       case _ ⇒
         removeChild(child)
@@ -234,7 +234,7 @@ private[akka] trait Children { this: ActorCell ⇒
   private def checkName(name: String): String = {
     name match {
       case null ⇒ throw InvalidActorNameException("actor name must not be null")
-      case ""   ⇒ throw InvalidActorNameException("actor name must not be empty")
+      case "" ⇒ throw InvalidActorNameException("actor name must not be empty")
       case _ ⇒
         ActorPath.validatePathElement(name)
         name

@@ -18,7 +18,7 @@ object RemoteDeploymentSpec {
 
     def receive = {
       case ex: Exception ⇒ throw ex
-      case x             ⇒ target = sender(); sender() ! x
+      case x ⇒ target = sender(); sender() ! x
     }
 
     override def preStart() {}

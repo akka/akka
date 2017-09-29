@@ -62,7 +62,7 @@ object PersistentActorFailureSpec {
             case PersistentRepr(Evt(s: String), _: Long) if s.contains("not serializable") ⇒ s
           } match {
             case Some(s) ⇒ Failure(new SimulatedSerializationException(s))
-            case None    ⇒ AsyncWriteJournal.successUnit
+            case None ⇒ AsyncWriteJournal.successUnit
           }
       }
 
@@ -89,7 +89,7 @@ object PersistentActorFailureSpec {
 
     def receive = {
       case props: Props ⇒ sender() ! context.actorOf(props)
-      case m            ⇒ sender() ! m
+      case m ⇒ sender() ! m
     }
   }
 

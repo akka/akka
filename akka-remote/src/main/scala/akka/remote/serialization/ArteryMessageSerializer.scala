@@ -62,19 +62,19 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match { // most frequent ones first
-    case env: SystemMessageDelivery.SystemMessageEnvelope   ⇒ serializeSystemMessageEnvelope(env).toByteArray
-    case SystemMessageDelivery.Ack(seqNo, from)             ⇒ serializeSystemMessageDeliveryAck(seqNo, from).toByteArray
-    case HandshakeReq(from, to)                             ⇒ serializeHandshakeReq(from, to).toByteArray
-    case HandshakeRsp(from)                                 ⇒ serializeWithAddress(from).toByteArray
-    case RemoteWatcher.ArteryHeartbeat                      ⇒ Array.emptyByteArray
-    case RemoteWatcher.ArteryHeartbeatRsp(from)             ⇒ serializeArteryHeartbeatRsp(from).toByteArray
-    case SystemMessageDelivery.Nack(seqNo, from)            ⇒ serializeSystemMessageDeliveryAck(seqNo, from).toByteArray
-    case q: Quarantined                                     ⇒ serializeQuarantined(q).toByteArray
-    case ActorSystemTerminating(from)                       ⇒ serializeWithAddress(from).toByteArray
-    case ActorSystemTerminatingAck(from)                    ⇒ serializeWithAddress(from).toByteArray
-    case adv: ActorRefCompressionAdvertisement              ⇒ serializeActorRefCompressionAdvertisement(adv).toByteArray
-    case ActorRefCompressionAdvertisementAck(from, id)      ⇒ serializeCompressionTableAdvertisementAck(from, id).toByteArray
-    case adv: ClassManifestCompressionAdvertisement         ⇒ serializeCompressionAdvertisement(adv)(identity).toByteArray
+    case env: SystemMessageDelivery.SystemMessageEnvelope ⇒ serializeSystemMessageEnvelope(env).toByteArray
+    case SystemMessageDelivery.Ack(seqNo, from) ⇒ serializeSystemMessageDeliveryAck(seqNo, from).toByteArray
+    case HandshakeReq(from, to) ⇒ serializeHandshakeReq(from, to).toByteArray
+    case HandshakeRsp(from) ⇒ serializeWithAddress(from).toByteArray
+    case RemoteWatcher.ArteryHeartbeat ⇒ Array.emptyByteArray
+    case RemoteWatcher.ArteryHeartbeatRsp(from) ⇒ serializeArteryHeartbeatRsp(from).toByteArray
+    case SystemMessageDelivery.Nack(seqNo, from) ⇒ serializeSystemMessageDeliveryAck(seqNo, from).toByteArray
+    case q: Quarantined ⇒ serializeQuarantined(q).toByteArray
+    case ActorSystemTerminating(from) ⇒ serializeWithAddress(from).toByteArray
+    case ActorSystemTerminatingAck(from) ⇒ serializeWithAddress(from).toByteArray
+    case adv: ActorRefCompressionAdvertisement ⇒ serializeActorRefCompressionAdvertisement(adv).toByteArray
+    case ActorRefCompressionAdvertisementAck(from, id) ⇒ serializeCompressionTableAdvertisementAck(from, id).toByteArray
+    case adv: ClassManifestCompressionAdvertisement ⇒ serializeCompressionAdvertisement(adv)(identity).toByteArray
     case ClassManifestCompressionAdvertisementAck(from, id) ⇒ serializeCompressionTableAdvertisementAck(from, id).toByteArray
   }
 
@@ -179,9 +179,9 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
 
     SystemMessageDelivery.SystemMessageEnvelope(
       serialization.deserialize(
-      protoEnv.getMessage.toByteArray,
-      protoEnv.getSerializerId,
-      if (protoEnv.hasMessageManifest) protoEnv.getMessageManifest.toStringUtf8 else "").get,
+        protoEnv.getMessage.toByteArray,
+        protoEnv.getSerializerId,
+        if (protoEnv.hasMessageManifest) protoEnv.getMessageManifest.toStringUtf8 else "").get,
       protoEnv.getSeqNo,
       deserializeUniqueAddress(protoEnv.getAckReplyTo))
   }

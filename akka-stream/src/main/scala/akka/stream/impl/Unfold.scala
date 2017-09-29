@@ -48,7 +48,7 @@ import scala.util.{ Failure, Success, Try }
 
       override def preStart() = {
         val ac = getAsyncCallback[Try[Option[(S, E)]]] {
-          case Failure(ex)   ⇒ fail(out, ex)
+          case Failure(ex) ⇒ fail(out, ex)
           case Success(None) ⇒ complete(out)
           case Success(Some((newS, elem))) ⇒
             push(out, elem)

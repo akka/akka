@@ -214,17 +214,17 @@ object Behavior {
   @tailrec
   def canonicalize[T](behavior: Behavior[T], current: Behavior[T], ctx: ActorContext[T]): Behavior[T] =
     behavior match {
-      case SameBehavior                  ⇒ current
-      case UnhandledBehavior             ⇒ current
+      case SameBehavior ⇒ current
+      case UnhandledBehavior ⇒ current
       case deferred: DeferredBehavior[T] ⇒ canonicalize(deferred(ctx), deferred, ctx)
-      case other                         ⇒ other
+      case other ⇒ other
     }
 
   @tailrec
   def undefer[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
     behavior match {
       case innerDeferred: DeferredBehavior[T] ⇒ undefer(innerDeferred(ctx), ctx)
-      case _                                  ⇒ behavior
+      case _ ⇒ behavior
     }
   }
 
@@ -245,7 +245,7 @@ object Behavior {
    */
   def isAlive[T](behavior: Behavior[T]): Boolean = behavior match {
     case _: StoppedBehavior[_] ⇒ false
-    case _                     ⇒ true
+    case _ ⇒ true
   }
 
   /**
@@ -258,7 +258,7 @@ object Behavior {
    */
   def isDeferred[T](behavior: Behavior[T]): Boolean = behavior match {
     case _: DeferredBehavior[T] ⇒ true
-    case _                      ⇒ false
+    case _ ⇒ false
   }
 
   /**
@@ -281,13 +281,13 @@ object Behavior {
         throw new IllegalArgumentException(s"cannot wrap behavior [$behavior] in " +
           "Actor.deferred, Actor.supervise or similar")
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
-      case IgnoreBehavior         ⇒ SameBehavior.asInstanceOf[Behavior[T]]
-      case s: StoppedBehavior[T]  ⇒ s
-      case EmptyBehavior          ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
+      case IgnoreBehavior ⇒ SameBehavior.asInstanceOf[Behavior[T]]
+      case s: StoppedBehavior[T] ⇒ s
+      case EmptyBehavior ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = msg match {
           case signal: Signal ⇒ ext.receiveSignal(ctx, signal)
-          case msg            ⇒ ext.receiveMessage(ctx, msg.asInstanceOf[T])
+          case msg ⇒ ext.receiveMessage(ctx, msg.asInstanceOf[T])
         }
         undefer(possiblyDeferredResult, ctx)
     }

@@ -118,12 +118,12 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   }
 
   def active: Actor.Receive = {
-    case HeartbeatTick                ⇒ heartbeat()
-    case HeartbeatRsp(from)           ⇒ heartbeatRsp(from)
-    case MemberRemoved(m, _)          ⇒ removeMember(m)
-    case evt: MemberEvent             ⇒ addMember(evt.member)
-    case UnreachableMember(m)         ⇒ unreachableMember(m)
-    case ReachableMember(m)           ⇒ reachableMember(m)
+    case HeartbeatTick ⇒ heartbeat()
+    case HeartbeatRsp(from) ⇒ heartbeatRsp(from)
+    case MemberRemoved(m, _) ⇒ removeMember(m)
+    case evt: MemberEvent ⇒ addMember(evt.member)
+    case UnreachableMember(m) ⇒ unreachableMember(m)
+    case ReachableMember(m) ⇒ reachableMember(m)
     case ExpectedFirstHeartbeat(from) ⇒ triggerFirstHeartbeat(from)
   }
 
@@ -134,7 +134,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   }
 
   def addMember(m: Member): Unit =
-    if (m.uniqueAddress != selfUniqueAddress && // is not self 
+    if (m.uniqueAddress != selfUniqueAddress && // is not self
       !state.contains(m.uniqueAddress) && // not already added
       filterInternalClusterMembers(m) // should be watching members from this DC (internal / external)
       ) {
@@ -192,9 +192,9 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
  */
 @InternalApi
 private[cluster] final case class ClusterHeartbeatSenderState(
-  ring:                       HeartbeatNodeRing,
+  ring: HeartbeatNodeRing,
   oldReceiversNowUnreachable: Set[UniqueAddress],
-  failureDetector:            FailureDetectorRegistry[Address]) {
+  failureDetector: FailureDetectorRegistry[Address]) {
 
   val activeReceivers: Set[UniqueAddress] = ring.myReceivers union oldReceiversNowUnreachable
 
@@ -260,9 +260,9 @@ private[cluster] final case class ClusterHeartbeatSenderState(
  * It is immutable, i.e. the methods return new instances.
  */
 private[cluster] final case class HeartbeatNodeRing(
-  selfAddress:            UniqueAddress,
-  nodes:                  Set[UniqueAddress],
-  unreachable:            Set[UniqueAddress],
+  selfAddress: UniqueAddress,
+  nodes: Set[UniqueAddress],
+  unreachable: Set[UniqueAddress],
   monitoredByNrOfMembers: Int) {
 
   require(nodes contains selfAddress, s"nodes [${nodes.mkString(", ")}] must contain selfAddress [${selfAddress}]")

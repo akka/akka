@@ -20,10 +20,10 @@ import akka.io.Udp._
  * INTERNAL API
  */
 private[io] class UdpListener(
-  val udp:         UdpExt,
+  val udp: UdpExt,
   channelRegistry: ChannelRegistry,
-  bindCommander:   ActorRef,
-  bind:            Bind)
+  bindCommander: ActorRef,
+  bind: Bind)
   extends Actor with ActorLogging with WithUdpSend with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import udp.bufferPool
@@ -45,13 +45,13 @@ private[io] class UdpListener(
       socket.bind(bind.localAddress)
       val ret = socket.getLocalSocketAddress match {
         case isa: InetSocketAddress ⇒ isa
-        case x                      ⇒ throw new IllegalArgumentException(s"bound to unknown SocketAddress [$x]")
+        case x ⇒ throw new IllegalArgumentException(s"bound to unknown SocketAddress [$x]")
       }
       channelRegistry.register(channel, OP_READ)
       log.debug("Successfully bound to [{}]", ret)
       bind.options.foreach {
         case o: Inet.SocketOptionV2 ⇒ o.afterBind(channel.socket)
-        case _                      ⇒
+        case _ ⇒
       }
       ret
     } catch {
@@ -68,8 +68,8 @@ private[io] class UdpListener(
   }
 
   def readHandlers(registration: ChannelRegistration): Receive = {
-    case SuspendReading  ⇒ registration.disableInterest(OP_READ)
-    case ResumeReading   ⇒ registration.enableInterest(OP_READ)
+    case SuspendReading ⇒ registration.disableInterest(OP_READ)
+    case ResumeReading ⇒ registration.enableInterest(OP_READ)
     case ChannelReadable ⇒ doReceive(registration, bind.handler)
 
     case Unbind ⇒

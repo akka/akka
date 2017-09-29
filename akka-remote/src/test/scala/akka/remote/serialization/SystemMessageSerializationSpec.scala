@@ -17,7 +17,7 @@ object SystemMessageSerializationSpec {
   class TestException(msg: String) extends RuntimeException {
     override def equals(other: Any): Boolean = other match {
       case e: TestException ⇒ e.getMessage == getMessage
-      case _                ⇒ false
+      case _ ⇒ false
     }
   }
 }

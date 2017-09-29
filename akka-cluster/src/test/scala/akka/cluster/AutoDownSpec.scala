@@ -19,9 +19,9 @@ object AutoDownSpec {
   final case class DownCalled(address: Address)
 
   class AutoDownTestActor(
-    memberA:                  Member,
+    memberA: Member,
     autoDownUnreachableAfter: FiniteDuration,
-    probe:                    ActorRef)
+    probe: ActorRef)
     extends AutoDownBase(autoDownUnreachableAfter) {
 
     override def selfAddress = memberA.address

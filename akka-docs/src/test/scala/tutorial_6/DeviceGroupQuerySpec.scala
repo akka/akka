@@ -22,8 +22,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         actorToDeviceId = Map(device1.ref -> "device1", device2.ref -> "device2"),
         requestId = 1,
         requester = requester.ref,
-        timeout = 3.seconds
-      ))
+        timeout = 3.seconds))
 
       device1.expectMsg(Device.ReadTemperature(requestId = 0))
       device2.expectMsg(Device.ReadTemperature(requestId = 0))
@@ -35,9 +34,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         requestId = 1,
         temperatures = Map(
           "device1" -> DeviceGroup.Temperature(1.0),
-          "device2" -> DeviceGroup.Temperature(2.0)
-        )
-      ))
+          "device2" -> DeviceGroup.Temperature(2.0))))
     }
 
     "return TemperatureNotAvailable for devices with no readings" in {
@@ -50,8 +47,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         actorToDeviceId = Map(device1.ref -> "device1", device2.ref -> "device2"),
         requestId = 1,
         requester = requester.ref,
-        timeout = 3.seconds
-      ))
+        timeout = 3.seconds))
 
       device1.expectMsg(Device.ReadTemperature(requestId = 0))
       device2.expectMsg(Device.ReadTemperature(requestId = 0))
@@ -63,9 +59,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         requestId = 1,
         temperatures = Map(
           "device1" -> DeviceGroup.TemperatureNotAvailable,
-          "device2" -> DeviceGroup.Temperature(2.0)
-        )
-      ))
+          "device2" -> DeviceGroup.Temperature(2.0))))
     }
 
     "return DeviceNotAvailable if device stops before answering" in {
@@ -78,8 +72,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         actorToDeviceId = Map(device1.ref -> "device1", device2.ref -> "device2"),
         requestId = 1,
         requester = requester.ref,
-        timeout = 3.seconds
-      ))
+        timeout = 3.seconds))
 
       device1.expectMsg(Device.ReadTemperature(requestId = 0))
       device2.expectMsg(Device.ReadTemperature(requestId = 0))
@@ -91,9 +84,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         requestId = 1,
         temperatures = Map(
           "device1" -> DeviceGroup.Temperature(1.0),
-          "device2" -> DeviceGroup.DeviceNotAvailable
-        )
-      ))
+          "device2" -> DeviceGroup.DeviceNotAvailable)))
     }
 
     "return temperature reading even if device stops after answering" in {
@@ -106,8 +97,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         actorToDeviceId = Map(device1.ref -> "device1", device2.ref -> "device2"),
         requestId = 1,
         requester = requester.ref,
-        timeout = 3.seconds
-      ))
+        timeout = 3.seconds))
 
       device1.expectMsg(Device.ReadTemperature(requestId = 0))
       device2.expectMsg(Device.ReadTemperature(requestId = 0))
@@ -120,9 +110,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         requestId = 1,
         temperatures = Map(
           "device1" -> DeviceGroup.Temperature(1.0),
-          "device2" -> DeviceGroup.Temperature(2.0)
-        )
-      ))
+          "device2" -> DeviceGroup.Temperature(2.0))))
     }
 
     "return DeviceTimedOut if device does not answer in time" in {
@@ -135,8 +123,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         actorToDeviceId = Map(device1.ref -> "device1", device2.ref -> "device2"),
         requestId = 1,
         requester = requester.ref,
-        timeout = 1.second
-      ))
+        timeout = 1.second))
 
       device1.expectMsg(Device.ReadTemperature(requestId = 0))
       device2.expectMsg(Device.ReadTemperature(requestId = 0))
@@ -147,9 +134,7 @@ class DeviceGroupQuerySpec extends AkkaSpec {
         requestId = 1,
         temperatures = Map(
           "device1" -> DeviceGroup.Temperature(1.0),
-          "device2" -> DeviceGroup.DeviceTimedOut
-        )
-      ))
+          "device2" -> DeviceGroup.DeviceTimedOut)))
     }
 
   }

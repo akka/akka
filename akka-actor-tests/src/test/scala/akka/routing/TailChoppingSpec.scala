@@ -17,7 +17,7 @@ object TailChoppingSpec {
       var times: Int = _
 
       def receive = {
-        case "stop"  ⇒ context.stop(self)
+        case "stop" ⇒ context.stop(self)
         case "times" ⇒ sender() ! times
         case x ⇒
           times += 1
@@ -49,7 +49,7 @@ class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender 
       val counter1 = new AtomicInteger
       val actor1 = system.actorOf(Props(new Actor {
         def receive = {
-          case "end"    ⇒ doneLatch.countDown()
+          case "end" ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
         }
       }))
@@ -57,7 +57,7 @@ class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender 
       val counter2 = new AtomicInteger
       val actor2 = system.actorOf(Props(new Actor {
         def receive = {
-          case "end"    ⇒ doneLatch.countDown()
+          case "end" ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
         }
       }))

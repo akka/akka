@@ -24,20 +24,18 @@ object AkkaBuild {
 
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization := "com.typesafe.akka",
-    version := "2.5-SNAPSHOT")
+    version := "2.5.6")
 
   lazy val rootSettings = parentSettings ++ Release.settings ++
     UnidocRoot.akkaSettings ++
     Protobuf.settings ++ Seq(
-      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean
-    )
+      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean)
 
   val dontPublishSettings = Seq(
     publishSigned := (),
     publish := (),
     publishArtifact in Compile := false,
-    whitesourceIgnore := true
-  )
+    whitesourceIgnore := true)
 
   val dontPublishDocsSettings = Seq(
     sources in doc in Compile := List())

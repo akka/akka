@@ -200,8 +200,8 @@ object Actor {
    */
   def tap[T](
     onMessage: Function2[ActorContext[T], T, _],
-    onSignal:  Function2[ActorContext[T], Signal, _], // FIXME use partial function here also?
-    behavior:  Behavior[T]): Behavior[T] =
+    onSignal: Function2[ActorContext[T], Signal, _], // FIXME use partial function here also?
+    behavior: Behavior[T]): Behavior[T] =
     BehaviorImpl.tap(onMessage, onSignal, behavior)
 
   /**

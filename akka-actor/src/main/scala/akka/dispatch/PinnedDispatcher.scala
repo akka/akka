@@ -15,10 +15,10 @@ import scala.concurrent.duration.FiniteDuration
  * the `lookup` method in [[akka.dispatch.Dispatchers]].
  */
 class PinnedDispatcher(
-  _configurator:     MessageDispatcherConfigurator,
-  _actor:            ActorCell,
-  _id:               String,
-  _shutdownTimeout:  FiniteDuration,
+  _configurator: MessageDispatcherConfigurator,
+  _actor: ActorCell,
+  _id: String,
+  _shutdownTimeout: FiniteDuration,
   _threadPoolConfig: ThreadPoolConfig)
   extends Dispatcher(
     _configurator,

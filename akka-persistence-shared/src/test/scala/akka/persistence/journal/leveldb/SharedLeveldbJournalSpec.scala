@@ -42,7 +42,7 @@ object SharedLeveldbJournalSpec {
   class ExamplePersistentActor(probe: ActorRef, name: String) extends NamedPersistentActor(name) {
     override def receiveRecover = {
       case RecoveryCompleted ⇒ // ignore
-      case payload           ⇒ probe ! payload
+      case payload ⇒ probe ! payload
     }
     override def receiveCommand = {
       case payload ⇒ persist(payload) { _ ⇒
@@ -56,7 +56,7 @@ object SharedLeveldbJournalSpec {
 
     def receive = {
       case ActorIdentity(1, Some(store)) ⇒ SharedLeveldbJournal.setStore(store, context.system)
-      case m                             ⇒ p forward m
+      case m ⇒ p forward m
     }
 
     override def preStart(): Unit =

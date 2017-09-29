@@ -41,7 +41,7 @@ import akka.util.OptionVal
   private def startTimer(key: Any, msg: Any, timeout: FiniteDuration, repeat: Boolean): Unit = {
     timers.get(key) match {
       case Some(t) ⇒ cancelTimer(t)
-      case None    ⇒
+      case None ⇒
     }
     val nextGen = nextTimerGen()
 
@@ -62,7 +62,7 @@ import akka.util.OptionVal
 
   override def cancel(key: Any): Unit = {
     timers.get(key) match {
-      case None    ⇒ // already removed/canceled
+      case None ⇒ // already removed/canceled
       case Some(t) ⇒ cancelTimer(t)
     }
   }

@@ -225,7 +225,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
       case ext if ext(system).actor == journalPluginActor ⇒ ext(system).adapters
     } match {
       case Some(adapters) ⇒ adapters
-      case _              ⇒ IdentityEventAdapters
+      case _ ⇒ IdentityEventAdapters
     }
   }
 
@@ -249,7 +249,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
       case ext if ext(system).actor == journalPluginActor ⇒ ext(system).config
     } match {
       case Some(conf) ⇒ conf
-      case None       ⇒ throw new IllegalArgumentException(s"Unknown plugin actor $journalPluginActor")
+      case None ⇒ throw new IllegalArgumentException(s"Unknown plugin actor $journalPluginActor")
     }
 
   /**

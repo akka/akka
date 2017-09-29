@@ -28,10 +28,10 @@ object GraphInterpreterSpecKit {
    * @return Created logics and the maps of all inlets respective outlets to those logics
    */
   private[stream] def createLogics(
-    stages:      Array[GraphStageWithMaterializedValue[_ <: Shape, _]],
-    upstreams:   Array[UpstreamBoundaryStageLogic[_]],
+    stages: Array[GraphStageWithMaterializedValue[_ <: Shape, _]],
+    upstreams: Array[UpstreamBoundaryStageLogic[_]],
     downstreams: Array[DownstreamBoundaryStageLogic[_]],
-    attributes:  Array[Attributes]                                     = Array.empty): (Array[GraphStageLogic], SMap[Inlet[_], GraphStageLogic], SMap[Outlet[_], GraphStageLogic]) = {
+    attributes: Array[Attributes] = Array.empty): (Array[GraphStageLogic], SMap[Inlet[_], GraphStageLogic], SMap[Outlet[_], GraphStageLogic]) = {
     if (attributes.nonEmpty && attributes.length != stages.length)
       throw new IllegalArgumentException("Attributes must be either empty or one per stage")
 
@@ -113,8 +113,7 @@ object GraphInterpreterSpecKit {
           outOwner = outOwner,
           outHandler = outOwner.outHandler(0),
           inOwner = inOwner,
-          inHandler = inOwner.inHandler(0)
-        )
+          inHandler = inOwner.inHandler(0))
 
         outOwner.portToConn(outOwner.inCount) = connection
         inOwner.portToConn(0) = connection
@@ -127,10 +126,10 @@ object GraphInterpreterSpecKit {
    * Create interpreter connections for all the given `connectedPorts`.
    */
   private[stream] def createConnections(
-    logics:         Seq[GraphStageLogic],
+    logics: Seq[GraphStageLogic],
     connectedPorts: Seq[(Outlet[_], Inlet[_])],
-    inOwners:       SMap[Inlet[_], GraphStageLogic],
-    outOwners:      SMap[Outlet[_], GraphStageLogic]): Array[Connection] = {
+    inOwners: SMap[Inlet[_], GraphStageLogic],
+    outOwners: SMap[Outlet[_], GraphStageLogic]): Array[Connection] = {
 
     val connections = new Array[Connection](connectedPorts.size)
     connectedPorts.zipWithIndex.foreach {
@@ -144,8 +143,7 @@ object GraphInterpreterSpecKit {
           outOwner = outOwner,
           outHandler = outOwner.outHandler(outlet.id),
           inOwner = inOwner,
-          inHandler = inOwner.inHandler(inlet.id)
-        )
+          inHandler = inOwner.inHandler(inlet.id))
 
         connections(idx) = connection
         inOwner.portToConn(inlet.id) = connection
@@ -395,7 +393,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
           internalEvent match {
             case Failed(_, elem) ⇒ lastEvent += OnNext(DownstreamPortProbe.this, elem)
-            case elem            ⇒ lastEvent += OnNext(DownstreamPortProbe.this, elem)
+            case elem ⇒ lastEvent += OnNext(DownstreamPortProbe.this, elem)
           }
         }
 

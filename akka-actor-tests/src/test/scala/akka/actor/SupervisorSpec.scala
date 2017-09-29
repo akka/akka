@@ -64,9 +64,9 @@ object SupervisorSpec {
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 0)(List(classOf[Exception]))
 
     def receive = {
-      case Die                ⇒ temp forward Die
+      case Die ⇒ temp forward Die
       case Terminated(`temp`) ⇒ sendTo ! "terminated"
-      case Status.Failure(_)  ⇒ /*Ignore*/
+      case Status.Failure(_) ⇒ /*Ignore*/
     }
   }
 
@@ -212,7 +212,7 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
         override def postStop() { postStops += 1; testActor ! ("postStop" + postStops) }
         def receive = {
           case "crash" ⇒ { testActor ! "crashed"; throw new RuntimeException("Expected") }
-          case "ping"  ⇒ sender() ! "pong"
+          case "ping" ⇒ sender() ! "pong"
         }
       }
       val master = system.actorOf(Props(new Actor {
@@ -426,7 +426,7 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
           override def postRestart(reason: Throwable): Unit = testActor ! "child restarted"
           def receive = {
             case l: TestLatch ⇒ { Await.ready(l, 5 seconds); throw new IllegalStateException("OHNOES") }
-            case "test"       ⇒ sender() ! "child green"
+            case "test" ⇒ sender() ! "child green"
           }
         }), "child"))
 
@@ -440,10 +440,10 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
 
         def receive = {
           case Terminated(a) if a.path == child.path ⇒ testActor ! "child terminated"
-          case l: TestLatch                          ⇒ child ! l
-          case "test"                                ⇒ sender() ! "green"
-          case "testchild"                           ⇒ child forward "test"
-          case "testchildAndAck"                     ⇒ child forward "test"; sender() ! "ack"
+          case l: TestLatch ⇒ child ! l
+          case "test" ⇒ sender() ! "green"
+          case "testchild" ⇒ child forward "test"
+          case "testchildAndAck" ⇒ child forward "test"; sender() ! "ack"
         }
       }))
 

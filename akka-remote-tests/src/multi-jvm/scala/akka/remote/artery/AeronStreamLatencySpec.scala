@@ -63,10 +63,10 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
        """)))
 
   final case class TestSettings(
-    testName:    String,
+    testName: String,
     messageRate: Int, // msg/s
     payloadSize: Int,
-    repeat:      Int)
+    repeat: Int)
 
 }
 

@@ -72,7 +72,7 @@ final class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
     future.flatMap {
       _ match {
         case CircuitOpenFailure(_) ⇒ Future.failed(throwing)
-        case result                ⇒ Future.successful(result)
+        case result ⇒ Future.successful(result)
       }
     }
   }

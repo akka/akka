@@ -73,18 +73,18 @@ object ClusterSingletonProxySettings {
  *   immediately if the location of the singleton is unknown.
  */
 final class ClusterSingletonProxySettings(
-  val singletonName:                   String,
-  val role:                            Option[String],
-  val dataCenter:                      Option[DataCenter],
+  val singletonName: String,
+  val role: Option[String],
+  val dataCenter: Option[DataCenter],
   val singletonIdentificationInterval: FiniteDuration,
-  val bufferSize:                      Int) extends NoSerializationVerificationNeeded {
+  val bufferSize: Int) extends NoSerializationVerificationNeeded {
 
   // for backwards compatibility
   def this(
-    singletonName:                   String,
-    role:                            Option[String],
+    singletonName: String,
+    role: Option[String],
     singletonIdentificationInterval: FiniteDuration,
-    bufferSize:                      Int) =
+    bufferSize: Int) =
     this(singletonName, role, None, singletonIdentificationInterval, bufferSize)
 
   require(bufferSize >= 0 && bufferSize <= 10000, "bufferSize must be >= 0 and <= 10000")
@@ -104,11 +104,11 @@ final class ClusterSingletonProxySettings(
     copy(bufferSize = bufferSize)
 
   private def copy(
-    singletonName:                   String             = singletonName,
-    role:                            Option[String]     = role,
-    dataCenter:                      Option[DataCenter] = dataCenter,
-    singletonIdentificationInterval: FiniteDuration     = singletonIdentificationInterval,
-    bufferSize:                      Int                = bufferSize): ClusterSingletonProxySettings =
+    singletonName: String = singletonName,
+    role: Option[String] = role,
+    dataCenter: Option[DataCenter] = dataCenter,
+    singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
+    bufferSize: Int = bufferSize): ClusterSingletonProxySettings =
     new ClusterSingletonProxySettings(singletonName, role, dataCenter, singletonIdentificationInterval, bufferSize)
 }
 
@@ -179,7 +179,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
 
   private val targetDcRole = settings.dataCenter match {
     case Some(t) ⇒ ClusterSettings.DcRolePrefix + t
-    case None    ⇒ ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
+    case None ⇒ ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
   }
 
   def matchingRole(member: Member): Boolean =
@@ -243,8 +243,8 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
   def receive = {
     // cluster logic
     case state: CurrentClusterState ⇒ handleInitial(state)
-    case MemberUp(m)                ⇒ add(m)
-    case MemberExited(m)            ⇒ remove(m)
+    case MemberUp(m) ⇒ add(m)
+    case MemberExited(m) ⇒ remove(m)
     case MemberRemoved(m, _) ⇒
       if (m.uniqueAddress == cluster.selfUniqueAddress)
         context.stop(self)

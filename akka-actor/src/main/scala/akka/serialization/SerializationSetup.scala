@@ -33,8 +33,7 @@ object SerializationSetup {
  * Setup for the serialization subsystem, constructor is *Internal API*, use factories in [[SerializationSetup()]]
  */
 final class SerializationSetup private (
-  val createSerializers: ExtendedActorSystem ⇒ immutable.Seq[SerializerDetails]
-) extends Setup
+  val createSerializers: ExtendedActorSystem ⇒ immutable.Seq[SerializerDetails]) extends Setup
 
 object SerializerDetails {
   /**
@@ -64,6 +63,6 @@ object SerializerDetails {
  * to construct
  */
 final class SerializerDetails private (
-  val alias:      String,
+  val alias: String,
   val serializer: Serializer,
-  val useFor:     immutable.Seq[Class[_]])
+  val useFor: immutable.Seq[Class[_]])

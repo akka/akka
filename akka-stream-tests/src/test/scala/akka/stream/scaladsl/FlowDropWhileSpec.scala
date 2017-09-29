@@ -42,8 +42,8 @@ class FlowDropWhileSpec extends StreamSpec {
     "restart with strategy" in assertAllStagesStopped {
       Source(1 to 4).dropWhile {
         case 1 | 3 ⇒ true
-        case 4     ⇒ false
-        case 2     ⇒ throw TE("")
+        case 4 ⇒ false
+        case 2 ⇒ throw TE("")
       }.withAttributes(supervisionStrategy(restartingDecider))
         .runWith(TestSink.probe[Int])
         .request(1)

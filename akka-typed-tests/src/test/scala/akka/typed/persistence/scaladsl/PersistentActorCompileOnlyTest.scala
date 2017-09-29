@@ -183,11 +183,11 @@ object PersistentActorCompileOnlyTest {
       initialState = State(Nil),
       actions = Actions.command {
         case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
-        case TaskDone(task)     ⇒ Persist(TaskRemoved(task))
+        case TaskDone(task) ⇒ Persist(TaskRemoved(task))
       },
       applyEvent = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
-        case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
+        case TaskRemoved(task) ⇒ State(state.tasksInFlight.filter(_ != task))
       }).snapshotOnState(_.tasksInFlight.isEmpty)
   }
 
@@ -219,7 +219,7 @@ object PersistentActorCompileOnlyTest {
       }),
       applyEvent = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
-        case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
+        case TaskRemoved(task) ⇒ State(state.tasksInFlight.filter(_ != task))
       })
   }
 
@@ -255,7 +255,7 @@ object PersistentActorCompileOnlyTest {
       },
       applyEvent = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
-        case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
+        case TaskRemoved(task) ⇒ State(state.tasksInFlight.filter(_ != task))
       })
   }
 
@@ -309,7 +309,7 @@ object PersistentActorCompileOnlyTest {
           Actions.byState(state ⇒
             if (isFullyHydrated(basket, state)) Actions { (ctx, cmd, state) ⇒
               cmd match {
-                case AddItem(id)    ⇒ addItem(id, ctx.self)
+                case AddItem(id) ⇒ addItem(id, ctx.self)
                 case RemoveItem(id) ⇒ Persist(ItemRemoved(id))
                 case GotMetaData(data) ⇒
                   basket = basket.updatedWith(data); PersistNothing()
@@ -318,7 +318,7 @@ object PersistentActorCompileOnlyTest {
             }
             else Actions { (ctx, cmd, state) ⇒
               cmd match {
-                case AddItem(id)    ⇒ addItem(id, ctx.self)
+                case AddItem(id) ⇒ addItem(id, ctx.self)
                 case RemoveItem(id) ⇒ Persist(ItemRemoved(id))
                 case GotMetaData(data) ⇒
                   basket = basket.updatedWith(data)
@@ -331,7 +331,7 @@ object PersistentActorCompileOnlyTest {
               }
             }),
         applyEvent = (evt, state) ⇒ evt match {
-          case ItemAdded(id)   ⇒ id +: state
+          case ItemAdded(id) ⇒ id +: state
           case ItemRemoved(id) ⇒ state.filter(_ != id)
         }).onRecoveryCompleted((ctx, state) ⇒ {
           val ad = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
@@ -383,7 +383,7 @@ object PersistentActorCompileOnlyTest {
         }
       },
       applyEvent = {
-        case (MoodChanged(to), _)   ⇒ to
+        case (MoodChanged(to), _) ⇒ to
         case (Remembered(_), state) ⇒ state
       })
 

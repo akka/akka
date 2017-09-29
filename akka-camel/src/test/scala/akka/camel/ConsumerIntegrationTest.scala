@@ -69,7 +69,7 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
         def endpointUri = "direct:a2"
 
         def receive = {
-          case "throw"         ⇒ throw new TestException("")
+          case "throw" ⇒ throw new TestException("")
           case m: CamelMessage ⇒ sender() ! "received " + m.bodyAs[String]
         }
 

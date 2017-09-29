@@ -56,7 +56,7 @@ private[stream] object InputStreamSinkStage {
       private val callback: AsyncCallback[AdapterToStageMessage] =
         getAsyncCallback {
           case ReadElementAcknowledgement ⇒ sendPullIfAllowed()
-          case Close                      ⇒ completeStage()
+          case Close ⇒ completeStage()
         }
 
       override def wakeUp(msg: AdapterToStageMessage): Unit = callback.invoke(msg)
@@ -107,8 +107,8 @@ private[stream] object InputStreamSinkStage {
  */
 @InternalApi private[akka] class InputStreamAdapter(
   sharedBuffer: BlockingQueue[StreamToAdapterMessage],
-  sendToStage:  (AdapterToStageMessage) ⇒ Unit,
-  readTimeout:  FiniteDuration)
+  sendToStage: (AdapterToStageMessage) ⇒ Unit,
+  readTimeout: FiniteDuration)
   extends InputStream {
 
   var isInitialized = false
@@ -156,7 +156,7 @@ private[stream] object InputStreamSinkStage {
                 case Failed(ex) ⇒
                   isStageAlive = false
                   throw new IOException(ex)
-                case null        ⇒ throw new IOException("Timeout on waiting for new data")
+                case null ⇒ throw new IOException("Timeout on waiting for new data")
                 case Initialized ⇒ throw new IllegalStateException("message 'Initialized' must come first")
               }
             } catch {
@@ -187,7 +187,7 @@ private[stream] object InputStreamSinkStage {
 
   @tailrec
   private[this] def getData(arr: Array[Byte], begin: Int, length: Int,
-                            gotBytes: Int): Int = {
+    gotBytes: Int): Int = {
     grabDataChunk() match {
       case Some(data) ⇒
         val size = data.size
@@ -211,8 +211,8 @@ private[stream] object InputStreamSinkStage {
     if (!isInitialized) {
       sharedBuffer.poll(readTimeout.toMillis, TimeUnit.MILLISECONDS) match {
         case Initialized ⇒ isInitialized = true
-        case null        ⇒ throw new IOException(s"Timeout after $readTimeout waiting for Initialized message from stage")
-        case entry       ⇒ require(false, s"First message must be Initialized notification, got $entry")
+        case null ⇒ throw new IOException(s"Timeout after $readTimeout waiting for Initialized message from stage")
+        case entry ⇒ require(false, s"First message must be Initialized notification, got $entry")
       }
     }
   }

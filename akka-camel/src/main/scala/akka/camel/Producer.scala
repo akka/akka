@@ -61,7 +61,7 @@ trait ProducerSupport extends Actor with CamelSupport {
       if (producerChild.isEmpty) {
         val disp = camel.settings.ProducerChildDispatcher match {
           case "" ⇒ context.props.dispatcher
-          case d  ⇒ d
+          case d ⇒ d
         }
         producerChild = Some(context.actorOf(Props(new ProducerChild(endpoint, processor)).withDispatcher(disp)))
         messages = {
@@ -81,7 +81,7 @@ trait ProducerSupport extends Actor with CamelSupport {
     case msg ⇒
       producerChild match {
         case Some(child) ⇒ child forward transformOutgoingMessage(msg)
-        case None        ⇒ messages :+= ((sender(), msg))
+        case None ⇒ messages :+= ((sender(), msg))
       }
   }
 
@@ -112,7 +112,7 @@ trait ProducerSupport extends Actor with CamelSupport {
   private class ProducerChild(endpoint: Endpoint, processor: SendProcessor) extends Actor {
     def receive = {
       case msg @ (_: FailureResult | _: MessageResult) ⇒ context.parent forward msg
-      case msg                                         ⇒ produce(endpoint, processor, msg, if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut)
+      case msg ⇒ produce(endpoint, processor, msg, if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut)
     }
     /**
      * Initiates a message exchange of given <code>pattern</code> with the endpoint specified by

@@ -22,7 +22,7 @@ object BackoffSupervisorSpec {
   class Child(probe: ActorRef) extends Actor {
     def receive = {
       case "boom" ⇒ throw new TestException
-      case msg    ⇒ probe ! msg
+      case msg ⇒ probe ! msg
     }
   }
 

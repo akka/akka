@@ -38,8 +38,8 @@ object UntrustedSpec {
 
     def receive = {
       case IdentifyReq(path) ⇒ context.actorSelection(path).tell(Identify(None), sender())
-      case StopChild(name)   ⇒ context.child(name) foreach context.stop
-      case msg               ⇒ testActor forward msg
+      case StopChild(name) ⇒ context.child(name) foreach context.stop
+      case msg ⇒ testActor forward msg
     }
   }
 
@@ -64,8 +64,7 @@ object UntrustedSpec {
       akka.remote.artery.untrusted-mode = on
       akka.remote.artery.trusted-selection-paths = ["/user/receptionist", ]
       akka.loglevel = DEBUG # the test is verifying some Debug logging
-    """
-  ).withFallback(ArterySpecSupport.defaultConfig)
+    """).withFallback(ArterySpecSupport.defaultConfig)
 
 }
 

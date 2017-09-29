@@ -50,10 +50,10 @@ akka.persistence.snapshot-store.plugin = "akka.persistence.no-snapshot-store"
     }
 
     val behavior: Receive = {
-      case p: Persist      ⇒ P(p)
+      case p: Persist ⇒ P(p)
       case p: PersistAsync ⇒ PA(p)
-      case Echo(id)        ⇒ sender() ! Done(id, 0)
-      case Fail(ex)        ⇒ throw ex
+      case Echo(id) ⇒ sender() ! Done(id, 0)
+      case Fail(ex) ⇒ throw ex
     }
     val doNothing = (_: Any) ⇒ ()
 

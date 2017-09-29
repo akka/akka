@@ -61,7 +61,7 @@ object ActorWithStashSpec {
           case msg ⇒ stash()
         }
       case "done" ⇒ state.finished.await
-      case msg    ⇒ stash()
+      case msg ⇒ stash()
     }
   }
 

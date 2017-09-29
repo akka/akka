@@ -205,7 +205,7 @@ trait SubchannelClassification { this: EventBus ⇒
 trait ScanningClassification { self: EventBus ⇒
   protected final val subscribers = new ConcurrentSkipListSet[(Classifier, Subscriber)](new Comparator[(Classifier, Subscriber)] {
     def compare(a: (Classifier, Subscriber), b: (Classifier, Subscriber)): Int = compareClassifiers(a._1, b._1) match {
-      case 0     ⇒ compareSubscribers(a._2, b._2)
+      case 0 ⇒ compareSubscribers(a._2, b._2)
       case other ⇒ other
     }
   })
@@ -376,7 +376,7 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier ⇒
 
   def publish(event: Event): Unit = {
     mappings.get.backing.get(classify(event)) match {
-      case None       ⇒ ()
+      case None ⇒ ()
       case Some(refs) ⇒ refs.foreach { _ ! event }
     }
   }

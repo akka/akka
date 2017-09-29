@@ -39,7 +39,7 @@ object ShardCoordinator {
    * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor.
    */
   private[akka] def props(typeName: String, settings: ClusterShardingSettings,
-                          allocationStrategy: ShardAllocationStrategy): Props =
+    allocationStrategy: ShardAllocationStrategy): Props =
     Props(new PersistentShardCoordinator(typeName: String, settings, allocationStrategy)).withDeploy(Deploy.local)
 
   /**
@@ -47,8 +47,8 @@ object ShardCoordinator {
    * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor with state based on ddata.
    */
   private[akka] def props(typeName: String, settings: ClusterShardingSettings,
-                          allocationStrategy: ShardAllocationStrategy,
-                          replicator:         ActorRef, majorityMinCap: Int): Props =
+    allocationStrategy: ShardAllocationStrategy,
+    replicator: ActorRef, majorityMinCap: Int): Props =
     Props(new DDataShardCoordinator(typeName: String, settings, allocationStrategy, replicator,
       majorityMinCap, settings.rememberEntities)).withDeploy(Deploy.local)
 
@@ -69,7 +69,7 @@ object ShardCoordinator {
      *         the references included in the `currentShardAllocations` parameter
      */
     def allocateShard(requester: ActorRef, shardId: ShardId,
-                      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef]
+      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef]
 
     /**
      * Invoked periodically to decide which shards to rebalance to another location.
@@ -81,7 +81,7 @@ object ShardCoordinator {
      */
     def rebalance(
       currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
-      rebalanceInProgress:     Set[ShardId]): Future[Set[ShardId]]
+      rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]]
   }
 
   /**
@@ -90,7 +90,7 @@ object ShardCoordinator {
    */
   abstract class AbstractShardAllocationStrategy extends ShardAllocationStrategy {
     override final def allocateShard(requester: ActorRef, shardId: ShardId,
-                                     currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
+      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
 
       import scala.collection.JavaConverters._
       allocateShard(requester, shardId, currentShardAllocations.asJava)
@@ -98,7 +98,7 @@ object ShardCoordinator {
 
     override final def rebalance(
       currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
-      rebalanceInProgress:     Set[ShardId]): Future[Set[ShardId]] = {
+      rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
       import scala.collection.JavaConverters._
       implicit val ec = ExecutionContexts.sameThreadExecutionContext
       rebalance(currentShardAllocations.asJava, rebalanceInProgress.asJava).map(_.asScala.toSet)
@@ -115,7 +115,7 @@ object ShardCoordinator {
      *         the references included in the `currentShardAllocations` parameter
      */
     def allocateShard(requester: ActorRef, shardId: String,
-                      currentShardAllocations: java.util.Map[ActorRef, immutable.IndexedSeq[String]]): Future[ActorRef]
+      currentShardAllocations: java.util.Map[ActorRef, immutable.IndexedSeq[String]]): Future[ActorRef]
 
     /**
      * Invoked periodically to decide which shards to rebalance to another location.
@@ -127,7 +127,7 @@ object ShardCoordinator {
      */
     def rebalance(
       currentShardAllocations: java.util.Map[ActorRef, immutable.IndexedSeq[String]],
-      rebalanceInProgress:     java.util.Set[String]): Future[java.util.Set[String]]
+      rebalanceInProgress: java.util.Set[String]): Future[java.util.Set[String]]
   }
 
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
@@ -145,14 +145,14 @@ object ShardCoordinator {
     extends ShardAllocationStrategy with Serializable {
 
     override def allocateShard(requester: ActorRef, shardId: ShardId,
-                               currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
+      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
       val (regionWithLeastShards, _) = currentShardAllocations.minBy { case (_, v) ⇒ v.size }
       Future.successful(regionWithLeastShards)
     }
 
     override def rebalance(
       currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
-      rebalanceInProgress:     Set[ShardId]): Future[Set[ShardId]] = {
+      rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
       if (rebalanceInProgress.size < maxSimultaneousRebalance) {
         val (regionWithLeastShards, leastShards) = currentShardAllocations.minBy { case (_, v) ⇒ v.size }
         val mostShards = currentShardAllocations.collect {
@@ -266,10 +266,10 @@ object ShardCoordinator {
       // region for each shard
       shards: Map[ShardId, ActorRef] = Map.empty,
       // shards for each region
-      regions:           Map[ActorRef, Vector[ShardId]] = Map.empty,
-      regionProxies:     Set[ActorRef]                  = Set.empty,
-      unallocatedShards: Set[ShardId]                   = Set.empty,
-      rememberEntities:  Boolean                        = false) extends ClusterShardingSerializable {
+      regions: Map[ActorRef, Vector[ShardId]] = Map.empty,
+      regionProxies: Set[ActorRef] = Set.empty,
+      unallocatedShards: Set[ShardId] = Set.empty,
+      rememberEntities: Boolean = false) extends ClusterShardingSerializable {
 
       def withRememberEntities(enabled: Boolean): State = {
         if (enabled)
@@ -360,7 +360,7 @@ object ShardCoordinator {
    * `handOffTimeout` it also sends [[akka.cluster.sharding.RebalanceDone]].
    */
   private[akka] class RebalanceWorker(shard: String, from: ActorRef, handOffTimeout: FiniteDuration,
-                                      regions: Set[ActorRef]) extends Actor {
+    regions: Set[ActorRef]) extends Actor {
     import Internal._
     regions.foreach(_ ! BeginHandOff(shard))
     var remaining = regions
@@ -380,7 +380,7 @@ object ShardCoordinator {
 
     def stoppingShard: Receive = {
       case ShardStopped(`shard`) ⇒ done(ok = true)
-      case ReceiveTimeout        ⇒ done(ok = false)
+      case ReceiveTimeout ⇒ done(ok = false)
     }
 
     def done(ok: Boolean): Unit = {
@@ -390,7 +390,7 @@ object ShardCoordinator {
   }
 
   private[akka] def rebalanceWorkerProps(shard: String, from: ActorRef, handOffTimeout: FiniteDuration,
-                                         regions: Set[ActorRef]): Props =
+    regions: Set[ActorRef]): Props =
     Props(new RebalanceWorker(shard, from, handOffTimeout, regions))
 
 }
@@ -401,7 +401,7 @@ object ShardCoordinator {
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSettings,
-                                allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
+  allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
   extends Actor with ActorLogging {
   import ShardCoordinator._
   import ShardCoordinator.Internal._
@@ -525,7 +525,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
     case ResendShardHost(shard, region) ⇒
       state.shards.get(shard) match {
         case Some(`region`) ⇒ sendHostShardMsg(shard, region)
-        case _              ⇒ //Reallocated to another region
+        case _ ⇒ //Reallocated to another region
       }
 
     case RebalanceTick ⇒
@@ -753,7 +753,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSettings,
-                                 allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
+  allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
   extends ShardCoordinator(typeName, settings, allocationStrategy) with PersistentActor {
   import ShardCoordinator.Internal._
   import settings.tuningParameters._
@@ -864,10 +864,10 @@ class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSett
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
-                            allocationStrategy: ShardCoordinator.ShardAllocationStrategy,
-                            replicator:         ActorRef,
-                            majorityMinCap:     Int,
-                            rememberEntities:   Boolean)
+  allocationStrategy: ShardCoordinator.ShardAllocationStrategy,
+  replicator: ActorRef,
+  majorityMinCap: Int,
+  rememberEntities: Boolean)
   extends ShardCoordinator(typeName, settings, allocationStrategy) with Stash {
   import ShardCoordinator.Internal._
   import akka.cluster.ddata.Replicator.Update
@@ -971,7 +971,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
 
   // this state will stash all messages until it receives UpdateSuccess
   def waitingForUpdate[E <: DomainEvent](evt: E, afterUpdateCallback: E ⇒ Unit,
-                                         remainingKeys: Set[Key[ReplicatedData]]): Receive = {
+    remainingKeys: Set[Key[ReplicatedData]]): Receive = {
     case UpdateSuccess(CoordinatorStateKey, Some(`evt`)) ⇒
       log.debug("The coordinator state was successfully updated with {}", evt)
       val newRemainingKeys = remainingKeys - CoordinatorStateKey

@@ -23,12 +23,12 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
     }
 
     def createFailureDetector(
-      threshold:              Double         = 8.0,
-      maxSampleSize:          Int            = 1000,
-      minStdDeviation:        FiniteDuration = 100.millis,
+      threshold: Double = 8.0,
+      maxSampleSize: Int = 1000,
+      minStdDeviation: FiniteDuration = 100.millis,
       acceptableLostDuration: FiniteDuration = Duration.Zero,
       firstHeartbeatEstimate: FiniteDuration = 1.second,
-      clock:                  Clock          = FailureDetector.defaultClock) =
+      clock: Clock = FailureDetector.defaultClock) =
       new PhiAccrualFailureDetector(
         threshold,
         maxSampleSize,

@@ -43,7 +43,7 @@ class TypedMultiMap[T <: AnyRef, K[_ <: T]] private (private val map: Map[T, Set
   def inserted(key: T)(value: K[key.type]): TypedMultiMap[T, K] = {
     val set = map.get(key) match {
       case Some(s) ⇒ s
-      case None    ⇒ Set.empty[Any]
+      case None ⇒ Set.empty[Any]
     }
     new TypedMultiMap[T, K](map.updated(key, set + value))
   }
@@ -54,7 +54,7 @@ class TypedMultiMap[T <: AnyRef, K[_ <: T]] private (private val map: Map[T, Set
   def get(key: T): Set[K[key.type]] =
     map.get(key) match {
       case Some(s) ⇒ s.asInstanceOf[Set[K[key.type]]]
-      case None    ⇒ Set.empty
+      case None ⇒ Set.empty
     }
 
   /**
@@ -102,7 +102,7 @@ class TypedMultiMap[T <: AnyRef, K[_ <: T]] private (private val map: Map[T, Set
   override def toString: String = s"TypedMultiMap($map)"
   override def equals(other: Any) = other match {
     case o: TypedMultiMap[_, _] ⇒ map == o.map
-    case _                      ⇒ false
+    case _ ⇒ false
   }
   override def hashCode: Int = map.hashCode
 }

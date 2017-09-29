@@ -225,7 +225,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
   private def oldDeserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
     val bytes = data.toByteArray
     serialization.deserialize(bytes, clazz) match {
-      case Success(x: T)  ⇒ x
+      case Success(x: T) ⇒ x
       case Success(other) ⇒ throw new IllegalArgumentException("Can't deserialize to [%s], got [%s]".format(clazz.getName, other))
       case Failure(e) ⇒
         // Fallback to the java serializer, because some interfaces don't implement java.io.Serializable,
@@ -235,7 +235,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         // akka.actor.Scope
         serialization.deserialize(bytes, classOf[java.io.Serializable]) match {
           case Success(x: T) ⇒ x
-          case _             ⇒ throw e // the first exception
+          case _ ⇒ throw e // the first exception
         }
     }
   }

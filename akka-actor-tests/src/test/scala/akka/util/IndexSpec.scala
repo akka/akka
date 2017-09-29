@@ -59,7 +59,7 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
       //Remove key
       index.remove("s2") match {
         case Some(iter) ⇒ iter.toSet should ===(Set(1, 2))
-        case None       ⇒ fail()
+        case None ⇒ fail()
       }
       index.remove("s2") should ===(None)
       index.valueIterator("s2").toSet should ===(Set.empty[Int])

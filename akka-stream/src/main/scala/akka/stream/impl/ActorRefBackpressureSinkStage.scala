@@ -16,9 +16,9 @@ import akka.stream.stage._
  * INTERNAL API
  */
 @InternalApi private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessage: Any,
-                                                                   ackMessage:        Any,
-                                                                   onCompleteMessage: Any,
-                                                                   onFailureMessage:  (Throwable) ⇒ Any)
+  ackMessage: Any,
+  onCompleteMessage: Any,
+  onFailureMessage: (Throwable) ⇒ Any)
   extends GraphStage[SinkShape[In]] {
   val in: Inlet[In] = Inlet[In]("ActorRefBackpressureSink.in")
   override def initialAttributes = DefaultAttributes.actorRefWithAck
@@ -48,7 +48,7 @@ import akka.stream.stage._
             }
           }
           case Terminated(`ref`) ⇒ completeStage()
-          case _                 ⇒ //ignore all other messages
+          case _ ⇒ //ignore all other messages
         }
       }
 

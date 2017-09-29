@@ -32,9 +32,9 @@ import scala.concurrent.{ Await, ExecutionContext, Future, duration }
  */
 @InternalApi
 private[akka] class AESCounterBuiltinRNG(val seed: Array[Byte], implicit val executionContext: ExecutionContext,
-                                         val reseedingThreshold: Long     = CounterRNGConstants.ReseedingThreshold,
-                                         val reseedingDeadline:  Long     = CounterRNGConstants.ReseedingDeadline,
-                                         val reseedingTimeout:   Duration = CounterRNGConstants.ReseedingTimeout) extends Random {
+  val reseedingThreshold: Long = CounterRNGConstants.ReseedingThreshold,
+  val reseedingDeadline: Long = CounterRNGConstants.ReseedingDeadline,
+  val reseedingTimeout: Duration = CounterRNGConstants.ReseedingTimeout) extends Random {
   import CounterRNGConstants._
 
   private val entropySource = new SecureRandom

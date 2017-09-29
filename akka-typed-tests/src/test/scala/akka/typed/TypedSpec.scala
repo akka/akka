@@ -120,7 +120,7 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
   def sync(f: Future[Status])(implicit system: ActorSystem[Command]): Unit = {
     def unwrap(ex: Throwable): Throwable = ex match {
       case ActorInitializationException(_, _, ex) ⇒ ex
-      case other                                  ⇒ other
+      case other ⇒ other
     }
 
     try await(f) match {
@@ -146,11 +146,11 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
   }
 
   def muteExpectedException[T <: Exception: ClassTag](
-    message:     String = null,
-    source:      String = null,
-    start:       String = "",
-    pattern:     String = null,
-    occurrences: Int    = Int.MaxValue)(implicit system: ActorSystem[Command]): EventFilter = {
+    message: String = null,
+    source: String = null,
+    start: String = "",
+    pattern: String = null,
+    occurrences: Int = Int.MaxValue)(implicit system: ActorSystem[Command]): EventFilter = {
     val filter = EventFilter(message, source, start, pattern, occurrences)
     system.eventStream.publish(Mute(filter))
     filter
@@ -223,7 +223,7 @@ object TypedSpec {
       .dropWhile(_ matches "(java.lang.Thread|.*TypedSpec.?$)")
     val reduced = s.lastIndexWhere(_ == clazz.getName) match {
       case -1 ⇒ s
-      case z  ⇒ s drop (z + 1)
+      case z ⇒ s drop (z + 1)
     }
     reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
   }

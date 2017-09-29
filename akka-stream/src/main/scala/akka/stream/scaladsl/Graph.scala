@@ -437,7 +437,7 @@ final class Interleave[T](val inputPorts: Int, val segmentSize: Int, val eagerCl
       def nextInletIndex(index: Int): Int = {
         val successor = index + 1 match {
           case `inputPorts` ⇒ 0
-          case x            ⇒ x
+          case x ⇒ x
         }
         if (!isClosed(in(successor))) successor
         else {

@@ -75,13 +75,13 @@ private[remote] object AeronSource {
  *                 when waiting for data
  */
 private[remote] class AeronSource(
-  channel:        String,
-  streamId:       Int,
-  aeron:          Aeron,
-  taskRunner:     TaskRunner,
-  pool:           EnvelopeBufferPool,
+  channel: String,
+  streamId: Int,
+  aeron: Aeron,
+  taskRunner: TaskRunner,
+  pool: EnvelopeBufferPool,
   flightRecorder: EventSink,
-  spinning:       Int)
+  spinning: Int)
   extends GraphStageWithMaterializedValue[SourceShape[EnvelopeBuffer], AeronSource.ResourceLifecycle] {
   import AeronSource._
   import TaskRunner._

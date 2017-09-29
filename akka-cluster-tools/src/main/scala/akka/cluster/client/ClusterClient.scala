@@ -62,7 +62,7 @@ object ClusterClientSettings {
       bufferSize = config.getInt("buffer-size"),
       reconnectTimeout = config.getString("reconnect-timeout") match {
         case "off" ⇒ None
-        case _     ⇒ Some(config.getDuration("reconnect-timeout", MILLISECONDS).millis)
+        case _ ⇒ Some(config.getDuration("reconnect-timeout", MILLISECONDS).millis)
       })
   }
 
@@ -107,13 +107,13 @@ object ClusterClientSettings {
  *   external service registry
  */
 final class ClusterClientSettings(
-  val initialContacts:                 Set[ActorPath],
+  val initialContacts: Set[ActorPath],
   val establishingGetContactsInterval: FiniteDuration,
-  val refreshContactsInterval:         FiniteDuration,
-  val heartbeatInterval:               FiniteDuration,
-  val acceptableHeartbeatPause:        FiniteDuration,
-  val bufferSize:                      Int,
-  val reconnectTimeout:                Option[FiniteDuration]) extends NoSerializationVerificationNeeded {
+  val refreshContactsInterval: FiniteDuration,
+  val heartbeatInterval: FiniteDuration,
+  val acceptableHeartbeatPause: FiniteDuration,
+  val bufferSize: Int,
+  val reconnectTimeout: Option[FiniteDuration]) extends NoSerializationVerificationNeeded {
 
   require(bufferSize >= 0 && bufferSize <= 10000, "bufferSize must be >= 0 and <= 10000")
 
@@ -121,12 +121,12 @@ final class ClusterClientSettings(
    * For binary/source compatibility
    */
   def this(
-    initialContacts:                 Set[ActorPath],
+    initialContacts: Set[ActorPath],
     establishingGetContactsInterval: FiniteDuration,
-    refreshContactsInterval:         FiniteDuration,
-    heartbeatInterval:               FiniteDuration,
-    acceptableHeartbeatPause:        FiniteDuration,
-    bufferSize:                      Int) =
+    refreshContactsInterval: FiniteDuration,
+    heartbeatInterval: FiniteDuration,
+    acceptableHeartbeatPause: FiniteDuration,
+    bufferSize: Int) =
     this(initialContacts, establishingGetContactsInterval, refreshContactsInterval, heartbeatInterval,
       acceptableHeartbeatPause, bufferSize, None)
 
@@ -162,13 +162,13 @@ final class ClusterClientSettings(
     copy(reconnectTimeout = reconnectTimeout)
 
   private def copy(
-    initialContacts:                 Set[ActorPath]         = initialContacts,
-    establishingGetContactsInterval: FiniteDuration         = establishingGetContactsInterval,
-    refreshContactsInterval:         FiniteDuration         = refreshContactsInterval,
-    heartbeatInterval:               FiniteDuration         = heartbeatInterval,
-    acceptableHeartbeatPause:        FiniteDuration         = acceptableHeartbeatPause,
-    bufferSize:                      Int                    = bufferSize,
-    reconnectTimeout:                Option[FiniteDuration] = reconnectTimeout): ClusterClientSettings =
+    initialContacts: Set[ActorPath] = initialContacts,
+    establishingGetContactsInterval: FiniteDuration = establishingGetContactsInterval,
+    refreshContactsInterval: FiniteDuration = refreshContactsInterval,
+    heartbeatInterval: FiniteDuration = heartbeatInterval,
+    acceptableHeartbeatPause: FiniteDuration = acceptableHeartbeatPause,
+    bufferSize: Int = bufferSize,
+    reconnectTimeout: Option[FiniteDuration] = reconnectTimeout): ClusterClientSettings =
     new ClusterClientSettings(initialContacts, establishingGetContactsInterval, refreshContactsInterval,
       heartbeatInterval, acceptableHeartbeatPause, bufferSize, reconnectTimeout)
 }
@@ -506,7 +506,7 @@ final class ClusterClientReceptionist(system: ExtendedActorSystem) extends Exten
   private val config = system.settings.config.getConfig("akka.cluster.client.receptionist")
   private val role: Option[String] = config.getString("role") match {
     case "" ⇒ None
-    case r  ⇒ Some(r)
+    case r ⇒ Some(r)
   }
 
   /**
@@ -627,8 +627,8 @@ object ClusterReceptionistSettings {
  *   client will be stopped after this time of inactivity.
  */
 final class ClusterReceptionistSettings(
-  val role:                         Option[String],
-  val numberOfContacts:             Int,
+  val role: Option[String],
+  val numberOfContacts: Int,
   val responseTunnelReceiveTimeout: FiniteDuration) extends NoSerializationVerificationNeeded {
 
   def withRole(role: String): ClusterReceptionistSettings = copy(role = ClusterReceptionistSettings.roleOption(role))
@@ -642,7 +642,7 @@ final class ClusterReceptionistSettings(
     copy(responseTunnelReceiveTimeout = responseTunnelReceiveTimeout)
 
   def withHeartbeat(
-    heartbeatInterval:        FiniteDuration,
+    heartbeatInterval: FiniteDuration,
     acceptableHeartbeatPause: FiniteDuration,
     failureDetectionInterval: FiniteDuration): ClusterReceptionistSettings =
     copy(
@@ -669,12 +669,12 @@ final class ClusterReceptionistSettings(
   private var _failureDetectionInterval: FiniteDuration = 2.second
 
   def this(
-    role:                         Option[String],
-    numberOfContacts:             Int,
+    role: Option[String],
+    numberOfContacts: Int,
     responseTunnelReceiveTimeout: FiniteDuration,
-    heartbeatInterval:            FiniteDuration,
-    acceptableHeartbeatPause:     FiniteDuration,
-    failureDetectionInterval:     FiniteDuration) = {
+    heartbeatInterval: FiniteDuration,
+    acceptableHeartbeatPause: FiniteDuration,
+    failureDetectionInterval: FiniteDuration) = {
     this(role, numberOfContacts, responseTunnelReceiveTimeout)
     this._heartbeatInterval = heartbeatInterval
     this._acceptableHeartbeatPause = acceptableHeartbeatPause
@@ -684,12 +684,12 @@ final class ClusterReceptionistSettings(
   // END BINARY COMPATIBILITY
 
   private def copy(
-    role:                         Option[String] = role,
-    numberOfContacts:             Int            = numberOfContacts,
+    role: Option[String] = role,
+    numberOfContacts: Int = numberOfContacts,
     responseTunnelReceiveTimeout: FiniteDuration = responseTunnelReceiveTimeout,
-    heartbeatInterval:            FiniteDuration = heartbeatInterval,
-    acceptableHeartbeatPause:     FiniteDuration = acceptableHeartbeatPause,
-    failureDetectionInterval:     FiniteDuration = failureDetectionInterval): ClusterReceptionistSettings =
+    heartbeatInterval: FiniteDuration = heartbeatInterval,
+    acceptableHeartbeatPause: FiniteDuration = acceptableHeartbeatPause,
+    failureDetectionInterval: FiniteDuration = failureDetectionInterval): ClusterReceptionistSettings =
     new ClusterReceptionistSettings(
       role,
       numberOfContacts,
@@ -785,7 +785,7 @@ object ClusterReceptionist {
    */
   def props(
     pubSubMediator: ActorRef,
-    settings:       ClusterReceptionistSettings): Props =
+    settings: ClusterReceptionistSettings): Props =
     Props(new ClusterReceptionist(pubSubMediator, settings)).withDeploy(Deploy.local)
 
   /**

@@ -22,7 +22,7 @@ import akka.util.OptionVal
  * INTERNAL API
  */
 private[remote] class MessageDispatcher(
-  system:   ExtendedActorSystem,
+  system: ExtendedActorSystem,
   provider: RemoteActorRefProvider) {
 
   private val remoteDaemon = provider.remoteDaemon
@@ -38,7 +38,7 @@ private[remote] class MessageDispatcher(
     val senderOption = inboundEnvelope.sender
     val originAddress = inboundEnvelope.association match {
       case OptionVal.Some(a) ⇒ OptionVal.Some(a.remoteAddress)
-      case OptionVal.None    ⇒ OptionVal.None
+      case OptionVal.None ⇒ OptionVal.None
     }
 
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
@@ -81,7 +81,7 @@ private[remote] class MessageDispatcher(
               "operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}] to [{}] from [{}]",
               messageClassName(msg), recipient, senderOption.getOrElse(originAddress.getOrElse("")))
           case msg: SystemMessage ⇒ l.sendSystemMessage(msg)
-          case msg                ⇒ l.!(msg)(sender)
+          case msg ⇒ l.!(msg)(sender)
         }
 
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal && !UntrustedMode ⇒

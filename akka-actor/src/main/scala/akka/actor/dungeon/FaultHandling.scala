@@ -153,7 +153,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       // separate iteration because this is a very rare case that should not penalize normal operation
       children foreach {
         case ref: ActorRefScope if !ref.isLocal ⇒ self.sendSystemMessage(DeathWatchNotification(ref, true, false))
-        case _                                  ⇒
+        case _ ⇒
       }
     }
 
@@ -180,7 +180,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       // suspend children
       val skip: Set[ActorRef] = currentMessage match {
         case Envelope(Failed(_, _, _), child) ⇒ { setFailed(child); Set(child) }
-        case _                                ⇒ { setFailed(self); Set.empty }
+        case _ ⇒ { setFailed(self); Set.empty }
       }
       suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
       t match {

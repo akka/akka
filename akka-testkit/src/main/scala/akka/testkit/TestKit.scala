@@ -47,7 +47,7 @@ object TestActor {
   final case class Spawn(props: Props, name: Option[String] = None, strategy: Option[SupervisorStrategy] = None) extends NoSerializationVerificationNeeded {
     def apply(context: ActorRefFactory): ActorRef = name match {
       case Some(n) ⇒ context.actorOf(props, n)
-      case None    ⇒ context.actorOf(props)
+      case None ⇒ context.actorOf(props)
     }
   }
 
@@ -102,9 +102,9 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
   var autopilot: AutoPilot = NoAutoPilot
 
   def receive = {
-    case SetIgnore(ign)      ⇒ ignore = ign
-    case Watch(ref)          ⇒ context.watch(ref)
-    case UnWatch(ref)        ⇒ context.unwatch(ref)
+    case SetIgnore(ign) ⇒ ignore = ign
+    case Watch(ref) ⇒ context.watch(ref)
+    case UnWatch(ref) ⇒ context.unwatch(ref)
     case SetAutoPilot(pilot) ⇒ autopilot = pilot
     case spawn: Spawn ⇒
       val actor = spawn(context)
@@ -113,7 +113,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
     case x: AnyRef ⇒
       autopilot = autopilot.run(sender(), x) match {
         case KeepRunning ⇒ autopilot
-        case other       ⇒ other
+        case other ⇒ other
       }
       val observe = ignore map (ignoreFunc ⇒ !ignoreFunc.applyOrElse(x, FALSE)) getOrElse true
       if (observe) queue.offerLast(RealMessage(x, sender()))
@@ -169,7 +169,7 @@ trait TestKitBase {
       "%s-%d".format(testActorName, TestKit.testActorId.incrementAndGet))
     awaitCond(ref match {
       case r: RepointableRef ⇒ r.isStarted
-      case _                 ⇒ true
+      case _ ⇒ true
     }, 3.seconds.dilated, 10.millis)
     ref
   }
@@ -235,7 +235,7 @@ trait TestKitBase {
    */
   def remaining: FiniteDuration = end match {
     case f: FiniteDuration ⇒ f - now
-    case _                 ⇒ throw new AssertionError("`remaining` may not be called outside of `within`")
+    case _ ⇒ throw new AssertionError("`remaining` may not be called outside of `within`")
   }
 
   /**
@@ -244,14 +244,14 @@ trait TestKitBase {
    */
   def remainingOr(duration: FiniteDuration): FiniteDuration = end match {
     case x if x eq Duration.Undefined ⇒ duration
-    case x if !x.isFinite             ⇒ throw new IllegalArgumentException("`end` cannot be infinite")
-    case f: FiniteDuration            ⇒ f - now
+    case x if !x.isFinite ⇒ throw new IllegalArgumentException("`end` cannot be infinite")
+    case f: FiniteDuration ⇒ f - now
   }
 
   private def remainingOrDilated(max: Duration): FiniteDuration = max match {
     case x if x eq Duration.Undefined ⇒ remainingOrDefault
-    case x if !x.isFinite             ⇒ throw new IllegalArgumentException("max duration cannot be infinite")
-    case f: FiniteDuration            ⇒ f.dilated
+    case x if !x.isFinite ⇒ throw new IllegalArgumentException("max duration cannot be infinite")
+    case f: FiniteDuration ⇒ f.dilated
   }
 
   /**
@@ -573,7 +573,7 @@ trait TestKitBase {
   def expectMsgAllOf[T](max: FiniteDuration, obj: T*): immutable.Seq[T] = expectMsgAllOf_internal(max.dilated, obj: _*)
 
   private def checkMissingAndUnexpected(missing: Seq[Any], unexpected: Seq[Any],
-                                        missingMessage: String, unexpectedMessage: String): Unit = {
+    missingMessage: String, unexpectedMessage: String): Unit = {
     assert(
       missing.isEmpty && unexpected.isEmpty,
       (if (missing.isEmpty) "" else missing.mkString(missingMessage + " [", ", ", "] ")) +
@@ -672,8 +672,7 @@ trait TestKitBase {
       //Use of (left / 2) gives geometric series limited by finish time similar to (1/2)^n limited by 1,
       //so it is very precise
       Thread.sleep(
-        pollInterval.toMillis min (left / 2).toMillis
-      )
+        pollInterval.toMillis min (left / 2).toMillis)
       left = leftNow
       if (left.toNanos > 0) {
         elem = queue.peekFirst()
@@ -787,9 +786,9 @@ trait TestKitBase {
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
   def shutdown(
-    actorSystem:          ActorSystem = system,
-    duration:             Duration    = 5.seconds.dilated.min(10.seconds),
-    verifySystemShutdown: Boolean     = false) {
+    actorSystem: ActorSystem = system,
+    duration: Duration = 5.seconds.dilated.min(10.seconds),
+    verifySystemShutdown: Boolean = false) {
     TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
   }
 
@@ -920,9 +919,9 @@ object TestKit {
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
   def shutdownActorSystem(
-    actorSystem:          ActorSystem,
-    duration:             Duration    = 10.seconds,
-    verifySystemShutdown: Boolean     = false): Unit = {
+    actorSystem: ActorSystem,
+    duration: Duration = 10.seconds,
+    verifySystemShutdown: Boolean = false): Unit = {
     actorSystem.terminate()
     try Await.ready(actorSystem.whenTerminated, duration) catch {
       case _: TimeoutException ⇒

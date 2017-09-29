@@ -47,7 +47,7 @@ import scala.annotation.tailrec
       else {
         b match {
           case d: DeferredBehavior[T] ⇒ canonical(Behavior.undefer(d, ctx), ctx)
-          case _                      ⇒ Widened(b, matcher)
+          case _ ⇒ Widened(b, matcher)
         }
       }
     }
@@ -57,7 +57,7 @@ import scala.annotation.tailrec
 
     override def receiveMessage(ctx: AC[U], msg: U): Behavior[U] =
       matcher.applyOrElse(msg, nullFun) match {
-        case null        ⇒ unhandled
+        case null ⇒ unhandled
         case transformed ⇒ canonical(Behavior.interpretMessage(behavior, ctx.as[T], transformed), ctx.as[T])
       }
 
@@ -66,7 +66,7 @@ import scala.annotation.tailrec
 
   class ImmutableBehavior[T](
     val onMessage: (SAC[T], T) ⇒ Behavior[T],
-    onSignal:      PartialFunction[(SAC[T], Signal), Behavior[T]] = Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+    onSignal: PartialFunction[(SAC[T], Signal), Behavior[T]] = Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
     extends ExtensibleBehavior[T] {
 
     override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
@@ -77,17 +77,17 @@ import scala.annotation.tailrec
 
   def tap[T](
     onMessage: Function2[SAC[T], T, _],
-    onSignal:  Function2[SAC[T], Signal, _],
-    behavior:  Behavior[T]): Behavior[T] = {
+    onSignal: Function2[SAC[T], Signal, _],
+    behavior: Behavior[T]): Behavior[T] = {
     intercept[T, T](
       beforeMessage = (ctx, msg) ⇒ {
-      onMessage(ctx, msg)
-      msg
-    },
+        onMessage(ctx, msg)
+        msg
+      },
       beforeSignal = (ctx, sig) ⇒ {
-      onSignal(ctx, sig)
-      true
-    },
+        onSignal(ctx, sig)
+        true
+      },
       afterMessage = (ctx, msg, b) ⇒ b, // TODO optimize by using more ConstantFun
       afterSignal = (ctx, sig, b) ⇒ b,
       behavior)(ClassTag(classOf[Any]))
@@ -109,12 +109,12 @@ import scala.annotation.tailrec
    * different than the incoming message).
    */
   def intercept[T, U <: Any: ClassTag](
-    beforeMessage:  Function2[SAC[U], U, T],
-    beforeSignal:   Function2[SAC[T], Signal, Boolean],
-    afterMessage:   Function3[SAC[T], T, Behavior[T], Behavior[T]],
-    afterSignal:    Function3[SAC[T], Signal, Behavior[T], Behavior[T]],
-    behavior:       Behavior[T],
-    toStringPrefix: String                                              = "Intercept"): Behavior[T] = {
+    beforeMessage: Function2[SAC[U], U, T],
+    beforeSignal: Function2[SAC[T], Signal, Boolean],
+    afterMessage: Function3[SAC[T], T, Behavior[T], Behavior[T]],
+    afterSignal: Function3[SAC[T], Signal, Behavior[T], Behavior[T]],
+    behavior: Behavior[T],
+    toStringPrefix: String = "Intercept"): Behavior[T] = {
     behavior match {
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
@@ -129,11 +129,11 @@ import scala.annotation.tailrec
 
   private final case class Intercept[T, U <: Any: ClassTag](
     beforeOnMessage: Function2[SAC[U], U, T],
-    beforeOnSignal:  Function2[SAC[T], Signal, Boolean],
-    afterMessage:    Function3[SAC[T], T, Behavior[T], Behavior[T]],
-    afterSignal:     Function3[SAC[T], Signal, Behavior[T], Behavior[T]],
-    behavior:        Behavior[T],
-    toStringPrefix:  String                                              = "Intercept") extends ExtensibleBehavior[T] {
+    beforeOnSignal: Function2[SAC[T], Signal, Boolean],
+    afterMessage: Function3[SAC[T], T, Behavior[T], Behavior[T]],
+    afterSignal: Function3[SAC[T], Signal, Behavior[T], Behavior[T]],
+    behavior: Behavior[T],
+    toStringPrefix: String = "Intercept") extends ExtensibleBehavior[T] {
 
     @tailrec
     private def canonical(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
@@ -143,7 +143,7 @@ import scala.annotation.tailrec
       else {
         b match {
           case d: DeferredBehavior[T] ⇒ canonical(Behavior.undefer(d, ctx), ctx)
-          case _                      ⇒ Intercept(beforeOnMessage, beforeOnSignal, afterMessage, afterSignal, b)
+          case _ ⇒ Intercept(beforeOnMessage, beforeOnSignal, afterMessage, afterSignal, b)
         }
       }
     }

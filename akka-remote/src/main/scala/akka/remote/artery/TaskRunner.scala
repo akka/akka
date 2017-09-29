@@ -183,8 +183,8 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
 
   private def processCommand(cmd: Command): Unit = {
     cmd match {
-      case null         ⇒ // no command
-      case Add(task)    ⇒ tasks.add(task)
+      case null ⇒ // no command
+      case Add(task) ⇒ tasks.add(task)
       case Remove(task) ⇒ tasks.remove(task)
       case Shutdown ⇒
         running = false

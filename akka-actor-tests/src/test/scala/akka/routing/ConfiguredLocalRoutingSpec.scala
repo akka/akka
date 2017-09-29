@@ -106,7 +106,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
     case r: RoutedActorRef ⇒
       r.underlying match {
         case c: RoutedActorCell ⇒ c.routerConfig
-        case _: UnstartedCell   ⇒ awaitCond(r.isStarted, 1 second, 10 millis); routerConfig(ref)
+        case _: UnstartedCell ⇒ awaitCond(r.isStarted, 1 second, 10 millis); routerConfig(ref)
       }
   }
 

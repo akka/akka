@@ -14,7 +14,7 @@ object SnapshotSpec {
     var state = List.empty[String]
 
     override def receiveRecover: Receive = {
-      case payload: String                     ⇒ state = s"${payload}-${lastSequenceNr}" :: state
+      case payload: String ⇒ state = s"${payload}-${lastSequenceNr}" :: state
       case SnapshotOffer(_, snapshot: List[_]) ⇒ state = snapshot.asInstanceOf[List[String]]
     }
 
@@ -23,9 +23,9 @@ object SnapshotSpec {
         persist(payload) { _ ⇒
           state = s"${payload}-${lastSequenceNr}" :: state
         }
-      case TakeSnapshot            ⇒ saveSnapshot(state)
+      case TakeSnapshot ⇒ saveSnapshot(state)
       case SaveSnapshotSuccess(md) ⇒ probe ! md.sequenceNr
-      case GetState                ⇒ probe ! state.reverse
+      case GetState ⇒ probe ! state.reverse
     }
   }
 
@@ -33,9 +33,9 @@ object SnapshotSpec {
     override def recovery: Recovery = _recovery
 
     override def receiveRecover: Receive = {
-      case payload: String              ⇒ probe ! s"${payload}-${lastSequenceNr}"
+      case payload: String ⇒ probe ! s"${payload}-${lastSequenceNr}"
       case offer @ SnapshotOffer(md, s) ⇒ probe ! offer
-      case other                        ⇒ probe ! other
+      case other ⇒ probe ! other
     }
 
     override def receiveCommand = {
@@ -45,7 +45,7 @@ object SnapshotSpec {
           probe ! s"${payload}-${lastSequenceNr}"
         }
       case offer @ SnapshotOffer(md, s) ⇒ probe ! offer
-      case other                        ⇒ probe ! other
+      case other ⇒ probe ! other
     }
   }
 
@@ -53,7 +53,7 @@ object SnapshotSpec {
     override def recovery: Recovery = _recovery
 
     override def receiveRecover: Receive = {
-      case payload: String                             ⇒ probe ! s"${payload}-${lastSequenceNr}"
+      case payload: String ⇒ probe ! s"${payload}-${lastSequenceNr}"
       case other if !other.isInstanceOf[SnapshotOffer] ⇒ probe ! other
     }
 

@@ -84,7 +84,7 @@ object EndToEndEventAdapterSpec {
 
     override def receiveRecover = {
       case RecoveryCompleted ⇒ // ignore
-      case e                 ⇒ state ::= e
+      case e ⇒ state ::= e
     }
     override def receiveCommand = persistIncoming
 

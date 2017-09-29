@@ -73,10 +73,10 @@ import scala.util.control.NonFatal
    * @param outHandler The handler that contains the callback for output events.
    */
   final class Connection(
-    var id:         Int,
-    var inOwner:    GraphStageLogic,
-    var outOwner:   GraphStageLogic,
-    var inHandler:  InHandler,
+    var id: Int,
+    var inOwner: GraphStageLogic,
+    var outOwner: GraphStageLogic,
+    var inHandler: InHandler,
     var outHandler: OutHandler) {
     var portState: Int = InReady
     var slot: Any = Empty
@@ -188,12 +188,12 @@ import scala.util.control.NonFatal
  */
 @InternalApi private[akka] final class GraphInterpreter(
   val materializer: Materializer,
-  val log:          LoggingAdapter,
-  val logics:       Array[GraphStageLogic], // Array of stage logics
-  val connections:  Array[GraphInterpreter.Connection],
+  val log: LoggingAdapter,
+  val logics: Array[GraphStageLogic], // Array of stage logics
+  val connections: Array[GraphInterpreter.Connection],
   val onAsyncInput: (GraphStageLogic, Any, (Any) ⇒ Unit) ⇒ Unit,
-  val fuzzingMode:  Boolean,
-  val context:      ActorRef) {
+  val fuzzingMode: Boolean,
+  val context: ActorRef) {
 
   import GraphInterpreter._
 

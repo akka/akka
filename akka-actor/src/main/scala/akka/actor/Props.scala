@@ -149,7 +149,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    */
   def dispatcher: String = deploy.dispatcher match {
     case NoDispatcherGiven ⇒ Dispatchers.DefaultDispatcherId
-    case x                 ⇒ x
+    case x ⇒ x
   }
 
   /**
@@ -158,7 +158,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    */
   def mailbox: String = deploy.mailbox match {
     case NoMailboxGiven ⇒ Mailboxes.DefaultMailboxId
-    case x              ⇒ x
+    case x ⇒ x
   }
 
   /**
@@ -172,7 +172,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    */
   def withDispatcher(d: String): Props = deploy.dispatcher match {
     case NoDispatcherGiven ⇒ copy(deploy = deploy.copy(dispatcher = d))
-    case x                 ⇒ if (x == d) this else copy(deploy = deploy.copy(dispatcher = d))
+    case x ⇒ if (x == d) this else copy(deploy = deploy.copy(dispatcher = d))
   }
 
   /**
@@ -180,7 +180,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    */
   def withMailbox(m: String): Props = deploy.mailbox match {
     case NoMailboxGiven ⇒ copy(deploy = deploy.copy(mailbox = m))
-    case x              ⇒ if (x == m) this else copy(deploy = deploy.copy(mailbox = m))
+    case x ⇒ if (x == m) this else copy(deploy = deploy.copy(mailbox = m))
   }
 
   /**

@@ -21,7 +21,7 @@ object DeathWatchSpec {
     context.watch(target)
     def receive = {
       case t: Terminated ⇒ testActor forward WrappedTerminated(t)
-      case x             ⇒ testActor forward x
+      case x ⇒ testActor forward x
     }
   }
 
@@ -123,7 +123,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
         context.watch(terminal)
         context.unwatch(terminal)
         def receive = {
-          case "ping"        ⇒ sender() ! "pong"
+          case "ping" ⇒ sender() ! "pong"
           case t: Terminated ⇒ testActor ! WrappedTerminated(t)
         }
       }).withDeploy(Deploy.local))
@@ -180,9 +180,9 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
 
         failed ! Kill
         val result = receiveWhile(3 seconds, messages = 3) {
-          case FF(Failed(_, _: ActorKilledException, _)) if lastSender eq failed       ⇒ 1
+          case FF(Failed(_, _: ActorKilledException, _)) if lastSender eq failed ⇒ 1
           case FF(Failed(_, DeathPactException(`failed`), _)) if lastSender eq brother ⇒ 2
-          case WrappedTerminated(Terminated(`brother`))                                ⇒ 3
+          case WrappedTerminated(Terminated(`brother`)) ⇒ 3
         }
         testActor.isTerminated should not be true
         result should ===(Seq(1, 2, 3))

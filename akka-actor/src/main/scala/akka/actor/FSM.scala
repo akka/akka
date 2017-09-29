@@ -90,7 +90,7 @@ object FSM {
    */
   @InternalApi
   private[akka] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int,
-                                       owner: AnyRef)(context: ActorContext)
+    owner: AnyRef)(context: ActorContext)
     extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
     private val scheduler = context.system.scheduler
@@ -168,8 +168,8 @@ object FSM {
      */
     def forMax(timeout: Duration): State[S, D] = timeout match {
       case f: FiniteDuration ⇒ copy(timeout = Some(f))
-      case Duration.Inf      ⇒ copy(timeout = SomeMaxFiniteDuration) // we map the Infinite duration to a special marker,
-      case _                 ⇒ copy(timeout = None) // that means "cancel stateTimeout". This marker is needed
+      case Duration.Inf ⇒ copy(timeout = SomeMaxFiniteDuration) // we map the Infinite duration to a special marker,
+      case _ ⇒ copy(timeout = None) // that means "cancel stateTimeout". This marker is needed
     } // so we do not have to break source/binary compat.
     // TODO: Can be removed once we can break State#timeout signature to `Option[Duration]`
 
@@ -543,7 +543,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    */
   final def nextStateData = nextState match {
     case null ⇒ throw new IllegalStateException("nextStateData is only available during onTransition")
-    case x    ⇒ x.stateData
+    case x ⇒ x.stateData
   }
 
   /*
@@ -699,7 +699,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       }
 
       currentState.timeout match {
-        case SomeMaxFiniteDuration                    ⇒ // effectively disable stateTimeout
+        case SomeMaxFiniteDuration ⇒ // effectively disable stateTimeout
         case Some(d: FiniteDuration) if d.length >= 0 ⇒ timeoutFuture = scheduleTimeout(d)
         case _ ⇒
           val timeout = stateTimeouts(currentState.stateName)
@@ -746,8 +746,8 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    */
   protected def logTermination(reason: Reason): Unit = reason match {
     case Failure(ex: Throwable) ⇒ log.error(ex, "terminating due to Failure")
-    case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
-    case _                      ⇒
+    case Failure(msg: AnyRef) ⇒ log.error(msg.toString)
+    case _ ⇒
   }
 }
 
@@ -783,10 +783,10 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
   private[akka] abstract override def processEvent(event: Event, source: AnyRef): Unit = {
     if (debugEvent) {
       val srcstr = source match {
-        case s: String               ⇒ s
+        case s: String ⇒ s
         case Timer(name, _, _, _, _) ⇒ "timer " + name
-        case a: ActorRef             ⇒ a.toString
-        case _                       ⇒ "unknown"
+        case a: ActorRef ⇒ a.toString
+        case _ ⇒ "unknown"
       }
       log.debug("processing {} from {} in state {}", event, srcstr, stateName)
     }

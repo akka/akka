@@ -39,7 +39,7 @@ trait Conductor { this: TestConductorExt ⇒
   private var _controller: ActorRef = _
   private def controller: ActorRef = _controller match {
     case null ⇒ throw new IllegalStateException("TestConductorServer was not started")
-    case x    ⇒ x
+    case x ⇒ x
   }
 
   /**
@@ -401,12 +401,12 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
    * BarrierTimeouts in the players).
    */
   override def supervisorStrategy = OneForOneStrategy() {
-    case BarrierTimeout(data)             ⇒ failBarrier(data)
-    case FailedBarrier(data)              ⇒ failBarrier(data)
-    case BarrierEmpty(data, msg)          ⇒ SupervisorStrategy.Resume
+    case BarrierTimeout(data) ⇒ failBarrier(data)
+    case FailedBarrier(data) ⇒ failBarrier(data)
+    case BarrierEmpty(data, msg) ⇒ SupervisorStrategy.Resume
     case WrongBarrier(name, client, data) ⇒ { client ! ToClient(BarrierResult(name, false)); failBarrier(data) }
-    case ClientLost(data, node)           ⇒ failBarrier(data)
-    case DuplicateNode(data, node)        ⇒ failBarrier(data)
+    case ClientLost(data, node) ⇒ failBarrier(data)
+    case DuplicateNode(data, node) ⇒ failBarrier(data)
   }
 
   def failBarrier(data: Data): SupervisorStrategy.Directive = {
@@ -452,7 +452,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     case op: ServerOp ⇒
       op match {
         case _: EnterBarrier ⇒ barrier forward op
-        case _: FailBarrier  ⇒ barrier forward op
+        case _: FailBarrier ⇒ barrier forward op
         case GetAddress(node) ⇒
           if (nodes contains node) sender() ! ToClient(AddressReply(node, nodes(node).addr))
           else addrInterest += node → ((addrInterest get node getOrElse Set()) + sender())
@@ -473,7 +473,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case Remove(node) ⇒
           barrier ! BarrierCoordinator.RemoveClient(node)
       }
-    case GetNodes    ⇒ sender() ! nodes.keys
+    case GetNodes ⇒ sender() ! nodes.keys
     case GetSockAddr ⇒ sender() ! connection.getLocalAddress
   }
 
@@ -548,7 +548,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
         stay using d.copy(clients = clients.filterNot(_.name == name))
       else {
         (clients find (_.name == name)) match {
-          case None    ⇒ stay
+          case None ⇒ stay
           case Some(c) ⇒ throw ClientLost(d.copy(clients = clients - c, arrived = arrived filterNot (_ == c.fsm)), name)
         }
       }

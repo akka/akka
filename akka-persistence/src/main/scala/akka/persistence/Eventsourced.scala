@@ -76,8 +76,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
   private val unstashFilterPredicate: Any ⇒ Boolean = {
     case _: WriteMessageSuccess ⇒ false
-    case _: ReplayedMessage     ⇒ false
-    case _                      ⇒ true
+    case _: ReplayedMessage ⇒ false
+    case _ ⇒ true
   }
 
   /**

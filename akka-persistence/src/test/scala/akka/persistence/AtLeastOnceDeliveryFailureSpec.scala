@@ -153,7 +153,7 @@ object AtLeastOnceDeliveryFailureSpec {
       context.watch(context.actorOf(Props(classOf[ChaosSender], destination, probe), "sender"))
 
     def receive = {
-      case Start  ⇒ 1 to numMessages foreach (snd ! _)
+      case Start ⇒ 1 to numMessages foreach (snd ! _)
       case Ack(i) ⇒ acks += i
       case Terminated(_) ⇒
         // snd will be stopped if recovery or persist fails

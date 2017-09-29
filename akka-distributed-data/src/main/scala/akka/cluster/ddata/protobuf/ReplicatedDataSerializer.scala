@@ -42,15 +42,15 @@ private object ReplicatedDataSerializer {
     def getKey(entry: A): Any
     final def compare(x: A, y: A): Int = compareKeys(getKey(x), getKey(y))
     private final def compareKeys(t1: Any, t2: Any): Int = (t1, t2) match {
-      case (k1: String, k2: String)             ⇒ k1.compareTo(k2)
-      case (k1: String, k2)                     ⇒ -1
-      case (k1, k2: String)                     ⇒ 1
-      case (k1: Int, k2: Int)                   ⇒ k1.compareTo(k2)
-      case (k1: Int, k2)                        ⇒ -1
-      case (k1, k2: Int)                        ⇒ 1
-      case (k1: Long, k2: Long)                 ⇒ k1.compareTo(k2)
-      case (k1: Long, k2)                       ⇒ -1
-      case (k1, k2: Long)                       ⇒ 1
+      case (k1: String, k2: String) ⇒ k1.compareTo(k2)
+      case (k1: String, k2) ⇒ -1
+      case (k1, k2: String) ⇒ 1
+      case (k1: Int, k2: Int) ⇒ k1.compareTo(k2)
+      case (k1: Int, k2) ⇒ -1
+      case (k1, k2: Int) ⇒ 1
+      case (k1: Long, k2: Long) ⇒ k1.compareTo(k2)
+      case (k1: Long, k2) ⇒ -1
+      case (k1, k2: Long) ⇒ 1
       case (k1: OtherMessage, k2: OtherMessage) ⇒ OtherMessageComparator.compare(k1, k2)
     }
   }
@@ -244,67 +244,67 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     ORMultiMapKeyManifest → (bytes ⇒ ORMultiMapKey(keyIdFromBinary(bytes))))
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: ORSet[_]                     ⇒ ORSetManifest
-    case _: ORSet.AddDeltaOp[_]          ⇒ ORSetAddManifest
-    case _: ORSet.RemoveDeltaOp[_]       ⇒ ORSetRemoveManifest
-    case _: GSet[_]                      ⇒ GSetManifest
-    case _: GCounter                     ⇒ GCounterManifest
-    case _: PNCounter                    ⇒ PNCounterManifest
-    case _: Flag                         ⇒ FlagManifest
-    case _: LWWRegister[_]               ⇒ LWWRegisterManifest
-    case _: ORMap[_, _]                  ⇒ ORMapManifest
-    case _: ORMap.PutDeltaOp[_, _]       ⇒ ORMapPutManifest
-    case _: ORMap.RemoveDeltaOp[_, _]    ⇒ ORMapRemoveManifest
+    case _: ORSet[_] ⇒ ORSetManifest
+    case _: ORSet.AddDeltaOp[_] ⇒ ORSetAddManifest
+    case _: ORSet.RemoveDeltaOp[_] ⇒ ORSetRemoveManifest
+    case _: GSet[_] ⇒ GSetManifest
+    case _: GCounter ⇒ GCounterManifest
+    case _: PNCounter ⇒ PNCounterManifest
+    case _: Flag ⇒ FlagManifest
+    case _: LWWRegister[_] ⇒ LWWRegisterManifest
+    case _: ORMap[_, _] ⇒ ORMapManifest
+    case _: ORMap.PutDeltaOp[_, _] ⇒ ORMapPutManifest
+    case _: ORMap.RemoveDeltaOp[_, _] ⇒ ORMapRemoveManifest
     case _: ORMap.RemoveKeyDeltaOp[_, _] ⇒ ORMapRemoveKeyManifest
-    case _: ORMap.UpdateDeltaOp[_, _]    ⇒ ORMapUpdateManifest
-    case _: LWWMap[_, _]                 ⇒ LWWMapManifest
-    case _: PNCounterMap[_]              ⇒ PNCounterMapManifest
-    case _: ORMultiMap[_, _]             ⇒ ORMultiMapManifest
-    case DeletedData                     ⇒ DeletedDataManifest
-    case _: VersionVector                ⇒ VersionVectorManifest
+    case _: ORMap.UpdateDeltaOp[_, _] ⇒ ORMapUpdateManifest
+    case _: LWWMap[_, _] ⇒ LWWMapManifest
+    case _: PNCounterMap[_] ⇒ PNCounterMapManifest
+    case _: ORMultiMap[_, _] ⇒ ORMultiMapManifest
+    case DeletedData ⇒ DeletedDataManifest
+    case _: VersionVector ⇒ VersionVectorManifest
 
-    case _: ORSetKey[_]                  ⇒ ORSetKeyManifest
-    case _: GSetKey[_]                   ⇒ GSetKeyManifest
-    case _: GCounterKey                  ⇒ GCounterKeyManifest
-    case _: PNCounterKey                 ⇒ PNCounterKeyManifest
-    case _: FlagKey                      ⇒ FlagKeyManifest
-    case _: LWWRegisterKey[_]            ⇒ LWWRegisterKeyManifest
-    case _: ORMapKey[_, _]               ⇒ ORMapKeyManifest
-    case _: LWWMapKey[_, _]              ⇒ LWWMapKeyManifest
-    case _: PNCounterMapKey[_]           ⇒ PNCounterMapKeyManifest
-    case _: ORMultiMapKey[_, _]          ⇒ ORMultiMapKeyManifest
+    case _: ORSetKey[_] ⇒ ORSetKeyManifest
+    case _: GSetKey[_] ⇒ GSetKeyManifest
+    case _: GCounterKey ⇒ GCounterKeyManifest
+    case _: PNCounterKey ⇒ PNCounterKeyManifest
+    case _: FlagKey ⇒ FlagKeyManifest
+    case _: LWWRegisterKey[_] ⇒ LWWRegisterKeyManifest
+    case _: ORMapKey[_, _] ⇒ ORMapKeyManifest
+    case _: LWWMapKey[_, _] ⇒ LWWMapKeyManifest
+    case _: PNCounterMapKey[_] ⇒ PNCounterMapKeyManifest
+    case _: ORMultiMapKey[_, _] ⇒ ORMultiMapKeyManifest
 
-    case _: ORSet.DeltaGroup[_]          ⇒ ORSetDeltaGroupManifest
-    case _: ORMap.DeltaGroup[_, _]       ⇒ ORMapDeltaGroupManifest
-    case _: ORSet.FullStateDeltaOp[_]    ⇒ ORSetFullManifest
+    case _: ORSet.DeltaGroup[_] ⇒ ORSetDeltaGroupManifest
+    case _: ORMap.DeltaGroup[_, _] ⇒ ORMapDeltaGroupManifest
+    case _: ORSet.FullStateDeltaOp[_] ⇒ ORSetFullManifest
 
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: ORSet[_]                     ⇒ compress(orsetToProto(m))
-    case m: ORSet.AddDeltaOp[_]          ⇒ orsetToProto(m.underlying).toByteArray
-    case m: ORSet.RemoveDeltaOp[_]       ⇒ orsetToProto(m.underlying).toByteArray
-    case m: GSet[_]                      ⇒ gsetToProto(m).toByteArray
-    case m: GCounter                     ⇒ gcounterToProto(m).toByteArray
-    case m: PNCounter                    ⇒ pncounterToProto(m).toByteArray
-    case m: Flag                         ⇒ flagToProto(m).toByteArray
-    case m: LWWRegister[_]               ⇒ lwwRegisterToProto(m).toByteArray
-    case m: ORMap[_, _]                  ⇒ compress(ormapToProto(m))
-    case m: ORMap.PutDeltaOp[_, _]       ⇒ ormapPutToProto(m).toByteArray
-    case m: ORMap.RemoveDeltaOp[_, _]    ⇒ ormapRemoveToProto(m).toByteArray
+    case m: ORSet[_] ⇒ compress(orsetToProto(m))
+    case m: ORSet.AddDeltaOp[_] ⇒ orsetToProto(m.underlying).toByteArray
+    case m: ORSet.RemoveDeltaOp[_] ⇒ orsetToProto(m.underlying).toByteArray
+    case m: GSet[_] ⇒ gsetToProto(m).toByteArray
+    case m: GCounter ⇒ gcounterToProto(m).toByteArray
+    case m: PNCounter ⇒ pncounterToProto(m).toByteArray
+    case m: Flag ⇒ flagToProto(m).toByteArray
+    case m: LWWRegister[_] ⇒ lwwRegisterToProto(m).toByteArray
+    case m: ORMap[_, _] ⇒ compress(ormapToProto(m))
+    case m: ORMap.PutDeltaOp[_, _] ⇒ ormapPutToProto(m).toByteArray
+    case m: ORMap.RemoveDeltaOp[_, _] ⇒ ormapRemoveToProto(m).toByteArray
     case m: ORMap.RemoveKeyDeltaOp[_, _] ⇒ ormapRemoveKeyToProto(m).toByteArray
-    case m: ORMap.UpdateDeltaOp[_, _]    ⇒ ormapUpdateToProto(m).toByteArray
-    case m: LWWMap[_, _]                 ⇒ compress(lwwmapToProto(m))
-    case m: PNCounterMap[_]              ⇒ compress(pncountermapToProto(m))
-    case m: ORMultiMap[_, _]             ⇒ compress(multimapToProto(m))
-    case DeletedData                     ⇒ dm.Empty.getDefaultInstance.toByteArray
-    case m: VersionVector                ⇒ versionVectorToProto(m).toByteArray
-    case Key(id)                         ⇒ keyIdToBinary(id)
-    case m: ORSet.DeltaGroup[_]          ⇒ orsetDeltaGroupToProto(m).toByteArray
-    case m: ORMap.DeltaGroup[_, _]       ⇒ ormapDeltaGroupToProto(m).toByteArray
-    case m: ORSet.FullStateDeltaOp[_]    ⇒ orsetToProto(m.underlying).toByteArray
+    case m: ORMap.UpdateDeltaOp[_, _] ⇒ ormapUpdateToProto(m).toByteArray
+    case m: LWWMap[_, _] ⇒ compress(lwwmapToProto(m))
+    case m: PNCounterMap[_] ⇒ compress(pncountermapToProto(m))
+    case m: ORMultiMap[_, _] ⇒ compress(multimapToProto(m))
+    case DeletedData ⇒ dm.Empty.getDefaultInstance.toByteArray
+    case m: VersionVector ⇒ versionVectorToProto(m).toByteArray
+    case Key(id) ⇒ keyIdToBinary(id)
+    case m: ORSet.DeltaGroup[_] ⇒ orsetDeltaGroupToProto(m).toByteArray
+    case m: ORMap.DeltaGroup[_, _] ⇒ ormapDeltaGroupToProto(m).toByteArray
+    case m: ORSet.FullStateDeltaOp[_] ⇒ orsetToProto(m.underlying).toByteArray
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -325,9 +325,9 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     val otherElements = new ArrayList[dm.OtherMessage]
     gset.elements.foreach {
       case s: String ⇒ stringElements.add(s)
-      case i: Int    ⇒ intElements.add(i)
-      case l: Long   ⇒ longElements.add(l)
-      case other     ⇒ otherElements.add(otherMessageToProto(other))
+      case i: Int ⇒ intElements.add(i)
+      case l: Long ⇒ longElements.add(l)
+      case other ⇒ otherElements.add(otherMessageToProto(other))
     }
     if (!stringElements.isEmpty) {
       Collections.sort(stringElements)
@@ -370,8 +370,8 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     var otherElementsMap = Map.empty[dm.OtherMessage, Any]
     orset.elementsMap.keysIterator.foreach {
       case s: String ⇒ stringElements.add(s)
-      case i: Int    ⇒ intElements.add(i)
-      case l: Long   ⇒ longElements.add(l)
+      case i: Int ⇒ intElements.add(i)
+      case l: Long ⇒ longElements.add(l)
       case other ⇒
         val enclosedMsg = otherMessageToProto(other)
         otherElements.add(enclosedMsg)
@@ -385,7 +385,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
       while (iter.hasNext) {
         val element = iter.next() match {
           case enclosedMsg: dm.OtherMessage ⇒ otherElementsMap(enclosedMsg)
-          case e                            ⇒ e
+          case e ⇒ e
         }
         b.addDots(versionVectorToProto(orset.elementsMap(element)))
       }
@@ -542,9 +542,9 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     val protoEntries = new TreeSet[PEntry](comparator)
     input.foreach {
       case (key: String, value) ⇒ protoEntries.add(eh.setStringKey(createBuilder(), key, valueConverter(value)))
-      case (key: Int, value)    ⇒ protoEntries.add(eh.setIntKey(createBuilder(), key, valueConverter(value)))
-      case (key: Long, value)   ⇒ protoEntries.add(eh.setLongKey(createBuilder(), key, valueConverter(value)))
-      case (key, value)         ⇒ protoEntries.add(eh.setOtherKey(createBuilder(), otherMessageToProto(key), valueConverter(value)))
+      case (key: Int, value) ⇒ protoEntries.add(eh.setIntKey(createBuilder(), key, valueConverter(value)))
+      case (key: Long, value) ⇒ protoEntries.add(eh.setLongKey(createBuilder(), key, valueConverter(value)))
+      case (key, value) ⇒ protoEntries.add(eh.setOtherKey(createBuilder(), otherMessageToProto(key), valueConverter(value)))
     }
     protoEntries
   }
@@ -696,9 +696,9 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
           .setZeroTag(zt)
         m.foreach {
           case (key: String, value) ⇒ builder.addEntryData(rd.ORMapDeltaGroup.MapEntry.newBuilder().setStringKey(key).setValue(otherMessageToProto(value)).build())
-          case (key: Int, value)    ⇒ builder.addEntryData(rd.ORMapDeltaGroup.MapEntry.newBuilder().setIntKey(key).setValue(otherMessageToProto(value)).build())
-          case (key: Long, value)   ⇒ builder.addEntryData(rd.ORMapDeltaGroup.MapEntry.newBuilder().setLongKey(key).setValue(otherMessageToProto(value)).build())
-          case (key, value)         ⇒ builder.addEntryData(rd.ORMapDeltaGroup.MapEntry.newBuilder().setOtherKey(otherMessageToProto(key)).setValue(otherMessageToProto(value)).build())
+          case (key: Int, value) ⇒ builder.addEntryData(rd.ORMapDeltaGroup.MapEntry.newBuilder().setIntKey(key).setValue(otherMessageToProto(value)).build())
+          case (key: Long, value) ⇒ builder.addEntryData(rd.ORMapDeltaGroup.MapEntry.newBuilder().setLongKey(key).setValue(otherMessageToProto(value)).build())
+          case (key, value) ⇒ builder.addEntryData(rd.ORMapDeltaGroup.MapEntry.newBuilder().setOtherKey(otherMessageToProto(key)).setValue(otherMessageToProto(value)).build())
         }
         builder
       }
@@ -708,9 +708,9 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
       val entryDataBuilder = rd.ORMapDeltaGroup.MapEntry.newBuilder()
       k match {
         case key: String ⇒ entryDataBuilder.setStringKey(key)
-        case key: Int    ⇒ entryDataBuilder.setIntKey(key)
-        case key: Long   ⇒ entryDataBuilder.setLongKey(key)
-        case key         ⇒ entryDataBuilder.setOtherKey(otherMessageToProto(key))
+        case key: Int ⇒ entryDataBuilder.setIntKey(key)
+        case key: Long ⇒ entryDataBuilder.setLongKey(key)
+        case key ⇒ entryDataBuilder.setOtherKey(otherMessageToProto(key))
       }
       val builder = rd.ORMapDeltaGroup.Entry.newBuilder()
         .setOperation(opType)

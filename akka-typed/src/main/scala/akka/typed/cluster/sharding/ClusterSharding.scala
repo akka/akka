@@ -64,7 +64,7 @@ object ShardingMessageExtractor {
    */
   def noEnvelope[A](
     maxNumberOfShards: Int,
-    extractEntityId:   A ⇒ String): ShardingMessageExtractor[A, A] =
+    extractEntityId: A ⇒ String): ShardingMessageExtractor[A, A] =
     new HashCodeNoEnvelopeMessageExtractor[A](maxNumberOfShards) {
       // TODO catch MatchError here and return null for those to yield an "unhandled" when partial functions are used?
       def entityId(message: A) = extractEntityId(message)
@@ -194,31 +194,31 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
   private val untypedSharding = akka.cluster.sharding.ClusterSharding(untypedSystem)
 
   override def spawn[A](
-    behavior:           Behavior[A],
-    entityProps:        Props,
-    typeKey:            EntityTypeKey[A],
-    settings:           ClusterShardingSettings,
-    maxNumberOfShards:  Int,
+    behavior: Behavior[A],
+    entityProps: Props,
+    typeKey: EntityTypeKey[A],
+    settings: ClusterShardingSettings,
+    maxNumberOfShards: Int,
     handOffStopMessage: A): ActorRef[ShardingEnvelope[A]] = {
     val extractor = new HashCodeMessageExtractor[A](maxNumberOfShards)
     spawn(behavior, entityProps, typeKey, settings, extractor, defaultShardAllocationStrategy(settings), handOffStopMessage)
   }
 
   override def spawn[E, A](
-    behavior:           Behavior[A],
-    entityProps:        Props,
-    typeKey:            EntityTypeKey[A],
-    settings:           ClusterShardingSettings,
-    messageExtractor:   ShardingMessageExtractor[E, A],
+    behavior: Behavior[A],
+    entityProps: Props,
+    typeKey: EntityTypeKey[A],
+    settings: ClusterShardingSettings,
+    messageExtractor: ShardingMessageExtractor[E, A],
     handOffStopMessage: A): ActorRef[E] =
     spawn(behavior, entityProps, typeKey, settings, messageExtractor, defaultShardAllocationStrategy(settings), handOffStopMessage)
 
   override def spawn[E, A](
-    behavior:           Behavior[A],
-    entityProps:        Props,
-    typeKey:            EntityTypeKey[A],
-    settings:           ClusterShardingSettings,
-    extractor:          ShardingMessageExtractor[E, A],
+    behavior: Behavior[A],
+    entityProps: Props,
+    typeKey: EntityTypeKey[A],
+    settings: ClusterShardingSettings,
+    extractor: ShardingMessageExtractor[E, A],
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: A): ActorRef[E] = {
 
@@ -292,11 +292,11 @@ sealed trait ClusterSharding extends Extension {
   // TODO: FYI, I think it would be very good to have rule that "behavior, otherstuff"
   // TODO: or "behavior, props, otherstuff" be the consistent style we want to promote in parameter ordering, WDYT?
   def spawn[A](
-    behavior:           Behavior[A],
-    props:              Props,
-    typeKey:            EntityTypeKey[A],
-    settings:           ClusterShardingSettings,
-    maxNumberOfShards:  Int,
+    behavior: Behavior[A],
+    props: Props,
+    typeKey: EntityTypeKey[A],
+    settings: ClusterShardingSettings,
+    maxNumberOfShards: Int,
     handOffStopMessage: A): ActorRef[ShardingEnvelope[A]]
 
   /**
@@ -311,11 +311,11 @@ sealed trait ClusterSharding extends Extension {
    * @tparam A The type of command the entity accepts
    */
   def spawn[E, A](
-    behavior:           Behavior[A],
-    entityProps:        Props,
-    typeKey:            EntityTypeKey[A],
-    settings:           ClusterShardingSettings,
-    messageExtractor:   ShardingMessageExtractor[E, A],
+    behavior: Behavior[A],
+    entityProps: Props,
+    typeKey: EntityTypeKey[A],
+    settings: ClusterShardingSettings,
+    messageExtractor: ShardingMessageExtractor[E, A],
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: A): ActorRef[E]
 
@@ -330,11 +330,11 @@ sealed trait ClusterSharding extends Extension {
    * @tparam A The type of command the entity accepts
    */
   def spawn[E, A](
-    behavior:           Behavior[A],
-    entityProps:        Props,
-    typeKey:            EntityTypeKey[A],
-    settings:           ClusterShardingSettings,
-    messageExtractor:   ShardingMessageExtractor[E, A],
+    behavior: Behavior[A],
+    entityProps: Props,
+    typeKey: EntityTypeKey[A],
+    settings: ClusterShardingSettings,
+    messageExtractor: ShardingMessageExtractor[E, A],
     handOffStopMessage: A): ActorRef[E]
 
   /**

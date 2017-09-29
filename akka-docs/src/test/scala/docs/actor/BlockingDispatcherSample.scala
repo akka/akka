@@ -93,8 +93,7 @@ object SeparateDispatcherSample {
         throughput = 1
       }
       //#my-blocking-dispatcher-config
-      """
-    )
+      """)
     val system = ActorSystem("SeparateDispatcherSample", config)
 
     try {

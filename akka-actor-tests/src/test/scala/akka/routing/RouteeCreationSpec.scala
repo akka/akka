@@ -24,7 +24,7 @@ class RouteeCreationSpec extends AkkaSpec {
       for (i ← 1 to N) {
         expectMsgType[ActorIdentity] match {
           case ActorIdentity(_, Some(_)) ⇒ // fine
-          case x                         ⇒ fail(s"routee $i was not found $x")
+          case x ⇒ fail(s"routee $i was not found $x")
         }
       }
     }

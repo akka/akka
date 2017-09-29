@@ -59,8 +59,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
 
     "resume when Map throws" in new OneBoundedSetupWithDecider[Int](
       Supervision.resumingDecider,
-      Map((x: Int) ⇒ if (x == 0) throw TE else x)
-    ) {
+      Map((x: Int) ⇒ if (x == 0) throw TE else x)) {
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(2)
@@ -88,8 +87,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       Supervision.resumingDecider,
       Map((x: Int) ⇒ x + 1),
       Map((x: Int) ⇒ if (x == 0) throw TE else x + 10),
-      Map((x: Int) ⇒ x + 100)
-    ) {
+      Map((x: Int) ⇒ x + 100)) {
 
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))

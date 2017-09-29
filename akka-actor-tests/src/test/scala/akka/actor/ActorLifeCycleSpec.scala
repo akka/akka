@@ -131,14 +131,14 @@ class ActorLifeCycleSpec extends AkkaSpec("akka.actor.serialize-messages=off") w
       val a = system.actorOf(Props(new Actor {
         def receive = {
           case Become(beh) ⇒ { context.become(beh(context), discardOld = false); sender() ! "ok" }
-          case x           ⇒ sender() ! 42
+          case x ⇒ sender() ! 42
         }
       }))
       a ! "hello"
       expectMsg(42)
       a ! Become(ctx ⇒ {
         case "fail" ⇒ throw new RuntimeException("buh")
-        case x      ⇒ ctx.sender() ! 43
+        case x ⇒ ctx.sender() ! 43
       })
       expectMsg("ok")
       a ! "hello"

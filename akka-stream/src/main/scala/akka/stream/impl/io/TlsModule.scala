@@ -17,12 +17,12 @@ import scala.util.Try
  * INTERNAL API.
  */
 @InternalApi private[stream] final case class TlsModule(plainIn: Inlet[SslTlsOutbound], plainOut: Outlet[SslTlsInbound],
-                                                        cipherIn: Inlet[ByteString], cipherOut: Outlet[ByteString],
-                                                        shape:           BidiShape[SslTlsOutbound, ByteString, ByteString, SslTlsInbound],
-                                                        attributes:      Attributes,
-                                                        createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-                                                        verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-                                                        closing:         TLSClosing)
+  cipherIn: Inlet[ByteString], cipherOut: Outlet[ByteString],
+  shape: BidiShape[SslTlsOutbound, ByteString, ByteString, SslTlsInbound],
+  attributes: Attributes,
+  createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+  verifySession: (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+  closing: TLSClosing)
   extends AtomicModule[BidiShape[SslTlsOutbound, ByteString, ByteString, SslTlsInbound], NotUsed] {
 
   override def withAttributes(att: Attributes): TlsModule = copy(attributes = att)
@@ -37,10 +37,10 @@ import scala.util.Try
  */
 @InternalApi private[stream] object TlsModule {
   def apply(
-    attributes:      Attributes,
+    attributes: Attributes,
     createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-    verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-    closing:         TLSClosing): TlsModule = {
+    verifySession: (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+    closing: TLSClosing): TlsModule = {
     val name = attributes.nameOrDefault(s"StreamTls()")
     val cipherIn = Inlet[ByteString](s"$name.cipherIn")
     val cipherOut = Outlet[ByteString](s"$name.cipherOut")

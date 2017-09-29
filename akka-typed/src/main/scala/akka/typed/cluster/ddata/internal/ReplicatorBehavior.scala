@@ -69,14 +69,14 @@ import akka.typed.Terminated
             case cmd: JReplicator.Get[d] ⇒
               implicit val timeout = Timeout(cmd.consistency.timeout match {
                 case Duration.Zero ⇒ localAskTimeout
-                case t             ⇒ t + additionalAskTimeout
+                case t ⇒ t + additionalAskTimeout
               })
               import ctx.executionContext
               val reply =
                 (untypedReplicator ? dd.Replicator.Get(cmd.key, cmd.consistency.toUntyped, cmd.request.asScala))
                   .mapTo[dd.Replicator.GetResponse[d]].map {
                     case rsp: dd.Replicator.GetSuccess[d] ⇒ JReplicator.GetSuccess(rsp.key, rsp.request.asJava)(rsp.dataValue)
-                    case rsp: dd.Replicator.NotFound[d]   ⇒ JReplicator.NotFound(rsp.key, rsp.request.asJava)
+                    case rsp: dd.Replicator.NotFound[d] ⇒ JReplicator.NotFound(rsp.key, rsp.request.asJava)
                     case rsp: dd.Replicator.GetFailure[d] ⇒ JReplicator.GetFailure(rsp.key, rsp.request.asJava)
                   }.recover {
                     case _ ⇒ JReplicator.GetFailure(cmd.key, cmd.request)
@@ -93,7 +93,7 @@ import akka.typed.Terminated
             case cmd: JReplicator.Update[d] ⇒
               implicit val timeout = Timeout(cmd.writeConsistency.timeout match {
                 case Duration.Zero ⇒ localAskTimeout
-                case t             ⇒ t + additionalAskTimeout
+                case t ⇒ t + additionalAskTimeout
               })
               import ctx.executionContext
               val reply =
@@ -102,7 +102,7 @@ import akka.typed.Terminated
                     case rsp: dd.Replicator.UpdateSuccess[d] ⇒ JReplicator.UpdateSuccess(rsp.key, rsp.request.asJava)
                     case rsp: dd.Replicator.UpdateTimeout[d] ⇒ JReplicator.UpdateTimeout(rsp.key, rsp.request.asJava)
                     case rsp: dd.Replicator.ModifyFailure[d] ⇒ JReplicator.ModifyFailure(rsp.key, rsp.errorMessage, rsp.cause, rsp.request.asJava)
-                    case rsp: dd.Replicator.StoreFailure[d]  ⇒ JReplicator.StoreFailure(rsp.key, rsp.request.asJava)
+                    case rsp: dd.Replicator.StoreFailure[d] ⇒ JReplicator.StoreFailure(rsp.key, rsp.request.asJava)
                   }.recover {
                     case _ ⇒ JReplicator.UpdateTimeout(cmd.key, cmd.request)
                   }
@@ -148,16 +148,16 @@ import akka.typed.Terminated
             case cmd: JReplicator.Delete[d] ⇒
               implicit val timeout = Timeout(cmd.consistency.timeout match {
                 case Duration.Zero ⇒ localAskTimeout
-                case t             ⇒ t + additionalAskTimeout
+                case t ⇒ t + additionalAskTimeout
               })
               import ctx.executionContext
               val reply =
                 (untypedReplicator ? dd.Replicator.Delete(cmd.key, cmd.consistency.toUntyped, cmd.request.asScala))
                   .mapTo[dd.Replicator.DeleteResponse[d]].map {
-                    case rsp: dd.Replicator.DeleteSuccess[d]            ⇒ JReplicator.DeleteSuccess(rsp.key, rsp.request.asJava)
+                    case rsp: dd.Replicator.DeleteSuccess[d] ⇒ JReplicator.DeleteSuccess(rsp.key, rsp.request.asJava)
                     case rsp: dd.Replicator.ReplicationDeleteFailure[d] ⇒ JReplicator.ReplicationDeleteFailure(rsp.key, rsp.request.asJava)
-                    case rsp: dd.Replicator.DataDeleted[d]              ⇒ JReplicator.DataDeleted(rsp.key, rsp.request.asJava)
-                    case rsp: dd.Replicator.StoreFailure[d]             ⇒ JReplicator.StoreFailure(rsp.key, rsp.request.asJava)
+                    case rsp: dd.Replicator.DataDeleted[d] ⇒ JReplicator.DataDeleted(rsp.key, rsp.request.asJava)
+                    case rsp: dd.Replicator.StoreFailure[d] ⇒ JReplicator.StoreFailure(rsp.key, rsp.request.asJava)
                   }.recover {
                     case _ ⇒ JReplicator.ReplicationDeleteFailure(cmd.key, cmd.request)
                   }

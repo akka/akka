@@ -56,25 +56,24 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     classOf[ExitingConfirmed] → (bytes ⇒ InternalClusterAction.ExitingConfirmed(uniqueAddressFromBinary(bytes))),
     classOf[GossipStatus] → gossipStatusFromBinary,
     classOf[GossipEnvelope] → gossipEnvelopeFromBinary,
-    classOf[ClusterRouterPool] → clusterRouterPoolFromBinary
-  )
+    classOf[ClusterRouterPool] → clusterRouterPoolFromBinary)
 
   def includeManifest: Boolean = true
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case ClusterHeartbeatSender.Heartbeat(from)       ⇒ addressToProtoByteArray(from)
-    case ClusterHeartbeatSender.HeartbeatRsp(from)    ⇒ uniqueAddressToProtoByteArray(from)
-    case m: GossipEnvelope                            ⇒ gossipEnvelopeToProto(m).toByteArray
-    case m: GossipStatus                              ⇒ gossipStatusToProto(m).toByteArray
-    case InternalClusterAction.Join(node, roles)      ⇒ joinToProto(node, roles).toByteArray
-    case InternalClusterAction.Welcome(from, gossip)  ⇒ compress(welcomeToProto(from, gossip))
-    case ClusterUserAction.Leave(address)             ⇒ addressToProtoByteArray(address)
-    case ClusterUserAction.Down(address)              ⇒ addressToProtoByteArray(address)
-    case InternalClusterAction.InitJoin               ⇒ cm.Empty.getDefaultInstance.toByteArray
-    case InternalClusterAction.InitJoinAck(address)   ⇒ addressToProtoByteArray(address)
-    case InternalClusterAction.InitJoinNack(address)  ⇒ addressToProtoByteArray(address)
+    case ClusterHeartbeatSender.Heartbeat(from) ⇒ addressToProtoByteArray(from)
+    case ClusterHeartbeatSender.HeartbeatRsp(from) ⇒ uniqueAddressToProtoByteArray(from)
+    case m: GossipEnvelope ⇒ gossipEnvelopeToProto(m).toByteArray
+    case m: GossipStatus ⇒ gossipStatusToProto(m).toByteArray
+    case InternalClusterAction.Join(node, roles) ⇒ joinToProto(node, roles).toByteArray
+    case InternalClusterAction.Welcome(from, gossip) ⇒ compress(welcomeToProto(from, gossip))
+    case ClusterUserAction.Leave(address) ⇒ addressToProtoByteArray(address)
+    case ClusterUserAction.Down(address) ⇒ addressToProtoByteArray(address)
+    case InternalClusterAction.InitJoin ⇒ cm.Empty.getDefaultInstance.toByteArray
+    case InternalClusterAction.InitJoinAck(address) ⇒ addressToProtoByteArray(address)
+    case InternalClusterAction.InitJoinNack(address) ⇒ addressToProtoByteArray(address)
     case InternalClusterAction.ExitingConfirmed(node) ⇒ uniqueAddressToProtoByteArray(node)
-    case rp: ClusterRouterPool                        ⇒ clusterRouterPoolToProtoByteArray(rp)
+    case rp: ClusterRouterPool ⇒ clusterRouterPoolToProtoByteArray(rp)
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass}")
   }
@@ -108,7 +107,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     case Some(c) ⇒
       fromBinaryMap.get(c.asInstanceOf[Class[ClusterMessage]]) match {
         case Some(f) ⇒ f(bytes)
-        case None    ⇒ throw new NotSerializableException(s"Unimplemented deserialization of message class $c in ClusterSerializer")
+        case None ⇒ throw new NotSerializableException(s"Unimplemented deserialization of message class $c in ClusterSerializer")
       }
     case _ ⇒ throw new IllegalArgumentException("Need a cluster message class to be able to deserialize bytes in ClusterSerializer")
   }
@@ -155,8 +154,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       case _ ⇒
         builder.setManifest(
           if (serializer.includeManifest) pool.getClass.getName
-          else ""
-        )
+          else "")
     }
     builder.build()
   }
@@ -236,7 +234,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
 
   private def mapWithErrorMessage[T](map: Map[T, Int], value: T, unknown: String): Int = map.get(value) match {
     case Some(x) ⇒ x
-    case _       ⇒ throw new IllegalArgumentException(s"Unknown $unknown [$value] in cluster message")
+    case _ ⇒ throw new IllegalArgumentException(s"Unknown $unknown [$value] in cluster message")
   }
 
   private def joinToProto(node: UniqueAddress, roles: Set[String]): cm.Join =
@@ -402,8 +400,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
 
     ClusterRouterPool(
       poolFromProto(crp.getPool),
-      clusterRouterPoolSettingsFromProto(crp.getSettings)
-    )
+      clusterRouterPoolSettingsFromProto(crp.getSettings))
   }
 
   private def poolFromProto(pool: cm.Pool): Pool = {
@@ -416,8 +413,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       totalInstances = crps.getTotalInstances,
       maxInstancesPerNode = crps.getMaxInstancesPerNode,
       allowLocalRoutees = crps.getAllowLocalRoutees,
-      useRoles = if (crps.hasUseRole) { crps.getUseRolesList.asScala.toSet + crps.getUseRole } else { crps.getUseRolesList.asScala.toSet }
-    )
+      useRoles = if (crps.hasUseRole) { crps.getUseRolesList.asScala.toSet + crps.getUseRole } else { crps.getUseRolesList.asScala.toSet })
   }
 
 }

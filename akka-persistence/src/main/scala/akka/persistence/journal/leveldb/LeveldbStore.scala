@@ -170,7 +170,7 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
   private def nextTagSequenceNr(tag: String): Long = {
     val n = tagSequenceNr.get(tag) match {
       case Some(n) ⇒ n
-      case None    ⇒ readHighestSequenceNr(tagNumericId(tag))
+      case None ⇒ readHighestSequenceNr(tagNumericId(tag))
     }
     tagSequenceNr = tagSequenceNr.updated(tag, n + 1)
     n + 1

@@ -368,11 +368,11 @@ private[akka] object ActorCell {
  * for! (waves hand)
  */
 private[akka] class ActorCell(
-  val system:      ActorSystemImpl,
-  val self:        InternalActorRef,
+  val system: ActorSystemImpl,
+  val self: InternalActorRef,
   final val props: Props, // Must be final so that it can be properly cleared in clearActorCellFields
-  val dispatcher:  MessageDispatcher,
-  val parent:      InternalActorRef)
+  val dispatcher: MessageDispatcher,
+  val parent: InternalActorRef)
   extends UntypedActorContext with AbstractActor.ActorContext with Cell
   with dungeon.ReceiveTimeout
   with dungeon.Children
@@ -444,8 +444,8 @@ private[akka] class ActorCell(
 
     def shouldStash(m: SystemMessage, state: Int): Boolean =
       (state: @switch) match {
-        case DefaultState                  ⇒ false
-        case SuspendedState                ⇒ m.isInstanceOf[StashWhenFailed]
+        case DefaultState ⇒ false
+        case SuspendedState ⇒ m.isInstanceOf[StashWhenFailed]
         case SuspendedWaitForChildrenState ⇒ m.isInstanceOf[StashWhenWaitingForChildren]
       }
 
@@ -493,7 +493,7 @@ private[akka] class ActorCell(
         cancelReceiveTimeout()
       messageHandle.message match {
         case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-        case msg                      ⇒ receiveMessage(msg)
+        case msg ⇒ receiveMessage(msg)
       }
       currentMessage = null // reset current message after successful invocation
     } catch handleNonFatalOrInterruptedException { e ⇒
@@ -509,12 +509,12 @@ private[akka] class ActorCell(
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case t: Terminated              ⇒ receivedTerminated(t)
+      case t: Terminated ⇒ receivedTerminated(t)
       case AddressTerminated(address) ⇒ addressTerminated(address)
-      case Kill                       ⇒ throw ActorKilledException("Kill")
-      case PoisonPill                 ⇒ self.stop()
+      case Kill ⇒ throw ActorKilledException("Kill")
+      case PoisonPill ⇒ self.stop()
       case sel: ActorSelectionMessage ⇒ receiveSelection(sel)
-      case Identify(messageId)        ⇒ sender() ! ActorIdentity(messageId, Some(self))
+      case Identify(messageId) ⇒ sender() ! ActorIdentity(messageId, Some(self))
     }
   }
 
@@ -531,9 +531,9 @@ private[akka] class ActorCell(
    */
 
   final def sender(): ActorRef = currentMessage match {
-    case null                      ⇒ system.deadLetters
+    case null ⇒ system.deadLetters
     case msg if msg.sender ne null ⇒ msg.sender
-    case _                         ⇒ system.deadLetters
+    case _ ⇒ system.deadLetters
   }
 
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit =
@@ -624,7 +624,7 @@ private[akka] class ActorCell(
   // future extension point
   protected def handleSupervise(child: ActorRef, async: Boolean): Unit = child match {
     case r: RepointableActorRef if async ⇒ r.point(catchFailures = true)
-    case _                               ⇒
+    case _ ⇒
   }
 
   final protected def clearActorCellFields(cell: ActorCell): Unit = {

@@ -63,9 +63,9 @@ import scala.collection.immutable.Map.Map1
     else if (first eq PushNotUsed) {
       // No need to push NotUsed and Pop it immediately
       second match {
-        case Pop               ⇒ EmptyTraversal
+        case Pop ⇒ EmptyTraversal
         case Concat(Pop, rest) ⇒ rest
-        case _                 ⇒ Concat(PushNotUsed, second)
+        case _ ⇒ Concat(PushNotUsed, second)
       }
     } else {
       // Limit the tree by rotations
@@ -283,15 +283,15 @@ import scala.collection.immutable.Map.Map1
       var nextStep: Traversal = EmptyTraversal
 
       current match {
-        case PushNotUsed                        ⇒ prindent("push NotUsed")
-        case Pop                                ⇒ prindent("pop mat")
-        case _: Transform                       ⇒ prindent("transform mat")
-        case Compose(_, false)                  ⇒ prindent("compose mat")
-        case Compose(_, true)                   ⇒ prindent("compose reversed mat")
-        case PushAttributes(attr)               ⇒ prindent("push attr " + attr)
-        case PopAttributes                      ⇒ prindent("pop attr")
-        case EnterIsland(tag)                   ⇒ prindent("enter island " + tag)
-        case ExitIsland                         ⇒ prindent("exit island")
+        case PushNotUsed ⇒ prindent("push NotUsed")
+        case Pop ⇒ prindent("pop mat")
+        case _: Transform ⇒ prindent("transform mat")
+        case Compose(_, false) ⇒ prindent("compose mat")
+        case Compose(_, true) ⇒ prindent("compose reversed mat")
+        case PushAttributes(attr) ⇒ prindent("push attr " + attr)
+        case PopAttributes ⇒ prindent("pop attr")
+        case EnterIsland(tag) ⇒ prindent("enter island " + tag)
+        case ExitIsland ⇒ prindent("exit island")
         case MaterializeAtomic(mod, outToSlots) ⇒ prindent("materialize " + mod + " " + outToSlots.mkString("[", ", ", "]"))
         case Concat(first, next) ⇒
           printTraversal(first, indent + 1)
@@ -452,10 +452,10 @@ import scala.collection.immutable.Map.Map1
  */
 @InternalApi private[akka] final case class CompletedTraversalBuilder(
   traversalSoFar: Traversal,
-  inSlots:        Int,
-  inToOffset:     Map[InPort, Int],
-  attributes:     Attributes,
-  islandTag:      OptionVal[IslandTag] = OptionVal.None) extends TraversalBuilder {
+  inSlots: Int,
+  inToOffset: Map[InPort, Int],
+  attributes: Attributes,
+  islandTag: OptionVal[IslandTag] = OptionVal.None) extends TraversalBuilder {
 
   override def add(submodule: TraversalBuilder, shape: Shape, combineMat: AnyFunction2): TraversalBuilder = {
     val key = new BuilderKey
@@ -470,7 +470,7 @@ import scala.collection.immutable.Map.Map1
   override def traversal: Traversal = {
     val withIsland = islandTag match {
       case OptionVal.Some(tag) ⇒ EnterIsland(tag).concat(traversalSoFar).concat(ExitIsland)
-      case _                   ⇒ traversalSoFar
+      case _ ⇒ traversalSoFar
     }
 
     if (attributes eq Attributes.none) withIsland
@@ -494,7 +494,7 @@ import scala.collection.immutable.Map.Map1
 
   override def makeIsland(islandTag: IslandTag): TraversalBuilder =
     this.islandTag match {
-      case OptionVal.None    ⇒ copy(islandTag = OptionVal(islandTag))
+      case OptionVal.None ⇒ copy(islandTag = OptionVal(islandTag))
       case OptionVal.Some(_) ⇒ this
     }
 
@@ -516,10 +516,10 @@ import scala.collection.immutable.Map.Map1
  * See comments in akka.stream.impl.package for more details.
  */
 @InternalApi private[akka] final case class AtomicTraversalBuilder(
-  module:      AtomicModule[Shape, Any],
-  outToSlot:   Array[Int],
+  module: AtomicModule[Shape, Any],
+  outToSlot: Array[Int],
   unwiredOuts: Int,
-  attributes:  Attributes) extends TraversalBuilder {
+  attributes: Attributes) extends TraversalBuilder {
 
   override def add(submodule: TraversalBuilder, shape: Shape, combineMat: AnyFunction2): TraversalBuilder = {
     // TODO: Use automatically a linear builder if applicable
@@ -625,8 +625,8 @@ import scala.collection.immutable.Map.Map1
 
   def fromBuilder(
     traversalBuilder: TraversalBuilder,
-    shape:            Shape,
-    combine:          AnyFunction2     = Keep.right): LinearTraversalBuilder = {
+    shape: Shape,
+    combine: AnyFunction2 = Keep.right): LinearTraversalBuilder = {
     traversalBuilder match {
       case linear: LinearTraversalBuilder ⇒
         if (combine eq Keep.right) linear
@@ -636,7 +636,7 @@ import scala.collection.immutable.Map.Map1
         val inOpt = OptionVal(shape.inlets.headOption.orNull)
         val inOffs = inOpt match {
           case OptionVal.Some(in) ⇒ completed.offsetOf(in)
-          case OptionVal.None     ⇒ 0
+          case OptionVal.None ⇒ 0
         }
 
         LinearTraversalBuilder(
@@ -653,7 +653,7 @@ import scala.collection.immutable.Map.Map1
         val out = shape.outlets.head // Cannot be empty, otherwise it would be a CompletedTraversalBuilder
         val inOffs = inOpt match {
           case OptionVal.Some(in) ⇒ composite.offsetOf(in)
-          case OptionVal.None     ⇒ 0
+          case OptionVal.None ⇒ 0
         }
 
         LinearTraversalBuilder(
@@ -682,15 +682,15 @@ import scala.collection.immutable.Map.Map1
  * See comments in akka.stream.impl.package for more details.
  */
 @InternalApi private[akka] final case class LinearTraversalBuilder(
-  inPort:               OptionVal[InPort],
-  outPort:              OptionVal[OutPort],
-  inOffset:             Int,
+  inPort: OptionVal[InPort],
+  outPort: OptionVal[OutPort],
+  inOffset: Int,
   override val inSlots: Int,
-  traversalSoFar:       Traversal,
-  pendingBuilder:       OptionVal[TraversalBuilder],
-  attributes:           Attributes,
-  beforeBuilder:        Traversal                   = EmptyTraversal,
-  islandTag:            OptionVal[IslandTag]        = OptionVal.None) extends TraversalBuilder {
+  traversalSoFar: Traversal,
+  pendingBuilder: OptionVal[TraversalBuilder],
+  attributes: Attributes,
+  beforeBuilder: Traversal = EmptyTraversal,
+  islandTag: OptionVal[IslandTag] = OptionVal.None) extends TraversalBuilder {
 
   protected def isEmpty: Boolean = inSlots == 0 && outPort.isEmpty
 
@@ -718,7 +718,7 @@ import scala.collection.immutable.Map.Map1
 
   private def applyIslandAndAttributes(t: Traversal): Traversal = {
     val withIslandTag = islandTag match {
-      case OptionVal.None      ⇒ t
+      case OptionVal.None ⇒ t
       case OptionVal.Some(tag) ⇒ EnterIsland(tag).concat(t).concat(ExitIsland)
     }
 
@@ -753,8 +753,8 @@ import scala.collection.immutable.Map.Map1
               applyIslandAndAttributes(
                 beforeBuilder.concat(
                   composite
-                  .assign(out, inOffset - composite.offsetOfModule(out))
-                  .traversal).concat(traversalSoFar)),
+                    .assign(out, inOffset - composite.offsetOfModule(out))
+                    .traversal).concat(traversalSoFar)),
             pendingBuilder = OptionVal.None, beforeBuilder = EmptyTraversal)
         case OptionVal.None ⇒
           copy(
@@ -770,7 +770,7 @@ import scala.collection.immutable.Map.Map1
     if (outPort.contains(out)) {
       pendingBuilder match {
         case OptionVal.Some(composite) ⇒ composite.offsetOfModule(out)
-        case OptionVal.None            ⇒ 0 // Output belongs to the last module, which will be materialized *first*
+        case OptionVal.None ⇒ 0 // Output belongs to the last module, which will be materialized *first*
       }
     } else
       throw new IllegalArgumentException(s"Port $out cannot be accessed in this builder")
@@ -1058,7 +1058,7 @@ import scala.collection.immutable.Map.Map1
   override def makeIsland(islandTag: IslandTag): LinearTraversalBuilder =
     this.islandTag match {
       case OptionVal.Some(tag) ⇒ this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
-      case OptionVal.None      ⇒ copy(islandTag = OptionVal.Some(islandTag))
+      case OptionVal.None ⇒ copy(islandTag = OptionVal.Some(islandTag))
     }
 }
 
@@ -1110,16 +1110,16 @@ import scala.collection.immutable.Map.Map1
  * @param unwiredOuts      Number of output ports that have not yet been wired/assigned
  */
 @InternalApi private[akka] final case class CompositeTraversalBuilder(
-  finalSteps:         Traversal                         = EmptyTraversal,
-  reverseBuildSteps:  List[TraversalBuildStep]          = AppendTraversal(PushNotUsed) :: Nil,
-  inSlots:            Int                               = 0,
-  inOffsets:          Map[InPort, Int]                  = Map.empty,
-  inBaseOffsetForOut: Map[OutPort, Int]                 = Map.empty,
-  pendingBuilders:    Map[BuilderKey, TraversalBuilder] = Map.empty,
-  outOwners:          Map[OutPort, BuilderKey]          = Map.empty,
-  unwiredOuts:        Int                               = 0,
-  attributes:         Attributes,
-  islandTag:          OptionVal[IslandTag]              = OptionVal.None) extends TraversalBuilder {
+  finalSteps: Traversal = EmptyTraversal,
+  reverseBuildSteps: List[TraversalBuildStep] = AppendTraversal(PushNotUsed) :: Nil,
+  inSlots: Int = 0,
+  inOffsets: Map[InPort, Int] = Map.empty,
+  inBaseOffsetForOut: Map[OutPort, Int] = Map.empty,
+  pendingBuilders: Map[BuilderKey, TraversalBuilder] = Map.empty,
+  outOwners: Map[OutPort, BuilderKey] = Map.empty,
+  unwiredOuts: Int = 0,
+  attributes: Attributes,
+  islandTag: OptionVal[IslandTag] = OptionVal.None) extends TraversalBuilder {
 
   override def toString: String =
     s"""
@@ -1163,7 +1163,7 @@ import scala.collection.immutable.Map.Map1
       }
 
       val finalTraversal = islandTag match {
-        case OptionVal.None      ⇒ traversal
+        case OptionVal.None ⇒ traversal
         case OptionVal.Some(tag) ⇒ EnterIsland(tag).concat(traversal).concat(ExitIsland)
       }
 
@@ -1306,7 +1306,7 @@ import scala.collection.immutable.Map.Map1
   override def makeIsland(islandTag: IslandTag): TraversalBuilder = {
     this.islandTag match {
       case OptionVal.None ⇒ copy(islandTag = OptionVal(islandTag))
-      case _              ⇒ this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
+      case _ ⇒ this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
     }
   }
 }
