@@ -159,14 +159,10 @@ if [ $# != "1" ]; then
   fail "A release version must be specified"
 fi
 
-declare -r java_version="$(java -version 2>&1 | awk -F '"' '/version/ {print $2}' | sed -e 's/-Debian//')"
-if [ "$java_version" != "9" ]; then
-  echo "Detected java version: $java_version"
-  fail "Akka MUST be released using JDK 9, in order to support j.u.c.Flow interfaces in Akka Streams"
-fi
-
 declare -r version=$1
 declare -r publish_path="${release_server}:${release_path}"
+
+[[ `java -version 2>&1 | grep -E "java version|openjdk version" | cut -d ' ' -f3 | cut -d '.' -f2` -eq 8 ]] || fail "Java version is not 1.8"
 
 # check for a git command
 type -P git &> /dev/null || fail "git command not found"
@@ -310,8 +306,7 @@ if [ ! $no_mima ] && [ $dry_run ]; then
   echodry "Finished migration manager report"
 fi
 
-# FIXME whitesource does not work with jdk9, https://github.com/whitesource/agents/issues/13
-# try sbt whitesourceCheckPolicies
+try sbt whitesourceCheckPolicies
 
 # commit and tag this release
 echolog "Committing and tagging..."
@@ -356,14 +351,13 @@ else
   important git push origin --tags
 fi
 
-# FIXME whitesource does not work with jdk9, https://github.com/whitesource/agents/issues/13
-#echolog "Uploading whitesource report"
-#if [ $dry_run ]; then
-#  echodry "Not actually uploading whitesource report. Commands:"
-#  echodry "  sbt whitesourceUpdate"
-#else
-#  important sbt whitesourceUpdate
-#fi
+echolog "Uploading whitesource report"
+if [ $dry_run ]; then
+  echodry "Not actually uploading whitesource report. Commands:"
+  echodry "  sbt whitesourceUpdate"
+else
+  important sbt whitesourceUpdate
+fi
 
 # push the release to the server
 echolog "Pushing ${release_dir} to ${publish_path} ..."
