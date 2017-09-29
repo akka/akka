@@ -23,10 +23,9 @@ addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.4")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.6")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
 
-// // JDK9 features support via Multi-Release JARs
-// addSbtPlugin("com.lightbend.sbt" % "sbt-multi-release-jar" % "0.1.0") // we don't actually use it so far
+// JDK9 features support via Multi-Release JARs
+addSbtPlugin("com.lightbend.sbt" % "sbt-multi-release-jar" % "0.1.2")
 
-// for advanced PR validation features
 // version with sbt 1.0 support is in snapshots for now
 //resolvers += Resolver.sonatypeRepo("snapshots")
 //addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.3-SNAPSHOT") // TODO
