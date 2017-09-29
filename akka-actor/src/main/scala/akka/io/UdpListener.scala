@@ -4,7 +4,7 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import java.nio.ByteBuffer
+import java.nio.{ Buffer, ByteBuffer }
 import java.nio.channels.SelectionKey._
 
 import scala.annotation.tailrec
@@ -84,7 +84,8 @@ private[io] class UdpListener(
 
   def doReceive(registration: ChannelRegistration, handler: ActorRef): Unit = {
     @tailrec def innerReceive(readsLeft: Int, buffer: ByteBuffer) {
-      buffer.clear()
+      // Call clear() from super class to make it work for both JDK 8 and 9
+      buffer.asInstanceOf[Buffer].clear()
       buffer.limit(DirectBufferSize)
 
       channel.receive(buffer) match {

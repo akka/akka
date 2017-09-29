@@ -4,7 +4,7 @@
 
 package akka.io
 
-import java.nio.ByteBuffer
+import java.nio.{ Buffer, ByteBuffer }
 import scala.util.control.NonFatal
 
 trait BufferPool {
@@ -50,7 +50,8 @@ private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries:
     if (buffer == null)
       allocate(defaultBufferSize)
     else {
-      buffer.clear()
+      // Call clear() from super class to make it work for both JDK 8 and 9
+      buffer.asInstanceOf[Buffer].clear()
       buffer
     }
   }

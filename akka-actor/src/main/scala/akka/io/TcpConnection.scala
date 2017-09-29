@@ -6,9 +6,9 @@ package akka.io
 
 import java.net.{ InetSocketAddress, SocketException }
 import java.nio.channels.SelectionKey._
-import java.io.{ FileInputStream, IOException }
+import java.io.IOException
 import java.nio.channels.{ FileChannel, SocketChannel }
-import java.nio.ByteBuffer
+import java.nio.{ Buffer, ByteBuffer }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -231,7 +231,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       @tailrec def innerRead(buffer: ByteBuffer, remainingLimit: Int): ReadResult =
         if (remainingLimit > 0) {
           // never read more than the configured limit
-          buffer.clear()
+          // Call clear() from super class to make it work for both JDK 8 and 9
+          buffer.asInstanceOf[Buffer].clear()
           val maxBufferSpace = math.min(DirectBufferSize, remainingLimit)
           buffer.limit(maxBufferSpace)
           val readBytes = channel.read(buffer)
@@ -417,7 +418,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
           else new PendingBufferWrite(commander, data, ack, buffer, tail) // copy with updated remainingData
 
         } else if (data.nonEmpty) {
-          buffer.clear()
+          // Call clear() from super class to make it work for both JDK 8 and 9
+          buffer.asInstanceOf[Buffer].clear()
           val copied = data.copyToBuffer(buffer)
           buffer.flip()
           writeToChannel(data drop copied)

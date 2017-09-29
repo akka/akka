@@ -4,7 +4,7 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import java.nio.ByteBuffer
+import java.nio.{ Buffer, ByteBuffer }
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
 import scala.annotation.tailrec
@@ -105,7 +105,8 @@ private[io] class UdpConnection(
 
   def doRead(registration: ChannelRegistration, handler: ActorRef): Unit = {
     @tailrec def innerRead(readsLeft: Int, buffer: ByteBuffer): Unit = {
-      buffer.clear()
+      // Call clear() from super class to make it work for both JDK 8 and 9
+      buffer.asInstanceOf[Buffer].clear()
       buffer.limit(DirectBufferSize)
 
       if (channel.read(buffer) > 0) {
@@ -125,7 +126,8 @@ private[io] class UdpConnection(
     val buffer = udpConn.bufferPool.acquire()
     try {
       val (send, commander) = pendingSend
-      buffer.clear()
+      // Call clear() from super class to make it work for both JDK 8 and 9
+      buffer.asInstanceOf[Buffer].clear()
       send.payload.copyToBuffer(buffer)
       buffer.flip()
       val writtenBytes = channel.write(buffer)
