@@ -60,10 +60,12 @@ import io.aeron.driver.MediaDriver
 import io.aeron.driver.ThreadingMode
 import io.aeron.exceptions.ConductorServiceTimeoutException
 import io.aeron.exceptions.DriverTimeoutException
-import org.agrona.ErrorHandler
-import org.agrona.IoUtil
+import org.agrona.{ DirectBuffer, ErrorHandler, IoUtil }
 import org.agrona.concurrent.BackoffIdleStrategy
 import akka.remote.artery.Decoder.InboundCompressionAccess
+import io.aeron.driver.status.ChannelEndpointStatus
+import org.agrona.collections.IntObjConsumer
+import org.agrona.concurrent.status.CountersReader.MetaData
 
 /**
  * INTERNAL API
@@ -304,6 +306,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private[this] val mediaDriver = new AtomicReference[Option[MediaDriver]](None)
   @volatile private[this] var aeron: Aeron = _
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
+  @volatile private[this] var aeronCounterTask: Cancellable = _
   @volatile private[this] var areonErrorLog: AeronErrorLog = _
 
   override val log: LoggingAdapter = Logging(system, getClass.getName)
@@ -404,7 +407,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       priorityMessageDestinations,
       outboundEnvelopePool))
 
-  override def settings = provider.remoteSettings.Artery
+  override def settings: ArterySettings = provider.remoteSettings.Artery
 
   override def start(): Unit = {
     Runtime.getRuntime.addShutdownHook(shutdownHook)
@@ -413,6 +416,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     topLevelFREvents.loFreq(Transport_AeronStarted, NoMetaData)
     startAeronErrorLog()
     topLevelFREvents.loFreq(Transport_AeronErrorLogStarted, NoMetaData)
+    if (settings.LogAeronCounters) {
+      startAeronCounterLog()
+    }
     taskRunner.start()
     topLevelFREvents.loFreq(Transport_TaskRunnerStarted, NoMetaData)
 
@@ -448,6 +454,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     topLevelFREvents.loFreq(Transport_MaterializerStarted, NoMetaData)
 
     runInboundStreams()
+    blockUntilChannelActive()
     topLevelFREvents.loFreq(Transport_StartupFinished, NoMetaData)
 
     log.info("Remoting started; listening on address: [{}] with UID [{}]", localAddress.address, localAddress.uid)
@@ -592,6 +599,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
               cause.getMessage)
             taskRunner.stop()
             aeronErrorLogTask.cancel()
+            if (settings.LogAeronCounters) aeronCounterTask.cancel()
             system.terminate()
             throw new AeronTerminated(cause)
           }
@@ -604,6 +612,44 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     aeron = Aeron.connect(ctx)
   }
 
+  private def blockUntilChannelActive(): Unit = {
+    val counterIdForInboundChannel = findCounterId(s"rcv-channel: $inboundChannel")
+    val waitInterval = 200
+    val retries = math.max(1, settings.Bind.BindTimeout.toMillis / waitInterval)
+    retry(retries)
+
+    @tailrec def retry(retries: Long): Unit = {
+      val status = aeron.countersReader().getCounterValue(counterIdForInboundChannel)
+      if (status == ChannelEndpointStatus.ACTIVE) {
+        log.debug("Inbound channel is now active")
+      } else if (status == ChannelEndpointStatus.ERRORED) {
+        areonErrorLog.logErrors(log, 0L)
+        throw new RuntimeException("Inbound Aeron channel is in errored state. See Aeron logs for details.")
+      } else if (status == ChannelEndpointStatus.INITIALIZING && retries > 0) {
+        Thread.sleep(waitInterval)
+        retry(retries - 1)
+      } else {
+        areonErrorLog.logErrors(log, 0L)
+        throw new RuntimeException("Timed out waiting for Aeron transport to bind. See Aeoron logs.")
+      }
+    }
+  }
+
+  private def findCounterId(label: String): Int = {
+    var counterId = -1
+    aeron.countersReader().forEach(new IntObjConsumer[String] {
+      def accept(i: Int, l: String): Unit = {
+        if (label == l)
+          counterId = i
+      }
+    })
+    if (counterId == -1) {
+      throw new RuntimeException(s"Unable to found counterId for label: $label")
+    } else {
+      counterId
+    }
+  }
+
   // TODO Add FR Events
   private def startAeronErrorLog(): Unit = {
     areonErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE), log)
@@ -613,6 +659,20 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       if (!isShutdown) {
         val newLastTimestamp = areonErrorLog.logErrors(log, lastTimestamp.get)
         lastTimestamp.set(newLastTimestamp + 1)
+      }
+    }
+  }
+
+  private def startAeronCounterLog(): Unit = {
+    import system.dispatcher
+    aeronCounterTask = system.scheduler.schedule(5.seconds, 5.seconds) {
+      if (!isShutdown && log.isDebugEnabled) {
+        aeron.countersReader.forEach(new MetaData() {
+          def accept(counterId: Int, typeId: Int, keyBuffer: DirectBuffer, label: String): Unit = {
+            val value = aeron.countersReader().getCounterValue(counterId)
+            log.debug("Aeron Counter {}: {} {}]", counterId, value, label)
+          }
+        })
       }
     }
   }

@@ -3,7 +3,6 @@
  */
 package akka.remote.artery
 
-import java.net.InetAddress
 import java.util.concurrent.Executors
 
 import scala.collection.AbstractIterator
