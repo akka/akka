@@ -112,11 +112,8 @@ object UnidocRoot extends AutoPlugin {
     UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(sbtunidoc.ScalaUnidocPlugin && sbtunidoc.JavaUnidocPlugin && sbtunidoc.GenJavadocPlugin)
       .getOrElse(sbtunidoc.ScalaUnidocPlugin)
 
-  val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
-      javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none"),
-      // genjavadoc needs to generate synthetic methods since the java code uses them
-      scalacOptions += "-P:genjavadoc:suppressSynthetic=false"
-    )).getOrElse(Nil)
+  val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
+    Seq(javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none"))).getOrElse(Nil)
 
   override lazy val projectSettings = {
     def unidocRootProjectFilter(ignoreProjects: Seq[Project]) =
@@ -139,4 +136,8 @@ object Unidoc extends AutoPlugin {
   override def requires = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(sbtunidoc.GenJavadocPlugin)
     .getOrElse(plugins.JvmPlugin)
 
+  override def projectSettings =
+    UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
+      // genjavadoc needs to generate synthetic methods since the java code uses/sees them
+      Seq(scalacOptions += "-P:genjavadoc:suppressSynthetic=false")).getOrElse(Nil)
 }
