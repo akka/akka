@@ -5,10 +5,13 @@ package akka.remote
 
 import java.util.UUID
 
+import akka.actor.ActorSystem
 import akka.remote.testkit.{ FlightRecordingSupport, MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.{ DefaultTimeout, ImplicitSender }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Outcome, Suite }
+
+import scala.util.Try
 
 object RemotingMultiNodeSpec {
 
@@ -24,7 +27,12 @@ object RemotingMultiNodeSpec {
 
 }
 
-abstract class RemotingMultiNodeSpec(config: MultiNodeConfig) extends MultiNodeSpec(config)
+abstract class RemotingMultiNodeSpec(config: MultiNodeConfig) extends MultiNodeSpec(config, config ⇒ {
+  val name = MultiNodeSpec.getCallerName(classOf[RemotingMultiNodeSpec])
+  //  When running multi-jvm tests with port = 0 two ActorSystems
+  //  can select the same port so retry once
+  Try(ActorSystem(name, config)).getOrElse(ActorSystem(name, config))
+})
   with Suite
   with STMultiNodeSpec
   with FlightRecordingSupport

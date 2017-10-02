@@ -13,7 +13,7 @@ import scala.util.control.NonFatal
 import scala.collection.immutable
 import akka.actor._
 import akka.util.Timeout
-import akka.remote.testconductor.{ RoleName, TestConductor, TestConductorExt }
+import akka.remote.testconductor.{ TestConductor, TestConductorExt }
 import akka.testkit._
 import akka.testkit.TestKit
 import akka.testkit.TestEvent._
@@ -234,7 +234,7 @@ object MultiNodeSpec {
     ConfigFactory.parseMap(map.asJava)
   }
 
-  private def getCallerName(clazz: Class[_]): String = {
+  private[akka] def getCallerName(clazz: Class[_]): String = {
     val pattern = s"(akka\\.remote\\.testkit\\.MultiNodeSpec.*|akka\\.remote\\.RemotingMultiNodeSpec)"
     val s = Thread.currentThread.getStackTrace.map(_.getClassName).drop(1).dropWhile(_.matches(pattern))
     val reduced = s.lastIndexWhere(_ == clazz.getName) match {
