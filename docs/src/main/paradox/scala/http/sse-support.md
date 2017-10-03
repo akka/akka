@@ -51,7 +51,7 @@ Java
 In order to unmarshal an event stream as @scala[`Source[ServerSentEvent, NotUsed]`]@java[`Source<ServerSentEvent, NotUsed>`], you have to @scala[bring the implicit `FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]]` defined by `EventStreamUnmarshalling` into scope]@java[use the `EventStreamUnmarshalling.fromEventStream` unmarshaller]:
 
 Scala
-:  @@snip [ServerSentEventsExampleSpec.scala]($test$/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-marshalling-example }
+:  @@snip [ServerSentEventsExampleSpec.scala]($test$/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-unmarshalling-example }
 
 Java
 :  @@snip [EventStreamMarshallingTest.java]($akka-http$/akka-http-tests/src/test/java/akka/http/javadsl/unmarshalling/sse/EventStreamUnmarshallingTest.java) { #event-stream-unmarshalling-example }
