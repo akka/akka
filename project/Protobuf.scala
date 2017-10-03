@@ -16,6 +16,7 @@ import Keys._
 object Protobuf {
   val paths = SettingKey[Seq[File]]("protobuf-paths", "The paths that contain *.proto files.")
   val outputPaths = SettingKey[Seq[File]]("protobuf-output-paths", "The paths where to save the generated *.java files.")
+  val importPath = SettingKey[Option[File]]("protobuf-import-path", "The path that contain additional *.proto files that can be imported.")
   val protoc = SettingKey[String]("protobuf-protoc", "The path and name of the protoc executable.")
   val protocVersion = SettingKey[String]("protobuf-protoc-version", "The version of the protoc executable.")
   val generate = TaskKey[Unit]("protobuf-generate", "Compile the protobuf sources and do all processing.")
@@ -23,6 +24,7 @@ object Protobuf {
   lazy val settings: Seq[Setting[_]] = Seq(
     paths := Seq((sourceDirectory in Compile).value, (sourceDirectory in Test).value).map(_ / "protobuf"),
     outputPaths := Seq((sourceDirectory in Compile).value, (sourceDirectory in Test).value).map(_ / "java"),
+    importPath := None,
     protoc := "protoc",
     protocVersion := "2.5.0",
     generate := {
@@ -48,7 +50,7 @@ object Protobuf {
             val relative = src.relativeTo(sources).getOrElse(throw new Exception(s"path $src is not a in source tree $sources")).toString
             val tmp = targets / "protoc" / relative
             IO.delete(tmp)
-            generate(cmd, src, tmp, log)
+            generate(cmd, src, tmp, log, importPath.value)
             transformDirectory(tmp, dst, _ ⇒ true, transformFile(_.replace("com.google.protobuf", "akka.protobuf")), cache, log)
         }
       }
@@ -71,7 +73,7 @@ object Protobuf {
     }
   }
 
-  private def generate(protoc: String, srcDir: File, targetDir: File, log: Logger): Unit = {
+  private def generate(protoc: String, srcDir: File, targetDir: File, log: Logger, importPath: Option[File]): Unit = {
     val protoFiles = (srcDir ** "*.proto").get
     if (srcDir.exists)
       if (protoFiles.isEmpty)
@@ -82,8 +84,13 @@ object Protobuf {
         log.info("Generating %d protobuf files from %s to %s".format(protoFiles.size, srcDir, targetDir))
         protoFiles.foreach { proto ⇒ log.info("Compiling %s" format proto) }
 
+        val protoPathArg = importPath match {
+          case None => Nil
+          case Some(p) => Seq("--proto_path", p.absolutePath)
+        }
+
         val exitCode = callProtoc(protoc, Seq("-I" + srcDir.absolutePath, "--java_out=%s" format targetDir.absolutePath) ++
-          protoFiles.map(_.absolutePath), log, { (p, l) ⇒ p ! l })
+          protoPathArg ++ protoFiles.map(_.absolutePath), log, { (p, l) => p ! l })
         if (exitCode != 0)
           sys.error("protoc returned exit code: %d" format exitCode)
       }

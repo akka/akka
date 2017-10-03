@@ -16,10 +16,18 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
+import scala.concurrent.Await
+import akka.typed.cluster.Join
+import org.scalatest.concurrent.Eventually
+import akka.cluster.MemberStatus
+import akka.actor.ExtendedActorSystem
+import akka.serialization.SerializerWithStringManifest
+import akka.typed.cluster.ActorRefResolver
+import java.nio.charset.StandardCharsets
 
 object ClusterShardingSpec {
   val config = ConfigFactory.parseString(
-    """
+    s"""
       akka.actor.provider = cluster
 
       // akka.loglevel = debug
@@ -36,10 +44,18 @@ object ClusterShardingSpec {
       akka.actor {
         serialize-messages = off
         allow-java-serialization = off
+
+       serializers {
+          test = "akka.typed.cluster.sharding.ClusterShardingSpec$$Serializer"
+        }
+        serialization-bindings {
+          "akka.typed.cluster.sharding.ClusterShardingSpec$$TestProtocol" = test
+          "akka.typed.cluster.sharding.ClusterShardingSpec$$IdTestProtocol" = test
+        }
       }
     """.stripMargin)
 
-  sealed trait TestProtocol
+  sealed trait TestProtocol extends java.io.Serializable
   final case class ReplyPlz(toMe: ActorRef[String]) extends TestProtocol
   final case class WhoAreYou(replyTo: ActorRef[String]) extends TestProtocol
   final case class StopPlz() extends TestProtocol
@@ -49,9 +65,59 @@ object ClusterShardingSpec {
   final case class IdWhoAreYou(id: String, replyTo: ActorRef[String]) extends IdTestProtocol
   final case class IdStopPlz(id: String) extends IdTestProtocol
 
+  class Serializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
+    def identifier: Int = 48
+    def manifest(o: AnyRef): String = o match {
+      case _: ReplyPlz    ⇒ "a"
+      case _: WhoAreYou   ⇒ "b"
+      case _: StopPlz     ⇒ "c"
+      case _: IdReplyPlz  ⇒ "A"
+      case _: IdWhoAreYou ⇒ "B"
+      case _: IdStopPlz   ⇒ "C"
+    }
+
+    private def actorRefToBinary(ref: ActorRef[_]): Array[Byte] =
+      ActorRefResolver(system.toTyped).toSerializationFormat(ref).getBytes(StandardCharsets.UTF_8)
+
+    private def idAndRefToBinary(id: String, ref: ActorRef[_]): Array[Byte] = {
+      val idBytes = id.getBytes(StandardCharsets.UTF_8)
+      val refBytes = actorRefToBinary(ref)
+      // yeah, very ad-hoc ;-)
+      Array(idBytes.length.toByte) ++ idBytes ++ refBytes
+    }
+
+    def toBinary(o: AnyRef): Array[Byte] = o match {
+      case ReplyPlz(ref)        ⇒ actorRefToBinary(ref)
+      case WhoAreYou(ref)       ⇒ actorRefToBinary(ref)
+      case _: StopPlz           ⇒ Array.emptyByteArray
+      case IdReplyPlz(id, ref)  ⇒ idAndRefToBinary(id, ref)
+      case IdWhoAreYou(id, ref) ⇒ idAndRefToBinary(id, ref)
+      case IdStopPlz(id)        ⇒ id.getBytes(StandardCharsets.UTF_8)
+    }
+
+    private def actorRefFromBinary[T](bytes: Array[Byte]): ActorRef[T] =
+      ActorRefResolver(system.toTyped).resolveActorRef(new String(bytes, StandardCharsets.UTF_8))
+
+    private def idAndRefFromBinary[T](bytes: Array[Byte]): (String, ActorRef[T]) = {
+      val idLength = bytes(0)
+      val id = new String(bytes.slice(1, idLength), StandardCharsets.UTF_8)
+      val ref = actorRefFromBinary(bytes.drop(1 + idLength))
+      (id, ref)
+    }
+
+    def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
+      case "a" ⇒ ReplyPlz(actorRefFromBinary(bytes))
+      case "b" ⇒ WhoAreYou(actorRefFromBinary(bytes))
+      case "c" ⇒ StopPlz()
+      case "A" ⇒ IdReplyPlz.tupled(idAndRefFromBinary(bytes))
+      case "B" ⇒ IdWhoAreYou.tupled(idAndRefFromBinary(bytes))
+      case "C" ⇒ IdStopPlz(new String(bytes, StandardCharsets.UTF_8))
+    }
+  }
+
 }
 
-class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with ScalaFutures {
+class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with ScalaFutures with Eventually {
   import akka.typed.scaladsl.adapter._
   import ClusterShardingSpec._
 
@@ -60,7 +126,15 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
   val sharding = ClusterSharding(system)
 
   implicit val untypedSystem = system.toUntyped
-  private val untypedCluster = akka.cluster.Cluster(untypedSystem)
+
+  val untypedSystem2 = akka.actor.ActorSystem(system.name, system.settings.config)
+  val system2 = untypedSystem2.toTyped
+  val sharding2 = ClusterSharding(system2)
+
+  override def afterAll(): Unit = {
+    Await.result(system2.terminate, timeout.duration)
+    super.afterAll()
+  }
 
   val typeKey = EntityTypeKey[TestProtocol]("envelope-shard")
   val behavior = Actor.immutable[TestProtocol] {
@@ -92,14 +166,34 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
 
   object `Typed cluster sharding` {
 
-    untypedCluster.join(untypedCluster.selfAddress)
+    def `01 must join cluster`(): Unit = {
+      Cluster(system).manager ! Join(Cluster(system).selfMember.address)
+      Cluster(system2).manager ! Join(Cluster(system).selfMember.address)
 
-    def `01 must send messsages via cluster sharding, using envelopes`(): Unit = {
+      eventually {
+        Cluster(system).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(system).state.members.size should ===(2)
+      }
+      eventually {
+        Cluster(system2).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(system2).state.members.size should ===(2)
+      }
+
+    }
+
+    def `02 must send messsages via cluster sharding, using envelopes`(): Unit = {
       val ref = sharding.spawn(
         behavior,
         Props.empty,
         typeKey,
         ClusterShardingSettings(system),
+        10,
+        StopPlz())
+      sharding2.spawn(
+        behavior,
+        Props.empty,
+        typeKey,
+        ClusterShardingSettings(system2),
         10,
         StopPlz())
 
@@ -109,12 +203,19 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
 
       ref ! ShardingEnvelope("test", StopPlz())
     }
-    def `02 must send messsages via cluster sharding, without envelopes`(): Unit = {
+    def `03 must send messsages via cluster sharding, without envelopes`(): Unit = {
       val ref = sharding.spawn(
         behaviorWithId,
         Props.empty,
         typeKey2,
         ClusterShardingSettings(system),
+        ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, _.id),
+        IdStopPlz("THE_ID_HERE"))
+      sharding2.spawn(
+        behaviorWithId,
+        Props.empty,
+        typeKey2,
+        ClusterShardingSettings(system2),
         ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, _.id),
         IdStopPlz("THE_ID_HERE"))
 
@@ -125,7 +226,7 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       ref ! IdStopPlz("test")
     }
 
-    //    def `03 fail if starting sharding for already used typeName, but with wrong type`(): Unit = {
+    //    def `04 fail if starting sharding for already used typeName, but with wrong type`(): Unit = {
     //      val ex = intercept[Exception] {
     //        sharding.spawn(
     //          Actor.empty[String],
@@ -139,8 +240,6 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
     //
     //      ex.getMessage should include("already started")
     //    }
-
-    untypedCluster.join(untypedCluster.selfAddress)
 
     def `11 EntityRef - tell`(): Unit = {
       val charlieRef = sharding.entityRefFor(typeKey, "charlie")

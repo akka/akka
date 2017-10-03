@@ -372,6 +372,8 @@ lazy val typed = akkaModule("akka-typed")
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.typed")) // fine for now, eventually new module name to become typed.actor
+  // To be ablet to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
   .settings(
     initialCommands := """
       import akka.typed._
