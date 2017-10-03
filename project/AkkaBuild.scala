@@ -137,12 +137,23 @@ object AkkaBuild {
     // default JVM config for tests
     javaOptions in Test ++= {
       val defaults = Seq(
-        // memory
+        // ## core memory settings
         "-XX:+UseG1GC",
         "-Xms2g", "-Xmx2g",
-        "-XX:+AlwaysPreTouch", "-XX:-UseBiasedLocking", "-XX:+UseCompressedOops",
+        // increate stack size (todo why?)
+        "-Xss2m",
 
-        "-XX:MaxDirectMemorySize=256m", "-Xss2m",
+        // ## extra memory/gc tuning
+        // make sure we actually allocate physical memory (todo is it really worth it?)
+        "-XX:+AlwaysPreTouch",
+        // not sure why we disable this (todo motivate)
+        "-XX:-UseBiasedLocking",
+        // this breaks jstat, but could avoid costly syncs to disc see http://www.evanjones.ca/jvm-mmap-pause.html
+        "-XX:+PerfDisableSharedMem",
+        // tell G1GC that we would be really happy if all GC pauses could be kept low and not cause test timeouts
+        "-XX:MaxGCPauseMillis=200",
+        // nio direct memory limit (todo why this value?)
+        "-XX:MaxDirectMemorySize=256m",
 
         // faster random source
         "-Djava.security.egd=file:/dev/./urandom"
