@@ -6,8 +6,8 @@ package akka.typed.cluster.internal
 import akka.serialization.{ SerializationExtension, SerializerWithStringManifest }
 import akka.typed.{ ActorRef, TypedSpec }
 import akka.typed.TypedSpec.Create
-import akka.typed.internal.adapter.ActorSystemAdapter
 import akka.typed.scaladsl.Actor
+import akka.typed.scaladsl.adapter._
 import akka.typed.scaladsl.AskPattern._
 import com.typesafe.config.ConfigFactory
 
@@ -28,23 +28,22 @@ class MiscMessageSerializerSpec extends TypedSpec(MiscMessageSerializerSpec.conf
 
   object `The typed MiscMessageSerializer` {
 
-    def `must serialize and deserialize typed actor refs `(): Unit = {
+    val serialization = SerializationExtension(system.toUntyped)
 
-      val ref = (system ? Create(Actor.empty[Unit], "some-actor")).futureValue
-
-      val serialization = SerializationExtension(ActorSystemAdapter.toUntyped(system))
-
-      val serializer = serialization.findSerializerFor(ref) match {
-        case s: SerializerWithStringManifest ⇒ s
+    def checkSerialization(obj: AnyRef): Unit = {
+      serialization.findSerializerFor(obj) match {
+        case serializer: MiscMessageSerializer ⇒
+          val blob = serializer.toBinary(obj)
+          val ref = serializer.fromBinary(blob, serializer.manifest(obj))
+          ref should ===(obj)
+        case s ⇒
+          throw new IllegalStateException(s"Wrong serializer ${s.getClass} for ${obj.getClass}")
       }
+    }
 
-      val manifest = serializer.manifest(ref)
-      val serialized = serializer.toBinary(ref)
-
-      val result = serializer.fromBinary(serialized, manifest)
-
-      result should ===(ref)
-
+    def `must serialize and deserialize typed actor refs `(): Unit = {
+      val ref = (system ? Create(Actor.empty[Unit], "some-actor")).futureValue
+      checkSerialization(ref)
     }
   }
 
