@@ -33,11 +33,11 @@ All Akka releases are published via Sonatype to Maven Central, see
 
 ## Snapshots Repository
 
-Nightly builds are available in [http://repo.akka.io/snapshots](http://repo.akka.io/snapshots/) as both `SNAPSHOT` and
+Nightly builds are available in [https://repo.akka.io/snapshots](https://repo.akka.io/snapshots/) as both `SNAPSHOT` and
 timestamped versions.
 
 For timestamped versions, pick a timestamp from
-[http://repo.akka.io/snapshots/com/typesafe/akka](http://repo.akka.io/snapshots/com/typesafe/akka).
+[https://repo.akka.io/snapshots/com/typesafe/akka](https://repo.akka.io/snapshots/com/typesafe/akka).
 All Akka modules that belong to the same build have the same timestamp.
 
 @@@ warning
@@ -51,7 +51,7 @@ The use of Akka SNAPSHOTs, nightlies and milestone releases is discouraged unles
 Make sure that you add the repository to the sbt resolvers:
 
 ```
-resolvers += "Akka Snapshots" at "http://repo.akka.io/snapshots/"
+resolvers += "Akka Snapshots" at "https://repo.akka.io/snapshots/"
 ```
 
 Define the library dependencies with the timestamp as version. For example:
@@ -71,7 +71,7 @@ Make sure that you add the repository to the Maven repositories in pom.xml:
   <repository>
     <id>akka-snapshots</id>
     <name>Akka Snapshots</name>
-    <url>http://repo.akka.io/snapshots/</url>
+    <url>https://repo.akka.io/snapshots/</url>
     <layout>default</layout>
   </repository>
 </repositories>

@@ -159,7 +159,7 @@ The multi node testing kit is a separate jar file. Make sure that you have the f
 @@@
 
 If you are using the latest nightly build you should pick a timestamped Akka version from
-[http://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/](http://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/).
+[https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/](https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/).
 We recommend against using `SNAPSHOT` in order to obtain stable builds.
 
 ## A Multi Node Testing Example
