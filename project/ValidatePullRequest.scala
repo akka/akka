@@ -105,6 +105,7 @@ object ValidatePullRequest extends AutoPlugin {
   def runningLocally: Boolean = !runningOnJenkins
 
   override lazy val buildSettings = Seq(
+
     sourceBranch in Global in ValidatePR := {
       sys.env.get(SourceBranchEnvVarName) orElse
         sys.env.get(SourcePullIdJenkinsEnvVarName).map("pullreq/" + _) getOrElse // Set by "GitHub pull request builder plugin"
@@ -188,6 +189,11 @@ object ValidatePullRequest extends AutoPlugin {
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "performance"),
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "long-running"),
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "timing"),
+
+    // make it fork just like regular test running
+    fork in ValidatePR := (fork in Test).value,
+    testGrouping in ValidatePR := (testGrouping in Test).value,
+    javaOptions in ValidatePR := (javaOptions in Test).value,
 
     projectBuildMode in ValidatePR := {
       val log = streams.value.log

@@ -10,9 +10,9 @@ import java.util.Properties
 import akka.TestExtras.JUnitFileReporting
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
-import sbt.TestLogger.wrap
 import sbt._
 import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
+import scala.collection.breakOut
 
 object AkkaBuild {
 
@@ -132,27 +132,70 @@ object AkkaBuild {
     /**
      * Test settings
      */
+    fork in Test := true,
+
+    // default JVM config for tests
+    javaOptions in Test ++= {
+      val defaults = Seq(
+        // ## core memory settings
+        "-XX:+UseG1GC",
+        // most tests actually don't really use _that_ much memory (>1g usually)
+        // twice used (and then some) keeps G1GC happy - very few or to no full gcs
+        "-Xms3g", "-Xmx3g",
+        // increase stack size (todo why?)
+        "-Xss2m",
+
+        // ## extra memory/gc tuning
+        // this breaks jstat, but could avoid costly syncs to disc see http://www.evanjones.ca/jvm-mmap-pause.html
+        "-XX:+PerfDisableSharedMem",
+        // tell G1GC that we would be really happy if all GC pauses could be kept below this as higher would
+        // likely start causing test failures in timing tests
+        "-XX:MaxGCPauseMillis=300",
+        // nio direct memory limit for artery/aeron (probably)
+        "-XX:MaxDirectMemorySize=256m",
+
+        // faster random source
+        "-Djava.security.egd=file:/dev/./urandom"
+      )
+
+      if (sys.props.contains("akka.ci-server"))
+        defaults ++ Seq("-XX:+PrintGCTimeStamps", "-XX:+PrintGCDetails")
+      else
+        defaults
+    },
+
+
+    // all system properties passed to sbt prefixed with "akka." will be passed on to the forked jvms as is
+    javaOptions in Test := {
+      val base = (javaOptions in Test).value
+      val akkaSysProps: Seq[String] =
+        sys.props.filter(_._1.startsWith("akka"))
+          .map { case (key, value) => s"-D$key=$value" }(breakOut)
+
+      base ++ akkaSysProps
+    },
+
+    // with forked tests the working directory is set to each module's home directory
+    // rather than the Akka root, some tests depend on Akka root being working dir, so reset
+    testGrouping in Test := {
+      val original: Seq[Tests.Group] = (testGrouping in Test).value
+
+      original.map { group =>
+        group.runPolicy match {
+          case Tests.SubProcess(forkOptions) =>
+            group.copy(runPolicy = Tests.SubProcess(forkOptions.copy(
+              workingDirectory = Some(new File(System.getProperty("user.dir")))
+            )))
+          case _ => group
+        }
+      }
+    },
 
     parallelExecution in Test := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
     logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
-
-    // don't save test output to a file, workaround for https://github.com/sbt/sbt/issues/937
-    testListeners in (Test, test) := {
-      val logger = streams.value.log
-
-      def contentLogger(log: sbt.Logger, buffered: Boolean): ContentLogger = {
-        val blog = new BufferedLogger(FullLogger(log))
-        if (buffered) blog.record()
-        new ContentLogger(wrap(blog), () => blog.stopQuietly())
-      }
-
-      val logTest = {_: TestDefinition => streams.value.log }
-      val buffered = logBuffered.value
-      Seq(new TestLogger(new TestLogging(wrap(logger), tdef => contentLogger(logTest(tdef), buffered))))
-    },
 
     // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
     // -a Show stack traces and exception class name for AssertionErrors.
