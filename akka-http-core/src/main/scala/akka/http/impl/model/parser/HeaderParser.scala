@@ -176,6 +176,8 @@ private[http] object HeaderParser {
     "user-agent",
     "www-authenticate",
     "x-forwarded-for",
+    "x-forwarded-host",
+    "x-forwarded-proto",
     "x-real-ip")
 
   abstract class Settings {

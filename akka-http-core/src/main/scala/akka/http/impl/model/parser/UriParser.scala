@@ -135,6 +135,8 @@ private[http] final class UriParser(val input: ParserInput,
     'h' ~ 't' ~ 't' ~ 'p' ~ (&(':') ~ run(_scheme = "http") | 's' ~ &(':') ~ run(_scheme = "https"))
     | clearSB() ~ ALPHA ~ appendLowered() ~ zeroOrMore(`scheme-char` ~ appendLowered()) ~ &(':') ~ run(_scheme = sb.toString))
 
+  def `scheme-pushed` = rule { oneOrMore(`scheme-char` ~ appendLowered()) ~ run(_scheme = sb.toString) ~ push(_scheme)}
+
   def authority = rule { optional(userinfo) ~ hostAndPort }
 
   def userinfo = rule {

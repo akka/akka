@@ -631,6 +631,22 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
           "1.2.3.4, akka.io\n          ^")
     }
 
+    "X-Forwarded-Host" in {
+      "X-Forwarded-Host: 1.2.3.4" =!= `X-Forwarded-Host`(Uri.Host("1.2.3.4"))
+      "X-Forwarded-Host: [2001:db8:cafe:0:0:0:0:17]" =!= `X-Forwarded-Host`(Uri.Host("2001:db8:cafe:0:0:0:0:17"))
+      "X-Forwarded-Host: [1234:5678:9abc:def1:2345:6789:abcd:ef00]" =!= `X-Forwarded-Host`(Uri.Host("1234:5678:9abc:def1:2345:6789:abcd:ef00"))
+      "X-Forwarded-Host: [1234:567:9a:d:2:67:abc:ef00]" =!= `X-Forwarded-Host`(Uri.Host("1234:567:9a:d:2:67:abc:ef00"))
+      "X-Forwarded-Host: [1:2:3:4:5:6:7:8]" =!= `X-Forwarded-Host`(Uri.Host("1:2:3:4:5:6:7:8"))
+      "X-Forwarded-Host: akka.io" =!= `X-Forwarded-Host`(Uri.Host("akka.io"))
+      "X-Forwarded-Host: [1:2:3:4::6:7:8]" =!= `X-Forwarded-Host`(Uri.Host("1:2:3:4::6:7:8"))
+    }
+
+    "X-Forwarded-Proto" in {
+      "X-Forwarded-Proto: http" =!= `X-Forwarded-Proto`("http")
+      "X-Forwarded-Proto: https" =!= `X-Forwarded-Proto`("https")
+      "X-Forwarded-Proto: akka" =!= `X-Forwarded-Proto`("akka")
+    }
+
     "X-Real-Ip" in {
       "X-Real-Ip: 1.2.3.4" =!= `X-Real-Ip`(remoteAddress("1.2.3.4"))
       "X-Real-Ip: 1.2.3.4" <=!= `X-Real-Ip`(remoteAddress("1.2.3.4", Some(56789)))

@@ -10,7 +10,7 @@ import java.security.MessageDigest
 import java.util
 import javax.net.ssl.SSLSession
 
-import akka.annotation.InternalApi
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.scaladsl.ScalaSessionAPI
 
 import scala.reflect.ClassTag
@@ -974,6 +974,40 @@ final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) exte
 
   /** Java API */
   def getAddresses: Iterable[jm.RemoteAddress] = addresses.asJava
+}
+
+object `X-Forwarded-Host` extends ModeledCompanion[`X-Forwarded-Host`] {
+  implicit val hostRenderer = UriRendering.HostRenderer // cache
+}
+
+/**
+ * De-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host
+ */
+@ApiMayChange
+final case class `X-Forwarded-Host`(host: Uri.Host) extends jm.headers.XForwardedHost
+  with RequestHeader {
+  import `X-Forwarded-Host`.hostRenderer
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ host
+  protected def companion = `X-Forwarded-Host`
+
+  /** Java API */
+  def getHost: jm.Host = host.asJava
+}
+
+object `X-Forwarded-Proto` extends ModeledCompanion[`X-Forwarded-Proto`]
+
+/**
+ * de-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Proto
+ */
+@ApiMayChange
+final case class `X-Forwarded-Proto`(protocol: String) extends jm.headers.XForwardedProto
+  with RequestHeader {
+  require(protocol.nonEmpty, "protocol must not be empty")
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ protocol
+
+  protected def companion = `X-Forwarded-Proto`
+  /** Java API */
+  def getProtocol: String = protocol
 }
 
 object `X-Real-Ip` extends ModeledCompanion[`X-Real-Ip`] {
