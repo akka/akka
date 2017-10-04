@@ -103,7 +103,6 @@ Java
 In this example, a request is handled by transforming the request stream with a function @scala[`HttpRequest => HttpResponse`]@java[`Function<HttpRequest, HttpResponse>`]
 using `handleWithSyncHandler` (or equivalently, Akka Stream's `map` operator). Depending on the use case many
 other ways of providing a request handler are conceivable using Akka Stream's combinators.
-ng
 If the application provides a `Flow` it is also the responsibility of the application to generate exactly one response
 for every request and that the ordering of responses matches the ordering of the associated requests (which is relevant
 if HTTP pipelining is enabled where processing of multiple incoming requests may overlap). When relying on
@@ -209,7 +208,7 @@ This section describes how to handle each failure situation, and in which situat
 
 The first type of failure is when the server is unable to bind to the given port. For example when the port
 is already taken by another application, or if the port is privileged (i.e. only usable by `root`).
-In this case the "binding future" will fail immediately, and we can react to if by listening on the @scala[Future's]@java[CompletionStage’s] completion:
+In this case the "binding future" will fail immediately, and we can react to it by listening on the @scala[Future's]@java[CompletionStage’s] completion:
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-failure-handling }

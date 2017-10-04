@@ -119,5 +119,5 @@ Scala
 Java
 :  @@snip [HttpsExamplesDocTest.java]($test$/java/docs/http/javadsl/HttpsExamplesDocTest.java) { #disable-sni-connection }
 
-The `badSslConfig` is a copy of the default `AkkaSSLConfig` with with the slightly changed configuration to disable SNI.
+The `badSslConfig` is a copy of the default `AkkaSSLConfig` with the slightly changed configuration to disable SNI.
 This value can be cached and used for connections which should indeed not use this feature.
