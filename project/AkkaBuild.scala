@@ -151,7 +151,7 @@ object AkkaBuild {
         // tell G1GC that we would be really happy if all GC pauses could be kept below this as higher would
         // likely start causing test failures in timing tests
         "-XX:MaxGCPauseMillis=300",
-        // nio direct memory limit (todo why this value?)
+        // nio direct memory limit for artery/aeron (probably)
         "-XX:MaxDirectMemorySize=256m",
 
         // faster random source
@@ -165,8 +165,7 @@ object AkkaBuild {
     },
 
 
-    // all system properties passed to sbt prefixed with "akka." will be passed
-    // on to the forked jvms without the "akka." prefix
+    // all system properties passed to sbt prefixed with "akka." will be passed on to the forked jvms as is
     javaOptions in Test := {
       val base = (javaOptions in Test).value
       val akkaSysProps: Seq[String] =
