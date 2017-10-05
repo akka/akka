@@ -21,7 +21,6 @@ you have to provide it inside the message.
 This mechanism is used in different places within Akka, e.g. the [Event Stream](#event-stream).
 Implementations can make use of the specific building blocks presented below.
 
-An event bus must define the following three type parameters:
 An event bus must define the following three @scala[abstract types]@java[type parameters]:
 
  * `Event` is the type of all events published on that bus
