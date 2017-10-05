@@ -7,7 +7,6 @@ package akka
 import java.io.{ FileInputStream, InputStreamReader }
 import java.util.Properties
 
-import akka.TestExtras.JUnitFileReporting
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
 import sbt._
@@ -184,15 +183,13 @@ object AkkaBuild {
       parallelExecution in Test := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
-      // show full stack traces and test case durations
-      testOptions in Test += Tests.Argument("-oDF"),
+    // show full stack traces and test case durations
+    testOptions in Test += Tests.Argument("-oDF")
+) ++
 
-      // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
-      // -a Show stack traces and exception class name for AssertionErrors.
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")) ++
-      mavenLocalResolverSettings ++
-      JUnitFileReporting.settings ++
-      docLintingSettings
+    mavenLocalResolverSettings ++
+
+    docLintingSettings
 
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),

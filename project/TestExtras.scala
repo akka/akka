@@ -8,13 +8,6 @@ import sbt._
 
 object TestExtras {
 
-  object JUnitFileReporting {
-    val settings = Seq(
-      // we can enable junit-style reports everywhere with this
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a", "-u", (target.value / "test-reports").getAbsolutePath),
-      testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-u", (target.value / "test-reports").getAbsolutePath))
-  }
-
   object Filter {
     object Keys {
       val excludeTestNames = settingKey[Set[String]]("Names of tests to be excluded. Not supported by MultiJVM tests. Example usage: -Dakka.test.names.exclude=TimingSpec")
