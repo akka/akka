@@ -38,7 +38,7 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
         randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
-      ) { () =>
+      ) { () ⇒
         // Create a source from a future of a source
         Source.fromFutureSource {
           // Make a single request with akka-http
@@ -54,7 +54,7 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
       //#with-kill-switch
       val killSwitch = restartSource
         .viaMat(KillSwitches.single)(Keep.right)
-        .toMat(Sink.foreach(event => println(s"Got event: $event")))(Keep.left)
+        .toMat(Sink.foreach(event ⇒ println(s"Got event: $event")))(Keep.left)
         .run()
 
       doSomethingElse()

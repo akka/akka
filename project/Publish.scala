@@ -21,9 +21,8 @@ object Publish extends AutoPlugin {
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("http://www.lightbend.com")),
     publishMavenStyle := true,
-    pomIncludeRepository := { x => false },
-    defaultPublishTo := crossTarget.value / "repository"
-  )
+    pomIncludeRepository := { x ⇒ false },
+    defaultPublishTo := crossTarget.value / "repository")
 
   def akkaPomExtra = {
     /* The scm info is automatic from the sbt-git plugin
@@ -48,7 +47,7 @@ object Publish extends AutoPlugin {
   }
 
   private def sonatypeRepo(version: String): Option[Resolver] =
-    Option(sys.props("publish.maven.central")) filter (_.toLowerCase == "true") map { _ =>
+    Option(sys.props("publish.maven.central")) filter (_.toLowerCase == "true") map { _ ⇒
       val nexus = "https://oss.sonatype.org/"
       if (version endsWith "-SNAPSHOT") "snapshots" at nexus + "content/repositories/snapshots"
       else "releases" at nexus + "service/local/staging/deploy/maven2"
@@ -58,6 +57,6 @@ object Publish extends AutoPlugin {
     Some(Resolver.file("Default Local Repository", repository))
 
   private def akkaCredentials: Seq[Credentials] =
-    Option(System.getProperty("akka.publish.credentials", null)).map(f => Credentials(new File(f))).toSeq
+    Option(System.getProperty("akka.publish.credentials", null)).map(f ⇒ Credentials(new File(f))).toSeq
 
 }

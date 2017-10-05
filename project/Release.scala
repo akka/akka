@@ -14,14 +14,12 @@ object Release extends ParadoxKeys {
   val releaseDirectory = SettingKey[File]("release-directory")
 
   lazy val settings: Seq[Setting[_]] = commandSettings ++ Seq(
-    releaseDirectory := crossTarget.value / "release"
-  )
+    releaseDirectory := crossTarget.value / "release")
 
   lazy val commandSettings = Seq(
-    commands += buildReleaseCommand
-  )
+    commands += buildReleaseCommand)
 
-  def buildReleaseCommand = Command.command("buildRelease") { state =>
+  def buildReleaseCommand = Command.command("buildRelease") { state ⇒
     val extracted = Project.extract(state)
     val release = extracted.get(releaseDirectory)
     val releaseVersion = extracted.get(version)

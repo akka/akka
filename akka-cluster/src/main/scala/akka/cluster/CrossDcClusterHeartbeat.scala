@@ -321,20 +321,20 @@ private[cluster] object CrossDcHeartbeatingState {
       crossDcFailureDetector,
       nrOfMonitoredNodesPerDc,
       state = {
-      // TODO unduplicate this with the logic in MembershipState.ageSortedTopOldestMembersPerDc
-      val groupedByDc = members.filter(atLeastInUpState).groupBy(_.dataCenter)
+        // TODO unduplicate this with the logic in MembershipState.ageSortedTopOldestMembersPerDc
+        val groupedByDc = members.filter(atLeastInUpState).groupBy(_.dataCenter)
 
-      if (members.ordering == Member.ageOrdering) {
-        // we already have the right ordering
-        groupedByDc
-      } else {
-        // we need to enforce the ageOrdering for the SortedSet in each DC
-        groupedByDc.map {
-          case (dc, ms) ⇒
-            dc → (SortedSet.empty[Member](Member.ageOrdering) union ms)
+        if (members.ordering == Member.ageOrdering) {
+          // we already have the right ordering
+          groupedByDc
+        } else {
+          // we need to enforce the ageOrdering for the SortedSet in each DC
+          groupedByDc.map {
+            case (dc, ms) ⇒
+              dc → (SortedSet.empty[Member](Member.ageOrdering) union ms)
+          }
         }
-      }
-    })
+      })
   }
 
 }

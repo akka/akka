@@ -36,8 +36,8 @@ class ByteString_copyToBuffer_Benchmark {
     [info] ByteStringBenchmark.bs_large_copyToBuffer      thrpt   40  142 163 289.866 ± 21751578.294  ops/s
     [info] ByteStringBenchmark.bss_large_copyToBuffer     thrpt   40    1 489 195.631 ±   209165.487  ops/s << that's the interesting case, we needlessly fold and allocate tons of Stream etc
     [info] ByteStringBenchmark.bss_large_pc_copyToBuffer  thrpt   40  184 466 756.364 ±  9169108.378  ops/s // "can't beat that"
-    
-    
+
+
     [info] ....[Thread state: RUNNABLE]........................................................................
     [info]  35.9%  35.9% scala.collection.Iterator$class.toStream
     [info]  20.2%  20.2% scala.collection.immutable.Stream.foldLeft
@@ -50,10 +50,10 @@ class ByteString_copyToBuffer_Benchmark {
     [info]   1.2%   1.2% akka.util.generated.ByteStringBenchmark_bss_large_copyToBuffer.bss_large_copyToBuffer_thrpt_jmhStub
     [info]   0.3%   0.3% akka.util.ByteIterator$MultiByteArrayIterator.copyToBuffer
     [info]   1.2%   1.2% <other>
-    
-    
+
+
     AFTER specializing impls
-    
+
     [info] ....[Thread state: RUNNABLE]........................................................................
     [info]  99.5%  99.6% akka.util.generated.ByteStringBenchmark_bss_large_copyToBuffer_jmhTest.bss_large_copyToBuffer_thrpt_jmhStub
     [info]   0.1%   0.1% java.util.concurrent.CountDownLatch.countDown
@@ -63,12 +63,12 @@ class ByteString_copyToBuffer_Benchmark {
     [info]   0.1%   0.1% java.lang.Thread.currentThread
     [info]   0.1%   0.1% sun.misc.Unsafe.compareAndSwapInt
     [info]   0.1%   0.1% sun.reflect.AccessorGenerator.internalize
-    
+
     [info] Benchmark                                       Mode  Cnt            Score         Error  Units
     [info] ByteStringBenchmark.bs_large_copyToBuffer      thrpt   40  177 328 585.473 ± 7742067.648  ops/s
     [info] ByteStringBenchmark.bss_large_copyToBuffer     thrpt   40  113 535 003.488 ± 3899763.124  ops/s // previous bad case now very good (was 2M/s)
     [info] ByteStringBenchmark.bss_large_pc_copyToBuffer  thrpt   40  203 590 896.493 ± 7582752.024  ops/s // "can't beat that"
-    
+
    */
 
   @Benchmark

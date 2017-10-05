@@ -281,9 +281,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
     start(typeName, entityProps, settings,
       extractEntityId = {
-      case msg if messageExtractor.entityId(msg) ne null ⇒
-        (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
-    },
+        case msg if messageExtractor.entityId(msg) ne null ⇒
+          (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
+      },
       extractShardId = msg ⇒ messageExtractor.shardId(msg),
       allocationStrategy = allocationStrategy,
       handOffStopMessage = handOffStopMessage)
@@ -438,9 +438,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
     startProxy(typeName, Option(role.orElse(null)), Option(dataCenter.orElse(null)),
       extractEntityId = {
-      case msg if messageExtractor.entityId(msg) ne null ⇒
-        (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
-    },
+        case msg if messageExtractor.entityId(msg) ne null ⇒
+          (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
+      },
       extractShardId = msg ⇒ messageExtractor.shardId(msg))
 
   }

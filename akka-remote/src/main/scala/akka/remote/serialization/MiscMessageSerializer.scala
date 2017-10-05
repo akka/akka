@@ -436,8 +436,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     BroadcastPool(
       nrOfInstances = bp.getNrOfInstances,
       resizer =
-      if (bp.hasResizer) Some(payloadSupport.deserializePayload(bp.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (bp.hasResizer) Some(payloadSupport.deserializePayload(bp.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (bp.hasRouterDispatcher) bp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
       usePoolDispatcher = bp.getUsePoolDispatcher
     )
@@ -448,8 +448,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     RandomPool(
       nrOfInstances = rp.getNrOfInstances,
       resizer =
-      if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (rp.hasRouterDispatcher) rp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
       usePoolDispatcher = rp.getUsePoolDispatcher
     )
@@ -460,8 +460,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     RoundRobinPool(
       nrOfInstances = rp.getNrOfInstances,
       resizer =
-      if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (rp.hasRouterDispatcher) rp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
       usePoolDispatcher = rp.getUsePoolDispatcher
     )
@@ -472,8 +472,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     ScatterGatherFirstCompletedPool(
       nrOfInstances = sgp.getGeneric.getNrOfInstances,
       resizer =
-      if (sgp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(sgp.getGeneric.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (sgp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(sgp.getGeneric.getResizer).asInstanceOf[Resizer])
+        else None,
       within = deserializeFiniteDuration(sgp.getWithin),
       routerDispatcher =
         if (sgp.getGeneric.hasRouterDispatcher) sgp.getGeneric.getRouterDispatcher
@@ -486,8 +486,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     TailChoppingPool(
       nrOfInstances = tcp.getGeneric.getNrOfInstances,
       resizer =
-      if (tcp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(tcp.getGeneric.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (tcp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(tcp.getGeneric.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (tcp.getGeneric.hasRouterDispatcher) tcp.getGeneric.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
       usePoolDispatcher = tcp.getGeneric.getUsePoolDispatcher,
       within = deserializeFiniteDuration(tcp.getWithin),

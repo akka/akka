@@ -43,7 +43,7 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       val Tick = "tick"
       class TickActor extends Actor {
         def receive = {
-          case Tick => //Do something
+          case Tick ⇒ //Do something
         }
       }
       val tickActor = system.actorOf(Props(classOf[TickActor], this))

@@ -12,8 +12,7 @@ object TestExtras {
     val settings = Seq(
       // we can enable junit-style reports everywhere with this
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a", "-u", (target.value / "test-reports").getAbsolutePath),
-      testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-u", (target.value / "test-reports").getAbsolutePath)
-    )
+      testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-u", (target.value / "test-reports").getAbsolutePath))
   }
 
   object Filter {
@@ -41,7 +40,7 @@ object TestExtras {
         onlyTestTags := Params.testTagsOnly,
 
         // add filters for tests excluded by name
-        testOptions in Test ++= excludeTestNames.value.toSeq.map(exclude => Tests.Filter(test => !test.contains(exclude))),
+        testOptions in Test ++= excludeTestNames.value.toSeq.map(exclude ⇒ Tests.Filter(test ⇒ !test.contains(exclude))),
 
         // add arguments for tests excluded by tag
         testOptions in Test ++= {
@@ -53,8 +52,7 @@ object TestExtras {
         testOptions in Test ++= {
           val tags = onlyTestTags.value
           if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
-        }
-      )
+        })
     }
 
     def containsOrNotExcludesTag(tag: String) = {

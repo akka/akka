@@ -36,7 +36,7 @@ object ORSet {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka]type Dot = VersionVector
+  @InternalApi private[akka] type Dot = VersionVector
 
   sealed trait DeltaOp extends ReplicatedDelta with RequiresCausalDeliveryOfDeltas with ReplicatedDataSerialization {
     type T = DeltaOp

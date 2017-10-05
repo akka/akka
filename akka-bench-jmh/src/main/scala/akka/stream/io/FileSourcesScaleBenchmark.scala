@@ -34,7 +34,7 @@ class FileSourcesScaleBenchmark {
   val FILES_NUMBER = 40
   val files: Seq[Path] = {
     val line = ByteString("x" * 2048 + "\n")
-    (1 to FILES_NUMBER).map(i => {
+    (1 to FILES_NUMBER).map(i ⇒ {
       val f = Files.createTempFile(getClass.getName, i + ".bench.tmp")
 
       val ft = Source.fromIterator(() ⇒ Iterator.continually(line))
@@ -67,16 +67,16 @@ class FileSourcesScaleBenchmark {
 
   @Benchmark
   def flatMapMerge(): Unit = {
-    val h = Source.fromIterator(() => files.iterator)
-      .flatMapMerge(FILES_NUMBER, path => FileIO.fromPath(path, bufSize)).runWith(Sink.ignore)
+    val h = Source.fromIterator(() ⇒ files.iterator)
+      .flatMapMerge(FILES_NUMBER, path ⇒ FileIO.fromPath(path, bufSize)).runWith(Sink.ignore)
 
     Await.result(h, 300.seconds)
   }
 
   @Benchmark
   def mapAsync(): Unit = {
-    val h = Source.fromIterator(() => files.iterator)
-      .mapAsync(FILES_NUMBER)(path => FileIO.fromPath(path, bufSize).runWith(Sink.ignore)).runWith(Sink.ignore)
+    val h = Source.fromIterator(() ⇒ files.iterator)
+      .mapAsync(FILES_NUMBER)(path ⇒ FileIO.fromPath(path, bufSize).runWith(Sink.ignore)).runWith(Sink.ignore)
 
     Await.result(h, 300.seconds)
   }
