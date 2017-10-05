@@ -396,8 +396,8 @@ A restart only swaps the `Actor`
 instance defined by the `Props` but the incarnation and hence the UID remains
 the same.
 As long as the incarnation is same, you can keep using the same `ActorRef`.
-Restart is handled by the [Supervision Strategy](fault-tolerance.md#creating-a-supervisor-strategy) of actor's parent actor,
-and there is more discussion about [what restart means](../general/supervision.md#what-restarting-means)
+Restart is handled by the @ref:[Supervision Strategy](fault-tolerance.md#creating-a-supervisor-strategy) of actor's parent actor,
+and there is more discussion about @ref:[what restart means](general/supervision.md#supervision-restart).
 
 The lifecycle of an incarnation ends when the actor is stopped. At
 that point the appropriate lifecycle events are called and watching actors
