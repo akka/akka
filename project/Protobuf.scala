@@ -40,27 +40,28 @@ object Protobuf {
         val targets = target.value
         val cache = targets / "protoc" / "cache"
 
-        (sourceDirs zip targetDirs) map { case (src, dst) =>
-          val relative = src.relativeTo(sources).getOrElse(throw new Exception(s"path $src is not a in source tree $sources")).toString
-          val tmp = targets / "protoc" / relative
-          IO.delete(tmp)
-          generate(cmd, src, tmp, log)
-          transformDirectory(tmp, dst, _ => true, transformFile(_.replace("com.google.protobuf", "akka.protobuf")), cache, log)
+        (sourceDirs zip targetDirs) map {
+          case (src, dst) ⇒
+            val relative = src.relativeTo(sources).getOrElse(throw new Exception(s"path $src is not a in source tree $sources")).toString
+            val tmp = targets / "protoc" / relative
+            IO.delete(tmp)
+            generate(cmd, src, tmp, log)
+            transformDirectory(tmp, dst, _ ⇒ true, transformFile(_.replace("com.google.protobuf", "akka.protobuf")), cache, log)
         }
       }
-    }
-  )
+    })
 
-  private def callProtoc[T](protoc: String, args: Seq[String], log: Logger, thunk: (ProcessBuilder, Logger) => T): T =
+  private def callProtoc[T](protoc: String, args: Seq[String], log: Logger, thunk: (ProcessBuilder, Logger) ⇒ T): T =
     try {
       val proc = Process(protoc, args)
       thunk(proc, log)
-    } catch { case e: Exception =>
-      throw new RuntimeException("error while executing '%s' with args: %s" format(protoc, args.mkString(" ")), e)
+    } catch {
+      case e: Exception ⇒
+        throw new RuntimeException("error while executing '%s' with args: %s" format (protoc, args.mkString(" ")), e)
     }
 
   private def checkProtocVersion(protoc: String, protocVersion: String, log: Logger): Unit = {
-    val res = callProtoc(protoc, Seq("--version"), log, { (p, l) => p !! l })
+    val res = callProtoc(protoc, Seq("--version"), log, { (p, l) ⇒ p !! l })
     val version = res.split(" ").last.trim
     if (version != protocVersion) {
       sys.error("Wrong protoc version! Expected %s but got %s" format (protocVersion, version))
@@ -76,10 +77,10 @@ object Protobuf {
         targetDir.mkdirs()
 
         log.info("Generating %d protobuf files from %s to %s".format(protoFiles.size, srcDir, targetDir))
-        protoFiles.foreach { proto => log.info("Compiling %s" format proto) }
+        protoFiles.foreach { proto ⇒ log.info("Compiling %s" format proto) }
 
         val exitCode = callProtoc(protoc, Seq("-I" + srcDir.absolutePath, "--java_out=%s" format targetDir.absolutePath) ++
-          protoFiles.map(_.absolutePath), log, { (p, l) => p ! l })
+          protoFiles.map(_.absolutePath), log, { (p, l) ⇒ p ! l })
         if (exitCode != 0)
           sys.error("protoc returned exit code: %d" format exitCode)
       }

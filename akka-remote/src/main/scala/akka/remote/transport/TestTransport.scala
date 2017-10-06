@@ -141,12 +141,12 @@ class TestTransport(
    */
   val writeBehavior = new SwitchableLoggedBehavior[(TestAssociationHandle, ByteString), Boolean](
     defaultBehavior = {
-    defaultWrite _
-  },
+      defaultWrite _
+    },
     logCallback = {
-    case (handle, payload) ⇒
-      registry.logActivity(WriteAttempt(handle.localAddress, handle.remoteAddress, payload))
-  })
+      case (handle, payload) ⇒
+        registry.logActivity(WriteAttempt(handle.localAddress, handle.remoteAddress, payload))
+    })
 
   /**
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the disassociate() method on handles. All
@@ -154,12 +154,12 @@ class TestTransport(
    */
   val disassociateBehavior = new SwitchableLoggedBehavior[TestAssociationHandle, Unit](
     defaultBehavior = {
-    defaultDisassociate _
-  },
+      defaultDisassociate _
+    },
     logCallback = {
-    (handle) ⇒
-      registry.logActivity(DisassociateAttempt(handle.localAddress, handle.remoteAddress))
-  })
+      (handle) ⇒
+        registry.logActivity(DisassociateAttempt(handle.localAddress, handle.remoteAddress))
+    })
 
   private[akka] def write(handle: TestAssociationHandle, payload: ByteString): Boolean =
     Await.result(writeBehavior((handle, payload)), 3.seconds)

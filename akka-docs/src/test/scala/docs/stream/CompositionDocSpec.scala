@@ -168,7 +168,7 @@ class CompositionDocSpec extends AkkaSpec {
   "closed graph" in {
     //#embed-closed
     val closed1 = Source.single(0).to(Sink.foreach(println))
-    val closed2 = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>
+    val closed2 = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder ⇒
       val embeddedClosed: ClosedShape = builder.add(closed1)
       // …
       embeddedClosed
@@ -191,7 +191,7 @@ class CompositionDocSpec extends AkkaSpec {
 
     //#mat-combine-2
     // Materializes to NotUsed                                                (orange)
-    val flow2: Flow[Int, ByteString, NotUsed] = Flow[Int].map { i => ByteString(i.toString) }
+    val flow2: Flow[Int, ByteString, NotUsed] = Flow[Int].map { i ⇒ ByteString(i.toString) }
 
     // Materializes to Future[OutgoingConnection]                             (yellow)
     val flow3: Flow[ByteString, ByteString, Future[OutgoingConnection]] =

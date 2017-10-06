@@ -167,11 +167,11 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       EventFilter[RuntimeException](message = "expected", occurrences = 1) intercept
         whenReady(
           Source.unfold((0, 1)) {
-          case (a, _) if a > 10000000 ⇒ throw t
-          case (a, b)                 ⇒ Some((b, a + b) → a)
-        }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }.failed) {
-          _ should be theSameInstanceAs (t)
-        }
+            case (a, _) if a > 10000000 ⇒ throw t
+            case (a, b)                 ⇒ Some((b, a + b) → a)
+          }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }.failed) {
+            _ should be theSameInstanceAs (t)
+          }
     }
 
     "generate a finite fibonacci sequence asynchronously" in {

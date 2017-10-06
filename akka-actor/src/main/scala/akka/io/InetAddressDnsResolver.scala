@@ -20,12 +20,12 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
 
   // Controls the cache policy for successful lookups only
   private final val CachePolicyProp = "networkaddress.cache.ttl"
-  // Deprecated JVM property key, keeping for legacy compatibility; replaced by CachePolicyProp 
+  // Deprecated JVM property key, keeping for legacy compatibility; replaced by CachePolicyProp
   private final val CachePolicyPropFallback = "sun.net.inetaddr.ttl"
 
   // Controls the cache policy for negative lookups only
   private final val NegativeCachePolicyProp = "networkaddress.cache.negative.ttl"
-  // Deprecated JVM property key, keeping for legacy compatibility; replaced by NegativeCachePolicyProp 
+  // Deprecated JVM property key, keeping for legacy compatibility; replaced by NegativeCachePolicyProp
   private final val NegativeCachePolicyPropFallback = "sun.net.inetaddr.negative.ttl"
 
   // default values (-1 and 0 are magic numbers, trust them)

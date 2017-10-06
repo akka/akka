@@ -179,9 +179,9 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
 
     SystemMessageDelivery.SystemMessageEnvelope(
       serialization.deserialize(
-      protoEnv.getMessage.toByteArray,
-      protoEnv.getSerializerId,
-      if (protoEnv.hasMessageManifest) protoEnv.getMessageManifest.toStringUtf8 else "").get,
+        protoEnv.getMessage.toByteArray,
+        protoEnv.getSerializerId,
+        if (protoEnv.hasMessageManifest) protoEnv.getMessageManifest.toStringUtf8 else "").get,
       protoEnv.getSeqNo,
       deserializeUniqueAddress(protoEnv.getAckReplyTo))
   }

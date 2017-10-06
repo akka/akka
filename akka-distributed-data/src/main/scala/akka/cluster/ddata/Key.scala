@@ -9,7 +9,7 @@ object Key {
    */
   def unapply(k: Key[_]): Option[String] = Some(k.id)
 
-  private[akka]type KeyR = Key[ReplicatedData]
+  private[akka] type KeyR = Key[ReplicatedData]
 
   type KeyId = String
 

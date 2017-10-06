@@ -25,15 +25,14 @@ object Scaladoc extends AutoPlugin {
   override lazy val projectSettings = {
     inTask(doc)(Seq(
       scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
-      autoAPIMappings := CliOptions.scaladocAutoAPI.get
-    )) ++
-    Seq(validateDiagrams in Compile := true) ++
-    CliOptions.scaladocDiagramsEnabled.ifTrue(doc in Compile := {
-      val docs = (doc in Compile).value
-      if ((validateDiagrams in Compile).value)
-        scaladocVerifier(docs)
-      docs
-    })
+      autoAPIMappings := CliOptions.scaladocAutoAPI.get)) ++
+      Seq(validateDiagrams in Compile := true) ++
+      CliOptions.scaladocDiagramsEnabled.ifTrue(doc in Compile := {
+        val docs = (doc in Compile).value
+        if ((validateDiagrams in Compile).value)
+          scaladocVerifier(docs)
+        docs
+      })
   }
 
   def scaladocOptions(ver: String, base: File): List[String] = {
@@ -42,7 +41,7 @@ object Scaladoc extends AutoPlugin {
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
-  def scaladocVerifier(file: File): File= {
+  def scaladocVerifier(file: File): File = {
     @tailrec
     def findHTMLFileWithDiagram(dirs: Seq[File]): Boolean = {
       if (dirs.isEmpty) false
@@ -50,18 +49,17 @@ object Scaladoc extends AutoPlugin {
         val curr = dirs.head
         val (newDirs, files) = curr.listFiles.partition(_.isDirectory)
         val rest = dirs.tail ++ newDirs
-        val hasDiagram = files exists { f =>
+        val hasDiagram = files exists { f ⇒
           val name = f.getName
           if (name.endsWith(".html") && !name.startsWith("index-") &&
             !name.equals("index.html") && !name.equals("package.html")) {
             val source = scala.io.Source.fromFile(f)(scala.io.Codec.UTF8)
             val hd = try source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
             catch {
-              case e: Exception => throw new IllegalStateException("Scaladoc verification failed for file '"+f+"'", e)
+              case e: Exception ⇒ throw new IllegalStateException("Scaladoc verification failed for file '" + f + "'", e)
             } finally source.close()
             hd
-          }
-          else false
+          } else false
         }
         hasDiagram || findHTMLFileWithDiagram(rest)
       }
@@ -84,8 +82,7 @@ object ScaladocNoVerificationOfDiagrams extends AutoPlugin {
   override def requires = Scaladoc
 
   override lazy val projectSettings = Seq(
-    Scaladoc.validateDiagrams in Compile := false
-  )
+    Scaladoc.validateDiagrams in Compile := false)
 }
 
 /**
@@ -109,8 +106,7 @@ object UnidocRoot extends AutoPlugin {
     // genjavadoc needs to generate synthetic methods since the java code uses them
     scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
     // FIXME: see #18056
-    sources in(JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
-  )).getOrElse(Nil)
+    sources in (JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin"))))).getOrElse(Nil)
 
   val settings = {
     def unidocRootProjectFilter(ignoreProjects: Seq[Project]) =
@@ -119,8 +115,7 @@ object UnidocRoot extends AutoPlugin {
     inTask(unidoc)(Seq(
       unidocProjectFilter in ScalaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
       unidocProjectFilter in JavaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
-      apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value
-    ))
+      apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value))
   }
 
   override lazy val projectSettings =
@@ -140,7 +135,5 @@ object Unidoc extends AutoPlugin {
       scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
       unidocGenjavadocVersion in Global := "0.10",
       // FIXME: see #18056
-      sources in(Genjavadoc, doc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
-    )
-  ).getOrElse(Seq.empty)
+      sources in (Genjavadoc, doc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin"))))).getOrElse(Seq.empty)
 }

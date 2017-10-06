@@ -19,7 +19,7 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
 
   "build with open ports" in {
     //#simple-partial-graph-dsl
-    val pickMaxOfThree = GraphDSL.create() { implicit b =>
+    val pickMaxOfThree = GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
 
       val zip1 = b.add(ZipWith[Int, Int, Int](math.max _))
@@ -31,7 +31,7 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
 
     val resultSink = Sink.head[Int]
 
-    val g = RunnableGraph.fromGraph(GraphDSL.create(resultSink) { implicit b => sink =>
+    val g = RunnableGraph.fromGraph(GraphDSL.create(resultSink) { implicit b ⇒ sink ⇒
       import GraphDSL.Implicits._
 
       // importing the partial graph will return its shape (inlets & outlets)
@@ -51,12 +51,12 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
 
   "build source from partial graph" in {
     //#source-from-partial-graph-dsl
-    val pairs = Source.fromGraph(GraphDSL.create() { implicit b =>
+    val pairs = Source.fromGraph(GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
 
       // prepare graph elements
       val zip = b.add(Zip[Int, Int]())
-      def ints = Source.fromIterator(() => Iterator.from(1))
+      def ints = Source.fromIterator(() ⇒ Iterator.from(1))
 
       // connect the graph
       ints.filter(_ % 2 != 0) ~> zip.in0
@@ -74,7 +74,7 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
   "build flow from partial graph" in {
     //#flow-from-partial-graph-dsl
     val pairUpWithToString =
-      Flow.fromGraph(GraphDSL.create() { implicit b =>
+      Flow.fromGraph(GraphDSL.create() { implicit b ⇒
         import GraphDSL.Implicits._
 
         // prepare graph elements
@@ -116,7 +116,7 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
     val actorRef: ActorRef = testActor
     //#sink-combine
     val sendRmotely = Sink.actorRef(actorRef, "Done")
-    val localProcessing = Sink.foreach[Int](_ => /* do something usefull */ ())
+    val localProcessing = Sink.foreach[Int](_ ⇒ /* do something usefull */ ())
 
     val sink = Sink.combine(sendRmotely, localProcessing)(Broadcast[Int](_))
 

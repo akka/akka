@@ -134,7 +134,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   }
 
   def addMember(m: Member): Unit =
-    if (m.uniqueAddress != selfUniqueAddress && // is not self 
+    if (m.uniqueAddress != selfUniqueAddress && // is not self
       !state.contains(m.uniqueAddress) && // not already added
       filterInternalClusterMembers(m) // should be watching members from this DC (internal / external)
       ) {
