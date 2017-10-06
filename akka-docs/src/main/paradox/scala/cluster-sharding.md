@@ -36,7 +36,7 @@ See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing).
 This is how an entity actor may look like:
 
 Scala
-:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #proxy-dc }
+:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-actor }
 
 Java
 :  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-actor }
