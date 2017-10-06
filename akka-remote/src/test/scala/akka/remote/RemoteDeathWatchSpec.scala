@@ -62,7 +62,7 @@ akka {
     }).withDeploy(Deploy.local))
 
     expectMsg(20.seconds, ref)
-    // we don't expect real quarantine when the UID is unknown, i.e. QuarantinedEvent is not published 
+    // we don't expect real quarantine when the UID is unknown, i.e. QuarantinedEvent is not published
     probe.expectNoMsg(3.seconds)
     // The following verifies ticket #3870, i.e. make sure that re-delivery of Watch message is stopped.
     // It was observed as periodic logging of "address is now gated" when the gate was lifted.

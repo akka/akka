@@ -30,7 +30,7 @@ object TwitterStreamQuickstartDocSpec {
 
   final case class Tweet(author: Author, timestamp: Long, body: String) {
     def hashtags: Set[Hashtag] = body.split(" ").collect {
-      case t if t.startsWith("#") => Hashtag(t.replaceAll("[^#\\w]", ""))
+      case t if t.startsWith("#") ⇒ Hashtag(t.replaceAll("[^#\\w]", ""))
     }.toSet
   }
 
@@ -98,7 +98,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     trait Example3 {
       //#authors-collect
       val authors: Source[Author, NotUsed] =
-        tweets.collect { case t if t.hashtags.contains(akkaTag) => t.author }
+        tweets.collect { case t if t.hashtags.contains(akkaTag) ⇒ t.author }
       //#authors-collect
     }
 
@@ -184,8 +184,8 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
       //#backpressure-by-readline
       val completion: Future[Done] =
         Source(1 to 10)
-          .map(i => { println(s"map => $i"); i })
-          .runForeach { i => readLine(s"Element = $i; continue reading? [press enter]\n") }
+          .map(i ⇒ { println(s"map => $i"); i })
+          .runForeach { i ⇒ readLine(s"Element = $i; continue reading? [press enter]\n") }
 
       Await.ready(completion, 1.minute)
       //#backpressure-by-readline
@@ -194,7 +194,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
   "count elements on finite stream" in {
     //#tweets-fold-count
-    val count: Flow[Tweet, Int, NotUsed] = Flow[Tweet].map(_ => 1)
+    val count: Flow[Tweet, Int, NotUsed] = Flow[Tweet].map(_ ⇒ 1)
 
     val sumSink: Sink[Int, Future[Int]] = Sink.fold[Int, Int](0)(_ + _)
 
@@ -205,12 +205,12 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
     val sum: Future[Int] = counterGraph.run()
 
-    sum.foreach(c => println(s"Total tweets processed: $c"))
+    sum.foreach(c ⇒ println(s"Total tweets processed: $c"))
     //#tweets-fold-count
 
     new AnyRef {
       //#tweets-fold-count-oneline
-      val sum: Future[Int] = tweets.map(t => 1).runWith(sumSink)
+      val sum: Future[Int] = tweets.map(t ⇒ 1).runWith(sumSink)
       //#tweets-fold-count-oneline
     }
   }
@@ -223,7 +223,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     val counterRunnableGraph: RunnableGraph[Future[Int]] =
       tweetsInMinuteFromNow
         .filter(_.hashtags contains akkaTag)
-        .map(t => 1)
+        .map(t ⇒ 1)
         .toMat(sumSink)(Keep.right)
 
     // materialize the stream once in the morning
@@ -235,7 +235,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
     val sum: Future[Int] = counterRunnableGraph.run()
 
-    sum.map { c => println(s"Total tweets processed: $c") }
+    sum.map { c ⇒ println(s"Total tweets processed: $c") }
   }
 
 }

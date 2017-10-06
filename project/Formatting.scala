@@ -9,35 +9,28 @@ import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 object Formatting {
+  import scalariform.formatter.preferences._
+
   lazy val formatSettings = Seq(
-    ScalariformKeys.preferences in Compile  := formattingPreferences.value,
-    ScalariformKeys.preferences in Test     := formattingPreferences.value,
-    ScalariformKeys.preferences in MultiJvm := formattingPreferences.value
+    ScalariformKeys.preferences := setPreferences(ScalariformKeys.preferences.value),
+    ScalariformKeys.preferences in Compile := setPreferences(ScalariformKeys.preferences.value),
+    ScalariformKeys.preferences in Test := setPreferences(ScalariformKeys.preferences.value),
+    ScalariformKeys.preferences in MultiJvm := setPreferences(ScalariformKeys.preferences.value)
   )
 
   lazy val docFormatSettings = Seq(
-    ScalariformKeys.preferences in Compile  := docFormattingPreferences.value,
-    ScalariformKeys.preferences in Test     := docFormattingPreferences.value,
-    ScalariformKeys.preferences in MultiJvm := docFormattingPreferences.value
+    ScalariformKeys.preferences := setPreferences(ScalariformKeys.preferences.value, rewriteArrowSymbols = false),
+    ScalariformKeys.preferences in Compile := setPreferences(ScalariformKeys.preferences.value, rewriteArrowSymbols = false),
+    ScalariformKeys.preferences in Test := setPreferences(ScalariformKeys.preferences.value, rewriteArrowSymbols = false),
+    ScalariformKeys.preferences in MultiJvm := setPreferences(ScalariformKeys.preferences.value, rewriteArrowSymbols = false)
   )
 
-  def formattingPreferences = Def.setting {
-    import scalariform.formatter.preferences._
-    ScalariformKeys.preferences.value
-      .setPreference(RewriteArrowSymbols, true)
-      .setPreference(AlignParameters, true)
-      .setPreference(AlignSingleLineCaseStatements, true)
-      .setPreference(DanglingCloseParenthesis, Preserve)
-      .setPreference(DoubleIndentClassDeclaration, false)
-  }
-
-  def docFormattingPreferences = Def.setting {
-    import scalariform.formatter.preferences._
-    ScalariformKeys.preferences.value
-      .setPreference(RewriteArrowSymbols, false)
-      .setPreference(AlignParameters, true)
-      .setPreference(AlignSingleLineCaseStatements, true)
-      .setPreference(DanglingCloseParenthesis, Preserve)
-      .setPreference(DoubleIndentClassDeclaration, false)
-  }
+  def setPreferences(preferences: IFormattingPreferences, rewriteArrowSymbols: Boolean = true) = preferences
+    .setPreference(RewriteArrowSymbols, rewriteArrowSymbols)
+    .setPreference(AlignParameters, true)
+    .setPreference(AlignSingleLineCaseStatements, true)
+    .setPreference(DoubleIndentConstructorArguments, false)
+    .setPreference(DoubleIndentMethodDeclaration, false)
+    .setPreference(DanglingCloseParenthesis, Preserve)
+    .setPreference(NewlineAtEndOfFile, true)
 }

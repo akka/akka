@@ -27,7 +27,7 @@ class ByteString_dropSliceTake_Benchmark {
   val bss_pc_large = bss_large.compact
 
   /*
-   --------------------------------- BASELINE -------------------------------------------------------------------- 
+   --------------------------------- BASELINE --------------------------------------------------------------------
    [info] Benchmark                                                         Mode  Cnt            Score         Error  Units
    [info] ByteString_dropSliceTake_Benchmark.bs_large_dropRight_100        thrpt   20  111 122 621.983 ± 6172679.160  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bs_large_dropRight_256        thrpt   20  110 238 003.870 ± 4042572.908  ops/s
@@ -48,9 +48,9 @@ class ByteString_dropSliceTake_Benchmark {
    [info] ByteString_dropSliceTake_Benchmark.bs_large_slice_129_129        thrpt   20  105 640 836.625 ± 9112709.942  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bss_large_slice_80_80         thrpt   20   10 868 202.262 ±  526537.133  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bss_large_slice_129_129       thrpt   20    9 429 199.802 ± 1321542.453  ops/s
-   
+
    --------------------------------- AFTER -----------------------------------------------------------------------
-   
+
    ------ TODAY –––––––
    [info] Benchmark                                                         Mode  Cnt            Score         Error  Units
    [info] ByteString_dropSliceTake_Benchmark.bs_large_dropRight_100        thrpt   20  126 091 961.654 ± 2813125.268  ops/s
@@ -59,7 +59,7 @@ class ByteString_dropSliceTake_Benchmark {
    [info] ByteString_dropSliceTake_Benchmark.bss_large_dropRight_100       thrpt   20    8 813 065.392 ±  234570.880  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bss_large_dropRight_256       thrpt   20    9 039 585.934 ±  297168.301  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bss_large_dropRight_2000      thrpt   20    9 629 458.168 ±  124846.904  ops/s
-   
+
    [info] ByteString_dropSliceTake_Benchmark.bs_large_drop_100             thrpt   20  111 666 137.955 ± 4846727.674  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bs_large_drop_256             thrpt   20  114 405 514.622 ± 4985750.805  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bs_large_drop_2000            thrpt   20  114 364 716.297 ± 2512280.603  ops/s
@@ -67,15 +67,15 @@ class ByteString_dropSliceTake_Benchmark {
    [info] ByteString_dropSliceTake_Benchmark.bss_large_drop_100            thrpt   20    9 184 934.769 ±  549140.840  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bss_large_drop_256            thrpt   20   10 887 437.121 ±  195606.240  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bss_large_drop_2000           thrpt   20   10 725 300.292 ±  403470.413  ops/s
-   
+
    [info] ByteString_dropSliceTake_Benchmark.bs_large_slice_80_80          thrpt   20  233 017 314.148 ± 7070246.826  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bs_large_slice_129_129        thrpt   20  275 245 086.247 ± 4969752.048  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bss_large_slice_80_80         thrpt   20  264 963 420.976 ± 4259289.143  ops/s
    [info] ByteString_dropSliceTake_Benchmark.bss_large_slice_129_129       thrpt   20  265 477 577.022 ± 4623974.283  ops/s
-   
+
    */
 
-  // 18 == "http://example.com", a typical url length 
+  // 18 == "http://example.com", a typical url length
 
   @Benchmark
   def bs_large_drop_0: ByteString =

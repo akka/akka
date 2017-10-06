@@ -16,7 +16,7 @@ class RecipeLoggingElements extends RecipeSpec {
       val mySource = Source(List("1", "2", "3"))
 
       //#println-debug
-      val loggedSource = mySource.map { elem => println(elem); elem }
+      val loggedSource = mySource.map { elem ⇒ println(elem); elem }
       //#println-debug
 
       loggedSource.runWith(Sink.ignore)
