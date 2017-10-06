@@ -13,6 +13,7 @@ import akka.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Pro
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
+import akka.typed.Behavior.UntypedBehavior
 
 /**
  * Default envelope type that may be used with Cluster Sharding.
@@ -227,9 +228,15 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
     val ref =
       if (settings.shouldHostShard(cluster)) {
         system.log.info("Starting Shard Region [{}]...")
+
+        val untypedProps = behavior match {
+          case u: UntypedBehavior[_] ⇒ u.untypedProps // PersistentBehavior
+          case _                     ⇒ PropsAdapter(behavior, entityProps)
+        }
+
         untypedSharding.start(
           typeKey.name,
-          PropsAdapter(behavior, entityProps),
+          untypedProps,
           untypedSettings,
           extractor, extractor,
           defaultShardAllocationStrategy(settings),
@@ -262,14 +269,14 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
   @InternalApi
   private implicit def convertExtractEntityId[E, A](extractor: ShardingMessageExtractor[E, A]): UntypedShardRegion.ExtractEntityId = {
     // TODO what if msg was null
-    case msg: E if extractor.entityId(msg.asInstanceOf[E]) ne null ⇒
+    case msg: E @unchecked if extractor.entityId(msg) ne null ⇒
       // we're evaluating entityId twice, I wonder if we could do it just once (same was in old sharding's Java DSL)
 
-      (extractor.entityId(msg.asInstanceOf[E]), extractor.entityMessage(msg.asInstanceOf[E]))
+      (extractor.entityId(msg), extractor.entityMessage(msg))
   }
   @InternalApi
   private implicit def convertExtractShardId[E, A](extractor: ShardingMessageExtractor[E, A]): UntypedShardRegion.ExtractShardId = {
-    case msg: E ⇒ extractor.shardId(msg)
+    case msg: E @unchecked ⇒ extractor.shardId(msg)
   }
 }
 
