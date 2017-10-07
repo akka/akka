@@ -45,7 +45,7 @@ private[affinity] object AffinityPool {
   // Method handle to JDK9+ onSpinWait method
   private val onSpinWaitMethodHandle =
     try
-      OptionVal.Some(MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Unit])))
+      OptionVal.Some(MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Void])))
     catch {
       case NonFatal(_) ⇒ OptionVal.None
     }
