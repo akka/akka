@@ -16,9 +16,9 @@ class RecipeAdhocSource extends RecipeSpec {
   //#adhoc-source
   def adhocSource[T](source: Source[T, _], timeout: FiniteDuration, maxRetries: Int): Source[T, _] =
     Source.lazily(
-      () => source.backpressureTimeout(timeout).recoverWithRetries(maxRetries, {
-        case t: TimeoutException =>
-          Source.lazily(() => source.backpressureTimeout(timeout)).mapMaterializedValue(_ => NotUsed)
+      () ⇒ source.backpressureTimeout(timeout).recoverWithRetries(maxRetries, {
+        case t: TimeoutException ⇒
+          Source.lazily(() ⇒ source.backpressureTimeout(timeout)).mapMaterializedValue(_ ⇒ NotUsed)
       })
     )
   //#adhoc-source
@@ -26,7 +26,7 @@ class RecipeAdhocSource extends RecipeSpec {
   "Recipe for adhoc source" must {
     "not start the source if there is no demand" taggedAs TimingTest in {
       val isStarted = new AtomicBoolean()
-      adhocSource(Source.empty.mapMaterializedValue(_ => isStarted.set(true)), 200.milliseconds, 3)
+      adhocSource(Source.empty.mapMaterializedValue(_ ⇒ isStarted.set(true)), 200.milliseconds, 3)
         .runWith(TestSink.probe[Int])
       Thread.sleep(300)
       isStarted.get() should be(false)
@@ -41,7 +41,7 @@ class RecipeAdhocSource extends RecipeSpec {
     "shut down the source when the next demand times out" taggedAs TimingTest in {
       val shutdown = Promise[Done]()
       val sink = adhocSource(
-        Source.repeat("a").watchTermination() { (_, term) =>
+        Source.repeat("a").watchTermination() { (_, term) ⇒
           shutdown.completeWith(term)
         }, 200.milliseconds, 3)
         .runWith(TestSink.probe[String])
@@ -54,7 +54,7 @@ class RecipeAdhocSource extends RecipeSpec {
     "not shut down the source when there are still demands" taggedAs TimingTest in {
       val shutdown = Promise[Done]()
       val sink = adhocSource(
-        Source.repeat("a").watchTermination() { (_, term) =>
+        Source.repeat("a").watchTermination() { (_, term) ⇒
           shutdown.completeWith(term)
         }, 200.milliseconds, 3)
         .runWith(TestSink.probe[String])
@@ -78,10 +78,10 @@ class RecipeAdhocSource extends RecipeSpec {
       val startedCount = new AtomicInteger(0)
 
       val source = Source
-        .empty.mapMaterializedValue(_ => startedCount.incrementAndGet())
+        .empty.mapMaterializedValue(_ ⇒ startedCount.incrementAndGet())
         .concat(Source.repeat("a"))
 
-      val sink = adhocSource(source.watchTermination() { (_, term) =>
+      val sink = adhocSource(source.watchTermination() { (_, term) ⇒
         shutdown.completeWith(term)
       }, 200.milliseconds, 3)
         .runWith(TestSink.probe[String])
@@ -97,10 +97,10 @@ class RecipeAdhocSource extends RecipeSpec {
       val startedCount = new AtomicInteger(0)
 
       val source = Source
-        .empty.mapMaterializedValue(_ => startedCount.incrementAndGet())
+        .empty.mapMaterializedValue(_ ⇒ startedCount.incrementAndGet())
         .concat(Source.repeat("a"))
 
-      val sink = adhocSource(source.watchTermination() { (_, term) =>
+      val sink = adhocSource(source.watchTermination() { (_, term) ⇒
         shutdown.completeWith(term)
       }, 200.milliseconds, 3)
         .runWith(TestSink.probe[String])
