@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.stream.scaladsl.{ Keep, Sink, Source }
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ Graph, SourceShape }
+import akka.testkit.TimingTest
 import akka.{ Done, NotUsed }
 
 import scala.concurrent._
@@ -17,13 +18,13 @@ class RecipeAdhocSource extends RecipeSpec {
     Source.lazily(
       () => source.backpressureTimeout(timeout).recoverWithRetries(maxRetries, {
         case t: TimeoutException =>
-          Source.lazily(() => source.backpressureTimeout(timeout)).asInstanceOf[Graph[SourceShape[T], NotUsed]]
+          Source.lazily(() => source.backpressureTimeout(timeout)).mapMaterializedValue(_ => NotUsed)
       })
     )
   //#adhoc-source
 
   "Recipe for adhoc source" must {
-    "not start the source if there is no demand" in {
+    "not start the source if there is no demand" taggedAs TimingTest in {
       val isStarted = new AtomicBoolean()
       adhocSource(Source.empty.mapMaterializedValue(_ => isStarted.set(true)), 200.milliseconds, 3)
         .runWith(TestSink.probe[Int])
@@ -31,13 +32,13 @@ class RecipeAdhocSource extends RecipeSpec {
       isStarted.get() should be(false)
     }
 
-    "start the source when there is a demand" in {
+    "start the source when there is a demand" taggedAs TimingTest in {
       val sink = adhocSource(Source.repeat("a"), 200.milliseconds, 3)
         .runWith(TestSink.probe[String])
       sink.requestNext("a")
     }
 
-    "shut down the source when the next demand times out" in {
+    "shut down the source when the next demand times out" taggedAs TimingTest in {
       val shutdown = Promise[Done]()
       val sink = adhocSource(
         Source.repeat("a").watchTermination() { (_, term) =>
@@ -50,7 +51,7 @@ class RecipeAdhocSource extends RecipeSpec {
       shutdown.isCompleted should be(true)
     }
 
-    "not shut down the source when there are still demands" in {
+    "not shut down the source when there are still demands" taggedAs TimingTest in {
       val shutdown = Promise[Done]()
       val sink = adhocSource(
         Source.repeat("a").watchTermination() { (_, term) =>
@@ -72,7 +73,7 @@ class RecipeAdhocSource extends RecipeSpec {
       shutdown.isCompleted should be(false)
     }
 
-    "restart upon demand again after timeout" in {
+    "restart upon demand again after timeout" taggedAs TimingTest in {
       val shutdown = Promise[Done]()
       val startedCount = new AtomicInteger(0)
 
@@ -91,7 +92,7 @@ class RecipeAdhocSource extends RecipeSpec {
       shutdown.isCompleted should be(true)
     }
 
-    "restart up to specified maxRetries" in {
+    "restart up to specified maxRetries" taggedAs TimingTest in {
       val shutdown = Promise[Done]()
       val startedCount = new AtomicInteger(0)
 
