@@ -114,8 +114,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   private def choosePort(port: Int, connectionContext: ConnectionContext) = if (port >= 0) port else connectionContext.defaultPort
 
-  private def materializeTcpBind(binding: Future[Tcp.ServerBinding])(implicit mat: Materializer) = binding
-    .map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(mat.executionContext)
+  private def materializeTcpBind(binding: Future[Tcp.ServerBinding]) =
+    binding.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(ExecutionContexts.sameThreadExecutionContext)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] of [[akka.http.scaladsl.Http.IncomingConnection]] instances which represents a prospective HTTP server binding
@@ -141,7 +141,17 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   def bind(interface: String, port: Int = DefaultPortForProtocol,
            connectionContext: ConnectionContext = defaultServerHttpContext,
            settings:          ServerSettings    = ServerSettings(system),
-           log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Source[Http.IncomingConnection, Future[ServerBinding]] = {
+           log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] =
+    bindImpl(interface, port, connectionContext, settings, log)
+
+  /**
+   *  Dummy method to disambiguate inner usages of `bind`. Implementation can be moved to
+   * `bind` when deprecated bind method(s) are removed.
+   */
+  private[http] def bindImpl(interface: String, port: Int = DefaultPortForProtocol,
+                             connectionContext: ConnectionContext = defaultServerHttpContext,
+                             settings:          ServerSettings    = ServerSettings(system),
+                             log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] = {
     val fullLayer = fuseServerBidiFlow(settings, connectionContext, log)
 
     tcpBind(interface, choosePort(port, connectionContext), settings)
@@ -151,6 +161,13 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       })
       .mapMaterializedValue(materializeTcpBind)
   }
+
+  @deprecated("Binary compatibility method. Use the new `bind` method without the implicit materializer instead.", "10.0.11")
+  private[http] def bind(interface: String, port: Int,
+                         connectionContext: ConnectionContext,
+                         settings:          ServerSettings,
+                         log:               LoggingAdapter)(implicit fm: Materializer): Source[Http.IncomingConnection, Future[ServerBinding]] =
+    bindImpl(interface, port, connectionContext, settings, log)
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
@@ -711,22 +728,18 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   private def gatewayClientFlow[T](
     hcps:    HostConnectionPoolSetup,
-    gateway: PoolGateway)(
-    implicit
-    fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    gateway: PoolGateway): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
     clientFlow[T](hcps.setup.settings)(_ → gateway)
       .mapMaterializedValue(_ ⇒ HostConnectionPool(hcps)(gateway))
 
-  private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, PoolGateway))(
-    implicit
-    system: ActorSystem, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
+  private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, PoolGateway)): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
     // a connection pool can never have more than pipeliningLimit * maxConnections requests in flight at any point
     val parallelism = settings.pipeliningLimit * settings.maxConnections
     Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
       case (request, userContext) ⇒
         val (effectiveRequest, gateway) = f(request)
         val result = Promise[(Try[HttpResponse], T)]() // TODO: simplify to `transformWith` when on Scala 2.12
-        gateway(effectiveRequest).onComplete(responseTry ⇒ result.success(responseTry → userContext))(fm.executionContext)
+        gateway(effectiveRequest).onComplete(responseTry ⇒ result.success(responseTry → userContext))(ExecutionContexts.sameThreadExecutionContext)
         result.future
     }
   }

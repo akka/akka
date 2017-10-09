@@ -131,9 +131,9 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    */
-  def bind(connect: ConnectHttp, materializer: Materializer): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
+  def bind(connect: ConnectHttp): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    new Source(delegate.bind(connect.host, connect.port, connectionContext)(materializer)
+    new Source(delegate.bindImpl(connect.host, connect.port, connectionContext)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
   }
@@ -154,11 +154,10 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    */
   def bind(
-    connect:      ConnectHttp,
-    settings:     ServerSettings,
-    materializer: Materializer): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
+    connect:  ConnectHttp,
+    settings: ServerSettings): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    new Source(delegate.bind(connect.host, connect.port, settings = settings.asScala, connectionContext = connectionContext)(materializer)
+    new Source(delegate.bindImpl(connect.host, connect.port, settings = settings.asScala, connectionContext = connectionContext)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
   }
@@ -178,17 +177,43 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    */
+  def bind(
+    connect:  ConnectHttp,
+    settings: ServerSettings,
+    log:      LoggingAdapter): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
+    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
+    new Source(delegate.bindImpl(connect.host, connect.port, connectionContext, settings.asScala, log)
+      .map(new IncomingConnection(_))
+      .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
+  }
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
+  def bind(connect: ConnectHttp, materializer: Materializer): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+    bind(connect)
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
+  def bind(
+    connect:      ConnectHttp,
+    settings:     ServerSettings,
+    materializer: Materializer): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+    bind(connect, settings)
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
   def bind(
     connect:      ConnectHttp,
     settings:     ServerSettings,
     log:          LoggingAdapter,
-    materializer: Materializer): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    new Source(delegate.bind(connect.host, connect.port, connectionContext, settings.asScala, log)(materializer)
-      .map(new IncomingConnection(_))
-      .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
-  }
-
+    materializer: Materializer): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+    bind(connect, settings, log)
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
