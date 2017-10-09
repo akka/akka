@@ -32,7 +32,7 @@ object MyExplicitExceptionHandler {
     val route: Route =
       handleExceptions(myExceptionHandler) {
         // ... some route structure
-        null // hide
+        null // #hide
       }
 
     Http().bindAndHandle(route, "localhost", 8080)
@@ -66,7 +66,7 @@ object MyImplicitExceptionHandler {
 
     val route: Route =
     // ... some route structure
-      null // hide
+      null // #hide
 
     Http().bindAndHandle(route, "localhost", 8080)
   }

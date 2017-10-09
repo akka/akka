@@ -45,9 +45,7 @@ object MyRejectionHandler {
 
     val route: Route =
       // ... some route structure
-      //#custom-handler-example
-      null // hide
-      //#custom-handler-example
+      null // #hide
 
     Http().bindAndHandle(route, "localhost", 8080)
   }

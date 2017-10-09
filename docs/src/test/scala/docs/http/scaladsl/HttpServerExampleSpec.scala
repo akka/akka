@@ -436,7 +436,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
               .as(OrderItem) { orderItem =>
                 // ... route using case class instance created from
                 // required and optional query parameters
-                complete("") // hide
+                complete("") // #hide
               }
           }
         }
