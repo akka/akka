@@ -525,6 +525,30 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
     clientFlow[T](settings) { request ⇒ request → sharedGateway(request, settings, connectionContext, log) }
 
+  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11") // kept as `private[http]` for binary compatibility
+  private[http] def singleRequest(
+    request:           HttpRequest,
+    connectionContext: HttpsConnectionContext,
+    settings:          ConnectionPoolSettings,
+    log:               LoggingAdapter)(implicit fm: Materializer): Future[HttpResponse] =
+    singleRequestImpl(request, connectionContext, settings, log)
+
+  /**
+   *  Dummy method to disambiguate inner usages of new singleRequest. Implementation can be moved to
+   * `singleRequest` when deprecated singleRequest method(s) are removed.
+   */
+  private[http] def singleRequestImpl(
+    request:           HttpRequest,
+    connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
+    settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
+    log:               LoggingAdapter         = system.log): Future[HttpResponse] =
+    try {
+      val gateway = sharedGateway(request, settings, connectionContext, log)
+      gateway(request)
+    } catch {
+      case e: IllegalUriException ⇒ FastFuture.failed(e)
+    }
+
   /**
    * Fires a single [[akka.http.scaladsl.model.HttpRequest]] across the (cached) host connection pool for the request's
    * effective URI to produce a response future.
@@ -538,13 +562,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     request:           HttpRequest,
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
-    log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Future[HttpResponse] =
-    try {
-      val gateway = sharedGateway(request, settings, connectionContext, log)
-      gateway(request)
-    } catch {
-      case e: IllegalUriException ⇒ FastFuture.failed(e)
-    }
+    log:               LoggingAdapter         = system.log): Future[HttpResponse] =
+    singleRequestImpl(request, connectionContext, settings, log)
 
   /**
    * Constructs a [[akka.http.scaladsl.Http.WebSocketClientLayer]] stage using the configured default [[akka.http.scaladsl.settings.ClientConnectionSettings]],

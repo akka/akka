@@ -513,16 +513,26 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptTupleFlow(delegate.superPool[T](defaultClientHttpsContext.asScala, settings.asScala, log)(materializer))
 
   /**
-   * Fires a single [[HttpRequest]] across the (cached) host connection pool for the request's
-   * effective URI to produce a response future.
-   *
-   * The [[defaultClientHttpsContext]] is used to configure TLS for the connection.
-   *
-   * Note that the request must have either an absolute URI or a valid `Host` header, otherwise
-   * the future will be completed with an error.
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
    */
   def singleRequest(request: HttpRequest, materializer: Materializer): CompletionStage[HttpResponse] =
-    delegate.singleRequest(request.asScala)(materializer).toJava
+    delegate.singleRequestImpl(request.asScala).toJava
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  def singleRequest(request: HttpRequest, connectionContext: HttpsConnectionContext, materializer: Materializer): CompletionStage[HttpResponse] =
+    delegate.singleRequestImpl(request.asScala, connectionContext.asScala).toJava
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  def singleRequest(
+    request:           HttpRequest,
+    connectionContext: HttpsConnectionContext,
+    settings:          ConnectionPoolSettings,
+    log:               LoggingAdapter, materializer: Materializer): CompletionStage[HttpResponse] =
+    delegate.singleRequestImpl(request.asScala, connectionContext.asScala, settings.asScala, log).toJava
 
   /**
    * Fires a single [[HttpRequest]] across the (cached) host connection pool for the request's
@@ -533,8 +543,20 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Note that the request must have either an absolute URI or a valid `Host` header, otherwise
    * the future will be completed with an error.
    */
-  def singleRequest(request: HttpRequest, connectionContext: HttpsConnectionContext, materializer: Materializer): CompletionStage[HttpResponse] =
-    delegate.singleRequest(request.asScala, connectionContext.asScala)(materializer).toJava
+  def singleRequest(request: HttpRequest): CompletionStage[HttpResponse] =
+    delegate.singleRequestImpl(request.asScala).toJava
+
+  /**
+   * Fires a single [[HttpRequest]] across the (cached) host connection pool for the request's
+   * effective URI to produce a response future.
+   *
+   * The [[defaultClientHttpsContext]] is used to configure TLS for the connection.
+   *
+   * Note that the request must have either an absolute URI or a valid `Host` header, otherwise
+   * the future will be completed with an error.
+   */
+  def singleRequest(request: HttpRequest, connectionContext: HttpsConnectionContext): CompletionStage[HttpResponse] =
+    delegate.singleRequestImpl(request.asScala, connectionContext.asScala).toJava
 
   /**
    * Fires a single [[HttpRequest]] across the (cached) host connection pool for the request's
@@ -549,8 +571,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     request:           HttpRequest,
     connectionContext: HttpsConnectionContext,
     settings:          ConnectionPoolSettings,
-    log:               LoggingAdapter, materializer: Materializer): CompletionStage[HttpResponse] =
-    delegate.singleRequest(request.asScala, connectionContext.asScala, settings.asScala, log)(materializer).toJava
+    log:               LoggingAdapter): CompletionStage[HttpResponse] =
+    delegate.singleRequestImpl(request.asScala, connectionContext.asScala, settings.asScala, log).toJava
 
   /**
    * Constructs a WebSocket [[akka.stream.javadsl.BidiFlow]].
