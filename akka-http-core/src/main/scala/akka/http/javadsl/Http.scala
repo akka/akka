@@ -48,17 +48,15 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Constructs a server layer stage using the configured default [[akka.http.javadsl.settings.ServerSettings]]. The returned [[akka.stream.javadsl.BidiFlow]] isn't
    * reusable and can only be materialized once.
    */
-  def serverLayer(materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayer()(materializer))
+  def serverLayer(): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    adaptServerLayer(delegate.serverLayerImpl())
 
   /**
    * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]]. The returned [[akka.stream.javadsl.BidiFlow]] isn't reusable and
    * can only be materialized once.
    */
-  def serverLayer(
-    settings:     ServerSettings,
-    materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayer(settings.asScala)(materializer))
+  def serverLayer(settings: ServerSettings): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    adaptServerLayer(delegate.serverLayerImpl(settings.asScala))
 
   /**
    * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]]. The returned [[akka.stream.javadsl.BidiFlow]] isn't reusable and
@@ -67,9 +65,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def serverLayer(
     settings:      ServerSettings,
-    remoteAddress: Optional[InetSocketAddress],
-    materializer:  Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayer(settings.asScala, remoteAddress.asScala)(materializer))
+    remoteAddress: Optional[InetSocketAddress]): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    adaptServerLayer(delegate.serverLayerImpl(settings.asScala, remoteAddress.asScala))
 
   /**
    * Constructs a server layer stage using the given [[ServerSettings]]. The returned [[akka.stream.javadsl.BidiFlow]] isn't reusable and
@@ -79,9 +76,45 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def serverLayer(
     settings:      ServerSettings,
     remoteAddress: Optional[InetSocketAddress],
+    log:           LoggingAdapter): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    adaptServerLayer(delegate.serverLayerImpl(settings.asScala, remoteAddress.asScala, log))
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
+  def serverLayer(materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    adaptServerLayer(delegate.serverLayerImpl())
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
+  def serverLayer(
+    settings:     ServerSettings,
+    materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    adaptServerLayer(delegate.serverLayerImpl(settings.asScala))
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
+  def serverLayer(
+    settings:      ServerSettings,
+    remoteAddress: Optional[InetSocketAddress],
+    materializer:  Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    adaptServerLayer(delegate.serverLayerImpl(settings.asScala, remoteAddress.asScala))
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
+  def serverLayer(
+    settings:      ServerSettings,
+    remoteAddress: Optional[InetSocketAddress],
     log:           LoggingAdapter,
     materializer:  Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayer(settings.asScala, remoteAddress.asScala, log)(materializer))
+    adaptServerLayer(delegate.serverLayerImpl(settings.asScala, remoteAddress.asScala, log))
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding

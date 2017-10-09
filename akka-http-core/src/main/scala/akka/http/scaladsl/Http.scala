@@ -68,8 +68,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   private def fuseServerBidiFlow(
     settings:          ServerSettings,
     connectionContext: ConnectionContext,
-    log:               LoggingAdapter)(implicit mat: Materializer): ServerLayerBidiFlow = {
-    val httpLayer = serverLayer(settings, None, log, connectionContext.isSecure)
+    log:               LoggingAdapter): ServerLayerBidiFlow = {
+    val httpLayer = serverLayerImpl(settings, None, log, connectionContext.isSecure)
     val tlsStage = sslTlsStage(connectionContext, Server)
 
     val serverBidiFlow =
@@ -86,7 +86,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   private def fuseServerFlow(
     baseFlow: ServerLayerBidiFlow,
-    handler:  Flow[HttpRequest, HttpResponse, Any])(implicit mat: Materializer): ServerLayerFlow =
+    handler:  Flow[HttpRequest, HttpResponse, Any]): ServerLayerFlow =
     Flow.fromGraph(
       StreamUtils.fuseAggressive(
         Flow[HttpRequest]
@@ -249,31 +249,47 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   type ServerLayer = Http.ServerLayer
 
   /**
-   * Constructs a [[akka.http.scaladsl.Http.ServerLayer]] stage using the configured default [[akka.http.scaladsl.settings.ServerSettings]],
-   * configured using the `akka.http.server` config section.
-   *
-   * The returned [[akka.stream.scaladsl.BidiFlow]] can only be materialized once.
-   */
-  def serverLayer()(implicit mat: Materializer): ServerLayer = serverLayer(ServerSettings(system))
-
-  /**
    * Constructs a [[akka.http.scaladsl.Http.ServerLayer]] stage using the given [[akka.http.scaladsl.settings.ServerSettings]]. The returned [[akka.stream.scaladsl.BidiFlow]] isn't reusable and
    * can only be materialized once. The `remoteAddress`, if provided, will be added as a header to each [[akka.http.scaladsl.model.HttpRequest]]
    * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
    */
   def serverLayer(
-    settings:           ServerSettings,
+    settings:           ServerSettings            = ServerSettings(system),
     remoteAddress:      Option[InetSocketAddress] = None,
     log:                LoggingAdapter            = system.log,
-    isSecureConnection: Boolean                   = false)(implicit mat: Materializer): ServerLayer =
-    HttpServerBluePrint(settings, log, isSecureConnection)
+    isSecureConnection: Boolean                   = false): ServerLayer =
+    serverLayerImpl(settings, remoteAddress, log, isSecureConnection)
+
+  /**
+   *  Dummy method to disambiguate inner usages of serverLayer. Implementation can be moved to
+   * `serverLayer` when deprecated serverLayer method(s) are removed.
+   */
+  private[http] def serverLayerImpl(
+    settings:           ServerSettings            = ServerSettings(system),
+    remoteAddress:      Option[InetSocketAddress] = None,
+    log:                LoggingAdapter            = system.log,
+    isSecureConnection: Boolean                   = false): ServerLayer =
+    HttpServerBluePrint(settings, log, isSecureConnection).addAttributes(HttpAttributes.remoteAddress(remoteAddress))
+
+  @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
+  private[http] def serverLayer()(implicit mat: Materializer): ServerLayer =
+    serverLayerImpl()
+
+  @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
+  private[http] def serverLayer(
+    settings:           ServerSettings,
+    remoteAddress:      Option[InetSocketAddress],
+    log:                LoggingAdapter,
+    isSecureConnection: Boolean)(implicit mat: Materializer): ServerLayer =
+    serverLayerImpl(settings, remoteAddress, log, isSecureConnection)
 
   // for binary-compatibility, since 10.0.0
-  def serverLayer(
+  @deprecated("Binary compatibility method. Invocations should (automatically) use overloaded variant with default parameters.", "10.0.11")
+  private[http] def serverLayer(
     settings:      ServerSettings,
     remoteAddress: Option[InetSocketAddress],
     log:           LoggingAdapter)(implicit mat: Materializer): ServerLayer =
-    HttpServerBluePrint(settings, log, false)
+    serverLayerImpl(settings, remoteAddress, log)
 
   // ** CLIENT ** //
 
