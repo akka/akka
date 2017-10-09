@@ -181,6 +181,10 @@ private[akka] class CachingConfig(_config: Config) extends Config {
 
   def getDurationList(path: String) = config.getDurationList(path)
 
+  def getPeriod(path: String) = config.getPeriod(path)
+
+  def getTemporal(path: String) = config.getTemporal(path)
+
   def getIsNull(path: String): Boolean = config.getIsNull(path)
 
   def getMemorySize(path: String) = config.getMemorySize(path)
