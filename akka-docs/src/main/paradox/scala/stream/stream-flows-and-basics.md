@@ -59,7 +59,7 @@ Sink
 producer of elements
 
 Flow
-: A processing stage which has *exactly one input and output*, which connects its up- and downstreams by
+: A processing stage which has *exactly one input and output*, which connects its upstream and downstream by
 transforming the data elements flowing through it.
 
 RunnableGraph
