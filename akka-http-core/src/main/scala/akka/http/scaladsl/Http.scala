@@ -145,7 +145,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     bindImpl(interface, port, connectionContext, settings, log)
 
   /**
-   *  Dummy method to disambiguate inner usages of `bind`. Implementation can be moved to
+   *  Dummy method to disambiguate internal usages of `bind`. Implementation can be moved to
    * `bind` when deprecated bind method(s) are removed.
    */
   private[http] def bindImpl(interface: String, port: Int = DefaultPortForProtocol,
@@ -278,7 +278,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     serverLayerImpl(settings, remoteAddress, log, isSecureConnection)
 
   /**
-   *  Dummy method to disambiguate inner usages of serverLayer. Implementation can be moved to
+   *  Dummy method to disambiguate internal usages of serverLayer. Implementation can be moved to
    * `serverLayer` when deprecated serverLayer method(s) are removed.
    */
   private[http] def serverLayerImpl(
@@ -488,11 +488,22 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    */
   def cachedHostConnectionPool[T](host: String, port: Int = 80,
                                   settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
-                                  log:      LoggingAdapter         = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+                                  log:      LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    cachedHostConnectionPoolImpl(host, port, settings, log)
+
+  private[http] def cachedHostConnectionPoolImpl[T](host: String, port: Int = 80,
+                                                    settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
+                                                    log:      LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val cps = ConnectionPoolSetup(settings, ConnectionContext.noEncryption(), log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
   }
+
+  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11")
+  private[http] def cachedHostConnectionPool[T](host: String, port: Int,
+                                                settings: ConnectionPoolSettings,
+                                                log:      LoggingAdapter)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    cachedHostConnectionPoolImpl(host, port, settings, log)
 
   /**
    * Same as [[#cachedHostConnectionPool]] but for encrypted (HTTPS) connections.
@@ -506,11 +517,23 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   def cachedHostConnectionPoolHttps[T](host: String, port: Int = 443,
                                        connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
                                        settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
-                                       log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+                                       log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    cachedHostConnectionPoolHttpsImpl(host, port, connectionContext, settings, log)
+
+  private[http] def cachedHostConnectionPoolHttpsImpl[T](host: String, port: Int = 443,
+                                                         connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
+                                                         settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
+                                                         log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val cps = ConnectionPoolSetup(settings, connectionContext, log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
   }
+  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11")
+  private[http] def cachedHostConnectionPoolHttps[T](host: String, port: Int,
+                                                     connectionContext: HttpsConnectionContext,
+                                                     settings:          ConnectionPoolSettings,
+                                                     log:               LoggingAdapter)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    cachedHostConnectionPoolHttpsImpl(host, port, connectionContext, settings, log)
 
   /**
    * Returns a [[akka.stream.scaladsl.Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
@@ -529,9 +552,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
-  private def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup)(
-    implicit
-    fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+  private def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     gatewayClientFlow(setup, sharedGateway(setup).startPool())
   }
 
@@ -555,32 +576,21 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   def superPool[T](
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
-    log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
+    log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
+    superPoolImpl(connectionContext, settings, log)
+
+  private[http] def superPoolImpl[T](
+    connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
+    settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
+    log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
     clientFlow[T](settings) { request ⇒ request → sharedGateway(request, settings, connectionContext, log) }
 
   @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11") // kept as `private[http]` for binary compatibility
-  private[http] def singleRequest(
-    request:           HttpRequest,
+  private[http] def superPool[T](
     connectionContext: HttpsConnectionContext,
     settings:          ConnectionPoolSettings,
-    log:               LoggingAdapter)(implicit fm: Materializer): Future[HttpResponse] =
-    singleRequestImpl(request, connectionContext, settings, log)
-
-  /**
-   *  Dummy method to disambiguate inner usages of new singleRequest. Implementation can be moved to
-   * `singleRequest` when deprecated singleRequest method(s) are removed.
-   */
-  private[http] def singleRequestImpl(
-    request:           HttpRequest,
-    connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
-    settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
-    log:               LoggingAdapter         = system.log): Future[HttpResponse] =
-    try {
-      val gateway = sharedGateway(request, settings, connectionContext, log)
-      gateway(request)
-    } catch {
-      case e: IllegalUriException ⇒ FastFuture.failed(e)
-    }
+    log:               LoggingAdapter)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
+    superPoolImpl(connectionContext, settings, log)
 
   /**
    * Fires a single [[akka.http.scaladsl.model.HttpRequest]] across the (cached) host connection pool for the request's
@@ -596,6 +606,30 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
     log:               LoggingAdapter         = system.log): Future[HttpResponse] =
+    singleRequestImpl(request, connectionContext, settings, log)
+
+  /**
+   *  Dummy method to disambiguate internal usages of new singleRequest. Implementation can be moved to
+   * `singleRequest` when deprecated singleRequest method(s) are removed.
+   */
+  private[http] def singleRequestImpl(
+    request:           HttpRequest,
+    connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
+    settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
+    log:               LoggingAdapter         = system.log): Future[HttpResponse] =
+    try {
+      val gateway = sharedGateway(request, settings, connectionContext, log)
+      gateway(request)
+    } catch {
+      case e: IllegalUriException ⇒ FastFuture.failed(e)
+    }
+
+  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11") // kept as `private[http]` for binary compatibility
+  private[http] def singleRequest(
+    request:           HttpRequest,
+    connectionContext: HttpsConnectionContext,
+    settings:          ConnectionPoolSettings,
+    log:               LoggingAdapter)(implicit fm: Materializer): Future[HttpResponse] =
     singleRequestImpl(request, connectionContext, settings, log)
 
   /**

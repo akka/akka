@@ -479,8 +479,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
-  def cachedHostConnectionPool[T](host: String, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    cachedHostConnectionPool(ConnectHttp.toHost(host), materializer)
+  def cachedHostConnectionPool[T](host: String): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
+    cachedHostConnectionPool(ConnectHttp.toHost(host))
 
   /**
    * Returns a [[akka.stream.javadsl.Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
@@ -499,20 +499,44 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
-  def cachedHostConnectionPool[T](to: ConnectHttp, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    adaptTupleFlow(delegate.cachedHostConnectionPool[T](to.host, to.port)(materializer).mapMaterializedValue(_.toJava))
+  def cachedHostConnectionPool[T](to: ConnectHttp): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
+    adaptTupleFlow(delegate.cachedHostConnectionPoolImpl[T](to.host, to.port).mapMaterializedValue(_.toJava))
 
   /**
    * Same as [[cachedHostConnectionPool]] but with HTTPS encryption.
    *
    * The given [[ConnectionContext]] will be used for encryption on the connection.
    */
+  def cachedHostConnectionPoolHttps[T](
+    to:       ConnectHttp,
+    settings: ConnectionPoolSettings,
+    log:      LoggingAdapter): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
+    adaptTupleFlow(delegate.cachedHostConnectionPoolHttpsImpl[T](to.host, to.port, to.effectiveHttpsConnectionContext(defaultClientHttpsContext).asScala, settings.asScala, log)
+      .mapMaterializedValue(_.toJava))
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
+  def cachedHostConnectionPool[T](host: String, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
+    cachedHostConnectionPool(host)
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
+  def cachedHostConnectionPool[T](to: ConnectHttp, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
+    cachedHostConnectionPool(to)
+
+  /**
+   * @deprecated in favor of [[cachedHostConnectionPoolHttps]] that doesn't require an Materializer argument.
+   */
+  @Deprecated
   def cachedHostConnectionPool[T](
     to:       ConnectHttp,
     settings: ConnectionPoolSettings,
     log:      LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    adaptTupleFlow(delegate.cachedHostConnectionPoolHttps[T](to.host, to.port, to.effectiveHttpsConnectionContext(defaultClientHttpsContext).asScala, settings.asScala, log)(materializer)
-      .mapMaterializedValue(_.toJava))
+    cachedHostConnectionPoolHttps(to, settings, log)
 
   /**
    * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
@@ -526,8 +550,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
-  def superPool[T](materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
-    adaptTupleFlow(delegate.superPool[T]()(materializer))
+  def superPool[T](): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
+    adaptTupleFlow(delegate.superPoolImpl[T]())
 
   /**
    * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
@@ -547,8 +571,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def superPool[T](
     settings:          ConnectionPoolSettings,
     connectionContext: HttpsConnectionContext,
-    log:               LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
-    adaptTupleFlow(delegate.superPool[T](connectionContext.asScala, settings.asScala, log)(materializer))
+    log:               LoggingAdapter): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
+    adaptTupleFlow(delegate.superPoolImpl[T](connectionContext.asScala, settings.asScala, log))
 
   /**
    * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
@@ -567,24 +591,53 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def superPool[T](
     settings: ConnectionPoolSettings,
-    log:      LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
-    adaptTupleFlow(delegate.superPool[T](defaultClientHttpsContext.asScala, settings.asScala, log)(materializer))
+    log:      LoggingAdapter): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
+    adaptTupleFlow(delegate.superPoolImpl[T](defaultClientHttpsContext.asScala, settings.asScala, log))
 
   /**
    * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
    */
+  @Deprecated
+  def superPool[T](materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
+    superPool()
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
+  def superPool[T](
+    settings: ConnectionPoolSettings,
+    log:      LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
+    superPool(settings, log)
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
+  def superPool[T](
+    settings:          ConnectionPoolSettings,
+    connectionContext: HttpsConnectionContext,
+    log:               LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
+    superPool(settings, connectionContext, log)
+
+  /**
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
+   */
+  @Deprecated
   def singleRequest(request: HttpRequest, materializer: Materializer): CompletionStage[HttpResponse] =
     delegate.singleRequestImpl(request.asScala).toJava
 
   /**
    * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
    */
+  @Deprecated
   def singleRequest(request: HttpRequest, connectionContext: HttpsConnectionContext, materializer: Materializer): CompletionStage[HttpResponse] =
     delegate.singleRequestImpl(request.asScala, connectionContext.asScala).toJava
 
   /**
    * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
    */
+  @Deprecated
   def singleRequest(
     request:           HttpRequest,
     connectionContext: HttpsConnectionContext,
