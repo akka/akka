@@ -14,9 +14,15 @@ Stages that creates substreams are listed on @ref:[Nesting and flattening stages
 
 A typical operation that generates substreams is `groupBy`.
 
-```
-Source(1 to 10).groupBy(3, _ % 3)
-```
+Scala
+:   ```
+    Source(1 to 10).groupBy(3, _ % 3)
+    ```
+
+Java
+:   ```
+    Source.from((Arrays.asList(1,2,3,4,5,6,7,8,9,10)).groupBy(3, elem -> elem % 3);
+    ```
 
 ![stream-substream-groupBy1.png](../../images/stream-substream-groupBy1.png)
 
@@ -29,9 +35,18 @@ If you add a `Sink` or `Flow` right after the `groupBy` stage,
 all transformations are applied to all encountered substreams in the same fashion.
 So, if you add the following `Sink`, that is added to each of the substreams as in the below diagram.
 
-```
-Source(1 to 10).groupBy(3, _ % 3).runWith(Sink.ignore)
-```
+Scala
+:   ```
+    Source(1 to 10).groupBy(3, _ % 3).runWith(Sink.ignore)
+    ```
+
+Java
+:   ```
+    Source.from(Arrays.asList(1,2,3,4,5,6,7,8,9,10))
+      .groupBy(3, elem -> elem % 3)
+      .to(Sink.ignore())
+      .run(mat);
+    ```
 
 ![stream-substream-groupBy2.png](../../images/stream-substream-groupBy2.png)
 
@@ -40,9 +55,18 @@ merge or concat substreams into the master stream again.
 
 The `mergeSubstreams` method merge an unbounded number of substreams back to the master stream.
 
-```
-Source(1 to 10).groupBy(3, _ % 3).mergeSubstreams.runWith(Sink.ignore)
-```
+Scala
+:   ```
+    Source(1 to 10).groupBy(3, _ % 3).mergeSubstreams.runWith(Sink.ignore)
+    ```
+
+Java
+:   ```
+    Source.from(Arrays.asList(1,2,3,4,5,6,7,8,9,10))
+      .groupBy(3, elem -> elem % 3)
+      .mergeSubstreams()
+      .runWith(Sink.ignore(), mat);
+    ```
 
 The `mergeSubstreams` method merge an unbounded number of active substreams back to the master stream.
 
@@ -51,12 +75,25 @@ The `mergeSubstreams` method merge an unbounded number of active substreams back
 You can limit the number of active substreams running amd being merged at a time,
 with either the `mergeSubstreamsWithParallelism` or `concatSubstreams` method.
 
-```
-Source(1 to 10).groupBy(3, _ % 3).mergeSubstreamsWithParallelism(2).runWith(Sink.ignore)
+Scala
+:   ```
+    Source(1 to 10).groupBy(3, _ % 3).mergeSubstreamsWithParallelism(2).runWith(Sink.ignore)
+    //concatSubstreams is equivalent to mergeSubstreamsWithParallelism(1)
+    Source(1 to 10).groupBy(3, _ % 3).concatSubstreams.runWith(Sink.ignore)
+    ```
 
-//concatSubstreams is equivalent to mergeSubstreamsWithParallelism(1)
-Source(1 to 10).groupBy(3, _ % 3).concatSubstreams.runWith(Sink.ignore)
-```
+Java
+:   ```
+    Source.from(Arrays.asList(1,2,3,4,5,6,7,8,9,10))
+      .groupBy(3, elem -> elem % 3)
+      .mergeSubstreamsWithParallelism(2)
+      .runWith(Sink.ignore(), mat);
+    //concatSubstreams is equivalent to mergeSubstreamsWithParallelism(1)
+    Source.from(Arrays.asList(1,2,3,4,5,6,7,8,9,10))
+      .groupBy(3, elem -> elem % 3)
+      .concatSubstreams()
+      .runWith(Sink.ignore(), mat);
+    ```
 
 However, since the number of active substreams is capped,
 be careful so that these methods do not cause deadlocks with back pressure like in the below diagram.
@@ -73,9 +110,15 @@ and a new substream is generated, the following elements will flow into the new 
 `splitWhen` flows the element on which the predicate returned true to a new substream,
  whereas `splitAfter` flows the next element to the new substream after the element on which predicate returned true.
 
-```
-Source(1 to 10).splitWhen(SubstreamCancelStrategy.drain)(_ == 3)
-```
+Scala
+:   ```
+    Source(1 to 10).splitWhen(SubstreamCancelStrategy.drain)(_ == 3)
+    ```
+
+Java
+:   ```
+    Source.from(Arrays.asList(1,2,3,4,5,6,7,8,9,10)).splitWhen(elem -> elem == 3);
+    ```
 
 ![stream-substream-splitWhen-splitAfter.png](../../images/stream-substream-splitWhen-splitAfter.png)
 
@@ -89,9 +132,17 @@ Source(1 to 10).splitWhen(SubstreamCancelStrategy.drain)(_ == 3)
 The predicate `f` of `flatMapConcat` transforms each input element into a `Source` that is then flattened
 into the output stream by concatnation.
 
-```
-Source(1 to 2).flatMapConcat(i => Source(List.fill(3)(i))).runWith(Sink.ignore)
-```
+Scala
+:   ```
+    Source(1 to 2).flatMapConcat(i => Source(List.fill(3)(i))).runWith(Sink.ignore)
+    ```
+
+Java
+:   ```
+    Source.from(Arrays.asList(1, 2))
+      .flatMapConcat(i -> Source.from(Arrays.asList(i, i, i)))
+      .runWith(Sink.ignore(), mat);
+    ```
 
 ![stream-substream-flatMapConcat1.png](../../images/stream-substream-flatMapConcat1.png)
 
@@ -109,7 +160,15 @@ Elements from all the substreams are concatnated to the sink.
  Instead, up to `breadth` number of streams emit elements at any given time.
 
 ```
-Source(1 to 2).flatMapMerge(i => Source(List.fill(3)(i))).runWith(Sink.ignore)
-```
+Scala
+:   ```
+    Source(1 to 2).flatMapMerge(i => Source(List.fill(3)(i))).runWith(Sink.ignore)
+    ```
 
+Java
+:   ```
+    Source.from(Arrays.asList(1, 2))
+      .flatMapMerge(2, i -> Source.from(Arrays.asList(i, i, i)))
+      .runWith(Sink.ignore(), mat);
+    ```
 ![stream-substream-flatMapMerge.png](../../images/stream-substream-flatMapMerge.png)
