@@ -20,9 +20,15 @@ private[akka] object HttpAttributes {
 
   private[akka] final case class RemoteAddress(address: InetSocketAddress) extends Attribute
 
-  private[akka] def remoteAddress(address: InetSocketAddress) =
+  private[akka] def remoteAddress(address: Option[InetSocketAddress]): Attributes =
+    address match {
+      case Some(addr) ⇒ remoteAddress(addr)
+      case None       ⇒ empty
+    }
+
+  private[akka] def remoteAddress(address: InetSocketAddress): Attributes =
     Attributes(RemoteAddress(address))
 
-  private[akka] val empty =
+  private[akka] val empty: Attributes =
     Attributes()
 }

@@ -68,8 +68,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   private def fuseServerBidiFlow(
     settings:          ServerSettings,
     connectionContext: ConnectionContext,
-    log:               LoggingAdapter)(implicit mat: Materializer): ServerLayerBidiFlow = {
-    val httpLayer = serverLayer(settings, None, log, connectionContext.isSecure)
+    log:               LoggingAdapter): ServerLayerBidiFlow = {
+    val httpLayer = serverLayerImpl(settings, None, log, connectionContext.isSecure)
     val tlsStage = sslTlsStage(connectionContext, Server)
 
     val serverBidiFlow =
@@ -86,7 +86,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   private def fuseServerFlow(
     baseFlow: ServerLayerBidiFlow,
-    handler:  Flow[HttpRequest, HttpResponse, Any])(implicit mat: Materializer): ServerLayerFlow =
+    handler:  Flow[HttpRequest, HttpResponse, Any]): ServerLayerFlow =
     Flow.fromGraph(
       StreamUtils.fuseAggressive(
         Flow[HttpRequest]
@@ -114,8 +114,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   private def choosePort(port: Int, connectionContext: ConnectionContext) = if (port >= 0) port else connectionContext.defaultPort
 
-  private def materializeTcpBind(binding: Future[Tcp.ServerBinding])(implicit mat: Materializer) = binding
-    .map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(mat.executionContext)
+  private def materializeTcpBind(binding: Future[Tcp.ServerBinding]) =
+    binding.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(ExecutionContexts.sameThreadExecutionContext)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] of [[akka.http.scaladsl.Http.IncomingConnection]] instances which represents a prospective HTTP server binding
@@ -141,7 +141,17 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   def bind(interface: String, port: Int = DefaultPortForProtocol,
            connectionContext: ConnectionContext = defaultServerHttpContext,
            settings:          ServerSettings    = ServerSettings(system),
-           log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Source[Http.IncomingConnection, Future[ServerBinding]] = {
+           log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] =
+    bindImpl(interface, port, connectionContext, settings, log)
+
+  /**
+   *  Dummy method to disambiguate internal usages of `bind`. Implementation can be moved to
+   * `bind` when deprecated bind method(s) are removed.
+   */
+  private[http] def bindImpl(interface: String, port: Int = DefaultPortForProtocol,
+                             connectionContext: ConnectionContext = defaultServerHttpContext,
+                             settings:          ServerSettings    = ServerSettings(system),
+                             log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] = {
     val fullLayer = fuseServerBidiFlow(settings, connectionContext, log)
 
     tcpBind(interface, choosePort(port, connectionContext), settings)
@@ -151,6 +161,13 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       })
       .mapMaterializedValue(materializeTcpBind)
   }
+
+  @deprecated("Binary compatibility method. Use the new `bind` method without the implicit materializer instead.", "10.0.11")
+  private[http] def bind(interface: String, port: Int,
+                         connectionContext: ConnectionContext,
+                         settings:          ServerSettings,
+                         log:               LoggingAdapter)(implicit fm: Materializer): Source[Http.IncomingConnection, Future[ServerBinding]] =
+    bindImpl(interface, port, connectionContext, settings, log)
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
@@ -249,31 +266,47 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   type ServerLayer = Http.ServerLayer
 
   /**
-   * Constructs a [[akka.http.scaladsl.Http.ServerLayer]] stage using the configured default [[akka.http.scaladsl.settings.ServerSettings]],
-   * configured using the `akka.http.server` config section.
-   *
-   * The returned [[akka.stream.scaladsl.BidiFlow]] can only be materialized once.
-   */
-  def serverLayer()(implicit mat: Materializer): ServerLayer = serverLayer(ServerSettings(system))
-
-  /**
    * Constructs a [[akka.http.scaladsl.Http.ServerLayer]] stage using the given [[akka.http.scaladsl.settings.ServerSettings]]. The returned [[akka.stream.scaladsl.BidiFlow]] isn't reusable and
    * can only be materialized once. The `remoteAddress`, if provided, will be added as a header to each [[akka.http.scaladsl.model.HttpRequest]]
    * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
    */
   def serverLayer(
-    settings:           ServerSettings,
+    settings:           ServerSettings            = ServerSettings(system),
     remoteAddress:      Option[InetSocketAddress] = None,
     log:                LoggingAdapter            = system.log,
-    isSecureConnection: Boolean                   = false)(implicit mat: Materializer): ServerLayer =
-    HttpServerBluePrint(settings, log, isSecureConnection)
+    isSecureConnection: Boolean                   = false): ServerLayer =
+    serverLayerImpl(settings, remoteAddress, log, isSecureConnection)
+
+  /**
+   *  Dummy method to disambiguate internal usages of serverLayer. Implementation can be moved to
+   * `serverLayer` when deprecated serverLayer method(s) are removed.
+   */
+  private[http] def serverLayerImpl(
+    settings:           ServerSettings            = ServerSettings(system),
+    remoteAddress:      Option[InetSocketAddress] = None,
+    log:                LoggingAdapter            = system.log,
+    isSecureConnection: Boolean                   = false): ServerLayer =
+    HttpServerBluePrint(settings, log, isSecureConnection).addAttributes(HttpAttributes.remoteAddress(remoteAddress))
+
+  @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
+  private[http] def serverLayer()(implicit mat: Materializer): ServerLayer =
+    serverLayerImpl()
+
+  @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
+  private[http] def serverLayer(
+    settings:           ServerSettings,
+    remoteAddress:      Option[InetSocketAddress],
+    log:                LoggingAdapter,
+    isSecureConnection: Boolean)(implicit mat: Materializer): ServerLayer =
+    serverLayerImpl(settings, remoteAddress, log, isSecureConnection)
 
   // for binary-compatibility, since 10.0.0
-  def serverLayer(
+  @deprecated("Binary compatibility method. Invocations should (automatically) use overloaded variant with default parameters.", "10.0.11")
+  private[http] def serverLayer(
     settings:      ServerSettings,
     remoteAddress: Option[InetSocketAddress],
     log:           LoggingAdapter)(implicit mat: Materializer): ServerLayer =
-    HttpServerBluePrint(settings, log, false)
+    serverLayerImpl(settings, remoteAddress, log)
 
   // ** CLIENT ** //
 
@@ -455,11 +488,22 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    */
   def cachedHostConnectionPool[T](host: String, port: Int = 80,
                                   settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
-                                  log:      LoggingAdapter         = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+                                  log:      LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    cachedHostConnectionPoolImpl(host, port, settings, log)
+
+  private[http] def cachedHostConnectionPoolImpl[T](host: String, port: Int = 80,
+                                                    settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
+                                                    log:      LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val cps = ConnectionPoolSetup(settings, ConnectionContext.noEncryption(), log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
   }
+
+  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11")
+  private[http] def cachedHostConnectionPool[T](host: String, port: Int,
+                                                settings: ConnectionPoolSettings,
+                                                log:      LoggingAdapter)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    cachedHostConnectionPoolImpl(host, port, settings, log)
 
   /**
    * Same as [[#cachedHostConnectionPool]] but for encrypted (HTTPS) connections.
@@ -473,11 +517,23 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   def cachedHostConnectionPoolHttps[T](host: String, port: Int = 443,
                                        connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
                                        settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
-                                       log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+                                       log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    cachedHostConnectionPoolHttpsImpl(host, port, connectionContext, settings, log)
+
+  private[http] def cachedHostConnectionPoolHttpsImpl[T](host: String, port: Int = 443,
+                                                         connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
+                                                         settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
+                                                         log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val cps = ConnectionPoolSetup(settings, connectionContext, log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
   }
+  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11")
+  private[http] def cachedHostConnectionPoolHttps[T](host: String, port: Int,
+                                                     connectionContext: HttpsConnectionContext,
+                                                     settings:          ConnectionPoolSettings,
+                                                     log:               LoggingAdapter)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    cachedHostConnectionPoolHttpsImpl(host, port, connectionContext, settings, log)
 
   /**
    * Returns a [[akka.stream.scaladsl.Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
@@ -496,9 +552,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
-  private def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup)(
-    implicit
-    fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+  private def cachedHostConnectionPool[T](setup: HostConnectionPoolSetup): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     gatewayClientFlow(setup, sharedGateway(setup).startPool())
   }
 
@@ -522,8 +576,21 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   def superPool[T](
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
-    log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
+    log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
+    superPoolImpl(connectionContext, settings, log)
+
+  private[http] def superPoolImpl[T](
+    connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
+    settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
+    log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
     clientFlow[T](settings) { request ⇒ request → sharedGateway(request, settings, connectionContext, log) }
+
+  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11") // kept as `private[http]` for binary compatibility
+  private[http] def superPool[T](
+    connectionContext: HttpsConnectionContext,
+    settings:          ConnectionPoolSettings,
+    log:               LoggingAdapter)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
+    superPoolImpl(connectionContext, settings, log)
 
   /**
    * Fires a single [[akka.http.scaladsl.model.HttpRequest]] across the (cached) host connection pool for the request's
@@ -538,13 +605,32 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     request:           HttpRequest,
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
-    log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Future[HttpResponse] =
+    log:               LoggingAdapter         = system.log): Future[HttpResponse] =
+    singleRequestImpl(request, connectionContext, settings, log)
+
+  /**
+   *  Dummy method to disambiguate internal usages of new singleRequest. Implementation can be moved to
+   * `singleRequest` when deprecated singleRequest method(s) are removed.
+   */
+  private[http] def singleRequestImpl(
+    request:           HttpRequest,
+    connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
+    settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
+    log:               LoggingAdapter         = system.log): Future[HttpResponse] =
     try {
       val gateway = sharedGateway(request, settings, connectionContext, log)
       gateway(request)
     } catch {
       case e: IllegalUriException ⇒ FastFuture.failed(e)
     }
+
+  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11") // kept as `private[http]` for binary compatibility
+  private[http] def singleRequest(
+    request:           HttpRequest,
+    connectionContext: HttpsConnectionContext,
+    settings:          ConnectionPoolSettings,
+    log:               LoggingAdapter)(implicit fm: Materializer): Future[HttpResponse] =
+    singleRequestImpl(request, connectionContext, settings, log)
 
   /**
    * Constructs a [[akka.http.scaladsl.Http.WebSocketClientLayer]] stage using the configured default [[akka.http.scaladsl.settings.ClientConnectionSettings]],
@@ -676,22 +762,18 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   private def gatewayClientFlow[T](
     hcps:    HostConnectionPoolSetup,
-    gateway: PoolGateway)(
-    implicit
-    fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+    gateway: PoolGateway): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
     clientFlow[T](hcps.setup.settings)(_ → gateway)
       .mapMaterializedValue(_ ⇒ HostConnectionPool(hcps)(gateway))
 
-  private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, PoolGateway))(
-    implicit
-    system: ActorSystem, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
+  private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, PoolGateway)): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
     // a connection pool can never have more than pipeliningLimit * maxConnections requests in flight at any point
     val parallelism = settings.pipeliningLimit * settings.maxConnections
     Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
       case (request, userContext) ⇒
         val (effectiveRequest, gateway) = f(request)
         val result = Promise[(Try[HttpResponse], T)]() // TODO: simplify to `transformWith` when on Scala 2.12
-        gateway(effectiveRequest).onComplete(responseTry ⇒ result.success(responseTry → userContext))(fm.executionContext)
+        gateway(effectiveRequest).onComplete(responseTry ⇒ result.success(responseTry → userContext))(ExecutionContexts.sameThreadExecutionContext)
         result.future
     }
   }
