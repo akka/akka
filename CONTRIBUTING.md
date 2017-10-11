@@ -50,6 +50,9 @@ as well as any plugins or additional repos located under the Akka GitHub organis
 These guidelines are meant to be a living document that should be changed and adapted as needed.
 We encourage changes that make it easier to achieve our goals in an efficient way.
 
+Please also note that we have a *Code of Conduct* in place which aims keep our community a nice and helpful one.
+You can read its full text here: [Akka Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## General Workflow
 
 The below steps are how to get a patch into a main development branch (e.g. `master`). 
