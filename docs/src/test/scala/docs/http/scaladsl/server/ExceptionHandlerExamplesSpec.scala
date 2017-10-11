@@ -17,15 +17,16 @@ object MyExplicitExceptionHandler {
   import StatusCodes._
   import Directives._
 
-  val myExceptionHandler = ExceptionHandler {
-    case _: ArithmeticException =>
-      extractUri { uri =>
-        println(s"Request to $uri could not be handled normally")
-        complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
-      }
-  }
-
   object MyApp extends App {
+
+    val myExceptionHandler = ExceptionHandler {
+      case _: ArithmeticException =>
+        extractUri { uri =>
+          println(s"Request to $uri could not be handled normally")
+          complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
+        }
+    }
+
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
@@ -51,16 +52,17 @@ object MyImplicitExceptionHandler {
   import StatusCodes._
   import Directives._
 
-  implicit def myExceptionHandler: ExceptionHandler =
-    ExceptionHandler {
-      case _: ArithmeticException =>
-        extractUri { uri =>
-          println(s"Request to $uri could not be handled normally")
-          complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
-        }
-    }
-
   object MyApp extends App {
+
+    implicit def myExceptionHandler: ExceptionHandler =
+      ExceptionHandler {
+        case _: ArithmeticException =>
+          extractUri { uri =>
+            println(s"Request to $uri could not be handled normally")
+            complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
+          }
+      }
+
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
@@ -77,7 +79,7 @@ class ExceptionHandlerExamplesSpec extends RoutingSpec {
 
   "test explicit example" in {
     // tests:
-    Get() ~> handleExceptions(MyExplicitExceptionHandler.myExceptionHandler) {
+    Get() ~> handleExceptions(MyExplicitExceptionHandler.MyApp.myExceptionHandler) {
       _.complete((1 / 0).toString)
     } ~> check {
       responseAs[String] === "Bad numbers, bad result!!!"
@@ -86,7 +88,7 @@ class ExceptionHandlerExamplesSpec extends RoutingSpec {
 
   "test implicit example" in {
     import akka.http.scaladsl.server._
-    import MyImplicitExceptionHandler.myExceptionHandler
+    import MyImplicitExceptionHandler.MyApp.myExceptionHandler
     // tests:
     Get() ~> Route.seal(ctx => ctx.complete((1 / 0).toString)) ~> check {
       responseAs[String] === "Bad numbers, bad result!!!"
