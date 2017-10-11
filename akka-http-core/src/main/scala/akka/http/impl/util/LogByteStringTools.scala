@@ -2,9 +2,12 @@ package akka.http.impl.util
 
 import akka.NotUsed
 import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.util.ByteString
+
+import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
@@ -21,11 +24,13 @@ private[akka] object LogByteStringTools {
       logByteString(s"$name UP  ", maxBytes)
     )
 
-  def logToStringBidi[A, B](name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[A, A, B, B, NotUsed] =
+  def logToStringBidi[A: ClassTag, B: ClassTag](name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[A, A, B, B, NotUsed] = {
+    def limitedName[T](implicit tag: ClassTag[T]) = Logging.simpleName(tag.runtimeClass).take(10).padTo(10, " ")
     BidiFlow.fromFlows(
-      logToString(s"$name DOWN", maxBytes),
-      logToString(s"$name UP  ", maxBytes)
+      logToString(s"$name [${limitedName[A]}]", maxBytes),
+      logToString(s"$name [${limitedName[B]}]", maxBytes)
     )
+  }
 
   def logByteString(name: String, maxBytes: Int = MaxBytesPrinted): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].log(name, printByteString(_, maxBytes))
@@ -35,8 +40,8 @@ private[akka] object LogByteStringTools {
 
   def logTLSBidi(name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
     BidiFlow.fromFlows(
-      logTlsOutbound(s"$name DOWN", maxBytes),
-      logTlsInbound(s"$name UP  ", maxBytes))
+      logTlsOutbound(s"$name ToNet  ", maxBytes),
+      logTlsInbound(s"$name FromNet", maxBytes))
 
   def logTlsOutbound(name: String, maxBytes: Int = MaxBytesPrinted): Flow[SslTlsOutbound, SslTlsOutbound, NotUsed] =
     Flow[SslTlsOutbound].log(name, {
