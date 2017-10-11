@@ -3,17 +3,13 @@
  */
 package jdocs.testkit;
 
-import static org.junit.Assert.*;
 import akka.actor.*;
 import akka.japi.Creator;
 import akka.japi.Function;
 import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.testkit.TestActorRef;
 import akka.testkit.TestProbe;
-
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
-
 import docs.testkit.MockedChild;
 import jdocs.AbstractJavaTest;
 import org.junit.ClassRule;
@@ -76,17 +72,17 @@ public class ParentChildTest extends AbstractJavaTest {
   //#test-dependentparent
   class DependentParent extends AbstractActor {
     final ActorRef child;
-    boolean ponged = false;
-
-    public DependentParent(Props childProps) {
+    final ActorRef probe;
+    public DependentParent(Props childProps, ActorRef probe) {
       child = getContext().actorOf(childProps, "child");
+      this.probe = probe;
     }
 
     @Override
     public Receive createReceive() {
       return receiveBuilder()
         .matchEquals("pingit", message -> child.tell("ping", getSelf()))
-        .matchEquals("pong", message -> ponged = true)
+        .matchEquals("pong", message -> probe.tell("ponged", getSelf()))
         .build();
     }
   }
@@ -123,14 +119,13 @@ public class ParentChildTest extends AbstractJavaTest {
 
   @Test
   public void testingWithCustomProps() {
-    TestProbe probe = new TestProbe(system);
-    Props childProps = Props.create(MockedChild.class);
-    TestActorRef<DependentParent> parent = TestActorRef.create(system, Props.create(DependentParent.class, childProps));
+    final TestProbe probe = new TestProbe(system);
+    final Props childProps = Props.create(MockedChild.class);
+    final ActorRef parent = system.actorOf(Props.create(DependentParent.class, childProps, probe.ref()));
 
     probe.send(parent, "pingit");
 
-    // test some parent state change
-    assertTrue(parent.underlyingActor().ponged == true || parent.underlyingActor().ponged == false);
+    probe.expectMsg("ponged");
   }
 
 
@@ -138,11 +133,7 @@ public class ParentChildTest extends AbstractJavaTest {
   public void testingWithChildProbe() throws Exception {
     final TestProbe probe = new TestProbe(system);
     //#child-maker-test
-    Function<ActorRefFactory, ActorRef> maker = new Function<ActorRefFactory, ActorRef>() {
-      @Override public ActorRef apply(ActorRefFactory param) throws Exception {
-        return probe.ref();
-      }
-    };
+    Function<ActorRefFactory, ActorRef> maker = param -> probe.ref();
     ActorRef parent = system.actorOf(Props.create(GenericDependentParent.class, maker));
     //#child-maker-test
     probe.send(parent, "pingit");
@@ -151,11 +142,7 @@ public class ParentChildTest extends AbstractJavaTest {
 
   public void exampleProdActorFactoryFunction() throws Exception {
     //#child-maker-prod
-    Function<ActorRefFactory, ActorRef> maker = new Function<ActorRefFactory, ActorRef>() {
-      @Override public ActorRef apply(ActorRefFactory f) throws Exception {
-        return f.actorOf(Props.create(Child.class));
-      }
-    };
+    Function<ActorRefFactory, ActorRef> maker = f -> f.actorOf(Props.create(Child.class));
     ActorRef parent = system.actorOf(Props.create(GenericDependentParent.class, maker));
     //#child-maker-prod
   }
