@@ -36,6 +36,8 @@ You can join these groups and chats to discuss and ask Akka related questions:
 - Q&A: [![stackoverflow: #akka-http][stackoverflow-badge]][stackoverflow]
 - Issue tracker: [![github: akka/akka-http][github-issues-badge]][github-issues]
 
+All of our forums, chat rooms, and issue trackers are governed by our [Code Of Conduct](CODE_OF_CONDUCT.md).
+
 In addition to that, you may enjoy following:
 
 - The [news](http://akka.io/news) section of the page, which is updated whenever a new version is released
@@ -59,7 +61,7 @@ Contributing
 Contributions are *very* welcome!
 
 If you see an issue that you'd like to see fixed, the best way to make it happen is to help out by submitting a pull request.
-For ideas of where to contribute, [tickets marked as "community"](https://github.com/akka/akka-http/issues?q=is%3Aissue+is%3Aopen+label%3Acommunity) are a good starting point.
+For ideas of where to contribute, [tickets marked as "help wanted"](https://github.com/akka/akka-http/labels/help%20wanted) are a good starting point.
 
 Refer to the [CONTRIBUTING.md](CONTRIBUTING.md) file for more details about the workflow,
 and general hints on how to prepare your pull request. You can also ask for clarifications or guidance in GitHub issues directly,
