@@ -66,6 +66,17 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       sub.cancel()
     }
 
+    "properly bind a server with a default port set via settings" in {
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
+      val settings = ServerSettings(system).withDefaultHttpPort(port)
+      val binding = Http().bind(hostname, settings = settings).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
+      val sub = probe.expectSubscription() // if we get it we are bound
+      val address = Await.result(binding, 1.second.dilated).localAddress
+      address.getPort shouldEqual port
+      sub.cancel()
+    }
+
     "report failure if bind fails" in EventFilter[BindException](occurrences = 2).intercept {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val binding = Http().bind(hostname, port)

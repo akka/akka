@@ -60,6 +60,8 @@ object ConnectionContext {
 abstract class ConnectionContext {
   def isSecure: Boolean
   /** Java API */
+
+  @deprecated("'default-http-port' and 'default-https-port' configuration properties are used instead", since = "10.0.11")
   def getDefaultPort: Int
   def sslConfig: Option[AkkaSSLConfig]
 }

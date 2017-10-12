@@ -41,7 +41,9 @@ private[akka] final case class ServerSettingsImpl(
   defaultHostHeader:          Host,
   websocketRandomFactory:     () ⇒ Random,
   parserSettings:             ParserSettings,
-  http2Settings:              Http2ServerSettings) extends ServerSettings {
+  http2Settings:              Http2ServerSettings,
+  defaultHttpPort:            Int,
+  defaultHttpsPort:           Int) extends ServerSettings {
 
   require(0 < maxConnections, "max-connections must be > 0")
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
@@ -94,5 +96,7 @@ private[http] object ServerSettingsImpl extends SettingsCompanion[ServerSettings
       },
     Randoms.SecureRandomInstances, // can currently only be overridden from code
     ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
-    Http2ServerSettings.Http2ServerSettingsImpl.fromSubConfig(root, c.getConfig("http2")))
+    Http2ServerSettings.Http2ServerSettingsImpl.fromSubConfig(root, c.getConfig("http2")),
+    c getInt "default-http-port",
+    c getInt "default-https-port")
 }

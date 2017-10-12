@@ -112,7 +112,10 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
         idleTimeout = Duration.Inf // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
       )
 
-  private def choosePort(port: Int, connectionContext: ConnectionContext) = if (port >= 0) port else connectionContext.defaultPort
+  private def choosePort(port: Int, connectionContext: ConnectionContext, settings: ServerSettings) =
+    if (port >= 0) port
+    else if (connectionContext.isSecure) settings.defaultHttpsPort
+    else settings.defaultHttpPort
 
   private def materializeTcpBind(binding: Future[Tcp.ServerBinding]) =
     binding.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(ExecutionContexts.sameThreadExecutionContext)
@@ -154,7 +157,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                              log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] = {
     val fullLayer = fuseServerBidiFlow(settings, connectionContext, log)
 
-    tcpBind(interface, choosePort(port, connectionContext), settings)
+    tcpBind(interface, choosePort(port, connectionContext, settings), settings)
       .map(incoming ⇒ {
         val serverFlow = fullLayer.addAttributes(prepareAttributes(settings, incoming)) join incoming.flow
         IncomingConnection(incoming.localAddress, incoming.remoteAddress, serverFlow)
@@ -188,7 +191,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
     val fullLayer: Flow[ByteString, ByteString, Future[Done]] = fuseServerFlow(fuseServerBidiFlow(settings, connectionContext, log), handler)
 
-    tcpBind(interface, choosePort(port, connectionContext), settings)
+    tcpBind(interface, choosePort(port, connectionContext, settings), settings)
       .mapAsyncUnordered(settings.maxConnections) { incoming ⇒
         try {
           fullLayer

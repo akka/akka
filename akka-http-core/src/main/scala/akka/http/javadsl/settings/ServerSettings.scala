@@ -40,6 +40,8 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   def getParserSettings: ParserSettings
   def getLogUnencryptedNetworkBytes: Optional[Int]
   def getHttp2Settings: Http2ServerSettings = self.http2Settings
+  def getDefaultHttpPort: Int
+  def getDefaultHttpsPort: Int
 
   // ---
 
@@ -60,6 +62,9 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ServerSettings = self.copy(websocketRandomFactory = () ⇒ newValue.get())
   def withLogUnencryptedNetworkBytes(newValue: Optional[Int]): ServerSettings = self.copy(logUnencryptedNetworkBytes = OptionConverters.toScala(newValue))
   def withHttp2Settings(newValue: Http2ServerSettings): ServerSettings = self.copy(http2Settings = newValue.asScala)
+  def withDefaultHttpPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
+  def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
+
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings] {

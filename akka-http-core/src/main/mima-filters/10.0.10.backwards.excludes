@@ -1,2 +1,9 @@
 # Don't monitor changes to internal API
 ProblemFilters.exclude[Problem]("akka.http.impl.*")
+
+# Adds new defaultHttpPort and defaultHttpsPort fields in ServerSettings
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.defaultHttpPort")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.defaultHttpsPort")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getDefaultHttpPort")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getDefaultHttpsPort")
+
