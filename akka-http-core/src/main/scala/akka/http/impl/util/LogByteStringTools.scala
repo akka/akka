@@ -25,10 +25,10 @@ private[akka] object LogByteStringTools {
     )
 
   def logToStringBidi[A: ClassTag, B: ClassTag](name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[A, A, B, B, NotUsed] = {
-    def limitedName[T](implicit tag: ClassTag[T]) = Logging.simpleName(tag.runtimeClass).take(10).padTo(10, " ")
+    def limitedName[T](implicit tag: ClassTag[T]): String = Logging.simpleName(tag.runtimeClass).take(20).mkString
     BidiFlow.fromFlows(
-      logToString(s"$name [${limitedName[A]}]", maxBytes),
-      logToString(s"$name [${limitedName[B]}]", maxBytes)
+      logToString(s"$name ${limitedName[A]}", maxBytes),
+      logToString(s"$name ${limitedName[B]}", maxBytes)
     )
   }
 
