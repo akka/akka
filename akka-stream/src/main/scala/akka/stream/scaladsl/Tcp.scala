@@ -8,6 +8,7 @@ import java.util.concurrent.TimeoutException
 
 import akka.{ Done, NotUsed }
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
 import akka.io.{ IO, Tcp ⇒ IoTcp }
 import akka.stream._
@@ -28,8 +29,10 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
    * @param localAddress The address the server was bound to
    * @param unbindAction a function that will trigger unbind of the server
    * @param whenUnbound A future that is completed when the server is unbound, or failed if the server binding fails
+   *
+   * Not indented for user construction
    */
-  final case class ServerBinding(localAddress: InetSocketAddress)(
+  final case class ServerBinding @InternalApi private[akka] (localAddress: InetSocketAddress)(
     private val unbindAction: () ⇒ Future[Unit],
     val whenUnbound:          Future[Done]
   ) {
