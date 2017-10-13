@@ -3,10 +3,10 @@
  */
 package akka.stream.javadsl
 
-import java.lang.{Iterable => JIterable}
+import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 
 import scala.concurrent.duration._
 import java.net.InetSocketAddress

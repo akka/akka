@@ -6,18 +6,18 @@ package akka.stream.scaladsl
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.io.Inet.SocketOption
-import akka.io.{IO, Tcp => IoTcp}
+import akka.io.{ IO, Tcp ⇒ IoTcp }
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.detacher
-import akka.stream.impl.io.{ConnectionSourceStage, OutgoingConnectionStage, TcpIdleTimeout}
+import akka.stream.impl.io.{ ConnectionSourceStage, OutgoingConnectionStage, TcpIdleTimeout }
 import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.control.NoStackTrace
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
@@ -31,7 +31,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
    */
   final case class ServerBinding(localAddress: InetSocketAddress)(
     private val unbindAction: () ⇒ Future[Unit],
-    val whenUnbound: Future[Done]
+    val whenUnbound:          Future[Done]
   ) {
     def unbind(): Future[Unit] = unbindAction()
   }

@@ -5,10 +5,10 @@ package akka.stream.impl.io
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 
-import akka.{Done, NotUsed}
-import akka.actor.{ActorRef, Terminated}
+import akka.{ Done, NotUsed }
+import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.io.Inet.SocketOption
@@ -17,14 +17,14 @@ import akka.io.Tcp._
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.fusing.GraphStages.detacher
-import akka.stream.scaladsl.Tcp.{OutgoingConnection, ServerBinding}
-import akka.stream.scaladsl.{BidiFlow, Flow, TcpIdleTimeoutException, Tcp => StreamTcp}
+import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
+import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp ⇒ StreamTcp }
 import akka.stream.stage._
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API
@@ -76,7 +76,7 @@ import scala.concurrent.{Future, Promise}
               // stopped.
               thisStage.tell(Unbind, thisStage)
               unbindPromise.future
-            }, unbindPromise.future.map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)))
+            }, unbindPromise.future.map(_ ⇒ Done)(ExecutionContexts.sameThreadExecutionContext)))
           case f: CommandFailed ⇒
             val ex = new BindFailedException {
               // cannot modify the actual exception class for compatibility reasons
