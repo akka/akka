@@ -54,6 +54,8 @@ private[akka] final class ArterySettings private (config: Config) {
       case ""    ⇒ Canonical.Hostname
       case other ⇒ other
     }
+
+    val BindTimeout = getDuration("bind-timeout").requiring(!_.isNegative, "bind-timeout can not be negative")
   }
 
   val LargeMessageDestinations =
@@ -67,6 +69,7 @@ private[akka] final class ArterySettings private (config: Config) {
 
   val LogReceive: Boolean = getBoolean("log-received-messages")
   val LogSend: Boolean = getBoolean("log-sent-messages")
+  val LogAeronCounters: Boolean = config.getBoolean("log-aeron-counters")
 
   object Advanced {
     val config = getConfig("advanced")
