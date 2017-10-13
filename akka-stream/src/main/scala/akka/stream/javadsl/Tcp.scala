@@ -25,14 +25,16 @@ import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 
-import scala.concurrent.Future
+import akka.annotation.InternalApi
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
   /**
    * Represents a prospective TCP server binding.
+   *
+   * Not indented for user construction
    */
-  class ServerBinding private[akka] (delegate: scaladsl.Tcp.ServerBinding) {
+  final class ServerBinding @InternalApi private[akka] (delegate: scaladsl.Tcp.ServerBinding) {
     /**
      * The local address of the endpoint bound by the materialization of the `connections` [[Source]].
      */
