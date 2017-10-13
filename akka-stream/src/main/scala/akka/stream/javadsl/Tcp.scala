@@ -3,11 +3,14 @@
  */
 package akka.stream.javadsl
 
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{Iterable => JIterable}
 import java.util.Optional
-import akka.NotUsed
+
+import akka.{Done, NotUsed}
+
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
+
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.ExtensionId
@@ -17,9 +20,12 @@ import akka.stream.scaladsl
 import akka.util.ByteString
 import akka.japi.Util.immutableSeq
 import akka.io.Inet.SocketOption
+
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
+
+import scala.concurrent.Future
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -39,6 +45,11 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      * The produced [[java.util.concurrent.CompletionStage]] is fulfilled when the unbinding has been completed.
      */
     def unbind(): CompletionStage[Unit] = delegate.unbind().toJava
+
+    /**
+     * @return A completion stage that is completed when manually unbound, or failed if the server fails
+     */
+    def whenUnbound(): CompletionStage[Done] = delegate.whenUnbound.toJava
   }
 
   /**

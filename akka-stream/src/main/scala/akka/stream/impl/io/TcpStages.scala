@@ -5,10 +5,10 @@ package akka.stream.impl.io
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 
-import akka.NotUsed
-import akka.actor.{ ActorRef, Terminated }
+import akka.{Done, NotUsed}
+import akka.actor.{ActorRef, Terminated}
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.io.Inet.SocketOption
@@ -17,14 +17,14 @@ import akka.io.Tcp._
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.fusing.GraphStages.detacher
-import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
-import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp ⇒ StreamTcp }
+import akka.stream.scaladsl.Tcp.{OutgoingConnection, ServerBinding}
+import akka.stream.scaladsl.{BidiFlow, Flow, TcpIdleTimeoutException, Tcp => StreamTcp}
 import akka.stream.stage._
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.{Future, Promise}
 
 /**
  * INTERNAL API
@@ -76,7 +76,7 @@ import scala.concurrent.{ Future, Promise }
               // stopped.
               thisStage.tell(Unbind, thisStage)
               unbindPromise.future
-            }))
+            }, unbindPromise.future.map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)))
           case f: CommandFailed ⇒
             val ex = new BindFailedException {
               // cannot modify the actual exception class for compatibility reasons
@@ -84,7 +84,7 @@ import scala.concurrent.{ Future, Promise }
             }
             f.cause.foreach(ex.initCause)
             bindingPromise.failure(ex)
-            unbindPromise.success(() ⇒ Future.successful(()))
+            unbindPromise.failure(ex)
             failStage(ex)
           case c: Connected ⇒
             push(out, connectionFor(c, sender))
@@ -96,8 +96,10 @@ import scala.concurrent.{ Future, Promise }
             if (unbindStarted) {
               unbindCompleted()
             } else {
-              failStage(new IllegalStateException("IO Listener actor terminated unexpectedly for remote endpoint [" +
-                endpoint.getHostString + ":" + endpoint.getPort + "]"))
+              val ex = new IllegalStateException("IO Listener actor terminated unexpectedly for remote endpoint [" +
+                endpoint.getHostString + ":" + endpoint.getPort + "]")
+              unbindPromise.failure(ex)
+              failStage(ex)
             }
         }
       }
