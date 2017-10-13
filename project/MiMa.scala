@@ -1233,6 +1233,10 @@ object MiMa extends AutoPlugin {
         // #23023 added a new overload with implementation to trait, so old transport implementations compiled against
         // older versions will be missing the method. We accept that incompatibility for now.
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.AssociationHandle.disassociate")
+      ),
+      "2.4.20" -> Seq(
+        // #22156 lost refuseUid
+        FilterAnyProblemStartingWith("akka.remote.EndpointManager")
       )
       // make sure that
       //  * this list ends with the latest released version number
