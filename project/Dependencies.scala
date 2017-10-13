@@ -86,12 +86,12 @@ object Dependencies {
       val logback = "ch.qos.logback" % "logback-classic" % "1.2.3" % "test" // EPL 1.0 / LGPL 2.1
       val mockito = "org.mockito" % "mockito-core" % "2.7.16" % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
-      val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"  % scalaTestVersion.value   % "test" } // ApacheV2
-      val scalacheck   = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value  % "test" } // New BSD
-      val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.2.1"            % "test" // ApacheV2
-      val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
-      val log4j        = "log4j"                       % "log4j"                        % "1.2.17"           % "test" // ApacheV2
-      val  scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % scalaXmlVersion    % "test"
+      val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "test" } // ApacheV2
+      val scalacheck = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value % "test" } // New BSD
+      val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
+      val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "1.0.0" % "test" // ApacheV2
+      val log4j = "log4j" % "log4j" % "1.2.17" % "test" // ApacheV2
+      val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion % "test"
 
       // in-memory filesystem for file related tests
       val jimfs = "com.google.jimfs" % "jimfs" % "1.1" % "test" // ApacheV2

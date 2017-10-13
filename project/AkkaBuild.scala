@@ -183,10 +183,10 @@ object AkkaBuild {
       parallelExecution in Test := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
-    // show full stack traces and test case durations
-    testOptions in Test += Tests.Argument("-oDF")) ++
-    mavenLocalResolverSettings ++
-    docLintingSettings
+      // show full stack traces and test case durations
+      testOptions in Test += Tests.Argument("-oDF")) ++
+      mavenLocalResolverSettings ++
+      docLintingSettings
 
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
