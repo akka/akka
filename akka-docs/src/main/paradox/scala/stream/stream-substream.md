@@ -26,7 +26,7 @@ Java
 
 ![stream-substream-groupBy1.png](../../images/stream-substream-groupBy1.png)
 
-This operation split the incoming stream into separate output
+This operation splits the incoming stream into separate output
 streams, one for each element key. The key is computed for each element
 using the given function, which is `f` in the above diagram. When a new key is encountered for the first time
 a new substream is opened and subsequently fed with all elements belonging to that key.
@@ -53,7 +53,7 @@ Java
 Also substreams, more precisely, `SubFlow` and `SubSource` have methods that allow you
 merge or concat substreams into the master stream again.
 
-The `mergeSubstreams` method merge an unbounded number of substreams back to the master stream.
+The `mergeSubstreams` method merges an unbounded number of substreams back to the master stream.
 
 Scala
 :   ```
@@ -68,11 +68,9 @@ Java
       .runWith(Sink.ignore(), mat);
     ```
 
-The `mergeSubstreams` method merge an unbounded number of active substreams back to the master stream.
-
 ![stream-substream-groupBy3.png](../../images/stream-substream-groupBy3.png)
 
-You can limit the number of active substreams running amd being merged at a time,
+You can limit the number of active substreams running and being merged at a time,
 with either the `mergeSubstreamsWithParallelism` or `concatSubstreams` method.
 
 Scala
@@ -105,7 +103,7 @@ be careful so that these methods do not cause deadlocks with back pressure like 
 `splitWhen` and `splitAfter` are two other operations which generate substreams.
 
 The difference from `groupBy` is that, if the predicate for `splitWhen` and `splitAfter` returns true,
-and a new substream is generated, the following elements will flow into the new substream.
+a new substream is generated, and the succeeding elements after split will flow into the new substream.
 
 `splitWhen` flows the element on which the predicate returned true to a new substream,
  whereas `splitAfter` flows the next element to the new substream after the element on which predicate returned true.
@@ -126,7 +124,7 @@ Java
 
 ### flatMapConcat
 
-`flatMapConcat` and `flatMapMerge` are substream operations in a different from `groupBy` and `splitWhen/After`.
+`flatMapConcat` and `flatMapMerge` are substream operations different from `groupBy` and `splitWhen/After`.
 
 `flatMapConcat` takes a so-called predicate, which is `f` in the following diagram.
 The predicate `f` of `flatMapConcat` transforms each input element into a `Source` that is then flattened
@@ -156,10 +154,10 @@ Elements from all the substreams are concatnated to the sink.
 
 ### flatMapMerge
 
-`flatMapMerge` is similar to `flatMapConcat`, but it doesn't wait one `Source`to be fully consumed.
+`flatMapMerge` is similar to `flatMapConcat`, but it doesn't wait for one `Source` to be fully consumed.
  Instead, up to `breadth` number of streams emit elements at any given time.
 
-```
+
 Scala
 :   ```
     Source(1 to 2).flatMapMerge(i => Source(List.fill(3)(i))).runWith(Sink.ignore)
@@ -171,4 +169,5 @@ Java
       .flatMapMerge(2, i -> Source.from(Arrays.asList(i, i, i)))
       .runWith(Sink.ignore(), mat);
     ```
+
 ![stream-substream-flatMapMerge.png](../../images/stream-substream-flatMapMerge.png)
