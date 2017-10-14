@@ -1,0 +1,2 @@
+# #23808 adding simplified throttle API
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.relaxedThrottle")

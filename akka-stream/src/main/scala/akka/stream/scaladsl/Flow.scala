@@ -1855,28 +1855,28 @@ trait FlowOps[+Out, +Mat] {
     via(new Throttle(cost, per, maximumBurst, costCalculation, mode))
 
   /**
-    * This is simplified version of throttle that evenly spreading events across given time interval. relaxedThrottle using
-    * best effort approach to meet throttle rate.
-    *
-    * You need to use this combinator in case you need just slow down a stream without warring about exact amount
-    * of time between events.
-    *
-    * Still, if you to be sure that no time interval has no more than specified number of events you need to use
-    * [[throttle()]] with maximumBurst attribute.
-    */
+   * This is simplified version of throttle that evenly spreading events across given time interval. relaxedThrottle using
+   * best effort approach to meet throttle rate.
+   *
+   * You need to use this combinator in case you need just slow down a stream without warring about exact amount
+   * of time between events.
+   *
+   * Still, if you to be sure that no time interval has no more than specified number of events you need to use
+   * [[throttle()]] with maximumBurst attribute.
+   */
   def relaxedThrottle(elements: Int, per: FiniteDuration, mode: ThrottleMode): Repr[Out] =
     throttle(elements, per, Int.MaxValue, ConstantFun.oneInt, mode)
 
   /**
-    * This is simplified version of throttle that evenly spreading events across given time interval. relaxedThrottle using
-    * best effort approach to meet throttle rate.
-    *
-    * You need to use this combinator in case you need just slow down a stream without warring about exact amount
-    * of time between events.
-    *
-    * Still, if you to be sure that no time interval has no more than specified number of events you need to use
-    * [[throttle()]] with maximumBurst attribute.
-    */
+   * This is simplified version of throttle that evenly spreading events across given time interval. relaxedThrottle using
+   * best effort approach to meet throttle rate.
+   *
+   * You need to use this combinator in case you need just slow down a stream without warring about exact amount
+   * of time between events.
+   *
+   * Still, if you to be sure that no time interval has no more than specified number of events you need to use
+   * [[throttle()]] with maximumBurst attribute.
+   */
   def relaxedThrottle(cost: Int, per: FiniteDuration,
                       costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] =
     via(new Throttle(cost, per, Int.MaxValue, costCalculation, mode))
