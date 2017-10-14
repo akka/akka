@@ -318,6 +318,15 @@ object Source {
   }
 
   /**
+   * Combines two sources with fan-in strategy like `Merge` or `Concat` and returns `Source` with a materialized value.
+   */
+  def combineMat[T, U, M1, M2, M](first: Source[T, M1], second: Source[T, M2],
+    strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], NotUsed]],
+    combine: function.Function2[M1, M2, M]): Source[U, M] = {
+    new Source(scaladsl.Source.combineMat(first.asScala, second.asScala)(num ⇒ strategy.apply(num))(combinerToScala(combine)))
+  }
+
+  /**
    * Combine the elements of multiple streams into a stream of lists.
    */
   def zipN[T](sources: java.util.List[Source[T, _ <: Any]]): Source[java.util.List[T], NotUsed] = {
