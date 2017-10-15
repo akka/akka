@@ -39,7 +39,7 @@ Java
 
 ![stream-substream-groupBy2.png](../../images/stream-substream-groupBy2.png)
 
-Also substreams, more precisely, `SubFlow` and `SubSource` have methods that allow you
+Also substreams, more precisely, `SubFlow` and `SubSource` have methods that allow you to
 merge or concat substreams into the master stream again.
 
 The `mergeSubstreams` method merges an unbounded number of substreams back to the master stream.
