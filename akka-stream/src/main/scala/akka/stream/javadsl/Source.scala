@@ -2107,8 +2107,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
    * to allow some burstiness. Whenever stream wants to send an element, it takes as many
-   * tokens from the bucket as number of elements. If there isn't any, throttle waits until the
-   * bucket accumulates enough tokens. Bucket is full when stream just materialized and started.
+   * tokens from the bucket as element cost. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
    * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
@@ -2118,8 +2119,12 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * the implementation to avoid using the scheduler when input rates fall below the enforced limit and to reduce
    * most of the inaccuracy caused by the scheduler resolution (which is in the range of milliseconds).
    *
-   * Throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
-   * enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
+   *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
+   *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
+   *  case burst is 0 and speed is higher than 30 events per second. You need to consider other solution in case you are
+   *  expecting events evenly spreading within some small interval like less than 30 milliseconds.
+   *  In other words throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
+   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
@@ -2144,12 +2149,23 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * to allow some burstiness. Whenever stream wants to send an element, it takes as many
    * tokens from the bucket as element cost. If there isn't any, throttle waits until the
    * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
-   * to their cost minus available tokens, meeting the target rate.
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
    * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
    *  cannot emit elements that cost more than the maximumBurst
+   *
+   * It is recommended to use non-zero burst sizes as they improve both performance and throttling precision by allowing
+   * the implementation to avoid using the scheduler when input rates fall below the enforced limit and to reduce
+   * most of the inaccuracy caused by the scheduler resolution (which is in the range of milliseconds).
+   *
+   *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
+   *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
+   *  case burst is 0 and speed is higher than 30 events per second. You need to consider other solution in case you are
+   *  expecting events evenly spreading within some small interval like less than 30 milliseconds.
+   *  In other words throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
+   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
@@ -2162,6 +2178,33 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
                costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Source[Out, Mat] =
     new Source(delegate.throttle(cost, per, maximumBurst, costCalculation.apply _, mode))
+
+  /**
+   * This is simplified version of throttle that evenly spreading events across given time interval. relaxedThrottle using
+   * best effort approach to meet throttle rate.
+   *
+   * You need to use this combinator in case you need just slow down a stream without warring about exact amount
+   * of time between events.
+   *
+   * Still, if you to be sure that no time interval has no more than specified number of events you need to use
+   * [[throttle()]] with maximumBurst attribute.
+   */
+  def relaxedThrottle(elements: Int, per: FiniteDuration, mode: ThrottleMode): javadsl.Source[Out, Mat] =
+    new Source(delegate.throttle(elements, per, Int.MaxValue, mode))
+
+  /**
+   * This is simplified version of throttle that evenly spreading events across given time interval. relaxedThrottle using
+   * best effort approach to meet throttle rate.
+   *
+   * You need to use this combinator in case you need just slow down a stream without warring about exact amount
+   * of time between events.
+   *
+   * Still, if you to be sure that no time interval has no more than specified number of events you need to use
+   * [[throttle()]] with maximumBurst attribute.
+   */
+  def relaxedThrottle(cost: Int, per: FiniteDuration,
+                      costCalculation: (Out) ⇒ Int, mode: ThrottleMode): javadsl.Source[Out, Mat] =
+    new Source(delegate.throttle(cost, per, Int.MaxValue, costCalculation.apply _, mode))
 
   /**
    * Detaches upstream demand from downstream demand without detaching the

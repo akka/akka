@@ -1787,7 +1787,7 @@ trait FlowOps[+Out, +Mat] {
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
    * to allow some burstiness. Whenever stream wants to send an element, it takes as many
-   * tokens from the bucket as number of elements. If there isn't any, throttle waits until the
+   * tokens from the bucket as element cost. If there isn't any, throttle waits until the
    * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
    * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
@@ -1796,10 +1796,16 @@ trait FlowOps[+Out, +Mat] {
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
    *  cannot emit elements that cost more than the maximumBurst
    *
+   * It is recommended to use non-zero burst sizes as they improve both performance and throttling precision by allowing
+   * the implementation to avoid using the scheduler when input rates fall below the enforced limit and to reduce
+   * most of the inaccuracy caused by the scheduler resolution (which is in the range of milliseconds).
+   *
    *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
    *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
    *  case burst is 0 and speed is higher than 30 events per second. You need to consider other solution in case you are
    *  expecting events evenly spreading within some small interval like less than 30 milliseconds.
+   *  In other words throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
+   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
@@ -1825,22 +1831,21 @@ trait FlowOps[+Out, +Mat] {
    * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
    * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
-   * It is recommended to use non-zero burst sizes as they improve both performance and throttling precision by allowing
-   * the implementation to avoid using the scheduler when input rates fall below the enforced limit and to reduce
-   * most of the inaccuracy caused by the scheduler resolution (which is in the range of milliseconds).
-   *
-   * Throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
-   * enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
-   *
    * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
    *  cannot emit elements that cost more than the maximumBurst
    *
+   * It is recommended to use non-zero burst sizes as they improve both performance and throttling precision by allowing
+   * the implementation to avoid using the scheduler when input rates fall below the enforced limit and to reduce
+   * most of the inaccuracy caused by the scheduler resolution (which is in the range of milliseconds).
+   *
    *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
    *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
    *  case burst is 0 and speed is higher than 30 events per second. You need to consider other solution in case you are
    *  expecting events evenly spreading within some small interval like less than 30 milliseconds.
+   *  In other words throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
+   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
