@@ -7,7 +7,6 @@ package akka
 import java.io.{ FileInputStream, InputStreamReader }
 import java.util.Properties
 
-import akka.TestExtras.JUnitFileReporting
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
 import sbt._
@@ -84,7 +83,7 @@ object AkkaBuild {
 
   lazy val defaultSettings = resolverSettings ++
     TestExtras.Filter.settings ++
-    Protobuf.settings ++ Seq(
+    Protobuf.settings ++ Seq[Setting[_]](
       // compile options
       scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
@@ -185,13 +184,8 @@ object AkkaBuild {
       logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
       // show full stack traces and test case durations
-      testOptions in Test += Tests.Argument("-oDF"),
-
-      // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
-      // -a Show stack traces and exception class name for AssertionErrors.
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")) ++
+      testOptions in Test += Tests.Argument("-oDF")) ++
       mavenLocalResolverSettings ++
-      JUnitFileReporting.settings ++
       docLintingSettings
 
   lazy val docLintingSettings = Seq(
