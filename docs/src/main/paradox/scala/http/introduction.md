@@ -66,7 +66,7 @@ Maven
     </dependency>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-http_$scala.binary_version$</artifactId>
+      <artifactId>akka-actor_$scala.binary_version$</artifactId>
       <version>$akka25.version$</version>
     </dependency>
     ```
