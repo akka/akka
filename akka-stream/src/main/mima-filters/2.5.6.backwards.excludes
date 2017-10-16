@@ -2,4 +2,4 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.compress
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.compression.DeflateCompressor.this")
 
 # #23808 adding simplified throttle API
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.relaxedThrottle")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.throttleEven")
