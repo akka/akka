@@ -2207,7 +2207,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * [[throttle()]] with maximumBurst attribute.
    */
   def throttleEven(cost: Int, per: FiniteDuration,
-                      costCalculation: (Out) ⇒ Int, mode: ThrottleMode): javadsl.Source[Out, Mat] =
+                   costCalculation: (Out) ⇒ Int, mode: ThrottleMode): javadsl.Source[Out, Mat] =
     new Source(delegate.throttle(cost, per, Int.MaxValue, costCalculation.apply _, mode))
 
   /**

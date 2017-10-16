@@ -1887,7 +1887,7 @@ trait FlowOps[+Out, +Mat] {
    * [[throttle()]] with maximumBurst attribute.
    */
   def throttleEven(cost: Int, per: FiniteDuration,
-                      costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] =
+                   costCalculation: (Out) ⇒ Int, mode: ThrottleMode): Repr[Out] =
     via(new Throttle(cost, per, Int.MaxValue, costCalculation, mode))
 
   /**

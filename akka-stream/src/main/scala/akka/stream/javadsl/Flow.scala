@@ -2149,7 +2149,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * [[throttle()]] with maximumBurst attribute.
    */
   def throttleEven(cost: Int, per: FiniteDuration,
-                      costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
+                   costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.throttle(cost, per, Integer.MAX_VALUE, costCalculation.apply, mode))
 
   /**

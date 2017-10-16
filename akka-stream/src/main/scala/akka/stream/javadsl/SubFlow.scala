@@ -1444,7 +1444,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * [[throttle()]] with maximumBurst attribute.
    */
   def throttleEven(cost: Int, per: FiniteDuration,
-                      costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
+                   costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(cost, per, Integer.MAX_VALUE, costCalculation.apply, mode))
 
   /**

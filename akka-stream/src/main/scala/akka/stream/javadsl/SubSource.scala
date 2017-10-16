@@ -1437,7 +1437,7 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    * [[throttle()]] with maximumBurst attribute.
    */
   def throttleEven(cost: Int, per: FiniteDuration,
-                      costCalculation: (Out) ⇒ Int, mode: ThrottleMode): javadsl.SubSource[Out, Mat] =
+                   costCalculation: (Out) ⇒ Int, mode: ThrottleMode): javadsl.SubSource[Out, Mat] =
     new SubSource(delegate.throttle(cost, per, Int.MaxValue, costCalculation.apply _, mode))
 
   /**
