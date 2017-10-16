@@ -57,7 +57,7 @@ Scala
 Java
 :  @@snip [FutureDocTest.java]($code$/java/jdocs/future/FutureDocTest.java) { #imports1 #ask-blocking }
 
-This will cause the current thread to block and wait for the @scala[`Actor`]@java[`AbstractActor`] to 'complete' the `Future` with it's reply.
+This will cause the current thread to block and wait for the @scala[`Actor`]@java[`AbstractActor`] to 'complete' the `Future` with its reply.
 Blocking is discouraged though as it will cause performance problems.
 The blocking operations are located in `Await.result` and `Await.ready` to make it easy to spot where blocking occurs.
 Alternatives to blocking are discussed further within this documentation. Also note that the `Future` returned by
@@ -319,7 +319,7 @@ Java
 
 Since callbacks are executed in any order and potentially in parallel,
 it can be tricky at the times when you need sequential ordering of operations.
-But there's a solution and it's name is `andThen`. It creates a new `Future` with
+But there's a solution and its name is `andThen`. It creates a new `Future` with
 the specified callback, a `Future` that will have the same result as the `Future` it's called on,
 which allows for ordering like in the following sample:
 
