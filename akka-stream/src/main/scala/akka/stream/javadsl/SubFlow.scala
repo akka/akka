@@ -1344,7 +1344,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
    * to allow some burstiness. Whenever stream wants to send an element, it takes as many
-   * tokens from the bucket as element cost. If there isn't any, throttle waits until the
+   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
    * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
    * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
@@ -1370,6 +1370,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
+   *
+   * @see [[#throttleEven]]
    */
   def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int,
                mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
@@ -1384,7 +1386,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
    * to allow some burstiness. Whenever stream wants to send an element, it takes as many
-   * tokens from the bucket as element cost. If there isn't any, throttle waits until the
+   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
    * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
    * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
@@ -1411,35 +1413,37 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
+   *
+   * @see [[#throttleEven]]
    */
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
                costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(cost, per, maximumBurst, costCalculation.apply, mode))
 
   /**
-   * This is simplified version of throttle that evenly spreading events across given time interval. relaxedThrottle using
+   * This is simplified version of throttle that evenly spreading events across given time interval. throttleEven using
    * best effort approach to meet throttle rate.
    *
-   * You need to use this combinator in case you need just slow down a stream without warring about exact amount
+   * You need to use this combinator in case you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * Still, if you to be sure that no time interval has no more than specified number of events you need to use
    * [[throttle()]] with maximumBurst attribute.
    */
-  def relaxedThrottle(elements: Int, per: FiniteDuration, mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
+  def throttleEven(elements: Int, per: FiniteDuration, mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(elements, per, Integer.MAX_VALUE, mode))
 
   /**
-   * This is simplified version of throttle that evenly spreading events across given time interval. relaxedThrottle using
+   * This is simplified version of throttle that evenly spreading events across given time interval. throttleEven using
    * best effort approach to meet throttle rate.
    *
-   * You need to use this combinator in case you need just slow down a stream without warring about exact amount
+   * You need to use this combinator in case you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * Still, if you to be sure that no time interval has no more than specified number of events you need to use
    * [[throttle()]] with maximumBurst attribute.
    */
-  def relaxedThrottle(cost: Int, per: FiniteDuration,
+  def throttleEven(cost: Int, per: FiniteDuration,
                       costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(cost, per, Integer.MAX_VALUE, costCalculation.apply, mode))
 
