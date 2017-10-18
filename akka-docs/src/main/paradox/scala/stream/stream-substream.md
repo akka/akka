@@ -61,8 +61,12 @@ Scala
 Java
 :   @@snip [SubstreamDocTest.java]($code$/java/jdocs/stream/SubstreamDocTest.java) { #groupBy4 }
 
-However, since the number of active substreams is capped,
+However, since the number of running (i.e. not yet completed) substreams is capped,
 be careful so that these methods do not cause deadlocks with back pressure like in the below diagram.
+
+Element one and two leads to two created substreams, but since the number of substreams are capped to 2 
+when element 3 comes in it cannot lead to creation of a new substream until one of the previous two are completed 
+and this leads to the stream being deadlocked.
 
 ![stream-substream-groupBy4.png](../../images/stream-substream-groupBy4.png)
 
@@ -90,9 +94,9 @@ Java
 
 `flatMapConcat` and `flatMapMerge` are substream operations different from `groupBy` and `splitWhen/After`.
 
-`flatMapConcat` takes a so-called predicate, which is `f` in the following diagram.
-The predicate `f` of `flatMapConcat` transforms each input element into a `Source` that is then flattened
-into the output stream by concatnation.
+`flatMapConcat` takes a function, which is `f` in the following diagram.
+The function `f` of `flatMapConcat` transforms each input element into a `Source` that is then flattened
+into the output stream by concatenation.
 
 Scala
 :   @@snip [SubstreamDocSpec.scala]($code$/scala/docs/stream/SubstreamDocSpec.scala) { #flatMapConcat }
