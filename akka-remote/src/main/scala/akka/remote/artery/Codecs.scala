@@ -21,6 +21,8 @@ import akka.util.{ OptionVal, Unsafe }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
+import akka.util.ByteStringBuilder
+import java.nio.ByteOrder
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.serialization.SerializerWithStringManifest
 
@@ -47,7 +49,9 @@ private[remote] class Encoder(
   system:               ExtendedActorSystem,
   outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
   bufferPool:           EnvelopeBufferPool,
-  debugLogSend:         Boolean)
+  streamId:             Int,
+  debugLogSend:         Boolean,
+  version:              Byte)
   extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, EnvelopeBuffer], Encoder.OutboundCompressionAccess] {
   import Encoder._
 
@@ -59,8 +63,9 @@ private[remote] class Encoder(
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging with OutboundCompressionAccess {
 
       private val headerBuilder = HeaderBuilder.out()
-      headerBuilder setVersion ArteryTransport.Version
+      headerBuilder setVersion version
       headerBuilder setUid uniqueLocalAddress.uid
+      headerBuilder setStreamId streamId.toByte
       private val localAddress = uniqueLocalAddress.address
       private val serialization = SerializationExtension(system)
       private val serializationInfo = Serialization.Information(localAddress, system)
@@ -130,6 +135,12 @@ private[remote] class Encoder(
               instruments.messageSent(outboundEnvelope, envelope.byteBuffer.position(), time)
             }
           } finally Serialization.currentTransportInformation.value = oldValue
+
+          if (headerBuilder.version >= 1) {
+            // Framing.lengthField need the length after the length field, not the total frame size
+            val frameLength = envelope.byteBuffer.position() - EnvelopeBuffer.FrameLengthOffset - 4
+            envelope.byteBuffer.putInt(EnvelopeBuffer.FrameLengthOffset, frameLength)
+          }
 
           envelope.byteBuffer.flip()
 
@@ -390,7 +401,7 @@ private[remote] class Decoder(
           }
         }
       }
-      override def onPush(): Unit = {
+      override def onPush(): Unit = try {
         messageCount += 1
         val envelope = grab(in)
         headerBuilder.resetMessageFields()
@@ -409,7 +420,7 @@ private[remote] class Decoder(
         } catch {
           case NonFatal(e) ⇒
             // probably version mismatch due to restarted system
-            log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e.getMessage)
+            log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e)
             OptionVal.None
         }
 
@@ -423,14 +434,14 @@ private[remote] class Decoder(
         } catch {
           case NonFatal(e) ⇒
             // probably version mismatch due to restarted system
-            log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e.getMessage)
+            log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e)
             OptionVal.None
         }
 
         val classManifestOpt = try headerBuilder.manifest(originUid) catch {
           case NonFatal(e) ⇒
             // probably version mismatch due to restarted system
-            log.warning("Couldn't decompress manifest from originUid [{}]. {}", originUid, e.getMessage)
+            log.warning("Couldn't decompress manifest from originUid [{}]. {}", originUid, e)
             OptionVal.None
         }
 
@@ -485,7 +496,8 @@ private[remote] class Decoder(
             headerBuilder.flags,
             envelope,
             association,
-            lane = 0)
+            lane = 0,
+            positionOfMetaData = headerBuilder.positionOfMetaData)
 
           if (recipient.isEmpty && !headerBuilder.isNoRecipient) {
 
@@ -520,6 +532,10 @@ private[remote] class Decoder(
             push(out, decoded)
           }
         }
+      } catch {
+        case NonFatal(e) ⇒
+          log.warning("Dropping message due to: {}", e)
+          pull(in)
       }
 
       private def resolveRecipient(path: String): OptionVal[InternalActorRef] = {
@@ -625,7 +641,7 @@ private[remote] class Deserializer(
           val envelopeWithMessage = envelope.withMessage(deserializedMessage)
 
           if (instruments.nonEmpty) {
-            instruments.deserialize(envelopeWithMessage)
+            instruments.deserialize(envelopeWithMessage, envelope.positionOfMetaData)
             val time = if (instruments.timeSerialization) System.nanoTime - startTime else 0
             instruments.messageReceived(envelopeWithMessage, envelope.envelopeBuffer.byteBuffer.limit(), time)
           }
@@ -638,7 +654,7 @@ private[remote] class Deserializer(
             }
             log.warning(
               "Failed to deserialize message from [{}] with serializer id [{}] and manifest [{}]. {}",
-              from, envelope.serializer, envelope.classManifest, e.getMessage)
+              from, envelope.serializer, envelope.classManifest, e)
             pull(in)
         } finally {
           val buf = envelope.envelopeBuffer

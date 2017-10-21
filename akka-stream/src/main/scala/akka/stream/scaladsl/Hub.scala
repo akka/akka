@@ -10,7 +10,6 @@ import akka.NotUsed
 import akka.dispatch.{ AbstractNodeQueue, ExecutionContexts }
 import akka.stream._
 import akka.stream.stage._
-
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
@@ -21,9 +20,11 @@ import java.util.concurrent.atomic.AtomicReferenceArray
 import scala.collection.immutable
 import scala.collection.mutable.LongMap
 import scala.collection.immutable.Queue
+
 import akka.annotation.InternalApi
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
+import akka.stream.Attributes.LogLevels
 
 /**
  * A MergeHub is a special streaming hub that is able to collect streamed elements from a dynamic set of
@@ -284,7 +285,13 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int) extends GraphStageWi
 
     }
 
-    (logic, Sink.fromGraph(sink))
+    // propagate LogLevels attribute so that MergeHub can be used with onFailure = LogLevels.Off
+    val sinkWithAttributes = inheritedAttributes.get[LogLevels] match {
+      case Some(a) ⇒ Sink.fromGraph(sink).addAttributes(Attributes(a))
+      case None    ⇒ Sink.fromGraph(sink)
+    }
+
+    (logic, sinkWithAttributes)
   }
 }
 

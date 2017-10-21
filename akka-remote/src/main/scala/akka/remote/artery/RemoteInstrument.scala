@@ -157,9 +157,9 @@ private[remote] final class RemoteInstruments(
     }
   }
 
-  def deserialize(inboundEnvelope: InboundEnvelope): Unit = {
+  def deserialize(inboundEnvelope: InboundEnvelope, positionOfMetaData: Int): Unit = {
     if (inboundEnvelope.flag(EnvelopeBuffer.MetadataPresentFlag)) {
-      inboundEnvelope.envelopeBuffer.byteBuffer.position(EnvelopeBuffer.MetadataContainerAndLiteralSectionOffset)
+      inboundEnvelope.envelopeBuffer.byteBuffer.position(positionOfMetaData)
       deserializeRaw(inboundEnvelope)
     }
   }

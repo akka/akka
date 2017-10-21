@@ -362,7 +362,7 @@ private[remote] class Association(
         case ShuttingDown ⇒ // silence it
       }
     } else if (log.isDebugEnabled)
-      log.debug(
+      log.warning( // FIXME debug level
         "Dropping message [{}] from [{}] to [{}] due to quarantined system [{}]",
         Logging.messageClassName(message), sender.getOrElse(deadletters), recipient.getOrElse(recipient), remoteAddress)
   }
@@ -516,7 +516,7 @@ private[remote] class Association(
     val streamKillSwitch = KillSwitches.shared("outboundControlStreamKillSwitch")
 
     val (queueValue, (control, completed)) =
-      Source.fromGraph(new SendQueue[OutboundEnvelope])
+      Source.fromGraph(new SendQueue[OutboundEnvelope](transport.system.deadLetters))
         .via(streamKillSwitch.flow)
         .toMat(transport.outboundControl(this))(Keep.both)
         .run()(materializer)
@@ -555,7 +555,7 @@ private[remote] class Association(
       val streamKillSwitch = KillSwitches.shared("outboundMessagesKillSwitch")
 
       val (queueValue, testMgmt, changeCompression, completed) =
-        Source.fromGraph(new SendQueue[OutboundEnvelope])
+        Source.fromGraph(new SendQueue[OutboundEnvelope](transport.system.deadLetters))
           .via(streamKillSwitch.flow)
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
           .toMat(transport.outbound(this))({ case ((a, b), (c, d)) ⇒ (a, b, c, d) }) // "keep all, exploded"
@@ -582,7 +582,7 @@ private[remote] class Association(
 
       val streamKillSwitch = KillSwitches.shared("outboundMessagesKillSwitch")
 
-      val lane = Source.fromGraph(new SendQueue[OutboundEnvelope])
+      val lane = Source.fromGraph(new SendQueue[OutboundEnvelope](transport.system.deadLetters))
         .via(streamKillSwitch.flow)
         .via(transport.outboundTestFlow(this))
         .viaMat(transport.outboundLane(this))(Keep.both)
@@ -595,7 +595,7 @@ private[remote] class Association(
 
       val (mergeHub, aeronSinkCompleted) = MergeHub.source[EnvelopeBuffer]
         .via(streamKillSwitch.flow)
-        .toMat(transport.aeronSink(this))(Keep.both).run()(materializer)
+        .toMat(transport.outboundTransportSink(this))(Keep.both).run()(materializer)
 
       val values: Vector[(SendQueue.QueueValue[OutboundEnvelope], Encoder.OutboundCompressionAccess, Future[Done])] =
         (0 until outboundLanes).map { _ ⇒
@@ -637,7 +637,7 @@ private[remote] class Association(
 
     val streamKillSwitch = KillSwitches.shared("outboundLargeMessagesKillSwitch")
 
-    val (queueValue, completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
+    val (queueValue, completed) = Source.fromGraph(new SendQueue[OutboundEnvelope](transport.system.deadLetters))
       .via(streamKillSwitch.flow)
       .via(transport.outboundTestFlow(this))
       .toMat(transport.outboundLarge(this))(Keep.both)
@@ -668,6 +668,11 @@ private[remote] class Association(
     }
 
     implicit val ec = materializer.executionContext
+    streamCompleted.foreach { _ ⇒
+      // shutdown as expected
+      // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
+      materializing.countDown()
+    }
     streamCompleted.failed.foreach {
       case ArteryTransport.ShutdownSignal ⇒
         // shutdown as expected
@@ -692,7 +697,9 @@ private[remote] class Association(
         if (queueIndex == ControlQueueIndex) {
           cause match {
             case _: HandshakeTimeoutException ⇒ // ok, quarantine not possible without UID
-            case _                            ⇒ quarantine("Outbound control stream restarted")
+            case _ ⇒
+              // FIXME can we avoid quarantine if all system messages have been delivered?
+              quarantine("Outbound control stream restarted")
           }
         }
 

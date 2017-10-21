@@ -55,7 +55,8 @@ private[akka] final class ArterySettings private (config: Config) {
       case other ⇒ other
     }
 
-    val BindTimeout = getDuration("bind-timeout").requiring(!_.isNegative, "bind-timeout can not be negative")
+    val BindTimeout: FiniteDuration = config.getMillisDuration("bind-timeout").requiring(
+      _ > Duration.Zero, "bind-timeout can not be negative")
   }
 
   val LargeMessageDestinations =
@@ -70,6 +71,22 @@ private[akka] final class ArterySettings private (config: Config) {
   val LogReceive: Boolean = getBoolean("log-received-messages")
   val LogSend: Boolean = getBoolean("log-sent-messages")
   val LogAeronCounters: Boolean = config.getBoolean("log-aeron-counters")
+
+  val Transport: Transport = toRootLowerCase(getString("transport")) match {
+    case "aeron-udp" ⇒ AeronUpd
+    case "tcp"       ⇒ Tcp
+    case "tls-tcp"   ⇒ TlsTcp
+    case other ⇒ throw new IllegalArgumentException(s"Unknown transport [$other], possible values: " +
+      """"aeron-udp", "tcp", or "tls-tcp"""")
+  }
+
+  val Version: Byte = Transport match {
+    case AeronUpd ⇒
+      // using older version for Aeron for backwards compatibility,
+      // and the new fields (FrameLength, StreamId) are not needed for Aeron
+      0
+    case Tcp | TlsTcp ⇒ ArteryTransport.HighestVersion
+  }
 
   object Advanced {
     val config = getConfig("advanced")
@@ -187,5 +204,16 @@ private[akka] object ArterySettings {
     case "<getHostAddress>" ⇒ InetAddress.getLocalHost.getHostAddress
     case "<getHostName>"    ⇒ InetAddress.getLocalHost.getHostName
     case other              ⇒ other
+  }
+
+  sealed trait Transport
+  object AeronUpd extends Transport {
+    override def toString = "aeron-udp"
+  }
+  object Tcp extends Transport {
+    override def toString = "tcp"
+  }
+  object TlsTcp extends Transport {
+    override def toString = "tls-tcp"
   }
 }

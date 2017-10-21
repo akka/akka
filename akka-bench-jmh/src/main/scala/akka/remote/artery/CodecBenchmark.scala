@@ -127,7 +127,9 @@ class CodecBenchmark {
     } else null
     val envelope = new EnvelopeBuffer(envelopeTemplateBuffer)
     val outboundEnvelope = OutboundEnvelope(OptionVal.None, payload, OptionVal.None)
-    headerIn setVersion 1
+    headerIn setFrameLength 100
+    headerIn setStreamId 1
+    headerIn setVersion ArteryTransport.HighestVersion
     headerIn setUid 42
     headerIn setSenderActorRef actorOnSystemA
     headerIn setRecipientActorRef remoteRefB
@@ -138,7 +140,8 @@ class CodecBenchmark {
 
     // Now build up the graphs
     val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, Encoder.OutboundCompressionAccess] =
-      Flow.fromGraph(new Encoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem], outboundEnvelopePool, envelopePool, false))
+      Flow.fromGraph(new Encoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem], outboundEnvelopePool,
+        envelopePool, streamId = 1, debugLogSend = false, version = ArteryTransport.HighestVersion))
     val encoderInput: Flow[String, OutboundEnvelope, NotUsed] =
       Flow[String].map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
     val compressions = new InboundCompressionsImpl(system, inboundContext, inboundContext.settings.Advanced.Compression)

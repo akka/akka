@@ -117,7 +117,7 @@ private[remote] class AeronSource(
         try sub.close() catch {
           case e: DriverTimeoutException ⇒
             // media driver was shutdown
-            log.debug("DriverTimeout when closing subscription. {}", e.getMessage)
+            log.debug("DriverTimeout when closing subscription. {}", e)
         } finally
           flightRecorder.loFreq(AeronSource_Stopped, channelMetadata)
       }

@@ -200,7 +200,7 @@ private[remote] class AeronSink(
       private def onGiveUp(): Unit = {
         offerTaskInProgress = false
         val cause = new GaveUpMessageException(s"Gave up sending message to $channel after ${giveUpAfter.pretty}.")
-        flightRecorder.alert(AeronSink_GaveUpEnvelope, cause.getMessage.getBytes("US-ASCII"))
+        flightRecorder.alert(AeronSink_GaveUpEnvelope, cause.toString.getBytes("US-ASCII"))
         completedValue = Failure(cause)
         failStage(cause)
       }
