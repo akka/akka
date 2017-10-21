@@ -59,7 +59,7 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
 
     "deliver all messages" in {
       val queue = new ManyToOneConcurrentArrayQueue[String](128)
-      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[String])
+      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[String](system.deadLetters))
         .toMat(TestSink.probe)(Keep.both).run()
 
       downstream.request(10)
@@ -78,7 +78,7 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
       queue.offer("a")
       queue.offer("b")
 
-      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[String])
+      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[String](system.deadLetters))
         .toMat(TestSink.probe)(Keep.both).run()
 
       downstream.request(10)
@@ -96,7 +96,7 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
       // this test verifies that the wakeup signal is triggered correctly
       val queue = new ManyToOneConcurrentArrayQueue[Int](128)
       val burstSize = 100
-      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[Int])
+      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[Int](system.deadLetters))
         .grouped(burstSize)
         .async
         .toMat(TestSink.probe)(Keep.both).run()
@@ -124,7 +124,7 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
       // send 100 per producer before materializing
       producers.foreach(_ ! ProduceToQueue(0, 100, queue))
 
-      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[Msg])
+      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[Msg](system.deadLetters))
         .toMat(TestSink.probe)(Keep.both).run()
 
       sendQueue.inject(queue)
@@ -154,7 +154,7 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
 
         (1 to 100).foreach { n ⇒
           val queue = new ManyToOneConcurrentArrayQueue[String](16)
-          val (sendQueue, downstream) = Source.fromGraph(new SendQueue[String])
+          val (sendQueue, downstream) = Source.fromGraph(new SendQueue[String](system.deadLetters))
             .toMat(TestSink.probe)(Keep.both).run()
 
           f(queue, sendQueue, downstream)

@@ -11,7 +11,7 @@ private[remote] object FlightRecorderEvents {
 
   // Top level remoting events
   val Transport_MediaDriverStarted = 0
-  val Transport_AeronStarted = 1
+  val Transport_Started = 1
   val Transport_AeronErrorLogStarted = 2
   val Transport_TaskRunnerStarted = 3
   val Transport_UniqueAddressSet = 4
@@ -54,7 +54,7 @@ private[remote] object FlightRecorderEvents {
   // Used for presentation of the entries in the flight recorder
   lazy val eventDictionary = Map(
     Transport_MediaDriverStarted → "Transport: Media driver started",
-    Transport_AeronStarted → "Transport: Aeron started",
+    Transport_Started → "Transport: started",
     Transport_AeronErrorLogStarted → "Transport: Aeron error log started",
     Transport_TaskRunnerStarted → "Transport: Task runner started",
     Transport_UniqueAddressSet → "Transport: Unique address set",
@@ -92,7 +92,8 @@ private[remote] object FlightRecorderEvents {
     Compression_CompressedManifest → "Compression: Compressed manifest",
     Compression_AllocatedManifestCompressionId → "Compression: Allocated manifest compression id",
     Compression_Inbound_RunActorRefAdvertisement → "InboundCompression: Run class manifest compression advertisement",
-    Compression_Inbound_RunClassManifestAdvertisement → "InboundCompression: Run class manifest compression advertisement")
-    .map { case (int, str) ⇒ int.toLong → str }
+    Compression_Inbound_RunClassManifestAdvertisement → "InboundCompression: Run class manifest compression advertisement"
+
+  ).map { case (int, str) ⇒ int.toLong → str }
 
 }

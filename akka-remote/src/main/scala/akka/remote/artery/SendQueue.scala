@@ -4,6 +4,7 @@
 package akka.remote.artery
 
 import java.util.Queue
+
 import akka.stream.stage.GraphStage
 import akka.stream.stage.OutHandler
 import akka.stream.Attributes
@@ -15,11 +16,14 @@ import akka.stream.stage.GraphStageWithMaterializedValue
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueueTail
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
+
+import akka.actor.ActorRef
 
 /**
  * INTERNAL API
@@ -43,7 +47,7 @@ private[remote] object SendQueue {
 /**
  * INTERNAL API
  */
-private[remote] final class SendQueue[T] extends GraphStageWithMaterializedValue[SourceShape[T], SendQueue.QueueValue[T]] {
+private[remote] final class SendQueue[T](deadLetters: ActorRef) extends GraphStageWithMaterializedValue[SourceShape[T], SendQueue.QueueValue[T]] {
   import SendQueue._
 
   val out: Outlet[T] = Outlet("SendQueue.out")
@@ -102,8 +106,14 @@ private[remote] final class SendQueue[T] extends GraphStageWithMaterializedValue
 
       override def postStop(): Unit = {
         // TODO quarantine will currently always be done when control stream is terminated, see issue #21359
-        if (consumerQueue ne null)
+        if (consumerQueue ne null) {
+          var msg = consumerQueue.poll()
+          while (msg != null) {
+            deadLetters ! msg
+            msg = consumerQueue.poll()
+          }
           consumerQueue.clear()
+        }
         super.postStop()
       }
 

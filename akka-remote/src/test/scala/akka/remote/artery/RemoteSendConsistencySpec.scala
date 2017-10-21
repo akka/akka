@@ -11,12 +11,12 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
 import akka.actor.ActorSelection
 
-class RemoteSendConsistencyWithOneLaneSpec extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
+class ArteryUpdSendConsistencyWithOneLaneSpec extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
       akka.remote.artery.advanced.outbound-lanes = 1
       akka.remote.artery.advanced.inbound-lanes = 1
     """).withFallback(ArterySpecSupport.defaultConfig))
 
-class RemoteSendConsistencyWithThreeLanesSpec extends AbstractRemoteSendConsistencySpec(
+class ArteryUpdSendConsistencyWithThreeLanesSpec extends AbstractRemoteSendConsistencySpec(
   ConfigFactory.parseString("""
       akka.remote.artery.advanced.outbound-lanes = 3
       akka.remote.artery.advanced.inbound-lanes = 3

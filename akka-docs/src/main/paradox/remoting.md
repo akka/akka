@@ -512,7 +512,7 @@ To intercept generic remoting related errors, listen to `RemotingErrorEvent` whi
 <a id="remote-security"></a>
 ## Remote Security
 
-An `ActorSystem` should not be exposed via Akka Remote over plain TCP to an untrusted network (e.g. internet).
+An `ActorSystem` should not be exposed via Akka Remote over plain TCP to an untrusted network (e.g. Internet).
 It should be protected by network security, such as a firewall. If that is not considered as enough protection
 [TLS with mutual authentication](#remote-tls)  should be enabled.
 

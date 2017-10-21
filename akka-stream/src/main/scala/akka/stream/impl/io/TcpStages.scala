@@ -343,8 +343,8 @@ private[stream] object ConnectionSourceStage {
           if (interpreter.log.isDebugEnabled) {
             val msg = "Aborting tcp connection to {} because of upstream failure: {}"
 
-            if (ex.getStackTrace.isEmpty) interpreter.log.debug(msg, remoteAddress, ex.getMessage)
-            else interpreter.log.debug(msg + "\n{}", remoteAddress, ex.getMessage, ex.getStackTrace.mkString("\n"))
+            if (ex.getStackTrace.isEmpty) interpreter.log.debug(msg, remoteAddress, ex)
+            else interpreter.log.debug(msg + "\n{}", remoteAddress, ex, ex.getStackTrace.mkString("\n"))
           }
           connection ! Abort
         } else failStage(ex)
