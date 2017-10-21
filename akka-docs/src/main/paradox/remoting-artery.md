@@ -478,7 +478,7 @@ phi = -log10(1 - F(timeSinceLastHeartbeat))
 where F is the cumulative distribution function of a normal distribution with mean
 and standard deviation estimated from historical heartbeat inter-arrival times.
 
-In the [Remote Configuration](#remote-configuration-artery) you can adjust the `akka.remote.watch-failure-detector.threshold`
+In the @ref:[Remote Configuration](#remote-configuration-artery) you can adjust the `akka.remote.watch-failure-detector.threshold`
 to define when a *phi* value is considered to be a failure.
 
 A low `threshold` is prone to generate many false positives but ensures
@@ -504,7 +504,7 @@ a standard deviation of 100 ms.
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
 `akka.remote.watch-failure-detector.acceptable-heartbeat-pause`. You may want to
-adjust the [Remote Configuration](#remote-configuration-artery) of this depending on you environment.
+adjust the @ref:[Remote Configuration](#remote-configuration-artery) of this depending on you environment.
 This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 3 seconds.
 

@@ -26,7 +26,6 @@ object LargeMessagesStreamSpec {
 class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
   """
     akka {
-      loglevel = ERROR
       remote.artery.large-message-destinations = [ "/user/large" ]
     }
   """.stripMargin) {
@@ -102,16 +101,23 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
       val largeRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "large"))
       val regularRemote = awaitResolve(systemA.actorSelection(rootB / "user" / "regular"))
 
-      // send a large message, as well as regular one
-      val remoteProbe = TestProbe()(systemA)
+      // send a large message, as well as some regular ones
+      val probeSmall = TestProbe()(systemA)
+      val probeLarge = TestProbe()(systemA)
 
       val largeBytes = 2000000
-      largeRemote.tell(Ping(ByteString.fromArray(new Array[Byte](largeBytes))), remoteProbe.ref)
-      regularRemote.tell(Ping(), remoteProbe.ref)
+      largeRemote.tell(Ping(ByteString.fromArray(new Array[Byte](largeBytes))), probeLarge.ref)
+      regularRemote.tell(Ping(), probeSmall.ref)
+      Thread.sleep(50)
+      regularRemote.tell(Ping(), probeSmall.ref)
+      Thread.sleep(50)
+      regularRemote.tell(Ping(), probeSmall.ref)
 
       // should be no problems sending regular small messages while large messages are being sent
-      remoteProbe.expectMsg(Pong(0))
-      remoteProbe.expectMsg(10.seconds, Pong(largeBytes))
+      probeSmall.expectMsg(Pong(0))
+      probeSmall.expectMsg(Pong(0))
+      probeSmall.expectMsg(Pong(0))
+      probeLarge.expectMsg(10.seconds, Pong(largeBytes))
 
       // cached flags should be set now
       largeRemote.asInstanceOf[RemoteActorRef].cachedSendQueueIndex should ===(Association.LargeQueueIndex)

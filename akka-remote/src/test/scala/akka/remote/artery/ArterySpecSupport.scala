@@ -9,6 +9,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.remote.RARP
 import akka.testkit.AkkaSpec
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Outcome
 
@@ -46,7 +47,8 @@ object ArterySpecSupport {
    * Artery enabled, flight recorder enabled, dynamic selection of port on localhost.
    * Combine with [[FlightRecorderSpecIntegration]] or remember to delete flight recorder file if using manually
    */
-  def defaultConfig = newFlightRecorderConfig.withFallback(staticArteryRemotingConfig)
+  def defaultConfig = newFlightRecorderConfig
+    .withFallback(staticArteryRemotingConfig)
 
 }
 

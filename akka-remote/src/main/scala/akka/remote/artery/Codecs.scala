@@ -21,6 +21,8 @@ import akka.util.{ OptionVal, Unsafe }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
+import akka.util.ByteStringBuilder
+import java.nio.ByteOrder
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.serialization.SerializerWithStringManifest
 
@@ -47,7 +49,9 @@ private[remote] class Encoder(
   system:               ExtendedActorSystem,
   outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
   bufferPool:           EnvelopeBufferPool,
-  debugLogSend:         Boolean)
+  streamId:             Int,
+  debugLogSend:         Boolean,
+  version:              Byte)
   extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, EnvelopeBuffer], Encoder.OutboundCompressionAccess] {
   import Encoder._
 
@@ -59,7 +63,7 @@ private[remote] class Encoder(
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging with OutboundCompressionAccess {
 
       private val headerBuilder = HeaderBuilder.out()
-      headerBuilder setVersion ArteryTransport.Version
+      headerBuilder setVersion version
       headerBuilder setUid uniqueLocalAddress.uid
       private val localAddress = uniqueLocalAddress.address
       private val serialization = SerializationExtension(system)
@@ -342,7 +346,6 @@ private[remote] class Decoder(
   system:              ExtendedActorSystem,
   uniqueLocalAddress:  UniqueAddress,
   settings:            ArterySettings,
-  bufferPool:          EnvelopeBufferPool,
   inboundCompressions: InboundCompressions,
   inEnvelopePool:      ObjectPool[ReusableInboundEnvelope])
   extends GraphStageWithMaterializedValue[FlowShape[EnvelopeBuffer, InboundEnvelope], InboundCompressionAccess] {
@@ -390,7 +393,7 @@ private[remote] class Decoder(
           }
         }
       }
-      override def onPush(): Unit = {
+      override def onPush(): Unit = try {
         messageCount += 1
         val envelope = grab(in)
         headerBuilder.resetMessageFields()
@@ -409,7 +412,7 @@ private[remote] class Decoder(
         } catch {
           case NonFatal(e) ⇒
             // probably version mismatch due to restarted system
-            log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e.getMessage)
+            log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e)
             OptionVal.None
         }
 
@@ -423,14 +426,14 @@ private[remote] class Decoder(
         } catch {
           case NonFatal(e) ⇒
             // probably version mismatch due to restarted system
-            log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e.getMessage)
+            log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e)
             OptionVal.None
         }
 
         val classManifestOpt = try headerBuilder.manifest(originUid) catch {
           case NonFatal(e) ⇒
             // probably version mismatch due to restarted system
-            log.warning("Couldn't decompress manifest from originUid [{}]. {}", originUid, e.getMessage)
+            log.warning("Couldn't decompress manifest from originUid [{}]. {}", originUid, e)
             OptionVal.None
         }
 
@@ -520,6 +523,10 @@ private[remote] class Decoder(
             push(out, decoded)
           }
         }
+      } catch {
+        case NonFatal(e) ⇒
+          log.warning("Dropping message due to: {}", e)
+          pull(in)
       }
 
       private def resolveRecipient(path: String): OptionVal[InternalActorRef] = {
@@ -638,7 +645,7 @@ private[remote] class Deserializer(
             }
             log.warning(
               "Failed to deserialize message from [{}] with serializer id [{}] and manifest [{}]. {}",
-              from, envelope.serializer, envelope.classManifest, e.getMessage)
+              from, envelope.serializer, envelope.classManifest, e)
             pull(in)
         } finally {
           val buf = envelope.envelopeBuffer

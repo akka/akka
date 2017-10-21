@@ -11,12 +11,12 @@ import akka.event.{ EventStream, Logging, LoggingAdapter }
 import akka.event.Logging.Error
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.pattern.pipe
-
 import scala.util.control.NonFatal
-import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
 
+import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
 import scala.util.control.Exception.Catcher
 import scala.concurrent.Future
+
 import akka.ConfigurationException
 import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
@@ -24,6 +24,7 @@ import akka.remote.artery.ArteryTransport
 import akka.util.OptionVal
 import akka.remote.artery.OutboundEnvelope
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
+import akka.remote.artery.aeron.ArteryAeronUdpTransport
 import akka.remote.serialization.ActorRefResolveCache
 import akka.remote.serialization.ActorRefResolveThreadLocalCache
 
@@ -203,7 +204,7 @@ private[akka] class RemoteActorRefProvider(
         local.registerExtraNames(Map(("remote", d)))
         d
       },
-      transport = if (remoteSettings.Artery.Enabled) new ArteryTransport(system, this) else new Remoting(system, this))
+      transport = if (remoteSettings.Artery.Enabled) new ArteryAeronUdpTransport(system, this) else new Remoting(system, this))
 
     _internals = internals
     remotingTerminator ! internals

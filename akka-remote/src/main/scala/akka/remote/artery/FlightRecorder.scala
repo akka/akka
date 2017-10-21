@@ -20,7 +20,9 @@ import scala.annotation.tailrec
  */
 private[remote] trait EventSink {
   def alert(code: Int, metadata: Array[Byte]): Unit
+  def alert(code: Int, metadata: String): Unit
   def loFreq(code: Int, metadata: Array[Byte]): Unit
+  def loFreq(code: Int, metadata: String): Unit
   def hiFreq(code: Long, param: Long): Unit
 
   def flushHiFreqBatch(): Unit
@@ -31,7 +33,9 @@ private[remote] trait EventSink {
  */
 private[remote] object IgnoreEventSink extends EventSink {
   override def alert(code: Int, metadata: Array[Byte]): Unit = ()
+  override def alert(code: Int, metadata: String): Unit = ()
   override def loFreq(code: Int, metadata: Array[Byte]): Unit = ()
+  override def loFreq(code: Int, metadata: String): Unit = ()
   override def flushHiFreqBatch(): Unit = ()
   override def hiFreq(code: Long, param: Long): Unit = ()
 }
@@ -44,8 +48,16 @@ private[remote] class SynchronizedEventSink(delegate: EventSink) extends EventSi
     delegate.alert(code, metadata)
   }
 
+  override def alert(code: Int, metadata: String): Unit = {
+    alert(code, metadata.getBytes("US-ASCII"))
+  }
+
   override def loFreq(code: Int, metadata: Array[Byte]): Unit = synchronized {
     delegate.loFreq(code, metadata)
+  }
+
+  override def loFreq(code: Int, metadata: String): Unit = {
+    loFreq(code, metadata.getBytes("US-ASCII"))
   }
 
   override def flushHiFreqBatch(): Unit = synchronized {
@@ -371,6 +383,10 @@ private[remote] class FlightRecorder(val fileChannel: FileChannel) extends Atomi
       }
     }
 
+    override def alert(code: Int, metadata: String): Unit = {
+      alert(code, metadata.getBytes("US-ASCII"))
+    }
+
     override def loFreq(code: Int, metadata: Array[Byte]): Unit = {
       val status = FlightRecorder.this.get
       if (status eq Running) {
@@ -378,6 +394,10 @@ private[remote] class FlightRecorder(val fileChannel: FileChannel) extends Atomi
         prepareRichRecord(loFreqRecordBuffer, code, metadata)
         loFreqLogs.write(currentLog, loFreqRecordBuffer)
       }
+    }
+
+    override def loFreq(code: Int, metadata: String): Unit = {
+      loFreq(code, metadata.getBytes("US-ASCII"))
     }
 
     private def prepareRichRecord(recordBuffer: ByteBuffer, code: Int, metadata: Array[Byte]): Unit = {
