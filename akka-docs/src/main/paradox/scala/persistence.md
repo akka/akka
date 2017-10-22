@@ -50,7 +50,6 @@ LevelDB based plugins will require the following additional dependency declarati
 sbt
 :   @@@vars
     ```
-    "org.iq80.leveldb"            % "leveldb"          % "0.9"
     "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
     ```
     @@@
@@ -58,7 +57,6 @@ sbt
 Gradle
 :   @@@vars
     ```
-    compile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.9'
     compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
     ```
     @@@
@@ -66,11 +64,6 @@ Gradle
 Maven
 :   @@@vars
     ```
-    <dependency>
-      <groupId>org.iq80.leveldb</groupId>
-      <artifactId>leveldb</artifactId>
-      <version>0.9</version>
-    </dependency>
     <dependency>
       <groupId>org.fusesource.leveldbjni</groupId>
       <artifactId>leveldbjni-all</artifactId>
@@ -1235,7 +1228,6 @@ LevelDB based plugins will also require the following additional dependency decl
 sbt
 :   @@@vars
     ```
-    "org.iq80.leveldb"            % "leveldb"          % "0.9"
     "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
     ```
     @@@
@@ -1243,7 +1235,6 @@ sbt
 Gradle
 :   @@@vars
     ```
-    compile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.9'
     compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
     ```
     @@@
@@ -1251,11 +1242,6 @@ Gradle
 Maven
 :   @@@vars
     ```
-    <dependency>
-      <groupId>org.iq80.leveldb</groupId>
-      <artifactId>leveldb</artifactId>
-      <version>0.9</version>
-    </dependency>
     <dependency>
       <groupId>org.fusesource.leveldbjni</groupId>
       <artifactId>leveldbjni-all</artifactId>
@@ -1410,6 +1396,34 @@ or
 @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #shared-store-native-config }
 
 in your Akka configuration. The LevelDB Java port is for testing purposes only.
+
+Also note that for the LevelDB Java port, you will need the following dependencies:
+
+sbt
+:   @@@vars
+    ```
+    "org.iq80.leveldb"            % "leveldb"          % "0.9"          % "test"
+    ```
+    @@@
+
+Gradle
+:   @@@vars
+    ```
+    testCompile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.9'
+    ```
+    @@@
+
+Maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>org.iq80.leveldb</groupId>
+      <artifactId>leveldb</artifactId>
+      <version>0.9</version>
+      <scope>test</scope>
+    </dependency>
+    ```
+    @@@
 
 @@@ warning
 
