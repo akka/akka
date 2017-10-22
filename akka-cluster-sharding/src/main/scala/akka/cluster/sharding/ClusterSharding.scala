@@ -6,6 +6,7 @@ package akka.cluster.sharding
 import java.net.URLEncoder
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
+
 import scala.concurrent.Await
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -27,10 +28,15 @@ import akka.pattern.ask
 import akka.dispatch.Dispatchers
 import akka.cluster.ddata.ReplicatorSettings
 import akka.cluster.ddata.Replicator
+
 import scala.util.control.NonFatal
 import akka.actor.Status
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
+import akka.stream.{Inlet, Outlet}
+
+import scala.collection.immutable
+import scala.collection.JavaConverters._
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -444,6 +450,16 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       extractShardId = msg ⇒ messageExtractor.shardId(msg))
 
   }
+
+  /**
+    * Scala API: get all currently defined sharding type names.
+    */
+  def shardTypeNames: immutable.Set[String] = regions.keySet().asScala.toSet
+
+  /**
+    * Java API: get all currently defined sharding type names.
+    */
+  def getShardTypeNames: java.util.Set[String] = regions.keySet()
 
   /**
    * Retrieve the actor reference of the [[ShardRegion]] actor responsible for the named entity type.
