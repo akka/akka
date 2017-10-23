@@ -1,12 +1,12 @@
-package akka.remote.artery
+package akka.remote
 
 import akka.actor.ActorSystem
-import akka.remote.RemoteTransportException
 import akka.testkit.SocketUtil
 import com.typesafe.config.ConfigFactory
+import org.jboss.netty.channel.ChannelException
 import org.scalatest.{ Matchers, WordSpec }
 
-class ArteryFailedToBindSpec extends WordSpec with Matchers {
+class RemotingFailedToBindSpec extends WordSpec with Matchers {
 
   "an ActorSystem" must {
     "not start if port is taken" in {
@@ -18,21 +18,19 @@ class ArteryFailedToBindSpec extends WordSpec with Matchers {
            |    provider = remote
            |  }
            |  remote {
-           |    artery {
-           |      enabled = on
-           |      canonical.hostname = "127.0.0.1"
-           |      canonical.port = $port
-           |      log-aeron-counters = on
+           |    netty.tcp {
+           |      hostname = "127.0.0.1"
+           |      port = $port
            |    }
            |  }
            |}
        """.stripMargin)
-      val as = ActorSystem("BindTest1", config)
+      val as = ActorSystem("RemotingFailedToBindSpec", config)
       try {
-        val ex = intercept[RemoteTransportException] {
+        val ex = intercept[ChannelException] {
           ActorSystem("BindTest2", config)
         }
-        ex.getMessage should equal("Inbound Aeron channel is in errored state. See Aeron logs for details.")
+        ex.getMessage should startWith("Failed to bind")
       } finally {
         as.terminate()
       }

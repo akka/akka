@@ -8,7 +8,7 @@ import java.net.{ InetAddress, InetSocketAddress }
 
 import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
 
-import scala.concurrent.{ Await, Awaitable, Future }
+import scala.concurrent.{ Await, Awaitable }
 import scala.util.control.NonFatal
 import scala.collection.immutable
 import akka.actor._
@@ -22,6 +22,8 @@ import scala.concurrent.duration._
 import akka.remote.testconductor.RoleName
 import akka.actor.RootActorPath
 import akka.event.{ Logging, LoggingAdapter }
+import akka.remote.RemoteTransportException
+import org.jboss.netty.channel.ChannelException
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -234,7 +236,7 @@ object MultiNodeSpec {
     ConfigFactory.parseMap(map.asJava)
   }
 
-  private[akka] def getCallerName(clazz: Class[_]): String = {
+  private def getCallerName(clazz: Class[_]): String = {
     val pattern = s"(akka\\.remote\\.testkit\\.MultiNodeSpec.*|akka\\.remote\\.RemotingMultiNodeSpec)"
     val s = Thread.currentThread.getStackTrace.map(_.getClassName).drop(1).dropWhile(_.matches(pattern))
     val reduced = s.lastIndexWhere(_ == clazz.getName) match {
@@ -267,7 +269,18 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     this(config.myself, actorSystemCreator(ConfigFactory.load(config.config)), config.roles, config.deployments)
 
   def this(config: MultiNodeConfig) =
-    this(config, config ⇒ ActorSystem(MultiNodeSpec.getCallerName(classOf[MultiNodeSpec]), config))
+    this(config, {
+      val name = MultiNodeSpec.getCallerName(classOf[MultiNodeSpec])
+      config ⇒
+        try {
+          ActorSystem(name, config)
+        } catch {
+          // Retry creating the system once as when using port = 0 two systems may try and use the same one.
+          // RTE is for aeron, CE for netty
+          case _: RemoteTransportException ⇒ ActorSystem(name, config)
+          case _: ChannelException         ⇒ ActorSystem(name, config)
+        }
+    })
 
   val log: LoggingAdapter = Logging(system, this.getClass)
 
@@ -275,7 +288,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost
    * enclosing `within` block or QueryTimeout.
    */
-  implicit def awaitHelper[T](w: Awaitable[T]) = new AwaitHelper(w)
+  implicit def awaitHelper[T](w: Awaitable[T]): AwaitHelper[T] = new AwaitHelper(w)
   class AwaitHelper[T](w: Awaitable[T]) {
     def await: T = Await.result(w, remainingOr(testConductor.Settings.QueryTimeout.duration))
   }
