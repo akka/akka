@@ -4,6 +4,7 @@
 package akka.io
 
 import java.net.InetSocketAddress
+import java.nio.Buffer
 import java.nio.channels.{ SelectionKey, DatagramChannel }
 import akka.actor.{ ActorRef, ActorLogging, Actor }
 import akka.io.Udp.{ CommandFailed, Send }
@@ -77,7 +78,8 @@ private[io] trait WithUdpSend {
   private def doSend(registration: ChannelRegistration): Unit = {
     val buffer = udp.bufferPool.acquire()
     try {
-      buffer.clear()
+      // Call clear() from super class to make it work for both JDK 8 and 9
+      buffer.asInstanceOf[Buffer].clear()
       pendingSend.payload.copyToBuffer(buffer)
       buffer.flip()
       val writtenBytes = channel.send(buffer, pendingSend.target)
