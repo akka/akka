@@ -41,7 +41,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
         InternalClusterAction.Join(
           uniqueAddressFromProto(m.getNode),
           if (roles.find(_.startsWith(ClusterSettings.DcRolePrefix)).isDefined) roles
-          else roles + (ClusterSettings.DcRolePrefix + "default")
+          else roles + (ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter)
         )
     },
     classOf[InternalClusterAction.Welcome] → {
@@ -366,7 +366,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
         roles += role
       }
 
-      if (!containsDc) roles + (ClusterSettings.DcRolePrefix + "default")
+      if (!containsDc) roles + (ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter)
       else roles
     }
 
