@@ -37,9 +37,12 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     classOf[InternalClusterAction.Join] → {
       case bytes ⇒
         val m = cm.Join.parseFrom(bytes)
+        val roles = Set.empty[String] ++ m.getRolesList.asScala
         InternalClusterAction.Join(
           uniqueAddressFromProto(m.getNode),
-          Set.empty[String] ++ m.getRolesList.asScala)
+          if (roles.find(_.startsWith(ClusterSettings.DcRolePrefix)).isDefined) roles
+          else roles + (ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter)
+        )
     },
     classOf[InternalClusterAction.Welcome] → {
       case bytes ⇒
@@ -363,7 +366,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
         roles += role
       }
 
-      if (!containsDc) roles + (ClusterSettings.DcRolePrefix + "default")
+      if (!containsDc) roles + (ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter)
       else roles
     }
 
