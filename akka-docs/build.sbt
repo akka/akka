@@ -34,6 +34,10 @@ paradoxProperties ++= Map(
   "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
   "extref.samples.base_url" -> "https://github.com/akka/akka-samples/tree/2.5/%s",
   "extref.ecs.base_url" -> "https://example.lightbend.com/v1/download/%s",
+  "scaladoc.akka.base_url" -> "https://doc.akka.io/api/akka/2.5",
+  "scaladoc.akka.http.base_url" -> "https://doc.akka.io/api/akka-http/current",
+  "javadoc.akka.base_url" -> "https://doc.akka.io/japi/akka/2.5",
+  "javadoc.akka.http.base_url" -> "http://doc.akka.io/japi/akka-http/current",
   "scala.version" -> scalaVersion.value,
   "scala.binary_version" -> scalaBinaryVersion.value,
   "akka.version" -> version.value,
