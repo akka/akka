@@ -23,7 +23,6 @@ import akka.annotation.InternalApi
 @InternalApi private[typed] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
   extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] with ExtensionsImpl {
 
-  import ActorSystemAdapter._
   import ActorRefAdapter.sendSystemMessage
 
   // Members declared in akka.typed.ActorRef
