@@ -453,6 +453,6 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E] extends AbstractPersis
  *
  */
 abstract class AbstractPersistentLoggingFSM[S <: FSMState, D, E]
-  extends AbstractPersistentFSMBase[S, D, E]
+  extends AbstractPersistentFSM[S, D, E]
   with LoggingPersistentFSM[S, D, E]
   with PersistentFSM[S, D, E]
