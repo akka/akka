@@ -7,7 +7,7 @@ package akka.remote
 import akka.AkkaException
 import akka.Done
 import akka.actor._
-import akka.event.{ LoggingAdapter }
+import akka.event.LoggingAdapter
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
@@ -18,7 +18,9 @@ import akka.util.OptionVal
  * such as inability to start, wrong configuration etc.
  */
 @SerialVersionUID(1L)
-class RemoteTransportException(message: String, cause: Throwable) extends AkkaException(message, cause)
+class RemoteTransportException(message: String, cause: Throwable) extends AkkaException(message, cause) {
+  def this(msg: String) = this(msg, null)
+}
 
 /**
  * [[RemoteTransportException]] without stack trace.

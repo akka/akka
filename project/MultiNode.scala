@@ -3,7 +3,6 @@
  */
 package akka
 
-import akka.TestExtras.Filter
 import akka.TestExtras.Filter.Keys._
 import com.typesafe.sbt.{ SbtScalariform, SbtMultiJvm }
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
