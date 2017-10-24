@@ -40,7 +40,7 @@ object Dependencies {
     val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.2.2"       // ApacheV2
 
     // For akka-http spray-json support
-    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.3"       // ApacheV2
+    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.4"       // ApacheV2
 
     // For akka-http-jackson support
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % jacksonVersion // ApacheV2
