@@ -10,7 +10,7 @@ import akka.event.Logging
 
 import scala.annotation.tailrec
 import scala.util.Failure
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 
 /**
  * Persistence extension for queries.

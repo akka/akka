@@ -1,6 +1,6 @@
 /**
-  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
-  */
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 
 package akka.persistence
 
@@ -8,8 +8,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor._
 import akka.persistence.PersistentActorSpec._
-import akka.testkit.{EventFilter, ImplicitSender, TestLatch, TestProbe}
-import com.typesafe.config.{Config, ConfigFactory}
+import akka.testkit.{ EventFilter, ImplicitSender, TestLatch, TestProbe }
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Await
@@ -32,12 +32,12 @@ object PersistentActorSpec {
     var askedForDelete: Option[ActorRef] = None
 
     val updateState: Receive = {
-      case Evt(data) ⇒ events = data :: events
-      case d@Some(ref: ActorRef) ⇒ askedForDelete = d.asInstanceOf[Some[ActorRef]]
+      case Evt(data)               ⇒ events = data :: events
+      case d @ Some(ref: ActorRef) ⇒ askedForDelete = d.asInstanceOf[Some[ActorRef]]
     }
 
     val commonBehavior: Receive = {
-      case "boom" ⇒ throw new TestException("boom")
+      case "boom"   ⇒ throw new TestException("boom")
       case GetState ⇒ sender() ! events.reverse
       case Delete(toSequenceNr) ⇒
         persist(Some(sender())) { s ⇒ askedForDelete = s }
@@ -83,13 +83,13 @@ object PersistentActorSpec {
     override protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit =
       event match {
         case Evt(data) ⇒ sender() ! s"Rejected: $data"
-        case _ ⇒ super.onPersistRejected(cause, event, seqNr)
+        case _         ⇒ super.onPersistRejected(cause, event, seqNr)
       }
 
     override protected def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit =
       event match {
         case Evt(data) ⇒ sender() ! s"Failure: $data"
-        case _ ⇒ super.onPersistFailure(cause, event, seqNr)
+        case _         ⇒ super.onPersistFailure(cause, event, seqNr)
       }
   }
 
@@ -231,9 +231,9 @@ object PersistentActorSpec {
     }
 
     def receiveCommand: Receive = commonBehavior orElse {
-      case c: Cmd ⇒ handleCmd(c)
+      case c: Cmd                 ⇒ handleCmd(c)
       case SaveSnapshotSuccess(_) ⇒ probe ! "saved"
-      case "snap" ⇒ saveSnapshot(events)
+      case "snap"                 ⇒ saveSnapshot(events)
     }
   }
 
@@ -297,7 +297,7 @@ object PersistentActorSpec {
     override protected def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit =
       event match {
         case Evt(data) ⇒ sender() ! s"Failure: $data"
-        case _ ⇒ super.onPersistFailure(cause, event, seqNr)
+        case _         ⇒ super.onPersistFailure(cause, event, seqNr)
       }
 
   }
@@ -1534,9 +1534,9 @@ class LeveldbPersistentActorSpec extends PersistentActorSpec(PersistenceSpec.con
 class InmemPersistentActorSpec extends PersistentActorSpec(PersistenceSpec.config("inmem", "InmemPersistentActorSpec"))
 
 /**
-  * Same test suite as [[LeveldbPersistentActorSpec]], the only difference is that all persistent actors are using the
-  * provided [[Config]] instead of the [[Config]] coming from the [[ActorSystem]].
-  */
+ * Same test suite as [[LeveldbPersistentActorSpec]], the only difference is that all persistent actors are using the
+ * provided [[Config]] instead of the [[Config]] coming from the [[ActorSystem]].
+ */
 class LeveldbPersistentActorWithProvidedConfigSpec extends PersistentActorSpec(
   PersistenceSpec.config("leveldb", "LeveldbPersistentActorWithProvidedConfigSpec")
 ) {
@@ -1548,12 +1548,12 @@ class LeveldbPersistentActorWithProvidedConfigSpec extends PersistentActorSpec(
          | custom.persistence.snapshot-store.local.dir = target/snapshots-LeveldbPersistentActorWithProvidedConfigSpec/
      """.stripMargin
     ).withValue(
-      s"custom.persistence.journal.leveldb",
-      system.settings.config.getValue(s"akka.persistence.journal.leveldb")
-    ).withValue(
-      "custom.persistence.snapshot-store.local",
-      system.settings.config.getValue("akka.persistence.snapshot-store.local")
-    )
+        s"custom.persistence.journal.leveldb",
+        system.settings.config.getValue(s"akka.persistence.journal.leveldb")
+      ).withValue(
+          "custom.persistence.snapshot-store.local",
+          system.settings.config.getValue("akka.persistence.snapshot-store.local")
+        )
   }
 
   override protected def behavior1PersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[Behavior1PersistentActorWithLevelDbProvidedConfig](providedActorConfig)
@@ -1626,9 +1626,9 @@ class LeveldbPersistentActorWithProvidedConfigSpec extends PersistentActorSpec(
 }
 
 /**
-  * Same test suite as [[InmemPersistentActorSpec]], the only difference is that all persistent actors are using the
-  * provided [[Config]] instead of the [[Config]] coming from the [[ActorSystem]].
-  */
+ * Same test suite as [[InmemPersistentActorSpec]], the only difference is that all persistent actors are using the
+ * provided [[Config]] instead of the [[Config]] coming from the [[ActorSystem]].
+ */
 class InmemPersistentActorWithProvidedConfigSpec extends PersistentActorSpec(
   PersistenceSpec.config("inmem", "InmemPersistentActorWithProvidedConfigSpec")
 ) {
@@ -1639,12 +1639,12 @@ class InmemPersistentActorWithProvidedConfigSpec extends PersistentActorSpec(
          | custom.persistence.snapshot-store.local.dir = target/snapshots-LeveldbPersistentActorWithProvidedConfigSpec/
      """.stripMargin
     ).withValue(
-      s"custom.persistence.journal.inmem",
-      system.settings.config.getValue(s"akka.persistence.journal.inmem")
-    ).withValue(
-      "custom.persistence.snapshot-store.local",
-      system.settings.config.getValue("akka.persistence.snapshot-store.local")
-    )
+        s"custom.persistence.journal.inmem",
+        system.settings.config.getValue(s"akka.persistence.journal.inmem")
+      ).withValue(
+          "custom.persistence.snapshot-store.local",
+          system.settings.config.getValue("akka.persistence.snapshot-store.local")
+        )
   }
 
   override protected def behavior1PersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[Behavior1PersistentActorWithInmemProvidedConfig](providedActorConfig)

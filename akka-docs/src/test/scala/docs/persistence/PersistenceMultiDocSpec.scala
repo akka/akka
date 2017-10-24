@@ -1,6 +1,6 @@
 /**
-  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
-  */
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 
 import akka.persistence.PersistentActor
 import com.typesafe.config.ConfigFactory
@@ -83,7 +83,6 @@ object PersistenceMultiDocSpec {
       s"snapshot-plugin-$runtimeDistinction",
       context.system.settings.config.getValue("snapshot-store-plugin") // or a very different configuration coming from an external service.
     )
-
 
   }
 
