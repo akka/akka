@@ -23,8 +23,8 @@ trait WSTestRequestBuilding {
           HttpResponse(
             StatusCodes.SwitchingProtocols,
             headers =
-            Upgrade(UpgradeProtocol("websocket") :: Nil) ::
-              subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(p :: Nil)).toList)
+              Upgrade(UpgradeProtocol("websocket") :: Nil) ::
+                subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(p :: Nil)).toList)
         }
       })
 }

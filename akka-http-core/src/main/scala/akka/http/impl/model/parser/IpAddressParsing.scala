@@ -24,10 +24,10 @@ private[parser] trait IpAddressParsing { this: Parser ⇒
   def `ip-v6-address`: Rule1[Array[Byte]] = {
     import CharUtils.{ hexValue ⇒ hv }
     var a: Array[Byte] = null
-    def zero(ix: Int) = rule { run(a(ix) = 0.toByte) }
+    def zero(ix: Int) = rule { run(a(ix)= 0.toByte) }
     def zero2(ix: Int) = rule { run { a(ix) = 0.toByte; a(ix + 1) = 0.toByte; } }
-    def h4(ix: Int) = rule { HEXDIG ~ run(a(ix) = hv(lastChar).toByte) }
-    def h8(ix: Int) = rule { HEXDIG ~ HEXDIG ~ run(a(ix) = (hv(charAt(-2)) * 16 + hv(lastChar)).toByte) }
+    def h4(ix: Int) = rule { HEXDIG ~ run(a(ix)= hv(lastChar).toByte) }
+    def h8(ix: Int) = rule { HEXDIG ~ HEXDIG ~ run(a(ix)= (hv(charAt(-2)) * 16 + hv(lastChar)).toByte) }
     def h16(ix: Int) = rule { h8(ix) ~ h8(ix + 1) | h4(ix) ~ h8(ix + 1) | zero(ix) ~ h8(ix + 1) | zero(ix) ~ h4(ix + 1) }
     def h16c(ix: Int) = rule { h16(ix) ~ ':' ~ !':' }
     def ch16o(ix: Int) = rule { optional(':' ~ !':') ~ (h16(ix) | zero2(ix)) }

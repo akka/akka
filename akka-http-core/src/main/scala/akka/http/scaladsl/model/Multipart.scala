@@ -66,7 +66,7 @@ sealed trait Multipart extends jm.Multipart {
    */
   @deprecated(
     message = "This variant of `toEntity` is not supported any more. The charset parameter will be ignored. " +
-    "Please use the variant without specifying the charset.",
+      "Please use the variant without specifying the charset.",
     since = "10.0.0")
   def toEntity(
     charset:  HttpCharset = HttpCharsets.`UTF-8`,
@@ -113,7 +113,7 @@ sealed trait Multipart extends jm.Multipart {
    */
   @deprecated(
     message = "This variant of `toEntity` is not supported any more. The charset parameter will be ignored. " +
-    "Please use the variant without specifying the charset.",
+      "Please use the variant without specifying the charset.",
     since = "10.0.0")
   def toEntity(charset: jm.HttpCharset, boundary: String): jm.RequestEntity =
     toEntity(boundary)

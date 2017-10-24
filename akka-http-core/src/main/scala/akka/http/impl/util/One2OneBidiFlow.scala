@@ -43,7 +43,7 @@ private[http] object One2OneBidiFlow {
   /*
    *    +--------------------+
    * ~> | in       toWrapped | ~>
-   *    |                    |    
+   *    |                    |
    * <~ | out    fromWrapped | <~
    *    +--------------------+
    */

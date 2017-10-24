@@ -422,11 +422,11 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         forAll(pseudoHeaders) { name: String ⇒
           val thrown = shouldThrowMalformedRequest(parse(
             keyValuePairs = Vector(
-            ":scheme" → "https",
-            ":method" → "GET",
-            ":authority" → "akka.io",
-            ":path" → "/"
-          ) :+ (name → "foo")))
+              ":scheme" → "https",
+              ":method" → "GET",
+              ":authority" → "akka.io",
+              ":path" → "/"
+            ) :+ (name → "foo")))
           thrown.getMessage should ===(s"Malformed request: Pseudo-header '$name' must not occur more than once")
         }
       }
