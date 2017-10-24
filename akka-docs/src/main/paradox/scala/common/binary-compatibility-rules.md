@@ -28,7 +28,7 @@ OK:  2.2.0 --> 2.2.1 --> ... --> 2.2.x
 NO:  2.2.y --x 2.3.y
 OK:  2.3.0 --> 2.3.1 --> ... --> 2.3.x
 OK:  2.3.x --> 2.4.x (special case, migration to new versioning scheme)
-# [major.minor.path] era
+# [major.minor.patch] era
 OK:  2.4.0 --> 2.5.x
 OK:  2.5.0 --> 2.6.x
 NO:  2.x.y --x 3.x.y
@@ -45,7 +45,7 @@ If a security vulnerability is reported in Akka or a transient dependency of Akk
 Some modules are excluded from the binary compatibility guarantees, such as:
 
  * `*-testkit` modules - since these are to be used only in tests, which usually are re-compiled and run on demand
- * `*-tck` modules - since they may want to add new tests (or force configuring something), in order to discover possible failures in an existing implementation that the TCK is supposed to be testing. Compatibility here is not *guaranteed*, however it is attempted to make the upgrade prosess as smooth as possible.
+ * `*-tck` modules - since they may want to add new tests (or force configuring something), in order to discover possible failures in an existing implementation that the TCK is supposed to be testing. Compatibility here is not *guaranteed*, however it is attempted to make the upgrade process as smooth as possible.
  * all @ref:[may change](may-change.md) modules - which by definition are subject to rapid iteration and change. Read more about that in @ref:[Modules marked "May Change"](may-change.md)
 
 <a id="24versioningchange"></a>
@@ -100,7 +100,7 @@ When browsing the source code and/or looking for methods available to be called,
 have as rich of an access protection system as Scala has, you may sometimes find methods or classes annotated with
 the `/** INTERNAL API */` comment or the `@akka.annotation.InternalApi` annotation. 
 
-No compatibility guarantees are given about these classes. They may change or even dissappear in minor versions,
+No compatibility guarantees are given about these classes. They may change or even disappear in minor versions,
 and user code is not supposed to call them.
 
 Side-note on JVM representation details of the Scala `private[akka]` pattern that Akka is using extensively in 
