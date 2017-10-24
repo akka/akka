@@ -6,8 +6,9 @@ package akka.typed
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import com.typesafe.config.ConfigFactory
-import akka.actor.DeadLetterSuppression
+import akka.actor.{ DeadLetterSuppression, InvalidMessageException }
 import akka.typed.scaladsl.Actor
+
 import scala.language.existentials
 
 object ActorContextSpec {
@@ -618,6 +619,13 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       }.expectMessage(expectTimeout) { (msg, subj) ⇒
         val Adapter(adapter) = msg
         adapter.path.name should include("named")
+      }
+    })
+    def `42 must not allow null messages`(): Unit = sync(setup("ctx42") { (ctx, startWith) ⇒
+      startWith.keep { subj ⇒
+        intercept[InvalidMessageException] {
+          subj ! null
+        }
       }
     })
   }
