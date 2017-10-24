@@ -27,12 +27,7 @@ import akka.actor.Cancellable
 import akka.actor.Props
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.remote.AddressUidExtension
-import akka.remote.RemoteActorRef
-import akka.remote.RemoteActorRefProvider
-import akka.remote.RemoteTransport
-import akka.remote.ThisActorSystemQuarantinedEvent
-import akka.remote.UniqueAddress
+import akka.remote._
 import akka.remote.artery.AeronSource.ResourceLifecycle
 import akka.remote.artery.ArteryTransport.ShuttingDown
 import akka.remote.artery.Encoder.OutboundCompressionAccess
@@ -624,13 +619,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         log.debug("Inbound channel is now active")
       } else if (status == ChannelEndpointStatus.ERRORED) {
         areonErrorLog.logErrors(log, 0L)
-        throw new RuntimeException("Inbound Aeron channel is in errored state. See Aeron logs for details.")
+        throw new RemoteTransportException("Inbound Aeron channel is in errored state. See Aeron logs for details.")
       } else if (status == ChannelEndpointStatus.INITIALIZING && retries > 0) {
         Thread.sleep(waitInterval)
         retry(retries - 1)
       } else {
         areonErrorLog.logErrors(log, 0L)
-        throw new RuntimeException("Timed out waiting for Aeron transport to bind. See Aeoron logs.")
+        throw new RemoteTransportException("Timed out waiting for Aeron transport to bind. See Aeoron logs.")
       }
     }
   }
