@@ -11,6 +11,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
+import akka.actor.AbstractActor;
 import akka.japi.Pair;
 import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
@@ -279,4 +280,64 @@ public class FlowDocTest extends AbstractJavaTest {
     //#flow-async
   }
 
+    static {
+        //#materializer-from-system
+        ActorSystem system = ActorSystem.create("ExampleSystem");
+
+        // created from `system`:
+        ActorMaterializer mat = ActorMaterializer.create(system);
+        //#materializer-from-system
+    }
+
+    //#materializer-from-actor-context
+    final class RunWithMyself extends AbstractActor {
+
+        ActorMaterializer mat = ActorMaterializer.create(context());
+
+        @Override
+        public void preStart() throws Exception {
+            Source
+                    .repeat("hello")
+                    .runWith(Sink.onComplete(tryDone -> {
+                        System.out.println("Terminated stream: " + tryDone);
+                    }), mat);
+        }
+
+        @Override
+        public Receive createReceive() {
+            return receiveBuilder().match(String.class, p -> {
+                // this WILL terminate the above stream as well
+                context().stop(self());
+            }).build();
+        }
+    }
+    //#materializer-from-actor-context
+
+    //#materializer-from-system-in-actor
+    final class RunForever extends AbstractActor {
+        final ActorMaterializer mat;
+
+        RunForever(ActorMaterializer mat) {
+            this.mat = mat;
+        }
+
+        @Override
+        public void preStart() throws Exception {
+            Source
+                    .repeat("hello")
+                    .runWith(Sink.onComplete(tryDone -> {
+                        System.out.println("Terminated stream: " + tryDone);
+                    }), mat);
+        }
+
+        @Override
+        public Receive createReceive() {
+            return receiveBuilder().match(String.class, p -> {
+                // will NOT terminate the stream (it's bound to the system!)
+                context().stop(self());
+            }).build();
+        }
+        //#materializer-from-system-in-actor
+
+    }
 }

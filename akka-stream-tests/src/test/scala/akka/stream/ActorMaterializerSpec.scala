@@ -1,13 +1,16 @@
 package akka.stream
 
-import akka.actor.{ ActorSystem, Props }
+import akka.Done
+import akka.actor.{ Actor, ActorSystem, PoisonPill, Props }
+import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.testkit.{ ImplicitSender, TestActor }
+import akka.testkit.{ ImplicitSender, TestActor, TestProbe }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.{ Failure, Try }
 
 class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
@@ -47,7 +50,18 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
       m.shutdown()
 
       m.supervisor ! StreamSupervisor.GetChildren
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
+    }
+
+    "terminate if ActorContext it was created from terminates" in {
+      val p = TestProbe()
+
+      val a = system.actorOf(Props(new ActorWithMaterializer(p)).withDispatcher("akka.test.stream-dispatcher"))
+
+      p.expectMsg("hello")
+      p.expectMsg("one")
+      a ! PoisonPill
+      val Failure(ex) = p.expectMsgType[Try[Done]]
     }
 
     "handle properly broken Props" in {
@@ -66,4 +80,20 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
     }
   }
 
+}
+
+object ActorMaterializerSpec {
+  class ActorWithMaterializer(p: TestProbe) extends Actor {
+    private val settings: ActorMaterializerSettings = ActorMaterializerSettings(context.system).withDispatcher("akka.test.stream-dispatcher")
+    implicit val mat = ActorMaterializer(settings)(context)
+
+    Source.repeat("hello")
+      .alsoTo(Flow[String].take(1).to(Sink.actorRef(p.ref, "one")))
+      .runWith(Sink.onComplete(signal ⇒ {
+        println(signal)
+        p.ref ! signal
+      }))
+
+    def receive = Actor.emptyBehavior
+  }
 }
