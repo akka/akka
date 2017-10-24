@@ -5,6 +5,7 @@ package akka.typed
 package internal
 
 import akka.Done
+import akka.actor.InvalidMessageException
 import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.Actor._
 import akka.typed.testkit.Inbox
@@ -96,6 +97,14 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
         val f = Future(42)(sys.executionContext)
         f.futureValue should ===(42)
       }
+
+    def `must not allow null messages`(): Unit = {
+      withSystem("null-messages", Actor.empty[String]) { sys ⇒
+        intercept[InvalidMessageException] {
+          sys ! null
+        }
+      }
+    }
 
   }
 
