@@ -6,7 +6,7 @@ package akka.typed.scaladsl.adapter
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.typed.ActorRef
-import akka.actor.Props
+import akka.actor.{ InvalidMessageException, Props }
 import akka.typed.Behavior
 import akka.typed.Terminated
 import akka.typed.scaladsl.Actor
@@ -167,6 +167,15 @@ class AdapterSpec extends AkkaSpec {
       val typedRef = system.spawnAnonymous(typed1(untypedRef, probe.ref))
       typedRef ! "send"
       probe.expectMsg("ok")
+    }
+
+    "not send null message from typed to untyped" in {
+      val probe = TestProbe()
+      val untypedRef = system.actorOf(untyped1)
+      val typedRef = system.spawnAnonymous(typed1(untypedRef, probe.ref))
+      intercept[InvalidMessageException] {
+        typedRef ! null
+      }
     }
 
     "send message from untyped to typed" in {

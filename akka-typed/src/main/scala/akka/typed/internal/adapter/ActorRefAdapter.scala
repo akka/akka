@@ -5,6 +5,7 @@ package akka.typed
 package internal
 package adapter
 
+import akka.actor.InvalidMessageException
 import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
 import akka.dispatch.sysmsg
@@ -16,7 +17,10 @@ import akka.dispatch.sysmsg
   extends ActorRef[T] with internal.ActorRefImpl[T] {
 
   override def path: a.ActorPath = untyped.path
-  override def tell(msg: T): Unit = untyped ! msg
+  override def tell(msg: T): Unit = {
+    if (msg == null) throw new InvalidMessageException("[null] is not an allowed message")
+    untyped ! msg
+  }
   override def isLocal: Boolean = untyped.isLocal
   override def sendSystem(signal: internal.SystemMessage): Unit =
     ActorRefAdapter.sendSystemMessage(untyped, signal)
