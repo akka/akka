@@ -92,6 +92,9 @@ class FutureFlattenSourceSpec extends StreamSpec {
       probe.request(1)
       probe.cancel()
 
+      // try to avoid a race between probe cancel and completing the promise
+      Thread.sleep(100)
+
       // even though canceled the underlying matval should arrive
       sourcePromise.success(underlying)
       val failure = sourceMatVal.failed.futureValue
