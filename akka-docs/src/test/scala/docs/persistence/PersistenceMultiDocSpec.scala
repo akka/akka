@@ -1,12 +1,14 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
- */
+  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+  */
 
 import akka.persistence.PersistentActor
+import com.typesafe.config.ConfigFactory
 
 object PersistenceMultiDocSpec {
 
-  val DefaultConfig = """
+  val DefaultConfig =
+    """
   //#default-config
   # Absolute path to the default journal plugin configuration entry.
   akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
@@ -19,9 +21,11 @@ object PersistenceMultiDocSpec {
   trait ActorWithDefaultPlugins extends PersistentActor {
     override def persistenceId = "123"
   }
+
   //#default-plugins
 
-  val OverrideConfig = s"""
+  val OverrideConfig =
+    s"""
   //#override-config
   # Configuration entry for the custom journal plugin, see `journalPluginId`.
   akka.persistence.chronicle.journal {
@@ -43,11 +47,45 @@ object PersistenceMultiDocSpec {
   //#override-plugins
   trait ActorWithOverridePlugins extends PersistentActor {
     override def persistenceId = "123"
+
     // Absolute path to the journal plugin configuration entry in the `reference.conf`.
     override def journalPluginId = "akka.persistence.chronicle.journal"
+
     // Absolute path to the snapshot store plugin configuration entry in the `reference.conf`.
     override def snapshotPluginId = "akka.persistence.chronicle.snapshot-store"
   }
+
   //#override-plugins
 
+  //#override-config
+
+  //#runtime-config
+  trait ActorWithRuntimeConfig extends PersistentActor {
+    // Variable that is retrieved at runtime, from an external service for instance.
+    val runtimeDistinction = "foo"
+
+    override def persistenceId = "123"
+
+    // Absolute path to the journal plugin configuration entry, not defined in the `reference.conf`.
+    override def journalPluginId = s"journal-plugin-$runtimeDistinction"
+
+    // Absolute path to the snapshot store plugin configuration entry, not defined in the `reference.conf`.
+    override def snapshotPluginId = s"snapshot-store-plugin-$runtimeDistinction"
+
+    // Configuration which contains the journal plugin id defined above
+    override def journalPluginConfig = ConfigFactory.empty().withValue(
+      s"journal-plugin-$runtimeDistinction",
+      context.system.settings.config.getValue("journal-plugin") // or a very different configuration coming from an external service.
+    )
+
+    // Configuration which contains the snapshot store plugin id defined above
+    override def snapshotPluginConfig = ConfigFactory.empty().withValue(
+      s"snapshot-plugin-$runtimeDistinction",
+      context.system.settings.config.getValue("snapshot-store-plugin") // or a very different configuration coming from an external service.
+    )
+
+
+  }
+
+  //#runtime-config
 }

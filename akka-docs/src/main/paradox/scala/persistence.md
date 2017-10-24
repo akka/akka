@@ -26,7 +26,7 @@ sbt
 
 Gradle
 :   @@@vars
-    ``` 
+    ```
     compile group: 'com.typesafe.akka', name: 'akka-persistence_$scala.binary_version$', version: '$akka.version$'
     ```
     @@@
@@ -57,7 +57,7 @@ sbt
 Gradle
 :   @@@vars
     ```
-    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
+    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8'
     ```
     @@@
 
@@ -185,8 +185,8 @@ By default, a persistent actor is automatically recovered on start and on restar
 New messages sent to a persistent actor during recovery do not interfere with replayed messages.
 They are stashed and received by a persistent actor after recovery phase completes.
 
-The number of concurrent recoveries that can be in progress at the same time is limited 
-to not overload the system and the backend data store. When exceeding the limit the actors will wait 
+The number of concurrent recoveries that can be in progress at the same time is limited
+to not overload the system and the backend data store. When exceeding the limit the actors will wait
 until other recoveries have been completed. This is configured by:
 
 ```
@@ -313,7 +313,7 @@ Java
     Persistence.get(getContext().getSystem()).defaultInternalStashOverflowStrategy();
     ```
     @@@
-    
+
 @@@ note
 
 The bounded mailbox should be avoided in the persistent actor, by which the messages come from storage backends may
@@ -646,7 +646,7 @@ akka.persistence.journal.leveldb.replay-filter {
 <a id="snapshots"></a>
 ## Snapshots
 
-As you model your domain using actors, you may notice that some actors may be prone to accumulating extremely long event logs and experiencing long recovery times. Sometimes, the right approach may be to split out into a set of shorter lived actors. However, when this is not an option, you can use snapshots to reduce recovery times drastically. 
+As you model your domain using actors, you may notice that some actors may be prone to accumulating extremely long event logs and experiencing long recovery times. Sometimes, the right approach may be to split out into a set of shorter lived actors. However, when this is not an option, you can use snapshots to reduce recovery times drastically.
 
 Persistent actors can save snapshots of internal state by calling the  `saveSnapshot` method. If saving of a snapshot
 succeeds, the persistent actor receives a `SaveSnapshotSuccess` message, otherwise a `SaveSnapshotFailure` message
@@ -1054,7 +1054,7 @@ akka {
       plugin = "akka.persistence.snapshot-store.local"
       auto-start-snapshot-stores = ["akka.persistence.snapshot-store.local"]
     }
-  
+
   }
 
 }
@@ -1235,7 +1235,7 @@ sbt
 Gradle
 :   @@@vars
     ```
-    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
+    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8'
     ```
     @@@
 
@@ -1249,7 +1249,7 @@ Maven
     </dependency>
     ```
     @@@
-  
+
 The default location of LevelDB files is a directory named `journal` in the current working
 directory. This location can be changed by configuration where the specified path can be relative or absolute:
 
@@ -1257,11 +1257,11 @@ directory. This location can be changed by configuration where the specified pat
 
 With this plugin, each actor system runs its own private LevelDB instance.
 
-One peculiarity of LevelDB is that the deletion operation does not remove messages from the journal, but adds 
-a "tombstone" for each deleted message instead. In the case of heavy journal usage, especially one including frequent 
-deletes, this may be an issue as users may find themselves dealing with continuously increasing journal sizes. To 
+One peculiarity of LevelDB is that the deletion operation does not remove messages from the journal, but adds
+a "tombstone" for each deleted message instead. In the case of heavy journal usage, especially one including frequent
+deletes, this may be an issue as users may find themselves dealing with continuously increasing journal sizes. To
 this end, LevelDB offers a special journal compaction function that is exposed via the following configuration:
-   
+
 @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #compaction-intervals-config }
 
 <a id="shared-leveldb-journal"></a>
@@ -1469,3 +1469,17 @@ Note that `journalPluginId` and `snapshotPluginId` must refer to properly config
 plugin entries with a standard `class` property as well as settings which are specific for those plugins, i.e.:
 
 @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #override-config }
+
+## Give persistence plugin configurations at runtime
+
+By default, a persistent actor will use the configuration loaded at `ActorSystem` creation time to create journal and snapshot store plugins.
+
+When the persistent actor overrides the `journalPluginConfig` and `snapshotPluginConfig` methods,
+the actor will use the declared `Config` objects with a fallback on the default configuration.
+It allows a dynamic configuration of the journal and the snapshot store at runtime:
+
+Scala
+:  @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #runtime-config }
+
+Java
+:  @@snip [PersistenceMultiDocTest.java]($code$/java/jdocs/persistence/PersistenceMultiDocTest.java) { #runtime-config }

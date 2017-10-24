@@ -7,6 +7,7 @@ package akka.persistence.query;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.testkit.AkkaJUnitActorSystemResource;
+import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 
 

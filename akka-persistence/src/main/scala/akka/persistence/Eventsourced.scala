@@ -50,15 +50,15 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
   private val extension = Persistence(context.system)
 
-  private[persistence] lazy val journal = extension.journalFor(journalPluginId)
-  private[persistence] lazy val snapshotStore = extension.snapshotStoreFor(snapshotPluginId)
+  private[persistence] lazy val journal = extension.journalFor(journalPluginId, journalPluginConfig)
+  private[persistence] lazy val snapshotStore = extension.snapshotStoreFor(snapshotPluginId, snapshotPluginConfig)
 
   private val instanceId: Int = Eventsourced.instanceIdCounter.getAndIncrement()
   private val writerUuid = UUID.randomUUID.toString
 
   private var journalBatch = Vector.empty[PersistentEnvelope]
   // no longer used, but kept for binary compatibility
-  private val maxMessageBatchSize = extension.journalConfigFor(journalPluginId).getInt("max-message-batch-size")
+  private val maxMessageBatchSize = extension.journalConfigFor(journalPluginId, journalPluginConfig).getInt("max-message-batch-size")
   private var writeInProgress = false
   private var sequenceNr: Long = 0L
   private var _lastSequenceNr: Long = 0L
@@ -434,7 +434,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   private def recoveryStarted(replayMax: Long) = new State {
 
     // protect against snapshot stalling forever because of journal overloaded and such
-    val timeout = extension.journalConfigFor(journalPluginId).getMillisDuration("recovery-event-timeout")
+    val timeout = extension.journalConfigFor(journalPluginId, journalPluginConfig).getMillisDuration("recovery-event-timeout")
     val timeoutCancellable = {
       import context.dispatcher
       context.system.scheduler.scheduleOnce(timeout, self, RecoveryTick(snapshot = true))

@@ -13,7 +13,7 @@ import akka.actor.ExtendedActorSystem
  * Use for tests only!
  * Emits infinite stream of strings (representing queried for events).
  */
-class DummyReadJournal extends scaladsl.ReadJournal with scaladsl.PersistenceIdsQuery {
+class DummyReadJournal(val dummyValue: String) extends scaladsl.ReadJournal with scaladsl.PersistenceIdsQuery {
   override def persistenceIds(): Source[String, NotUsed] =
     Source.fromIterator(() ⇒ Iterator.from(0)).map(_.toString)
 }
@@ -42,13 +42,19 @@ object DummyReadJournalProvider {
       ${DummyReadJournal.Identifier}4 {
         class = "${classOf[DummyReadJournalProvider4].getCanonicalName}"
       }
+      ${DummyReadJournal.Identifier}5 {
+        class = "${classOf[DummyReadJournalProvider5].getCanonicalName}"
+      }
     """)
 }
 
-class DummyReadJournalProvider extends ReadJournalProvider {
+class DummyReadJournalProvider(dummyValue: String) extends ReadJournalProvider {
+
+  // mandatory zero-arg constructor
+  def this() = this("dummy")
 
   override val scaladslReadJournal: DummyReadJournal =
-    new DummyReadJournal
+    new DummyReadJournal(dummyValue)
 
   override val javadslReadJournal: DummyReadJournalForJava =
     new DummyReadJournalForJava(scaladslReadJournal)
@@ -59,4 +65,8 @@ class DummyReadJournalProvider2(sys: ExtendedActorSystem) extends DummyReadJourn
 class DummyReadJournalProvider3(sys: ExtendedActorSystem, conf: Config) extends DummyReadJournalProvider
 
 class DummyReadJournalProvider4(sys: ExtendedActorSystem, conf: Config, confPath: String) extends DummyReadJournalProvider
+
+class DummyReadJournalProvider5(sys: ExtendedActorSystem) extends DummyReadJournalProvider
+
+class CustomDummyReadJournalProvider5(sys: ExtendedActorSystem) extends DummyReadJournalProvider("custom")
 
