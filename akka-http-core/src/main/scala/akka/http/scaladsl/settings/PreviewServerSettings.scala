@@ -20,7 +20,7 @@ abstract class PreviewServerSettings private[akka] () extends akka.http.javadsl.
 
   override def enableHttp2: Boolean
 
-  // -- 
+  // --
 
   // override for more specific return type
   override def withEnableHttp2(newValue: Boolean): PreviewServerSettings = self.copy(enableHttp2 = newValue)

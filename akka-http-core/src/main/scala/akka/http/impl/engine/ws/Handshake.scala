@@ -72,9 +72,9 @@ private[http] object Handshake {
       // - Host header is validated in general HTTP logic
       // - Origin header is optional and, if required, should be validated
       //   on higher levels (routing, application logic)
-      // 
+      //
       // TODO See #18709 Extension support is optional in WS and currently unsupported.
-      // 
+      //
       // these are not needed directly, we verify their presence and correctness only:
       // - Upgrade
       // - Connection

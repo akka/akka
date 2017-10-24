@@ -614,7 +614,7 @@ class Http2ServerSpec extends AkkaSpec("""
         sendSETTING(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 1)
         expectSettingsAck()
 
-        // TODO actually apply the limiting and verify it works		
+        // TODO actually apply the limiting and verify it works
       }
 
       "received SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
@@ -795,8 +795,8 @@ class Http2ServerSpec extends AkkaSpec("""
      */
     def expectGOAWAY(lastStreamId: Int = -1): (Int, ErrorCode) = {
       // GOAWAY is always written to stream zero:
-      //   The GOAWAY frame applies to the connection, not a specific stream. 
-      //   An endpoint MUST treat a GOAWAY frame with a stream identifier other than 0x0 
+      //   The GOAWAY frame applies to the connection, not a specific stream.
+      //   An endpoint MUST treat a GOAWAY frame with a stream identifier other than 0x0
       //   as a connection error (Section 5.4.1) of type PROTOCOL_ERROR.
       val payload = expectFramePayload(FrameType.GOAWAY, ByteFlag.Zero, streamId = 0)
       val reader = new ByteReader(payload)

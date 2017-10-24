@@ -86,7 +86,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
         8.2. Server Push
       """.split("\n").map(_.trim).filterNot(_.isEmpty)
 
-    // execution of tests ------------------------------------------------------------------ 
+    // execution of tests ------------------------------------------------------------------
     val runningOnJenkins = System.getenv.containsKey("BUILD_NUMBER")
 
     if (runningOnJenkins) {
@@ -105,11 +105,11 @@ class H2SpecIntegrationSpec extends AkkaSpec(
           }
       }
     }
-    // end of execution of tests ----------------------------------------------------------- 
+    // end of execution of tests -----------------------------------------------------------
 
     def runSpec(specSectionNumber: String = null, junitOutput: File = null): Unit = {
       require(specSectionNumber != null ^ junitOutput != null, "Only one of the parameters must be not null, selecting the mode we run in.")
-      val TestFailureMarker = "×" // that special character is next to test failures, so we detect them by it 
+      val TestFailureMarker = "×" // that special character is next to test failures, so we detect them by it
 
       val keepAccumulating = new AtomicBoolean(true)
       val sb = new StringBuffer()

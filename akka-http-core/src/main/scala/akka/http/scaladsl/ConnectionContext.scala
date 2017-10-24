@@ -53,7 +53,7 @@ final class HttpsConnectionContext(
   val sslParameters:       Option[SSLParameters]         = None)
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
 
-  // for binary-compatibility, since 2.4.7  
+  // for binary-compatibility, since 2.4.7
   def this(
     sslContext:          SSLContext,
     enabledCipherSuites: Option[immutable.Seq[String]],
