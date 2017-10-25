@@ -596,6 +596,9 @@ the other (the "server").
 Note that if TLS is enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate
 by compromising any node with certificates issued by the same internal PKI tree.
 
+In order to allow for extensions and specialisations, such as certificate pinning, a custom trust manager factory implementation may be
+supplied by setting the parameter trust-manager-factory-class to the fully qualified class name.
+
 See also a description of the settings in the @ref:[Remote Configuration](remoting.md#remote-configuration) section.
 
 @@@ note

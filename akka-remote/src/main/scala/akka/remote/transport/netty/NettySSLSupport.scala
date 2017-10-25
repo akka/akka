@@ -5,25 +5,49 @@
 package akka.remote.transport.netty
 
 import java.io.{ FileNotFoundException, IOException }
-import java.security._
+import java.nio.file.{ Files, Paths }
+import java.security.{ KeyStore, _ }
 import java.util.concurrent.atomic.AtomicReference
-import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
+import javax.net.ssl._
 
+import akka.actor.{ DynamicAccess, ReflectiveDynamicAccess }
+import akka.annotation.InternalApi
 import akka.event.{ LogMarker, MarkerLoggingAdapter }
 import akka.japi.Util._
 import akka.remote.RemoteTransportException
 import akka.remote.security.provider.AkkaProvider
+import akka.util.Collections.EmptyImmutableSeq
 import com.typesafe.config.Config
 import org.jboss.netty.handler.ssl.SslHandler
 
 import scala.annotation.tailrec
-import scala.util.Try
-import java.nio.file.Files
-import java.nio.file.Paths
+import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API
  */
+@InternalApi
+private[akka] object KeyStoreHelper {
+  def load(filename: String, password: String): KeyStore = {
+    val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
+    val fin = Files.newInputStream(Paths.get(filename))
+    try keyStore.load(fin, password.toCharArray) finally Try(fin.close())
+    keyStore
+  }
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] class DefaultTrustManagerFactory extends CustomTrustManagerFactory {
+  override def create(filename: String, password: String): Array[TrustManager] = {
+    val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+    trustManagerFactory.init(KeyStoreHelper.load(filename, password))
+    trustManagerFactory.getTrustManagers
+  }
+}
+
 private[akka] class SSLSettings(config: Config) {
   import config.{ getBoolean, getString, getStringList }
 
@@ -42,34 +66,35 @@ private[akka] class SSLSettings(config: Config) {
 
   val SSLRequireMutualAuthentication = getBoolean("require-mutual-authentication")
 
+  val SSLTrustManagerFactoryClass = getString("trust-manager-factory-class")
+
   private val sslContext = new AtomicReference[SSLContext]()
-  @tailrec final def getOrCreateContext(log: MarkerLoggingAdapter): SSLContext =
+  @tailrec final def getOrCreateContext(log: MarkerLoggingAdapter, dynamicAccess: DynamicAccess): SSLContext =
     sslContext.get() match {
       case null ⇒
-        val newCtx = constructContext(log)
+        val newCtx = constructContext(log, dynamicAccess)
         if (sslContext.compareAndSet(null, newCtx)) newCtx
-        else getOrCreateContext(log)
+        else getOrCreateContext(log, dynamicAccess)
       case ctx ⇒ ctx
     }
 
-  private def constructContext(log: MarkerLoggingAdapter): SSLContext =
+  /**
+   * For binary backwards compatibility. Don't use
+   * @deprecated
+   */
+  final def getOrCreateContext(log: MarkerLoggingAdapter): SSLContext = getOrCreateContext(log, new ReflectiveDynamicAccess(getClass.getClassLoader))
+  private def constructContext(log: MarkerLoggingAdapter, dynamicAccess: DynamicAccess): SSLContext =
     try {
-      def loadKeystore(filename: String, password: String): KeyStore = {
-        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
-        val fin = Files.newInputStream(Paths.get(filename))
-        try keyStore.load(fin, password.toCharArray) finally Try(fin.close())
-        keyStore
-      }
-
       val keyManagers = {
         val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-        factory.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray)
+        factory.init(KeyStoreHelper.load(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray)
         factory.getKeyManagers
       }
       val trustManagers = {
-        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-        trustManagerFactory.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword))
-        trustManagerFactory.getTrustManagers
+        dynamicAccess.createInstanceFor[CustomTrustManagerFactory](SSLTrustManagerFactoryClass, EmptyImmutableSeq) match {
+          case Success(factory: CustomTrustManagerFactory) ⇒ factory.create(SSLTrustStore, SSLTrustStorePassword)
+          case Failure(problem)                            ⇒ throw new RemoteTransportException("Failed to instantiate custom trust manager", problem)
+        }
       }
       val rng = createSecureRandom(log)
 
@@ -118,8 +143,8 @@ private[akka] object NettySSLSupport {
   /**
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
    */
-  def apply(settings: SSLSettings, log: MarkerLoggingAdapter, isClient: Boolean): SslHandler = {
-    val sslEngine = settings.getOrCreateContext(log).createSSLEngine // TODO: pass host information to enable host verification
+  def apply(settings: SSLSettings, log: MarkerLoggingAdapter, isClient: Boolean, dynamicAccess: DynamicAccess): SslHandler = {
+    val sslEngine = settings.getOrCreateContext(log, dynamicAccess).createSSLEngine // TODO: pass host information to enable host verification
     sslEngine.setUseClientMode(isClient)
     sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray)
     sslEngine.setEnabledProtocols(Array(settings.SSLProtocol))
@@ -127,4 +152,11 @@ private[akka] object NettySSLSupport {
     if (!isClient && settings.SSLRequireMutualAuthentication) sslEngine.setNeedClientAuth(true)
     new SslHandler(sslEngine)
   }
+
+  /**
+   * For backwards compatibillity.
+   * At least some OSGi environments will not have the appropriate class loader to instantiate external trust manager factories in the default akka classes. In such cases this constructor will fail.
+   * @deprecated
+   */
+  def apply(settings: SSLSettings, log: MarkerLoggingAdapter, isClient: Boolean): SslHandler = apply(settings, log, isClient, new ReflectiveDynamicAccess(getClass.getClassLoader))
 }
