@@ -45,7 +45,7 @@ object PersistentActorSpec {
     PersistentActor.immutable[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
-      actions = Actions[Command, Event, State]((ctx, cmd, state) ⇒ cmd match {
+      commandHandler = CommandHandler[Command, Event, State]((ctx, cmd, state) ⇒ cmd match {
         case Increment ⇒
           Effect.persist(Incremented(1))
         case GetValue(replyTo) ⇒
