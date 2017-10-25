@@ -52,7 +52,7 @@
 #                          "<your password>")
 #
 # 3) You must have access to gustav.akka.io
-#    Please note that gustav.akka.io is the same as repo.akka.io, 
+#    Please note that gustav.akka.io is the same as repo.akka.io, 		
 #    but the latter domain is pointed at cloudflare so one could not ssh into it.
 #
 # 3.1) Ask someone in the team for login information for the akkarepo user.
@@ -159,10 +159,14 @@ if [ $# != "1" ]; then
   fail "A release version must be specified"
 fi
 
+declare -r java_version="$(java -version 2>&1 | awk -F '"' '/version/ {print $2}' | sed -e 's/-Debian//')"
+if [ "$java_version" != "9" ]; then
+  echo "Detected java version: $java_version"
+  fail "Akka MUST be released using JDK 9, in order to support j.u.c.Flow interfaces in Akka Streams"
+fi
+
 declare -r version=$1
 declare -r publish_path="${release_server}:${release_path}"
-
-[[ `java -version 2>&1 | grep -E "java version|openjdk version" | cut -d ' ' -f3 | cut -d '.' -f2` -eq 8 ]] || fail "Java version is not 1.8"
 
 # check for a git command
 type -P git &> /dev/null || fail "git command not found"
@@ -186,7 +190,7 @@ function get_current_branch {
 # get the current project version from sbt
 # a little messy as the ansi escape codes are included
 function get_current_version {
-  local result=$(sbt version | grep -v warn | tail -1 | cut -f2)
+  local result=$(sbt version | grep -v warn | grep -v "coordinated shutdown" | tail -1 | cut -f2)
   # remove ansi escape code from end
   local code0=$(echo -e "\033[0m")
   echo ${result%$code0}
@@ -248,7 +252,7 @@ trap signal_bail_out SIGHUP SIGINT SIGTERM
 
 # try to run a command or otherwise bail out
 function try {
-  "$@" || bail_out "Failed to create release"
+  "$@" || bail_out "Failed to create release while running command '$@'"
 }
 
 echolog "Creating release ${version} ..."
@@ -306,7 +310,8 @@ if [ ! $no_mima ] && [ $dry_run ]; then
   echodry "Finished migration manager report"
 fi
 
-try sbt whitesourceCheckPolicies
+# FIXME whitesource does not work with jdk9, https://github.com/whitesource/agents/issues/13
+# try sbt whitesourceCheckPolicies
 
 # commit and tag this release
 echolog "Committing and tagging..."
@@ -351,13 +356,14 @@ else
   important git push origin --tags
 fi
 
-echolog "Uploading whitesource report"
-if [ $dry_run ]; then
-  echodry "Not actually uploading whitesource report. Commands:"
-  echodry "  sbt whitesourceUpdate"
-else
-  important sbt whitesourceUpdate
-fi
+# FIXME whitesource does not work with jdk9, https://github.com/whitesource/agents/issues/13
+#echolog "Uploading whitesource report"
+#if [ $dry_run ]; then
+#  echodry "Not actually uploading whitesource report. Commands:"
+#  echodry "  sbt whitesourceUpdate"
+#else
+#  important sbt whitesourceUpdate
+#fi
 
 # push the release to the server
 echolog "Pushing ${release_dir} to ${publish_path} ..."

@@ -5,4 +5,4 @@ Formatting.formatSettings
 OSGi.stream
 Dependencies.stream
 
-enablePlugins(spray.boilerplate.BoilerplatePlugin)
+enablePlugins(spray.boilerplate.BoilerplatePlugin, akka.Unidoc)

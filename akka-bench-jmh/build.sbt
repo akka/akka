@@ -2,7 +2,7 @@ import akka._
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 
 enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams)
-disablePlugins(Unidoc, MimaPlugin)
+disablePlugins(MimaPlugin)
 
 AkkaBuild.defaultSettings
 Formatting.formatSettings

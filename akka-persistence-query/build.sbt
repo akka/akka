@@ -7,4 +7,4 @@ Dependencies.persistenceQuery
 
 fork in Test := true
 
-enablePlugins(ScaladocNoVerificationOfDiagrams)
+enablePlugins(akka.Unidoc, ScaladocNoVerificationOfDiagrams)
