@@ -68,7 +68,7 @@ object Configuration {
       val sRng = settings.SSLRandomNumberGenerator
       rng.getAlgorithm == sRng || (throw new NoSuchAlgorithmException(sRng))
 
-      val engine = NettySSLSupport(settings, NoMarkerLogging, isClient = true).getEngine
+      val engine = NettySSLSupport(settings, NoMarkerLogging, isClient = true, None).getEngine
       val gotAllSupported = enabled.toSet diff engine.getSupportedCipherSuites.toSet
       val gotAllEnabled = enabled.toSet diff engine.getEnabledCipherSuites.toSet
       gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
