@@ -32,7 +32,7 @@ object PersistentActorCompileOnlyTest {
       initialState = ExampleState(Nil),
 
       actions = Actions.command {
-        case Cmd(data) ⇒ Persist(Evt(data))
+        case Cmd(data) ⇒ Effect.persist(Evt(data))
       },
 
       applyEvent = {
@@ -58,7 +58,7 @@ object PersistentActorCompileOnlyTest {
 
       actions = Actions.command {
         case Cmd(data, sender) ⇒
-          Persist(Evt(data))
+          Effect.persist(Evt(data))
             .andThen { sender ! Ack }
       },
 
@@ -100,11 +100,11 @@ object PersistentActorCompileOnlyTest {
 
       actions = Actions((ctx, cmd, state) ⇒ cmd match {
         case DoSideEffect(data) ⇒
-          Persist(IntentRecorded(state.nextCorrelationId, data)).andThen {
+          Effect.persist(IntentRecorded(state.nextCorrelationId, data)).andThen {
             performSideEffect(ctx.self, state.nextCorrelationId, data)
           }
         case AcknowledgeSideEffect(correlationId) ⇒
-          Persist(SideEffectAcknowledged(correlationId))
+          Effect.persist(SideEffectAcknowledged(correlationId))
       }),
 
       applyEvent = (evt, state) ⇒ evt match {
@@ -144,14 +144,14 @@ object PersistentActorCompileOnlyTest {
         case Happy ⇒ Actions.command {
           case Greet(whom) ⇒
             println(s"Super happy to meet you $whom!")
-            PersistNothing()
-          case MoodSwing ⇒ Persist(MoodChanged(Sad))
+            Effect.done
+          case MoodSwing ⇒ Effect.persist(MoodChanged(Sad))
         }
         case Sad ⇒ Actions.command {
           case Greet(whom) ⇒
             println(s"hi $whom")
-            PersistNothing()
-          case MoodSwing ⇒ Persist(MoodChanged(Happy))
+            Effect.done
+          case MoodSwing ⇒ Effect.persist(MoodChanged(Happy))
         }
       },
       applyEvent = {
@@ -182,8 +182,8 @@ object PersistentActorCompileOnlyTest {
       persistenceId = "asdf",
       initialState = State(Nil),
       actions = Actions.command {
-        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
-        case TaskDone(task)     ⇒ Persist(TaskRemoved(task))
+        case RegisterTask(task) ⇒ Effect.persist(TaskRegistered(task))
+        case TaskDone(task)     ⇒ Effect.persist(TaskRemoved(task))
       },
       applyEvent = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
@@ -209,13 +209,14 @@ object PersistentActorCompileOnlyTest {
       persistenceId = "asdf",
       initialState = State(Nil),
       actions = Actions((ctx, cmd, _) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
-          .andThen {
-            val child = ctx.spawn[Nothing](worker(task), task)
-            // This assumes *any* termination of the child may trigger a `TaskDone`:
-            ctx.watchWith(child, TaskDone(task))
-          }
-        case TaskDone(task) ⇒ Persist(TaskRemoved(task))
+        case RegisterTask(task) ⇒
+          Effect.persist(TaskRegistered(task))
+            .andThen {
+              val child = ctx.spawn[Nothing](worker(task), task)
+              // This assumes *any* termination of the child may trigger a `TaskDone`:
+              ctx.watchWith(child, TaskDone(task))
+            }
+        case TaskDone(task) ⇒ Effect.persist(TaskRemoved(task))
       }),
       applyEvent = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
@@ -240,7 +241,7 @@ object PersistentActorCompileOnlyTest {
       initialState = State(Nil),
       // The 'onSignal' seems to break type inference here.. not sure if that can be avoided?
       actions = Actions[RegisterTask, Event, State]((ctx, cmd, state) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
+        case RegisterTask(task) ⇒ Effect.persist(TaskRegistered(task))
           .andThen {
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
@@ -251,7 +252,7 @@ object PersistentActorCompileOnlyTest {
           // watchWith (as in the above example) is nicer because it means we don't have to
           // 'manually' associate the task and the child actor, but we wanted to demonstrate
           // signals here:
-          Persist(TaskRemoved(actorRef.path.name))
+          Effect.persist(TaskRemoved(actorRef.path.name))
       },
       applyEvent = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
@@ -310,24 +311,29 @@ object PersistentActorCompileOnlyTest {
             if (isFullyHydrated(basket, state)) Actions { (ctx, cmd, state) ⇒
               cmd match {
                 case AddItem(id)    ⇒ addItem(id, ctx.self)
-                case RemoveItem(id) ⇒ Persist(ItemRemoved(id))
+                case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
                 case GotMetaData(data) ⇒
-                  basket = basket.updatedWith(data); PersistNothing()
-                case GetTotalPrice(sender) ⇒ sender ! basket.items.map(_.price).sum; PersistNothing()
+                  basket = basket.updatedWith(data)
+                  Effect.done
+                case GetTotalPrice(sender) ⇒
+                  sender ! basket.items.map(_.price).sum
+                  Effect.done
               }
             }
             else Actions { (ctx, cmd, state) ⇒
               cmd match {
                 case AddItem(id)    ⇒ addItem(id, ctx.self)
-                case RemoveItem(id) ⇒ Persist(ItemRemoved(id))
+                case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
                 case GotMetaData(data) ⇒
                   basket = basket.updatedWith(data)
                   if (isFullyHydrated(basket, state)) {
                     stash.foreach(ctx.self ! _)
                     stash = Nil
                   }
-                  PersistNothing()
-                case cmd: GetTotalPrice ⇒ stash :+= cmd; PersistNothing()
+                  Effect.done
+                case cmd: GetTotalPrice ⇒
+                  stash :+= cmd
+                  Effect.done
               }
             }),
         applyEvent = (evt, state) ⇒ evt match {
@@ -358,8 +364,8 @@ object PersistentActorCompileOnlyTest {
     case class Remembered(memory: String) extends Event
 
     def changeMoodIfNeeded(currentState: Mood, newMood: Mood): Effect[Event, Mood] =
-      if (currentState == newMood) PersistNothing()
-      else Persist(MoodChanged(newMood))
+      if (currentState == newMood) Effect.done
+      else Effect.persist(MoodChanged(newMood))
 
     PersistentActor.immutable[Command, Event, Mood](
       persistenceId = "myPersistenceId",
@@ -368,7 +374,7 @@ object PersistentActorCompileOnlyTest {
         cmd match {
           case Greet(whom) ⇒
             println(s"Hi there, I'm $state!")
-            PersistNothing()
+            Effect.done
           case CheerUp(sender) ⇒
             changeMoodIfNeeded(state, Happy)
               .andThen { sender ! Ack }
@@ -376,9 +382,7 @@ object PersistentActorCompileOnlyTest {
             // A more elaborate example to show we still have full control over the effects
             // if needed (e.g. when some logic is factored out but you want to add more effects)
             val commonEffects = changeMoodIfNeeded(state, Happy)
-            CompositeEffect(
-              PersistAll[Event, Mood](commonEffects.events :+ Remembered(memory)),
-              commonEffects.sideEffects)
+            Effect.persistAll(commonEffects.events :+ Remembered(memory), commonEffects.sideEffects)
 
         }
       },
@@ -404,10 +408,10 @@ object PersistentActorCompileOnlyTest {
       actions = Actions { (_, cmd, _) ⇒
         cmd match {
           case Enough ⇒
-            Persist(Done)
-              .andThen(
-                SideEffect(_ ⇒ println("yay")),
-                Stop())
+
+            Effect.persist(Done)
+              .andThen((_: State) ⇒ println("yay"))
+              .andThenStop
         }
       },
       applyEvent = {

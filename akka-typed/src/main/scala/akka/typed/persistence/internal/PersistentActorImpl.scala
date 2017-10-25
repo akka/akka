@@ -72,7 +72,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
     eventHandler.apply(event, s)
 
   private val unhandledSignal: PartialFunction[(ActorContext[C], Signal, S), Effect[E, S]] = {
-    case sig ⇒ Unhandled()
+    case sig ⇒ Effect.unhandled
   }
 
   override def receiveCommand: Receive = {
@@ -121,16 +121,16 @@ import akka.typed.internal.adapter.ActorRefAdapter
       persistAll(scala.collection.immutable.Seq(events)) { _ ⇒
         sideEffects.foreach(applySideEffect)
       }
-    case PersistNothing() ⇒
-    case Unhandled() ⇒
+    case _: PersistNothing.type @unchecked ⇒
+    case _: Unhandled.type @unchecked ⇒
       super.unhandled(msg)
     case c: ChainableEffect[_, S] ⇒
       applySideEffect(c)
   }
 
   def applySideEffect(effect: ChainableEffect[_, S]): Unit = effect match {
-    case Stop()                ⇒ context.stop(self)
-    case SideEffect(callbacks) ⇒ callbacks.apply(state)
+    case _: Stop.type @unchecked ⇒ context.stop(self)
+    case SideEffect(callbacks)   ⇒ callbacks.apply(state)
   }
 }
 

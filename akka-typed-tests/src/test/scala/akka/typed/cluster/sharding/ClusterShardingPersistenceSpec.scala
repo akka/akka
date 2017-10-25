@@ -54,11 +54,11 @@ object ClusterShardingPersistenceSpec {
       persistenceIdFromActorName = name ⇒ "Test-" + name,
       initialState = "",
       actions = Actions((ctx, cmd, state) ⇒ cmd match {
-        case Add(s) ⇒ Persist(s)
+        case Add(s) ⇒ Effect.persist(s)
         case Get(replyTo) ⇒
           replyTo ! state
-          PersistNothing()
-        case StopPlz ⇒ Stop()
+          Effect.done
+        case StopPlz ⇒ Effect.stop
       }),
       applyEvent = (evt, state) ⇒ if (state.isEmpty) evt else state + "|" + evt)
 

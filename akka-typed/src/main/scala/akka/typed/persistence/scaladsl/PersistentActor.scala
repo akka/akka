@@ -37,51 +37,102 @@ object PersistentActor {
     new PersistentBehavior(persistenceIdFromActorName, initialState, actions, applyEvent,
       recoveryCompleted = (_, state) ⇒ state)
 
-  sealed abstract class Effect[+Event, State]() {
+  /**
+   * Factories for effects - how a persitent actor reacts on a command
+   */
+  object Effect {
+    def persist[Event, State](event: Event): Effect[Event, State] =
+      new Persist[Event, State](event)
+
+    def persistAll[Event, State](events: im.Seq[Event]): Effect[Event, State] =
+      new PersistAll[Event, State](events)
+
+    def persistAll[Event, State](events: im.Seq[Event], sideEffects: im.Seq[ChainableEffect[Event, State]]): Effect[Event, State] =
+      new CompositeEffect[Event, State](Some(new PersistAll[Event, State](events)), sideEffects)
+
+    /**
+     * Do not persist anything
+     */
+    def done[Event, State]: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
+
+    /**
+     * This command is not handled, but it is not an error that it isn't.
+     */
+    def unhandled[Event, State]: Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
+
+    /**
+     * Stop this persistent actor
+     */
+    def stop[Event, State]: ChainableEffect[Event, State] = Stop.asInstanceOf[ChainableEffect[Event, State]]
+
+  }
+
+  /**
+   * Instances are created through the factories in the [[Effect]] companion object.
+   *
+   * Not for user extension.
+   */
+  @DoNotInherit
+  sealed abstract class Effect[+Event, State] {
     /* All events that will be persisted in this effect */
     def events: im.Seq[Event] = Nil
 
     /* All side effects that will be performed in this effect */
-    def sideEffects: im.Seq[ChainableEffect[_, State]] =
-      if (isInstanceOf[ChainableEffect[_, State]]) im.Seq(asInstanceOf[ChainableEffect[_, State]])
-      else Nil
-
-    def andThen(sideEffects: ChainableEffect[_, State]*): Effect[Event, State] =
-      CompositeEffect(if (events.isEmpty) None else Some(this), sideEffects.toList)
+    def sideEffects[E >: Event]: im.Seq[ChainableEffect[E, State]] = Nil
 
     /** Convenience method to register a side effect with just a callback function */
     def andThen(callback: State ⇒ Unit): Effect[Event, State] =
-      andThen(SideEffect[Event, State](callback))
+      CompositeEffect(this, SideEffect[Event, State](callback))
 
     /** Convenience method to register a side effect with just a lazy expression */
     def andThen(callback: ⇒ Unit): Effect[Event, State] =
-      andThen(SideEffect[Event, State]((_: State) ⇒ callback))
+      CompositeEffect(this, SideEffect[Event, State]((_: State) ⇒ callback))
+
+    /** The side effect is to stop the actor */
+    def andThenStop[E >: Event]: Effect[Event, State] =
+      CompositeEffect(this, Effect.stop[Event, State])
   }
 
-  case class CompositeEffect[Event, State](persistingEffect: Option[Effect[Event, State]], override val sideEffects: im.Seq[ChainableEffect[_, State]]) extends Effect[Event, State] {
+  @InternalApi
+  private[akka] object CompositeEffect {
+    def apply[Event, State](effect: Effect[Event, State], sideEffects: ChainableEffect[Event, State]): Effect[Event, State] =
+      CompositeEffect[Event, State](
+        if (effect.events.isEmpty) None else Some(effect),
+        sideEffects.asInstanceOf[im.Seq[ChainableEffect[Event, State]]])
+  }
+
+  @InternalApi
+  private[akka] final case class CompositeEffect[Event, State](
+    persistingEffect: Option[Effect[Event, State]],
+    _sideEffects:     im.Seq[ChainableEffect[Event, State]]) extends Effect[Event, State] {
     override val events = persistingEffect.map(_.events).getOrElse(Nil)
-    override def andThen(additionalSideEffects: ChainableEffect[_, State]*): CompositeEffect[Event, State] =
-      copy(sideEffects = sideEffects ++ additionalSideEffects)
-  }
-  object CompositeEffect {
-    def apply[Event, State](persistAll: PersistAll[Event, State], sideEffects: im.Seq[ChainableEffect[_, State]]): CompositeEffect[Event, State] =
-      CompositeEffect(Some(persistAll), sideEffects)
+
+    override def sideEffects[E >: Event]: im.Seq[ChainableEffect[E, State]] = _sideEffects.asInstanceOf[im.Seq[ChainableEffect[E, State]]]
+
   }
 
-  case class PersistNothing[Event, State]() extends Effect[Event, State]
+  @InternalApi
+  private[akka] case object PersistNothing extends Effect[Nothing, Nothing]
 
-  case class Persist[Event, State](event: Event) extends Effect[Event, State] {
+  @InternalApi
+  private[akka] case class Persist[Event, State](event: Event) extends Effect[Event, State] {
     override val events = event :: Nil
   }
-  case class PersistAll[Event, State](override val events: im.Seq[Event]) extends Effect[Event, State]
+  @InternalApi
+  private[akka] case class PersistAll[Event, State](override val events: im.Seq[Event]) extends Effect[Event, State]
 
-  trait ChainableEffect[Event, State] {
-    self: Effect[Event, State] ⇒
-  }
-  case class SideEffect[Event, State](effect: State ⇒ Unit) extends Effect[Event, State] with ChainableEffect[Event, State]
-  case class Stop[Event, State]() extends Effect[Event, State] with ChainableEffect[Event, State]()
+  /**
+   * Not for user extension
+   */
+  @DoNotInherit
+  sealed abstract class ChainableEffect[Event, State] extends Effect[Event, State]
+  @InternalApi
+  private[akka] case class SideEffect[Event, State](effect: State ⇒ Unit) extends ChainableEffect[Event, State]
+  @InternalApi
+  private[akka] case object Stop extends ChainableEffect[Nothing, Nothing]
 
-  case class Unhandled[Event, State]() extends Effect[Event, State]
+  @InternalApi
+  private[akka] case object Unhandled extends Effect[Nothing, Nothing]
 
   type CommandHandler[Command, Event, State] = Function3[ActorContext[Command], Command, State, Effect[Event, State]]
   type SignalHandler[Command, Event, State] = PartialFunction[(ActorContext[Command], Signal, State), Effect[Event, State]]
