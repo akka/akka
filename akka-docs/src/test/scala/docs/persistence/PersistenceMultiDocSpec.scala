@@ -57,8 +57,6 @@ object PersistenceMultiDocSpec {
 
   //#override-plugins
 
-  //#override-config
-
   //#runtime-config
   trait ActorWithRuntimeConfig extends PersistentActor {
     // Variable that is retrieved at runtime, from an external service for instance.

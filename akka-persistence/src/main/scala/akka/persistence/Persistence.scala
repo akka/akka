@@ -119,7 +119,6 @@ trait PersistenceIdentity {
    * @return an additional configuration used to configure the snapshot plugin.
    */
   def snapshotPluginConfig: Config = ConfigFactory.empty
-
 }
 
 //#persistence-identity
@@ -241,7 +240,19 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * If no adapters are registered for a given journal the EventAdapters object will simply return the identity
    * adapter for each class, otherwise the most specific adapter matching a given class will be returned.
    */
-  final def adaptersFor(journalPluginId: String, journalPluginConfig: Config = ConfigFactory.empty): EventAdapters = {
+  final def adaptersFor(journalPluginId: String): EventAdapters = {
+    val configPath = if (isEmpty(journalPluginId)) defaultJournalPluginId else journalPluginId
+    pluginHolderFor(configPath, journalFallbackConfigPath, ConfigFactory.empty).adapters
+  }
+
+  /**
+   * Returns an [[akka.persistence.journal.EventAdapters]] object which serves as a per-journal collection of bound event adapters.
+   * If no adapters are registered for a given journal the EventAdapters object will simply return the identity
+   * adapter for each class, otherwise the most specific adapter matching a given class will be returned.
+   *
+   * The provided journalPluginConfig will be used to configure the plugin instead of the actor system config.
+   */
+  final def adaptersFor(journalPluginId: String, journalPluginConfig: Config): EventAdapters = {
     val configPath = if (isEmpty(journalPluginId)) defaultJournalPluginId else journalPluginId
     pluginHolderFor(configPath, journalFallbackConfigPath, journalPluginConfig).adapters
   }
@@ -356,6 +367,8 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   private def id(ref: ActorRef) = ref.path.toStringWithoutAddress
 
   private class PluginHolderExtensionId(configPath: String, fallbackPath: String, additionalConfig: Config) extends ExtensionId[PluginHolder] {
+    def this(configPath: String, fallbackPath: String) = this(configPath, fallbackPath, ConfigFactory.empty)
+
     override def createExtension(system: ExtendedActorSystem): PluginHolder = {
       val mergedConfig = additionalConfig.withFallback(system.settings.config)
       require(
