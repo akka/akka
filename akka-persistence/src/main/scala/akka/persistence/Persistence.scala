@@ -241,8 +241,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * adapter for each class, otherwise the most specific adapter matching a given class will be returned.
    */
   final def adaptersFor(journalPluginId: String): EventAdapters = {
-    val configPath = if (isEmpty(journalPluginId)) defaultJournalPluginId else journalPluginId
-    pluginHolderFor(configPath, journalFallbackConfigPath, ConfigFactory.empty).adapters
+    adaptersFor(journalPluginId: String, ConfigFactory.empty)
   }
 
   /**

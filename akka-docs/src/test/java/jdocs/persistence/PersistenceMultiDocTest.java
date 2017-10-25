@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory;
 public class PersistenceMultiDocTest {
 
     //#default-plugins
-    abstract class ActorWithDefaultPlugins extends AbstractPersistentActor {
+    abstract class AbstractPersistentActorWithDefaultPlugins extends AbstractPersistentActor {
         @Override
         public String persistenceId() {
             return "123";
@@ -21,7 +21,7 @@ public class PersistenceMultiDocTest {
     //#default-plugins
 
     //#override-plugins
-    abstract class ActorWithOverridePlugins extends AbstractPersistentActor {
+    abstract class AbstractPersistentActorWithOverridePlugins extends AbstractPersistentActor {
         @Override
         public String persistenceId() {
             return "123";
@@ -42,7 +42,7 @@ public class PersistenceMultiDocTest {
     //#override-plugins
 
     //#runtime-config
-    abstract class ActorWithRuntimeConfig extends AbstractPersistentActor {
+    abstract class AbstractPersistentActorWithRuntimeConfig extends AbstractPersistentActor {
         // Variable that is retrieved at runtime, from an external service for instance.
         String runtimeDistinction = "foo";
 

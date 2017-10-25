@@ -43,6 +43,9 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
   /**
    * Scala API: Returns the [[akka.persistence.query.scaladsl.ReadJournal]] specified by the given
    * read journal configuration entry.
+   *
+   * The provided readJournalPluginConfig will be used to configure the journal plugin instead of the actor system
+   * config.
    */
   final def readJournalFor[T <: scaladsl.ReadJournal](readJournalPluginId: String, readJournalPluginConfig: Config): T =
     readJournalPluginFor(readJournalPluginId, readJournalPluginConfig).scaladslPlugin.asInstanceOf[T]
@@ -52,7 +55,7 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
    * read journal configuration entry.
    */
   final def readJournalFor[T <: scaladsl.ReadJournal](readJournalPluginId: String): T =
-    readJournalPluginFor(readJournalPluginId, ConfigFactory.empty).scaladslPlugin.asInstanceOf[T]
+    readJournalFor(readJournalPluginId, ConfigFactory.empty)
 
   /**
    * Java API: Returns the [[akka.persistence.query.javadsl.ReadJournal]] specified by the given
