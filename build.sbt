@@ -55,7 +55,7 @@ lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   // remove dependencies that we have to build ourselves (Scala STM)
   .aggregate(aggregatedProjects diff List[ProjectReference](agent, docs): _*)
   .disablePlugins(MimaPlugin)
-  //.disablePlugins(ValidatePullRequest, MimaPlugin) FIXME
+  .disablePlugins(ValidatePullRequest, MimaPlugin)
 
 lazy val benchJmh = akkaModule("akka-bench-jmh")
   .dependsOn(
@@ -65,7 +65,7 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
       persistence, distributedData,
       testkit
     ).map(_ % "compile->compile;compile->test;provided->provided"): _*
-  )// .disablePlugins(ValidatePullRequest) FIXME
+  ).disablePlugins(ValidatePullRequest)
 
 lazy val camel = akkaModule("akka-camel")
   .dependsOn(actor, slf4j, testkit % "test->test")
