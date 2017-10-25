@@ -60,7 +60,7 @@ object ClusterShardingPersistenceSpec {
           Effect.done
         case StopPlz ⇒ Effect.stop
       }),
-      applyEvent = (evt, state) ⇒ if (state.isEmpty) evt else state + "|" + evt)
+      eventHandler = (evt, state) ⇒ if (state.isEmpty) evt else state + "|" + evt)
 
   val typeKey = EntityTypeKey[Command]("test")
 

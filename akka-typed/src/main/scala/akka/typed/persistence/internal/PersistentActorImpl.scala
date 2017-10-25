@@ -52,7 +52,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
 
   private val commandHandler: CommandHandler[C, E, S] = behavior.commandHandler
 
-  private val eventHandler: (E, S) ⇒ S = behavior.applyEvent
+  private val eventHandler: (E, S) ⇒ S = behavior.eventHandler
 
   private val ctxAdapter = new ActorContextAdapter[C](context)
   private val ctx = ctxAdapter.asScala

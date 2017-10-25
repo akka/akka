@@ -72,7 +72,7 @@ object PersistentActorSpec {
           case (_, Terminated(_), _) ⇒
             Effect.persist(Incremented(10))
         },
-      applyEvent = (evt, state) ⇒ evt match {
+      eventHandler = (evt, state) ⇒ evt match {
         case Incremented(delta) ⇒
           State(state.value + delta, state.history :+ state.value)
       })

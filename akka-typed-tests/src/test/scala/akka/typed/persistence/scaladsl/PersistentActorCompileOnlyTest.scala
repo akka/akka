@@ -35,7 +35,7 @@ object PersistentActorCompileOnlyTest {
         case Cmd(data) ⇒ Effect.persist(Evt(data))
       },
 
-      applyEvent = {
+      eventHandler = {
         case (Evt(data), state) ⇒ state.copy(data :: state.events)
       })
   }
@@ -62,7 +62,7 @@ object PersistentActorCompileOnlyTest {
             .andThen { sender ! Ack }
       },
 
-      applyEvent = {
+      eventHandler = {
         case (Evt(data), state) ⇒ state.copy(data :: state.events)
       })
   }
@@ -107,7 +107,7 @@ object PersistentActorCompileOnlyTest {
           Effect.persist(SideEffectAcknowledged(correlationId))
       }),
 
-      applyEvent = (evt, state) ⇒ evt match {
+      eventHandler = (evt, state) ⇒ evt match {
         case IntentRecorded(correlationId, data) ⇒
           EventsInFlight(
             nextCorrelationId = correlationId + 1,
@@ -154,7 +154,7 @@ object PersistentActorCompileOnlyTest {
           case MoodSwing ⇒ Effect.persist(MoodChanged(Happy))
         }
       },
-      applyEvent = {
+      eventHandler = {
         case (MoodChanged(to), _) ⇒ to
       })
 
@@ -185,7 +185,7 @@ object PersistentActorCompileOnlyTest {
         case RegisterTask(task) ⇒ Effect.persist(TaskRegistered(task))
         case TaskDone(task)     ⇒ Effect.persist(TaskRemoved(task))
       },
-      applyEvent = (evt, state) ⇒ evt match {
+      eventHandler = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       }).snapshotOnState(_.tasksInFlight.isEmpty)
@@ -218,7 +218,7 @@ object PersistentActorCompileOnlyTest {
             }
         case TaskDone(task) ⇒ Effect.persist(TaskRemoved(task))
       }),
-      applyEvent = (evt, state) ⇒ evt match {
+      eventHandler = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       })
@@ -254,7 +254,7 @@ object PersistentActorCompileOnlyTest {
           // signals here:
           Effect.persist(TaskRemoved(actorRef.path.name))
       },
-      applyEvent = (evt, state) ⇒ evt match {
+      eventHandler = (evt, state) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       })
@@ -336,7 +336,7 @@ object PersistentActorCompileOnlyTest {
                   Effect.done
               }
             }),
-        applyEvent = (evt, state) ⇒ evt match {
+        eventHandler = (evt, state) ⇒ evt match {
           case ItemAdded(id)   ⇒ id +: state
           case ItemRemoved(id) ⇒ state.filter(_ != id)
         }).onRecoveryCompleted((ctx, state) ⇒ {
@@ -386,7 +386,7 @@ object PersistentActorCompileOnlyTest {
 
         }
       },
-      applyEvent = {
+      eventHandler = {
         case (MoodChanged(to), _)   ⇒ to
         case (Remembered(_), state) ⇒ state
       })
@@ -414,7 +414,7 @@ object PersistentActorCompileOnlyTest {
               .andThenStop
         }
       },
-      applyEvent = {
+      eventHandler = {
         case (Done, _) ⇒ ()
       })
   }

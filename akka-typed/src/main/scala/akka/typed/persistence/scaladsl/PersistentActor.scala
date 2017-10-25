@@ -19,8 +19,8 @@ object PersistentActor {
     persistenceId:  String,
     initialState:   State,
     commandHandler: CommandHandler[Command, Event, State],
-    applyEvent:     (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
-    persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, applyEvent)
+    eventHandler:   (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
+    persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, eventHandler)
 
   /**
    * Create a `Behavior` for a persistent actor in Cluster Sharding, when the persistenceId is not known
@@ -33,8 +33,8 @@ object PersistentActor {
     persistenceIdFromActorName: String ⇒ String,
     initialState:               State,
     commandHandler:             CommandHandler[Command, Event, State],
-    applyEvent:                 (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, applyEvent,
+    eventHandler:               (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
+    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
       recoveryCompleted = (_, state) ⇒ state)
 
   /**
@@ -211,7 +211,7 @@ class PersistentBehavior[Command, Event, State](
   @InternalApi private[akka] val persistenceIdFromActorName: String ⇒ String,
   val initialState:                                          State,
   val commandHandler:                                        PersistentActor.CommandHandler[Command, Event, State],
-  val applyEvent:                                            (Event, State) ⇒ State,
+  val eventHandler:                                          (Event, State) ⇒ State,
   val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ State) extends UntypedBehavior[Command] {
   import PersistentActor._
 
@@ -239,7 +239,7 @@ class PersistentBehavior[Command, Event, State](
     persistenceIdFromActorName: String ⇒ String                        = persistenceIdFromActorName,
     initialState:               State                                  = initialState,
     commandHandler:             CommandHandler[Command, Event, State]  = commandHandler,
-    applyEvent:                 (Event, State) ⇒ State                 = applyEvent,
+    eventHandler:               (Event, State) ⇒ State                 = eventHandler,
     recoveryCompleted:          (ActorContext[Command], State) ⇒ State = recoveryCompleted): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, applyEvent, recoveryCompleted)
+    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted)
 }
