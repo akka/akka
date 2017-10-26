@@ -36,7 +36,7 @@ object PersistentActorCompileOnlyTest {
       },
 
       eventHandler = {
-        case (Evt(data), state) ⇒ state.copy(data :: state.events)
+        case (state, Evt(data)) ⇒ state.copy(data :: state.events)
       })
   }
 
@@ -63,7 +63,7 @@ object PersistentActorCompileOnlyTest {
       },
 
       eventHandler = {
-        case (Evt(data), state) ⇒ state.copy(data :: state.events)
+        case (state, Evt(data)) ⇒ state.copy(data :: state.events)
       })
   }
 
@@ -98,7 +98,7 @@ object PersistentActorCompileOnlyTest {
 
       initialState = EventsInFlight(0, Map.empty),
 
-      commandHandler = CommandHandler((ctx, cmd, state) ⇒ cmd match {
+      commandHandler = CommandHandler((ctx, state, cmd) ⇒ cmd match {
         case DoSideEffect(data) ⇒
           Effect.persist(IntentRecorded(state.nextCorrelationId, data)).andThen {
             performSideEffect(ctx.self, state.nextCorrelationId, data)
@@ -107,7 +107,7 @@ object PersistentActorCompileOnlyTest {
           Effect.persist(SideEffectAcknowledged(correlationId))
       }),
 
-      eventHandler = (evt, state) ⇒ evt match {
+      eventHandler = (state, evt) ⇒ evt match {
         case IntentRecorded(correlationId, data) ⇒
           EventsInFlight(
             nextCorrelationId = correlationId + 1,
@@ -155,7 +155,7 @@ object PersistentActorCompileOnlyTest {
         }
       },
       eventHandler = {
-        case (MoodChanged(to), _) ⇒ to
+        case (_, MoodChanged(to)) ⇒ to
       })
 
     // FIXME this doesn't work, wrapping is not supported
@@ -185,7 +185,7 @@ object PersistentActorCompileOnlyTest {
         case RegisterTask(task) ⇒ Effect.persist(TaskRegistered(task))
         case TaskDone(task)     ⇒ Effect.persist(TaskRemoved(task))
       },
-      eventHandler = (evt, state) ⇒ evt match {
+      eventHandler = (state, evt) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       }).snapshotOnState(_.tasksInFlight.isEmpty)
@@ -208,7 +208,7 @@ object PersistentActorCompileOnlyTest {
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "asdf",
       initialState = State(Nil),
-      commandHandler = CommandHandler((ctx, cmd, _) ⇒ cmd match {
+      commandHandler = CommandHandler((ctx, _, cmd) ⇒ cmd match {
         case RegisterTask(task) ⇒
           Effect.persist(TaskRegistered(task))
             .andThen {
@@ -218,7 +218,7 @@ object PersistentActorCompileOnlyTest {
             }
         case TaskDone(task) ⇒ Effect.persist(TaskRemoved(task))
       }),
-      eventHandler = (evt, state) ⇒ evt match {
+      eventHandler = (state, evt) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       })
@@ -240,7 +240,7 @@ object PersistentActorCompileOnlyTest {
       persistenceId = "asdf",
       initialState = State(Nil),
       // The 'onSignal' seems to break type inference here.. not sure if that can be avoided?
-      commandHandler = CommandHandler[RegisterTask, Event, State]((ctx, cmd, state) ⇒ cmd match {
+      commandHandler = CommandHandler[RegisterTask, Event, State]((ctx, state, cmd) ⇒ cmd match {
         case RegisterTask(task) ⇒ Effect.persist(TaskRegistered(task))
           .andThen {
             val child = ctx.spawn[Nothing](worker(task), task)
@@ -248,13 +248,13 @@ object PersistentActorCompileOnlyTest {
             ctx.watch(child)
           }
       }).onSignal {
-        case (ctx, Terminated(actorRef), _) ⇒
+        case (ctx, _, Terminated(actorRef)) ⇒
           // watchWith (as in the above example) is nicer because it means we don't have to
           // 'manually' associate the task and the child actor, but we wanted to demonstrate
           // signals here:
           Effect.persist(TaskRemoved(actorRef.path.name))
       },
-      eventHandler = (evt, state) ⇒ evt match {
+      eventHandler = (state, evt) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       })
@@ -308,7 +308,7 @@ object PersistentActorCompileOnlyTest {
         initialState = Nil,
         commandHandler =
           CommandHandler.byState(state ⇒
-            if (isFullyHydrated(basket, state)) CommandHandler { (ctx, cmd, state) ⇒
+            if (isFullyHydrated(basket, state)) CommandHandler { (ctx, state, cmd) ⇒
               cmd match {
                 case AddItem(id)    ⇒ addItem(id, ctx.self)
                 case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
@@ -320,7 +320,7 @@ object PersistentActorCompileOnlyTest {
                   Effect.done
               }
             }
-            else CommandHandler { (ctx, cmd, state) ⇒
+            else CommandHandler { (ctx, state, cmd) ⇒
               cmd match {
                 case AddItem(id)    ⇒ addItem(id, ctx.self)
                 case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
@@ -336,7 +336,7 @@ object PersistentActorCompileOnlyTest {
                   Effect.done
               }
             }),
-        eventHandler = (evt, state) ⇒ evt match {
+        eventHandler = (state, evt) ⇒ evt match {
           case ItemAdded(id)   ⇒ id +: state
           case ItemRemoved(id) ⇒ state.filter(_ != id)
         }).onRecoveryCompleted((ctx, state) ⇒ {
@@ -370,7 +370,7 @@ object PersistentActorCompileOnlyTest {
     PersistentActor.immutable[Command, Event, Mood](
       persistenceId = "myPersistenceId",
       initialState = Sad,
-      commandHandler = CommandHandler { (_, cmd, state) ⇒
+      commandHandler = CommandHandler { (_, state, cmd) ⇒
         cmd match {
           case Greet(whom) ⇒
             println(s"Hi there, I'm $state!")
@@ -387,8 +387,8 @@ object PersistentActorCompileOnlyTest {
         }
       },
       eventHandler = {
-        case (MoodChanged(to), _)   ⇒ to
-        case (Remembered(_), state) ⇒ state
+        case (_, MoodChanged(to))   ⇒ to
+        case (state, Remembered(_)) ⇒ state
       })
 
   }
@@ -405,7 +405,7 @@ object PersistentActorCompileOnlyTest {
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "myPersistenceId",
       initialState = (),
-      commandHandler = CommandHandler { (_, cmd, _) ⇒
+      commandHandler = CommandHandler { (_, _, cmd) ⇒
         cmd match {
           case Enough ⇒
 
@@ -415,7 +415,7 @@ object PersistentActorCompileOnlyTest {
         }
       },
       eventHandler = {
-        case (Done, _) ⇒ ()
+        case (_, Done) ⇒ ()
       })
   }
 

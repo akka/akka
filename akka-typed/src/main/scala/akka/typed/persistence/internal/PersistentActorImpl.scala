@@ -52,7 +52,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
 
   private val commandHandler: CommandHandler[C, E, S] = behavior.commandHandler
 
-  private val eventHandler: (E, S) ⇒ S = behavior.eventHandler
+  private val eventHandler: (S, E) ⇒ S = behavior.eventHandler
 
   private val ctxAdapter = new ActorContextAdapter[C](context)
   private val ctx = ctxAdapter.asScala
@@ -69,9 +69,9 @@ import akka.typed.internal.adapter.ActorRefAdapter
   }
 
   def applyEvent(s: S, event: E): S =
-    eventHandler.apply(event, s)
+    eventHandler.apply(s, event)
 
-  private val unhandledSignal: PartialFunction[(ActorContext[C], Signal, S), Effect[E, S]] = {
+  private val unhandledSignal: PartialFunction[(ActorContext[C], S, Signal), Effect[E, S]] = {
     case sig ⇒ Effect.unhandled
   }
 
@@ -84,13 +84,13 @@ import akka.typed.internal.adapter.ActorRefAdapter
         val effects = msg match {
           case a.Terminated(ref) ⇒
             val sig = Terminated(ActorRefAdapter(ref))(null)
-            commandHandler.sigHandler(state).applyOrElse((ctx, sig, state), unhandledSignal)
+            commandHandler.sigHandler(state).applyOrElse((ctx, state, sig), unhandledSignal)
           case a.ReceiveTimeout ⇒
-            commandHandler.commandHandler(ctx, ctxAdapter.receiveTimeoutMsg, state)
+            commandHandler.commandHandler(ctx, state, ctxAdapter.receiveTimeoutMsg)
           // TODO note that PostStop and PreRestart signals are not handled, we wouldn't be able to persist there
           case cmd: C @unchecked ⇒
             // FIXME we could make it more safe by using ClassTag for C
-            commandHandler.commandHandler(ctx, cmd, state)
+            commandHandler.commandHandler(ctx, state, cmd)
         }
 
         applyEffects(msg, effects)

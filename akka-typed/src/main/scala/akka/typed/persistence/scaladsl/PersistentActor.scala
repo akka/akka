@@ -19,7 +19,7 @@ object PersistentActor {
     persistenceId:  String,
     initialState:   State,
     commandHandler: CommandHandler[Command, Event, State],
-    eventHandler:   (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
+    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, eventHandler)
 
   /**
@@ -33,7 +33,7 @@ object PersistentActor {
     persistenceIdFromActorName: String ⇒ String,
     initialState:               State,
     commandHandler:             CommandHandler[Command, Event, State],
-    eventHandler:               (Event, State) ⇒ State): PersistentBehavior[Command, Event, State] =
+    eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
       recoveryCompleted = (_, state) ⇒ state)
 
@@ -134,8 +134,8 @@ object PersistentActor {
   @InternalApi
   private[akka] case object Unhandled extends Effect[Nothing, Nothing]
 
-  type CommandToEffect[Command, Event, State] = (ActorContext[Command], Command, State) ⇒ Effect[Event, State]
-  type SignalHandler[Command, Event, State] = PartialFunction[(ActorContext[Command], Signal, State), Effect[Event, State]]
+  type CommandToEffect[Command, Event, State] = (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
+  type SignalHandler[Command, Event, State] = PartialFunction[(ActorContext[Command], State, Signal), Effect[Event, State]]
 
   /**
    * The `CommandHandler` defines how to act on commands and partial function for other signals,
@@ -152,7 +152,7 @@ object PersistentActor {
      * Convenience for simple commands that don't need the state and context.
      */
     def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): CommandHandler[Command, Event, State] =
-      apply((_, cmd, _) ⇒ commandHandler(cmd))
+      apply((_, _, cmd) ⇒ commandHandler(cmd))
 
     /**
      * Select different command handlers based on current state.
@@ -169,7 +169,7 @@ object PersistentActor {
     choice:        State ⇒ CommandHandler[Command, Event, State],
     signalHandler: SignalHandler[Command, Event, State])
     extends CommandHandler[Command, Event, State](
-      commandHandler = (ctx, cmd, state) ⇒ choice(state).commandHandler(ctx, cmd, state),
+      commandHandler = (ctx, state, cmd) ⇒ choice(state).commandHandler(ctx, state, cmd),
       signalHandler) {
 
     // SignalHandler may be registered in the wrapper or in the wrapped
@@ -211,7 +211,7 @@ class PersistentBehavior[Command, Event, State](
   @InternalApi private[akka] val persistenceIdFromActorName: String ⇒ String,
   val initialState:                                          State,
   val commandHandler:                                        PersistentActor.CommandHandler[Command, Event, State],
-  val eventHandler:                                          (Event, State) ⇒ State,
+  val eventHandler:                                          (State, Event) ⇒ State,
   val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ State) extends UntypedBehavior[Command] {
   import PersistentActor._
 
@@ -239,7 +239,7 @@ class PersistentBehavior[Command, Event, State](
     persistenceIdFromActorName: String ⇒ String                        = persistenceIdFromActorName,
     initialState:               State                                  = initialState,
     commandHandler:             CommandHandler[Command, Event, State]  = commandHandler,
-    eventHandler:               (Event, State) ⇒ State                 = eventHandler,
+    eventHandler:               (State, Event) ⇒ State                 = eventHandler,
     recoveryCompleted:          (ActorContext[Command], State) ⇒ State = recoveryCompleted): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted)
 }

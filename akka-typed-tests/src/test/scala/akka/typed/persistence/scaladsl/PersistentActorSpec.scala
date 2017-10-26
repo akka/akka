@@ -45,7 +45,7 @@ object PersistentActorSpec {
     PersistentActor.immutable[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
-      commandHandler = CommandHandler[Command, Event, State]((ctx, cmd, state) ⇒ cmd match {
+      commandHandler = CommandHandler[Command, Event, State]((ctx, state, cmd) ⇒ cmd match {
         case Increment ⇒
           Effect.persist(Incremented(1))
         case GetValue(replyTo) ⇒
@@ -69,10 +69,10 @@ object PersistentActorSpec {
           Effect.persist(Incremented(100))
       })
         .onSignal {
-          case (_, Terminated(_), _) ⇒
+          case (_, _, Terminated(_)) ⇒
             Effect.persist(Incremented(10))
         },
-      eventHandler = (evt, state) ⇒ evt match {
+      eventHandler = (state, evt) ⇒ evt match {
         case Incremented(delta) ⇒
           State(state.value + delta, state.history :+ state.value)
       })
