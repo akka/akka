@@ -69,13 +69,11 @@ object MultiNode extends AutoPlugin {
           (executeTests in Test) := {
             val testResults = (executeTests in Test).value
             val multiNodeResults = multiExecuteTests.value
-            //        // FIXME no idea what this was doing
-            //        val overall =
-            //          if (testResults.overall.id < multiNodeResults.overall.id)
-            //            multiNodeResults.overall
-            //          else
-            //            testResults.overall
-            val overall = testResults.overall
+            val overall =
+              if (testResults.overall.id < multiNodeResults.overall.id)
+                multiNodeResults.overall
+              else
+                testResults.overall
 
             Tests.Output(
               overall,
@@ -83,6 +81,14 @@ object MultiNode extends AutoPlugin {
               testResults.summaries ++ multiNodeResults.summaries)
           }
         } else Nil)
+
+  implicit class TestResultOps(val self: TestResult) extends AnyVal {
+    def id: Int = self match {
+      case TestResult.Passed ⇒ 0
+      case TestResult.Failed ⇒ 1
+      case TestResult.Error  ⇒ 2
+    }
+  }
 }
 
 /**

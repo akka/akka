@@ -382,3 +382,4 @@ def akkaModule(name: String): Project =
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(akka.Formatting.formatSettings)
+    .enablePlugins(BootstrapGenjavadoc)

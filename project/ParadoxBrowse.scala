@@ -1,3 +1,5 @@
+package akka
+
 import com.lightbend.paradox.sbt.ParadoxPlugin
 import com.lightbend.paradox.sbt.ParadoxPlugin.autoImport._
 import sbt.Keys._
@@ -10,15 +12,16 @@ object ParadoxBrowse extends AutoPlugin {
   }
   import autoImport._
 
-  override def trigger = noTrigger
+  override def trigger = allRequirements
   override def requires = ParadoxPlugin
 
-  paradoxBrowse := {
-    import java.awt.Desktop
-    val rootDocFile = (target in (Compile, paradox)).value / "index.html"
-    val log = streams.value.log
-    if (!rootDocFile.exists()) log.info("No generated docs found, generate with the 'paradox' task")
-    else if (Desktop.isDesktopSupported) Desktop.getDesktop.open(rootDocFile)
-    else log.info(s"Couldn't open default browser, but docs are at $rootDocFile")
-  }
+  override lazy val projectSettings = Seq(
+    paradoxBrowse := {
+      import java.awt.Desktop
+      val rootDocFile = (paradox in Compile).value / "index.html"
+      val log = streams.value.log
+      if (Desktop.isDesktopSupported) Desktop.getDesktop.open(rootDocFile)
+      else log.info(s"Couldn't open default browser, but docs are at $rootDocFile")
+    }
+  )
 }
