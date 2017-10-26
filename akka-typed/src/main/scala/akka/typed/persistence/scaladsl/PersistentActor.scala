@@ -35,7 +35,7 @@ object PersistentActor {
     commandHandler:             CommandHandler[Command, Event, State],
     eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
-      recoveryCompleted = (_, state) ⇒ state)
+      recoveryCompleted = (_, _) ⇒ ())
 
   /**
    * Factories for effects - how a persitent actor reacts on a command
@@ -212,7 +212,7 @@ class PersistentBehavior[Command, Event, State](
   val initialState:                                          State,
   val commandHandler:                                        PersistentActor.CommandHandler[Command, Event, State],
   val eventHandler:                                          (State, Event) ⇒ State,
-  val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ State) extends UntypedBehavior[Command] {
+  val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit) extends UntypedBehavior[Command] {
   import PersistentActor._
 
   /** INTERNAL API */
@@ -222,7 +222,7 @@ class PersistentBehavior[Command, Event, State](
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ State): PersistentBehavior[Command, Event, State] =
+  def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State] =
     copy(recoveryCompleted = callback)
 
   /**
@@ -236,10 +236,10 @@ class PersistentBehavior[Command, Event, State](
   def snapshotOn(predicate: (State, Event) ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
 
   private def copy(
-    persistenceIdFromActorName: String ⇒ String                        = persistenceIdFromActorName,
-    initialState:               State                                  = initialState,
-    commandHandler:             CommandHandler[Command, Event, State]  = commandHandler,
-    eventHandler:               (State, Event) ⇒ State                 = eventHandler,
-    recoveryCompleted:          (ActorContext[Command], State) ⇒ State = recoveryCompleted): PersistentBehavior[Command, Event, State] =
+    persistenceIdFromActorName: String ⇒ String                       = persistenceIdFromActorName,
+    initialState:               State                                 = initialState,
+    commandHandler:             CommandHandler[Command, Event, State] = commandHandler,
+    eventHandler:               (State, Event) ⇒ State                = eventHandler,
+    recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted)
 }

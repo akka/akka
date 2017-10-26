@@ -62,7 +62,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
       state = snapshot.asInstanceOf[S]
 
     case RecoveryCompleted ⇒
-      state = behavior.recoveryCompleted(ctx, state)
+      behavior.recoveryCompleted(ctx, state)
 
     case event: E @unchecked ⇒
       state = applyEvent(state, event)

@@ -119,7 +119,6 @@ object PersistentActorCompileOnlyTest {
           state.dataByCorrelationId.foreach {
             case (correlationId, data) ⇒ performSideEffect(ctx.self, correlationId, data)
           }
-          state
         }
       }
 
@@ -342,7 +341,6 @@ object PersistentActorCompileOnlyTest {
         }).onRecoveryCompleted((ctx, state) ⇒ {
           val ad = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
           state.foreach(id ⇒ metadataRegistry ! GetMetaData(id, ad))
-          state
         })
     }
   }
