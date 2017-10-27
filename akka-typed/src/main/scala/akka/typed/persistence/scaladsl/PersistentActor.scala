@@ -3,8 +3,8 @@
  */
 package akka.typed.persistence.scaladsl
 
-import scala.collection.{immutable => im}
-import akka.annotation.{ApiMayChange, DoNotInherit, InternalApi}
+import scala.collection.{ immutable ⇒ im }
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.typed.Behavior.UntypedBehavior
 import akka.typed.Signal
 import akka.typed.persistence.internal.PersistentActorImpl
@@ -98,7 +98,7 @@ object PersistentActor {
     def apply[Event, State](effect: Effect[Event, State], sideEffects: ChainableEffect[Event, State]): Effect[Event, State] =
       CompositeEffect[Event, State](
         if (effect.events.isEmpty) None else Some(effect),
-        sideEffects.asInstanceOf[im.Seq[ChainableEffect[Event, State]]])
+        sideEffects :: Nil)
   }
 
   @InternalApi
