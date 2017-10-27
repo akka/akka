@@ -3,15 +3,15 @@
  */
 package akka.typed.persistence.scaladsl
 
-import scala.collection.{ immutable ⇒ im }
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
+import scala.collection.{immutable => im}
+import akka.annotation.{ApiMayChange, DoNotInherit, InternalApi}
 import akka.typed.Behavior.UntypedBehavior
 import akka.typed.Signal
 import akka.typed.persistence.internal.PersistentActorImpl
 import akka.typed.scaladsl.ActorContext
 
 object PersistentActor {
+
   /**
    * Create a `Behavior` for a persistent actor.
    */
@@ -145,11 +145,20 @@ object PersistentActor {
    * [[CommandHandler#byState]].
    */
   object CommandHandler {
-    def apply[Command, Event, State](commandHandler: CommandToEffect[Command, Event, State]): CommandHandler[Command, Event, State] =
+
+    /**
+     * Create a command handler that will be applied for commands.
+     *
+     * @see [[Effect]] for possible effects of a command.
+     */
+    // Note: using full parameter type instead of type aliase here to make API more straight forward to figure out in an IDE
+    def apply[Command, Event, State](commandHandler: (ActorContext[Command], State, Command) ⇒ Effect[Event, State]): CommandHandler[Command, Event, State] =
       new CommandHandler(commandHandler, Map.empty)
 
     /**
      * Convenience for simple commands that don't need the state and context.
+     *
+     * @see [[Effect]] for possible effects of a command.
      */
     def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): CommandHandler[Command, Event, State] =
       apply((_, _, cmd) ⇒ commandHandler(cmd))
@@ -195,7 +204,8 @@ object PersistentActor {
     @InternalApi private[akka] def sigHandler(state: State): SignalHandler[Command, Event, State] =
       signalHandler
 
-    def onSignal(handler: SignalHandler[Command, Event, State]): CommandHandler[Command, Event, State] =
+    // Note: using full parameter type instead of type alias here to make API more straight forward to figure out in an IDE
+    def onSignal(handler: PartialFunction[(ActorContext[Command], State, Signal), Effect[Event, State]]): CommandHandler[Command, Event, State] =
       withSignalHandler(signalHandler.orElse(handler))
 
     /** INTERNAL API */
