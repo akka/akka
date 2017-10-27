@@ -1,9 +1,9 @@
 # Source Streaming
 
-Akka HTTP supports completing a request with an Akka `Source[T, _]`, which makes it possible to easily build
+Akka HTTP supports completing a request with an Akka @scala[`Source[T, _]`]@java[`Source<T, ?>`], which makes it possible to easily build
 and consume streaming end-to-end APIs which apply back pressure throughout the entire stack. 
 
-It is possible to complete requests with raw `Source[ByteString, _]`, however often it is more convenient to 
+It is possible to complete requests with raw @scala[`Source[ByteString, _]`]@java[`Source<ByteString, ?>`], however often it is more convenient to 
 stream on an element-by-element basis, and allow Akka HTTP to handle the rendering internally - for example as a JSON array,
 or CSV stream (where each element is separated by a newline).
 
@@ -19,16 +19,30 @@ use case.
 
 In the below examples, we'll be referring to the `Tweet` and `Measurement` case classes as our model, which are defined as:
 
-@@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #models }
+Scala
+:   @@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #models }
+
+Java
+:   @@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #models }
+
+@@@ div { .group-scala }
 
 And as always with `spray-json`, we provide our marshaller and unmarshaller instances as implicit values using the `jsonFormat##`
 method to generate them statically:
 
-@@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #formats }
+@@@
+
+Scala
+:   @@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #formats }
+
+Java
+:   @@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #formats }
 
 ## Responding with JSON Streams
 
 In this example we implement an API representing an infinite stream of tweets, very much like Twitter's [Streaming API](https://dev.twitter.com/streaming/overview).
+
+@@@ div { .group-scala }
 
 Firstly, we'll need to get some additional marshalling infrastructure set up, that is able to marshal to and from an
 Akka Streams `Source[T,_]`. One such trait, containing the needed marshallers is `SprayJsonSupport`, which uses
@@ -40,12 +54,40 @@ and enable JSON Streaming by making an implicit `EntityStreamingSupport` instanc
 Akka HTTP pre-packages JSON and CSV entity streaming support, however it is simple to add your own, in case you'd
 like to stream a different content type (for example plists or protobuf).
 
+@@@
+
+@@@ div { .group-java }
+
+Firstly, we'll need to get some additional marshalling infrastructure set up, that is able to marshal to and from an
+Akka Streams `Source<T, ?>`. Here we'll use the `Jackson` helper class from `akka-http-jackson` (a separate library
+that you should add as a dependency if you want to use Jackson with Akka HTTP).
+
+First we enable JSON Streaming by making an implicit `EntityStreamingSupport` instance available (Step 1).
+
+The default mode of rendering a `Source` is to represent it as an JSON Array. If you want to change this representation
+for example to use Twitter style new-line separated JSON objects, you can do so by configuring the support trait accordingly.
+
+In Step 1.1. we demonstrate how to configure the rendering to be new-line separated, and also how parallel marshalling 
+can be applied. We configure the Support object to render the JSON as series of new-line separated JSON objects,
+simply by providing the `start`, `sep` and `end` ByteStrings, which will be emitted at the appropriate
+places in the rendered stream. Although this format is *not* valid JSON, it is pretty popular since parsing it is relatively
+simple - clients need only to find the new-lines and apply JSON unmarshalling for an entire line of JSON.
+
+
+@@@
+
 The final step is simply completing a request using a Source of tweets, as simple as that:
 
-@@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #spray-json-response-streaming }
+Scala
+:   @@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #spray-json-response-streaming }
+
+Java
+:   @@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #response-streaming }
 
 The reason the `EntityStreamingSupport` has to be enabled explicitly is that one might want to configure how the 
 stream should be rendered. We'll discuss this in depth in the next section though.
+
+@@@ div { .group-scala }
 
 ### Customising response rendering mode
 
@@ -63,13 +105,15 @@ The line-by-line approach however is also pretty popular even though it is not v
 client-side parsing is a strong point in case to pick this format for your Streaming APIs.
 Below we demonstrate how to reconfigure the support trait to render the JSON line-by-line.
 
-@@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #line-by-line-json-response-streaming }
+Scala
+:   @@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #line-by-line-json-response-streaming }
 
 Another interesting feature is parallel marshalling. Since marshalling can potentially take much time,
 it is possible to marshal multiple elements of the stream in parallel. This is simply a configuration 
 option on `EntityStreamingSupport` and is configurable like this:
 
-@@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #async-rendering }
+Scala
+:   @@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #async-rendering }
 
 The above shown mode preserves ordering of the Source's elements, which may sometimes be a required property,
 for example when streaming a strictly ordered dataset. Sometimes the concept of strict order does not apply to the
@@ -77,10 +121,13 @@ data being streamed, though, which allows us to exploit this property and use an
 
 This `unordered` rendering can be enabled via a configuration option as shown below. Effectively, this allows Akka HTTP's marshalling infrastructure to concurrently marshall up to as many elements as defined in `parallelism` and emit the first one which is marshalled into the `HttpResponse`:
 
-@@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #async-unordered-rendering }
+Scala
+:   @@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #async-unordered-rendering }
 
 This allows us to _potentially_ render elements faster into the HttpResponse, since it can avoid "head of line blocking",
 in case one element in front of the stream takes a long time to marshall, yet others after it are very quick to marshall.
+
+@@@
 
 ## Consuming JSON Streaming uploads
 
@@ -91,7 +138,11 @@ In this example, we want to consume this data in a streaming fashion from the re
 back pressure to the underlying TCP connection should the server be unable to cope with the rate of incoming data. Back pressure
 is automatically applied thanks to @extref[Akka Streams](akka-docs:scala/stream/index.html).
 
-@@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #spray-json-request-streaming }
+Scala
+:   @@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #spray-json-request-streaming }
+
+Java
+:   @@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #incoming-request-streaming }
 
 ## Simple CSV streaming example
 
@@ -102,16 +153,22 @@ and that the streaming support operates on the same `Content-Type` as the render
 an error during runtime that the marshaller did not expose the expected content type and thus we can't render
 the streaming response).
 
-@@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #csv-example }
+Scala
+:   @@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #csv-example }
+
+Java
+:   @@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #csv-example }
 
 ## Implementing custom EntityStreamingSupport traits
 
 The `EntityStreamingSupport` infrastructure is open for extension and not bound to any single format, content type,
-or marshalling library. The provided JSON support does not rely on `spray-json` directly, but uses `Marshaller[T, ByteString]`
+or marshalling library. The provided JSON support does not rely on `spray-json` directly, but uses @scala[`Marshaller[T, ByteString]`]@java[`Marshaller<T, ByteString>`]
 instances, which can be provided using any JSON marshalling library (such as Circe, Jawn or Play JSON).
 
 When implementing a custom support trait, one should simply extend the `EntityStreamingSupport` abstract class
 and implement all of its methods. It's best to use the existing implementations as a guideline.
+
+@@@ div { .group-scala }
 
 ## Supporting custom content types
 
@@ -122,4 +179,7 @@ Refer to the complete example below, showcasing how to configure a custom marsha
 the entity streaming support's content type to be compatible. This is an area that would benefit from additional type safety,
 which we hope to add in a future release.
 
-@@snip [JsonStreamingFullExamples.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingFullExamples.scala) { #custom-content-type }
+Scala
+:   @@snip [JsonStreamingFullExamples.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingFullExamples.scala) { #custom-content-type }
+
+@@@
