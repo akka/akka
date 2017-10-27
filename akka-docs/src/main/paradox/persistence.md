@@ -806,6 +806,170 @@ For more advanced schema evolution techniques refer to the @ref:[Persistence - S
 
 ## Testing
 
+### Persistence TestKit
+
+There is the persistence testkit for testing persistent actors. 
+It allows to check messages saved in storage, emulate storage exceptions and behavior.
+
+To use the testkit you need to add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence-testkit_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+There are two testkit classes which have similar api:
+
+ * @scala[`PersistenceTestKit` class]@java[`PersistenceTestKit` class] is for messages
+ * @scala[`SnapshotTestKit` class]@java[`SnapshotTestKit` class] is for snapshots
+ 
+The testkit classes have two corresponding plugins which emulate the behavior of the storages: 
+
+ * @scala[`PersistenceTestKitPlugin` class]@java[`PersistenceTestKitPlugin` class] emulates a messages storage 
+ * @scala[`PersistenceTestKitSnapshotPlugin` class]@java[`PersistenceTestKitSnapshotPlugin` class] emulates a snapshots storage
+
+**Note!** The corresponding plugins **must** be configured in the actor system which is used to initialize the particular testkit class:
+
+Scala
+:  @@snip [Configuration.scala](/akka-docs/src/test/scala/docs/persistence/testkit/Configuration.scala) { #testkit-conf }
+
+Java
+:  @@snip [Configuration.java](/akka-docs/src/test/java/jdocs/persistence/testkit/Configuration.java) { #testkit-conf }
+
+and
+
+Scala
+:  @@snip [Configuration.scala](/akka-docs/src/test/scala/docs/persistence/testkit/Configuration.scala) { #snapshot-conf }
+
+Java
+:  @@snip [Configuration.java](/akka-docs/src/test/java/jdocs/persistence/testkit/Configuration.java) { #snapshot-conf }
+
+A typical scenario is to create a persistent actor, send messages to it and check that it persists data as it is expected:
+
+Scala
+:  @@snip [TestKitExamples.scala](/akka-docs/src/test/scala/docs/persistence/testkit/TestKitExamples.scala) { #testkit-usecase }
+
+Java
+:  @@snip [TestKitExamples.java](/akka-docs/src/test/java/jdocs/persistence/testkit/TestKitExamples.java) { #testkit-usecase }
+
+You can safely use persistence testkit in combination with main akka testkit.
+
+The main methods of the api are:
+
+ * @scala[`def expectNextPersisted[A](persistenceId: String, msg: A): A`]@java[`public A expectNextPersisted<A>(String persistenceId, A msg)`]
+The given message object must be persisted in the storage.
+ * @scala[`def expectNextPersistedPF[A](persistenceId: String)(pf: PartialFunction[Any, A]): A`]@java[`public <A> A expectNextPersistedPF(String persistenceId, Function<Object, A> pf )`]
+The given message object persisted in the storage must match the partial function.
+ * @scala[`def expectNothingPersisted(persistenceId: String): Unit`]@java[`public void expectNothingPersisted(String persistenceId)`]
+No messages must be persisted in the storage.
+ * @scala[`def failNextPersisted(): Unit`]@java[`public void failNextPersisted()`]
+Throw the default exception from the storage on attempt to persist a message.
+ * @scala[`def failNextRead(): Unit`]@java[`public void failNextRead()`]
+Throw the default exception from the storage on attempt to read from the storage.
+ * @scala[`def failNextDelete(): Unit`]@java[`public void failNextDelete()`]
+Throw the default exception from the storage on attempt to delete messages from the storage.
+ * @scala[`def expectPersistedInOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A]`]@java[`public List<A> expectPersistedInOrder<A>(persistenceId: String, msgs: List<A>)`]
+The given messages must be persisted in the storage in order.
+ * @scala[`def expectPersistedInAnyOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A]`]@java[`public List<A> expectPersistedInAnyOrder<A>(persistenceId: String, msgs: List<A>)`]
+The given messages must be persisted in the storage regardless of order.
+ * @scala[`def clearAll(): Unit`]@java[`public void clearAll()`]
+Clear all the messages persisted in storage.
+ * @scala[`def clearByPersistenceId(persistenceId: String): Unit`]@java[`public void clearByPersistenceId(String persistenceId)`]
+Clear all the messages from the storage by persistence id.
+
+Message storage may also reject messages and PersistenceTestKit additionally has:
+
+ * @scala[`def persistForRecovery(persistenceId: String, elems: immutable.Seq[Any]): Unit`]@java[`public void persistForRecovery(String persistenceId, List<Object> elems)`]
+This method allows you to persist messages directly in the storage to test recovery.
+ * @scala[`def persistedInStorage(persistenceId: String): immutable.Seq[Any]`]@java[`public List<Object> persistedInStorage(String persistenceId)`]
+Read all the messages that were saved with particular persistence id.
+ * @scala[`def rejectNextPersisted(): Unit`]@java[`public void rejectNextPersisted()`]
+Reject a message persisted in the storage. 
+ * @scala[`def rejectNextRead(): Unit`]@java[`public void rejectNextRead()`]
+Reject a read from the storage. It can be read of the messages for recovery or read of a sequence number.
+ * @scala[`def rejectNextDelete(): Unit`]@java[`public void rejectNextDelete()`]
+Reject delete from the storage. 
+ * @scala[`def clearAllPreservingSeqNumbers(): Unit`]@java[`public void clearAllPreservingSeqNumbers()`]
+The message storage must keep the highest sequence number ever after deletion of all the messages in the storage. 
+This method allows you to delete all the messages and save the sequence numbers.
+ * @scala[`def clearByIdPreservingSeqNumbers(persistenceId: String): Unit`]@java[`public void clearByIdPreservingSeqNumbers(String persistenceId)`]
+Delete all the messages from the storage by persistence id and keep highest sequence number for it. 
+ * @scala[`def withPolicy(policy: Policies.PolicyType): this.type`]@java[`public PersistenceTestKit withPolicy(ProcessingPolicy<JournalOperation>) policy)`]
+You can set your own [policy](#setting-your-own-policy-for-the-storage) which emulates work of a snapshot storage. 
+Policy determines what to do when persistence needs to execute some operation on the storage (i.e. read, delete etc.).
+ * @scala[`def returnDefaultPolicy(): Unit`]@java[`public void returnDefaultPolicy()`]
+This method returns the default policy. 
+It can be useful if you used `withPolicy()` method and want to return the default back.
+
+SnapshotTestKit additionally has:
+
+ * @scala[`def persistForRecovery(persistenceId: String, elems: immutable.Seq[(SnapshotMeta, Any)]): Unit`]@java[`public void persistForRecovery(String persistenceId, List<Pair<SnapshotMeta, Object>> elems)`]
+This method allows you to persist snapshots directly in the storage to test recovery. You also need to specify a metadata for your snapshots with the sequence number at which the snapshot was saved and optional timestamp.  
+ * @scala[`def persistedInStorage(persistenceId: String): immutable.Seq[(SnapshotMeta, Any)]`]@java[`public List<Pair<SnapshotMeta, Object>> persistedInStorage(String persistenceId)`]
+Read all the snapshots and their metadata that were saved with particular persistence id.
+ * @scala[`def withPolicy(policy: Policies.PolicyType): this.type`]@java[`public SnapshotTestKit withPolicy(ProcessingPolicy<SnapshotOperation>) policy)`]
+You can set your own [policy](#setting-your-own-policy-for-the-storage) which emulates work of a message storage. 
+Policy determines what to do when persistence needs to execute some operation on the storage (i.e. read, delete etc.).
+ * @scala[`def returnDefaultPolicy(): Unit`]@java[`public void returnDefaultPolicy()`] 
+This method returns the default policy. 
+It can be useful if you used `withPolicy()` method and want to return the default back. 
+
+<a id="setting-your-own-policy-for-the-storage"></a>
+#### Setting your own policy for the storage
+
+You can implement and set your own policy for the storage to control its behavior on particular operations, for example you can fail or reject messages on your own condition.
+Implement the @scala[`ProcessingPolicy[MessageStorage.JournalOperation] trait`]@java[`ProcessingPolicy<MessageStorage.JournalOperation> interface`] for message storage
+or @scala[`ProcessingPolicy[SnapshotStorage.SnapshotOperation] trait`]@java[`ProcessingPolicy<SnapshotStorage.SnapshotOperation> interface`] for snapshot storage,
+and set it with `withPolicy()` method.
+
+`tryProcess()` method of the `ProcessingPolicy` has two arguments: persistence id and the storage operation. 
+
+Message storage has the following operations:
+
+ * `Read` Read the messages from the storage.
+ * `Write` Write messages to the storage.
+ * `Delete` Delete messages from the storage.
+ * `ReadSeqNum` Read the highest sequence number for particular persistence id.
+
+Snapshot storage has the following operations:
+
+ * `Read` Read the snapshot from the storage.
+ * `Write` Writhe the snapshot to the storage.
+ * `DeleteByCriteria` Delete snapshots in the storage by criteria.
+ * `DeleteSnapshot` Delete particular snapshot from the storage by its metadata.
+
+The `tryProcess()` method must return one of the processing results:
+ 
+ * `ProcessingSuccess` Successful completion of the operation. All the messages will be saved/read/deleted.
+ * `StorageFailure` Emulates exception from the storage.
+ * `Reject` Emulates rejection from the storage.
+
+**Note** that snapshot storage does not have rejections. If you return `Reject` in the `tryProcess()` of the snapshot storage policy, it will have the same effect as the `StorageFailure`.
+
+Here is an example of the policy for message storage:
+
+Scala
+:  @@snip [TestKitExamples.scala](/akka-docs/src/test/scala/docs/persistence/testkit/TestKitExamples.scala) { #set-message-storage-policy }
+
+Java
+:  @@snip [TestKitExamples.java](/akka-docs/src/test/java/jdocs/persistence/testkit/TestKitExamples.java) { #set-message-storage-policy }
+
+Here is an example of the policy for snapshot storage:
+
+Scala
+:  @@snip [TestKitExamples.scala](/akka-docs/src/test/scala/docs/persistence/testkit/TestKitExamples.scala) { #set-snapshot-storage-policy }
+
+Java
+:  @@snip [TestKitExamples.java](/akka-docs/src/test/java/jdocs/persistence/testkit/TestKitExamples.java) { #set-snapshot-storage-policy } 
+
+#### Configuration of Persistence TestKit
+
+There are several configuration properties for persistence testkit, please refer
+to the @ref:[reference configuration](general/configuration.md#config-akka-persistence-testkit)
+
+### Testing with LevelDB journal
+
 When running tests with LevelDB default settings in `sbt`, make sure to set `fork := true` in your sbt project. Otherwise, you'll see an `UnsatisfiedLinkError`. Alternatively, you can switch to a LevelDB Java port by setting
 
 @@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #native-config }

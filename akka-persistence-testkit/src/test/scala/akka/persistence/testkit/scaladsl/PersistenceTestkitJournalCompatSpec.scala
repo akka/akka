@@ -1,0 +1,44 @@
+/*
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka.persistence.testkit.scaladsl
+
+import java.io.NotSerializableException
+
+import akka.persistence.CapabilityFlag
+import akka.persistence.journal.JournalSpec
+import akka.persistence.snapshot.SnapshotStoreSpec
+import akka.persistence.testkit.{ InMemStorageExtension, PersistenceTestKitPlugin, PersistenceTestKitSnapshotPlugin, ProcessingPolicy }
+import akka.persistence.testkit.MessageStorage.{ JournalOperation, JournalPolicies, Write }
+import akka.persistence.testkit.ProcessingPolicy.ProcessingSuccess
+import akka.persistence.testkit.ProcessingPolicy.Reject
+
+class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = PersistenceTestKitPlugin.config) {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    InMemStorageExtension(system).setPolicy(new JournalPolicies.PolicyType {
+      override def tryProcess(persistenceId: String, op: JournalOperation): ProcessingPolicy.ProcessingResult = {
+        op match {
+          case Write(batch) ⇒
+            val allSerializable =
+              batch
+                .filter(_.isInstanceOf[AnyRef])
+                .forall(_.isInstanceOf[java.io.Serializable])
+            if (allSerializable) {
+              ProcessingSuccess
+            } else {
+              Reject(new NotSerializableException("Some objects in the batch were not serializable"))
+            }
+          case _ ⇒ ProcessingSuccess
+        }
+
+      }
+    })
+  }
+
+  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = true
+}
+
+class PersistenceTestKitSnapshotStoreCompatSpec extends SnapshotStoreSpec(config = PersistenceTestKitSnapshotPlugin.config)

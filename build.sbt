@@ -60,6 +60,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   persistenceShared,
   persistenceTck,
   persistenceTyped,
+  persistenceTestKit,
   protobuf,
   protobufV3,
   remote,
@@ -180,6 +181,7 @@ lazy val docs = akkaModule("akka-docs")
     osgi,
     persistenceTck,
     persistenceQuery,
+    persistenceTestKit,
     distributedData,
     stream,
     stream % "TestJdk9->CompileJdk9",
@@ -266,6 +268,12 @@ lazy val persistenceTck = akkaModule("akka-persistence-tck")
   .settings(AutomaticModuleName.settings("akka.persistence.tck"))
   //.settings(OSGi.persistenceTck) TODO: we do need to export this as OSGi bundle too?
   .settings(fork in Test := true)
+  .disablePlugins(MimaPlugin)
+
+lazy val persistenceTestKit = akkaModule("akka-persistence-testkit")
+  .dependsOn(persistence % "compile->compile;provided->provided;test->test", testkit % "compile->compile;test->test", persistenceTck % "test")
+  .settings(Dependencies.persistenceTestKit)
+  .settings(AutomaticModuleName.settings("akka.persistence.testkit"))
   .disablePlugins(MimaPlugin)
 
 lazy val protobuf = akkaModule("akka-protobuf")
