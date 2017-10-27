@@ -4,11 +4,13 @@
 package akka
 
 import sbt._
-import sbtunidoc.Plugin.UnidocKeys._
-import sbtunidoc.Plugin.{ ScalaUnidoc, JavaUnidoc, Genjavadoc, scalaJavaUnidocSettings, genjavadocExtraSettings, scalaUnidocSettings }
 import sbt.Keys._
-import sbt.File
 import scala.annotation.tailrec
+import sbtunidoc.{ GenJavadocPlugin, JavaUnidocPlugin, ScalaUnidocPlugin }
+import sbtunidoc.BaseUnidocPlugin.autoImport.{ unidoc, unidocProjectFilter }
+import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
+import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
+import sbtunidoc.GenJavadocPlugin.autoImport.{ Genjavadoc, unidocGenjavadocVersion }
 
 object Doc {
   val BinVer = """(\d+\.\d+)\.\d+""".r
@@ -53,7 +55,7 @@ object Scaladoc extends AutoPlugin {
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
-  def scaladocVerifier(file: File): File= {
+  def scaladocVerifier(file: File): File = {
     @tailrec
     def findHTMLFileWithDiagram(dirs: Seq[File]): Boolean = {
       if (dirs.isEmpty) false
@@ -114,13 +116,14 @@ object UnidocRoot extends AutoPlugin {
   }
 
   override def trigger = noTrigger
+  override def requires = ScalaUnidocPlugin && CliOptions.genjavadocEnabled.ifTrue(JavaUnidocPlugin).getOrElse(plugins.JvmPlugin)
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
     javacOptions in (JavaUnidoc, unidoc) ++= Seq("-Xdoclint:none"),
     // genjavadoc needs to generate synthetic methods since the java code uses them
     scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
     // FIXME: see https://github.com/akka/akka-http/issues/230
-    sources in(JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
+    sources in (JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
   )).getOrElse(Nil)
 
   val settings = inTask(unidoc)(Seq(
@@ -129,7 +132,6 @@ object UnidocRoot extends AutoPlugin {
   ))
 
   override lazy val projectSettings =
-    CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++
     settings ++
     akkaSettings
 }
@@ -137,20 +139,18 @@ object UnidocRoot extends AutoPlugin {
 /**
  * Unidoc settings for every multi-project. Adds genjavadoc specific settings.
  */
-object Unidoc extends AutoPlugin {
+object BootstrapGenjavadoc extends AutoPlugin {
 
   override def trigger = allRequirements
-  override def requires = plugins.JvmPlugin
+  override def requires = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(GenJavadocPlugin).getOrElse(plugins.JvmPlugin)
 
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
-    genjavadocExtraSettings ++ Seq(
+    Seq(
       javacOptions in compile += "-Xdoclint:none",
       javacOptions in test += "-Xdoclint:none",
       javacOptions in doc += "-Xdoclint:none",
       scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
-      unidocGenjavadocVersion in Global := "0.10",
-      // FIXME: see https://github.com/akka/akka-http/issues/230
-      sources in(Genjavadoc, doc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
+      unidocGenjavadocVersion in Global := "0.10"
     )
   ).getOrElse(Seq.empty)
 }

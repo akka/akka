@@ -9,7 +9,7 @@ object Whitesource extends AutoPlugin {
 
   override def trigger = allRequirements
 
-  def majorMinor(version: String): Option[String] ="""\d+\.\d+""".r.findFirstIn(version)
+  def majorMinor(version: String): Option[String] = """\d+\.\d+""".r.findFirstIn(version)
 
   override lazy val projectSettings = Seq(
     // do not change the value of whitesourceProduct

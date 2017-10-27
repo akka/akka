@@ -80,7 +80,7 @@ object Dependencies {
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
     ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(nominalScalaVersion))
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   )
 
   lazy val httpCore = l ++= Seq(
@@ -95,8 +95,8 @@ object Dependencies {
 
   lazy val httpTestkit = l ++= Seq(
     Test.junit, Test.junitIntf, Compile.junit % "provided",
-    Test.scalatest.value.copy(configurations = Some("provided; test")),
-    Test.specs2.value.copy(configurations = Some("provided; test"))
+    Test.scalatest.value.withConfigurations(Some("provided; test")),
+    Test.specs2.value.withConfigurations(Some("provided; test"))
   )
 
   lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)

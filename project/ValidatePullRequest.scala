@@ -7,13 +7,14 @@ import com.typesafe.tools.mima.plugin.MimaKeys.mimaReportBinaryIssues
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
 import net.virtualvoid.sbt.graph.ModuleGraph
-import org.kohsuke.github.{GHIssueComment, GitHubBuilder}
-import sbtunidoc.Plugin.UnidocKeys.unidoc
+import org.kohsuke.github.{ GHIssueComment, GitHubBuilder }
+import sbtunidoc.BaseUnidocPlugin.autoImport.unidoc
 import sbt.Keys._
 import sbt._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.sys.process._
 import scala.util.matching.Regex
 
 object ValidatePullRequest extends AutoPlugin {
@@ -124,9 +125,9 @@ object ValidatePullRequest extends AutoPlugin {
     buildAllKeyword in Global in ValidatePR := """PLS BUILD ALL""".r,
 
     gitHubEnforcedBuildAll in Global in ValidatePR := {
+      val log = streams.value.log
+      val buildAllMagicPhrase = (buildAllKeyword in ValidatePR).value
       sys.env.get(PullIdEnvVarName).map(_.toInt) flatMap { prId =>
-        val log = streams.value.log
-        val buildAllMagicPhrase = (buildAllKeyword in ValidatePR).value
         log.info("Checking GitHub comments for PR validation options...")
 
         try {
@@ -198,9 +199,9 @@ object ValidatePullRequest extends AutoPlugin {
       val thisProjectId = CrossVersion(scalaVersion.value, scalaBinaryVersion.value)(projectID.value)
 
       def graphFor(updateReport: UpdateReport, config: Configuration): (Configuration, ModuleGraph) =
-        config -> SbtUpdateReport.fromConfigurationReport(updateReport.configuration(config.name).get, thisProjectId)
+        config -> SbtUpdateReport.fromConfigurationReport(updateReport.configuration(config).get, thisProjectId)
 
-      def isDependency: Boolean =
+      def isDependency: Boolean = {
         changedDirectoryIsDependency(
           changedDirs,
           name.value,
@@ -210,6 +211,7 @@ object ValidatePullRequest extends AutoPlugin {
             graphFor((update in Runtime).value, Runtime),
             graphFor((update in Provided).value, Provided),
             graphFor((update in Optional).value, Optional)))(log)
+      }
 
       if (githubCommandEnforcedBuildAll.isDefined)
         githubCommandEnforcedBuildAll.get

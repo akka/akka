@@ -53,7 +53,7 @@ lazy val root = Project(
     // Unidoc doesn't like macros
     unidocProjectExcludes := Seq(parsing),
     deployRsyncArtifact :=
-      (sbtunidoc.Plugin.UnidocKeys.unidoc in Compile).value zip Seq(s"www/api/akka-http/${version.value}", s"www/japi/akka-http/${version.value}")
+      (unidoc in Compile).value zip Seq(s"www/api/akka-http/${version.value}", s"www/japi/akka-http/${version.value}")
   )
   .aggregate(
     parsing,
@@ -75,23 +75,26 @@ lazy val parsing = project("akka-parsing")
   .addAkkaModuleDependency("akka-actor")
 
 lazy val httpCore = project("akka-http-core")
+  .enablePlugins(BootstrapGenjavadoc)
   .settings(Dependencies.httpCore)
-  .settings(Version.versionSettings)
+  .settings(VersionGenerator.versionSettings)
   .dependsOn(parsing)
   .addAkkaModuleDependency("akka-stream")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
 
 lazy val http = project("akka-http")
+  .enablePlugins(BootstrapGenjavadoc)
   .dependsOn(httpCore)
 
 lazy val http2Support = project("akka-http2-support")
-  .enablePlugins(JavaAgent)
+  .enablePlugins(JavaAgent, BootstrapGenjavadoc)
   .disablePlugins(MimaPlugin) // experimental module still
   .settings(javaAgents += Dependencies.Compile.Test.alpnAgent)
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
 
 lazy val httpTestkit = project("akka-http-testkit")
+  .enablePlugins(BootstrapGenjavadoc)
   .settings(Dependencies.httpTestkit)
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream-testkit")
@@ -132,16 +135,18 @@ def project(name: String) =
 def httpMarshallersScalaSubproject(name: String) =
   Project(
     id = s"akka-http-$name",
-    base = file(s"akka-http-marshallers-scala/akka-http-$name"),
-    dependencies = Seq(http)
+    base = file(s"akka-http-marshallers-scala/akka-http-$name")
   )
+  .dependsOn(http)
+  .enablePlugins(BootstrapGenjavadoc)
 
 def httpMarshallersJavaSubproject(name: String) =
   Project(
     id = s"akka-http-$name",
     base = file(s"akka-http-marshallers-java/akka-http-$name"),
-    dependencies = Seq(http)
   )
+  .dependsOn(http)
+  .enablePlugins(BootstrapGenjavadoc)
 
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
