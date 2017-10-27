@@ -145,7 +145,7 @@ One example of a predefined directive relying `recoverPF` is the `optionalHeader
 ## Directives from Scratch
 
 The third option for creating custom directives is to do it “from scratch”,
-by directly subclassing the Directive class. The Directive is defined like this
+either by using `Directive.apply` or by subclassing `Directive` class directly. The `Directive` is defined like this
 (leaving away operators and modifiers):
 
 @@snip [Directive.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala) { #basic }
@@ -169,8 +169,15 @@ A `Directive[(String)]` extracts one String value (like the hostName directive).
 type Directive1[T] = Directive[Tuple1[T]]
 ```
 
-A `Directive[(Int, String)]` extracts an `Int` value and a `String` value
-(like a `parameters('a.as[Int], 'b.as[String])` directive).
+A `Directive[(String, Int)]` extracts a `String` value and an `Int` value
+(like a `parameters('a.as[String], 'b.as[Int])` directive). Such a directive can be defined to extract the 
+hostname and port of a request:
+
+@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-1 }
+
+Beside using `Directive.apply`, you can also extending `Directive` directly(This is actually uncommon and the first is preferable for common use cases):
+
+@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-2 }
 
 Keeping extractions as `Tuples` has a lot of advantages, mainly great flexibility
 while upholding full type safety and “inferability”. However, the number of times
