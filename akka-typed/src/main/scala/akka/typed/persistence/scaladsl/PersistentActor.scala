@@ -89,7 +89,7 @@ object PersistentActor {
       CompositeEffect(this, SideEffect[Event, State]((_: State) ⇒ callback))
 
     /** The side effect is to stop the actor */
-    def andThenStop[E >: Event]: Effect[Event, State] =
+    def andThenStop: Effect[Event, State] =
       CompositeEffect(this, Effect.stop[Event, State])
   }
 

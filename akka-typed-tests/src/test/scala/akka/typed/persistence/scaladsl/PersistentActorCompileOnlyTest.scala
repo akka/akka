@@ -398,22 +398,20 @@ object PersistentActorCompileOnlyTest {
     sealed trait Event
     case object Done extends Event
 
-    type State = Unit
+    class State
 
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "myPersistenceId",
-      initialState = (),
-      commandHandler = CommandHandler { (_, _, cmd) ⇒
-        cmd match {
-          case Enough ⇒
+      initialState = new State,
+      commandHandler = CommandHandler.command {
+        case Enough ⇒
+          Effect.persist(Done)
+            .andThen(println("yay"))
+            .andThenStop
 
-            Effect.persist(Done)
-              .andThen((_: State) ⇒ println("yay"))
-              .andThenStop
-        }
       },
       eventHandler = {
-        case (_, Done) ⇒ ()
+        case (state, Done) ⇒ state
       })
   }
 
