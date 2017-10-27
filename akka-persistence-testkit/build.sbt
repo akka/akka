@@ -1,0 +1,6 @@
+import akka._
+
+AkkaBuild.defaultSettings
+Formatting.formatSettings
+
+Dependencies.persistenceTestKit

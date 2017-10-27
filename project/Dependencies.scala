@@ -186,6 +186,8 @@ object Dependencies {
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
+  val persistenceTestKit = l ++= Seq(Test.scalatest.value)
+
   val camel = l ++= Seq(camelCore, Provided.jaxb, Provided.activation, Test.scalatest.value, Test.junit, Test.mockito, Test.logback, Test.commonsIo)
 
   val osgi = l ++= Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest.value, Test.junit)
