@@ -452,7 +452,7 @@ object Source {
    * Combines two sources with fan-in strategy like `Merge` or `Concat` and returns `Source` with a materialized value.
    */
   def combineMat[T, U, M1, M2, M](first: Source[T, M1], second: Source[T, M2])(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed])(matF: (M1, M2) ⇒ M): Source[U, M] = {
-    val secondPartiallyCombined = GraphDSL.create(second) { implicit b ⇒ secondShape =>
+    val secondPartiallyCombined = GraphDSL.create(second) { implicit b ⇒ secondShape ⇒
       import GraphDSL.Implicits._
       val c = b.add(strategy(2))
       secondShape ~> c.in(1)
