@@ -46,10 +46,10 @@ final class Source[+Out, +Mat](
 
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
     if (flow.traversalBuilder eq Flow.identityTraversalBuilder)
-      if(combine == Keep.left)
+      if (combine == Keep.left)
         //optimization by returning this
         this.asInstanceOf[Source[T, Mat3]] //Mat == Mat3, due to Keep.left
-      else if(combine == Keep.right || combine == Keep.none) // Mat3 = NotUsed
+      else if (combine == Keep.right || combine == Keep.none) // Mat3 = NotUsed
         //optimization with LinearTraversalBuilder.empty()
         new Source[T, Mat3](
           traversalBuilder.append(LinearTraversalBuilder.empty(), flow.shape, combine),
