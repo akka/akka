@@ -487,7 +487,7 @@ import scala.util.control.NonFatal
       if (currentInterpreter == null || (currentInterpreter.context ne self))
         self ! asyncInput
       else enqueueToShortCircuit(asyncInput)
-    }, settings.fuzzingMode, self)
+    }, settings.fuzzingMode, self, settings.alwaysLogErrors)
 
   // TODO: really needed?
   private var subscribesPending = 0

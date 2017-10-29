@@ -193,7 +193,8 @@ import scala.util.control.NonFatal
   val connections:  Array[GraphInterpreter.Connection],
   val onAsyncInput: (GraphStageLogic, Any, (Any) ⇒ Unit) ⇒ Unit,
   val fuzzingMode:  Boolean,
-  val context:      ActorRef) {
+  val context:      ActorRef,
+  val alwaysLogErrors: Boolean) {
 
   import GraphInterpreter._
 
@@ -586,7 +587,7 @@ import scala.util.control.NonFatal
 
   private[stream] def fail(connection: Connection, ex: Throwable): Unit = {
     val currentState = connection.portState
-    if (Debug) println(s"$Name   fail($connection, $ex) [$currentState]")
+    if(alwaysLogErrors) log.error(ex, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), ex.getMessage)
     connection.portState = currentState | OutClosed
     if ((currentState & (InClosed | OutClosed)) == 0) {
       connection.portState = currentState | (OutClosed | InFailed)
