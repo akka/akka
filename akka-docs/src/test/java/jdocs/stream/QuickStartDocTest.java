@@ -44,7 +44,7 @@ public class QuickStartDocTest extends AbstractJavaTest {
     //#create-source
     
     //#run-source
-    source.runForeach(i -> System.out.println(i), materializer);
+    source.runForeach(System.out::println, materializer);
     //#run-source
     
     //#transform-source
@@ -69,14 +69,14 @@ public class QuickStartDocTest extends AbstractJavaTest {
       //#add-streams
       .take(2)
       //#add-streams
-      .runForeach(s -> System.out.println(s), materializer);
+      .runForeach(System.out::println, materializer);
     //#add-streams
     
     //#run-source-and-terminate
     final CompletionStage<Done> done =
-      source.runForeach(i -> System.out.println(i), materializer);
+      source.runForeach(System.out::println, materializer);
 
-    done.thenRun(() -> system.terminate());
+    done.thenRun(system::terminate);
     //#run-source-and-terminate
 
     done.toCompletableFuture().get();
