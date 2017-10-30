@@ -66,7 +66,7 @@ public class SomeActor extends AbstractActor {
 }
 ```
 
-See @ref:[Receive messages](../../java/actors.md#actors-receive) documentation for more advice about how to implement
+See @ref:[Receive messages](../actors.md#receive-messages) documentation for more advice about how to implement
 `createReceive`.
 
 A few new methods have been added with deprecation of the old. Worth noting is `preRestart`.
@@ -212,7 +212,7 @@ public class SomeActor extends AbstractActor {
 }
 ```
 
-See @ref:[Receive messages](../../java/actors.md#actors-receive) documentation for more advice about how to implement
+See @ref:[Receive messages](../actors.md#receive-messages) documentation for more advice about how to implement
 `createReceive`.
 
 Similar with `UntypedActorWithStash`, `UntypedPersistentActor`, and
