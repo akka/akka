@@ -356,10 +356,10 @@ If you find yourself in need of fine grained control over order of emitted eleme
 scenarios consider using `MergePreferred`, `MergePrioritized` or `GraphStage` – which gives you full control over how the
 merge is performed.
 
-# Actor Materializer Life-cycle
+# Actor Materializer Lifecycle
 
 An important aspect of working with streams and actors is understanding an `ActorMaterializer`'s life-cycle.
-The materializer is bound to the life-cycle of the `ActorRefFactory` it is created from, which in practice will
+The materializer is bound to the lifecycle of the `ActorRefFactory` it is created from, which in practice will
 be either an `ActorSystem` or `ActorContext` (when the materializer is created within an `Actor`).
 
 The usual way of creating an `ActorMaterializer` is to create it next to your `ActorSystem`,
