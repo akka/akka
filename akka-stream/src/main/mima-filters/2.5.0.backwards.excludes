@@ -5,6 +5,7 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSink
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FilePublisher.props")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSubscriber.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FilePublisher.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.this")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GroupedWithin")
 
 ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.traversalBuilder")
