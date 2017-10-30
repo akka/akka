@@ -25,12 +25,6 @@ object Publish extends AutoPlugin {
     defaultPublishTo := crossTarget.value / "repository")
 
   def akkaPomExtra = {
-    /* The scm info is automatic from the sbt-git plugin
-    <scm>
-      <url>git://github.com/akka/akka.git</url>
-      <connection>scm:git:git@github.com:akka/akka.git</connection>
-    </scm>
-    */
     <inceptionYear>2009</inceptionYear>
     <developers>
       <developer>
@@ -58,5 +52,19 @@ object Publish extends AutoPlugin {
 
   private def akkaCredentials: Seq[Credentials] =
     Option(System.getProperty("akka.publish.credentials", null)).map(f ⇒ Credentials(new File(f))).toSeq
+}
 
+/**
+  * For projects that are not to be published.
+  */
+object NoPublish extends AutoPlugin {
+  override def requires = plugins.JvmPlugin
+
+  override def projectSettings = Seq(
+    publishArtifact := false,
+    publishArtifact in Compile := false,
+    publish := {},
+    skip in publish := true,
+    publishLocal := {}
+  )
 }

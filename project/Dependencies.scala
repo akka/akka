@@ -154,7 +154,7 @@ object Dependencies {
 
   val persistenceQuery = l ++= Seq(Test.scalatest.value, Test.junit, Test.commonsIo)
 
-  val persistenceTck = l ++= Seq(Test.scalatest.value.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
+  val persistenceTck = l ++= Seq(Test.scalatest.value.withConfigurations(Some("compile")), Test.junit.withConfigurations(Some("compile")))
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 

@@ -74,12 +74,21 @@ object MultiNode extends AutoPlugin {
                 multiNodeResults.overall
               else
                 testResults.overall
+
             Tests.Output(
               overall,
               testResults.events ++ multiNodeResults.events,
               testResults.summaries ++ multiNodeResults.summaries)
           }
         } else Nil)
+
+  implicit class TestResultOps(val self: TestResult) extends AnyVal {
+    def id: Int = self match {
+      case TestResult.Passed ⇒ 0
+      case TestResult.Failed ⇒ 1
+      case TestResult.Error  ⇒ 2
+    }
+  }
 }
 
 /**
