@@ -28,7 +28,9 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
     }
   }
 
-  override def afterAll() = testSystems.foreach(_.system.terminate())
+  override def afterAll(): Unit = testSystems.foreach { sys ⇒
+    TestKit.shutdownActorSystem(sys.system)
+  }
 }
 
 object ClusterSingletonProxySpec {
