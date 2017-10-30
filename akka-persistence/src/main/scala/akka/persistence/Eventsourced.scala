@@ -9,12 +9,12 @@ import java.util.UUID
 
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import akka.actor.{ DeadLetter, StashOverflowException }
+import akka.actor.{ StashOverflowException, DeadLetter, ActorCell }
 import akka.annotation.InternalApi
+import akka.dispatch.Envelope
 import akka.util.Helpers.ConfigOps
 import akka.event.Logging
 import akka.event.LoggingAdapter
-
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -62,7 +62,6 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   private var writeInProgress = false
   private var sequenceNr: Long = 0L
   private var _lastSequenceNr: Long = 0L
-  private var withinHandler = false
 
   // safely null because we initialize it with a proper `waitingRecoveryPermit` state in aroundPreStart before any real action happens
   private var currentState: State = null
@@ -359,7 +358,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   final private[akka] def internalDeferAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
     if (recoveryRunning) throw new IllegalStateException("Cannot defer during replay. Events can be deferred when receiving RecoveryCompleted or later.")
     if (pendingInvocations.isEmpty) {
-      applyHandler(handler, event)
+      handler(event)
     } else {
       pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
       eventBatch = NonPersistentRepr(event, sender()) :: eventBatch
@@ -391,9 +390,11 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   def recoveryFinished: Boolean = !recoveryRunning
 
   override def stash(): Unit = {
-    if (withinHandler)
-      throw new IllegalStateException("Do not call stash inside of persist callback.")
-    else super.stash()
+    context.asInstanceOf[ActorCell].currentMessage match {
+      case Envelope(_: JournalProtocol.Response, _) ⇒
+        throw new IllegalStateException("Do not call stash inside of persist callback.")
+      case _ ⇒ super.stash()
+    }
   }
 
   override def unstashAll() {
@@ -596,14 +597,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     flushJournalBatch()
   }
 
-  private def applyHandler[A](handler: A ⇒ Unit, payload: A): Unit = {
-    withinHandler = true
-    try handler(payload)
-    finally withinHandler = false
-  }
-
   private def peekApplyHandler(payload: Any): Unit =
-    try applyHandler(pendingInvocations.peek().handler, payload)
+    try pendingInvocations.peek().handler(payload)
     finally flushBatch()
 
   /**

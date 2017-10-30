@@ -155,7 +155,9 @@ object PersistentActorStashingSpec {
     val receiveCommand: Receive = {
       case Cmd("a") ⇒ persist(Evt("a"))(stashWithinHandler)
       case Cmd("b") ⇒ persistAsync(Evt("b"))(stashWithinHandler)
-      case Cmd("c") ⇒ deferAsync(Evt("c"))(stashWithinHandler)
+      case Cmd("c") ⇒
+        persist(Evt("x")) { _ ⇒ }
+        deferAsync(Evt("c"))(stashWithinHandler)
     }
 
   }
