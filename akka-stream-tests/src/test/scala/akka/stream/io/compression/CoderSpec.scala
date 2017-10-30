@@ -158,7 +158,7 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
 
   lazy val corruptContent = {
     val content = encode(largeText).toArray
-    content(14) = 26.toByte
+    content(14) = 36.toByte
     ByteString(content)
   }
 
