@@ -1,1 +1,0 @@
-../scala/event-bus.md

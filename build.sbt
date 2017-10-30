@@ -209,10 +209,11 @@ lazy val docs = akkaModule("akka-docs")
       "snip.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
       "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath
     ),
-    paradoxGroups := Map("Languages" -> Seq("Scala", "Java")),
-    resolvers += Resolver.jcenterRepo
+    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
+    resolvers += Resolver.jcenterRepo,
+    deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}"),
   )
-  .enablePlugins(AkkaParadoxPlugin, NoPublish, ParadoxBrowse, ScaladocNoVerificationOfDiagrams)
+  .enablePlugins(AkkaParadoxPlugin, DeployRsync, NoPublish, ParadoxBrowse, ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
