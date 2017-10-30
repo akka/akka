@@ -865,6 +865,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def shutdown(): Future[Done] = {
     if (hasBeenShutdown.compareAndSet(false, true)) {
       log.debug("Shutting down [{}]", localAddress)
+      Runtime.getRuntime.removeShutdownHook(shutdownHook)
       val allAssociations = associationRegistry.allAssociations
       val flushing: Future[Done] =
         if (allAssociations.isEmpty) Future.successful(Done)
