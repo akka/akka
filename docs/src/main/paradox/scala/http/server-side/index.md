@@ -13,7 +13,7 @@ It sports the following features:
 
 The server-side components of Akka HTTP are split into two layers:
 
-@ref[Low-Level Server-Side API](low-level-api.md)
+@ref[Low-Level Server-Side API](../../../scala/http/server-side/low-level-api.md)
 :  The basic low-level server implementation in the `akka-http-core` module.
 
 @ref[High-level Server-Side API](../routing-dsl/index.md)
@@ -36,9 +36,9 @@ from a background with non-"streaming first" HTTP Servers.
 
 @@@ index
 
-* [low-level-api](low-level-api.md)
-* [websocket-support](websocket-support.md)
-* [server-https-support](server-https-support.md)
-* [http2](http2.md)
+* [low-level-api](../../../scala/http/server-side/low-level-api.md)
+* [websocket-support](../../../scala/http/server-side/websocket-support.md)
+* [server-https-support](../../../scala/http/server-side/server-https-support.md)
+* [http2](../../../scala/http/server-side/http2.md)
 
 @@@

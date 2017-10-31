@@ -130,7 +130,7 @@ Scala
 Java
 :   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #discard-close-connections }
 
-Closing connections is also explained in depth in the @ref[Closing a connection](server-side/low-level-api.md#http-closing-connection-low-level)
+Closing connections is also explained in depth in the @ref[Closing a connection](../../scala/http/server-side/low-level-api.md#http-closing-connection-low-level)
 section of the docs.
 
 ### Pending: Automatic discarding of not used entities

@@ -1,6 +1,6 @@
 # High-level Server-Side API
 
-In addition to the @ref[Low-Level Server-Side API](../server-side/low-level-api.md) Akka HTTP provides a very flexible "Routing DSL" for elegantly
+In addition to the @ref[Low-Level Server-Side API](../../../scala/http/server-side/low-level-api.md) Akka HTTP provides a very flexible "Routing DSL" for elegantly
 defining RESTful web services. It picks up where the low-level API leaves off and offers much of the higher-level
 functionality of typical web servers or frameworks, like deconstruction of URIs, content negotiation or
 static content serving.
@@ -61,7 +61,7 @@ In this case the "binding future" will fail immediately, and we can react to it 
 
 @@@ note
 For a more low-level overview of the kinds of failures that can happen and also more fine-grained control over them
-refer to the @ref[Handling HTTP Server failures in the Low-Level API](../server-side/low-level-api.md#handling-http-server-failures-low-level) documentation.
+refer to the @ref[Handling HTTP Server failures in the Low-Level API](../../../scala/http/server-side/low-level-api.md#handling-http-server-failures-low-level) documentation.
 @@@
 
 ### Failures and exceptions inside the Routing DSL
