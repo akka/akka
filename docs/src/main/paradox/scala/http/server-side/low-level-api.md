@@ -1,22 +1,6 @@
 # Low-Level Server-Side API
 
-Apart from the @ref[HTTP Client](../client-side/index.md) Akka HTTP also provides an embedded,
-[Reactive-Streams](http://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of @scala[@extref[Streams](akka-docs:scala/stream/index.html)]@java[@extref[Streams](akka-docs:java/stream/index.html)].
-
-It sports the following features:
-
- * Full support for [HTTP persistent connections](http://en.wikipedia.org/wiki/HTTP_persistent_connection)
- * Full support for [HTTP pipelining](http://en.wikipedia.org/wiki/HTTP_pipelining)
- * Full support for asynchronous HTTP streaming including "chunked" transfer encoding accessible through an idiomatic API
- * Optional SSL/TLS encryption
- * WebSocket support
-
-The server-side components of Akka HTTP are split into two layers:
-
- 1. The basic low-level server implementation in the `akka-http-core` module
- 2. Higher-level functionality in the `akka-http` module
-
-The low-level server (1) is scoped with a clear focus on the essential functionality of an HTTP/1.1 server:
+The low-level server-side API is scoped with a clear focus on the essential functionality of an HTTP/1.1 server:
 
  * Connection management
  * Parsing and rendering of messages and headers
@@ -24,13 +8,9 @@ The low-level server (1) is scoped with a clear focus on the essential functiona
  * Response ordering (for transparent pipelining support)
 
 All non-core features of typical HTTP servers (like request routing, file serving, compression, etc.) are left to
-the higher layers, they are not implemented by the `akka-http-core`-level server itself.
+the @ref[higher layers](../routing-dsl/index.md), they are not implemented by the `akka-http-core`-level server itself.
 Apart from general focus this design keeps the server core small and light-weight as well as easy to understand and
 maintain.
-
-Depending on your needs you can either use the low-level API directly or rely on the high-level
-@ref[Routing DSL](../routing-dsl/index.md) which can make the definition of more complex service logic much
-easier.
 
 @@@ note
 It is recommended to read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md) section,
