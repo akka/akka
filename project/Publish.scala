@@ -61,11 +61,8 @@ object NoPublish extends AutoPlugin {
   override def requires = plugins.JvmPlugin
 
   override def projectSettings = Seq(
-    publishArtifact := false,
-    publishArtifact in Compile := false,
-    publish := {},
     skip in publish := true,
-    publishLocal := {}
+    skip in doc := true,
   )
 }
 
