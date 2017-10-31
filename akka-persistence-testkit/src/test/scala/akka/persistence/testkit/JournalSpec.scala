@@ -5,7 +5,7 @@ import akka.persistence.PersistentActor
 import akka.testkit.ImplicitSender
 import org.scalatest.WordSpecLike
 
-class JournalSpec extends PersistenceTestKitImpl with WordSpecLike with ImplicitSender {
+class JournalSpec extends PersistenceTestKit with WordSpecLike with ImplicitSender {
 
   "this spec" should {
 
@@ -14,9 +14,8 @@ class JournalSpec extends PersistenceTestKitImpl with WordSpecLike with Implicit
       val a = system.actorOf(Props[A])
 
       a ! B(1)
-      Thread.sleep(1000)
 
-      expectPersisted(B(1))
+      expectNextPersisted("111", B(1))
 
     }
 
