@@ -46,7 +46,7 @@ object MiMa extends AutoPlugin {
         case "2.12" ⇒
           akka24WithScala212 ++ akka25Versions
 
-        case "2.13" ⇒
+        case v if v.startsWith("2.13") =>
           // no Akka released for 2.13 yet, no jars to check BC against
           Seq.empty
       }
