@@ -146,6 +146,7 @@ import scala.concurrent.{ Future, Promise }
 
       private def unbindCompleted(): Unit = {
         stageActor.unwatch(listener)
+        unbindPromise.trySuccess(Done)
         if (connectionFlowsAwaitingInitialization.get() == 0) completeStage()
         else scheduleOnce(BindShutdownTimer, bindShutdownTimeout)
       }
@@ -156,7 +157,9 @@ import scala.concurrent.{ Future, Promise }
       }
 
       override def postStop(): Unit = {
-        unbindPromise.trySuccess(())
+        // a bit unexpected to succeed here rather than fail with abrupt stage termination
+        // but there was an existing test case covering this behavior
+        unbindPromise.trySuccess(Done)
         bindingPromise.tryFailure(new NoSuchElementException("Binding was unbound before it was completely finished"))
       }
     }
