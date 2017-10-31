@@ -26,7 +26,7 @@ slowing down the upstream producer to match their consumption speeds.
 In the context of Akka Streams back-pressure is always understood as *non-blocking* and *asynchronous*.
 
 Non-Blocking
-: Means that a certain operation does not hinder the progress of the calling thread, even if it takes long time to
+: Means that a certain operation does not hinder the progress of the calling thread, even if it takes a long time to
 finish the requested operation.
 
 Graph
