@@ -255,12 +255,12 @@ import scala.util.Random
   }
 
   /**
-   * Choose cross-dc nodes if this one of the N oldest nodes, and if not fall back to gosip locally in the dc
+   * Choose cross-dc nodes if this one of the N oldest nodes, and if not fall back to gossip locally in the dc
    */
   protected def multiDcGossipTargets(state: MembershipState): Vector[UniqueAddress] = {
-    val latestGossip = state.latestGossip
     // only a fraction of the time across data centers
-    if (selectDcLocalNodes()) localDcGossipTargets(state)
+    if (selectDcLocalNodes(state))
+      localDcGossipTargets(state)
     else {
       val nodesPerDc = state.ageSortedTopOldestMembersPerDc
 
@@ -321,7 +321,22 @@ import scala.util.Random
     }
   }
 
-  protected def selectDcLocalNodes(): Boolean = ThreadLocalRandom.current.nextDouble() > crossDcGossipProbability
+  /**
+   * For small DCs prefer cross DC gossip. This speeds up the bootstrapping of
+   * new DCs as adding an initial node means it has no local peers.
+   * Once the DC is at 5 members use the configured crossDcGossipProbability, before
+   * that for a single node cluster use 1.0, two nodes use 0.75 etc
+   */
+  protected def selectDcLocalNodes(state: MembershipState): Boolean = {
+    val localMembers = state.dcMembers.size
+    val probability = if (localMembers > 4)
+      crossDcGossipProbability
+    else {
+      // don't go below the configured probability
+      math.max((5 - localMembers) * 0.25, crossDcGossipProbability)
+    }
+    ThreadLocalRandom.current.nextDouble() > probability
+  }
 
   protected def preferNodesWithDifferentView(state: MembershipState): Boolean =
     ThreadLocalRandom.current.nextDouble() < adjustedGossipDifferentViewProbability(state.latestGossip.members.size)
