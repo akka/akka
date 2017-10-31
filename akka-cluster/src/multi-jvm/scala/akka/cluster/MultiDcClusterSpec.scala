@@ -19,7 +19,9 @@ class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString(
     s"""
-      akka.loglevel = INFO
+      # DEBUG On for issue #23864
+      akka.loglevel = DEBUG
+      akka.coordinated-shutdown.terminate-actor-system = off
       akka.cluster.multi-data-center.cross-data-center-connections = $crossDcConnections
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
@@ -71,7 +73,7 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
 
       runOn(first, second, third, fourth) {
         within(20.seconds) {
-          awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size (4))
+          awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size 4)
         }
       }
 
@@ -85,6 +87,7 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
         val dc1 = Set(address(first), address(second))
         dc1 should contain(clusterView.leader.get)
       }
+
       runOn(third, fourth) {
         cluster.settings.SelfDataCenter should ===("dc2")
         clusterView.leader shouldBe defined
@@ -109,7 +112,7 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
         // should be able to join and become up since the
         // unreachable is between dc1 and dc2,
         within(10.seconds) {
-          awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size (5))
+          awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size 5)
         }
       }
 
@@ -120,7 +123,7 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
       // should be able to join and become up since the
       // unreachable is between dc1 and dc2,
       within(10.seconds) {
-        awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size (5))
+        awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size 5)
       }
 
       enterBarrier("inter-data-center unreachability end")
@@ -133,12 +136,13 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
       enterBarrier("other-data-center-internal-unreachable")
 
       runOn(third) {
+        // FIXME This is already part of the cluster, is this intended? Joined on line 107
         cluster.join(fifth)
         // should be able to join and leave
         // since the unreachable nodes are inside of dc1
         cluster.leave(fourth)
 
-        awaitAssert(clusterView.members.map(_.address) should not contain (address(fourth)))
+        awaitAssert(clusterView.members.map(_.address) should not contain address(fourth))
         awaitAssert(clusterView.members.collect { case m if m.status == Up ⇒ m.address } should contain(address(fifth)))
       }
 
@@ -147,7 +151,7 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
       runOn(first) {
         testConductor.passThrough(first, second, Direction.Both).await
       }
-      enterBarrier("other-datac-enter-internal-unreachable end")
+      enterBarrier("other-data-center-internal-unreachable end")
     }
 
     "be able to down a member of another data-center" in within(20.seconds) {
@@ -156,10 +160,9 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
       }
 
       runOn(first, third, fifth) {
-        awaitAssert(clusterView.members.map(_.address) should not contain (address(second)))
+        awaitAssert(clusterView.members.map(_.address) should not contain address(second))
       }
       enterBarrier("cross-data-center-downed")
     }
-
   }
 }
