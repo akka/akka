@@ -37,15 +37,12 @@ along with the implementation of how the messages should be processed.
 @@@ div { .group-java }
 
 Actor classes are implemented by extending the `AbstractActor` class and setting
-the “initial behavior” in the constructor by calling the `receive` method in
-the `AbstractActor`.
+the “initial behavior” in `createReceive` method.
 
-The argument to the `receive` method is a `PartialFunction<Object,BoxedUnit>`
-that defines which messages your Actor can handle, along with the implementation of
-how the messages should be processed.
-
-Don't let the type signature scare you. To allow you to easily build up a partial
-function there is a builder named `ReceiveBuilder` that you can use.
+`createReceive` method has no arguments and returns `AbstractActor.Receive`. It 
+defines which messages your Actor can handle, along with the implementation of how 
+the messages should be processed. You can build such behavior with a builder named 
+`ReceiveBuilder`. This build has convenient factory in `AbstractActor` called `receiveBuilder`.
 
 @@@
 
@@ -57,8 +54,8 @@ Scala
 Java
 :  @@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #imports #my-actor }
 
-Please note that the Akka Actor `receive` message loop is exhaustive, which
-is different compared to Erlang and the late Scala Actors. This means that you
+Please note that the Akka Actor @scala[`receive`] message loop is exhaustive, which 
+is different compared to Erlang and the late Scala Actors. This means that you 
 need to provide a pattern match for all messages that it can accept and if you
 want to be able to handle unknown messages then you need to have a default case
 as in the example above. Otherwise an `akka.actor.UnhandledMessage(message,
@@ -69,8 +66,10 @@ Note further that the return type of the behavior defined above is `Unit`; if
 the actor shall reply to the received message then this must be done explicitly
 as explained below.
 
-The @scala[result of] @java[argument to] the `receive` method is a partial function object, which is
-stored within the actor as its “initial behavior”, see [Become/Unbecome](#become-unbecome) for
+The result of the @scala[`receive` method is a partial function object, which is]
+@java[`createReceive` method is `AbstractActor.Receive` which is a wrapper around partial 
+scala function object. It is] stored within the actor as its “initial behavior”, 
+see [Become/Unbecome](#become-unbecome) for
 further information on changing the behavior of an actor after its
 construction.
 
@@ -169,12 +168,13 @@ which simultaneously safe-guards against these edge cases.
 
 #### Recommended Practices
 
-It is a good idea to provide factory methods on the companion object of each
-`Actor` which help keeping the creation of suitable `Props` as
-close to the actor definition as possible. This also avoids the pitfalls
-associated with using the @scala[`Props.apply(...)`] @java[ `Props.create(...)`] method which takes a by-name
-argument, since within a companion object the given code block will not retain
-a reference to its enclosing scope:
+It is a good idea to provide @scala[factory methods on the companion object of each
+`Actor`] @java[static factory methods for each `Actor`] which help keeping the creation of 
+suitable `Props` as close to the actor definition as possible. This also avoids the pitfalls
+associated with using the @scala[`Props.apply(...)` method which takes a by-name
+argument, since within a companion object] @java[ `Props.create(...)` method which takes 
+arguments as constructor parameters, since within static method] 
+the given code block will not retain a reference to its enclosing scope:
 
 Scala
 :  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #props-factory }
@@ -320,7 +320,7 @@ last line.  Watching an actor is quite simple as well:
 
 @scala[The `Actor` trait defines only one abstract method, the above mentioned
 `receive`, which implements the behavior of the actor.]
-@java[The `AbstractActor` class defines a method called `receive`,
+@java[The `AbstractActor` class defines a method called `createReceive`,
 that is used to set the “initial behavior” of the actor.]
 
 If the current actor behavior does not match a received message,
