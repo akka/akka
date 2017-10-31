@@ -1,4 +1,3 @@
-<a id="alwayscache"></a>
 # alwaysCache
 
 ## Signature
@@ -7,7 +6,7 @@
 
 ## Description
 
-Like @ref[cache](cache.md#cache) but disregards a `Cache-Control` request header.
+Like @ref[cache](cache.md) but disregards a `Cache-Control` request header.
 
 ## Example
 

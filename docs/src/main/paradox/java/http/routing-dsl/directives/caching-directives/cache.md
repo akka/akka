@@ -1,12 +1,8 @@
 # cache
 
-## Signature
-
-@@signature [CachingDirectives.scala](../../../../../../../../../akka-http-caching/src/main/scala/akka/http/scaladsl/server/directives/CachingDirectives.scala) { #cache }
-
 ## Description
 
-Wraps its inner Route with caching support using the given `akka.http.caching.scaladsl.Cache` implementation and the provided keyer function.
+Wraps its inner Route with caching support using the given `akka.http.caching.javadsl.Cache` implementation and the provided keyer function.
 
 The directive tries to serve the request from the given cache and only if not found runs the inner route to generate a new response. A simple cache can be constructed using `routeCache` constructor.
 
@@ -14,4 +10,4 @@ The directive is implemented in terms of @ref[cachingProhibited](cachingProhibit
 
 ## Example
 
-@@snip [CachingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/CachingDirectivesExamplesSpec.scala) { #cache }
+@@snip [CachingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CachingDirectivesExamplesTest.java) { #cache }

@@ -40,7 +40,7 @@ class CachingDirectivesSpec extends WordSpec with Matchers with ScalatestRouteTe
     }
   }
 
-  "the cacheResults directive" should {
+  "the cache directive" should {
     "return and cache the response of the first GET" in {
       Get() ~> countingService ~> check { responseAs[String] shouldEqual "1" }
     }

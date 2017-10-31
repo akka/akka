@@ -14,8 +14,9 @@ To enable caching support add a library dependency onto:
   version="$project.version$"
 }
 
-Directives are available by importing
-`akka.http.scaladsl.server.directives.CachingDirectives`.
+Directives are available by importing:
+
+@@snip [CachingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CachingDirectivesExamplesTest.java) { #caching-directives-import }
 
 @@toc { depth=1 }
 

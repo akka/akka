@@ -18,5 +18,6 @@ which are specific to one side only.
 * [json-support](json-support.md)
 * [xml-support](xml-support.md)
 * [timeouts](timeouts.md)
+* [caching](caching.md)
 
 @@@

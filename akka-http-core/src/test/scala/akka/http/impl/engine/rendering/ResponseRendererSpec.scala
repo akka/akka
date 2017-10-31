@@ -576,9 +576,9 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         ResponseRenderingContext(
           response = HttpResponse(200, headers = resCH.toList,
             entity = if (resCD) HttpEntity.CloseDelimited(
-            ContentTypes.`text/plain(UTF-8)`,
-            Source.single(ByteString("ENTITY")))
-          else HttpEntity("ENTITY"), protocol = resProto),
+              ContentTypes.`text/plain(UTF-8)`,
+              Source.single(ByteString("ENTITY")))
+            else HttpEntity("ENTITY"), protocol = resProto),
           requestMethod = if (headReq) HttpMethods.HEAD else HttpMethods.GET,
           requestProtocol = reqProto,
           closeRequested = HttpMessage.connectionCloseExpected(reqProto, reqCH)) should renderTo(

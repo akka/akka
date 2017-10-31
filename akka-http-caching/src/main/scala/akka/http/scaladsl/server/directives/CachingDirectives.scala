@@ -6,8 +6,7 @@ package akka.http.scaladsl.server.directives
 
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
-import akka.http.caching.scaladsl.{ Cache, CachingSettingsImpl }
-import akka.http.caching.javadsl.{ CachingSettings }
+import akka.http.caching.scaladsl.{ Cache, CachingSettings }
 import akka.http.caching.LfuCache
 import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server._
@@ -54,15 +53,14 @@ trait CachingDirectives {
   }
 
   /**
-   * Creates an [[LfuCache]] with default settings obtained from the systems' configuration
+   * Creates an [[LfuCache]] with default settings obtained from the system's configuration.
    */
   @ApiMayChange // since perhaps we indeed have to hardcode the defaults in code rather than reference.conf?
   def routeCache[K](implicit s: ActorSystem): Cache[K, RouteResult] =
-    LfuCache[K, RouteResult](akka.http.caching.scaladsl.CachingSettings(s))
+    LfuCache[K, RouteResult](s)
 
   /**
    * Creates an [[LfuCache]].
-   * Default settings are available via [[akka.http.caching.scaladsl.CachingSettings.apply]].
    */
   def routeCache[K](settings: CachingSettings): Cache[K, RouteResult] =
     LfuCache[K, RouteResult](settings)

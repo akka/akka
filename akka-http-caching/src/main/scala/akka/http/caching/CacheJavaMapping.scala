@@ -20,4 +20,11 @@ private[akka] object CacheJavaMapping {
       def toJava(scalaObject: akka.http.caching.scaladsl.Cache[SK, SV]): Cache[JK, JV] =
         scalaObject.asInstanceOf[Cache[JK, JV]]
     }
+
+  object Implicits {
+    import scala.language.implicitConversions
+
+    implicit object CachingSettings extends JavaMapping.Inherited[javadsl.CachingSettings, scaladsl.CachingSettings]
+    implicit object LfuCacheSettings extends JavaMapping.Inherited[javadsl.LfuCacheSettings, scaladsl.LfuCacheSettings]
+  }
 }

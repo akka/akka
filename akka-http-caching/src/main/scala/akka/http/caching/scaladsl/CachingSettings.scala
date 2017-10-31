@@ -5,7 +5,6 @@ package akka.http.caching.scaladsl
 
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.caching.javadsl
-import akka.http.caching.javadsl.CachingSettings
 import akka.http.impl.util.SettingsCompanion
 import com.typesafe.config.Config
 
@@ -16,21 +15,25 @@ import akka.http.impl.util._
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class CachingSettings extends javadsl.CachingSettings { this: CachingSettingsImpl ⇒
+abstract class CachingSettings private[http] () extends javadsl.CachingSettings { self: CachingSettingsImpl ⇒
   override def lfuCacheSettings: LfuCacheSettings
 
+  // overloads for idiomatic Scala use
+  def withLfuCacheSettings(newSettings: LfuCacheSettings): CachingSettings =
+    self.copy(lfuCacheSettings = newSettings)
 }
+
 /** INTERNAL API */
 @InternalApi
 private[http] final case class CachingSettingsImpl(lfuCacheSettings: LfuCacheSettings) extends CachingSettings {
-  override def withLfuCacheSettings(newSettings: javadsl.LfuCacheSettings): CachingSettings = copy(lfuCacheSettings = newSettings.asInstanceOf[LfuCacheSettings])
+  override def productPrefix = "CachingSettings"
 }
 
 /**
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class LfuCacheSettings extends javadsl.LfuCacheSettings { self: LfuCacheSettingsImpl ⇒
+abstract class LfuCacheSettings private[http] () extends javadsl.LfuCacheSettings { self: LfuCacheSettingsImpl ⇒
   def maxCapacity: Int
   def initialCapacity: Int
   def timeToLive: Duration
@@ -41,11 +44,12 @@ abstract class LfuCacheSettings extends javadsl.LfuCacheSettings { self: LfuCach
   final def getTimeToLive: Duration = timeToLive
   final def getTimeToIdle: Duration = timeToIdle
 
-  override def withMaxCapacity(newMaxCapacity: Int): LfuCacheSettings = copy(maxCapacity = newMaxCapacity)
-  override def withInitialCapacity(newInitialCapacity: Int): LfuCacheSettings = copy(initialCapacity = newInitialCapacity)
-  override def withTimeToLive(newTimeToLive: Duration): LfuCacheSettings = copy(timeToLive = newTimeToLive)
-  override def withTimeToIdle(newTimeToIdle: Duration): LfuCacheSettings = copy(timeToIdle = newTimeToIdle)
+  override def withMaxCapacity(newMaxCapacity: Int): LfuCacheSettings = self.copy(maxCapacity = newMaxCapacity)
+  override def withInitialCapacity(newInitialCapacity: Int): LfuCacheSettings = self.copy(initialCapacity = newInitialCapacity)
+  override def withTimeToLive(newTimeToLive: Duration): LfuCacheSettings = self.copy(timeToLive = newTimeToLive)
+  override def withTimeToIdle(newTimeToIdle: Duration): LfuCacheSettings = self.copy(timeToIdle = newTimeToIdle)
 }
+
 /** INTERNAL API */
 @InternalApi
 private[http] final case class LfuCacheSettingsImpl(
@@ -53,7 +57,9 @@ private[http] final case class LfuCacheSettingsImpl(
   initialCapacity: Int,
   timeToLive:      Duration,
   timeToIdle:      Duration
-) extends LfuCacheSettings
+) extends LfuCacheSettings {
+  override def productPrefix = "LfuCacheSettings"
+}
 
 object CachingSettings extends SettingsCompanion[CachingSettings]("akka.http.caching") {
   def fromSubConfig(root: Config, c: Config) = {

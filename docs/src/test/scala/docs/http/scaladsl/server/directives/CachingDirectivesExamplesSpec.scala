@@ -9,8 +9,10 @@ import docs.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
 import akka.http.scaladsl.server.RequestContext
+import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.directives.CachingDirectives
 import akka.http.scaladsl.model.HttpMethods.GET
+import scala.concurrent.duration._
 
 class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
 
@@ -27,7 +29,7 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
 
     var i = 0
     val route =
-      cache(routeCache(), simpleKeyer) {
+      cache(routeCache, simpleKeyer) {
         complete {
           i += 1
           i.toString
@@ -47,7 +49,7 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
     }
     //#cache
   }
-  "always-cache" in {
+  "alwaysCache" in {
     //#always-cache
     //Example keyer for non-authenticated GET requests
     val simpleKeyer: PartialFunction[RequestContext, Uri] = {
@@ -60,7 +62,7 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
 
     var i = 0
     val route =
-      alwaysCache(routeCache(), simpleKeyer) {
+      alwaysCache(routeCache, simpleKeyer) {
         complete {
           i += 1
           i.toString
@@ -93,5 +95,50 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
       responseAs[String] shouldEqual "abc"
     }
     //#caching-prohibited
+  }
+
+  "createCache" in {
+    val keyerFunction: PartialFunction[RequestContext, Uri] = {
+      case r: RequestContext ⇒ r.request.uri
+    }
+
+    var count = 0
+    val innerRoute = extractUri { uri =>
+      count += 1
+      complete(s"Request for $uri @ count $count")
+    }
+
+    //#create-cache
+    import akka.http.caching.scaladsl.Cache
+    import akka.http.caching.scaladsl.CachingSettings
+    import akka.http.caching.scaladsl.LfuCacheSettings
+    import akka.http.caching.LfuCache
+
+    val defaultCachingSettings = CachingSettings(system)
+    val lfuCacheSettings =
+      defaultCachingSettings.lfuCacheSettings
+        .withInitialCapacity(25)
+        .withMaxCapacity(50)
+        .withTimeToLive(20.seconds)
+        .withTimeToIdle(10.seconds)
+    val cachingSettings = defaultCachingSettings.withLfuCacheSettings(lfuCacheSettings)
+    val lfuCache: Cache[Uri, RouteResult] = LfuCache(cachingSettings)
+    val route = cache(lfuCache, keyerFunction)(innerRoute)
+    //#create-cache
+
+    // tests:
+    Get("/1") ~> route ~> check {
+      responseAs[String] shouldEqual "Request for http://example.com/1 @ count 1"
+    }
+
+    for (i <- 1 until 100) {
+      Get(s"/$i") ~> route ~> check {
+        responseAs[String] shouldEqual s"Request for http://example.com/$i @ count $i"
+      }
+    }
+
+    Get("/1") ~> route ~> check {
+      responseAs[String] shouldEqual "Request for http://example.com/1 @ count 100"
+    }
   }
 }

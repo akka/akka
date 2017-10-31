@@ -12,4 +12,7 @@ akka-http-core
 akka-http
 :  @@snip [reference.conf]($akka-http$/akka-http/src/main/resources/reference.conf)
 
+akka-http-caching
+:  @@snip [reference.conf]($akka-http$/akka-http-caching/src/main/resources/reference.conf)
+
 The other Akka HTTP modules do not offer any configuration via [Typesafe Config](https://github.com/lightbend/config).

@@ -6,15 +6,17 @@ package akka.http.caching
 import java.util.concurrent.{ CompletableFuture, Executor, TimeUnit }
 
 import akka.actor.ActorSystem
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.annotation.{ ApiMayChange, InternalApi }
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.Future
 import com.github.benmanes.caffeine.cache.{ AsyncCacheLoader, AsyncLoadingCache, Caffeine }
 import akka.http.caching.LfuCache.toJavaMappingFunction
-import akka.http.caching.javadsl.CachingSettings
-import akka.http.caching.scaladsl.{ Cache, CachingSettingsImpl, LfuCacheSettings }
+import akka.http.caching.scaladsl.Cache
+
+import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.caching.CacheJavaMapping.Implicits._
 
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.FunctionConverters._
@@ -23,14 +25,14 @@ import scala.compat.java8.FunctionConverters._
 object LfuCache {
 
   def apply[K, V](implicit system: ActorSystem): akka.http.caching.scaladsl.Cache[K, V] =
-    apply(akka.http.caching.scaladsl.CachingSettings(system))
+    apply(scaladsl.CachingSettings(system))
 
   /**
    * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
    * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
    */
-  def apply[K, V](cachingSettings: CachingSettings): akka.http.caching.scaladsl.Cache[K, V] = {
-    val settings = cachingSettings.lfuCacheSettings.asInstanceOf[LfuCacheSettings]
+  def apply[K, V](cachingSettings: scaladsl.CachingSettings): akka.http.caching.scaladsl.Cache[K, V] = {
+    val settings = cachingSettings.lfuCacheSettings
 
     require(settings.maxCapacity >= 0, "maxCapacity must not be negative")
     require(settings.initialCapacity <= settings.maxCapacity, "initialCapacity must be <= maxCapacity")
@@ -52,8 +54,8 @@ object LfuCache {
    * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
    * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
    */
-  def create[K, V](settings: CachingSettings): akka.http.caching.javadsl.Cache[K, V] =
-    apply(settings)
+  def create[K, V](settings: javadsl.CachingSettings): akka.http.caching.javadsl.Cache[K, V] =
+    apply(settings.asScala)
 
   private def simpleLfuCache[K, V](maxCapacity: Int, initialCapacity: Int): LfuCache[K, V] = {
     val store = Caffeine.newBuilder().asInstanceOf[Caffeine[K, V]]

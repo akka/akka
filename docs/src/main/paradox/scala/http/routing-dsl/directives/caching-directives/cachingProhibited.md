@@ -1,4 +1,3 @@
-<a id="cachingprohibited"></a>
 # cachingProhibited
 
 ## Signature
@@ -7,7 +6,7 @@
 
 ## Description
 
-This directive is used to filter out requests that forbid caching. It is used as a building block of the @ref[cache](cache.md#cache) directive to prevent caching if the client requests so.
+This directive is used to filter out requests that forbid caching. It is used as a building block of the @ref[cache](cache.md) directive to prevent caching if the client requests so.
 
 ## Example
 

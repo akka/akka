@@ -13,7 +13,7 @@ import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.server.{ RequestContext, Route, RouteResult }
 
 @ApiMayChange
-class CachingDirectives {
+object CachingDirectives {
 
   import akka.http.scaladsl.server.directives.{ CachingDirectives ⇒ D }
 
@@ -57,7 +57,7 @@ class CachingDirectives {
    */
   def alwaysCache[K](cache: Cache[K, RouteResult], keyer: PartialFunction[RequestContext, K], inner: Supplier[Route]) = RouteAdapter {
     D.alwaysCache(
-      cache.asInstanceOf[akka.http.caching.scaladsl.Cache[K, akka.http.scaladsl.server.RouteResult]],
+      JavaMapping.toScala(cache),
       toScalaKeyer(keyer)
     ) { inner.get.delegate }
   }
@@ -68,7 +68,5 @@ class CachingDirectives {
    * Default settings are available via [[akka.http.caching.javadsl.CachingSettings.create]].
    */
   def routeCache[K](settings: CachingSettings): Cache[K, RouteResult] =
-    JavaMapping.toJava(D.routeCache[K](settings))
+    LfuCache.create[K, RouteResult](settings)
 }
-
-object CachingDirectives extends CachingDirectives

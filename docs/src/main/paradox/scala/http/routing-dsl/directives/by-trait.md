@@ -47,6 +47,9 @@ All predefined directives are organized into traits that form one part of the ov
 @ref[CacheConditionDirectives](cache-condition-directives/index.md)
 :   Support for conditional requests (`304 Not Modified` responses).
 
+@ref[CachingDirectives](caching-directives/index.md)
+:   Support for caching expensive operations.
+
 @ref[CookieDirectives](cookie-directives/index.md)
 :   Set, modify, or delete cookies.
 
