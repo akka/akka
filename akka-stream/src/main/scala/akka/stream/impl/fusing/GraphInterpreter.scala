@@ -588,7 +588,13 @@ import scala.util.control.NonFatal
   private[stream] def fail(connection: Connection, ex: Throwable): Unit = {
     val currentState = connection.portState
     if (Debug) println(s"$Name   fail($connection, $ex) [$currentState]")
-    if (verboseLogErrors) log.error(ex, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), ex.getMessage)
+    if (verboseLogErrors) {
+      Option(activeStage) match {
+        case Some(stage) ⇒ log.error(ex, "Error in stage [{}]: {}", stage.originalStage.getOrElse(stage), ex.getMessage)
+        case None        ⇒ log.error(ex, "Error in unknown stage: {}", ex.getMessage)
+      }
+    }
+
     connection.portState = currentState | OutClosed
     if ((currentState & (InClosed | OutClosed)) == 0) {
       connection.portState = currentState | (OutClosed | InFailed)
