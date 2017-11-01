@@ -43,16 +43,16 @@ If no custom `HttpsContext` is defined the default context uses Java's default T
 ## SSL-Config
 
 Akka HTTP heavily relies on, and delegates most configuration of any SSL/TLS related options to
-[Lightbend SSL-Config](http://typesafehub.github.io/ssl-config/), which is a library specialized in providing an secure-by-default SSLContext
+[Lightbend SSL-Config](https://lightbend.github.io/ssl-config/), which is a library specialized in providing an secure-by-default SSLContext
 and related options.
 
-Please refer to the [Lightbend SSL-Config](http://typesafehub.github.io/ssl-config/) documentation for detailed documentation of all available settings.
+Please refer to the [Lightbend SSL-Config](https://lightbend.github.io/ssl-config/) documentation for detailed documentation of all available settings.
 
 SSL Config settings used by Akka HTTP (as well as Streaming TCP) are located under the *akka.ssl-config* namespace.
 
 ## Detailed configuration and workarounds
 
-Akka HTTP relies on [Typesafe SSL-Config](http://typesafehub.github.io/ssl-config) which is a library maintained by Lightbend that makes configuring
+Akka HTTP relies on [Lightbend SSL-Config](https://lightbend.github.io/ssl-config) which is a library maintained by Lightbend that makes configuring
 things related to SSL/TLS much simpler than using the raw SSL APIs provided by the JDK. Please refer to its
 documentation to learn more about it.
 
@@ -60,7 +60,7 @@ All configuration options available to this library may be set under the `akka.s
 
 @@@ note
 When encountering problems connecting to HTTPS hosts we highly encourage to reading up on the excellent ssl-config
-configuration. Especially the quick start sections about [adding certificates to the trust store](http://typesafehub.github.io/ssl-config/WSQuickStart.html#connecting-to-a-remote-server-over-https) should prove
+configuration. Especially the quick start sections about [adding certificates to the trust store](https://lightbend.github.io/ssl-config/WSQuickStart.html#connecting-to-a-remote-server-over-https) should prove
 very useful, for example to easily trust a self-signed certificate that applications might use in development mode.
 @@@
 
@@ -83,9 +83,9 @@ communicate with. Without this check a man-in-the-middle attack is possible. In 
 certificate would be presented which was issued for another host name. Checking the host name in the certificate
 against the host name the connection was opened against is therefore vital.
 
-The default `HttpsContext` enables hostname verification. Akka HTTP relies on the [Typesafe SSL-Config](http://typesafehub.github.io/ssl-config) library
+The default `HttpsContext` enables hostname verification. Akka HTTP relies on the [Lightbend SSL-Config](https://lightbend.github.io/ssl-config) library
 to implement this and security options for SSL/TLS. Hostname verification is provided by the JDK
-and used by Akka HTTP since Java 7, and on Java 6 the verification is implemented by ssl-config manually.
+and used by Akka since Java 7, and on Java 6 the verification is implemented by ssl-config manually.
 
 For further recommended reading we would like to highlight the [fixing hostname verification blog post](https://tersesystems.com/2014/03/23/fixing-hostname-verification/) by blog post by Will Sargent.
 

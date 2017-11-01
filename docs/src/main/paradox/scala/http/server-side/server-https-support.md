@@ -22,10 +22,10 @@ For detailed documentation for client-side HTTPS support refer to @ref[Client-Si
 ## SSL-Config
 
 Akka HTTP heavily relies on, and delegates most configuration of any SSL/TLS related options to
-[Lightbend SSL-Config](http://typesafehub.github.io/ssl-config/), which is a library specialized in providing an secure-by-default SSLContext
+[Lightbend SSL-Config](https://lightbend.github.io/ssl-config/), which is a library specialized in providing an secure-by-default SSLContext
 and related options.
 
-Please refer to the [Lightbend SSL-Config](http://typesafehub.github.io/ssl-config/) documentation for detailed documentation of all available settings.
+Please refer to the [Lightbend SSL-Config](https://lightbend.github.io/ssl-config/) documentation for detailed documentation of all available settings.
 
 SSL Config settings used by Akka HTTP (as well as Streaming TCP) are located under the *akka.ssl-config* namespace.
 
@@ -53,7 +53,7 @@ configuration). If you want to generate your own certificates, the official Orac
 keystores using the JDK keytool utility can be found [here](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html).
 
 SSL-Config provides a more targeted guide on generating certificates, so we recommend you start with the guide
-titled [Generating X.509 Certificates](http://typesafehub.github.io/ssl-config/CertificateGeneration.html).
+titled [Generating X.509 Certificates](https://lightbend.github.io/ssl-config/CertificateGeneration.html).
 
 <a id="using-https"></a>
 ## Using HTTPS
