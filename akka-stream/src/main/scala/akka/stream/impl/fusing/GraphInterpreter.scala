@@ -187,14 +187,14 @@ import scala.util.control.NonFatal
  * edge of a balance is pulled, dissolving the original cycle).
  */
 @InternalApi private[akka] final class GraphInterpreter(
-  val materializer:    Materializer,
-  val log:             LoggingAdapter,
-  val logics:          Array[GraphStageLogic], // Array of stage logics
-  val connections:     Array[GraphInterpreter.Connection],
-  val onAsyncInput:    (GraphStageLogic, Any, (Any) ⇒ Unit) ⇒ Unit,
-  val fuzzingMode:     Boolean,
-  val context:         ActorRef,
-  val alwaysLogErrors: Boolean) {
+  val materializer:     Materializer,
+  val log:              LoggingAdapter,
+  val logics:           Array[GraphStageLogic], // Array of stage logics
+  val connections:      Array[GraphInterpreter.Connection],
+  val onAsyncInput:     (GraphStageLogic, Any, (Any) ⇒ Unit) ⇒ Unit,
+  val fuzzingMode:      Boolean,
+  val context:          ActorRef,
+  val verboseLogErrors: Boolean) {
 
   import GraphInterpreter._
 
@@ -588,7 +588,7 @@ import scala.util.control.NonFatal
   private[stream] def fail(connection: Connection, ex: Throwable): Unit = {
     val currentState = connection.portState
     if (Debug) println(s"$Name   fail($connection, $ex) [$currentState]")
-    if (alwaysLogErrors) log.error(ex, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), ex.getMessage)
+    if (verboseLogErrors) log.error(ex, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), ex.getMessage)
     connection.portState = currentState | OutClosed
     if ((currentState & (InClosed | OutClosed)) == 0) {
       connection.portState = currentState | (OutClosed | InFailed)

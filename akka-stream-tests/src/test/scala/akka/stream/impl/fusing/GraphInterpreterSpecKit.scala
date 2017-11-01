@@ -254,7 +254,9 @@ trait GraphInterpreterSpecKit extends StreamSpec {
         connections,
         onAsyncInput = (_, _, _) ⇒ (),
         fuzzingMode = false,
-        context = null)
+        context = null,
+        verboseLogErrors = true
+      )
       _interpreter.init(null)
     }
 
