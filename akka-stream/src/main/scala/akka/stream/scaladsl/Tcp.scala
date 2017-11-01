@@ -26,11 +26,11 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   /**
    * Represents a successful TCP server binding.
    *
+   * Not indented for user construction
+   *
    * @param localAddress The address the server was bound to
    * @param unbindAction a function that will trigger unbind of the server
    * @param whenUnbound A future that is completed when the server is unbound, or failed if the server binding fails
-   *
-   * Not indented for user construction
    */
   final case class ServerBinding @InternalApi private[akka] (localAddress: InetSocketAddress)(
     private val unbindAction: () ⇒ Future[Unit],
