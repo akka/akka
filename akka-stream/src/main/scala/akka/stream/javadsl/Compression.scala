@@ -23,4 +23,40 @@ object Compression {
    */
   def inflate(maxBytesPerChunk: Int): Flow[ByteString, ByteString, NotUsed] =
     scaladsl.Compression.inflate(maxBytesPerChunk).asJava
+
+  /**
+   * Creates a flow that gzip-compresses a stream of ByteStrings. Note that the compressor
+   * will SYNC_FLUSH after every [[ByteString]] so that it is guaranteed that every [[ByteString]]
+   * coming out of the flow can be fully decompressed without waiting for additional data. This may
+   * come at a compression performance cost for very small chunks.
+   */
+  def gzip: Flow[ByteString, ByteString, NotUsed] =
+    scaladsl.Compression.gzip.asJava
+
+  /**
+   * Same as [[gzip]] with a custom level.
+   *
+   * @param level Compression level (0-9)
+   */
+  def gzip(level: Int): Flow[ByteString, ByteString, NotUsed] =
+    scaladsl.Compression.gzip(level).asJava
+
+  /**
+   * Creates a flow that deflate-compresses a stream of ByteString. Note that the compressor
+   * will SYNC_FLUSH after every [[ByteString]] so that it is guaranteed that every [[ByteString]]
+   * coming out of the flow can be fully decompressed without waiting for additional data. This may
+   * come at a compression performance cost for very small chunks.
+   */
+  def deflate: Flow[ByteString, ByteString, NotUsed] =
+    scaladsl.Compression.deflate.asJava
+
+  /**
+   * Same as [[deflate]] with configurable level and nowrap
+   *
+   * @param level Compression level (0-9)
+   * @param nowrap if true then use GZIP compatible compression
+   */
+  def deflate(level: Int, nowrap: Boolean): Flow[ByteString, ByteString, NotUsed] =
+    scaladsl.Compression.deflate(level, nowrap).asJava
+
 }

@@ -5,16 +5,14 @@ package akka.typed.scaladsl.adapter
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.{ actor ⇒ untyped }
 import akka.typed.ActorRef
+import akka.actor.{ InvalidMessageException, Props }
 import akka.typed.Behavior
 import akka.typed.Terminated
 import akka.typed.scaladsl.Actor
 import akka.{ actor ⇒ untyped }
-import akka.annotation.ApiMayChange
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
 import akka.testkit._
+import akka.typed.Behavior.UntypedBehavior
 
 object AdapterSpec {
   val untyped1: untyped.Props = untyped.Props(new Untyped1)
@@ -23,6 +21,14 @@ object AdapterSpec {
     def receive = {
       case "ping"     ⇒ sender() ! "pong"
       case t: ThrowIt ⇒ throw t
+    }
+  }
+
+  def untypedForwarder(ref: untyped.ActorRef): untyped.Props = untyped.Props(new UntypedForwarder(ref))
+
+  class UntypedForwarder(ref: untyped.ActorRef) extends untyped.Actor {
+    def receive = {
+      case a: String ⇒ ref ! a
     }
   }
 
@@ -163,6 +169,15 @@ class AdapterSpec extends AkkaSpec {
       probe.expectMsg("ok")
     }
 
+    "not send null message from typed to untyped" in {
+      val probe = TestProbe()
+      val untypedRef = system.actorOf(untyped1)
+      val typedRef = system.spawnAnonymous(typed1(untypedRef, probe.ref))
+      intercept[InvalidMessageException] {
+        typedRef ! null
+      }
+    }
+
     "send message from untyped to typed" in {
       val probe = TestProbe()
       val typedRef = system.spawnAnonymous(typed2)
@@ -258,6 +273,25 @@ class AdapterSpec extends AkkaSpec {
       typedRef ! "stop-child"
       probe.expectMsg("terminated")
     }
-  }
 
+    "spawn untyped behaviour anonymously" in {
+      val probe = TestProbe()
+      val untypedBehaviour: Behavior[String] = new UntypedBehavior[String] {
+        override private[akka] def untypedProps: Props = untypedForwarder(probe.ref)
+      }
+      val ref = system.spawnAnonymous(untypedBehaviour)
+      ref ! "hello"
+      probe.expectMsg("hello")
+    }
+
+    "spawn untyped behaviour" in {
+      val probe = TestProbe()
+      val untypedBehaviour: Behavior[String] = new UntypedBehavior[String] {
+        override private[akka] def untypedProps: Props = untypedForwarder(probe.ref)
+      }
+      val ref = system.spawn(untypedBehaviour, "test")
+      ref ! "hello"
+      probe.expectMsg("hello")
+    }
+  }
 }

@@ -139,7 +139,7 @@ class FlowMapAsyncSpec extends StreamSpec {
         case OnNext("A") ⇒ () // is fine
         case OnNext("B") ⇒ () // is fine
         case OnError(ex) if ex.getMessage == "Boom at C" && !gotErrorAlready ⇒
-          gotErrorAlready = true // fine, error can over-take elements 
+          gotErrorAlready = true // fine, error can over-take elements
       }
       probe.request(100)
 

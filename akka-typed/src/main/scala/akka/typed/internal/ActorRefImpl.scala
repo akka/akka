@@ -7,11 +7,15 @@ package internal
 import akka.{ actor ⇒ a }
 import akka.dispatch.sysmsg._
 import akka.util.Unsafe.{ instance ⇒ unsafe }
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.concurrent.Future
 import java.util.ArrayList
-import scala.util.{ Success, Failure }
+
+import akka.actor.InvalidMessageException
+
+import scala.util.{ Failure, Success }
 import scala.annotation.unchecked.uncheckedVariance
 
 /**
@@ -85,12 +89,14 @@ private[typed] final class FunctionRef[-T](
   _terminate: FunctionRef[T] ⇒ Unit)
   extends WatchableRef[T](_path) {
 
-  override def tell(msg: T): Unit =
+  override def tell(msg: T): Unit = {
+    if (msg == null) throw new InvalidMessageException("[null] is not an allowed message")
     if (isAlive)
       try send(msg, this) catch {
         case NonFatal(ex) ⇒ // nothing we can do here
       }
     else () // we don’t have deadLetters available
+  }
 
   override def sendSystem(signal: SystemMessage): Unit = signal match {
     case Create()                           ⇒ // nothing to do
@@ -193,7 +199,8 @@ private[typed] class FutureRef[-T](_path: a.ActorPath, bufferSize: Int, f: Futur
     }
   }
 
-  override def tell(msg: T): Unit =
+  override def tell(msg: T): Unit = {
+    if (msg == null) throw new InvalidMessageException("[null] is not an allowed message")
     _target match {
       case Left(list) ⇒
         list.synchronized {
@@ -202,6 +209,7 @@ private[typed] class FutureRef[-T](_path: a.ActorPath, bufferSize: Int, f: Futur
         }
       case Right(ref) ⇒ ref ! msg
     }
+  }
 
   override def sendSystem(signal: SystemMessage): Unit = signal match {
     case Create() ⇒ // nothing to do

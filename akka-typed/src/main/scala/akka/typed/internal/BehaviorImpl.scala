@@ -4,11 +4,13 @@
 package akka.typed
 package internal
 
+import akka.actor.InvalidMessageException
 import akka.util.LineNumbers
 import akka.annotation.InternalApi
 import akka.typed.{ ActorContext ⇒ AC }
 import akka.typed.scaladsl.{ ActorContext ⇒ SAC }
 import akka.typed.scaladsl.Actor
+
 import scala.reflect.ClassTag
 import scala.annotation.tailrec
 
@@ -81,13 +83,13 @@ import scala.annotation.tailrec
     behavior:  Behavior[T]): Behavior[T] = {
     intercept[T, T](
       beforeMessage = (ctx, msg) ⇒ {
-      onMessage(ctx, msg)
-      msg
-    },
+        onMessage(ctx, msg)
+        msg
+      },
       beforeSignal = (ctx, sig) ⇒ {
-      onSignal(ctx, sig)
-      true
-    },
+        onSignal(ctx, sig)
+        true
+      },
       afterMessage = (ctx, msg, b) ⇒ b, // TODO optimize by using more ConstantFun
       afterSignal = (ctx, sig, b) ⇒ b,
       behavior)(ClassTag(classOf[Any]))

@@ -24,7 +24,7 @@ object TestActors {
    */
   class BlackholeActor extends Actor {
     override def receive = {
-      case _ ⇒ // ignore... 
+      case _ ⇒ // ignore...
     }
   }
 

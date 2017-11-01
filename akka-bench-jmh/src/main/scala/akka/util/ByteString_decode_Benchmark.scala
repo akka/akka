@@ -25,17 +25,17 @@ class ByteString_decode_Benchmark {
 
   /*
     Using Charset helps a bit, but nothing impressive:
-  
+
     [info] ByteString_decode_Benchmark.bc_large_decodeString_stringCharset_utf8        thrpt   20  21 612.293 ±  825.099  ops/s
       =>
     [info] ByteString_decode_Benchmark.bc_large_decodeString_charsetCharset_utf8       thrpt   20  22 473.372 ±  851.597  ops/s
-    
-    
+
+
     [info] ByteString_decode_Benchmark.bs_large_decodeString_stringCharset_utf8        thrpt   20  84 443.674 ± 3723.987  ops/s
       =>
     [info] ByteString_decode_Benchmark.bs_large_decodeString_charsetCharset_utf8       thrpt   20  93 865.033 ± 2052.476  ops/s
-    
-    
+
+
     [info] ByteString_decode_Benchmark.bss_large_decodeString_stringCharset_utf8       thrpt   20  14 886.553 ±  326.752  ops/s
       =>
     [info] ByteString_decode_Benchmark.bss_large_decodeString_charsetCharset_utf8      thrpt   20  16 031.670 ±  474.565  ops/s

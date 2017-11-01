@@ -3,16 +3,15 @@
  */
 package akka
 
-import akka.TestExtras.Filter
 import akka.TestExtras.Filter.Keys._
-import com.typesafe.sbt.{SbtScalariform, SbtMultiJvm}
+import com.typesafe.sbt.{ SbtScalariform, SbtMultiJvm }
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import sbt._
 import sbt.Keys._
 
 object MultiNode extends AutoPlugin {
-  
+
   // MultiJvm tests can be excluded from normal test target an validatePullRequest
   // with -Dakka.test.multi-in-test=false
   val multiNodeTestInTest: Boolean =
@@ -44,10 +43,10 @@ object MultiNode extends AutoPlugin {
     val MultinodeJvmArgs = "multinode\\.(D|X)(.*)".r
     val knownPrefix = Set("multnode.", "akka.", "MultiJvm.")
     val akkaProperties = System.getProperties.propertyNames.asScala.toList.collect {
-      case MultinodeJvmArgs(a, b) =>
+      case MultinodeJvmArgs(a, b) ⇒
         val value = System.getProperty("multinode." + a + b)
         "-" + a + b + (if (value == "") "" else "=" + value)
-      case key: String if knownPrefix.exists(pre => key.startsWith(pre)) => "-D" + key + "=" + System.getProperty(key)
+      case key: String if knownPrefix.exists(pre ⇒ key.startsWith(pre)) ⇒ "-D" + key + "=" + System.getProperty(key)
     }
 
     "-Xmx256m" :: akkaProperties ::: CliOptions.sbtLogNoFormat.ifTrue("-Dakka.test.nocolor=true").toList
@@ -55,32 +54,41 @@ object MultiNode extends AutoPlugin {
 
   private val multiJvmSettings =
     SbtMultiJvm.multiJvmSettings ++
-    inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++
-    Seq(
-      jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      compileInputs in(MultiJvm, compile) := ((compileInputs in(MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm)).value,
-      scalacOptions in MultiJvm := (scalacOptions in Test).value,
-      compile in MultiJvm := ((compile in MultiJvm) triggeredBy (compile in Test)).value
-    ) ++
-    CliOptions.hostsFileName.map(multiNodeHostsFileName in MultiJvm := _) ++
-    CliOptions.javaName.map(multiNodeJavaName in MultiJvm := _) ++
-    CliOptions.targetDirName.map(multiNodeTargetDirName in MultiJvm := _) ++
-    (if (multiNodeTestInTest) {
-      // make sure that MultiJvm tests are executed by the default test target,
-      // and combine the results from ordinary test and multi-jvm tests
-      (executeTests in Test) := {
-        val testResults = (executeTests in Test).value
-        val multiNodeResults = multiExecuteTests.value
-        val overall =
-          if (testResults.overall.id < multiNodeResults.overall.id)
-            multiNodeResults.overall
-          else
-            testResults.overall
-        Tests.Output(overall,
-          testResults.events ++ multiNodeResults.events,
-          testResults.summaries ++ multiNodeResults.summaries)
-      }
-    } else Nil)
+      inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++
+      Seq(
+        jvmOptions in MultiJvm := defaultMultiJvmOptions,
+        compileInputs in (MultiJvm, compile) := ((compileInputs in (MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm)).value,
+        scalacOptions in MultiJvm := (scalacOptions in Test).value,
+        compile in MultiJvm := ((compile in MultiJvm) triggeredBy (compile in Test)).value) ++
+        CliOptions.hostsFileName.map(multiNodeHostsFileName in MultiJvm := _) ++
+        CliOptions.javaName.map(multiNodeJavaName in MultiJvm := _) ++
+        CliOptions.targetDirName.map(multiNodeTargetDirName in MultiJvm := _) ++
+        (if (multiNodeTestInTest) {
+          // make sure that MultiJvm tests are executed by the default test target,
+          // and combine the results from ordinary test and multi-jvm tests
+          (executeTests in Test) := {
+            val testResults = (executeTests in Test).value
+            val multiNodeResults = multiExecuteTests.value
+            val overall =
+              if (testResults.overall.id < multiNodeResults.overall.id)
+                multiNodeResults.overall
+              else
+                testResults.overall
+
+            Tests.Output(
+              overall,
+              testResults.events ++ multiNodeResults.events,
+              testResults.summaries ++ multiNodeResults.summaries)
+          }
+        } else Nil)
+
+  implicit class TestResultOps(val self: TestResult) extends AnyVal {
+    def id: Int = self match {
+      case TestResult.Passed ⇒ 0
+      case TestResult.Failed ⇒ 1
+      case TestResult.Error  ⇒ 2
+    }
+  }
 }
 
 /**
@@ -93,12 +101,11 @@ object MultiNodeScalaTest extends AutoPlugin {
   override lazy val projectSettings = Seq(
     extraOptions in MultiJvm := {
       val src = (sourceDirectory in MultiJvm).value
-      (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      (name: String) ⇒ (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
     },
     scalatestOptions in MultiJvm := {
       Seq("-C", "org.scalatest.extra.QuietReporter") ++
         (if (excludeTestTags.value.isEmpty) Seq.empty else Seq("-l", if (MultiNode.CliOptions.multiNode.get) excludeTestTags.value.mkString("\"", " ", "\"") else excludeTestTags.value.mkString(" "))) ++
         (if (onlyTestTags.value.isEmpty) Seq.empty else Seq("-n", if (MultiNode.CliOptions.multiNode.get) onlyTestTags.value.mkString("\"", " ", "\"") else onlyTestTags.value.mkString(" ")))
-    }
-  )
+    })
 }

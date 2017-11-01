@@ -788,7 +788,7 @@ private[testkit] object StreamTestKit {
       case RequestMore(sub, n) if sub eq this ⇒ n
     }
 
-    def expectCancellation(): Unit = publisherProbe.fishForMessage() {
+    def expectCancellation(): Unit = publisherProbe.fishForMessage(hint = "Expecting cancellation") {
       case CancelSubscription(sub) if sub eq this ⇒ true
       case RequestMore(sub, _) if sub eq this     ⇒ false
     }

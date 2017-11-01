@@ -1,0 +1,2 @@
+RedirectMatch 301 ^(.*)/scala/(.*) $1/$2?language=scala
+RedirectMatch 301 ^(.*)/java/(.*) $1/$2?language=java

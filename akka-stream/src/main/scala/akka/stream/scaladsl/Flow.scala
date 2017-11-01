@@ -615,7 +615,6 @@ trait FlowOps[+Out, +Mat] {
    *
    * @param attempts Maximum number of retries or -1 to retry indefinitely
    * @param pf Receives the failure cause and returns the new Source to be materialized if any
-   * @throws IllegalArgumentException if `attempts` is a negative number other than -1
    *
    */
   def recoverWithRetries[T >: Out](attempts: Int, pf: PartialFunction[Throwable, Graph[SourceShape[T], NotUsed]]): Repr[T] =

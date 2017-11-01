@@ -343,7 +343,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         case cause: Exception ⇒
           throw new AssertionError(s"Member ${toBeRemovedAddress} was not removed within ${timeout}!", cause)
       }
-      awaiter ! PoisonPill // you've done your job, now die 
+      awaiter ! PoisonPill // you've done your job, now die
 
       enterBarrier("member-shutdown")
       markNodeAsUnavailable(toBeRemovedAddress)

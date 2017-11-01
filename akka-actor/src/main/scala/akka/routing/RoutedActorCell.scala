@@ -149,8 +149,8 @@ private[akka] class RouterActor extends Actor {
 
   val routingLogicController: Option[ActorRef] = cell.routerConfig.routingLogicController(
     cell.router.logic).map(props ⇒ context.actorOf(
-    props.withDispatcher(context.props.dispatcher),
-    name = "routingLogicController"))
+      props.withDispatcher(context.props.dispatcher),
+      name = "routingLogicController"))
 
   def receive = {
     case GetRoutees ⇒

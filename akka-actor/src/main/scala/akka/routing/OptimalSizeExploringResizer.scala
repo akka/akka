@@ -32,7 +32,7 @@ case object OptimalSizeExploringResizer {
   /**
    * INTERNAL API
    */
-  private[routing]type PoolSize = Int
+  private[routing] type PoolSize = Int
 
   /**
    * INTERNAL API
@@ -51,7 +51,7 @@ case object OptimalSizeExploringResizer {
   /**
    * INTERNAL API
    */
-  private[routing]type PerformanceLog = Map[PoolSize, Duration]
+  private[routing] type PerformanceLog = Map[PoolSize, Duration]
 
   def apply(resizerCfg: Config): OptimalSizeExploringResizer =
     DefaultOptimalSizeExploringResizer(

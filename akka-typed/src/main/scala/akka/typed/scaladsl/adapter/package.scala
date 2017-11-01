@@ -4,8 +4,7 @@
 package akka.typed
 package scaladsl
 
-import akka.actor.ExtendedActorSystem
-import akka.annotation.InternalApi
+import akka.typed.Behavior.UntypedBehavior
 import akka.typed.internal.adapter._
 
 /**
@@ -36,10 +35,24 @@ package object adapter {
    * Extension methods added to [[akka.actor.ActorSystem]].
    */
   implicit class UntypedActorSystemOps(val sys: akka.actor.ActorSystem) extends AnyVal {
-    def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] =
-      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props)))
-    def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] =
-      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props), name))
+
+    def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] = {
+      behavior match {
+        case b: UntypedBehavior[_] ⇒
+          ActorRefAdapter(sys.actorOf(b.untypedProps))
+        case _ ⇒
+          ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props)))
+      }
+    }
+
+    def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] = {
+      behavior match {
+        case b: UntypedBehavior[_] ⇒
+          ActorRefAdapter(sys.actorOf(b.untypedProps, name))
+        case _ ⇒
+          ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props), name))
+      }
+    }
 
     def toTyped: ActorSystem[Nothing] = AdapterExtension(sys).adapter
   }

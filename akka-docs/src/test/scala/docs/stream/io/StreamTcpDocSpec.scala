@@ -29,9 +29,9 @@ class StreamTcpDocSpec extends AkkaSpec {
       val binding: Future[ServerBinding] =
         Tcp().bind("127.0.0.1", 8888).to(Sink.ignore).run()
 
-      binding.map { b =>
+      binding.map { b ⇒
         b.unbind() onComplete {
-          case _ => // ...
+          case _ ⇒ // ...
         }
       }
       //#echo-server-simple-bind
@@ -43,7 +43,7 @@ class StreamTcpDocSpec extends AkkaSpec {
 
       val connections: Source[IncomingConnection, Future[ServerBinding]] =
         Tcp().bind(host, port)
-      connections runForeach { connection =>
+      connections runForeach { connection ⇒
         println(s"New connection from: ${connection.remoteAddress}")
 
         val echo = Flow[ByteString]
@@ -69,7 +69,7 @@ class StreamTcpDocSpec extends AkkaSpec {
     import akka.stream.scaladsl.Framing
     //#welcome-banner-chat-server
 
-    connections.runForeach { connection =>
+    connections.runForeach { connection ⇒
 
       // server logic, parses incoming commands
       val commandParser = Flow[String].takeWhile(_ != "BYE").map(_ + "!")
@@ -85,7 +85,7 @@ class StreamTcpDocSpec extends AkkaSpec {
           allowTruncation = true))
         .map(_.utf8String)
         //#welcome-banner-chat-server
-        .map { command => serverProbe.ref ! command; command }
+        .map { command ⇒ serverProbe.ref ! command; command }
         //#welcome-banner-chat-server
         .via(commandParser)
         // merge in the initial banner after parser
@@ -102,8 +102,8 @@ class StreamTcpDocSpec extends AkkaSpec {
     val input = new AtomicReference("Hello world" :: "What a lovely day" :: Nil)
     def readLine(prompt: String): String = {
       input.get() match {
-        case all @ cmd :: tail if input.compareAndSet(all, tail) => cmd
-        case _ => "q"
+        case all @ cmd :: tail if input.compareAndSet(all, tail) ⇒ cmd
+        case _ ⇒ "q"
       }
     }
 
@@ -120,7 +120,7 @@ class StreamTcpDocSpec extends AkkaSpec {
       val replParser =
         Flow[String].takeWhile(_ != "q")
           .concat(Source.single("BYE"))
-          .map(elem => ByteString(s"$elem\n"))
+          .map(elem ⇒ ByteString(s"$elem\n"))
 
       val repl = Flow[ByteString]
         .via(Framing.delimiter(
@@ -128,8 +128,8 @@ class StreamTcpDocSpec extends AkkaSpec {
           maximumFrameLength = 256,
           allowTruncation = true))
         .map(_.utf8String)
-        .map(text => println("Server: " + text))
-        .map(_ => readLine("> "))
+        .map(text ⇒ println("Server: " + text))
+        .map(_ ⇒ readLine("> "))
         .via(replParser)
 
       connection.join(repl).run()

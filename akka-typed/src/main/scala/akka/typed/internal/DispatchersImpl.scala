@@ -189,7 +189,7 @@ class DispatcherConfigurator(config: Config, prerequisites: d.DispatcherPrerequi
 
   private val instance = ExecutionContexts.fromExecutorService(
     configureExecutor().createExecutorServiceFactory(config.getString("id"), prerequisites.threadFactory)
-    .createExecutorService)
+      .createExecutorService)
 
   /**
    * Returns the same dispatcher instance for each invocation

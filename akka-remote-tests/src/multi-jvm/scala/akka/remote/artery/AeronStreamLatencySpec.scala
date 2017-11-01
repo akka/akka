@@ -88,7 +88,7 @@ abstract class AeronStreamLatencySpec
 
   val pool = new EnvelopeBufferPool(1024 * 1024, 128)
 
-  val cncByteBuffer = IoUtil.mapExistingFile(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE), "cnc");
+  val cncByteBuffer = IoUtil.mapExistingFile(new File(driver.aeronDirectoryName, CncFileDescriptor.CNC_FILE), "cnc")
   val stats =
     new AeronStat(AeronStat.mapCounters(cncByteBuffer))
 
@@ -106,7 +106,6 @@ abstract class AeronStreamLatencySpec
   }
 
   lazy implicit val mat = ActorMaterializer()(system)
-  import system.dispatcher
 
   override def initialParticipants = roles.size
 

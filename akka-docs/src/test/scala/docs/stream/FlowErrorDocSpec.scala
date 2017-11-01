@@ -32,8 +32,8 @@ class FlowErrorDocSpec extends AkkaSpec {
   "demonstrate resume stream" in {
     //#resume
     val decider: Supervision.Decider = {
-      case _: ArithmeticException => Supervision.Resume
-      case _                      => Supervision.Stop
+      case _: ArithmeticException ⇒ Supervision.Resume
+      case _                      ⇒ Supervision.Stop
     }
     implicit val materializer = ActorMaterializer(
       ActorMaterializerSettings(system).withSupervisionStrategy(decider))
@@ -50,11 +50,11 @@ class FlowErrorDocSpec extends AkkaSpec {
     //#resume-section
     implicit val materializer = ActorMaterializer()
     val decider: Supervision.Decider = {
-      case _: ArithmeticException => Supervision.Resume
-      case _                      => Supervision.Stop
+      case _: ArithmeticException ⇒ Supervision.Resume
+      case _                      ⇒ Supervision.Stop
     }
     val flow = Flow[Int]
-      .filter(100 / _ < 50).map(elem => 100 / (5 - elem))
+      .filter(100 / _ < 50).map(elem ⇒ 100 / (5 - elem))
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
     val source = Source(0 to 5).via(flow)
 
@@ -70,11 +70,11 @@ class FlowErrorDocSpec extends AkkaSpec {
     //#restart-section
     implicit val materializer = ActorMaterializer()
     val decider: Supervision.Decider = {
-      case _: IllegalArgumentException => Supervision.Restart
-      case _                           => Supervision.Stop
+      case _: IllegalArgumentException ⇒ Supervision.Restart
+      case _                           ⇒ Supervision.Stop
     }
     val flow = Flow[Int]
-      .scan(0) { (acc, elem) =>
+      .scan(0) { (acc, elem) ⇒
         if (elem < 0) throw new IllegalArgumentException("negative not allowed")
         else acc + elem
       }
@@ -92,11 +92,11 @@ class FlowErrorDocSpec extends AkkaSpec {
   "demonstrate recover" in {
     implicit val materializer = ActorMaterializer()
     //#recover
-    Source(0 to 6).map(n =>
+    Source(0 to 6).map(n ⇒
       if (n < 5) n.toString
       else throw new RuntimeException("Boom!")
     ).recover {
-      case _: RuntimeException => "stream truncated"
+      case _: RuntimeException ⇒ "stream truncated"
     }.runForeach(println)
     //#recover
 
@@ -118,11 +118,11 @@ stream truncated
     //#recoverWithRetries
     val planB = Source(List("five", "six", "seven", "eight"))
 
-    Source(0 to 10).map(n =>
+    Source(0 to 10).map(n ⇒
       if (n < 5) n.toString
       else throw new RuntimeException("Boom!")
     ).recoverWithRetries(attempts = 1, {
-      case _: RuntimeException => planB
+      case _: RuntimeException ⇒ planB
     }).runForeach(println)
     //#recoverWithRetries
 

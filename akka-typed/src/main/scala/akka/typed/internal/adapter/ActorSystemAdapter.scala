@@ -5,6 +5,7 @@ package akka.typed
 package internal
 package adapter
 
+import akka.actor.InvalidMessageException
 import akka.{ actor ⇒ a }
 
 import scala.concurrent.ExecutionContextExecutor
@@ -23,11 +24,13 @@ import akka.annotation.InternalApi
 @InternalApi private[typed] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
   extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] with ExtensionsImpl {
 
-  import ActorSystemAdapter._
   import ActorRefAdapter.sendSystemMessage
 
   // Members declared in akka.typed.ActorRef
-  override def tell(msg: T): Unit = untyped.guardian ! msg
+  override def tell(msg: T): Unit = {
+    if (msg == null) throw new InvalidMessageException("[null] is not an allowed message")
+    untyped.guardian ! msg
+  }
   override def isLocal: Boolean = true
   override def sendSystem(signal: internal.SystemMessage): Unit = sendSystemMessage(untyped.guardian, signal)
   final override val path: a.ActorPath = a.RootActorPath(a.Address("akka", untyped.name)) / "user"

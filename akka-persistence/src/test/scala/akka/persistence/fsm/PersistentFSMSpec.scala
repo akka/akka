@@ -70,12 +70,16 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
 
       val shirt = Item("1", "Shirt", 59.99F)
 
+      // this isn't quite when the state transition happens, but close enough
+      val before = System.nanoTime
       fsmRef ! AddItem(shirt)
 
       expectMsg(CurrentState(fsmRef, LookingAround, None))
+
       expectMsg(Transition(fsmRef, LookingAround, Shopping, Some(1 second)))
 
-      within(0.9 seconds, remainingOrDefault) {
+      val adjustedMin = 1.second - (System.nanoTime - before).nanos
+      within(min = adjustedMin, max = remainingOrDefault) {
         expectMsg(Transition(fsmRef, Shopping, Inactive, Some(2 seconds)))
       }
 
@@ -203,9 +207,12 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       watch(recoveredFsmRef)
       recoveredFsmRef ! SubscribeTransitionCallBack(testActor)
 
+      // this isn't when it got into that state, but close enough
+      val before = System.nanoTime
       expectMsg(CurrentState(recoveredFsmRef, Shopping, Some(1 second)))
 
-      within(0.9 seconds, remainingOrDefault) {
+      val adjustedMin = 1.second - (System.nanoTime - before).nanos
+      within(min = adjustedMin, max = remainingOrDefault) {
         expectMsg(Transition(recoveredFsmRef, Shopping, Inactive, Some(2 seconds)))
       }
 
