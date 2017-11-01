@@ -1,9 +1,13 @@
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import akka._
-import AkkaDependency._
 import akka.ValidatePullRequest._
+import AkkaDependency._
+import Dependencies.{ h2specName, h2specExe }
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
+import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+import java.nio.file.Files
+import java.nio.file.attribute.{ PosixFileAttributeView, PosixFilePermission }
 import sbtdynver.GitDescribeOutput
-import com.typesafe.sbt.SbtGit.GitKeys._
+import spray.boilerplate.BoilerplatePlugin
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
@@ -68,36 +72,88 @@ lazy val root = Project(
   )
 
 lazy val parsing = project("akka-parsing")
-  .settings(Dependencies.parsing)
-  .settings(
-    scalacOptions := scalacOptions.value.filterNot(_ == "-Xfatal-warnings")
-  )
   .addAkkaModuleDependency("akka-actor")
+  .settings(Dependencies.parsing)
+  .settings(OSGi.parsing)
+  .settings(
+    scalacOptions := scalacOptions.value.filterNot(_ == "-Xfatal-warnings"),
+    scalacOptions += "-language:_",
+    unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
+  )
+  .enablePlugins(ScaladocNoVerificationOfDiagrams)
+  .disablePlugins(MimaPlugin)
 
 lazy val httpCore = project("akka-http-core")
-  .enablePlugins(BootstrapGenjavadoc)
-  .settings(Dependencies.httpCore)
-  .settings(VersionGenerator.versionSettings)
   .dependsOn(parsing)
   .addAkkaModuleDependency("akka-stream")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
+  .settings(Dependencies.httpCore)
+  .settings(OSGi.httpCore)
+  .settings(VersionGenerator.versionSettings)
+  .enablePlugins(BootstrapGenjavadoc)
 
 lazy val http = project("akka-http")
-  .enablePlugins(BootstrapGenjavadoc)
   .dependsOn(httpCore)
+  .settings(Dependencies.http)
+  .settings(OSGi.http)
+  .settings(
+    scalacOptions in Compile += "-language:_"
+  )
+  .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
 
 lazy val http2Support = project("akka-http2-support")
-  .enablePlugins(JavaAgent, BootstrapGenjavadoc)
-  .disablePlugins(MimaPlugin) // experimental module still
-  .settings(javaAgents += Dependencies.Compile.Test.alpnAgent)
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
+  .settings(Dependencies.http2)
+  .settings(Dependencies.http2Support)
+  .settings(OSGi.http2Support)
+  .settings {
+    lazy val h2specPath = Def.task {
+      (target in Test).value / h2specName / h2specExe
+    }
+    Seq(
+      javaAgents += Dependencies.Compile.Test.alpnAgent,
+      fork in run in Test := true,
+      fork in Test := true,
+      sbt.Keys.connectInput in run in Test := true,
+      javaOptions in Test += "-Dh2spec.path=" + h2specPath.value,
+      resourceGenerators in Test += Def.task {
+        val log = streams.value.log
+        val h2spec = h2specPath.value
+
+        if (!h2spec.exists) {
+          log.info("Extracting h2spec to " + h2spec)
+
+          for (zip <- (update in Test).value.select(artifact = artifactFilter(name = h2specName, extension = "zip")))
+            IO.unzip(zip, (target in Test).value)
+
+          // Set the executable bit on the expected path to fail if it doesn't exist
+          for (view <- Option(Files.getFileAttributeView(h2spec.toPath, classOf[PosixFileAttributeView]))) {
+            val permissions = view.readAttributes.permissions
+            if (permissions.add(PosixFilePermission.OWNER_EXECUTE))
+              view.setPermissions(permissions)
+          }
+        }
+        Seq(h2spec)
+      }
+    )
+  }
+  .enablePlugins(JavaAgent, BootstrapGenjavadoc)
+  .disablePlugins(MimaPlugin) // experimental module still
 
 lazy val httpTestkit = project("akka-http-testkit")
-  .enablePlugins(BootstrapGenjavadoc)
-  .settings(Dependencies.httpTestkit)
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream-testkit")
+  .settings(Dependencies.httpTestkit)
+  .settings(OSGi.httpTestkit)
+  .settings(
+    // don't ignore Suites which is the default for the junit-interface
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "--ignore-runners="),
+    scalacOptions in Compile ++= Seq("-language:_"),
+    mainClass in run in Test := Some("akka.http.javadsl.SimpleServerApp")
+  )
+  .enablePlugins(BootstrapGenjavadoc, MultiNodeScalaTest, ScaladocNoVerificationOfDiagrams)
+  .disablePlugins(MimaPlugin) // testkit, no bin compat guaranteed
 
 lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
@@ -117,9 +173,13 @@ lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
 
 lazy val httpXml =
   httpMarshallersScalaSubproject("xml")
+    .settings(Dependencies.httpXml)
+    .settings(OSGi.httpXml)
 
 lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
+    .settings(Dependencies.httpSprayJson)
+    .settings(OSGi.httpSprayJson)
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .enablePlugins(NoPublish)
@@ -128,6 +188,9 @@ lazy val httpMarshallersJava = project("akka-http-marshallers-java")
 
 lazy val httpJackson =
   httpMarshallersJavaSubproject("jackson")
+    .settings(Dependencies.httpJackson)
+    .settings(OSGi.httpJackson)
+    .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 def project(name: String) =
   Project(id = name, base = file(name))
@@ -192,5 +255,6 @@ lazy val docs = project("docs")
     additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
+  .settings(ParadoxSupport.paradoxWithSignatureDirective)
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
