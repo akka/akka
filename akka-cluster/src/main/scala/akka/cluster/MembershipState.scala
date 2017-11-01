@@ -3,7 +3,6 @@
  */
 package akka.cluster
 
-import java.util.{ ArrayList, Collections }
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
@@ -102,16 +101,24 @@ import scala.util.Random
   /**
    * @return Up to `crossDcConnections` oldest members for each DC
    */
-  lazy val ageSortedTopOldestMembersPerDc: Map[DataCenter, SortedSet[Member]] =
-    // TODO make this recursive and bail early when size reached to make it fast for large clusters
+  lazy val ageSortedTopOldestMembersPerDc: Map[DataCenter, SortedSet[Member]] = {
     latestGossip.members.foldLeft(Map.empty[DataCenter, SortedSet[Member]]) { (acc, member) ⇒
       acc.get(member.dataCenter) match {
         case Some(set) ⇒
-          if (set.size < crossDcConnections) acc + (member.dataCenter → (set + member))
-          else acc
-        case None ⇒ acc + (member.dataCenter → (SortedSet.empty(Member.ageOrdering) + member))
+          if (set.size < crossDcConnections) {
+            acc + (member.dataCenter → (set + member))
+          } else {
+            if (set.exists(member.isOlderThan)) {
+              acc + (member.dataCenter -> (set + member).take(crossDcConnections))
+            } else {
+              acc
+            }
+          }
+        case None ⇒
+          acc + (member.dataCenter → (SortedSet.empty(Member.ageOrdering) + member))
       }
     }
+  }
 
   /**
    * @return true if toAddress should be reachable from the fromDc in general, within a data center

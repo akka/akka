@@ -1,6 +1,7 @@
+/**
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.cluster
-
-import java.util.concurrent.TimeUnit
 
 import akka.remote.testkit._
 import akka.testkit.ImplicitSender
@@ -98,7 +99,7 @@ abstract class InitialMembersOfNewDcSpec extends MultiNodeSpec(InitialMembersOfN
           })
         }
         val totalTime = System.nanoTime() - startTime
-        log.info("Can see new node (and all others as up): {}", Duration(totalTime, TimeUnit.NANOSECONDS).toMillis)
+        log.info("Can see new node (and all others as up): {}ms", totalTime.nanos.toMillis)
       }
       enterBarrier("node 4 joined dc and all nodes know it is up")
     }
