@@ -1358,9 +1358,9 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
    *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
-   *  case burst is 0 and speed is higher than 30 events per second. You need to consider other solution in case you are
-   *  expecting events evenly spreading within some small interval like less than 30 milliseconds.
-   *  In other words throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
+   *  case burst is 0 and speed is higher than 30 events per second. You need to consider another solution in case you are expecting
+   *  events being evenly spread with some small interval (30 milliseconds or less).
+   *  In other words the throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
    *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
@@ -1401,9 +1401,9 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
    *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
-   *  case burst is 0 and speed is higher than 30 events per second. You need to consider other solution in case you are
-   *  expecting events evenly spreading within some small interval like less than 30 milliseconds.
-   *  In other words throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
+   *  case burst is 0 and speed is higher than 30 events per second. You need to consider another solution in case you are expecting
+   *  events being evenly spread with some small interval (30 milliseconds or less).
+   *  In other words the throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
    *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
@@ -1421,27 +1421,27 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
     new SubFlow(delegate.throttle(cost, per, maximumBurst, costCalculation.apply, mode))
 
   /**
-   * This is simplified version of throttle that evenly spreading events across given time interval. throttleEven using
-   * best effort approach to meet throttle rate.
+   * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * You need to use this combinator in case you need just slow down a stream without worrying about exact amount
+   * Use this combinator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
-   * Still, if you to be sure that no time interval has no more than specified number of events you need to use
+   * If you want to be sure that no time interval has no more than specified number of events you need to use
    * [[throttle()]] with maximumBurst attribute.
+   * @see [[#throttle]]
    */
   def throttleEven(elements: Int, per: FiniteDuration, mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(elements, per, Integer.MAX_VALUE, mode))
 
   /**
-   * This is simplified version of throttle that evenly spreading events across given time interval. throttleEven using
-   * best effort approach to meet throttle rate.
+   * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * You need to use this combinator in case you need just slow down a stream without worrying about exact amount
+   * Use this combinator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
-   * Still, if you to be sure that no time interval has no more than specified number of events you need to use
+   * If you want to be sure that no time interval has no more than specified number of events you need to use
    * [[throttle()]] with maximumBurst attribute.
+   * @see [[#throttle]]
    */
   def throttleEven(cost: Int, per: FiniteDuration,
                    costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
