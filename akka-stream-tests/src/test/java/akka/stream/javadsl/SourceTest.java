@@ -11,6 +11,8 @@ import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 import akka.stream.*;
+import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.TestSink;
 import akka.util.ConstantFun;
 import akka.stream.stage.*;
 import akka.testkit.AkkaSpec;
@@ -653,6 +655,28 @@ public class SourceTest extends StreamTest {
     probe.expectMsgAllOf(0, 1, 2, 3);
 
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void mustBeAbleToCombineMat() throws Exception {
+    final TestKit probe = new TestKit(system);
+    final Source<Integer, SourceQueueWithComplete<Integer>> source1 = Source.queue(1, OverflowStrategy.dropNew());
+    final Source<Integer, NotUsed> source2 = Source.from(Arrays.asList(2, 3));
+
+    // compiler to check the correct materialized value of type = SourceQueueWithComplete<Integer> available
+    final Source<Integer, SourceQueueWithComplete<Integer>> combined = Source.combineMat(
+      source1, source2, width -> Concat.<Integer> create(width), Keep.left()); //Keep.left() (i.e. preserve queueSource's materialized value)
+
+    SourceQueueWithComplete<Integer> queue = combined
+        .toMat(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), Keep.left())
+        .run(materializer);
+
+    queue.offer(0);
+    queue.offer(1);
+    queue.complete(); //complete queueSource so that combined with `Concat` pulls elements from queueSource
+
+    // elements from source1 (i.e. first of combined source) come first, then source2 elements, due to `Concat`
+    probe.expectMsgAllOf(0, 1, 2, 3);
   }
 
   @Test
