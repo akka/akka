@@ -45,12 +45,12 @@ object PersistentActorSpec {
     PersistentActor.immutable[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
-      actions = Actions[Command, Event, State]((ctx, cmd, state) ⇒ cmd match {
+      commandHandler = CommandHandler[Command, Event, State]((ctx, state, cmd) ⇒ cmd match {
         case Increment ⇒
-          Persist(Incremented(1))
+          Effect.persist(Incremented(1))
         case GetValue(replyTo) ⇒
           replyTo ! state
-          PersistNothing()
+          Effect.done
         case IncrementLater ⇒
           // purpose is to test signals
           val delay = ctx.spawnAnonymous(Actor.withTimers[Tick.type] { timers ⇒
@@ -60,19 +60,19 @@ object PersistentActorSpec {
             })
           })
           ctx.watch(delay)
-          PersistNothing()
+          Effect.done
         case IncrementAfterReceiveTimeout ⇒
           ctx.setReceiveTimeout(10.millis, Timeout)
-          PersistNothing()
+          Effect.done
         case Timeout ⇒
           ctx.cancelReceiveTimeout()
-          Persist(Incremented(100))
+          Effect.persist(Incremented(100))
       })
         .onSignal {
-          case (_, Terminated(_), _) ⇒
-            Persist(Incremented(10))
+          case (_, _, Terminated(_)) ⇒
+            Effect.persist(Incremented(10))
         },
-      applyEvent = (evt, state) ⇒ evt match {
+      eventHandler = (state, evt) ⇒ evt match {
         case Incremented(delta) ⇒
           State(state.value + delta, state.history :+ state.value)
       })
