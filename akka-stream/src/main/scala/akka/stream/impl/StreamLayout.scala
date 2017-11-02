@@ -135,9 +135,9 @@ import scala.util.control.NonFatal
                 case _     ⇒ pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
               }
           }
-        case _ ⇒
+        case state @ _ ⇒
           // spec violation
-          tryCancel(s)
+          tryCancel(s, new IllegalStateException(s"VirtualProcessor in wrong state [$state]. Spec violation"))
       }
 
     if (s == null) {
@@ -157,7 +157,7 @@ import scala.util.control.NonFatal
     } catch {
       case NonFatal(ex) ⇒
         set(Inert)
-        tryCancel(subscription)
+        tryCancel(subscription, ex)
         tryOnError(subscriber, ex)
     }
   }
@@ -268,7 +268,7 @@ import scala.util.control.NonFatal
 
     override def request(n: Long): Unit = {
       if (n < 1) {
-        tryCancel(real)
+        tryCancel(real, new IllegalArgumentException(s"Demand must not be < 1 but was $n"))
         VirtualProcessor.this.getAndSet(Inert) match {
           case Both(s) ⇒ rejectDueToNonPositiveDemand(s)
           case Inert   ⇒ // another failure has won the race

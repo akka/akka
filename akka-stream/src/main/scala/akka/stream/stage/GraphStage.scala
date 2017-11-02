@@ -5,6 +5,8 @@ package akka.stream.stage
 
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.deprecated
+
 import akka.NotUsed
 import java.util.concurrent.locks.ReentrantLock
 
@@ -459,8 +461,16 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Requests to stop receiving events from a given input port. Cancelling clears any ungrabbed elements from the port.
+   *
+   * It is recommended to provide a cause.
    */
-  final protected def cancel[T](in: Inlet[T]): Unit = interpreter.cancel(conn(in))
+  @deprecated("Use other overload to provide a cause for cancellation or use SubscriptionWithCancelException.NoCause", since = "2.6.0")
+  final protected def cancel[T](in: Inlet[T]): Unit = cancel(in, SubscriptionWithCancelException.NoCause)
+
+  /**
+   * Requests to stop receiving events from a given input port. Cancelling clears any ungrabbed elements from the port.
+   */
+  final protected def cancel[T](in: Inlet[T], cause: Throwable): Unit = interpreter.cancel(conn(in), cause)
 
   /**
    * Once the callback [[InHandler.onPush()]] for an input port has been invoked, the element that has been pushed
@@ -580,11 +590,21 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
    * then marks the stage as stopped.
    */
-  final def completeStage(): Unit = {
+  final def completeStage(): Unit = cancelStage(SubscriptionWithCancelException.StageWasCompleted)
+
+  /**
+   * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
+   * then marks the stage as stopped.
+   */
+  final def cancelStage(cause: Throwable): Unit = {
+    // TODO: It's debatable if completing the stage if one output is cancelled is the right way to do things.
+    //       At least optionally it might be more reasonable to fail the stage with the given cause. That
+    //       would mean that all other *outputs* are failed, i.e. it would only concern stages with more that one
+    //       output anyway.
     var i = 0
     while (i < portToConn.length) {
       if (i < inCount)
-        interpreter.cancel(portToConn(i))
+        interpreter.cancel(portToConn(i), cause)
       else handlers(i) match {
         case e: Emitting[_] ⇒ e.addFollowUp(new EmittingCompletion(e.out, e.previous))
         case _              ⇒ interpreter.complete(portToConn(i))
@@ -602,7 +622,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     var i = 0
     while (i < portToConn.length) {
       if (i < inCount)
-        interpreter.cancel(portToConn(i))
+        interpreter.cancel(portToConn(i), ex)
       else
         interpreter.fail(portToConn(i), ex)
       i += 1
@@ -1384,17 +1404,31 @@ trait OutHandler {
   @throws(classOf[Exception])
   def onPull(): Unit
 
+  // Hack to make sure that old `onDownstreamFinish` can be called without losing the cause in the default implementation
+  private[this] var lastCancellationCause: Throwable = _
+
   /**
    * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
    * be called for this port.
    */
   @throws(classOf[Exception])
-  def onDownstreamFinish(): Unit = {
+  @deprecated("Override method that provides cause.", since = "2.6.0")
+  def onDownstreamFinish(): Unit =
     GraphInterpreter
       .currentInterpreter
       .activeStage
-      .completeStage()
-  }
+      .cancelStage(lastCancellationCause)
+
+  /**
+   * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
+   * be called for this port.
+   */
+  @throws(classOf[Exception])
+  def onDownstreamFinish(cause: Throwable): Unit =
+    try {
+      lastCancellationCause = cause
+      onDownstreamFinish()
+    } finally lastCancellationCause = null
 }
 
 /**

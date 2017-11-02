@@ -334,7 +334,7 @@ final class MergePrioritized[T] private (val priorities: Seq[Int], val eagerComp
 
           override def onUpstreamFinish(): Unit = {
             if (eagerComplete) {
-              in.foreach(cancel)
+              in.foreach(cancel(_))
               runningUpstreams = 0
               if (!hasPending) completeStage()
             } else {

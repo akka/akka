@@ -471,7 +471,9 @@ import scala.util.control.NonFatal
       if (Debug) println(s"$Name CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
       connection.portState |= OutClosed
       completeConnection(connection.outOwner.stageId)
-      connection.outHandler.onDownstreamFinish()
+      val cause = connection.slot.asInstanceOf[Throwable]
+      connection.slot = Empty
+      connection.outHandler.onDownstreamFinish(cause)
     } else if ((code & (OutClosed | InClosed)) == OutClosed) {
       // COMPLETIONS
 
@@ -602,12 +604,12 @@ import scala.util.control.NonFatal
     if ((currentState & OutClosed) == 0) completeConnection(connection.outOwner.stageId)
   }
 
-  private[stream] def cancel(connection: Connection): Unit = {
+  private[stream] def cancel(connection: Connection, cause: Throwable): Unit = {
     val currentState = connection.portState
     if (Debug) println(s"$Name   cancel($connection) [$currentState]")
     connection.portState = currentState | InClosed
     if ((currentState & OutClosed) == 0) {
-      connection.slot = Empty
+      connection.slot = cause
       if ((currentState & (Pulling | Pushing | InClosed)) == 0) enqueue(connection)
       else if (chasedPull eq connection) {
         // Abort chasing so Cancel is not lost (chasing does NOT decode the event but assumes it to be a PULL
