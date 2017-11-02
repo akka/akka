@@ -23,8 +23,9 @@ object RestartSource {
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails or complete using an exponential
    * backoff.
    *
-   * This [[Source]] will never emit a complete or failure, since the completion or failure of the wrapped [[Source]]
-   * is always handled by restarting it. The wrapped [[Source]] can however be cancelled by cancelling this [[Source]].
+   * This [[Source]] will never emit a failure, since the failure of the wrapped [[Source]] is always handled by
+   * restarting. If onlyOnFailures is false, when the wrapped [[Source]] completes, it will be restarted. In general,
+   * the wrapped [[Source]] can be cancelled by cancelling this [[Source]].
    * When that happens, the wrapped [[Source]], if currently running will be cancelled, and it will not be restarted.
    * This can be triggered simply by the downstream cancelling, or externally by introducing a [[KillSwitch]] right
    * after this [[Source]] in the graph.
@@ -37,26 +38,27 @@ object RestartSource {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
+   * @param onlyOnFailures indicates that this [[Source]] should be restarted ONLY on failures and not in completions.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
+   *
    */
-  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(sourceFactory: () ⇒ Source[T, _]): Source[T, NotUsed] = {
-    Source.fromGraph(new RestartWithBackoffSource(sourceFactory, minBackoff, maxBackoff, randomFactor))
+  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, onlyOnFailures: Boolean)(sourceFactory: () ⇒ Source[T, _]): Source[T, NotUsed] = {
+    Source.fromGraph(new RestartWithBackoffSource(sourceFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures))
   }
 }
 
 private final class RestartWithBackoffSource[T](
-  sourceFactory: () ⇒ Source[T, _],
-  minBackoff:    FiniteDuration,
-  maxBackoff:    FiniteDuration,
-  randomFactor:  Double
-) extends GraphStage[SourceShape[T]] { self ⇒
+  sourceFactory:  () ⇒ Source[T, _],
+  minBackoff:     FiniteDuration,
+  maxBackoff:     FiniteDuration,
+  randomFactor:   Double,
+  onlyOnFailures: Boolean) extends GraphStage[SourceShape[T]] { self ⇒
 
   val out = Outlet[T]("RestartWithBackoffSource.out")
 
   override def shape = SourceShape(out)
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Source", shape, minBackoff, maxBackoff, randomFactor
-  ) {
+    "Source", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures) {
 
     override protected def logSource = self.getClass
 
@@ -120,15 +122,13 @@ private final class RestartWithBackoffSink[T](
   sinkFactory:  () ⇒ Sink[T, _],
   minBackoff:   FiniteDuration,
   maxBackoff:   FiniteDuration,
-  randomFactor: Double
-) extends GraphStage[SinkShape[T]] { self ⇒
+  randomFactor: Double) extends GraphStage[SinkShape[T]] { self ⇒
 
   val in = Inlet[T]("RestartWithBackoffSink.in")
 
   override def shape = SinkShape(in)
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Sink", shape, minBackoff, maxBackoff, randomFactor
-  ) {
+    "Sink", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false) {
     override protected def logSource = self.getClass
 
     override protected def startGraph() = {
@@ -187,16 +187,14 @@ private final class RestartWithBackoffFlow[In, Out](
   flowFactory:  () ⇒ Flow[In, Out, _],
   minBackoff:   FiniteDuration,
   maxBackoff:   FiniteDuration,
-  randomFactor: Double
-) extends GraphStage[FlowShape[In, Out]] { self ⇒
+  randomFactor: Double) extends GraphStage[FlowShape[In, Out]] { self ⇒
 
   val in = Inlet[In]("RestartWithBackoffFlow.in")
   val out = Outlet[Out]("RestartWithBackoffFlow.out")
 
   override def shape = FlowShape(in, out)
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Flow", shape, minBackoff, maxBackoff, randomFactor
-  ) {
+    "Flow", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false) {
 
     var activeOutIn: Option[(SubSourceOutlet[In], SubSinkInlet[Out])] = None
 
@@ -242,12 +240,12 @@ private final class RestartWithBackoffFlow[In, Out](
  * Shared logic for all restart with backoff logics.
  */
 private abstract class RestartWithBackoffLogic[S <: Shape](
-  name:         String,
-  shape:        S,
-  minBackoff:   FiniteDuration,
-  maxBackoff:   FiniteDuration,
-  randomFactor: Double
-) extends TimerGraphStageLogicWithLogging(shape) {
+  name:           String,
+  shape:          S,
+  minBackoff:     FiniteDuration,
+  maxBackoff:     FiniteDuration,
+  randomFactor:   Double,
+  onlyOnFailures: Boolean) extends TimerGraphStageLogicWithLogging(shape) {
   var restartCount = 0
   var resetDeadline = minBackoff.fromNow
   // This is effectively only used for flows, if either the main inlet or outlet of this stage finishes, then we
@@ -263,11 +261,11 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     sinkIn.setHandler(new InHandler {
       override def onPush() = push(out, sinkIn.grab())
       override def onUpstreamFinish() = {
-        if (finishing) {
+        if (finishing || onlyOnFailures) {
           complete(out)
         } else {
-          log.debug("Graph out finished")
-          onCompleteOrFailure()
+          log.debug("Restarting graph due to finished upstream")
+          scheduleRestartTimer()
         }
       }
       override def onUpstreamFailure(ex: Throwable) = {
@@ -275,7 +273,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
           fail(out, ex)
         } else {
           log.error(ex, "Restarting graph due to failure")
-          onCompleteOrFailure()
+          scheduleRestartTimer()
         }
       }
     })
@@ -307,7 +305,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
           cancel(in)
         } else {
           log.debug("Graph in finished")
-          onCompleteOrFailure()
+          scheduleRestartTimer()
         }
       }
     })
@@ -330,7 +328,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   }
 
   // Set a timer to restart after the calculated delay
-  protected final def onCompleteOrFailure() = {
+  protected final def scheduleRestartTimer() = {
     // Check if the last start attempt was more than the minimum backoff
     if (resetDeadline.isOverdue()) {
       log.debug("Last restart attempt was more than {} ago, resetting restart count", minBackoff)

@@ -22,8 +22,9 @@ object RestartSource {
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails or complete using an exponential
    * backoff.
    *
-   * This [[Source]] will never emit a complete or failure, since the completion or failure of the wrapped [[Source]]
-   * is always handled by restarting it. The wrapped [[Source]] can however be cancelled by cancelling this [[Source]].
+   * This [[Source]] will never emit a failure, since the failure of the wrapped [[Source]] is always handled by
+   * restarting. If onlyOnFailures is false, when the wrapped [[Source]] completes, it will be restarted. In general,
+   * the wrapped [[Source]] can be cancelled by cancelling this [[Source]].
    * When that happens, the wrapped [[Source]], if currently running will be cancelled, and it will not be restarted.
    * This can be triggered simply by the downstream cancelling, or externally by introducing a [[KillSwitch]] right
    * after this [[Source]] in the graph.
@@ -36,10 +37,13 @@ object RestartSource {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
+   * @param onlyOnFailures if true only restarts in failures and not in completions. Default false.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
+   *
    */
-  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
-    akka.stream.scaladsl.RestartSource.withBackoff(minBackoff, maxBackoff, randomFactor) { () ⇒
+  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, onlyOnFailures: Boolean,
+                     sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+    akka.stream.scaladsl.RestartSource.withBackoff(minBackoff, maxBackoff, randomFactor, onlyOnFailures) { () ⇒
       sourceFactory.create().asScala
     }.asJava
   }
