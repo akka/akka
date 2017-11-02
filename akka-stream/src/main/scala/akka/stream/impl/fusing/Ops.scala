@@ -27,6 +27,8 @@ import akka.stream.ActorAttributes.SupervisionStrategy
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import akka.stream.impl.Stages.DefaultAttributes
 
+import scala.util.control.NoStackTrace
+
 /**
  * INTERNAL API
  */
@@ -309,12 +311,15 @@ private[stream] object Collect {
         push(out, grab(in))
         left -= 1
       }
-      if (left <= 0) completeStage()
+      if (left <= 0) {
+        complete(out)
+        cancel(in, new RuntimeException("`take` took out all requested elements.") with NoStackTrace) //FIXME
+      }
     }
 
     override def onPull(): Unit = {
       if (left > 0) pull(in)
-      else completeStage()
+      else completeStage() // TODO: how would that happen?
     }
 
     setHandlers(in, out, this)
