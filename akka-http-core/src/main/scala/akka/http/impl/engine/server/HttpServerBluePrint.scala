@@ -664,14 +664,25 @@ private[http] object HttpServerBluePrint {
           })
 
           setHandler(fromNet, new InHandler {
-            override def onPush(): Unit = sourceOut.push(grab(fromNet).bytes)
+            override def onPush(): Unit = {
+              if (sourceOut.isAvailable) {
+                sourceOut.push(grab(fromNet).bytes)
+              }
+            }
             override def onUpstreamFinish(): Unit = sourceOut.complete()
             override def onUpstreamFailure(ex: Throwable): Unit = sourceOut.fail(ex)
           })
           sourceOut.setHandler(new OutHandler {
             override def onPull(): Unit = {
-              if (!hasBeenPulled(fromNet)) pull(fromNet)
+              // This check only needed on the first pull due to potential element
+              // pushed in response to pull by previous source
+              if (isAvailable(fromNet)) {
+                sourceOut.push(grab(fromNet).bytes)
+              } else if (!hasBeenPulled(fromNet)) {
+                pull(fromNet)
+              }
               cancelTimeout(timeoutKey)
+
               sourceOut.setHandler(new OutHandler {
                 override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
                 override def onDownstreamFinish(): Unit = cancel(fromNet)
