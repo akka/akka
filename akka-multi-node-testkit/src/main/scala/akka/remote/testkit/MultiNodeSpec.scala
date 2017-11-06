@@ -308,11 +308,11 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
         }
       }
     }
-    shutdown(system)
+    shutdown(system, duration = shutdownTimeout)
     afterTermination()
   }
 
-  def shutdownTimeout: FiniteDuration = 5.seconds.dilated
+  def shutdownTimeout: FiniteDuration = 15.seconds.dilated
 
   /**
    * Override this and return `true` to assert that the
