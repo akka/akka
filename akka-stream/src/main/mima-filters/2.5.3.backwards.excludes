@@ -7,4 +7,5 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.attributes")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.create")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.this")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$")

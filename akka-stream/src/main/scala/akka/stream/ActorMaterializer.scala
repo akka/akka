@@ -3,22 +3,19 @@
  */
 package akka.stream
 
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
 import akka.event.LoggingAdapter
-import akka.util.Helpers.toRootLowerCase
-import akka.stream.ActorMaterializerSettings.defaultMaxFixedBufferSize
+import akka.japi.function
+import akka.stream.ActorMaterializerSettings.{ defaultMaxFixedBufferSize, defaultVerboseLogErrors }
 import akka.stream.impl._
+import akka.stream.stage.GraphStageLogic
+import akka.util.Helpers.toRootLowerCase
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
-import akka.japi.function
-import akka.stream.impl.fusing.GraphInterpreterShell
-import akka.stream.stage.GraphStageLogic
-
 import scala.util.control.NoStackTrace
 
 object ActorMaterializer {
@@ -272,7 +269,9 @@ object ActorMaterializerSettings {
       fuzzingMode = config.getBoolean("debug.fuzzing-mode"),
       autoFusing = config.getBoolean("auto-fusing"),
       maxFixedBufferSize = config.getInt("max-fixed-buffer-size"),
-      syncProcessingLimit = config.getInt("sync-processing-limit"))
+      syncProcessingLimit = config.getInt("sync-processing-limit"),
+      verboseLogErrors = config.getBoolean("verbose-log-errors ")
+    )
 
   /**
    * Create [[ActorMaterializerSettings]] from individual settings (Java).
@@ -305,6 +304,7 @@ object ActorMaterializerSettings {
     apply(config)
 
   private val defaultMaxFixedBufferSize = 1000
+  private val defaultVerboseLogErrors = true
 }
 
 /**
@@ -322,7 +322,24 @@ final class ActorMaterializerSettings private (
   val fuzzingMode:                 Boolean,
   val autoFusing:                  Boolean,
   val maxFixedBufferSize:          Int,
-  val syncProcessingLimit:         Int) {
+  val syncProcessingLimit:         Int,
+  val verboseLogErrors:            Boolean) {
+
+  def this(
+    initialInputBufferSize:      Int,
+    maxInputBufferSize:          Int,
+    dispatcher:                  String,
+    supervisionDecider:          Supervision.Decider,
+    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+    debugLogging:                Boolean,
+    outputBurstLimit:            Int,
+    fuzzingMode:                 Boolean,
+    autoFusing:                  Boolean,
+    maxFixedBufferSize:          Int,
+    syncProcessingLimit:         Int) {
+    this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit, defaultVerboseLogErrors)
+  }
 
   def this(
     initialInputBufferSize:      Int,
@@ -356,10 +373,11 @@ final class ActorMaterializerSettings private (
     fuzzingMode:                 Boolean                           = this.fuzzingMode,
     autoFusing:                  Boolean                           = this.autoFusing,
     maxFixedBufferSize:          Int                               = this.maxFixedBufferSize,
-    syncProcessingLimit:         Int                               = this.syncProcessingLimit) = {
+    syncProcessingLimit:         Int                               = this.syncProcessingLimit,
+    verboseLogErrors:            Boolean                           = this.verboseLogErrors) = {
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit)
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit, verboseLogErrors)
   }
 
   /**
@@ -465,6 +483,13 @@ final class ActorMaterializerSettings private (
     if (settings == this.subscriptionTimeoutSettings) this
     else copy(subscriptionTimeoutSettings = settings)
 
+  /**
+   * Enable verbose error logging on every stage
+   */
+  def withVerboseLogErrors(verboseLogErrors: Boolean): ActorMaterializerSettings =
+    if (verboseLogErrors == this.subscriptionTimeoutSettings) this
+    else copy(verboseLogErrors = verboseLogErrors)
+
   private def requirePowerOfTwo(n: Integer, name: String): Unit = {
     require(n > 0, s"$name must be > 0")
     require((n & (n - 1)) == 0, s"$name must be a power of two")
@@ -481,7 +506,8 @@ final class ActorMaterializerSettings private (
         s.outputBurstLimit == outputBurstLimit &&
         s.syncProcessingLimit == syncProcessingLimit &&
         s.fuzzingMode == fuzzingMode &&
-        s.autoFusing == autoFusing
+        s.autoFusing == autoFusing &&
+        s.verboseLogErrors == verboseLogErrors
     case _ ⇒ false
   }
 
