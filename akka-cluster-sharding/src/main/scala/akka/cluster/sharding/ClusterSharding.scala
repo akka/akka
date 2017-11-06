@@ -166,6 +166,10 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
   private val regions: ConcurrentHashMap[String, ActorRef] =
     new ConcurrentHashMap
+
+  private val proxies: ConcurrentHashMap[String, ActorRef] =
+    new ConcurrentHashMap
+
   private lazy val guardian = {
     val guardianName: String =
       system.settings.config.getString("akka.cluster.sharding.guardian-name")
@@ -421,18 +425,18 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     val Started(shardRegion) =
       Await.result(guardian ? startMsg, timeout.duration)
     // it must be possible to start several proxies, one per data center
-    regions.put(proxyName(s"${typeName}Proxy", dataCenter), shardRegion)
+    proxies.put(proxyName(typeName, dataCenter), shardRegion)
     shardRegion
   }
 
-  private def proxyName(
-    typeName:   String,
-    dataCenter: Option[DataCenter]): String = {
-    dataCenter match {
-      case None    ⇒ typeName
-      case Some(t) ⇒ typeName + "-" + t
+    private def proxyName(
+      typeName:   String,
+      dataCenter: Option[DataCenter]): String = {
+      dataCenter match {
+        case None    ⇒ s"${typeName}Proxy"
+        case Some(t) ⇒ s"${typeName}Proxy" + "-" + t
+      }
     }
-  }
 
   /**
    * Java/Scala API: Register a named entity type `ShardRegion` on this node that will run in proxy only mode,
@@ -500,7 +504,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    */
   def shardRegion(typeName: String): ActorRef = regions.get(typeName) match {
     case null ⇒
-      regions.get(proxyName(typeName, None)) match {
+      regions.get(typeName) match {
         case null ⇒
           throw new IllegalArgumentException(
             s"Shard type [$typeName] must be started first")
@@ -517,7 +521,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * via the `ShardRegion`.
    */
   def shardRegionProxy(typeName: String, dataCenter: DataCenter): ActorRef = {
-    regions.get(proxyName(typeName, Some(dataCenter))) match {
+    proxies.get(proxyName(typeName, Some(dataCenter))) match {
       case null ⇒
         throw new IllegalArgumentException(
           s"Shard type [$typeName] must be started first")
