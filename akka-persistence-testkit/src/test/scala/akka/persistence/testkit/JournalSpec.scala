@@ -7,9 +7,9 @@ import org.scalatest.WordSpecLike
 
 class JournalSpec extends PersistenceTestKit with WordSpecLike with ImplicitSender {
 
-  "this spec" should {
+  "PersistenceTestkit" should {
 
-    "init journal" in {
+    "expect next valid message" in {
 
       val a = system.actorOf(Props[A])
 

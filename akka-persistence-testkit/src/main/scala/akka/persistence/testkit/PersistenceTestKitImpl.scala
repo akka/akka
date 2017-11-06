@@ -13,7 +13,7 @@ import akka.util.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.collection.{ immutable }
+import scala.collection.immutable
 
 trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
@@ -30,7 +30,12 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
   final val map: ConcurrentHashMap[String, BlockingDeque[PersistentRepr]] = new ConcurrentHashMap()
 
-  val journal = Persistence(system).addNewJournal(() ⇒ system.actorOf(Props(classOf[PersistenceTestKitPlugin], map)), PersistenceTestKitPlugin.PluginId)
+  //todo this should be atomicref
+  final val decider: RejectionDecider = new RejectionDecider(new RejectionPolicy {
+    override def rejectOrPass(msg: Any) = PassMessage
+  })
+
+  val journal = Persistence(system).addNewJournal(() ⇒ system.actorOf(Props(classOf[PersistenceTestKitPlugin], map, decider)), PersistenceTestKitPlugin.PluginId)
 
   override def expectNextPersisted(persistenceId: String, msg: Any): Unit = {
     val actual = receiveOnePersisted(persistenceId)
@@ -43,12 +48,19 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
   override def expectPersistedInAnyOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit = ???
 
+  override def withRejectionPolicy(rej: RejectionPolicy) = ???
+
+  override def clearTheJournal() = {
+    map.clear()
+  }
+
   private def receiveOnePersisted(persistenceId: String): Any = {
     val msg = map.computeIfAbsent(persistenceId, new java.util.function.Function[String, BlockingDeque[PersistentRepr]] {
       override def apply(v1: String) = {
         new LinkedBlockingDeque[PersistentRepr]()
       }
     })
+      //todo this can be changed to peek or find, not to delete the message from queue
       .pollFirst(timeout.duration.length, timeout.duration.unit)
       .payload
     msg
@@ -66,14 +78,29 @@ trait PersistentTestKitOps {
 
   def recoverWith(persistenceId: String, msgs: immutable.Seq[Any])
 
+  def clearTheJournal(): Unit
+
+  //todo probably init new journal for each policy
+  def withRejectionPolicy(rej: RejectionPolicy)
+
 }
 
-class PersistenceTestKitPlugin(val map: ConcurrentHashMap[String, BlockingDeque[PersistentRepr]]) extends AsyncWriteJournal {
+class PersistenceTestKitPlugin(val map: ConcurrentHashMap[String, BlockingDeque[PersistentRepr]], val decider: RejectionDecider) extends AsyncWriteJournal {
 
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]) = {
-    for (w ← messages; p ← w.payload)
-      add(p)
-    Future.successful(Nil)
+    var failed: Option[Throwable] = None
+    for (w ← messages; p ← w.payload if failed.isEmpty) {
+      decider.policy.rejectOrPass(p) match {
+        case PassMessage ⇒
+          add(p)
+        case Reject(e) ⇒
+          failed = Some(e)
+      }
+    }
+    failed match {
+      case None    ⇒ Future.successful(Nil)
+      case Some(e) ⇒ Future.failed(e)
+    }
   }
 
   def add(p: PersistentRepr): Unit = map.compute(p.persistenceId, new BiFunction[String, BlockingDeque[PersistentRepr], BlockingDeque[PersistentRepr]] {
@@ -93,11 +120,13 @@ class PersistenceTestKitPlugin(val map: ConcurrentHashMap[String, BlockingDeque[
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit) = ???
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long) = {
-    Future.successful(Option(map.computeIfAbsent(persistenceId, new java.util.function.Function[String, BlockingDeque[PersistentRepr]] {
-      override def apply(v1: String) = {
-        new LinkedBlockingDeque[PersistentRepr]()
-      }
-    }).pollFirst()).map(_.sequenceNr).getOrElse(0L))
+    val result = Option(
+      map.computeIfAbsent(persistenceId, new java.util.function.Function[String, BlockingDeque[PersistentRepr]] {
+        override def apply(v1: String) = {
+          new LinkedBlockingDeque[PersistentRepr]()
+        }
+      }).pollFirst()).map(_.sequenceNr).getOrElse(0L)
+    Future.successful(result)
   }
 
 }
