@@ -545,7 +545,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       // Detailed error information should not add overhead to the hot path
       ReactiveStreamsCompliance.requireNonNullElement(elem)
       require(!isClosed(out), s"Cannot push closed port ($out)")
-      require(isAvailable(out), s"Cannot push port ($out) twice")
+      require(isAvailable(out), s"Cannot push port ($out) twice or before being pulled")
 
       // No error, just InClosed caused the actual pull to be ignored, but the status flag still needs to be flipped
       connection.portState = portState ^ PushStartFlip
