@@ -107,8 +107,6 @@ Sinks and flows can also be supervised, using @scala[`akka.stream.scaladsl.Resta
 @java[`akka.stream.scaladsl.RestartSink` and `akka.stream.scaladsl.RestartFlow`]. The `RestartSink` is restarted when 
 it cancels, while the `RestartFlow` is restarted when either the in port cancels, the out port completes, or the out
  port sends an error.
- 
- 
 
 ## Supervision Strategies
 

@@ -30,7 +30,7 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
   "A restart with backoff source" should {
     "run normally" in assertAllStagesStopped {
       val created = new AtomicInteger()
-      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0, false) { () ⇒
+      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
         created.incrementAndGet()
         Source.repeat("a")
       }.runWith(TestSink.probe)
@@ -48,7 +48,7 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
 
     "restart on completion" in assertAllStagesStopped {
       val created = new AtomicInteger()
-      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0, false) { () ⇒
+      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
         created.incrementAndGet()
         Source(List("a", "b"))
       }.runWith(TestSink.probe)
@@ -66,11 +66,11 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
 
     "restart on failure" in assertAllStagesStopped {
       val created = new AtomicInteger()
-      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0, false) { () ⇒
+      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
         created.incrementAndGet()
         Source(List("a", "b", "c"))
           .map {
-            case "c" ⇒ throw TE("failed")
+            case "c"   ⇒ throw TE("failed")
             case other ⇒ other
           }
       }.runWith(TestSink.probe)
@@ -88,7 +88,7 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
 
     "backoff before restart" in assertAllStagesStopped {
       val created = new AtomicInteger()
-      val probe = RestartSource.withBackoff(minBackoff, maxBackoff, 0, false) { () ⇒
+      val probe = RestartSource.withBackoff(minBackoff, maxBackoff, 0) { () ⇒
         created.incrementAndGet()
         Source(List("a", "b"))
       }.runWith(TestSink.probe)
@@ -110,7 +110,7 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
 
     "reset exponential backoff back to minimum when source runs for at least minimum backoff without completing" in assertAllStagesStopped {
       val created = new AtomicInteger()
-      val probe = RestartSource.withBackoff(minBackoff, maxBackoff, 0, false) { () ⇒
+      val probe = RestartSource.withBackoff(minBackoff, maxBackoff, 0) { () ⇒
         created.incrementAndGet()
         Source(List("a", "b"))
       }.runWith(TestSink.probe)
@@ -161,7 +161,7 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
 
     "not restart the source when cancelled while backing off" in assertAllStagesStopped {
       val created = new AtomicInteger()
-      val probe = RestartSource.withBackoff(minBackoff, maxBackoff, 0, false) { () ⇒
+      val probe = RestartSource.withBackoff(minBackoff, maxBackoff, 0) { () ⇒
         created.incrementAndGet()
         Source.single("a")
       }.runWith(TestSink.probe)
@@ -178,11 +178,11 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
 
     "stop on completion if only should be restarted in failures" in assertAllStagesStopped {
       val created = new AtomicInteger()
-      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0, true) { () ⇒
+      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
         created.incrementAndGet()
         Source(List("a", "b", "c"))
           .map {
-            case "c" ⇒ if (created.get() == 1) throw TE("failed") else "c"
+            case "c"   ⇒ if (created.get() == 1) throw TE("failed") else "c"
             case other ⇒ other
           }
       }.runWith(TestSink.probe)
@@ -202,11 +202,11 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
 
     "restart on failure when only due to failures should be restarted" in assertAllStagesStopped {
       val created = new AtomicInteger()
-      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0, true) { () ⇒
+      val probe = RestartSource.onFailuresWithBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
         created.incrementAndGet()
         Source(List("a", "b", "c"))
           .map {
-            case "c" ⇒ throw TE("failed")
+            case "c"   ⇒ throw TE("failed")
             case other ⇒ other
           }
       }.runWith(TestSink.probe)
@@ -379,7 +379,7 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
             .takeWhile(_ != "complete")
             .map {
               case "error" ⇒ throw TE("error")
-              case other ⇒ other
+              case other   ⇒ other
             }.watchTermination()((_, term) ⇒
               term.foreach(_ ⇒ {
                 flowInSource.sendNext("out complete")
