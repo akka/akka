@@ -36,7 +36,8 @@ import scala.concurrent.{ Future, Promise }
   val options:             immutable.Traversable[SocketOption],
   val halfClose:           Boolean,
   val idleTimeout:         Duration,
-  val bindShutdownTimeout: FiniteDuration)
+  val bindShutdownTimeout: FiniteDuration,
+  val ioSettings:          IOSettings)
   extends GraphStageWithMaterializedValue[SourceShape[StreamTcp.IncomingConnection], Future[StreamTcp.ServerBinding]] {
   import ConnectionSourceStage._
 
@@ -114,7 +115,7 @@ import scala.concurrent.{ Future, Promise }
         connectionFlowsAwaitingInitialization.incrementAndGet()
 
         val tcpFlow =
-          Flow.fromGraph(new IncomingConnectionStage(connection, connected.remoteAddress, halfClose))
+          Flow.fromGraph(new IncomingConnectionStage(connection, connected.remoteAddress, halfClose, ioSettings))
             .via(detacher[ByteString]) // must read ahead for proper completions
             .mapMaterializedValue { m ⇒
               connectionFlowsAwaitingInitialization.decrementAndGet()
@@ -176,13 +177,16 @@ private[stream] object ConnectionSourceStage {
 
   trait TcpRole {
     def halfClose: Boolean
+    def ioSettings: IOSettings
   }
   case class Outbound(
     manager:             ActorRef,
     connectCmd:          Connect,
     localAddressPromise: Promise[InetSocketAddress],
-    halfClose:           Boolean) extends TcpRole
-  case class Inbound(connection: ActorRef, halfClose: Boolean) extends TcpRole
+    halfClose:           Boolean,
+    ioSettings:          IOSettings) extends TcpRole
+
+  case class Inbound(connection: ActorRef, halfClose: Boolean, ioSettings: IOSettings) extends TcpRole
 
   /*
    * This is a *non-detached* design, i.e. this does not prefetch itself any of the inputs. It relies on downstream
@@ -198,6 +202,11 @@ private[stream] object ConnectionSourceStage {
     private def bytesOut = shape.out
     private var connection: ActorRef = _
 
+    private val writeBufferSize = role.ioSettings.tcpWriteBufferSize
+    private var writeBuffer = ByteString.empty
+    private var writePending = false
+    private var connectionClosePending = false
+
     // No reading until role have been decided
     setHandler(bytesOut, new OutHandler {
       override def onPull(): Unit = ()
@@ -206,13 +215,13 @@ private[stream] object ConnectionSourceStage {
     override def preStart(): Unit = {
       setKeepGoing(true)
       role match {
-        case Inbound(conn, _) ⇒
+        case Inbound(conn, _, _) ⇒
           setHandler(bytesOut, readHandler)
           connection = conn
           getStageActor(connected).watch(connection)
           connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
           pull(bytesIn)
-        case ob @ Outbound(manager, cmd, _, _) ⇒
+        case ob @ Outbound(manager, cmd, _, _, _) ⇒
           getStageActor(connecting(ob)).watch(manager)
           manager ! cmd
       }
@@ -238,9 +247,30 @@ private[stream] object ConnectionSourceStage {
     }
 
     private def connected(evt: (ActorRef, Any)): Unit = {
-      val sender = evt._1
       val msg = evt._2
       msg match {
+        case Received(data) ⇒
+          // Keep on reading even when closed. There is no "close-read-side" in TCP
+          if (isClosed(bytesOut)) connection ! ResumeReading
+          else push(bytesOut, data)
+
+        case WriteAck ⇒
+          if (writeBuffer.isEmpty)
+            writePending = false
+          else {
+            connection ! Write(writeBuffer, WriteAck)
+            writePending = true
+            writeBuffer = ByteString.empty
+          }
+
+          if (!writePending && connectionClosePending) {
+            // continue onUpstreamFinish
+            closeConnection()
+          }
+
+          if (!isClosed(bytesIn) && !hasBeenPulled(bytesIn))
+            pull(bytesIn)
+
         case Terminated(_)          ⇒ failStage(new StreamTcpException("The connection actor has terminated. Stopping now."))
         case f @ CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}"))
         case ErrorClosed(cause)     ⇒ failStage(new StreamTcpException(s"The connection closed with error: $cause"))
@@ -249,13 +279,25 @@ private[stream] object ConnectionSourceStage {
         case ConfirmedClosed        ⇒ completeStage()
         case PeerClosed             ⇒ complete(bytesOut)
 
-        case Received(data) ⇒
-          // Keep on reading even when closed. There is no "close-read-side" in TCP
-          if (isClosed(bytesOut)) connection ! ResumeReading
-          else push(bytesOut, data)
-
-        case WriteAck ⇒ if (!isClosed(bytesIn)) pull(bytesIn)
       }
+    }
+
+    private def closeConnection(): Unit = {
+      // Note that if there are pending bytes in the writeBuffer those must be written first.
+      if (isClosed(bytesOut) || !role.halfClose) {
+        // Reading has stopped before, either because of cancel, or PeerClosed, so just Close now
+        // (or half-close is turned off)
+        if (writePending)
+          connectionClosePending = true // will continue when WriteAck is received and writeBuffer drained
+        else
+          connection ! Close
+      } else if (connection != null) {
+        // We still read, so we only close the write side
+        if (writePending)
+          connectionClosePending = true // will continue when WriteAck is received and writeBuffer drained
+        else
+          connection ! ConfirmedClose
+      } else completeStage()
     }
 
     val readHandler = new OutHandler {
@@ -276,17 +318,20 @@ private[stream] object ConnectionSourceStage {
       override def onPush(): Unit = {
         val elem = grab(bytesIn)
         ReactiveStreamsCompliance.requireNonNullElement(elem)
-        connection ! Write(elem.asInstanceOf[ByteString], WriteAck)
+        if (writePending) {
+          writeBuffer = writeBuffer ++ elem
+        } else {
+          connection ! Write(writeBuffer ++ elem, WriteAck)
+          writePending = true
+          writeBuffer = ByteString.empty
+        }
+        if (writeBuffer.size < writeBufferSize)
+          pull(bytesIn)
+
       }
 
-      override def onUpstreamFinish(): Unit = {
-        // Reading has stopped before, either because of cancel, or PeerClosed, so just Close now
-        // (or half-close is turned off)
-        if (isClosed(bytesOut) || !role.halfClose) connection ! Close
-        // We still read, so we only close the write side
-        else if (connection != null) connection ! ConfirmedClose
-        else completeStage()
-      }
+      override def onUpstreamFinish(): Unit =
+        closeConnection()
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
         if (connection != null) {
@@ -302,18 +347,20 @@ private[stream] object ConnectionSourceStage {
     })
 
     override def postStop(): Unit = role match {
-      case Outbound(_, _, localAddressPromise, _) ⇒
+      case Outbound(_, _, localAddressPromise, _, _) ⇒
         // Fail if has not been completed with an address earlier
         localAddressPromise.tryFailure(new StreamTcpException("Connection failed."))
       case _ ⇒ // do nothing...
     }
+    writeBuffer = ByteString.empty
   }
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean)
+@InternalApi private[akka] class IncomingConnectionStage(
+  connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean, ioSettings: IOSettings)
   extends GraphStage[FlowShape[ByteString, ByteString]] {
   import TcpConnectionStage._
 
@@ -328,7 +375,7 @@ private[stream] object ConnectionSourceStage {
     if (hasBeenCreated.get) throw new IllegalStateException("Cannot materialize an incoming connection Flow twice.")
     hasBeenCreated.set(true)
 
-    new TcpStreamLogic(shape, Inbound(connection, halfClose), remoteAddress)
+    new TcpStreamLogic(shape, Inbound(connection, halfClose, ioSettings), remoteAddress)
   }
 
   override def toString = s"TCP-from($remoteAddress)"
@@ -343,7 +390,8 @@ private[stream] object ConnectionSourceStage {
   localAddress:   Option[InetSocketAddress]           = None,
   options:        immutable.Traversable[SocketOption] = Nil,
   halfClose:      Boolean                             = true,
-  connectTimeout: Duration                            = Duration.Inf)
+  connectTimeout: Duration                            = Duration.Inf,
+  ioSettings:     IOSettings)
 
   extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {
   import TcpConnectionStage._
@@ -365,7 +413,8 @@ private[stream] object ConnectionSourceStage {
       manager,
       Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
       localAddressPromise,
-      halfClose),
+      halfClose,
+      ioSettings),
       remoteAddress)
 
     (logic, localAddressPromise.future.map(OutgoingConnection(remoteAddress, _))(ExecutionContexts.sameThreadExecutionContext))
