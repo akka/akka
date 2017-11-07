@@ -142,7 +142,7 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
     "cancel the currently running source when cancelled" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val promise = Promise[Done]()
-      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0, false) { () ⇒
+      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
         created.incrementAndGet()
         Source.repeat("a").watchTermination() { (_, term) ⇒
           promise.completeWith(term)
