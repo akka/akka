@@ -217,6 +217,7 @@ object MultiNodeSpec {
         loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
+        coordinated-shutdown.terminate-actor-system = off
         coordinated-shutdown.run-by-jvm-shutdown-hook = off
         actor {
           default-dispatcher {

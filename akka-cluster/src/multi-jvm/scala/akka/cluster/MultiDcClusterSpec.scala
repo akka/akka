@@ -21,7 +21,6 @@ class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
     s"""
       # DEBUG On for issue #23864
       akka.loglevel = DEBUG
-      akka.coordinated-shutdown.terminate-actor-system = off
       akka.cluster.multi-data-center.cross-data-center-connections = $crossDcConnections
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
