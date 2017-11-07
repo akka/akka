@@ -392,7 +392,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   override def stash(): Unit = {
     context.asInstanceOf[ActorCell].currentMessage match {
       case Envelope(_: JournalProtocol.Response, _) ⇒
-        throw new IllegalStateException("Do not call stash inside of persist callback.")
+        throw new IllegalStateException("Do not call stash inside of persist callback or during recovery.")
       case _ ⇒ super.stash()
     }
   }

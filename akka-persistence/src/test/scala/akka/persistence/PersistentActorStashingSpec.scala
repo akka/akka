@@ -4,11 +4,11 @@
 
 package akka.persistence
 
-import akka.actor.ActorRef
+import akka.actor.SupervisorStrategy.Resume
+import akka.actor.{ActorRef, OneForOneStrategy, Actor, Props}
 import akka.persistence.journal.SteppingInmemJournal
 import akka.testkit.ImplicitSender
 import com.typesafe.config.Config
-
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
@@ -139,17 +139,28 @@ object PersistentActorStashingSpec {
     }
   }
 
+  class StashWithinHandlerSupervisor(target: ActorRef, name: String) extends Actor {
+
+    val child = context.actorOf(Props(classOf[StashWithinHandlerPersistentActor], name))
+
+    override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
+      case ex: Exception ⇒
+        target ! ex
+        Resume
+    }
+
+    def receive = {
+      case c: Cmd ⇒ child ! c
+    }
+  }
+
   class StashWithinHandlerPersistentActor(name: String) extends NamedPersistentActor(name) {
     val receiveRecover: Receive = {
       case _ ⇒ // ignore
     }
 
     def stashWithinHandler(evt: Evt) = {
-      try stash()
-      catch {
-        case ex: IllegalStateException if ex.getMessage.startsWith("Do not call stash") ⇒
-          sender ! evt.data
-      }
+      stash()
     }
 
     val receiveCommand: Receive = {
@@ -218,16 +229,23 @@ abstract class PersistentActorStashingSpec(config: Config) extends PersistenceSp
 
   "Stashing(stash called in handler) in a persistent actor" must {
     "fail when calling stash in persist handler" in {
-      val actor = namedPersistentActor[StashWithinHandlerPersistentActor]
+
+      def expectError(): Unit = {
+        expectMsgPF() {
+          case ex: IllegalStateException if ex.getMessage.startsWith("Do not call stash") ⇒ ()
+        }
+      }
+
+      val actor = system.actorOf(Props(classOf[StashWithinHandlerSupervisor], testActor, name))
 
       actor ! Cmd("a")
-      expectMsg("a")
+      expectError()
 
       actor ! Cmd("b")
-      expectMsg("b")
+      expectError()
 
       actor ! Cmd("c")
-      expectMsg("c")
+      expectError()
     }
   }
 }
