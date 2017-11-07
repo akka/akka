@@ -309,6 +309,7 @@ lazy val streamTestkit = akkaModule("akka-stream-testkit")
   .dependsOn(stream, testkit % "compile->compile;test->test")
   .settings(Dependencies.streamTestkit)
   .settings(OSGi.streamTestkit)
+  .disablePlugins(MimaPlugin)
 
 lazy val streamTests = akkaModule("akka-stream-tests")
   .dependsOn(streamTestkit % "test->test", stream)
