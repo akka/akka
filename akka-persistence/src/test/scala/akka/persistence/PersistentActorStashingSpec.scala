@@ -5,7 +5,7 @@
 package akka.persistence
 
 import akka.actor.SupervisorStrategy.Resume
-import akka.actor.{ActorRef, OneForOneStrategy, Actor, Props}
+import akka.actor.{ ActorRef, OneForOneStrategy, Actor, Props }
 import akka.persistence.journal.SteppingInmemJournal
 import akka.testkit.ImplicitSender
 import com.typesafe.config.Config
@@ -230,22 +230,18 @@ abstract class PersistentActorStashingSpec(config: Config) extends PersistenceSp
   "Stashing(stash called in handler) in a persistent actor" must {
     "fail when calling stash in persist handler" in {
 
-      def expectError(): Unit = {
+      val actor = system.actorOf(Props(classOf[StashWithinHandlerSupervisor], testActor, name))
+
+      def stashInPersist(s: String): Unit = {
+        actor ! Cmd(s)
         expectMsgPF() {
           case ex: IllegalStateException if ex.getMessage.startsWith("Do not call stash") ⇒ ()
         }
       }
 
-      val actor = system.actorOf(Props(classOf[StashWithinHandlerSupervisor], testActor, name))
-
-      actor ! Cmd("a")
-      expectError()
-
-      actor ! Cmd("b")
-      expectError()
-
-      actor ! Cmd("c")
-      expectError()
+      stashInPersist("a")
+      stashInPersist("b")
+      stashInPersist("c")
     }
   }
 }
