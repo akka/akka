@@ -176,9 +176,9 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
       created.get() should ===(1)
     }
 
-    "stop on completion if only should be restarted in failures" in assertAllStagesStopped {
+    "stop on completion if it should only be restarted in failures" in assertAllStagesStopped {
       val created = new AtomicInteger()
-      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
+      val probe = RestartSource.onFailuresWithBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
         created.incrementAndGet()
         Source(List("a", "b", "c"))
           .map {
