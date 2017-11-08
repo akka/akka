@@ -241,6 +241,18 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       probe.expectNoMessage(3.seconds)
     }
 
+    "execute andThen callback for stay" in {
+      val persistenceId = name
+      val probe = TestProbe()
+      val fsmRef = system.actorOf(SimpleTransitionFSM.props(persistenceId, probe.ref))
+
+      fsmRef ! "stay andThen report"
+      probe.fishForMessage(hint = "expect I'm staying message") {
+        case "I'm staying"                    ⇒ true
+        case "LookingAround -> LookingAround" ⇒ false
+      }
+    }
+
     "not persist state change event when staying in the same state" in {
       val persistenceId = name
 
@@ -458,8 +470,9 @@ object PersistentFSMSpec {
     startWith(LookingAround, EmptyShoppingCart)
 
     when(LookingAround) {
-      case Event("stay", _) ⇒ stay()
-      case Event(e, _)      ⇒ goto(LookingAround)
+      case Event("stay andThen report", _) ⇒ stay andThen { _ ⇒ reportActor ! "I'm staying" }
+      case Event("stay", _)                ⇒ stay()
+      case Event(e, _)                     ⇒ goto(LookingAround)
     }
 
     onTransition {
