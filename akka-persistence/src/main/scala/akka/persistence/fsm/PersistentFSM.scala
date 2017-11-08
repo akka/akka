@@ -140,6 +140,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
     if (eventsToPersist.isEmpty) {
       //If there are no events to persist, just apply the state
       super.applyState(nextState)
+      nextState.afterTransitionDo(stateData)
     } else {
       //Persist the events and apply the new state after all event handlers were executed
       var nextData: D = stateData
