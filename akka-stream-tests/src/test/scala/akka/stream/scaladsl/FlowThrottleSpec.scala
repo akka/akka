@@ -124,10 +124,6 @@ class FlowThrottleSpec extends StreamSpec {
       (1 to 5) foreach upstream.sendNext
       downstream.receiveWithin(300.millis, 5) should be(1 to 5)
 
-      downstream.request(1)
-      upstream.sendNext(6)
-      downstream.expectNoMsg(100.millis)
-      downstream.expectNext(6)
       downstream.request(5)
       downstream.expectNoMsg(1200.millis)
       for (i ← 7 to 11) upstream.sendNext(i)

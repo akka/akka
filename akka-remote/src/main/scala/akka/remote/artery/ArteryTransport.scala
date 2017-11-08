@@ -19,6 +19,7 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
+
 import akka.Done
 import akka.NotUsed
 import akka.actor._
@@ -530,7 +531,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     val maybeDriver = mediaDriver.getAndSet(None)
     maybeDriver.foreach { driver ⇒
       // this is only for embedded media driver
-      driver.close()
+      try driver.close() catch {
+        case NonFatal(e) ⇒
+          // don't think driver.close will ever throw, but just in case
+          log.warning("Couldn't close Aeron embedded media driver due to [{}]", e.getMessage)
+      }
 
       try {
         if (settings.Advanced.DeleteAeronDirectory) {
@@ -619,12 +624,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         log.debug("Inbound channel is now active")
       } else if (status == ChannelEndpointStatus.ERRORED) {
         areonErrorLog.logErrors(log, 0L)
+        stopMediaDriver()
         throw new RemoteTransportException("Inbound Aeron channel is in errored state. See Aeron logs for details.")
       } else if (status == ChannelEndpointStatus.INITIALIZING && retries > 0) {
         Thread.sleep(waitInterval)
         retry(retries - 1)
       } else {
         areonErrorLog.logErrors(log, 0L)
+        stopMediaDriver()
         throw new RemoteTransportException("Timed out waiting for Aeron transport to bind. See Aeoron logs.")
       }
     }

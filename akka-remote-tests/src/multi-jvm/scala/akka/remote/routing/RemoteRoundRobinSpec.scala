@@ -25,7 +25,6 @@ class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString(s"""
-      akka.loglevel = DEBUG
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 

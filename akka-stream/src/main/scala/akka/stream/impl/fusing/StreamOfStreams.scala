@@ -606,7 +606,7 @@ import scala.collection.JavaConverters._
   extends GraphStage[SinkShape[T]] {
   import SubSink._
 
-  private val in = Inlet[T]("SubSink.in")
+  private val in = Inlet[T](s"SubSink($name).in")
 
   override def initialAttributes = Attributes.name(s"SubSink($name)")
   override val shape = SinkShape(in)
@@ -676,7 +676,7 @@ import scala.collection.JavaConverters._
   extends GraphStage[SourceShape[T]] {
   import SubSink._
 
-  val out: Outlet[T] = Outlet("SubSource.out")
+  val out: Outlet[T] = Outlet(s"SubSource($name).out")
   override def initialAttributes = Attributes.name(s"SubSource($name)")
   override val shape: SourceShape[T] = SourceShape(out)
 
