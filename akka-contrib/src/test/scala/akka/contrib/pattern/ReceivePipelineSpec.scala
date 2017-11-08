@@ -28,11 +28,36 @@ object ReceivePipelineSpec {
     }
   }
 
+  // has an interceptor that can be removed with a message
+
+  class RemovableInterceptorActor extends Actor with ReceivePipeline with ActorLogging {
+
+    val incrementIntInterceptor: Interceptor = {
+
+      case n: Int ⇒
+        Inner({
+          n + 1
+        })
+    }
+
+    val addedInterceptor = pipelineInner(incrementIntInterceptor)
+
+    def receive = {
+      case n: Int ⇒
+        sender ! n
+      case "remove" ⇒
+        removeInterceptor(addedInterceptor)
+        sender ! "removed"
+    }
+
+  }
+
   class TotallerActor extends Actor with ReceivePipeline {
     var total = 0
     def receive: Actor.Receive = {
-      case m: Int ⇒ total += m
-      case "get"  ⇒ sender ! total
+      case m: Int ⇒
+        total += m
+      case "get" ⇒ sender ! total
     }
   }
 
@@ -163,6 +188,17 @@ class ReceivePipelineSpec extends AkkaSpec with ImplicitSender {
       innerOuterReplier ! 6
       expectMsg(IntList(List(16, 17, 18)))
     }
+
+    "support removing an interceptor" in {
+      val replier = system.actorOf(Props(new RemovableInterceptorActor))
+      replier ! 8
+      expectMsg(9)
+      replier ! "remove"
+      expectMsg("removed")
+      replier ! 8
+      expectMsg(8)
+    }
+
   }
 
 }

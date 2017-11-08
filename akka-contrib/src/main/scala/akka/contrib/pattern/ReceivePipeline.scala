@@ -54,17 +54,33 @@ trait ReceivePipeline extends Actor {
   /**
    * Adds an inner interceptor, it will be applied lastly, near to Actor's original behavior
    * @param interceptor an interceptor
+   * @return the interceptor added
    */
-  def pipelineInner(interceptor: Interceptor): Unit = {
-    pipeline :+= withDefault(interceptor)
+  def pipelineInner(interceptor: Interceptor): Interceptor = {
+    val interceptorWithDefault = withDefault(interceptor)
+    pipeline :+= interceptorWithDefault
     decoratorCache = None
+    interceptorWithDefault
   }
+
   /**
    * Adds an outer interceptor, it will be applied firstly, far from Actor's original behavior
    * @param interceptor an interceptor
+   * @return the interceptor added
    */
-  def pipelineOuter(interceptor: Interceptor): Unit = {
-    pipeline +:= withDefault(interceptor)
+  def pipelineOuter(interceptor: Interceptor): Interceptor = {
+    val interceptorWithDefault = withDefault(interceptor)
+    pipeline +:= interceptorWithDefault
+    decoratorCache = None
+    interceptorWithDefault
+  }
+
+  /**
+   * Removes an outer interceptor
+   *  @param interceptor Interceptor to remove
+   */
+  def removeInterceptor(interceptor: Interceptor): Unit = {
+    pipeline = pipeline.filterNot(i ⇒ i == interceptor)
     decoratorCache = None
   }
 
