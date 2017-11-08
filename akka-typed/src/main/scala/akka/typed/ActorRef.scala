@@ -29,7 +29,7 @@ trait ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] {
   def tell(msg: T): Unit
 
   /**
-   * Narrow the type of this `ActorRef, which is always a safe operation.
+   * Narrow the type of this `ActorRef`, which is always a safe operation.
    */
   def narrow[U <: T]: ActorRef[U]
 
