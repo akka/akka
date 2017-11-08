@@ -355,3 +355,56 @@ been signalled already – thus the ordering in the case of zipping is defined b
 If you find yourself in need of fine grained control over order of emitted elements in fan-in
 scenarios consider using `MergePreferred`, `MergePrioritized` or `GraphStage` – which gives you full control over how the
 merge is performed.
+
+# Actor Materializer Lifecycle
+
+An important aspect of working with streams and actors is understanding an `ActorMaterializer`'s life-cycle.
+The materializer is bound to the lifecycle of the `ActorRefFactory` it is created from, which in practice will
+be either an `ActorSystem` or `ActorContext` (when the materializer is created within an `Actor`).
+
+The usual way of creating an `ActorMaterializer` is to create it next to your `ActorSystem`,
+which likely is in a "main" class of your application:
+
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-system }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materializer-from-system }
+
+In this case the streams run by the materializer will run until it is shut down. When the materializer is shut down
+*before* the streams have run to completion, they will be terminated abruptly. This is a little different than the
+usual way to terminate streams, which is by cancelling/completing them. The stream lifecycles are bound to the materializer
+like this to prevent leaks, and in normal operations you should not rely on the mechanism and rather use `KillSwitch` or
+normal completion signals to manage the lifecycles of your streams.  
+
+If we look at the following example, where we create the `ActorMaterializer` within an `Actor`:
+
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-actor-context }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materializer-from-actor-context }
+
+In the above example we used the `ActorContext` to create the materializer. This binds its lifecycle to the surrounding `Actor`. In other words, while the stream we started there would under normal circumstances run forever, if we stop the Actor it would terminate the stream as well. We have *bound the streams' lifecycle to the surrounding actor's lifecycle*.
+This is a very useful technique if the stream is closely related to the actor, e.g. when the actor represents an user or other entity, that we continiously query using the created stream -- and it would not make sense to keep the stream alive when the actor has terminated already. The streams termination will be signalled by an "Abrupt termination exception" signaled by the stream.
+
+You may also cause an `ActorMaterializer` to shutdown by explicitly calling `shutdown()` on it, resulting in abruptly terminating all of the streams it has been running then. 
+
+Sometimes however you may want to explicitly create a stream that will out-last the actor's life. For example, if you want to continue pushing some large stream of data to an external service and are doing so via an Akka stream while you already want to eagerly stop the Actor since it has performed all of it's duties already:
+
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-system-in-actor }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materializer-from-system-in-actor }
+
+In the above example we pass in a materializer to the Actor, which results in binding its lifecycle to the entire `ActorSystem` rather than the single enclosing actor. This can be useful if you want to share a materializer or group streams into specific materializers,
+for example because of the materializer's settings etc.
+
+@@@ warning
+
+Do not create new actor materializers inside actors by passing the `context.system` to it. 
+This will cause a new @ActorMaterializer@ to be created and potentially leaked (unless you shut it down explicitly) for each such actor.
+It is instead recommended to either pass-in the Materializer or create one using the actor's `context`.
+
+@@@
