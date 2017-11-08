@@ -9,7 +9,6 @@ import java.io.File
 import akka.actor.{ ActorSystem, _ }
 import akka.persistence._
 import akka.persistence.fsm.PersistentFSM._
-import akka.persistence.fsm.PersistentFSMSpec.IntAdded
 import akka.testkit._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils
@@ -22,7 +21,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
   import PersistentFSMSpec._
 
   //Dummy report actor, for tests that don't need it
-  val dummyReportActorRef = TestProbe().ref
+  private val dummyReportActorRef = TestProbe().ref
 
   "PersistentFSM" must {
     "function as a regular FSM " in {
@@ -199,7 +198,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       expectMsg(CurrentState(fsmRef, LookingAround, None))
       expectMsg(Transition(fsmRef, LookingAround, Shopping, Some(1 second)))
 
-      expectNoMsg(0.6 seconds) // arbitrarily chosen delay, less than the timeout, before stopping the FSM
+      expectNoMessage(0.6 seconds) // arbitrarily chosen delay, less than the timeout, before stopping the FSM
       fsmRef ! PoisonPill
       expectTerminated(fsmRef)
 
@@ -216,7 +215,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
         expectMsg(Transition(recoveredFsmRef, Shopping, Inactive, Some(2 seconds)))
       }
 
-      expectNoMsg(0.6 seconds) // arbitrarily chosen delay, less than the timeout, before stopping the FSM
+      expectNoMessage(0.6 seconds) // arbitrarily chosen delay, less than the timeout, before stopping the FSM
       recoveredFsmRef ! PoisonPill
       expectTerminated(recoveredFsmRef)
 
@@ -239,7 +238,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       probe.expectMsg(3.seconds, "LookingAround -> LookingAround")
 
       fsmRef ! "stay" // causes stay()
-      probe.expectNoMsg(3.seconds)
+      probe.expectNoMessage(3.seconds)
     }
 
     "not persist state change event when staying in the same state" in {
@@ -319,7 +318,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       expectMsg(NonEmptyShoppingCart(List(shirt, shoes, coat)))
 
       expectMsg(NonEmptyShoppingCart(List(shirt, shoes, coat)))
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
 
       fsmRef ! PoisonPill
       expectTerminated(fsmRef)
@@ -357,7 +356,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
 
       fsm ! TimeoutFSM.OverrideTimeoutToInf
       p.expectMsg(TimeoutFSM.OverrideTimeoutToInf)
-      p.expectNoMsg(1.seconds)
+      p.expectNoMessage(1.seconds)
 
     }
 
@@ -425,7 +424,7 @@ object PersistentFSMSpec {
   }
   case object EmptyShoppingCart extends ShoppingCart {
     def addItem(item: Item) = NonEmptyShoppingCart(item :: Nil)
-    def empty() = this
+    def empty(): EmptyShoppingCart.type = this
   }
   case class NonEmptyShoppingCart(items: Seq[Item]) extends ShoppingCart {
     def addItem(item: Item) = NonEmptyShoppingCart(items :+ item)
@@ -454,12 +453,12 @@ object PersistentFSMSpec {
   case object ShoppingCardDiscarded extends ReportEvent
 
   class SimpleTransitionFSM(_persistenceId: String, reportActor: ActorRef)(implicit val domainEventClassTag: ClassTag[DomainEvent]) extends PersistentFSM[UserState, ShoppingCart, DomainEvent] {
-    override val persistenceId = _persistenceId
+    override val persistenceId: String = _persistenceId
 
     startWith(LookingAround, EmptyShoppingCart)
 
     when(LookingAround) {
-      case Event("stay", _) ⇒ stay
+      case Event("stay", _) ⇒ stay()
       case Event(e, _)      ⇒ goto(LookingAround)
     }
 
@@ -478,7 +477,7 @@ object PersistentFSMSpec {
   class WebStoreCustomerFSM(_persistenceId: String, reportActor: ActorRef)(implicit val domainEventClassTag: ClassTag[DomainEvent])
     extends PersistentFSM[UserState, ShoppingCart, DomainEvent] {
 
-    override def persistenceId = _persistenceId
+    override def persistenceId: String = _persistenceId
 
     //#customer-fsm-body
     startWith(LookingAround, EmptyShoppingCart)
@@ -507,7 +506,7 @@ object PersistentFSMSpec {
       case Event(Leave, _) ⇒
         //#customer-snapshot-example
         stop applying OrderDiscarded andThen {
-          case _ ⇒
+          _ ⇒
             reportActor ! ShoppingCardDiscarded
             saveStateSnapshot()
         }
@@ -523,7 +522,7 @@ object PersistentFSMSpec {
         goto(Shopping) applying ItemAdded(item) forMax (1 seconds)
       case Event(StateTimeout, _) ⇒
         stop applying OrderDiscarded andThen {
-          case _ ⇒ reportActor ! ShoppingCardDiscarded
+          _ ⇒ reportActor ! ShoppingCardDiscarded
         }
     }
 
@@ -559,12 +558,12 @@ object PersistentFSMSpec {
   class PersistentEventsStreamer(id: String, client: ActorRef) extends PersistentActor {
     override val persistenceId: String = id
 
-    def receiveRecover = {
+    def receiveRecover: Receive = {
       case RecoveryCompleted ⇒ // do nothing
       case persistentEvent   ⇒ client ! persistentEvent
     }
 
-    def receiveCommand = {
+    def receiveCommand: Receive = {
       case _ ⇒ // do nothing
     }
   }
@@ -628,7 +627,7 @@ object PersistentFSMSpec {
       case Event("4x", _) ⇒
         goto(Persist4xAtOnce)
       case Event(SaveSnapshotSuccess(metadata), _) ⇒
-        probe ! s"SeqNo=${metadata.sequenceNr}, StateData=${stateData}"
+        probe ! s"SeqNo=${metadata.sequenceNr}, StateData=$stateData"
         stay()
     }
 
@@ -636,7 +635,7 @@ object PersistentFSMSpec {
       case Event(i: Int, _) ⇒
         stay applying (IntAdded(i), IntAdded(i), IntAdded(i), IntAdded(i))
       case Event(SaveSnapshotSuccess(metadata), _) ⇒
-        probe ! s"SeqNo=${metadata.sequenceNr}, StateData=${stateData}"
+        probe ! s"SeqNo=${metadata.sequenceNr}, StateData=$stateData"
         stay()
     }
   }
