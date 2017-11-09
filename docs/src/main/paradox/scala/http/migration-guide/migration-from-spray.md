@@ -11,8 +11,7 @@ little effort.
 
 ### Streams everywhere
 
-Akka HTTP is not implemented on Actors any more but is now completely based on akka-stream. This has some important
-consequences.
+Akka HTTP offers an API based on streams where spray offered an API based on actor messaging. This has important consequences.
 
 Streaming support is needed to handle request and response entities (or bodies) in a streaming fashion, i.e. being
 able to access the incoming bytes while they come in from the network without having to buffer a potentially big request
@@ -28,6 +27,8 @@ In Akka HTTP, handling streaming data is mandatory. When you receive a `HttpRequ
 in the default case it will contain a streamed entity as the `entity` field *which you are required to consume*.
 Otherwise, a connection might be stuck (at least until timeouts kick in).
 See @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md).
+
+In the implementation, Akka HTTP makes heavy use of streams as well with the occasional fallback to actors.
 
 ### New module structure
 
