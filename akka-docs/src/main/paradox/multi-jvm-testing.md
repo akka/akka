@@ -25,7 +25,7 @@ Here is an example of a @extref[sample project](samples:akka-sample-multi-node-s
 
 ## Running tests
 
-The multi-JVM tasks are similar to the normal tasks: `test`, `test-only`,
+The multi-JVM tasks are similar to the normal tasks: `test`, `testOnly`,
 and `run`, but are under the `multi-jvm` configuration.
 
 So in Akka, to run all the multi-JVM tests in the akka-remote project use (at
@@ -43,20 +43,20 @@ project akka-remote-tests
 multi-jvm:test
 ```
 
-To run individual tests use `test-only`:
+To run individual tests use `testOnly`:
 
 ```none
-multi-jvm:test-only akka.remote.RandomRoutedRemoteActor
+multi-jvm:testOnly akka.remote.RandomRoutedRemoteActor
 ```
 
 More than one test name can be listed to run multiple specific
 tests. Tab-completion in sbt makes it easy to complete the test names.
 
-It's also possible to specify JVM options with `test-only` by including those
+It's also possible to specify JVM options with `testOnly` by including those
 options after the test names and `--`. For example:
 
 ```none
-multi-jvm:test-only akka.remote.RandomRoutedRemoteActor -- -Dsome.option=something
+multi-jvm:testOnly akka.remote.RandomRoutedRemoteActor -- -Dsome.option=something
 ```
 
 ## Creating application tests
@@ -190,7 +190,7 @@ class SpecMultiJvmNode2 extends WordSpec with MustMatchers {
 }
 ```
 
-To run just these tests you would call `multi-jvm:test-only sample.Spec` at
+To run just these tests you would call `multi-jvm:testOnly sample.Spec` at
 the sbt prompt.
 
 ## Multi Node Additions
