@@ -638,6 +638,32 @@ trait TestKitBase {
   }
 
   /**
+    * Receive one message from the test actor and assert that
+    * it is a `akka.actor.Status.Failure` with exception of given type.
+    * Example:
+    * {{{
+    * // test actor behavior
+    * def receive = {
+    *   case "message" => Status.Failure(new RuntimeException("error"))
+    * }
+    * ...
+    * // test case
+    * test ! "message"
+    * assert(expectFailureMessage[RuntimeException].getMessage == "error")
+    * }}}
+    *
+    * @return the received exception
+    */
+  def expectFailureMessage[T <: Throwable](implicit t: ClassTag[T]): T = {
+    expectMsgType[Status.Failure].cause match {
+      case e: T => e
+      case other =>
+        throw new AssertionError(s"Expected exception of type ${t.runtimeClass.getCanonicalName} " +
+          s"but found ${other.getClass.getCanonicalName}")
+    }
+  }
+
+  /**
    * Same as `expectNoMsg(remainingOrDefault)`, but correctly treating the timeFactor.
    */
   @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
