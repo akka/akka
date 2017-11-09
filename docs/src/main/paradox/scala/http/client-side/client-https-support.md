@@ -103,8 +103,8 @@ It is specified as part of [RFC 6066](https://tools.ietf.org/html/rfc6066#page-6
 It is highly discouraged to disable any of the security features of TLS, however do acknowledge that workarounds may sometimes be needed.
 
 Before disabling any of the features one should consider if they may be solvable *within* the TLS world,
-for example by [trusting a certificate](https://typesafehub.github.io/ssl-config/WSQuickStart.html), or [configuring the trusted cipher suites](https://typesafehub.github.io/ssl-config/CipherSuites.html).
-There's also a very important section in the ssl-config docs titled [LooseSSL - Please read this before turning anything off!](https://typesafehub.github.io/ssl-config/LooseSSL.html#please-read-this-before-turning-anything-off).
+for example by [trusting a certificate](https://lightbend.github.io/ssl-config/WSQuickStart.html), or [configuring the trusted cipher suites](https://lightbend.github.io/ssl-config/CipherSuites.html).
+There's also a very important section in the ssl-config docs titled [LooseSSL - Please read this before turning anything off!](https://lightbend.github.io/ssl-config/LooseSSL.html#please-read-this-before-turning-anything-off).
 
 If disabling features is indeed desired, we recommend doing so for *specific connections*,
 instead of globally configuring it via `application.conf`.

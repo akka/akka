@@ -124,7 +124,7 @@ This allows simple and fast iterations on changes that would need to be introduc
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
 ](http://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
 
-Akka-http uses MiMa (which is short for [Lightbend Migration Manager](https://github.com/typesafehub/migration-manager)) to
+Akka-http uses MiMa (which is short for [Lightbend Migration Manager](https://github.com/lightbend/migration-manager)) to
 validate binary compatibility of incoming Pull Requests. If your PR fails due to binary compatibility issues, you may see 
 an error like this:
 
@@ -200,7 +200,7 @@ The rendered documentation will be available under `docs/target/paradox/site/mai
 
 ### JavaDoc
 
-Akka-http generates JavaDoc-style API documentation using the [genjavadoc](https://github.com/typesafehub/genjavadoc) sbt plugin, since the sources are written mostly in Scala.
+Akka-http generates JavaDoc-style API documentation using the [genjavadoc](https://github.com/lightbend/genjavadoc) sbt plugin, since the sources are written mostly in Scala.
 
 Generating JavaDoc is not enabled by default, as it's not needed on day-to-day development as it's expected to just work.
 If you'd like to check if you links and formatting looks good in JavaDoc (and not only in ScalaDoc), you can generate it by running:
