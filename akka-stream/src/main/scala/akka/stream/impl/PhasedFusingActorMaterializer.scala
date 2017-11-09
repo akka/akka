@@ -801,7 +801,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
  */
 @InternalApi private[akka] final class SinkModulePhase(materializer: PhasedFusingActorMaterializer, islandName: String)
   extends PhaseIsland[AnyRef] {
-  override def name: String = s"SourceModule phase"
+  override def name: String = s"SinkModule phase"
   var subscriberOrVirtualPublisher: AnyRef = _
 
   override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (AnyRef, Any) = {
