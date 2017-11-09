@@ -121,10 +121,10 @@ Here are some examples of how you define hosts:
 ### Running the Multi Node Tests
 
 To run all the multi node test in multi-node mode (i.e. distributing the jar files and kicking off the tests
-remotely) from inside sbt, use the `multi-node-test` task:
+remotely) from inside sbt, use the `multiNodeTest` task:
 
 ```none
-multi-node-test
+multiNodeTest
 ```
 
 To run all of them in multi-jvm mode (i.e. all JVMs on the local machine) do:
@@ -133,16 +133,16 @@ To run all of them in multi-jvm mode (i.e. all JVMs on the local machine) do:
 multi-jvm:test
 ```
 
-To run individual tests use the `multi-node-test-only` task:
+To run individual tests use the `multiNodeTestOnly` task:
 
 ```none
-multi-node-test-only your.MultiNodeTest
+multiNodeTestOnly your.MultiNodeTest
 ```
 
 To run individual tests in the multi-jvm mode do:
 
 ```none
-multi-jvm:test-only your.MultiNodeTest
+multi-jvm:testOnly your.MultiNodeTest
 ```
 
 More than one test name can be listed to run multiple specific tests. Tab completion in sbt makes it easy to
