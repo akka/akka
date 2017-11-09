@@ -172,6 +172,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     system.systemActorOf(Props[ClusterShardingGuardian].withDispatcher(dispatcher), guardianName)
   }
 
+  // no longer used, but kept for binary compatibility
   private[akka] def requireClusterRole(role: Option[String]): Unit =
     require(
       role.forall(cluster.selfRoles.contains),
@@ -208,13 +209,24 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: Any): ActorRef = {
 
-    requireClusterRole(settings.role)
-    implicit val timeout = system.settings.CreationTimeout
-    val startMsg = Start(typeName, entityProps, settings,
-      extractEntityId, extractShardId, allocationStrategy, handOffStopMessage)
-    val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
-    regions.put(typeName, shardRegion)
-    shardRegion
+    if (settings.shouldHostShard(cluster)) {
+
+      implicit val timeout = system.settings.CreationTimeout
+      val startMsg = Start(typeName, entityProps, settings,
+        extractEntityId, extractShardId, allocationStrategy, handOffStopMessage)
+      val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
+      regions.put(typeName, shardRegion)
+      shardRegion
+    } else {
+      system.log.info("Starting Shard Region Proxy [{}] (no actors will be hosted on this node)...", typeName)
+
+      startProxy(
+        typeName,
+        settings.role,
+        dataCenter = None, // TODO what about the multi-dc value here?
+        extractEntityId,
+        extractShardId)
+    }
   }
 
   /**
@@ -245,9 +257,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId:  ShardRegion.ExtractShardId): ActorRef = {
 
-    val allocationStrategy = new LeastShardAllocationStrategy(
-      settings.tuningParameters.leastShardAllocationRebalanceThreshold,
-      settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance)
+    val allocationStrategy = defaultShardAllocationStrategy(settings)
 
     start(typeName, entityProps, settings, extractEntityId, extractShardId, allocationStrategy, PoisonPill)
   }
@@ -313,9 +323,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     settings:         ClusterShardingSettings,
     messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
 
-    val allocationStrategy = new LeastShardAllocationStrategy(
-      settings.tuningParameters.leastShardAllocationRebalanceThreshold,
-      settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance)
+    val allocationStrategy = defaultShardAllocationStrategy(settings)
 
     start(typeName, entityProps, settings, messageExtractor, allocationStrategy, PoisonPill)
   }
@@ -469,6 +477,11 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     }
   }
 
+  def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
+    val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
+    val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
+    new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+  }
 }
 
 /**
