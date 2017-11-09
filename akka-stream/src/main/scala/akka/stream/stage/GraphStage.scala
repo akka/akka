@@ -3,26 +3,29 @@
  */
 package akka.stream.stage
 
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-
-import akka.NotUsed
 import java.util.concurrent.locks.ReentrantLock
 
+import akka.{ Done, NotUsed }
 import akka.actor._
-import akka.annotation.ApiMayChange
+import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
-import akka.stream.impl.StreamLayout.AtomicModule
-import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
-import akka.stream.impl.{ EmptyTraversal, LinearTraversalBuilder, ReactiveStreamsCompliance, TraversalBuilder }
-
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.{ immutable, mutable }
-import scala.concurrent.duration.FiniteDuration
 import akka.stream.actor.ActorSubscriberMessage
-import akka.stream.scaladsl.{ GenericGraph, GenericGraphWithChangedAttributes }
+import akka.stream.impl.{ NotInitialized, ReactiveStreamsCompliance, TraversalBuilder }
+import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
+import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
-import akka.annotation.InternalApi
+
+import scala.annotation.tailrec
+import scala.collection.JavaConverters._
+import scala.collection.{ immutable, mutable }
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
+import scala.util.control.TailCalls.{ TailRec, done, tailcall }
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing stage.
@@ -262,10 +265,12 @@ object GraphStageLogic {
  * cleanup should always be done in `postStop`.
  */
 abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: Int) {
+
   import GraphInterpreter._
   import GraphStageLogic._
 
   def this(shape: Shape) = this(shape.inlets.size, shape.outlets.size)
+
   /**
    * INTERNAL API
    */
@@ -364,14 +369,17 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * nor failure.
    */
   final protected def totallyIgnorantInput: InHandler = TotallyIgnorantInput
+
   /**
    * Output handler that terminates the stage upon cancellation.
    */
   final protected def eagerTerminateOutput: OutHandler = EagerTerminateOutput
+
   /**
    * Output handler that does not terminate the stage upon cancellation.
    */
   final protected def ignoreTerminateOutput: OutHandler = IgnoreTerminateOutput
+
   /**
    * Output handler that terminates the state upon receiving completion if the
    * given condition holds at that time. The stage fails upon receiving a failure.
@@ -735,6 +743,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       onComplete()
       previous.onUpstreamFinish()
     }
+
     override def onUpstreamFailure(ex: Throwable): Unit = {
       setHandler(in, previous)
       previous.onUpstreamFailure(ex)
@@ -965,11 +974,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
                                                 doPull: Boolean = false): Unit = {
     class PassAlongHandler extends InHandler with (() ⇒ Unit) {
       override def apply(): Unit = tryPull(from)
+
       override def onPush(): Unit = {
         val elem = grab(from)
         emit(to, elem, this)
       }
+
       override def onUpstreamFinish(): Unit = if (doFinish) completeStage()
+
       override def onUpstreamFailure(ex: Throwable): Unit = if (doFail) failStage(ex)
     }
     val ph = new PassAlongHandler
@@ -984,30 +996,173 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * Obtain a callback object that can be used asynchronously to re-enter the
    * current [[GraphStage]] with an asynchronous notification. The [[invoke()]] method of the returned
-   * [[AsyncCallback]] is safe to be called from other threads and it will in the background thread-safely
-   * delegate to the passed callback function. I.e. [[invoke()]] will be called by the external world and
+   * [[AsyncCallback]] is safe to be called from other threads. It will in the background thread-safely
+   * delegate to the passed callback function. I.e. [[invoke()]] will be called by other thread and
    * the passed handler will be invoked eventually in a thread-safe way by the execution environment.
+   *
+   * In case stream is not yet materialized [[AsyncCallback]] will buffer events until stream is available.
+   *
+   * [[AsyncCallback.invokeWithFeedback()]] has an internal promise that will be failed if event cannot be processed
+   * due to stream completion.
+   *
+   * Method must be called in thread-safe manner during materialization and in the same thread as materialization
+   * process.
    *
    * This object can be cached and reused within the same [[GraphStageLogic]].
    */
   final def getAsyncCallback[T](handler: T ⇒ Unit): AsyncCallback[T] = {
-    new AsyncCallback[T] {
-      override def invoke(event: T): Unit =
-        interpreter.onAsyncInput(GraphStageLogic.this, event, handler.asInstanceOf[Any ⇒ Unit])
+    val result = new ConcurrentAsyncCallback[T](handler)
+    asyncCallbacksInProgress.add(result)
+    if (_interpreter != null) result.onStart()
+    result
+  }
+
+  /**
+   * ConcurrentAsyncCallback allows to call [[invoke()]] and [[invokeWithPromise()]] with event attribute.
+   * This event will be sent to the stream and the corresponding handler will be called with this attribute in thread-safe manner.
+   *
+   * State of this object can be changed both "internally" by the owning GraphStage or by the "external world" (e.g. other threads).
+   * Specifically, calls to this class can be made:
+   * * From the owning [[GraphStage]], to [[onStart]] - when materialization is finished and to [[onStop()]] -
+   * because the stage is about to stop or fail.
+   * * "Real world" calls [[invoke()]] and [[invokeWithFeedback()]]. These methods have synchronization
+   *   with class state that reflects the stream state
+   *
+   * onStart sends all events that were buffered while stream was materializing.
+   * In case "Real world" added more events while initializing, onStart checks for more events in buffer when exiting and
+   * resend new events
+   *
+   * Once class is in `Initialized` state - all "Real world" calls of [[invoke()]] and [[invokeWithFeedback()]] are running
+   * as is - without blocking each other.
+   *
+   * [[GraphStage]] is called [[onStop()]] when stream is wrapping down. onStop fails all futures for events that have not yet processed
+   * [[onStop()]] puts class in `Completed` state
+   * "Real world" calls of [[invokeWithFeedback()]] always return failed promises for `Completed` state
+   */
+  private class ConcurrentAsyncCallback[T](handler: T ⇒ Unit) extends AsyncCallback[T] {
+
+    sealed trait State
+    // waiting for materialization completion
+    private case class Pending(pendingEvents: List[Event]) extends State
+    // GraphStage sending all events to stream
+    private case object Initializing extends State
+    // stream is initialized and so no threads can just send events without any synchronization overhead
+    private case object Initialized extends State
+    // stage has been shut down, either regularly or it failed
+    private case object Completed extends State
+    // Event with feedback promise
+    private case class Event(e: T, handlingPromise: OptionVal[Promise[Done]])
+
+    val waitingForProcessing = ConcurrentHashMap.newKeySet[Promise[_]]()
+
+    private[this] val currentState = new AtomicReference[State](Pending(Nil))
+
+    // is called from the owning [[GraphStage]]
+    @tailrec
+    final private[stage] def onStart(): Unit = {
+      (currentState.getAndSet(Initializing): @unchecked) match {
+        case Pending(l) ⇒ l.reverse.foreach(ack ⇒ {
+          onAsyncInput(ack.e)
+        })
+      }
+      if (!currentState.compareAndSet(Initializing, Initialized)) {
+        (currentState.get: @unchecked) match {
+          case Pending(_) ⇒ onStart()
+          case Completed  ⇒ () //wonder if this is possible
+        }
+      }
+    }
+
+    // is called from the owning [[GraphStage]]
+    final private[stage] def onStop(): Unit = {
+      currentState.set(Completed)
+      val iterator = waitingForProcessing.iterator()
+      lazy val detachedException = new StreamDetachedException()
+      while (iterator.hasNext) { iterator.next().tryFailure(detachedException) }
+      waitingForProcessing.clear()
+    }
+
+    private def onAsyncInput(event: T) = interpreter.onAsyncInput(GraphStageLogic.this, event, handler.asInstanceOf[Any ⇒ Unit])
+
+    private def sendEvent(event: T, promise: Promise[Done]): Promise[Done] = {
+      onAsyncInput(event)
+      currentState.get() match {
+        case Completed ⇒ failPromiseOnComplete(promise)
+        case _         ⇒ promise
+      }
+    }
+
+    // external call
+    override def invokeWithFeedback(event: T): Future[Done] = {
+      val promise: Promise[Done] = Promise[Done]()
+      promise.future.andThen { case _ ⇒ waitingForProcessing.remove(promise) }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+      waitingForProcessing.add(promise)
+      invokeWithPromise(event, promise).future
+    }
+
+    private def invokeWithPromise(event: T, promise: Promise[Done]): Promise[Done] = {
+      currentState.get() match {
+        // not started yet
+        case list @ Pending(_) ⇒
+          if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal(promise)) :: list.pendingEvents)))
+            invokeWithPromise(event, promise) // atomicity is failed - try again
+          else promise
+        // started - can just send message to stream
+        case Initialized ⇒ sendEvent(event, promise)
+        // initializing is in progress in another thread (initializing thread is managed by Akka)
+        case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal(promise)) :: Nil))) {
+          (currentState.get(): @unchecked) match {
+            case Pending(_)  ⇒ invokeWithPromise(event, promise) // atomicity is failed - try again
+            case Initialized ⇒ sendEvent(event, promise)
+          }
+        } else promise
+        // fail promise as stream is completed
+        case Completed ⇒ failPromiseOnComplete(promise)
+      }
+    }
+
+    private def failPromiseOnComplete(promise: Promise[Done]): Promise[Done] = {
+      waitingForProcessing.remove(promise)
+      promise.tryFailure(new StreamDetachedException())
+      promise
+    }
+
+    //external call
+    override def invoke(event: T): Unit = {
+      @tailrec
+      def internalInvoke(event: T): Unit = currentState.get() match {
+        // started - can just send message to stream
+        case Initialized       ⇒ onAsyncInput(event)
+        // not started yet
+        case list @ Pending(l) ⇒ if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal.None) :: l))) internalInvoke(event)
+        // initializing is in progress in another thread (initializing thread is managed by akka)
+        case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal.None) :: Nil))) {
+          (currentState.get(): @unchecked) match {
+            case list @ Pending(l) ⇒ if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal.None) :: l))) internalInvoke(event)
+            case Initialized       ⇒ onAsyncInput(event)
+          }
+        }
+        case Completed ⇒ // do nothing here as stream is completed
+      }
+      internalInvoke(event)
     }
   }
 
   /**
    * Java API: Obtain a callback object that can be used asynchronously to re-enter the
    * current [[GraphStage]] with an asynchronous notification. The [[invoke()]] method of the returned
-   * [[AsyncCallback]] is safe to be called from other threads and it will in the background thread-safely
-   * delegate to the passed callback function. I.e. [[invoke()]] will be called by the external world and
+   * [[AsyncCallback]] is safe to be called from other threads. It will in the background thread-safely
+   * delegate to the passed callback function. I.e. [[invoke()]] will be called by other thread and
    * the passed handler will be invoked eventually in a thread-safe way by the execution environment.
+   *
+   * [[AsyncCallback.invokeWithFeedback()]] has an internal promise that will be failed if event cannot be processed due to stream completion.
    *
    * This object can be cached and reused within the same [[GraphStageLogic]].
    */
   final protected def createAsyncCallback[T](handler: Procedure[T]): AsyncCallback[T] =
     getAsyncCallback(handler.apply)
+
+  private val asyncCallbacksInProgress = mutable.HashSet[ConcurrentAsyncCallback[_]]()
 
   private var _stageActor: StageActor = _
   final def stageActor: StageActor = _stageActor match {
@@ -1048,7 +1203,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   // Internal hooks to avoid reliance on user calling super in preStart
   /** INTERNAL API */
-  protected[stream] def beforePreStart(): Unit = ()
+  protected[stream] def beforePreStart(): Unit = {
+    asyncCallbacksInProgress.foreach(_.onStart())
+  }
 
   // Internal hooks to avoid reliance on user calling super in postStop
   /** INTERNAL API */
@@ -1057,6 +1214,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       _stageActor.stop()
       _stageActor = null
     }
+    asyncCallbacksInProgress.foreach(_.onStop())
   }
 
   /**
@@ -1230,8 +1388,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
 /**
  * An asynchronous callback holder that is attached to a [[GraphStageLogic]].
- * Invoking [[AsyncCallback#invoke]] will eventually lead to the registered handler
+ * Initializing [[AsyncCallback#invoke]] will eventually lead to the registered handler
  * being called.
+ *
+ * This holder has the same lifecycle as a stream and cannot be used before
+ * materialization is done.
+ *
+ * Typical use cases are exchanging messages between stream and substreams or invoking from external world sending
+ * event to a stream
  */
 trait AsyncCallback[T] {
   /**
@@ -1239,6 +1403,13 @@ trait AsyncCallback[T] {
    * may be invoked from external execution contexts.
    */
   def invoke(t: T): Unit
+  /**
+   * Dispatch an asynchronous notification.
+   * This method is thread-safe and may be invoked from external execution contexts.
+   * Promise in `HasCallbackPromise` will fail if stream is already closed or closed before
+   * being able to process the event
+   */
+  def invokeWithFeedback(t: T): Future[Done]
 }
 
 abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shape) {
@@ -1414,53 +1585,3 @@ abstract class AbstractOutHandler extends OutHandler
  * (completing when upstream completes, failing when upstream fails, completing when downstream cancels).
  */
 abstract class AbstractInOutHandler extends InHandler with OutHandler
-
-/**
- * INTERNAL API
- * This trait wraps callback for `GraphStage` stage instances and handle gracefully cases when stage is
- * not yet initialized or already finished.
- *
- * While `GraphStage` has not initialized it adds all requests to list.
- * As soon as `GraphStage` is started it stops collecting requests (pointing to real callback
- * function) and run all the callbacks from the list
- *
- * Supposed to be used by GraphStages that share call back to outer world
- */
-private[akka] trait CallbackWrapper[T] extends AsyncCallback[T] {
-  private trait CallbackState
-  private case class NotInitialized(list: List[T]) extends CallbackState
-  private case class Initialized(f: T ⇒ Unit) extends CallbackState
-  private case class Stopped(f: T ⇒ Unit) extends CallbackState
-
-  /*
-   * To preserve message order when switching between not initialized / initialized states
-   * lock is used. Case is similar to RepointableActorRef
-   */
-  private[this] final val lock = new ReentrantLock
-
-  private[this] val callbackState = new AtomicReference[CallbackState](NotInitialized(Nil))
-
-  def stopCallback(f: T ⇒ Unit): Unit = locked {
-    callbackState.set(Stopped(f))
-  }
-
-  def initCallback(f: T ⇒ Unit): Unit = locked {
-    val list = (callbackState.getAndSet(Initialized(f)): @unchecked) match {
-      case NotInitialized(l) ⇒ l
-    }
-    list.reverse.foreach(f)
-  }
-
-  override def invoke(arg: T): Unit = locked {
-    callbackState.get() match {
-      case Initialized(cb)          ⇒ cb(arg)
-      case list @ NotInitialized(l) ⇒ callbackState.compareAndSet(list, NotInitialized(arg :: l))
-      case Stopped(cb)              ⇒ cb(arg)
-    }
-  }
-
-  private[this] def locked(body: ⇒ Unit): Unit = {
-    lock.lock()
-    try body finally lock.unlock()
-  }
-}

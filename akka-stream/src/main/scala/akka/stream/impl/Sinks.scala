@@ -334,7 +334,9 @@ import akka.util.OptionVal
   override def toString: String = "QueueSink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Output[T]] with InHandler {
+    var logicCallback: AsyncCallback[Output[T]] = null
+
+    val stageLogic = new GraphStageLogic(shape) with InHandler with SinkQueueWithCancel[T] {
       type Received[E] = Try[Option[E]]
 
       val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
@@ -348,29 +350,22 @@ import akka.util.OptionVal
         // closed/failure indicators
         buffer = Buffer(maxBuffer + 1, materializer)
         setKeepGoing(true)
-        initCallback(callback.invoke)
         pull(in)
       }
 
-      override def postStop(): Unit = stopCallback {
-        case Pull(promise) ⇒ promise.failure(new StreamDetachedException())
-        case _             ⇒ //do nothing
-      }
-
-      private val callback: AsyncCallback[Output[T]] =
-        getAsyncCallback {
-          case QueueSink.Pull(pullPromise) ⇒ currentRequest match {
-            case Some(_) ⇒
-              pullPromise.failure(new IllegalStateException("You have to wait for previous future to be resolved to send another request"))
-            case None ⇒
-              if (buffer.isEmpty) currentRequest = Some(pullPromise)
-              else {
-                if (buffer.used == maxBuffer) tryPull(in)
-                sendDownstream(pullPromise)
-              }
-          }
-          case QueueSink.Cancel ⇒ completeStage()
+      private val callback = getAsyncCallback[Output[T]] {
+        case QueueSink.Pull(pullPromise) ⇒ currentRequest match {
+          case Some(_) ⇒
+            pullPromise.failure(new IllegalStateException("You have to wait for previous future to be resolved to send another request"))
+          case None ⇒
+            if (buffer.isEmpty) currentRequest = Some(pullPromise)
+            else {
+              if (buffer.used == maxBuffer) tryPull(in)
+              sendDownstream(pullPromise)
+            }
         }
+        case QueueSink.Cancel ⇒ completeStage()
+      }
 
       def sendDownstream(promise: Requested[T]): Unit = {
         val e = buffer.dequeue()
@@ -400,19 +395,22 @@ import akka.util.OptionVal
       override def onUpstreamFinish(): Unit = enqueueAndNotify(Success(None))
       override def onUpstreamFailure(ex: Throwable): Unit = enqueueAndNotify(Failure(ex))
 
+      logicCallback = callback
       setHandler(in, this)
-    }
 
-    (stageLogic, new SinkQueueWithCancel[T] {
+      // SinkQueueWithCancel impl
       override def pull(): Future[Option[T]] = {
         val p = Promise[Option[T]]
-        stageLogic.invoke(Pull(p))
+        logicCallback.invokeWithFeedback(Pull(p))
+          .onFailure { case NonFatal(e) ⇒ p.tryFailure(e) }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }
       override def cancel(): Unit = {
-        stageLogic.invoke(QueueSink.Cancel)
+        logicCallback.invoke(QueueSink.Cancel)
       }
-    })
+    }
+
+    (stageLogic, stageLogic)
   }
 }
 
