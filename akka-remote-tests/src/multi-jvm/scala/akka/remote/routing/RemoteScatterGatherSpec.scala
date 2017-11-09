@@ -81,6 +81,9 @@ class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig) extend
         val connectionCount = 3
         val iterationCount = 10
 
+        // let them start
+        Thread.sleep(2000)
+
         for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
           actor ! "hit"
         }
@@ -104,7 +107,7 @@ class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig) extend
         enterBarrier("done")
       }
 
-      enterBarrier("done")
+      enterBarrier("all-done")
     }
   }
 }

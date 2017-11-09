@@ -90,12 +90,12 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
     }
 
     "be produced for reachability observations between data centers" in {
-      val dc2AMemberUp = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Up, Set.empty, "dc2")
-      val dc2AMemberDown = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Down, Set.empty, "dc2")
-      val dc2BMemberUp = TestMember(Address("akka.tcp", "sys", "dc2B", 2552), Up, Set.empty, "dc2")
+      val dc2AMemberUp = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Up, Set.empty[String], "dc2")
+      val dc2AMemberDown = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Down, Set.empty[String], "dc2")
+      val dc2BMemberUp = TestMember(Address("akka.tcp", "sys", "dc2B", 2552), Up, Set.empty[String], "dc2")
 
-      val dc3AMemberUp = TestMember(Address("akka.tcp", "sys", "dc3A", 2552), Up, Set.empty, "dc3")
-      val dc3BMemberUp = TestMember(Address("akka.tcp", "sys", "dc3B", 2552), Up, Set.empty, "dc3")
+      val dc3AMemberUp = TestMember(Address("akka.tcp", "sys", "dc3A", 2552), Up, Set.empty[String], "dc3")
+      val dc3BMemberUp = TestMember(Address("akka.tcp", "sys", "dc3B", 2552), Up, Set.empty[String], "dc3")
 
       val reachability1 = Reachability.empty
       val g1 = Gossip(members = SortedSet(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp), overview = GossipOverview(reachability = reachability1))
@@ -121,8 +121,8 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
     }
 
     "not be produced for same reachability observations between data centers" in {
-      val dc2AMemberUp = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Up, Set.empty, "dc2")
-      val dc2AMemberDown = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Down, Set.empty, "dc2")
+      val dc2AMemberUp = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Up, Set.empty[String], "dc2")
+      val dc2AMemberDown = TestMember(Address("akka.tcp", "sys", "dc2A", 2552), Down, Set.empty[String], "dc2")
 
       val reachability1 = Reachability.empty
       val g1 = Gossip(members = SortedSet(aUp, dc2AMemberUp), overview = GossipOverview(reachability = reachability1))
@@ -246,8 +246,8 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       val g2 = Gossip(members = SortedSet(bUp, cUp, dExiting, eJoining))
       val s2 = state(g2).copy(selfDc = "dc2")
 
-      diffRolesLeader(s0, s1) should ===(Set.empty)
-      diffRolesLeader(s1, s2) should ===(Set.empty)
+      diffRolesLeader(s0, s1) should ===(Set.empty[String])
+      diffRolesLeader(s1, s2) should ===(Set.empty[String])
     }
   }
 }

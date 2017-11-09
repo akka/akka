@@ -65,8 +65,10 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import Tcp._
 
+  private val settings = ActorMaterializerSettings(system)
+
   // TODO maybe this should be a new setting, like `akka.stream.tcp.bind.timeout` / `shutdown-timeout` instead?
-  val bindShutdownTimeout = ActorMaterializer()(system).settings.subscriptionTimeoutSettings.timeout
+  val bindShutdownTimeout = settings.subscriptionTimeoutSettings.timeout
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
@@ -103,7 +105,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       options,
       halfClose,
       idleTimeout,
-      bindShutdownTimeout))
+      bindShutdownTimeout,
+      settings.ioSettings))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
@@ -175,7 +178,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       localAddress,
       options,
       halfClose,
-      connectTimeout)).via(detacher[ByteString]) // must read ahead for proper completions
+      connectTimeout,
+      settings.ioSettings)).via(detacher[ByteString]) // must read ahead for proper completions
 
     idleTimeout match {
       case d: FiniteDuration ⇒ tcpFlow.join(TcpIdleTimeout(d, Some(remoteAddress)))
