@@ -14,10 +14,9 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 import com.typesafe.config._
 import akka.pattern.ask
-import org.apache.commons.codec.binary.Hex.encodeHex
+import org.apache.commons.codec.binary.Hex.decodeHex
 import java.nio.ByteOrder
 import java.nio.ByteBuffer
-import akka.actor.NoSerializationVerificationNeeded
 import test.akka.serialization.NoVerification
 
 object SerializationTests {
@@ -351,7 +350,7 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
 
   "Cross-version serialization compatibility" must {
     def verify(obj: SystemMessage, asExpected: String): Unit = {
-      val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(asExpected)
+      val bytes = decodeHex(asExpected.toCharArray)
       val stream = new ObjectInputStream(new ByteArrayInputStream(bytes))
       val read = stream.readObject()
       read should ===(obj)

@@ -131,9 +131,9 @@ class StreamTestKitSpec extends AkkaSpec {
 
     "#expectNextWithTimeoutPF should fail after timeout when element delayed" in {
       intercept[AssertionError] {
-        val timeout = 100 millis
-        val overTimeout = timeout + (10 millis)
-        Source.tick(overTimeout, 1 millis, 1).runWith(TestSink.probe)
+        val timeout = 100.millis
+        val overTimeout = timeout + (10.millis)
+        Source.tick(overTimeout, 1.millis, 1).runWith(TestSink.probe)
           .request(1)
           .expectNextWithTimeoutPF(timeout, {
             case 1 ⇒
@@ -169,9 +169,9 @@ class StreamTestKitSpec extends AkkaSpec {
 
     "#expectNextChainingPF should fail after timeout when element delayed" in {
       intercept[AssertionError] {
-        val timeout = 100 millis
-        val overTimeout = timeout + (10 millis)
-        Source.tick(overTimeout, 1 millis, 1).runWith(TestSink.probe)
+        val timeout = 100.millis
+        val overTimeout = timeout + (10.millis)
+        Source.tick(overTimeout, 1.millis, 1).runWith(TestSink.probe)
           .request(1)
           .expectNextChainingPF(timeout, {
             case 1 ⇒

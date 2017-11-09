@@ -1,6 +1,7 @@
 package akka.remote.artery
 
 import akka.actor.ActorSystem
+import akka.remote.RemoteTransportException
 import akka.testkit.SocketUtil
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
@@ -28,7 +29,7 @@ class ArteryFailedToBindSpec extends WordSpec with Matchers {
        """.stripMargin)
       val as = ActorSystem("BindTest1", config)
       try {
-        val ex = intercept[RuntimeException] {
+        val ex = intercept[RemoteTransportException] {
           ActorSystem("BindTest2", config)
         }
         ex.getMessage should equal("Inbound Aeron channel is in errored state. See Aeron logs for details.")

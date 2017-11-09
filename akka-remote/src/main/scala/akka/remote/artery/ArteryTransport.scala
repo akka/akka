@@ -19,6 +19,7 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
+
 import akka.Done
 import akka.NotUsed
 import akka.actor._
@@ -27,12 +28,7 @@ import akka.actor.Cancellable
 import akka.actor.Props
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.remote.AddressUidExtension
-import akka.remote.RemoteActorRef
-import akka.remote.RemoteActorRefProvider
-import akka.remote.RemoteTransport
-import akka.remote.ThisActorSystemQuarantinedEvent
-import akka.remote.UniqueAddress
+import akka.remote._
 import akka.remote.artery.AeronSource.ResourceLifecycle
 import akka.remote.artery.ArteryTransport.ShuttingDown
 import akka.remote.artery.Encoder.OutboundCompressionAccess
@@ -535,7 +531,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     val maybeDriver = mediaDriver.getAndSet(None)
     maybeDriver.foreach { driver ⇒
       // this is only for embedded media driver
-      driver.close()
+      try driver.close() catch {
+        case NonFatal(e) ⇒
+          // don't think driver.close will ever throw, but just in case
+          log.warning("Couldn't close Aeron embedded media driver due to [{}]", e.getMessage)
+      }
 
       try {
         if (settings.Advanced.DeleteAeronDirectory) {
@@ -624,13 +624,15 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         log.debug("Inbound channel is now active")
       } else if (status == ChannelEndpointStatus.ERRORED) {
         areonErrorLog.logErrors(log, 0L)
-        throw new RuntimeException("Inbound Aeron channel is in errored state. See Aeron logs for details.")
+        stopMediaDriver()
+        throw new RemoteTransportException("Inbound Aeron channel is in errored state. See Aeron logs for details.")
       } else if (status == ChannelEndpointStatus.INITIALIZING && retries > 0) {
         Thread.sleep(waitInterval)
         retry(retries - 1)
       } else {
         areonErrorLog.logErrors(log, 0L)
-        throw new RuntimeException("Timed out waiting for Aeron transport to bind. See Aeoron logs.")
+        stopMediaDriver()
+        throw new RemoteTransportException("Timed out waiting for Aeron transport to bind. See Aeoron logs.")
       }
     }
   }
@@ -870,6 +872,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def shutdown(): Future[Done] = {
     if (hasBeenShutdown.compareAndSet(false, true)) {
       log.debug("Shutting down [{}]", localAddress)
+      Runtime.getRuntime.removeShutdownHook(shutdownHook)
       val allAssociations = associationRegistry.allAssociations
       val flushing: Future[Done] =
         if (allAssociations.isEmpty) Future.successful(Done)

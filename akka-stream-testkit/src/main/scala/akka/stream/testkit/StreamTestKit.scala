@@ -220,7 +220,7 @@ object TestPublisher {
       this
     }
 
-    def sendError(cause: Exception): Self = {
+    def sendError(cause: Throwable): Self = {
       subscription.sendError(cause)
       this
     }
@@ -788,14 +788,14 @@ private[testkit] object StreamTestKit {
       case RequestMore(sub, n) if sub eq this ⇒ n
     }
 
-    def expectCancellation(): Unit = publisherProbe.fishForMessage() {
+    def expectCancellation(): Unit = publisherProbe.fishForMessage(hint = "Expecting cancellation") {
       case CancelSubscription(sub) if sub eq this ⇒ true
       case RequestMore(sub, _) if sub eq this     ⇒ false
     }
 
     def sendNext(element: I): Unit = subscriber.onNext(element)
     def sendComplete(): Unit = subscriber.onComplete()
-    def sendError(cause: Exception): Unit = subscriber.onError(cause)
+    def sendError(cause: Throwable): Unit = subscriber.onError(cause)
 
     def sendOnSubscribe(): Unit = subscriber.onSubscribe(this)
   }

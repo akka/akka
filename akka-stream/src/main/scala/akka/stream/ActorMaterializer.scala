@@ -272,7 +272,8 @@ object ActorMaterializerSettings {
       fuzzingMode = config.getBoolean("debug.fuzzing-mode"),
       autoFusing = config.getBoolean("auto-fusing"),
       maxFixedBufferSize = config.getInt("max-fixed-buffer-size"),
-      syncProcessingLimit = config.getInt("sync-processing-limit"))
+      syncProcessingLimit = config.getInt("sync-processing-limit"),
+      ioSettings = IOSettings(config.getConfig("io")))
 
   /**
    * Create [[ActorMaterializerSettings]] from individual settings (Java).
@@ -322,7 +323,25 @@ final class ActorMaterializerSettings private (
   val fuzzingMode:                 Boolean,
   val autoFusing:                  Boolean,
   val maxFixedBufferSize:          Int,
-  val syncProcessingLimit:         Int) {
+  val syncProcessingLimit:         Int,
+  val ioSettings:                  IOSettings) {
+
+  // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
+  def this(
+    initialInputBufferSize:      Int,
+    maxInputBufferSize:          Int,
+    dispatcher:                  String,
+    supervisionDecider:          Supervision.Decider,
+    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+    debugLogging:                Boolean,
+    outputBurstLimit:            Int,
+    fuzzingMode:                 Boolean,
+    autoFusing:                  Boolean,
+    maxFixedBufferSize:          Int,
+    syncProcessingLimit:         Int) =
+    this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit,
+      IOSettings(tcpWriteBufferSize = 16 * 1024))
 
   def this(
     initialInputBufferSize:      Int,
@@ -334,10 +353,9 @@ final class ActorMaterializerSettings private (
     outputBurstLimit:            Int,
     fuzzingMode:                 Boolean,
     autoFusing:                  Boolean,
-    maxFixedBufferSize:          Int) {
+    maxFixedBufferSize:          Int) =
     this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
       outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, defaultMaxFixedBufferSize)
-  }
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
   require(syncProcessingLimit > 0, "syncProcessingLimit must be > 0")
@@ -356,10 +374,11 @@ final class ActorMaterializerSettings private (
     fuzzingMode:                 Boolean                           = this.fuzzingMode,
     autoFusing:                  Boolean                           = this.autoFusing,
     maxFixedBufferSize:          Int                               = this.maxFixedBufferSize,
-    syncProcessingLimit:         Int                               = this.syncProcessingLimit) = {
+    syncProcessingLimit:         Int                               = this.syncProcessingLimit,
+    ioSettings:                  IOSettings                        = this.ioSettings) = {
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit)
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit, ioSettings)
   }
 
   /**
@@ -465,6 +484,10 @@ final class ActorMaterializerSettings private (
     if (settings == this.subscriptionTimeoutSettings) this
     else copy(subscriptionTimeoutSettings = settings)
 
+  def withIOSettings(ioSettings: IOSettings): ActorMaterializerSettings =
+    if (ioSettings == this.ioSettings) this
+    else copy(ioSettings = ioSettings)
+
   private def requirePowerOfTwo(n: Integer, name: String): Unit = {
     require(n > 0, s"$name must be > 0")
     require((n & (n - 1)) == 0, s"$name must be a power of two")
@@ -481,11 +504,52 @@ final class ActorMaterializerSettings private (
         s.outputBurstLimit == outputBurstLimit &&
         s.syncProcessingLimit == syncProcessingLimit &&
         s.fuzzingMode == fuzzingMode &&
-        s.autoFusing == autoFusing
+        s.autoFusing == autoFusing &&
+        s.ioSettings == ioSettings
     case _ ⇒ false
   }
 
-  override def toString: String = s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize,$dispatcher,$supervisionDecider,$subscriptionTimeoutSettings,$debugLogging,$outputBurstLimit,$syncProcessingLimit,$fuzzingMode,$autoFusing)"
+  override def toString: String = s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize," +
+    s"$dispatcher,$supervisionDecider,$subscriptionTimeoutSettings,$debugLogging,$outputBurstLimit," +
+    s"$syncProcessingLimit,$fuzzingMode,$autoFusing,$ioSettings)"
+}
+
+object IOSettings {
+  def apply(system: ActorSystem): IOSettings =
+    apply(system.settings.config.getConfig("akka.stream.materializer.io"))
+
+  def apply(config: Config): IOSettings =
+    new IOSettings(
+      tcpWriteBufferSize = math.min(Int.MaxValue, config.getBytes("tcp.write-buffer-size")).toInt)
+
+  def apply(tcpWriteBufferSize: Int): IOSettings =
+    new IOSettings(tcpWriteBufferSize)
+
+  /** Java API */
+  def create(config: Config) = apply(config)
+
+  /** Java API */
+  def create(system: ActorSystem) = apply(system)
+
+  /** Java API */
+  def create(tcpWriteBufferSize: Int): IOSettings =
+    apply(tcpWriteBufferSize)
+}
+
+final class IOSettings private (val tcpWriteBufferSize: Int) {
+
+  def withTcpWriteBufferSize(value: Int): IOSettings = copy(tcpWriteBufferSize = value)
+
+  private def copy(tcpWriteBufferSize: Int = tcpWriteBufferSize): IOSettings = new IOSettings(
+    tcpWriteBufferSize = tcpWriteBufferSize)
+
+  override def equals(other: Any): Boolean = other match {
+    case s: IOSettings ⇒ s.tcpWriteBufferSize == tcpWriteBufferSize
+    case _             ⇒ false
+  }
+
+  override def toString =
+    s"""IoSettings(${tcpWriteBufferSize})"""
 }
 
 object StreamSubscriptionTimeoutSettings {

@@ -15,7 +15,10 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
+import akka.actor.Identify
 import akka.remote.testconductor.TestConductor
 import akka.testkit.TestProbe
 
@@ -23,7 +26,7 @@ class RemoteReDeploymentConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(
+  commonConfig(debugConfig(on = true).withFallback(ConfigFactory.parseString(
     s"""akka.remote.transport-failure-detector {
          threshold=0.1
          heartbeat-interval=0.1s
@@ -165,6 +168,20 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
       }
 
       enterBarrier("cable-cut")
+
+      // make sure ordinary communication works
+      runOn(second) {
+        val sel = sys.actorSelection(node(first) / "user" / "echo")
+        val p = TestProbe()(sys)
+        p.within(15.seconds) {
+          p.awaitAssert {
+            sel.tell(Identify("id-echo-again"), p.ref)
+            p.expectMsgType[ActorIdentity](3.seconds).ref.isDefined should ===(true)
+          }
+        }
+      }
+
+      enterBarrier("ready-again")
 
       // add new echo, parent, and (if needed) Hello actors:
       runOn(second) {

@@ -1,0 +1,6 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.compression.GzipCompressor.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.compression.DeflateCompressor.this")
+
+# Optimize TCP stream writes
+ProblemFilters.exclude[Problem]("akka.stream.impl.io.*")
+

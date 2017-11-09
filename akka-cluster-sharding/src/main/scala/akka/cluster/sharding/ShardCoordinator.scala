@@ -158,8 +158,9 @@ object ShardCoordinator {
         val mostShards = currentShardAllocations.collect {
           case (_, v) ⇒ v.filterNot(s ⇒ rebalanceInProgress(s))
         }.maxBy(_.size)
-        if (mostShards.size - leastShards.size >= rebalanceThreshold)
-          Future.successful(mostShards.take(maxSimultaneousRebalance - rebalanceInProgress.size).toSet)
+        val difference = mostShards.size - leastShards.size
+        if (difference >= rebalanceThreshold)
+          Future.successful(mostShards.take(math.min(difference, maxSimultaneousRebalance - rebalanceInProgress.size)).toSet)
         else
           emptyRebalanceResult
       } else emptyRebalanceResult

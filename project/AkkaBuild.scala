@@ -23,23 +23,11 @@ object AkkaBuild {
     organization := "com.typesafe.akka",
     version := "2.5-SNAPSHOT")
 
-  lazy val rootSettings = parentSettings ++ Release.settings ++
+  lazy val rootSettings = Release.settings ++
     UnidocRoot.akkaSettings ++
     Formatting.formatSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean)
-
-  val dontPublishSettings = Seq(
-    publishSigned := (),
-    publish := (),
-    publishArtifact in Compile := false,
-    whitesourceIgnore := true)
-
-  val dontPublishDocsSettings = Seq(
-    sources in doc in Compile := List())
-
-  lazy val parentSettings = Seq(
-    publishArtifact := false) ++ dontPublishSettings
 
   lazy val mayChangeSettings = Seq(
     description := """|This module of Akka is marked as
@@ -59,10 +47,22 @@ object AkkaBuild {
       case null ⇒ (Resolver.mavenLocal, Seq.empty)
       case path ⇒
         // Maven resolver settings
+        def deliverPattern(outputPath: File): String =
+          (outputPath / "[artifact]-[revision](-[classifier]).[ext]").absolutePath
+
         val resolver = Resolver.file("user-publish-m2-local", new File(path))
         (resolver, Seq(
           otherResolvers := resolver :: publishTo.value.toList,
-          publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = resolver.name, checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value, overwrite = true)))
+          publishM2Configuration := Classpaths.publishConfig(
+            publishMavenStyle.value,
+            deliverPattern(crossTarget.value),
+            if (isSnapshot.value) "integration" else "release",
+            ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
+            artifacts = packagedArtifacts.value.toVector,
+            resolverName = resolver.name,
+            checksums = checksums.in(publishM2).value.toVector,
+            logging = ivyLoggingLevel.value,
+            overwrite = true)))
     }
 
   lazy val resolverSettings = {
@@ -93,7 +93,6 @@ object AkkaBuild {
       javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
-      incOptions := incOptions.value.withNameHashing(true),
 
       crossVersion := CrossVersion.binary,
 
@@ -173,7 +172,7 @@ object AkkaBuild {
         original.map { group ⇒
           group.runPolicy match {
             case Tests.SubProcess(forkOptions) ⇒
-              group.copy(runPolicy = Tests.SubProcess(forkOptions.copy(
+              group.copy(runPolicy = Tests.SubProcess(forkOptions.withWorkingDirectory(
                 workingDirectory = Some(new File(System.getProperty("user.dir"))))))
             case _ ⇒ group
           }
