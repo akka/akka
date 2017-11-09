@@ -49,13 +49,19 @@ object CacheDirective {
 object CacheDirectives {
   import CacheDirective._
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.1.1
-  // http://tools.ietf.org/html/rfc7234#section-5.2.2.8
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.1.1 and
+   * http://tools.ietf.org/html/rfc7234#section-5.2.2.8
+   */
   final case class `max-age`(deltaSeconds: Long) extends RequestDirective with ResponseDirective with ValueRenderable {
     def render[R <: Rendering](r: R): r.type = r ~~ productPrefix ~~ '=' ~~ deltaSeconds
   }
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.1.2
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.1.2
+   */
   final case class `max-stale`(deltaSeconds: Option[Long]) extends RequestDirective with ValueRenderable {
     def render[R <: Rendering](r: R): r.type = deltaSeconds match {
       case Some(s) ⇒ r ~~ productPrefix ~~ '=' ~~ s
@@ -63,40 +69,67 @@ object CacheDirectives {
     }
   }
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.1.3
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.1.3
+   */
   final case class `min-fresh`(deltaSeconds: Long) extends RequestDirective with ValueRenderable {
     def render[R <: Rendering](r: R): r.type = r ~~ productPrefix ~~ '=' ~~ deltaSeconds
   }
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.1.4
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.1.4
+   */
   case object `no-cache` extends SingletonValueRenderable with RequestDirective with ResponseDirective {
     def apply(fieldNames: String*): `no-cache` = new `no-cache`(immutable.Seq(fieldNames: _*))
   }
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.1.5
-  // http://tools.ietf.org/html/rfc7234#section-5.2.2.3
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.1.5 and
+   * http://tools.ietf.org/html/rfc7234#section-5.2.2.3
+   */
   case object `no-store` extends SingletonValueRenderable with RequestDirective with ResponseDirective
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.1.6
-  // http://tools.ietf.org/html/rfc7234#section-5.2.2.4
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.1.6 and
+   * http://tools.ietf.org/html/rfc7234#section-5.2.2.4
+   */
   case object `no-transform` extends SingletonValueRenderable with RequestDirective with ResponseDirective
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.1.7
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.1.7
+   */
   case object `only-if-cached` extends SingletonValueRenderable with RequestDirective
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.2.1
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.2.1
+   */
   case object `must-revalidate` extends SingletonValueRenderable with ResponseDirective
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.2.2
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.2.2
+   */
   final case class `no-cache`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.2.5
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.2.5
+   */
   case object `public` extends SingletonValueRenderable with ResponseDirective
 
   /** Java API */
   def getPublic: ResponseDirective = `public`
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.2.6
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.2.6
+   */
   final case class `private`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
   object `private` {
     def apply(fieldNames: String*): `private` = new `private`(immutable.Seq(fieldNames: _*))
@@ -105,10 +138,16 @@ object CacheDirectives {
   /** Java API */
   @varargs def createPrivate(fieldNames: String*): ResponseDirective = new `private`(immutable.Seq(fieldNames: _*))
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.2.7
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.2.7
+   */
   case object `proxy-revalidate` extends SingletonValueRenderable with ResponseDirective
 
-  // http://tools.ietf.org/html/rfc7234#section-5.2.2.9
+  /**
+   * For a fuller description of the use case, see
+   * http://tools.ietf.org/html/rfc7234#section-5.2.2.9
+   */
   final case class `s-maxage`(deltaSeconds: Long) extends ResponseDirective with ValueRenderable {
     def render[R <: Rendering](r: R): r.type = r ~~ productPrefix ~~ '=' ~~ deltaSeconds
   }

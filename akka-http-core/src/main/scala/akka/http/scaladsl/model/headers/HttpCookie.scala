@@ -14,8 +14,11 @@ import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 import scala.compat.java8.OptionConverters._
 
-// see http://tools.ietf.org/html/rfc6265
-// sealed abstract to prevent generation of default apply method in companion
+/**
+ * for a full definition of the http cookie header fields, see
+ * http://tools.ietf.org/html/rfc6265
+ * This class is sealed abstract to prevent generation of default apply method in companion
+ */
 sealed abstract case class HttpCookiePair private (
   name:  String,
   value: String) extends jm.headers.HttpCookiePair with ToStringRenderable {
@@ -48,7 +51,10 @@ object HttpCookiePair {
   }
 }
 
-// see http://tools.ietf.org/html/rfc6265
+/**
+ * for a full definition of the http cookie header fields, see
+ * http://tools.ietf.org/html/rfc6265
+ */
 final case class HttpCookie(
   name:      String,
   value:     String,
@@ -125,8 +131,10 @@ object HttpCookie {
   import akka.http.impl.model.parser.CharacterClasses._
 
   private[http] def nameChars = tchar
-  // http://tools.ietf.org/html/rfc6265#section-4.1.1
-  // ; US-ASCII characters excluding CTLs, whitespace DQUOTE, comma, semicolon, and backslash
+  /**
+   * http://tools.ietf.org/html/rfc6265#section-4.1.1
+   * US-ASCII characters excluding CTLs, whitespace DQUOTE, comma, semicolon, and backslash
+   */
   private[http] val valueChars = CharPredicate('\u0021', '\u0023' to '\u002B', '\u002D' to '\u003A', '\u003C' to '\u005B', '\u005D' to '\u007E')
   private[http] val rawValueChars = CharacterClasses.`cookie-octet-raw`
   private[http] val domainChars = ALPHANUM ++ ".-"
