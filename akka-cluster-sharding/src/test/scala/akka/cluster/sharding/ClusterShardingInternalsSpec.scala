@@ -1,3 +1,6 @@
+/**
+  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+  */
 package akka.cluster.sharding
 
 import akka.actor.{ ExtendedActorSystem, PoisonPill, Props }
