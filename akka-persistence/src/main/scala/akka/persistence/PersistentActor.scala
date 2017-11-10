@@ -180,7 +180,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
    *
    * If persistence of an event fails, [[#onPersistFailure]] will be invoked and the actor will
    * unconditionally be stopped. The reason that it cannot resume when persist fails is that it
-   * is unknown if the even was actually persisted or not, and therefore it is in an inconsistent
+   * is unknown if the event was actually persisted or not, and therefore it is in an inconsistent
    * state. Restarting on persistent failures will most likely fail anyway, since the journal
    * is probably unavailable. It is better to stop the actor and after a back-off timeout start
    * it again.
@@ -219,7 +219,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
    *
    * If persistence of an event fails, [[#onPersistFailure]] will be invoked and the actor will
    * unconditionally be stopped. The reason that it cannot resume when persist fails is that it
-   * is unknown if the even was actually persisted or not, and therefore it is in an inconsistent
+   * is unknown if the event was actually persisted or not, and therefore it is in an inconsistent
    * state. Restarting on persistent failures will most likely fail anyway, since the journal
    * is probably unavailable. It is better to stop the actor and after a back-off timeout start
    * it again.
@@ -298,7 +298,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    *
    * If persistence of an event fails, [[#onPersistFailure]] will be invoked and the actor will
    * unconditionally be stopped. The reason that it cannot resume when persist fails is that it
-   * is unknown if the even was actually persisted or not, and therefore it is in an inconsistent
+   * is unknown if the event was actually persisted or not, and therefore it is in an inconsistent
    * state. Restarting on persistent failures will most likely fail anyway, since the journal
    * is probably unavailable. It is better to stop the actor and after a back-off timeout start
    * it again.
@@ -335,7 +335,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    *
    * If persistence of an event fails, [[#onPersistFailure]] will be invoked and the actor will
    * unconditionally be stopped. The reason that it cannot resume when persist fails is that it
-   * is unknown if the even was actually persisted or not, and therefore it is in an inconsistent
+   * is unknown if the event was actually persisted or not, and therefore it is in an inconsistent
    * state. Restarting on persistent failures will most likely fail anyway, since the journal
    * is probably unavailable. It is better to stop the actor and after a back-off timeout start
    * it again.
@@ -454,7 +454,7 @@ abstract class AbstractPersistentActor extends AbstractActor with Eventsourced {
    *
    * If persistence of an event fails, [[#onPersistFailure]] will be invoked and the actor will
    * unconditionally be stopped. The reason that it cannot resume when persist fails is that it
-   * is unknown if the even was actually persisted or not, and therefore it is in an inconsistent
+   * is unknown if the event was actually persisted or not, and therefore it is in an inconsistent
    * state. Restarting on persistent failures will most likely fail anyway, since the journal
    * is probably unavailable. It is better to stop the actor and after a back-off timeout start
    * it again.
@@ -486,7 +486,7 @@ abstract class AbstractPersistentActor extends AbstractActor with Eventsourced {
    *
    * If persistence of an event fails, [[#onPersistFailure]] will be invoked and the actor will
    * unconditionally be stopped. The reason that it cannot resume when persist fails is that it
-   * is unknown if the even was actually persisted or not, and therefore it is in an inconsistent
+   * is unknown if the event was actually persisted or not, and therefore it is in an inconsistent
    * state. Restarting on persistent failures will most likely fail anyway, since the journal
    * is probably unavailable. It is better to stop the actor and after a back-off timeout start
    * it again.
