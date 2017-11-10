@@ -539,6 +539,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
         val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
         val cName = coordinatorSingletonManagerName(encName)
         val cPath = coordinatorPath(encName)
+        //val shardRegion = context.child(encName).getOrElse {
         val shardRegion = context.child(cName).flatMap(_ ⇒ context.child(encName)).getOrElse {
 
           if (context.child(cName).isEmpty) {
