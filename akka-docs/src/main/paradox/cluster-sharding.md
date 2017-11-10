@@ -464,6 +464,8 @@ the identifiers of the shards running in a Region and what entities are alive fo
 a `ShardRegion.ClusterShardingStats` containing the identifiers of the shards running in each region and a count
 of entities that are alive in each shard.
 
+The type names of all started shards can be aquired via @scala[`ClusterSharding.shardTypeNames`]  @java[`ClusterSharding.getShardTypeNames`].
+
 The purpose of these messages is testing and monitoring, they are not provided to give access to
 directly sending messages to the individual entities.
 
