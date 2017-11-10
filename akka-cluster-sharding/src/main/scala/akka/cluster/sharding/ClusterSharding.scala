@@ -33,7 +33,7 @@ import scala.util.control.NonFatal
 import akka.actor.Status
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
-import akka.stream.{Inlet, Outlet}
+import akka.stream.{ Inlet, Outlet }
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -452,13 +452,13 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-    * Scala API: get all currently defined sharding type names.
-    */
+   * Scala API: get all currently defined sharding type names.
+   */
   def shardTypeNames: immutable.Set[String] = regions.keySet().asScala.toSet
 
   /**
-    * Java API: get all currently defined sharding type names.
-    */
+   * Java API: get all currently defined sharding type names.
+   */
   def getShardTypeNames: java.util.Set[String] = regions.keySet()
 
   /**
