@@ -7,7 +7,7 @@ package docs.http.scaladsl.server.directives
 import akka.event.{ Logging, LoggingAdapter }
 import akka.event.Logging.LogLevel
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.server.{ RouteResult, ValidationRejection }
+import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.RouteResult.{ Complete, Rejected }
 import akka.http.scaladsl.server.directives.{ DebuggingDirectives, LogEntry, LoggingMagnet }
 import docs.http.scaladsl.server.RoutingSpec
@@ -116,12 +116,12 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     def akkaResponseTimeLoggingFunction(
       loggingAdapter:   LoggingAdapter,
       requestTimestamp: Long,
-      level:            LogLevel       = Logging.InfoLevel)(req: HttpRequest)(res: Any): Unit = {
+      level:            LogLevel       = Logging.InfoLevel)(req: HttpRequest)(res: RouteResult): Unit = {
       val entry = res match {
         case Complete(resp) =>
           val responseTimestamp: Long = System.nanoTime
           val elapsedTime: Long = (responseTimestamp - requestTimestamp) / 1000000
-          val loggingString = s"""Logged Request:${req.method}:${req.uri}:${resp.status}:${elapsedTime}"""
+          val loggingString = s"""Logged Request:${req.method}:${req.uri}:${resp.status}:$elapsedTime"""
           LogEntry(loggingString, level)
         case Rejected(reason) =>
           LogEntry(s"Rejected Reason: ${reason.mkString(",")}", level)
@@ -133,7 +133,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
       akkaResponseTimeLoggingFunction(log, requestTimestamp)(_)
     }
 
-    val logResponseTime = DebuggingDirectives.logRequestResult(LoggingMagnet(printResponseTime(_)))
+    val logResponseTime = DebuggingDirectives.logRequestResult(LoggingMagnet(printResponseTime))
 
     Get("/") ~> logResponseTime(complete("logged")) ~> check {
       responseAs[String] shouldEqual "logged"
