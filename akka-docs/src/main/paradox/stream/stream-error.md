@@ -72,7 +72,7 @@ supervision strategy*, starting a stage again when it fails, each time with a gr
 This pattern is useful when the stage fails or completes because some external resource is not available
 and we need to give it some time to start-up again. One of the prime examples when this is useful is
 when a WebSocket connection fails due to the HTTP server it's running on going down, perhaps because it is overloaded. 
-By using an exponential backoff, we avoid going into a tight reconnect look, which both gives the HTTP server some time
+By using an exponential backoff, we avoid going into a tight reconnect loop, which both gives the HTTP server some time
 to recover, and it avoids using needless resources on the client side.
 
 The following snippet shows how to create a backoff supervisor using @scala[`akka.stream.scaladsl.RestartSource`] 

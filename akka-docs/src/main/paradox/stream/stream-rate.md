@@ -44,7 +44,7 @@ a new element is not immediately requested once an element has been drained from
 are requested after multiple elements have been drained. This batching strategy reduces the communication cost of
 propagating the backpressure signal through the asynchronous boundary.
 
-While this internal protocol is mostly invisible to the user (apart form its throughput increasing effects) there are
+While this internal protocol is mostly invisible to the user (apart from its throughput increasing effects) there are
 situations when these details get exposed. In all of our previous examples we always assumed that the rate of the
 processing chain is strictly coordinated through the backpressure signal causing all stages to process no faster than
 the throughput of the connected chain. There are tools in Akka Streams however that enable the rates of different segments
@@ -191,10 +191,10 @@ Java
 :   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #conflate-summarize }
 
 This example demonstrates that such flow's rate is decoupled. The element rate at the start of the flow can be much
-higher that the element rate at the end of the flow.
+higher than the element rate at the end of the flow.
 
-Another possible use of `conflate` is to not consider all elements for summary when producer starts getting too fast.
-Example below demonstrates how `conflate` can be used to implement random drop of elements when consumer is not able
+Another possible use of `conflate` is to not consider all elements for summary when the producer starts getting too fast.
+The example below demonstrates how `conflate` can be used to randomly drop elements when the consumer is not able
 to keep up with the producer.
 
 Scala
