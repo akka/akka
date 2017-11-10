@@ -539,9 +539,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
         val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
         val cName = coordinatorSingletonManagerName(encName)
         val cPath = coordinatorPath(encName)
-        //val shardRegion = context.child(encName).getOrElse {
-        val shardRegion = context.child(cName).flatMap(_ ⇒ context.child(encName)).getOrElse {
-
+        val shardRegion = context.child(encName).getOrElse {
           if (context.child(cName).isEmpty) {
             val coordinatorProps =
               if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
@@ -589,8 +587,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
 
     case StartProxy(typeName, dataCenter, settings, extractEntityId, extractShardId) ⇒
       try {
-
-        val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
+        val encName = URLEncoder.encode(s"${typeName}Proxy", ByteString.UTF_8)
         val cName = coordinatorSingletonManagerName(encName)
         val cPath = coordinatorPath(encName)
         // it must be possible to start several proxies, one per data center
