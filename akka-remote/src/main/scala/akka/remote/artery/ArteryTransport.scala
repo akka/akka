@@ -792,6 +792,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           aeronSource(ordinaryStreamId, envelopeBufferPool)
             .via(hubKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
+            .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
 
         // Select lane based on destination to preserve message order,
         // Also include the uid of the sending system in the hash to spread
@@ -804,7 +805,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
               val hashA = 23 + a
               val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
               math.abs(hash) % inboundLanes
-            case OptionVal.None ⇒ 0
+            case OptionVal.None ⇒
+              // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
+              env.lane
           }
         }
 
