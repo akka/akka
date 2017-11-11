@@ -47,6 +47,8 @@ object LatencySpec extends MultiNodeConfig {
            enabled = on
            advanced.idle-cpu-level = 7
 
+           advanced.inbound-lanes = 1
+
            # for serious measurements when running this test on only one machine
            # it is recommended to use external media driver
            # See akka-remote/src/test/resources/aeron.properties
