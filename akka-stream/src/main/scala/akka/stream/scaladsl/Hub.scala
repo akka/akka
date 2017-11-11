@@ -776,7 +776,8 @@ object PartitionHub {
    * @param partitioner Function that decides where to route an element. The function takes two parameters;
    *   the first is the number of active consumers and the second is the stream element. The function should
    *   return the index of the selected consumer for the given element, i.e. int greater than or equal to 0
-   *   and less than number of consumers. E.g. `(size, elem) => math.abs(elem.hashCode) % size`.
+   *   and less than number of consumers. E.g. `(size, elem) => math.abs(elem.hashCode) % size`. It's also
+   *   possible to use `-1` to drop the element.
    * @param startAfterNrOfConsumers Elements are buffered until this number of consumers have been connected.
    *   This is only used initially when the stage is starting up, i.e. it is not honored when consumers have
    *   been removed (canceled).
@@ -785,8 +786,14 @@ object PartitionHub {
    */
   @ApiMayChange
   def sink[T](partitioner: (Int, T) ⇒ Int, startAfterNrOfConsumers: Int,
-              bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
-    statefulSink(() ⇒ (info, elem) ⇒ info.consumerIdByIdx(partitioner(info.size, elem)), startAfterNrOfConsumers, bufferSize)
+              bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] = {
+    val fun: (ConsumerInfo, T) ⇒ Long = { (info, elem) ⇒
+      val idx = partitioner(info.size, elem)
+      if (idx < 0) -1L
+      else info.consumerIdByIdx(idx)
+    }
+    statefulSink(() ⇒ fun, startAfterNrOfConsumers, bufferSize)
+  }
 
   @DoNotInherit @ApiMayChange trait ConsumerInfo extends akka.stream.javadsl.PartitionHub.ConsumerInfo {
 
@@ -1051,8 +1058,10 @@ object PartitionHub {
         pending :+= elem
       } else {
         val id = materializedPartitioner(consumerInfo, elem)
-        queue.offer(id, elem)
-        wakeup(id)
+        if (id >= 0) { // negative id is a way to drop the element
+          queue.offer(id, elem)
+          wakeup(id)
+        }
       }
     }
 
