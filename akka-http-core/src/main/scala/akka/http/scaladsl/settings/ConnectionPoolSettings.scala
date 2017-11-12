@@ -31,6 +31,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
 
   // overrides for more precise return type
   override def withMaxConnections(n: Int): ConnectionPoolSettings = self.copy(maxConnections = n)
+  override def withMinConnections(n: Int): ConnectionPoolSettings = self.copy(minConnections = n)
   override def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n)
   override def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
   override def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
