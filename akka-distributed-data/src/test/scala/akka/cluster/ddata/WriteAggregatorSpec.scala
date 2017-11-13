@@ -17,7 +17,7 @@ import akka.cluster.ddata.Replicator._
 import akka.remote.RARP
 
 import scala.concurrent.Future
-import akka.cluster.Cluster
+import akka.cluster.{ Cluster, Member, UniqueAddress }
 
 object WriteAggregatorSpec {
 
@@ -25,15 +25,15 @@ object WriteAggregatorSpec {
   val KeyB = ORSetKey[String]("B")
 
   def writeAggregatorProps(data: GSet[String], consistency: Replicator.WriteConsistency,
-                           probes: Map[Address, ActorRef], nodes: Set[Address], unreachable: Set[Address], replyTo: ActorRef, durable: Boolean): Props =
+                           probes: Map[Address, ActorRef], nodes: Set[Member], unreachable: Set[Member], replyTo: ActorRef, durable: Boolean): Props =
     Props(new TestWriteAggregator(KeyA, data, None, consistency, probes, nodes, unreachable, replyTo, durable))
 
   def writeAggregatorPropsWithDelta(data: ORSet[String], delta: Delta, consistency: Replicator.WriteConsistency,
-                                    probes: Map[Address, ActorRef], nodes: Set[Address], unreachable: Set[Address], replyTo: ActorRef, durable: Boolean): Props =
+                                    probes: Map[Address, ActorRef], nodes: Set[Member], unreachable: Set[Member], replyTo: ActorRef, durable: Boolean): Props =
     Props(new TestWriteAggregator(KeyB, data, Some(delta), consistency, probes, nodes, unreachable, replyTo, durable))
 
   class TestWriteAggregator(key: Key.KeyR, data: ReplicatedData, delta: Option[Delta], consistency: Replicator.WriteConsistency,
-                            probes: Map[Address, ActorRef], nodes: Set[Address], unreachable: Set[Address], replyTo: ActorRef, durable: Boolean)
+                            probes: Map[Address, ActorRef], nodes: Set[Member], unreachable: Set[Member], replyTo: ActorRef, durable: Boolean)
     extends WriteAggregator(key, DataEnvelope(data), delta, consistency, None, nodes, unreachable, replyTo, durable) {
 
     override def replica(address: Address): ActorSelection =
@@ -91,7 +91,9 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
   val nodeC = nodeA.copy(host = Some("c"))
   val nodeD = nodeA.copy(host = Some("d"))
   // 4 replicas + the local => 5
-  val nodes = Set(nodeA, nodeB, nodeC, nodeD)
+  val nodes = Set(nodeA, nodeB, nodeC, nodeD).map(toMember)
+
+  def toMember(a: Address): Member = Member(UniqueAddress(a, 0L), Set("dc-default"))
 
   val data = GSet.empty + "A" + "B"
   val timeout = 3.seconds.dilated
@@ -99,15 +101,16 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
   val writeMajority = WriteMajority(timeout)
   val writeAll = WriteAll(timeout)
 
-  def probes(probe: ActorRef): Map[Address, ActorRef] =
-    nodes.toSeq.map(_ → system.actorOf(WriteAggregatorSpec.writeAckAdapterProps(probe))).toMap
+  def probes(probe: ActorRef): Map[Address, ActorRef] = {
+    nodes.map(_.address).toSeq.map(_ → system.actorOf(WriteAggregatorSpec.writeAckAdapterProps(probe))).toMap
+  }
 
   /**
    * Create a tuple for each node with the WriteAckAdapter and the TestProbe
    */
   def probes(): Map[Address, TestMock] = {
     val probe = TestProbe()
-    nodes.toSeq.map(_ → TestMock()).toMap
+    nodes.toSeq.map(_.address).map(_ → TestMock()).toMap
   }
 
   "WriteAggregator" must {
@@ -129,7 +132,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
       val testProbes = probes()
       val testProbeRefs = testProbes.map { case (a, tm) ⇒ a → tm.writeAckAdapter }
       val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorProps(
-        data, writeMajority, testProbeRefs, nodes, Set(nodeC, nodeD), testActor, durable = false))
+        data, writeMajority, testProbeRefs, nodes, Set(nodeC, nodeD).map(toMember), testActor, durable = false))
 
       testProbes(nodeA).expectMsgType[Write]
       // no reply
