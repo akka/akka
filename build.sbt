@@ -230,7 +230,7 @@ lazy val docs = akkaModule("akka-docs")
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
   .settings(Protobuf.settings)
-  .settings(AutomaticModuleName.settings("akka.multinode.testkit"))
+  .settings(AutomaticModuleName.settings("akka.remote.testkit"))
   .settings(AkkaBuild.mayChangeSettings)
 
 lazy val osgi = akkaModule("akka-osgi")
