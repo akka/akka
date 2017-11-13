@@ -7,8 +7,8 @@ import java.util
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 
 import akka.NotUsed
-import akka.dispatch.AbstractNodeQueue
-import akka.stream._
+import akka.dispatch.{ AbstractNodeQueue, ExecutionContexts }
+import akka.stream.{ StreamDetachedException, _ }
 import akka.stream.stage._
 
 import scala.annotation.tailrec
@@ -424,33 +424,44 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
             val startFrom = head
             activeConsumers += 1
             addConsumer(consumer, startFrom)
-            consumer.callback.invoke(Initialize(startFrom))
+            // in case the consumer is already stopped we need to undo registration
+            // note that this will always be invoked for every consumer at some point in time
+            implicit val ec = ExecutionContexts.sameThreadExecutionContext
+            consumer.callback.invokeWithFeedback(Initialize(startFrom)).onFailure {
+              case _: StreamDetachedException ⇒
+                callbackPromise.future.foreach(callback ⇒
+                  callback.invoke(UnRegister(consumer.id, startFrom, startFrom))
+                )
+            }
           }
 
         case UnRegister(id, previousOffset, finalOffset) ⇒
-          activeConsumers -= 1
-          val consumer = findAndRemoveConsumer(id, previousOffset)
-          if (activeConsumers == 0) {
-            if (isClosed(in)) completeStage()
-            else if (head != finalOffset) {
-              // If our final consumer goes away, we roll forward the buffer so a subsequent consumer does not
-              // see the already consumed elements. This feature is quite handy.
-              while (head != finalOffset) {
-                queue(head & Mask) = null
-                head += 1
+          // we can get two of these because of how invokeWithFeedback works
+          // only do the logic if the consumer actually still is active
+          if (findAndRemoveConsumer(id, previousOffset) != null) {
+            activeConsumers -= 1
+            if (activeConsumers == 0) {
+              if (isClosed(in)) completeStage()
+              else if (head != finalOffset) {
+                // If our final consumer goes away, we roll forward the buffer so a subsequent consumer does not
+                // see the already consumed elements. This feature is quite handy.
+                while (head != finalOffset) {
+                  queue(head & Mask) = null
+                  head += 1
+                }
+                head = finalOffset
+                if (!hasBeenPulled(in)) pull(in)
               }
-              head = finalOffset
-              if (!hasBeenPulled(in)) pull(in)
-            }
-          } else checkUnblock(previousOffset)
+            } else checkUnblock(previousOffset)
+          }
         case Advance(id, previousOffset) ⇒
           val newOffset = previousOffset + DemandThreshold
-          // Move the consumer from its last known offest to its new one. Check if we are unblocked.
+          // Move the consumer from its last known offset to its new one. Check if we are unblocked.
           val consumer = findAndRemoveConsumer(id, previousOffset)
           addConsumer(consumer, newOffset)
           checkUnblock(previousOffset)
         case NeedWakeup(id, previousOffset, currentOffset) ⇒
-          // Move the consumer from its last known offest to its new one. Check if we are unblocked.
+          // Move the consumer from its last known offset to its new one. Check if we are unblocked.
           val consumer = findAndRemoveConsumer(id, previousOffset)
           addConsumer(consumer, currentOffset)
 
