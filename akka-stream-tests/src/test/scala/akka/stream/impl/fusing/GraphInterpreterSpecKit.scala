@@ -11,6 +11,7 @@ import akka.stream.impl.fusing.GraphInterpreter.{ Connection, DownstreamBoundary
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, _ }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
+import akka.util.OptionVal
 
 import scala.collection.{ Map ⇒ SMap }
 import scala.language.existentials

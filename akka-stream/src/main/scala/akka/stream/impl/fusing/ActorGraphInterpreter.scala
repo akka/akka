@@ -457,16 +457,16 @@ import scala.util.control.NonFatal
     shell:   GraphInterpreterShell,
     logic:   GraphStageLogic,
     evt:     Any,
-    promise: Promise[Done],
+    promise: OptionVal[Promise[Done]],
     handler: (Any) ⇒ Unit) extends BoundaryEvent {
     override def execute(eventLimit: Int): Int = {
       if (!waitingForShutdown) {
         try {
           interpreter.runAsyncInput(logic, evt, handler)
-          if (promise ne null) promise.success(Done)
+          if (promise.isDefined) promise.get.success(Done)
         } catch {
-          case t: Throwable if promise ne null ⇒
-            promise.failure(t)
+          case t: Throwable if promise.isDefined ⇒
+            promise.get.failure(t)
             throw t
         }
         if (eventLimit == 1 && interpreter.isSuspended) {
@@ -474,7 +474,7 @@ import scala.util.control.NonFatal
           0
         } else runBatch(eventLimit - 1)
       } else {
-        if (promise ne null) promise.failure(new StreamDetachedException)
+        if (promise.isDefined) promise.get.failure(new StreamDetachedException)
         eventLimit
       }
     }
