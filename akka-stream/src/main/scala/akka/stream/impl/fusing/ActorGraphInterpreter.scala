@@ -450,8 +450,8 @@ import scala.util.control.NonFatal
   lazy val log = Logging(mat.system.eventStream, self)
 
   /**
-   *
-   * @param promise Will be completed upon
+   * @param promise Will be completed upon processing the event, or failed if processing the event throws
+   *                if the event isn't ever processed the promise (the stage stops) is failed elsewhere
    */
   final case class AsyncInput(
     shell:   GraphInterpreterShell,
