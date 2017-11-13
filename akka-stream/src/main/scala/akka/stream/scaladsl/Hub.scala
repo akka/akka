@@ -424,7 +424,6 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
             activeConsumers += 1
             addConsumer(consumer, startFrom)
             // in case the consumer is already stopped we need to undo registration
-            // note that this will always be invoked for every consumer at some point in time
             implicit val ec = materializer.executionContext
             consumer.callback.invokeWithFeedback(Initialize(startFrom)).onFailure {
               case _: StreamDetachedException ⇒
@@ -435,24 +434,22 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
           }
 
         case UnRegister(id, previousOffset, finalOffset) ⇒
-          // we can get two of these because of how invokeWithFeedback works
-          // only do the logic if the consumer actually still is active
-          if (findAndRemoveConsumer(id, previousOffset) != null) {
+          if (findAndRemoveConsumer(id, previousOffset) != null)
             activeConsumers -= 1
-            if (activeConsumers == 0) {
-              if (isClosed(in)) completeStage()
-              else if (head != finalOffset) {
-                // If our final consumer goes away, we roll forward the buffer so a subsequent consumer does not
-                // see the already consumed elements. This feature is quite handy.
-                while (head != finalOffset) {
-                  queue(head & Mask) = null
-                  head += 1
-                }
-                head = finalOffset
-                if (!hasBeenPulled(in)) pull(in)
+          if (activeConsumers == 0) {
+            if (isClosed(in)) completeStage()
+            else if (head != finalOffset) {
+              // If our final consumer goes away, we roll forward the buffer so a subsequent consumer does not
+              // see the already consumed elements. This feature is quite handy.
+              while (head != finalOffset) {
+                queue(head & Mask) = null
+                head += 1
               }
-            } else checkUnblock(previousOffset)
-          }
+              head = finalOffset
+              if (!hasBeenPulled(in)) pull(in)
+            }
+          } else checkUnblock(previousOffset)
+
         case Advance(id, previousOffset) ⇒
           val newOffset = previousOffset + DemandThreshold
           // Move the consumer from its last known offset to its new one. Check if we are unblocked.
