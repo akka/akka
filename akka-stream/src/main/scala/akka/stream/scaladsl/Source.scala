@@ -45,15 +45,23 @@ final class Source[+Out, +Mat](
   override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
 
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
-    val toAppend =
-      if (flow.traversalBuilder eq Flow.identityTraversalBuilder)
-        LinearTraversalBuilder.empty()
+    if (flow.traversalBuilder eq Flow.identityTraversalBuilder)
+      if (combine == Keep.left)
+        //optimization by returning this
+        this.asInstanceOf[Source[T, Mat3]] //Mat == Mat3, due to Keep.left
+      else if (combine == Keep.right || combine == Keep.none) // Mat3 = NotUsed
+        //optimization with LinearTraversalBuilder.empty()
+        new Source[T, Mat3](
+          traversalBuilder.append(LinearTraversalBuilder.empty(), flow.shape, combine),
+          SourceShape(shape.out).asInstanceOf[SourceShape[T]])
       else
-        flow.traversalBuilder
-
-    new Source[T, Mat3](
-      traversalBuilder.append(toAppend, flow.shape, combine),
-      SourceShape(flow.shape.out))
+        new Source[T, Mat3](
+          traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
+          SourceShape(flow.shape.out))
+    else
+      new Source[T, Mat3](
+        traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
+        SourceShape(flow.shape.out))
   }
 
   /**
