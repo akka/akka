@@ -8,13 +8,12 @@ import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 
 import akka.NotUsed
 import akka.dispatch.{ AbstractNodeQueue, ExecutionContexts }
-import akka.stream.{ StreamDetachedException, _ }
+import akka.stream._
 import akka.stream.stage._
 
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
-import java.util.Arrays
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReferenceArray
@@ -426,7 +425,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
             addConsumer(consumer, startFrom)
             // in case the consumer is already stopped we need to undo registration
             // note that this will always be invoked for every consumer at some point in time
-            implicit val ec = ExecutionContexts.sameThreadExecutionContext
+            implicit val ec = materializer.executionContext
             consumer.callback.invokeWithFeedback(Initialize(startFrom)).onFailure {
               case _: StreamDetachedException ⇒
                 callbackPromise.future.foreach(callback ⇒
