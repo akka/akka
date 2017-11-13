@@ -175,7 +175,7 @@ lazy val contrib = akkaModule("akka-contrib")
 lazy val distributedData = akkaModule("akka-distributed-data")
   .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
   .settings(Dependencies.distributedData)
-  .settings(AutomaticModuleName.settings("akka.cluster.ddata")) // TODO or akka.ddata
+  .settings(AutomaticModuleName.settings("akka.cluster.ddata"))
   .settings(OSGi.distributedData)
   .settings(Protobuf.settings)
   .configs(MultiJvm)
