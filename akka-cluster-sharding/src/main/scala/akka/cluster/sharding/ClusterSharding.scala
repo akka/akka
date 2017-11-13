@@ -429,14 +429,14 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     shardRegion
   }
 
-    private def proxyName(
-      typeName:   String,
-      dataCenter: Option[DataCenter]): String = {
-      dataCenter match {
-        case None    ⇒ s"${typeName}Proxy"
-        case Some(t) ⇒ s"${typeName}Proxy" + "-" + t
-      }
+  private def proxyName(
+    typeName:   String,
+    dataCenter: Option[DataCenter]): String = {
+    dataCenter match {
+      case None    ⇒ s"${typeName}Proxy"
+      case Some(t) ⇒ s"${typeName}Proxy" + "-" + t
     }
+  }
 
   /**
    * Java/Scala API: Register a named entity type `ShardRegion` on this node that will run in proxy only mode,
