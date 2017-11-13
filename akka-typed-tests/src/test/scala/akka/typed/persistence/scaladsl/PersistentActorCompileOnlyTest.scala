@@ -299,7 +299,8 @@ object PersistentActorCompileOnlyTest {
       val adapt = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
 
       def addItem(id: Id, self: ActorRef[Command]) =
-        Persist[Event, List[Id]](ItemAdded(id))
+        Effect
+          .persist[Event, List[Id]](ItemAdded(id))
           .andThen(metadataRegistry ! GetMetaData(id, adapt))
 
       PersistentActor.immutable[Command, Event, List[Id]](

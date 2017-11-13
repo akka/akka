@@ -44,7 +44,7 @@ object PersistentActor {
 
     def persist[Event, State](event: Event, events: Event*): Effect[Event, State] =
       if (events.nonEmpty)
-        Effect.persist(im.Seq(event) ++ events)
+        Effect.persist(event :: events.toList)
       else
         new Persist[Event, State](event)
 

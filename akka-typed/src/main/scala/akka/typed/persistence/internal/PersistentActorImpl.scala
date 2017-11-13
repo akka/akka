@@ -110,6 +110,7 @@ import akka.typed.internal.adapter.ActorRefAdapter
     case Persist(event) ⇒
       // apply the event before persist so that validation exception is handled before persisting
       // the invalid event, in case such validation is implemented in the event handler.
+      // also, we ensure, before persisting, that there is an event handler for each single event
       state = applyEvent(state, event)
       persist(event) { _ ⇒
         sideEffects.foreach(applySideEffect)
@@ -117,8 +118,9 @@ import akka.typed.internal.adapter.ActorRefAdapter
     case PersistAll(events) ⇒
       // apply the event before persist so that validation exception is handled before persisting
       // the invalid event, in case such validation is implemented in the event handler.
+      // also, we ensure, before persisting, that there is an event handler for each single event
       state = events.foldLeft(state)(applyEvent)
-      persistAll(scala.collection.immutable.Seq(events)) { _ ⇒
+      persistAll(events) { _ ⇒
         sideEffects.foreach(applySideEffect)
       }
     case _: PersistNothing.type @unchecked ⇒
