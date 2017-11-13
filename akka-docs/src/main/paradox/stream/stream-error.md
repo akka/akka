@@ -67,7 +67,7 @@ Java
 
 Just as Akka provides the @ref:[backoff supervision pattern for actors](../general/supervision.md#backoff-supervisor), Akka streams
 also provides a `RestartSource`, `RestartSink` and `RestartFlow` for implementing the so-called *exponential backoff 
-supervision strategy*, starting a stage again when it fails, each time with a growing time delay between restarts.
+supervision strategy*, starting a stage again when it fails or completes, each time with a growing time delay between restarts.
 
 This pattern is useful when the stage fails or completes because some external resource is not available
 and we need to give it some time to start-up again. One of the prime examples when this is useful is
