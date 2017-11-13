@@ -575,7 +575,7 @@ According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended alg
 You should always check the latest information about security and algorithm recommendations though before you configure your system.
 
 Creating and working with keystores and certificates is well documented in the
-[Generating X.509 Certificates](http://typesafehub.github.io/ssl-config/CertificateGeneration.html#using-keytool)
+[Generating X.509 Certificates](http://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
 section of Lightbend's SSL-Config library.
 
 Since an Akka remoting is inherently @ref:[peer-to-peer](general/remoting.md#symmetric-communication) both the key-store as well as trust-store
