@@ -380,7 +380,7 @@ object PersistentActorCompileOnlyTest {
             // A more elaborate example to show we still have full control over the effects
             // if needed (e.g. when some logic is factored out but you want to add more effects)
             val commonEffects = changeMoodIfNeeded(state, Happy)
-            Effect.persistAll(commonEffects.events :+ Remembered(memory), commonEffects.sideEffects)
+            Effect.persist(commonEffects.events :+ Remembered(memory), commonEffects.sideEffects)
 
         }
       },
