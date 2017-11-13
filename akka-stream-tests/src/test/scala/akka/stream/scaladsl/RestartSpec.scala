@@ -175,6 +175,54 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
       Thread.sleep((minBackoff + 100.millis).toMillis)
       created.get() should ===(1)
     }
+
+    "stop on completion if it should only be restarted in failures" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val probe = RestartSource.onFailuresWithBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
+        created.incrementAndGet()
+        Source(List("a", "b", "c"))
+          .map {
+            case "c"   ⇒ if (created.get() == 1) throw TE("failed") else "c"
+            case other ⇒ other
+          }
+      }.runWith(TestSink.probe)
+
+      probe.requestNext("a")
+      probe.requestNext("b")
+      // will fail, and will restart
+      probe.requestNext("a")
+      probe.requestNext("b")
+      probe.requestNext("c")
+      probe.expectComplete()
+
+      created.get() should ===(2)
+
+      probe.cancel()
+    }
+
+    "restart on failure when only due to failures should be restarted" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val probe = RestartSource.onFailuresWithBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
+        created.incrementAndGet()
+        Source(List("a", "b", "c"))
+          .map {
+            case "c"   ⇒ throw TE("failed")
+            case other ⇒ other
+          }
+      }.runWith(TestSink.probe)
+
+      probe.requestNext("a")
+      probe.requestNext("b")
+      probe.requestNext("a")
+      probe.requestNext("b")
+      probe.requestNext("a")
+
+      created.get() should ===(3)
+
+      probe.cancel()
+
+    }
+
   }
 
   "A restart with backoff sink" should {
