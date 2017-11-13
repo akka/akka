@@ -143,13 +143,13 @@ object PersistentActorCompileOnlyTest {
         case Happy ⇒ CommandHandler.command {
           case Greet(whom) ⇒
             println(s"Super happy to meet you $whom!")
-            Effect.done
+            Effect.none
           case MoodSwing ⇒ Effect.persist(MoodChanged(Sad))
         }
         case Sad ⇒ CommandHandler.command {
           case Greet(whom) ⇒
             println(s"hi $whom")
-            Effect.done
+            Effect.none
           case MoodSwing ⇒ Effect.persist(MoodChanged(Happy))
         }
       },
@@ -313,10 +313,10 @@ object PersistentActorCompileOnlyTest {
                 case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
                 case GotMetaData(data) ⇒
                   basket = basket.updatedWith(data)
-                  Effect.done
+                  Effect.none
                 case GetTotalPrice(sender) ⇒
                   sender ! basket.items.map(_.price).sum
-                  Effect.done
+                  Effect.none
               }
             }
             else CommandHandler { (ctx, state, cmd) ⇒
@@ -329,10 +329,10 @@ object PersistentActorCompileOnlyTest {
                     stash.foreach(ctx.self ! _)
                     stash = Nil
                   }
-                  Effect.done
+                  Effect.none
                 case cmd: GetTotalPrice ⇒
                   stash :+= cmd
-                  Effect.done
+                  Effect.none
               }
             }),
         eventHandler = (state, evt) ⇒ evt match {
@@ -362,7 +362,7 @@ object PersistentActorCompileOnlyTest {
     case class Remembered(memory: String) extends Event
 
     def changeMoodIfNeeded(currentState: Mood, newMood: Mood): Effect[Event, Mood] =
-      if (currentState == newMood) Effect.done
+      if (currentState == newMood) Effect.none
       else Effect.persist(MoodChanged(newMood))
 
     PersistentActor.immutable[Command, Event, Mood](
@@ -372,7 +372,7 @@ object PersistentActorCompileOnlyTest {
         cmd match {
           case Greet(whom) ⇒
             println(s"Hi there, I'm $state!")
-            Effect.done
+            Effect.none
           case CheerUp(sender) ⇒
             changeMoodIfNeeded(state, Happy)
               .andThen { sender ! Ack }

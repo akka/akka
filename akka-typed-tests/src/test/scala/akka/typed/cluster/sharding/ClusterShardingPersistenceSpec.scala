@@ -57,7 +57,7 @@ object ClusterShardingPersistenceSpec {
         case Add(s) ⇒ Effect.persist(s)
         case Get(replyTo) ⇒
           replyTo ! state
-          Effect.done
+          Effect.none
         case StopPlz ⇒ Effect.stop
       }),
       eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt)

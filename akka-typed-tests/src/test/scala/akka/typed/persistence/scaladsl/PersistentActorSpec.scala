@@ -50,7 +50,7 @@ object PersistentActorSpec {
           Effect.persist(Incremented(1))
         case GetValue(replyTo) ⇒
           replyTo ! state
-          Effect.done
+          Effect.none
         case IncrementLater ⇒
           // purpose is to test signals
           val delay = ctx.spawnAnonymous(Actor.withTimers[Tick.type] { timers ⇒
@@ -60,10 +60,10 @@ object PersistentActorSpec {
             })
           })
           ctx.watch(delay)
-          Effect.done
+          Effect.none
         case IncrementAfterReceiveTimeout ⇒
           ctx.setReceiveTimeout(10.millis, Timeout)
-          Effect.done
+          Effect.none
         case Timeout ⇒
           ctx.cancelReceiveTimeout()
           Effect.persist(Incremented(100))

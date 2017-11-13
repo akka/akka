@@ -41,19 +41,26 @@ object PersistentActor {
    * Factories for effects - how a persitent actor reacts on a command
    */
   object Effect {
-    def persist[Event, State](event: Event): Effect[Event, State] =
-      new Persist[Event, State](event)
 
-    def persistAll[Event, State](events: im.Seq[Event]): Effect[Event, State] =
+    def persist[Event, State](event: Event, events: Event*): Effect[Event, State] =
+      if (events.nonEmpty)
+        Effect.persist(im.Seq(event) ++ events)
+      else
+        new Persist[Event, State](event)
+
+    def persist[Event, State](eventOpt: Option[Event]): Effect[Event, State] =
+      Effect.persist[Event, State](eventOpt.toIndexedSeq)
+
+    def persist[Event, State](events: im.Seq[Event]): Effect[Event, State] =
       new PersistAll[Event, State](events)
 
-    def persistAll[Event, State](events: im.Seq[Event], sideEffects: im.Seq[ChainableEffect[Event, State]]): Effect[Event, State] =
+    def persist[Event, State](events: im.Seq[Event], sideEffects: im.Seq[ChainableEffect[Event, State]]): Effect[Event, State] =
       new CompositeEffect[Event, State](Some(new PersistAll[Event, State](events)), sideEffects)
 
     /**
      * Do not persist anything
      */
-    def done[Event, State]: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
+    def none[Event, State]: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
 
     /**
      * This command is not handled, but it is not an error that it isn't.
