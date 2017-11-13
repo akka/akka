@@ -252,7 +252,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
         logger,
         logics,
         connections,
-        onAsyncInput = (_, _, _) ⇒ (),
+        onAsyncInput = (_, _, _, _) ⇒ (),
         fuzzingMode = false,
         context = null)
       _interpreter.init(null)

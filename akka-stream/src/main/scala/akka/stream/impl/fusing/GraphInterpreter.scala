@@ -9,8 +9,10 @@ import akka.stream.stage._
 import akka.stream._
 import java.util.concurrent.ThreadLocalRandom
 
+import akka.Done
 import akka.annotation.InternalApi
 
+import scala.concurrent.Promise
 import scala.util.control.NonFatal
 
 /**
@@ -191,7 +193,7 @@ import scala.util.control.NonFatal
   val log:          LoggingAdapter,
   val logics:       Array[GraphStageLogic], // Array of stage logics
   val connections:  Array[GraphInterpreter.Connection],
-  val onAsyncInput: (GraphStageLogic, Any, (Any) ⇒ Unit) ⇒ Unit,
+  val onAsyncInput: (GraphStageLogic, Any, Promise[Done], (Any) ⇒ Unit) ⇒ Unit,
   val fuzzingMode:  Boolean,
   val context:      ActorRef) {
 
