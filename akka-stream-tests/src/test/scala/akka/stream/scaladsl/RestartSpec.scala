@@ -17,7 +17,7 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-class RestartSpec extends StreamSpec with DefaultTimeout {
+class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "10s")) with DefaultTimeout {
 
   implicit val mat = ActorMaterializer()
   import system.dispatcher
@@ -435,13 +435,17 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
+      // we need to start counting time before we issue the cancel signal,
+      // as starting the counter anywhere after the cancel signal, might not
+      // capture all of the time, that has been spent for the backoff.
+      val deadline = minBackoff.fromNow
+
       source.sendNext("cancel")
       // This will complete the flow in probe and cancel the flow out probe
       flowInProbe.request(2)
       Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain only ("in complete", "out complete")
 
       source.sendNext("c")
-      val deadline = (minBackoff - 1.millis).fromNow
       flowInProbe.request(1)
       flowInProbe.expectNext("c")
       deadline.isOverdue() should be(true)
