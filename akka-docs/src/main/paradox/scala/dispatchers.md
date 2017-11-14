@@ -358,7 +358,7 @@ For a similar discussion specific about Akka HTTP refer to, @scala[@extref[Handl
 The non-exhaustive list of adequate solutions to the “blocking problem”
 includes the following suggestions:
 
- * Do the blocking call within an actor (or a set of actors managed by a router
+ * Do the blocking call within an actor (or a set of actors) managed by a
 @ref:[router](routing.md),  making sure to
 configure a thread pool which is either dedicated for this purpose or
 sufficiently sized.

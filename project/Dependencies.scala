@@ -91,7 +91,6 @@ object Dependencies {
       val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
       val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "1.0.0" % "test" // ApacheV2
       val log4j = "log4j" % "log4j" % "1.2.17" % "test" // ApacheV2
-      val junitIntf = "com.novocode" % "junit-interface" % "0.11" % "test" // MIT
       val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion % "test"
 
       // in-memory filesystem for file related tests
@@ -131,7 +130,7 @@ object Dependencies {
 
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
-  val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck.value, Test.junitIntf)
+  val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck.value)
 
   val remote = l ++= Seq(netty, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.jimfs)
 
@@ -159,13 +158,13 @@ object Dependencies {
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
-  val camel = l ++= Seq(camelCore, Test.scalatest.value, Test.junit, Test.mockito, Test.logback, Test.commonsIo, Test.junitIntf)
+  val camel = l ++= Seq(camelCore, Test.scalatest.value, Test.junit, Test.mockito, Test.logback, Test.commonsIo)
 
   val osgi = l ++= Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest.value, Test.junit)
 
-  val docs = l ++= Seq(Test.scalatest.value, Test.junit, Test.junitIntf, Docs.sprayJson, Docs.gson)
+  val docs = l ++= Seq(Test.scalatest.value, Test.junit, Docs.sprayJson, Docs.gson)
 
-  val contrib = l ++= Seq(Test.junitIntf, Test.commonsIo)
+  val contrib = l ++= Seq(Test.commonsIo)
 
   val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
@@ -174,7 +173,6 @@ object Dependencies {
   lazy val stream = l ++= Seq[sbt.ModuleID](
     reactiveStreams,
     sslConfigCore,
-    Test.junitIntf,
     Test.scalatest.value)
 
   lazy val streamTestkit = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit)

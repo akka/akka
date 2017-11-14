@@ -3,6 +3,8 @@
  */
 package akka.typed
 
+import akka.actor.InvalidMessageException
+
 import scala.annotation.tailrec
 import akka.util.LineNumbers
 import akka.annotation.{ DoNotInherit, InternalApi }
@@ -275,6 +277,7 @@ object Behavior {
 
   private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] =
     behavior match {
+      case null ⇒ throw new InvalidMessageException("[null] is not an allowed message")
       case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
       case _: UntypedBehavior[_] ⇒

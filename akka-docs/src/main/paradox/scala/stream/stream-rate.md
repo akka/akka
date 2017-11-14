@@ -8,7 +8,7 @@ buffers in a stream. In this chapter we cover how buffers are used in Akka Strea
 
 In this section we will discuss internal buffers that are introduced as an optimization when using asynchronous stages.
 
-To run a stage asynchronously it has to be marked explicitly as such using the @scala[`.async`]@java[`.async()`] method. Being run
+To run a stage asynchronously it has to be marked explicitly as such using the @scala[@scaladoc[`.async`](akka.stream.Graph#shape:S)]@java[@javadoc[`.async()`](akka.stream.Graph#async--)] method. Being run
 asynchronously means that a stage, after handing out an element to its downstream consumer is able to immediately
 process the next message. To demonstrate what we mean by this, let's take a look at the following example:
 
@@ -63,7 +63,8 @@ can be set through configuration:
 akka.stream.materializer.max-input-buffer-size = 16
 ```
 
-Alternatively they can be set by passing a `ActorMaterializerSettings` to the materializer:
+Alternatively they can be set by passing a 
+@scala[@scaladoc[`ActorMaterializerSettings`](akka.stream.ActorMaterializerSettings)]@java[@javadoc[`ActorMaterializerSettings`](akka.stream.ActorMaterializerSettings)] to the materializer:
 
 Scala
 :   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #materializer-buffer }
@@ -71,8 +72,8 @@ Scala
 Java
 :   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #materializer-buffer }
 
-If the buffer size needs to be set for segments of a `Flow` only, it is possible by defining a separate
-`Flow` with these attributes:
+If the buffer size needs to be set for segments of a @scala[@scaladoc[`Flow`](akka.stream.scaladsl.Flow)]@java[@javadoc[`Flow`](akka.stream.javadsl.Flow)] only, it is possible by defining a separate
+@scala[@scaladoc[`Flow`](akka.stream.scaladsl.Flow)]@java[@javadoc[`Flow`](akka.stream.javadsl.Flow)] with these attributes:
 
 Scala
 :   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #section-buffer }
@@ -89,11 +90,11 @@ Java
 :   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #buffering-abstraction-leak }
 
 Running the above example one would expect the number *3* to be printed in every 3 seconds (the `conflateWithSeed`
-step here is configured so that it counts the number of elements received before the downstream `ZipWith` consumes
+step here is configured so that it counts the number of elements received before the downstream @scala[@scaladoc[`ZipWith`](akka.stream.scaladsl.ZipWith$)]@java[@javadoc[`ZipWith`](akka.stream.javadsl.ZipWith$)] consumes
 them). What is being printed is different though, we will see the number *1*. The reason for this is the internal
-buffer which is by default 16 elements large, and prefetches elements before the `ZipWith` starts consuming them.
-It is possible to fix this issue by changing the buffer size of `ZipWith` (or the whole graph) to 1. We will still see
-a leading 1 though which is caused by an initial prefetch of the `ZipWith` element.
+buffer which is by default 16 elements large, and prefetches elements before the @scala[@scaladoc[`ZipWith`](akka.stream.scaladsl.ZipWith$)]@java[@javadoc[`ZipWith`](akka.stream.javadsl.ZipWith$)] starts consuming them.
+It is possible to fix this issue by changing the buffer size of @scala[@scaladoc[`ZipWith`](akka.stream.scaladsl.ZipWith$)]@java[@javadoc[`ZipWith`](akka.stream.javadsl.ZipWith$)] (or the whole graph) to 1. We will still see
+a leading 1 though which is caused by an initial prefetch of the @scala[@scaladoc[`ZipWith`](akka.stream.scaladsl.ZipWith$)]@java[@javadoc[`ZipWith`](akka.stream.javadsl.ZipWith$)] element.
 
 @@@ note
 

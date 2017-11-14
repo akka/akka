@@ -4,11 +4,13 @@
 package akka.typed
 package internal
 
+import akka.actor.InvalidMessageException
 import akka.util.LineNumbers
 import akka.annotation.InternalApi
 import akka.typed.{ ActorContext ⇒ AC }
 import akka.typed.scaladsl.{ ActorContext ⇒ SAC }
 import akka.typed.scaladsl.Actor
+
 import scala.reflect.ClassTag
 import scala.annotation.tailrec
 
