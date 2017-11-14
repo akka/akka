@@ -3,9 +3,7 @@
  */
 package akka.stream.tck
 
-import akka.NotUsed
 import akka.stream._
-import akka.stream.impl.fusing.GraphStages
 import akka.stream.scaladsl.Flow
 import org.reactivestreams.Processor
 
@@ -17,8 +15,7 @@ class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
     implicit val materializer = ActorMaterializer(settings)(system)
 
-    // withAttributes "wraps" the underlying identity and protects it from automatic removal
-    Flow[Int].via(GraphStages.identity.asInstanceOf[Graph[FlowShape[Int, Int], NotUsed]]).named("identity").toProcessor.run()
+    Flow[Int].map(identity).toProcessor.run()
   }
 
   override def createElement(element: Int): Int = element
