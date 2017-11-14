@@ -1,0 +1,5 @@
+# 23798 observable unbind on stream Tcp server
+ProblemFilters.exclude[FinalClassProblem]("akka.stream.javadsl.Tcp$ServerBinding")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp#ServerBinding.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp#ServerBinding.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp#ServerBinding.apply")
