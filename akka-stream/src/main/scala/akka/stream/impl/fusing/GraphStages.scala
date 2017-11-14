@@ -324,7 +324,7 @@ import scala.util.control.NonFatal
               // the materialized value, but that is not safe and may cause the graph shell
               // to leak/stay alive after the stage completes
 
-              materialized.tryFailure(new StreamDetachedException("Stream finished before future source completed"))
+              materialized.tryFailure(new StreamDetachedException("Stream cancelled before Source Future completed"))
             }
 
             super.onDownstreamFinish()

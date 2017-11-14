@@ -99,7 +99,7 @@ class FutureFlattenSourceSpec extends StreamSpec {
       sourcePromise.success(underlying)
       val failure = sourceMatVal.failed.futureValue
       failure shouldBe a[StreamDetachedException]
-      failure.getMessage should ===("Stream finished before future source completed")
+      failure.getMessage should ===("Stream cancelled before Source Future completed")
     }
 
     "fail if the underlying Future is failed" in assertAllStagesStopped {
