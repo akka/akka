@@ -98,7 +98,7 @@ import scala.concurrent.{ Future, Promise }
             } else {
               val ex = new IllegalStateException("IO Listener actor terminated unexpectedly for remote endpoint [" +
                 endpoint.getHostString + ":" + endpoint.getPort + "]")
-              unbindPromise.failure(ex)
+              unbindPromise.tryFailure(ex)
               failStage(ex)
             }
         }
