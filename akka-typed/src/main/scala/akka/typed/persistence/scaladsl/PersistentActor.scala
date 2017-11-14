@@ -41,19 +41,29 @@ object PersistentActor {
    * Factories for effects - how a persitent actor reacts on a command
    */
   object Effect {
+
     def persist[Event, State](event: Event): Effect[Event, State] =
-      new Persist[Event, State](event)
+      Persist(event)
 
-    def persistAll[Event, State](events: im.Seq[Event]): Effect[Event, State] =
-      new PersistAll[Event, State](events)
+    def persist[Event, A <: Event, B <: Event, State](evt1: A, evt2: B, events: Event*): Effect[Event, State] =
+      persist(evt1 :: evt2 :: events.toList)
 
-    def persistAll[Event, State](events: im.Seq[Event], sideEffects: im.Seq[ChainableEffect[Event, State]]): Effect[Event, State] =
+    def persist[Event, State](eventOpt: Option[Event]): Effect[Event, State] =
+      eventOpt match {
+        case Some(evt) ⇒ persist[Event, State](evt)
+        case _         ⇒ none[Event, State]
+      }
+
+    def persist[Event, State](events: im.Seq[Event]): Effect[Event, State] =
+      PersistAll(events)
+
+    def persist[Event, State](events: im.Seq[Event], sideEffects: im.Seq[ChainableEffect[Event, State]]): Effect[Event, State] =
       new CompositeEffect[Event, State](Some(new PersistAll[Event, State](events)), sideEffects)
 
     /**
      * Do not persist anything
      */
-    def done[Event, State]: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
+    def none[Event, State]: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
 
     /**
      * This command is not handled, but it is not an error that it isn't.
@@ -64,7 +74,6 @@ object PersistentActor {
      * Stop this persistent actor
      */
     def stop[Event, State]: ChainableEffect[Event, State] = Stop.asInstanceOf[ChainableEffect[Event, State]]
-
   }
 
   /**
@@ -98,7 +107,8 @@ object PersistentActor {
     def apply[Event, State](effect: Effect[Event, State], sideEffects: ChainableEffect[Event, State]): Effect[Event, State] =
       CompositeEffect[Event, State](
         if (effect.events.isEmpty) None else Some(effect),
-        sideEffects :: Nil)
+        sideEffects :: Nil
+      )
   }
 
   @InternalApi
@@ -116,7 +126,7 @@ object PersistentActor {
 
   @InternalApi
   private[akka] case class Persist[Event, State](event: Event) extends Effect[Event, State] {
-    override val events = event :: Nil
+    override def events = event :: Nil
   }
   @InternalApi
   private[akka] case class PersistAll[Event, State](override val events: im.Seq[Event]) extends Effect[Event, State]
