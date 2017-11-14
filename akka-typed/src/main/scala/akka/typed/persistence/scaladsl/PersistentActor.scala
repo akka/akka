@@ -46,12 +46,13 @@ object PersistentActor {
       Persist(event)
 
     def persist[Event, A <: Event, B <: Event, State](evt1: A, evt2: B, events: Event*): Effect[Event, State] =
-      persist(im.Seq(evt1, evt2) ++ events)
+      persist(evt1 :: evt2 :: events.toList)
 
     def persist[Event, State](eventOpt: Option[Event]): Effect[Event, State] =
-      eventOpt
-        .map(evt ⇒ persist[Event, State](evt))
-        .getOrElse(none[Event, State])
+      eventOpt match {
+        case Some(evt) ⇒ persist[Event, State](evt)
+        case _         ⇒ none[Event, State]
+      }
 
     def persist[Event, State](events: im.Seq[Event]): Effect[Event, State] =
       PersistAll(events)
