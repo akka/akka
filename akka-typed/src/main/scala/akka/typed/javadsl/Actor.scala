@@ -180,11 +180,10 @@ object Actor {
    * Constructs an actor behavior builder that can build a behavior that can react to both
    * incoming messages and lifecycle signals.
    *
-   * This constructor is called immutable because the behavior instance doesn't
-   * have or close over any mutable state. Processing the next message
-   * results in a new behavior that can potentially be different from this one.
-   * State is updated by returning a new behavior that holds the new immutable
-   * state. If no change is desired, use {@link #same}.
+   * This constructor is called immutable because the behavior instance does not
+   * need and in fact should not use (close over) mutable variables, but instead
+   * return a potentially different behavior encapsulating any state changes.
+   * If no change is desired, use {@link #same}.
    *
    * @param type the supertype of all messages accepted by this behavior
    * @return the behavior builder
