@@ -42,17 +42,19 @@ object PersistentActor {
    */
   object Effect {
 
-    def persist[Event, State](event: Event, events: Event*): Effect[Event, State] =
-      if (events.nonEmpty)
-        Effect.persist(event :: events.toList)
-      else
-        new Persist[Event, State](event)
+    def persist[Event, State](event: Event): Effect[Event, State] =
+      Persist(event)
+
+    def persist[Event, A <: Event, B <: Event, State](evt1: A, evt2: B, events: Event*): Effect[Event, State] =
+      persist(im.Seq(evt1, evt2) ++ events)
 
     def persist[Event, State](eventOpt: Option[Event]): Effect[Event, State] =
-      Effect.persist[Event, State](eventOpt.toIndexedSeq)
+      eventOpt
+        .map(evt ⇒ persist[Event, State](evt))
+        .getOrElse(none[Event, State])
 
     def persist[Event, State](events: im.Seq[Event]): Effect[Event, State] =
-      new PersistAll[Event, State](events)
+      PersistAll(events)
 
     def persist[Event, State](events: im.Seq[Event], sideEffects: im.Seq[ChainableEffect[Event, State]]): Effect[Event, State] =
       new CompositeEffect[Event, State](Some(new PersistAll[Event, State](events)), sideEffects)
@@ -71,7 +73,6 @@ object PersistentActor {
      * Stop this persistent actor
      */
     def stop[Event, State]: ChainableEffect[Event, State] = Stop.asInstanceOf[ChainableEffect[Event, State]]
-
   }
 
   /**
