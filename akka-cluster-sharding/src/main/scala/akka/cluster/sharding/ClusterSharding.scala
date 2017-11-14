@@ -19,7 +19,6 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
-import akka.cluster.ddata.DistributedData
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.pattern.BackoffSupervisor
 import akka.util.ByteString
@@ -31,6 +30,7 @@ import scala.util.control.NonFatal
 import akka.actor.Status
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
+import akka.event.Logging
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -160,6 +160,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   import ShardCoordinator.ShardAllocationStrategy
   import ShardCoordinator.LeastShardAllocationStrategy
 
+  private val log = Logging(system, this.getClass)
+
   private val cluster = Cluster(system)
 
   private val regions: ConcurrentHashMap[String, ActorRef] = new ConcurrentHashMap
@@ -182,6 +184,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
    * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
+   *
+   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
+   * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
@@ -218,12 +223,12 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       regions.put(typeName, shardRegion)
       shardRegion
     } else {
-      system.log.info("Starting Shard Region Proxy [{}] (no actors will be hosted on this node)...", typeName)
+      log.debug("Starting Shard Region Proxy [{}] (no actors will be hosted on this node)...", typeName)
 
       startProxy(
         typeName,
         settings.role,
-        dataCenter = None, // TODO what about the multi-dc value here?
+        dataCenter = None, // startProxy method must be used directly to start a proxy for another DC
         extractEntityId,
         extractShardId)
     }
@@ -236,6 +241,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
    * is used. [[akka.actor.PoisonPill]] is used as `handOffStopMessage`.
+   *
+   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
+   * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
@@ -266,6 +274,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * Java/Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
    * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
+   *
+   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
+   * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
@@ -306,6 +317,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
    * is used. [[akka.actor.PoisonPill]] is used as `handOffStopMessage`.
+   *
+   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
+   * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
