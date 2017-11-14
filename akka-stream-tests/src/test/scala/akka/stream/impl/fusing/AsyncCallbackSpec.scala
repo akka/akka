@@ -34,8 +34,9 @@ class AsyncCallbackSpec extends AkkaSpec {
       val logic = new GraphStageLogic(shape) {
         val callback = getAsyncCallback((whatever: AnyRef) ⇒ {
           whatever match {
-            case t: Throwable ⇒ throw t
-            case anythingElse ⇒ probe ! anythingElse
+            case t: Throwable     ⇒ throw t
+            case "fail-the-stage" ⇒ failStage(new RuntimeException("failing the stage"))
+            case anythingElse     ⇒ probe ! anythingElse
           }
         })
         early.foreach(cb ⇒ cb(callback))
@@ -210,7 +211,28 @@ class AsyncCallbackSpec extends AkkaSpec {
       probe.expectMsg(Stopped)
     }
 
-    "fail the feedback if the invoke fails" in {
+    "fail the feedback if the handler throws" in {
+      val probe = TestProbe()
+      val in = TestPublisher.probe()
+      val callbackF = Source.fromPublisher(in)
+        .viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right)
+        .to(Sink.ignore)
+        .run()
+
+      probe.expectMsg(Started)
+      val callback = callbackF.futureValue
+      callback.invokeWithFeedback("happy-case").futureValue should ===(Done)
+      probe.expectMsg("happy-case")
+
+      val feedbackF = callback.invokeWithFeedback(new RuntimeException("oh my gosh, whale of a wash!"))
+      val failure = feedbackF.failed.futureValue
+      failure shouldBe a[RuntimeException]
+      failure.getMessage should ===("oh my gosh, whale of a wash!")
+
+      in.expectCancellation()
+    }
+
+    "fail the feedback if the handler fails the stage" in {
       val probe = TestProbe()
       val callbackF = Source.empty
         .viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right)
@@ -220,8 +242,9 @@ class AsyncCallbackSpec extends AkkaSpec {
       probe.expectMsg(Started)
       probe.expectMsg(Stopped)
 
-      val feedbakF = callbackF.futureValue.invokeWithFeedback(new RuntimeException("oh my gosh, whale of a wash!"))
-      feedbakF.failed.futureValue shouldBe a[RuntimeException]
+      val feedbakF = callbackF.futureValue.invokeWithFeedback("fail-the-stage")
+      val failure = feedbakF.failed.futureValue
+      failure shouldBe a[StreamDetachedException] // we can't capture the exception in this case
     }
 
   }

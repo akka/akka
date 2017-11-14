@@ -435,7 +435,7 @@ import scala.util.control.NonFatal
     eventsRemaining
   }
 
-  def runAsyncInput(logic: GraphStageLogic, evt: Any, handler: (Any) ⇒ Unit): Unit =
+  def runAsyncInput(logic: GraphStageLogic, evt: Any, promise: OptionVal[Promise[Done]], handler: (Any) ⇒ Unit): Unit =
     if (!isStageCompleted(logic)) {
       if (GraphInterpreter.Debug) println(s"$Name ASYNC $evt ($handler) [$logic]")
       val currentInterpreterHolder = _currentInterpreter.get()
@@ -443,9 +443,13 @@ import scala.util.control.NonFatal
       currentInterpreterHolder(0) = this
       try {
         activeStage = logic
-        try handler(evt)
-        catch {
-          case NonFatal(ex) ⇒ logic.failStage(ex)
+        try {
+          handler(evt)
+          if (promise.isDefined) promise.get.success(Done)
+        } catch {
+          case NonFatal(ex) ⇒
+            if (promise.isDefined) promise.get.failure(ex)
+            logic.failStage(ex)
         }
         afterStageHasRun(logic)
       } finally currentInterpreterHolder(0) = previousInterpreter

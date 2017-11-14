@@ -1125,7 +1125,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     private def failPromiseOnComplete(promise: Promise[Done]): Promise[Done] = {
       waitingForProcessing.remove(promise)
-      promise.tryFailure(new StreamDetachedException())
+      promise.tryFailure(new StreamDetachedException("Stage stopped before async invocation was processed"))
       promise
     }
 

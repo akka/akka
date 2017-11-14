@@ -461,20 +461,12 @@ import scala.util.control.NonFatal
     handler: (Any) ⇒ Unit) extends BoundaryEvent {
     override def execute(eventLimit: Int): Int = {
       if (!waitingForShutdown) {
-        try {
-          interpreter.runAsyncInput(logic, evt, handler)
-          if (promise.isDefined) promise.get.success(Done)
-        } catch {
-          case t: Throwable if promise.isDefined ⇒
-            promise.get.failure(t)
-            throw t
-        }
+        interpreter.runAsyncInput(logic, evt, promise, handler)
         if (eventLimit == 1 && interpreter.isSuspended) {
           sendResume(true)
           0
         } else runBatch(eventLimit - 1)
       } else {
-        if (promise.isDefined) promise.get.failure(new StreamDetachedException)
         eventLimit
       }
     }
