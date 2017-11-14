@@ -133,7 +133,7 @@ object LatencySpec extends MultiNodeConfig {
       def percentile(p: Double): Double = histogram.getValueAtPercentile(p) / 1000.0
       val throughput = 1000.0 * histogram.getTotalCount / math.max(1, totalDurationNanos.nanos.toMillis)
 
-      reporter.reportResults(s"=== Latency $testName: RTT " +
+      reporter.reportResults(s"=== ${reporter.testName} $testName: RTT " +
         f"50%%ile: ${percentile(50.0)}%.0f µs, " +
         f"90%%ile: ${percentile(90.0)}%.0f µs, " +
         f"99%%ile: ${percentile(99.0)}%.0f µs, " +
