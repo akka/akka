@@ -44,17 +44,13 @@ object PersistentActorSpec {
 
   case object Tick
 
-  class SideEffectLogging {
-    var logs = List.empty[String]
-    def log(message: String): Unit = {
-      logs = logs :+ message
-    }
-  }
-
   val firstLogging = "first logging"
   val secondLogging = "second logging"
 
-  def counter(persistenceId: String, sideEffectLogging: SideEffectLogging = new SideEffectLogging): Behavior[Command] = {
+  def counter(persistenceId: String)(implicit actorSystem: ActorSystem[TypedSpec.Command], testSettings: TestKitSettings): Behavior[Command] =
+    counter(persistenceId, TestProbe[String].ref)
+
+  def counter(persistenceId: String, loggingActor: ActorRef[String]): Behavior[Command] = {
 
     PersistentActor.immutable[Command, Event, State](
       persistenceId,
@@ -86,24 +82,24 @@ object PersistentActorSpec {
           Effect
             .persist(Incremented(1), Incremented(1))
             .andThen {
-              sideEffectLogging.log(firstLogging)
+              loggingActor ! firstLogging
             }
             .andThen {
-              sideEffectLogging.log(secondLogging)
+              loggingActor ! secondLogging
             }
 
         case EmptyEventsListAndThenLog ⇒
           Effect
             .persist(List.empty) // send empty list of events
             .andThen {
-              sideEffectLogging.log(firstLogging)
+              loggingActor ! firstLogging
             }
 
         case DoNothingAndThenLog ⇒
           Effect
             .none
             .andThen {
-              sideEffectLogging.log(firstLogging)
+              loggingActor ! firstLogging
             }
       })
         .onSignal {
@@ -183,39 +179,41 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
      * The [[IncrementTwiceAndThenLog]] command will emit two Increment events
      */
     def `chainable side effects with events`(): Unit = {
-      val sideEffectLogging = new SideEffectLogging
-      val c = start(counter("c5", sideEffectLogging))
+      val loggingProbe = TestProbe[String]
+      val c = start(counter("c5", loggingProbe.ref))
 
       val probe = TestProbe[State]
 
       c ! IncrementTwiceAndThenLog
       c ! GetValue(probe.ref)
       probe.expectMsg(State(2, Vector(0, 1)))
-      sideEffectLogging.logs shouldBe List(firstLogging, secondLogging)
+
+      loggingProbe.expectMsg(firstLogging)
+      loggingProbe.expectMsg(secondLogging)
     }
 
     /** Proves that side-effects are called when emitting an empty list of events */
     def `chainable side effects without events`(): Unit = {
-      val sideEffectLogging = new SideEffectLogging
-      val c = start(counter("c6", sideEffectLogging))
+      val loggingProbe = TestProbe[String]
+      val c = start(counter("c6", loggingProbe.ref))
 
       val probe = TestProbe[State]
       c ! EmptyEventsListAndThenLog
       c ! GetValue(probe.ref)
       probe.expectMsg(State(0, Vector.empty))
-      sideEffectLogging.logs shouldBe List(firstLogging)
+      loggingProbe.expectMsg(firstLogging)
     }
 
     /** Proves that side-effects are called when explicitly calling Effect.none */
     def `chainable side effects when doing nothing (Effect.none)`(): Unit = {
-      val sideEffectLogging = new SideEffectLogging
-      val c = start(counter("c7", sideEffectLogging))
+      val loggingProbe = TestProbe[String]
+      val c = start(counter("c7", loggingProbe.ref))
 
       val probe = TestProbe[State]
       c ! DoNothingAndThenLog
       c ! GetValue(probe.ref)
       probe.expectMsg(State(0, Vector.empty))
-      sideEffectLogging.logs shouldBe List(firstLogging)
+      loggingProbe.expectMsg(firstLogging)
     }
 
     def `work when wrapped in other behavior`(): Unit = {
