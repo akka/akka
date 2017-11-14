@@ -31,6 +31,9 @@ object PersistentActorSpec {
   final case object Increment extends Command
   final case object IncrementLater extends Command
   final case object IncrementAfterReceiveTimeout extends Command
+  final case object IncrementTwiceAndThenLog extends Command
+  final case object DoNothingAndThenLog extends Command
+  final case object EmptyEventsListAndThenLog extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
   private case object Timeout extends Command
 
@@ -41,7 +44,20 @@ object PersistentActorSpec {
 
   case object Tick
 
+  class SideEffectLogging {
+    var logs = List.empty[String]
+    def log(message: String): Unit = {
+      logs = logs :+ message
+    }
+    def reset() = logs = List.empty
+  }
+
+  val sideEffectLogging = new SideEffectLogging
+  val firstLogging = "first logging"
+  val secondLogging = "second logging"
+
   def counter(persistenceId: String): Behavior[Command] = {
+
     PersistentActor.immutable[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
@@ -67,6 +83,30 @@ object PersistentActorSpec {
         case Timeout ⇒
           ctx.cancelReceiveTimeout()
           Effect.persist(Incremented(100))
+
+        case IncrementTwiceAndThenLog ⇒
+          Effect
+            .persist(Incremented(1), Incremented(1))
+            .andThen {
+              sideEffectLogging.log(firstLogging)
+            }
+            .andThen {
+              sideEffectLogging.log(secondLogging)
+            }
+
+        case EmptyEventsListAndThenLog ⇒
+          Effect
+            .persist(List.empty) // send empty list of events
+            .andThen {
+              sideEffectLogging.log(firstLogging)
+            }
+
+        case DoNothingAndThenLog ⇒
+          Effect
+            .none
+            .andThen {
+              sideEffectLogging.log(firstLogging)
+            }
       })
         .onSignal {
           case (_, _, Terminated(_)) ⇒
@@ -138,6 +178,46 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
         c ! GetValue(probe.ref)
         probe.expectMsg(State(101, Vector(0, 1)))
       }
+    }
+
+    /**
+     * Verify that all side-effects callbacks are called (in order) and only once.
+     * The [[IncrementTwiceAndThenLog]] command will emit two Increment events
+     */
+    def `chainable side effects with events`(): Unit = {
+      sideEffectLogging.reset()
+      val c = start(counter("c5"))
+
+      val probe = TestProbe[State]
+
+      c ! IncrementTwiceAndThenLog
+      c ! GetValue(probe.ref)
+      probe.expectMsg(State(2, Vector(0, 1)))
+      sideEffectLogging.logs shouldBe List(firstLogging, secondLogging)
+    }
+
+    /** Proves that side-effects are called when emitting an empty list of events */
+    def `chainable side effects without events`(): Unit = {
+      sideEffectLogging.reset()
+      val c = start(counter("c6"))
+
+      val probe = TestProbe[State]
+      c ! EmptyEventsListAndThenLog
+      c ! GetValue(probe.ref)
+      probe.expectMsg(State(0, Vector.empty))
+      sideEffectLogging.logs shouldBe List(firstLogging)
+    }
+
+    /** Proves that side-effects are called when explicitly calling Effect.none */
+    def `chainable side effects when doing nothing (Effect.none)`(): Unit = {
+      sideEffectLogging.reset()
+      val c = start(counter("c7"))
+
+      val probe = TestProbe[State]
+      c ! DoNothingAndThenLog
+      c ! GetValue(probe.ref)
+      probe.expectMsg(State(0, Vector.empty))
+      sideEffectLogging.logs shouldBe List(firstLogging)
     }
 
     def `work when wrapped in other behavior`(): Unit = {

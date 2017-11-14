@@ -97,30 +97,37 @@ import akka.typed.internal.adapter.ActorRefAdapter
       } catch {
         case e: MatchError ⇒ throw new IllegalStateException(
           s"Undefined state [${state.getClass.getName}] or handler for [${msg.getClass.getName} " +
-            s"in [${behavior.getClass.getName}] with persistenceId [${persistenceId}]")
+            s"in [${behavior.getClass.getName}] with persistenceId [$persistenceId]")
       }
 
   }
 
   private def applyEffects(msg: Any, effect: Effect[E, S], sideEffects: Seq[ChainableEffect[_, S]] = Nil): Unit = effect match {
-    case CompositeEffect(Some(persist), sideEffects) ⇒
-      applyEffects(msg, persist, sideEffects)
-    case CompositeEffect(_, sideEffects) ⇒
-      sideEffects.foreach(applySideEffect)
+    case CompositeEffect(Some(persist), currentSideEffects) ⇒
+      applyEffects(msg, persist, currentSideEffects ++ sideEffects)
+    case CompositeEffect(_, currentSideEffects) ⇒
+      (currentSideEffects ++ sideEffects).foreach(applySideEffect)
     case Persist(event) ⇒
       // apply the event before persist so that validation exception is handled before persisting
       // the invalid event, in case such validation is implemented in the event handler.
-      // also, we ensure, before persisting, that there is an event handler for each single event
+      // also, ensure that there is an event handler for each single event
       state = applyEvent(state, event)
       persist(event) { _ ⇒
         sideEffects.foreach(applySideEffect)
       }
     case PersistAll(events) ⇒
-      // apply the event before persist so that validation exception is handled before persisting
-      // the invalid event, in case such validation is implemented in the event handler.
-      // also, we ensure, before persisting, that there is an event handler for each single event
-      state = events.foldLeft(state)(applyEvent)
-      persistAll(events) { _ ⇒
+      if (events.nonEmpty) {
+        // apply the event before persist so that validation exception is handled before persisting
+        // the invalid event, in case such validation is implemented in the event handler.
+        // also, ensure that there is an event handler for each single event
+        var count = events.size
+        state = events.foldLeft(state)(applyEvent)
+        persistAll(events) { _ ⇒
+          count -= 1
+          if (count == 0) sideEffects.foreach(applySideEffect)
+        }
+      } else {
+        // run side-effects even when no events are emitted
         sideEffects.foreach(applySideEffect)
       }
     case _: PersistNothing.type @unchecked ⇒
