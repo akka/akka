@@ -84,7 +84,7 @@ import scala.concurrent.{ Future, Promise }
             }
             f.cause.foreach(ex.initCause)
             bindingPromise.failure(ex)
-            unbindPromise.failure(ex)
+            unbindPromise.tryFailure(ex)
             failStage(ex)
           case c: Connected ⇒
             push(out, connectionFor(c, sender))
