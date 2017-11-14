@@ -125,7 +125,7 @@ object PersistentActor {
 
   @InternalApi
   private[akka] case class Persist[Event, State](event: Event) extends Effect[Event, State] {
-    override val events = event :: Nil
+    override def events = event :: Nil
   }
   @InternalApi
   private[akka] case class PersistAll[Event, State](override val events: im.Seq[Event]) extends Effect[Event, State]
