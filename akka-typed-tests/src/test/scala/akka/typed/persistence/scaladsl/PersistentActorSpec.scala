@@ -49,14 +49,12 @@ object PersistentActorSpec {
     def log(message: String): Unit = {
       logs = logs :+ message
     }
-    def reset() = logs = List.empty
   }
 
-  val sideEffectLogging = new SideEffectLogging
   val firstLogging = "first logging"
   val secondLogging = "second logging"
 
-  def counter(persistenceId: String): Behavior[Command] = {
+  def counter(persistenceId: String, sideEffectLogging: SideEffectLogging = new SideEffectLogging): Behavior[Command] = {
 
     PersistentActor.immutable[Command, Event, State](
       persistenceId,
@@ -185,8 +183,8 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
      * The [[IncrementTwiceAndThenLog]] command will emit two Increment events
      */
     def `chainable side effects with events`(): Unit = {
-      sideEffectLogging.reset()
-      val c = start(counter("c5"))
+      val sideEffectLogging = new SideEffectLogging
+      val c = start(counter("c5", sideEffectLogging))
 
       val probe = TestProbe[State]
 
@@ -198,8 +196,8 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
 
     /** Proves that side-effects are called when emitting an empty list of events */
     def `chainable side effects without events`(): Unit = {
-      sideEffectLogging.reset()
-      val c = start(counter("c6"))
+      val sideEffectLogging = new SideEffectLogging
+      val c = start(counter("c6", sideEffectLogging))
 
       val probe = TestProbe[State]
       c ! EmptyEventsListAndThenLog
@@ -210,8 +208,8 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
 
     /** Proves that side-effects are called when explicitly calling Effect.none */
     def `chainable side effects when doing nothing (Effect.none)`(): Unit = {
-      sideEffectLogging.reset()
-      val c = start(counter("c7"))
+      val sideEffectLogging = new SideEffectLogging
+      val c = start(counter("c7", sideEffectLogging))
 
       val probe = TestProbe[State]
       c ! DoNothingAndThenLog
