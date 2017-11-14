@@ -479,15 +479,17 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * The entity type must be registered with the [[#start]] or [[#startProxy]] method before it
    * can be used here. Messages to the entity is always sent via the `ShardRegion`.
    */
-  def shardRegion(typeName: String): ActorRef = regions.get(typeName) match {
-    case null ⇒
-      regions.get(typeName) match {
-        case null ⇒
-          throw new IllegalArgumentException(
-            s"Shard type [$typeName] must be started first")
-        case ref ⇒ ref
-      }
-    case ref ⇒ ref
+  def shardRegion(typeName: String): ActorRef = {
+    regions.get(typeName) match {
+      case null ⇒
+        proxies.get(proxyName(typeName, None)) match {
+          case null ⇒
+            throw new IllegalArgumentException(
+              s"Shard type [$typeName] must be started first")
+          case ref ⇒ ref
+        }
+      case ref ⇒ ref
+    }
   }
 
   /**
@@ -650,7 +652,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
       try {
         val encName = URLEncoder.encode(s"${typeName}Proxy", ByteString.UTF_8)
         val cName = coordinatorSingletonManagerName(encName)
-        val cPath = coordinatorPath(encName)
+        val cPath = coordinatorPath(URLEncoder.encode(typeName, ByteString.UTF_8))
         // it must be possible to start several proxies, one per data center
         val actorName = dataCenter match {
           case None    ⇒ encName
