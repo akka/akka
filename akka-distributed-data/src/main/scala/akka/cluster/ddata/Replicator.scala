@@ -1969,9 +1969,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     durable:     Boolean): Props = {
 
     consistency match {
-      case WriteDataCenterAware(_, writeDataCenterMap) ⇒
+      case WriteDataCenterAware(_, dataCenterToConsistency) ⇒
         Props(new DataCenterWriteAggregator(
-          key, envelope, delta, writeDataCenterMap, centers, req, nodes, unreachable, replyTo, durable))
+          key, envelope, delta, dataCenterToConsistency, centers, req, nodes, unreachable, replyTo, durable))
       case _ ⇒
         if (centers.size > 1)
           Props(new DataCenterWriteAggregator(
