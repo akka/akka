@@ -90,6 +90,9 @@ object AttributesSpec {
     }
 
   }
+
+  def whateverAttribute(label: String): Attributes = Attributes(WhateverAttribute(label))
+  case class WhateverAttribute(label: String) extends Attribute
 }
 
 class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
@@ -125,6 +128,33 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
   }
 
   "attributes on a stage" must {
+
+    "be appended with addAttributes" in {
+      val attributes =
+        Source.fromGraph(new AttributesSource()
+          .addAttributes(Attributes.name("new-name"))
+          .addAttributes(Attributes.name("re-added")) // adding twice at same level replaces
+          .addAttributes(whateverAttribute("other-thing"))
+        )
+          .toMat(Sink.head)(Keep.left)
+          .run()
+
+      attributes.get[Name] should contain(Name("re-added"))
+      attributes.get[WhateverAttribute] should contain(WhateverAttribute("other-thing"))
+    }
+
+    "be replaced withAttributes" in {
+      val attributes =
+        Source.fromGraph(new AttributesSource()
+          .withAttributes(Attributes.name("new-name") and whateverAttribute("other-thing"))
+          .withAttributes(Attributes.name("re-added")) // we loose all previous attributes for same level
+        )
+          .toMat(Sink.head)(Keep.left)
+          .run()
+
+      attributes.get[Name] should contain(Name("re-added"))
+      attributes.get[WhateverAttribute] shouldBe empty
+    }
 
     "be overridable on a module basis" in {
       val attributes =
