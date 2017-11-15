@@ -27,7 +27,6 @@ import akka.cluster.ClusterSettings.DataCenter
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 object ShardRegion {
-
   /**
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardRegion]] actor.
