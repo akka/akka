@@ -570,7 +570,7 @@ a standard deviation of 100 ms.
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
 `akka.cluster.failure-detector.acceptable-heartbeat-pause`. You may want to
-adjust the [configuration](#cluster-configuration) of this depending on you environment.
+adjust the [configuration](#cluster-configuration) of this depending on your environment.
 This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 3 seconds.
 
