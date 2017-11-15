@@ -173,13 +173,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     }
     system.systemActorOf(Props[ClusterShardingGuardian].withDispatcher(dispatcher), guardianName)
   }
-
-  // no longer used, but kept for binary compatibility
-  private[akka] def requireClusterRole(role: Option[String]): Unit =
-    require(
-      role.forall(cluster.selfRoles.contains),
-      s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
-
+  
   /**
    * Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
    * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
