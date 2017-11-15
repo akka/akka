@@ -18,6 +18,17 @@ import akka.stream.impl.TraversalBuilder
 import scala.compat.java8.OptionConverters._
 import akka.util.ByteString
 
+trait SealedAttributes { this: Attributes ⇒
+  def sealName: String
+  def attributeList: List[Attributes.Attribute]
+
+  def liftedBy(name: String): Boolean = name match {
+    case "*"                   ⇒ true
+    case _ if name == sealName ⇒ true
+    case _                     ⇒ false
+  }
+}
+
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
  * or [[akka.stream.scaladsl.GraphDSL]] / [[akka.stream.javadsl.GraphDSL]] materialization.
@@ -27,9 +38,17 @@ import akka.util.ByteString
  * The ``attributeList`` is ordered with the most specific attribute first, least specific last.
  * Note that the order was the opposite in Akka 2.4.x.
  */
-final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
+sealed case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 
   import Attributes._
+
+  def seal(): Attributes =
+    seal("")
+
+  def seal(name: String): Attributes =
+    new Attributes(attributeList) with SealedAttributes {
+      override def sealName = name
+    }
 
   /**
    * INTERNAL API
@@ -134,7 +153,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   def get[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
+    (attributeList.collect { case attr if c.isInstance(attr) ⇒ c.cast(attr) }).lastOption
   }
 
   /**
@@ -209,6 +228,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 object Attributes {
 
   trait Attribute
+  trait AttributeSeal { def sealName: String }
   final case class Name(n: String) extends Attribute
   final case class InputBuffer(initial: Int, max: Int) extends Attribute
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) extends Attribute

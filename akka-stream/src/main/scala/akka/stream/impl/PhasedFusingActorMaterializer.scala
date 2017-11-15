@@ -33,7 +33,7 @@ import akka.util.OptionVal
  */
 @InternalApi private[akka] object PhasedFusingActorMaterializer {
 
-  val Debug = false
+  val Debug = true // FIXME
 
   val DefaultPhase: Phase[Any] = new Phase[Any] {
     override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] =
@@ -433,7 +433,8 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     var current: Traversal = graph.traversalBuilder.traversal
 
     val attributesStack = new java.util.ArrayDeque[Attributes](8)
-    attributesStack.addLast(initialAttributes and graph.traversalBuilder.attributes)
+    // attributesStack.addLast(initialAttributes and graph.traversalBuilder.attributes)
+    attributesStack.addLast(graph.traversalBuilder.attributes and initialAttributes)
 
     val traversalStack = new java.util.ArrayDeque[Traversal](16)
     traversalStack.addLast(current)
@@ -490,10 +491,10 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
             if (Debug) println(s"COMP: $matValueStack")
           case PushAttributes(attr) ⇒
             attributesStack.addLast(attributesStack.getLast and attr)
-            if (Debug) println(s"ATTR PUSH: $attr")
+            if (Debug) println(Console.YELLOW + s"ATTR PUSH: $attr" + Console.RESET)
           case PopAttributes ⇒
-            attributesStack.removeLast()
-            if (Debug) println(s"ATTR POP")
+            val it = attributesStack.removeLast()
+            if (Debug) println(Console.YELLOW + s"ATTR POP: (removed: $it)" + Console.RESET)
           case EnterIsland(tag) ⇒
             islandTracking.enterIsland(tag, attributesStack.getLast)
           case ExitIsland ⇒
