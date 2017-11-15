@@ -319,7 +319,7 @@ object Replicator {
   }
   final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency
 
-  final case class WriteDataCenterAware(timeout: FiniteDuration, centerToConsistency: DataCenter ⇒ WriteConsistency)
+  final case class WriteDataCenterAware(timeout: FiniteDuration, centerToConsistency: DataCenter ⇒ Option[WriteConsistency])
     extends WriteConsistency
 
   /**
@@ -1975,7 +1975,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       case _ ⇒
         if (centers.size > 1)
           Props(new DataCenterWriteAggregator(
-            key, envelope, delta, _ ⇒ consistency, centers, req, nodes, unreachable, replyTo, durable))
+            key, envelope, delta, _ ⇒ Some(consistency), centers, req, nodes, unreachable, replyTo, durable))
         else
           Props(new WriteAggregator(key, envelope, delta, consistency, req, nodes, unreachable, replyTo, durable))
     }
@@ -1989,7 +1989,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   key:                  KeyR,
   envelope:             Replicator.Internal.DataEnvelope,
   delta:                Option[Replicator.Internal.Delta],
-  dcToWriteConsistency: DataCenter ⇒ WriteConsistency,
+  dcToWriteConsistency: DataCenter ⇒ Option[WriteConsistency],
   centers:              Set[DataCenter],
   req:                  Option[Any],
   nodes:                Set[Member],
@@ -2001,15 +2001,16 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   private var pendingChildren: Set[ActorRef] = _
 
   override def preStart(): Unit = {
-    children = centers.toStream.map {
+    children = centers.toStream.flatMap {
       case dataCenter ⇒
         def nodesForDataCenter(nodes: Set[Member]) = nodes.filter(_.dataCenter == dataCenter)
 
-        val consistency = dcToWriteConsistency(dataCenter)
-        val child = context.actorOf(WriteAggregator.props(key, envelope, delta, consistency, req,
-          nodesForDataCenter(nodes), nodesForDataCenter(unreachable), centers, self, durable))
+        dcToWriteConsistency(dataCenter).toStream.map(consistency ⇒ {
+          val child = context.actorOf(WriteAggregator.props(key, envelope, delta, consistency, req,
+            nodesForDataCenter(nodes), nodesForDataCenter(unreachable), centers, self, durable))
 
-        (child, dataCenter)
+          (child, dataCenter)
+        })
     }.toMap
     pendingChildren = children.keys.toSet
   }
