@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.stream.Attributes._
 import akka.stream._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
+import akka.stream.stage._
 import akka.stream.testkit._
 import com.typesafe.config.ConfigFactory
 
@@ -22,6 +22,49 @@ object AttributesSpec {
           completeStage()
         }
       })
+    }
+  }
+
+  class AttributesFlow(_initialAttributes: Attributes = Attributes.none) extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Attributes] {
+
+    val in = Inlet[Any]("in")
+    val out = Outlet[Any]("out")
+
+    override protected def initialAttributes: Attributes = _initialAttributes
+    override val shape = FlowShape(in, out)
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Attributes) = {
+      val logic = new GraphStageLogic(shape) {
+
+        setHandlers(in, out, new InHandler with OutHandler {
+          override def onPush(): Unit = push(out, grab(in))
+          override def onPull(): Unit = pull(in)
+        })
+      }
+
+      (logic, inheritedAttributes)
+    }
+  }
+
+  class AttributesSink(_initialAttributes: Attributes = Attributes.none) extends GraphStageWithMaterializedValue[SinkShape[Any], Attributes] {
+
+    val in = Inlet[Any]("in")
+
+    override protected def initialAttributes: Attributes = _initialAttributes
+    override val shape = SinkShape(in)
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Attributes) = {
+      val logic = new GraphStageLogic(shape) {
+        override def preStart(): Unit = {
+          pull(in)
+        }
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = {
+            grab(in)
+            pull(in)
+          }
+        })
+      }
+
+      (logic, inheritedAttributes)
     }
   }
 
@@ -85,7 +128,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "keep the outermost attribute as the least specific" in {
       val attributes = Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
-        .addAttributes(Attributes.name("new-name"))
+        .map(identity)
+        .addAttributes(Attributes.name("whole-graph"))
         .runWith(Sink.head)
         .futureValue
 
@@ -93,7 +137,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       attributes.get[Name] should contain(Name("original-name"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("new-name"))
+      attributes.getFirst[Name] should contain(Name("whole-graph"))
     }
 
     "replace the attributes directly on a graph stage" in {
@@ -111,20 +155,54 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       attributes.getFirst[Name] should contain(Name("new-name"))
     }
 
-    // just to document the behavior, this creates a nested source with attributes
-    // so they are not really replaced on the inner graph
-    "wrap the attributes on a graph stage " in {
+    "make the attribues on Source.fromGraph source behave the same as the stage itself" in {
       val attributes =
         Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
-          .withAttributes(Attributes.name("nested-source"))
-          .runWith(Sink.head)
+          .withAttributes(Attributes.name("replaced")) // this actually replaces now
+          .toMat(Sink.head)(Keep.right).withAttributes(Attributes.name("whole-graph"))
+          .run()
           .futureValue
 
       // most specific
-      attributes.get[Name] should contain(Name("original-name"))
+      attributes.get[Name] should contain(Name("replaced"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("nested-source"))
+      attributes.getFirst[Name] should contain(Name("whole-graph"))
+    }
+
+    "make the attribues on Flow.fromGraph source behave the same as the stage itself" in {
+      val attributes =
+        Source.maybe
+          .viaMat(
+            Flow.fromGraph(new AttributesFlow(Attributes.name("original-name")))
+              .withAttributes(Attributes.name("replaced")) // this actually replaces now
+          )(Keep.right)
+          .withAttributes(Attributes.name("source-flow"))
+          .toMat(Sink.ignore)(Keep.left)
+          .withAttributes(Attributes.name("whole-graph"))
+          .run()
+
+      // most specific
+      attributes.get[Name] should contain(Name("replaced"))
+
+      // least specific
+      attributes.getFirst[Name] should contain(Name("whole-graph"))
+    }
+
+    "make the attribues on Sink.fromGraph source behave the same as the stage itself" in {
+      val attributes =
+        Source.maybe.toMat(
+          Sink.fromGraph(new AttributesSink(Attributes.name("original-name")))
+            .withAttributes(Attributes.name("replaced")) // this actually replaces now
+        )(Keep.right)
+          .withAttributes(Attributes.name("whole-graph"))
+          .run()
+
+      // most specific
+      attributes.get[Name] should contain(Name("replaced"))
+
+      // least specific
+      attributes.getFirst[Name] should contain(Name("whole-graph"))
     }
 
     "use the initial attributes for dispatcher" in {
