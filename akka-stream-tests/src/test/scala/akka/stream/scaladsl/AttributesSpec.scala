@@ -155,7 +155,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       attributes.getFirst[Name] should contain(Name("new-name"))
     }
 
-    "make the attribues on Source.fromGraph source behave the same as the stage itself" in {
+    "make the attributes on Source.fromGraph source behave the same as the stage itself" in {
       val attributes =
         Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
           .withAttributes(Attributes.name("replaced")) // this actually replaces now
@@ -170,7 +170,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       attributes.getFirst[Name] should contain(Name("whole-graph"))
     }
 
-    "make the attribues on Flow.fromGraph source behave the same as the stage itself" in {
+    "make the attributes on Flow.fromGraph source behave the same as the stage itself" in {
       val attributes =
         Source.maybe
           .viaMat(
@@ -189,7 +189,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       attributes.getFirst[Name] should contain(Name("whole-graph"))
     }
 
-    "make the attribues on Sink.fromGraph source behave the same as the stage itself" in {
+    "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
       val attributes =
         Source.maybe.toMat(
           Sink.fromGraph(new AttributesSink(Attributes.name("original-name")))
@@ -253,6 +253,18 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .futureValue
 
       dispatcher should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+    }
+
+    "change dispatcher when defined directly on top of the async boundary" in {
+      val dispatcher =
+        Source.fromGraph(
+          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          .async
+          .withAttributes(ActorAttributes.dispatcher("my-dispatcher"))
+          .runWith(Sink.head)
+          .futureValue
+
+      dispatcher should startWith("AttributesSpec-my-dispatcher")
     }
 
   }
