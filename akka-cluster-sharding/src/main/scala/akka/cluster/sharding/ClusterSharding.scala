@@ -190,8 +190,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
-   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
-   * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
+   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the roles of
+   * the current cluster node and the role specified in [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
