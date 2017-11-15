@@ -835,10 +835,10 @@ private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Pub
       case sub: Subscriber[r] ⇒
         set(Inert.subscriber)
         pub.asInstanceOf[Publisher[r]].subscribe(sub)
-        
+
       case p: Publisher[_] ⇒
         throw new IllegalStateException(s"internal error, already registered [$p], yet attempted to register 2nd publisher [$pub]!")
-        
+
       case unexpected ⇒
         throw new IllegalStateException(s"internal error, unexpected state: $unexpected")
     }
