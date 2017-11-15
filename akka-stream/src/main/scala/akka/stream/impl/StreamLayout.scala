@@ -812,12 +812,16 @@ private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Pub
     requireNonNullSubscriber(subscriber)
     @tailrec def rec(): Unit = {
       get() match {
-        case null ⇒ if (!compareAndSet(null, subscriber)) rec()
+        case null ⇒
+          if (!compareAndSet(null, subscriber)) rec() // retry
+
         case pub: Publisher[_] ⇒
           if (compareAndSet(pub, Inert.subscriber)) {
             pub.asInstanceOf[Publisher[T]].subscribe(subscriber)
-          } else rec()
-        case _: Subscriber[_] ⇒ rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
+          } else rec() // retry
+
+        case _: Subscriber[_] ⇒
+          rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
       }
     }
     rec() // return value is boolean only to make the expressions above compile
@@ -825,11 +829,18 @@ private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Pub
 
   @tailrec final def registerPublisher(pub: Publisher[_]): Unit =
     get() match {
-      case null ⇒ if (!compareAndSet(null, pub)) registerPublisher(pub)
+      case null ⇒
+        if (!compareAndSet(null, pub)) registerPublisher(pub) // retry
+
       case sub: Subscriber[r] ⇒
         set(Inert.subscriber)
         pub.asInstanceOf[Publisher[r]].subscribe(sub)
-      case _ ⇒ throw new IllegalStateException("internal error")
+
+      case p: Publisher[_] ⇒
+        throw new IllegalStateException(s"internal error, already registered [$p], yet attempted to register 2nd publisher [$pub]!")
+
+      case unexpected ⇒
+        throw new IllegalStateException(s"internal error, unexpected state: $unexpected")
     }
 }
 
