@@ -58,7 +58,7 @@ import akka.cluster.ClusterSettings.DataCenter
 
 import scala.collection.immutable.{ Set, TreeSet }
 import akka.cluster.MemberStatus
-import akka.cluster.ddata.Replicator.{ UpdateResponse, WriteConsistency, WriteDataCenterAware }
+import akka.cluster.ddata.Replicator._
 
 import scala.annotation.varargs
 
@@ -319,11 +319,8 @@ object Replicator {
   }
   final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency
 
-  final case class WriteDataCenterAware(
-    timeout:        FiniteDuration,
-    consistencyMap: Map[DataCenter, WriteConsistency]) extends WriteConsistency {
-    require(consistencyMap.nonEmpty)
-  }
+  final case class WriteDataCenterAware(timeout: FiniteDuration, centerToConsistency: DataCenter ⇒ WriteConsistency)
+    extends WriteConsistency
 
   /**
    * Java API: The `ReadLocal` instance
@@ -1036,6 +1033,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   val selfAddress = cluster.selfAddress
   val selfUniqueAddress = cluster.selfUniqueAddress
 
+  def dataCenters(): Set[DataCenter] = nodes.union(unreachable).union(Set(cluster.selfMember)).map(_.dataCenter)
+
   require(!cluster.isTerminated, "Cluster node must not be terminated")
   require(
     roles.subsetOf(cluster.selfRoles),
@@ -1353,7 +1352,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           }
           val writeAggregator =
             context.actorOf(WriteAggregator.props(key, writeEnvelope, writeDelta, writeConsistency,
-              req, nodes, unreachable, replyTo, durable)
+              req, nodes, unreachable, dataCenters(), replyTo, durable)
               .withDispatcher(context.props.dispatcher))
           if (durable) {
             durableStore ! Store(key.id, new DurableDataEnvelope(newEnvelope),
@@ -1455,8 +1454,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
             replyTo ! DeleteSuccess(key, req)
         } else {
           val writeAggregator =
-            context.actorOf(WriteAggregator.props(key, DeletedEnvelope, None, consistency, req, nodes, unreachable, replyTo, durable)
-              .withDispatcher(context.props.dispatcher))
+            context.actorOf(WriteAggregator.props(key, DeletedEnvelope, None, consistency, req, nodes, unreachable,
+              dataCenters(), replyTo, durable).withDispatcher(context.props.dispatcher))
           if (durable) {
             durableStore ! Store(key.id, new DurableDataEnvelope(DeletedEnvelope),
               Some(StoreReply(DeleteSuccess(key, req), StoreFailure(key, req), writeAggregator)))
@@ -1744,7 +1743,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (matchingRole(m) && m.address != selfAddress)
       weaklyUpNodes += m
 
-  def receiveMemberUp(m: Member): Unit =
+  def receiveMemberUp(m: Member): Unit = {
     if (matchingRole(m)) {
       leader += m
       if (m.address != selfAddress) {
@@ -1752,6 +1751,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         weaklyUpNodes -= m
       }
     }
+  }
 
   def receiveMemberRemoved(m: Member): Unit = {
     if (m.address == selfAddress)
@@ -1964,67 +1964,63 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     req:         Option[Any],
     nodes:       Set[Member],
     unreachable: Set[Member],
+    centers:     Set[DataCenter],
     replyTo:     ActorRef,
-    durable:     Boolean): Props =
+    durable:     Boolean): Props = {
+
     consistency match {
       case WriteDataCenterAware(_, writeDataCenterMap) ⇒
         Props(new DataCenterWriteAggregator(
-          key, envelope, delta, writeDataCenterMap, req, nodes, unreachable, replyTo, durable))
+          key, envelope, delta, writeDataCenterMap, centers, req, nodes, unreachable, replyTo, durable))
       case _ ⇒
-        Props(new WriteAggregator(key, envelope, delta, consistency, req, nodes, unreachable, replyTo, durable))
+        if (centers.size > 1)
+          Props(new DataCenterWriteAggregator(
+            key, envelope, delta, _ ⇒ consistency, centers, req, nodes, unreachable, replyTo, durable))
+        else
+          Props(new WriteAggregator(key, envelope, delta, consistency, req, nodes, unreachable, replyTo, durable))
     }
-
+  }
 }
+
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] class DataCenterWriteAggregator(
-  key:                KeyR,
-  envelope:           Replicator.Internal.DataEnvelope,
-  delta:              Option[Replicator.Internal.Delta],
-  writeDataCenterMap: Map[DataCenter, WriteConsistency],
-  req:                Option[Any],
-  nodes:              Set[Member],
-  unreachable:        Set[Member],
-  replyTo:            ActorRef,
-  durable:            Boolean) extends Actor with ActorLogging {
+  key:                  KeyR,
+  envelope:             Replicator.Internal.DataEnvelope,
+  delta:                Option[Replicator.Internal.Delta],
+  dcToWriteConsistency: DataCenter ⇒ WriteConsistency,
+  centers:              Set[DataCenter],
+  req:                  Option[Any],
+  nodes:                Set[Member],
+  unreachable:          Set[Member],
+  replyTo:              ActorRef,
+  durable:              Boolean) extends Actor with ActorLogging {
 
   private var children: Map[ActorRef, DataCenter] = _
   private var pendingChildren: Set[ActorRef] = _
-  private var responses: Map[DataCenter, UpdateResponse[ReplicatedData]] = Map.empty
 
   override def preStart(): Unit = {
-    log.info("PreStarting " + self + " of " + getClass)
-    children = writeDataCenterMap.toStream.map {
-      case (dataCenter, consistency) ⇒
-        def byDataCenterFilter(node: Member) = node.dataCenter == dataCenter
+    children = centers.toStream.map {
+      case dataCenter ⇒
+        def nodesForDataCenter(nodes: Set[Member]) = nodes.filter(_.dataCenter == dataCenter)
+
+        val consistency = dcToWriteConsistency(dataCenter)
         val child = context.actorOf(WriteAggregator.props(key, envelope, delta, consistency, req,
-          nodes.filter(byDataCenterFilter), unreachable.filter(byDataCenterFilter), self, durable))
+          nodesForDataCenter(nodes), nodesForDataCenter(unreachable), centers, self, durable))
+
         (child, dataCenter)
     }.toMap
-    log.info("children=" + children)
     pendingChildren = children.keys.toSet
   }
 
   override def receive = {
-    case response: UpdateResponse[ReplicatedData] ⇒
-      log.warning("got message from " + sender() + ": " + response)
-      log.info("checking " + sender() + " in " + children + " -> " + children.get(sender()))
-      if (children.get(sender()).nonEmpty) {
-        val dataCenter = children(sender())
-        responses += dataCenter -> response
-        pendingChildren -= sender()
-        if (pendingChildren.isEmpty) {
-          val responsesToDataCenters: Map[UpdateResponse[ReplicatedData], List[DataCenter]] =
-            responses.groupBy(_._2).mapValues(responsesWithDC ⇒ responsesWithDC.keys.toList)
-          val response = responsesToDataCenters.keys.toStream match {
-            case Stream(onlyResponse) ⇒ onlyResponse
-            case responses @ _        ⇒ responses.toList
-          }
-          log.info("Telling " + replyTo + " " + response + " from " + context.parent)
-          replyTo.tell(response, context.parent)
-          context.stop(self)
-        }
+    case response ⇒
+      log.debug(s"Got WriteAggregator response $response from ${sender()}")
+      pendingChildren -= sender()
+      if (pendingChildren.isEmpty || (response != DeleteSuccess && response != UpdateSuccess)) {
+        replyTo.tell(response, context.parent)
+        context.stop(self)
       }
   }
 }
@@ -2042,8 +2038,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   import Replicator._
   import Replicator.Internal._
   import ReadWriteAggregator._
-
-  log.info("PreStarting " + self + " of " + getClass)
 
   val selfUniqueAddress = Cluster(context.system).selfUniqueAddress
 
