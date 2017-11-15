@@ -15,6 +15,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class SubstreamDocTest  extends AbstractJavaTest {
 
@@ -77,6 +79,23 @@ public class SubstreamDocTest  extends AbstractJavaTest {
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
           .splitAfter(elem -> elem == 3);
         //#splitWhenAfter
+
+        //#wordCount
+        String text =
+          "This is the first line.\n" +
+          "The second line.\n" +
+          "There is also the 3rd line\n";
+
+        Source.from(Arrays.asList(text.split("")))
+          .map(x -> x.charAt(0))
+          .splitAfter(x -> x == '\n')
+          .filter(x -> x != '\n')
+          .map(x -> 1)
+          .reduce((x,y) -> x + y)
+          .to(Sink.foreach(x -> System.out.println(x)))
+          .run(mat);
+        //#wordCount
+        Thread.sleep(1000);
     }
 
     @Test

@@ -6,7 +6,7 @@ into a stream of streams.
 SubFlows cannot contribute to the super-flow’s materialized value since they are materialized later,
 during the runtime of the flow graph processing.
 
-Stages that creates substreams are listed on @ref:[Nesting and flattening stages](stages-overview.md#nesting-and-flattening-stages)
+Stages that create substreams are listed on @ref:[Nesting and flattening stages](stages-overview.md#nesting-and-flattening-stages)
 
 ## Nesting stages
 
@@ -86,6 +86,23 @@ Scala
 Java
 :   @@snip [SubstreamDocTest.java]($code$/java/jdocs/stream/SubstreamDocTest.java) { #splitWhenAfter }
 
+These are useful when you scanned over something and you don't need to care about anything behind it.
+A typical example is counting the number of characters for each line like below.
+
+Scala
+:   @@snip [SubstreamDocSpec.scala]($code$/scala/docs/stream/SubstreamDocSpec.scala) { #wordCount }
+
+Java
+:   @@snip [SubstreamDocTest.java]($code$/java/jdocs/stream/SubstreamDocTest.java) { #wordCount }
+
+This prints out the following output.
+
+```
+23
+16
+26
+``` 
+
 ![stream-substream-splitWhen-splitAfter.png](../../images/stream-substream-splitWhen-splitAfter.png)
 
 ## Flattening stages
@@ -118,7 +135,6 @@ Elements from all the substreams are concatnated to the sink.
 
 `flatMapMerge` is similar to `flatMapConcat`, but it doesn't wait for one `Source` to be fully consumed.
  Instead, up to `breadth` number of streams emit elements at any given time.
-
 
 Scala
 :   @@snip [SubstreamDocSpec.scala]($code$/scala/docs/stream/SubstreamDocSpec.scala) { #flatMapMerge }

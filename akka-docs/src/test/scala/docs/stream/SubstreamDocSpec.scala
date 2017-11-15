@@ -46,6 +46,21 @@ class SubstreamDocSpec extends AkkaSpec {
 
     Source(1 to 10).splitAfter(SubstreamCancelStrategy.drain)(_ == 3)
     //#splitWhenAfter
+
+    //#wordCount
+    val text =
+      "This is the first line.\n" +
+        "The second line.\n" +
+        "There is also the 3rd line\n"
+
+    val charCount = Source(text.toList)
+      .splitAfter { _ == '\n' }
+      .filter(_ != '\n')
+      .map(_ => 1)
+      .reduce(_ + _)
+      .to(Sink.foreach(println))
+      .run()
+    //#wordCount
   }
 
   "generate substreams by flatMapConcat and flatMapMerge" in {
