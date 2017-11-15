@@ -3,26 +3,34 @@
  */
 package akka.stream.scaladsl
 
+import java.util.Optional
+import java.util.concurrent.{ CompletableFuture, CompletionStage, TimeUnit }
+
+import akka.Done
 import akka.stream.Attributes._
 import akka.stream._
+import akka.stream.javadsl
 import akka.stream.stage._
 import akka.stream.testkit._
 import com.typesafe.config.ConfigFactory
 
 object AttributesSpec {
 
-  class AttributesSource(_initialAttributes: Attributes = Attributes.none) extends GraphStage[SourceShape[Attributes]] {
-    val out = Outlet[Attributes]("out")
+  class AttributesSource(_initialAttributes: Attributes = Attributes.none) extends GraphStageWithMaterializedValue[SourceShape[Any], Attributes] {
+    val out = Outlet[Any]("out")
     override protected def initialAttributes: Attributes = _initialAttributes
     override val shape = SourceShape.of(out)
-    def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-      setHandler(out, new OutHandler {
-        def onPull(): Unit = {
-          push(out, inheritedAttributes)
-          completeStage()
-        }
-      })
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Attributes) = {
+      val logic = new GraphStageLogic(shape) {
+        setHandler(out, new OutHandler {
+          def onPull(): Unit = {
+          }
+        })
+      }
+      (logic, inheritedAttributes)
     }
+
   }
 
   class AttributesFlow(_initialAttributes: Attributes = Attributes.none) extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Attributes] {
@@ -121,8 +129,9 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     "be overridable on a module basis" in {
       val attributes =
         Source.fromGraph(new AttributesSource().withAttributes(Attributes.name("new-name")))
-          .runWith(Sink.head)
-          .futureValue
+          .toMat(Sink.head)(Keep.left)
+          .run()
+
       attributes.get[Name] should contain(Name("new-name"))
     }
 
@@ -130,8 +139,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       val attributes = Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
         .map(identity)
         .addAttributes(Attributes.name("whole-graph"))
-        .runWith(Sink.head)
-        .futureValue
+        .toMat(Sink.head)(Keep.left)
+        .run()
 
       // most specific
       attributes.get[Name] should contain(Name("original-name"))
@@ -143,10 +152,10 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     "replace the attributes directly on a graph stage" in {
       val attributes =
         Source.fromGraph(
-          new AttributesSource(Attributes.name("original-name")).withAttributes(Attributes.name("new-name"))
-        )
-          .runWith(Sink.head)
-          .futureValue
+          new AttributesSource(Attributes.name("original-name"))
+            .withAttributes(Attributes.name("new-name")))
+          .toMat(Sink.head)(Keep.left)
+          .run()
 
       // most specific
       attributes.get[Name] should contain(Name("new-name"))
@@ -159,9 +168,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       val attributes =
         Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
           .withAttributes(Attributes.name("replaced")) // this actually replaces now
-          .toMat(Sink.head)(Keep.right).withAttributes(Attributes.name("whole-graph"))
+          .toMat(Sink.head)(Keep.left).withAttributes(Attributes.name("whole-graph"))
           .run()
-          .futureValue
 
       // most specific
       attributes.get[Name] should contain(Name("replaced"))
@@ -265,6 +273,89 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .futureValue
 
       dispatcher should startWith("AttributesSpec-my-dispatcher")
+    }
+
+  }
+
+  "attributes in the javadsl" must {
+
+    "not change dispatcher from one defined on a surrounding graph" in {
+      val dispatcherF =
+        javadsl.Source.fromGraph(
+          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          // this already introduces an async boundary here
+          .detach
+          // this is now just for map since there already is one inbetween stage and map
+          .async
+          .addAttributes(ActorAttributes.dispatcher("my-dispatcher"))
+          .runWith(javadsl.Sink.head(), materializer)
+
+      val dispatcher = dispatcherF.toCompletableFuture.get(remainingOrDefault.toMillis, TimeUnit.MILLISECONDS)
+
+      dispatcher should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+    }
+
+    "change dispatcher when defined directly on top of the async boundary" in {
+      val dispatcherF =
+        javadsl.Source.fromGraph(
+          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          .async
+          .withAttributes(ActorAttributes.dispatcher("my-dispatcher"))
+          .runWith(javadsl.Sink.head(), materializer)
+
+      val dispatcher = dispatcherF.toCompletableFuture.get(remainingOrDefault.toMillis, TimeUnit.MILLISECONDS)
+
+      dispatcher should startWith("AttributesSpec-my-dispatcher")
+    }
+
+    "make the attributes on Source.fromGraph source behave the same as the stage itself" in {
+      val attributes: Attributes =
+        javadsl.Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
+          .withAttributes(Attributes.name("replaced")) // this actually replaces now
+          .toMat(javadsl.Sink.ignore(), javadsl.Keep.left[Attributes, CompletionStage[Done]])
+          .withAttributes(Attributes.name("whole-graph"))
+          .run(materializer)
+
+      // most specific
+      attributes.get[Name] should contain(Name("replaced"))
+
+      // least specific
+      attributes.getFirst[Name] should contain(Name("whole-graph"))
+    }
+
+    "make the attributes on Flow.fromGraph source behave the same as the stage itself" in {
+      val attributes: Attributes =
+        javadsl.Source.maybe
+          .viaMat(
+            javadsl.Flow.fromGraph(new AttributesFlow(Attributes.name("original-name")))
+              .withAttributes(Attributes.name("replaced")) // this actually replaces now
+              , javadsl.Keep.right[CompletableFuture[Optional[Any]], Attributes])
+          .withAttributes(Attributes.name("source-flow"))
+          .toMat(javadsl.Sink.ignore(), javadsl.Keep.left[Attributes, CompletionStage[Done]])
+          .withAttributes(Attributes.name("whole-graph"))
+          .run(materializer)
+
+      // most specific
+      attributes.get[Name] should contain(Name("replaced"))
+
+      // least specific
+      attributes.getFirst[Name] should contain(Name("whole-graph"))
+    }
+
+    "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
+      val attributes: Attributes =
+        javadsl.Source.maybe[Any].toMat(
+          javadsl.Sink.fromGraph(new AttributesSink(Attributes.name("original-name")))
+            .withAttributes(Attributes.name("replaced")) // this actually replaces now
+            , javadsl.Keep.right[CompletableFuture[Optional[Any]], Attributes])
+          .withAttributes(Attributes.name("whole-graph"))
+          .run(materializer)
+
+      // most specific
+      attributes.get[Name] should contain(Name("replaced"))
+
+      // least specific
+      attributes.getFirst[Name] should contain(Name("whole-graph"))
     }
 
   }

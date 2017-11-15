@@ -32,5 +32,27 @@ trait Graph[+S <: Shape, +M] {
    */
   def async: Graph[S, M] = addAttributes(Attributes.asyncBoundary)
 
+  /**
+   * Put an asynchronous boundary around this `Graph`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  def async(dispatcher: String) =
+    addAttributes(
+      Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher)
+    )
+
+  /**
+   * Put an asynchronous boundary around this `Graph`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  def async(dispatcher: String, inputBufferSize: Int) =
+    addAttributes(
+      Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher)
+        and Attributes.inputBuffer(inputBufferSize, inputBufferSize)
+    )
+
   def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
 }

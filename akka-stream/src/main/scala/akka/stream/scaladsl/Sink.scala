@@ -83,9 +83,26 @@ final class Sink[-In, +Mat](
   override def named(name: String): Sink[In, Mat] = addAttributes(Attributes.name(name))
 
   /**
-   * Put an asynchronous boundary around this `Sink`
+   * Put an asynchronous boundary around this `Source`
    */
-  override def async: Sink[In, Mat] = addAttributes(Attributes.asyncBoundary)
+  override def async: Sink[In, Mat] = super.async.asInstanceOf[Sink[In, Mat]]
+
+  /**
+   * Put an asynchronous boundary around this `Graph`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): Sink[In, Mat] =
+    super.async(dispatcher).asInstanceOf[Sink[In, Mat]]
+
+  /**
+   * Put an asynchronous boundary around this `Graph`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): Sink[In, Mat] =
+    super.async(dispatcher, inputBufferSize).asInstanceOf[Sink[In, Mat]]
 
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.

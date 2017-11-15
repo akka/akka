@@ -236,7 +236,24 @@ final class Flow[-In, +Out, +Mat](
   /**
    * Put an asynchronous boundary around this `Flow`
    */
-  override def async: Repr[Out] = addAttributes(Attributes.asyncBoundary)
+  override def async: Repr[Out] = super.async.asInstanceOf[Repr[Out]]
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): Repr[Out] =
+    super.async(dispatcher).asInstanceOf[Repr[Out]]
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): Repr[Out] =
+    super.async(dispatcher, inputBufferSize).asInstanceOf[Repr[Out]]
 
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
@@ -514,7 +531,20 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
   override def named(name: String): RunnableGraph[Mat] =
     addAttributes(Attributes.name(name))
 
-  override def async: RunnableGraph[Mat] = addAttributes(Attributes.asyncBoundary)
+  /**
+   * This does nothing, as an async boundary around a runnable graph does not make sense
+   */
+  override def async: RunnableGraph[Mat] = this
+
+  /**
+   * This does nothing, as an async boundary around a runnable graph does not make sense
+   */
+  override def async(dispatcher: String) = this
+
+  /**
+   * This does nothing, as an async boundary around a runnable graph does not make sense
+   */
+  override def async(dispatcher: String, inputBufferSize: Int) = this
 }
 
 /**

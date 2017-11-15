@@ -2291,6 +2291,23 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.async)
 
   /**
+   * Put an asynchronous boundary around this `Source`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): javadsl.Source[Out, Mat] =
+    new Source(delegate.async(dispatcher))
+
+  /**
+   * Put an asynchronous boundary around this `Source`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): javadsl.Source[Out, Mat] =
+    new Source(delegate.async(dispatcher, inputBufferSize))
+
+  /**
    * Logs elements flowing through the stream as well as completion and erroring.
    *
    * By default element and completion signals are logged on debug level, and errors are logged on Error level.
