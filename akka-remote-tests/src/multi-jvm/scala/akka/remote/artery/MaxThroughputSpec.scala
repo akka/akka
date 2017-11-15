@@ -96,7 +96,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
   final case object End extends Echo
   final case class Warmup(msg: AnyRef)
   final case class EndResult(totalReceived: Long) extends JavaSerializable
-  final case class FlowControl(burstStartTime: Long) extends Echo
+  final case class FlowControl(id: Int, burstStartTime: Long) extends Echo
 
   sealed trait Target {
     def tell(msg: Any, sender: ActorRef): Unit
@@ -168,6 +168,9 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
     context.system.eventStream.subscribe(self, classOf[ReceivedActorRefCompressionTable])
 
+    var flowControlId = 0
+    var pendingFlowControl = Map.empty[Int, Int]
+
     val compressionEnabled =
       RARP(context.system).provider.transport.isInstanceOf[ArteryTransport] &&
         RARP(context.system).provider.remoteSettings.Artery.Enabled
@@ -222,13 +225,20 @@ object MaxThroughputSpec extends MultiNodeConfig {
     }
 
     def active: Receive = {
-      case c @ FlowControl(t0) ⇒
-        val now = System.nanoTime()
-        val duration = NANOSECONDS.toMillis(now - t0)
-        maxRoundTripMillis = math.max(maxRoundTripMillis, duration)
+      case c @ FlowControl(id, t0) ⇒
+        val targetCount = pendingFlowControl(id)
+        if (targetCount - 1 == 0) {
+          pendingFlowControl -= id
+          val now = System.nanoTime()
+          val duration = NANOSECONDS.toMillis(now - t0)
+          maxRoundTripMillis = math.max(maxRoundTripMillis, duration)
 
-        sendBatch(warmup = false)
-        sendFlowControl(now)
+          sendBatch(warmup = false)
+          sendFlowControl(now)
+        } else {
+          // waiting for FlowControl from more targets
+          pendingFlowControl = pendingFlowControl.updated(id, targetCount - 1)
+        }
     }
 
     val waitingForEndResult: Receive = {
@@ -287,8 +297,12 @@ object MaxThroughputSpec extends MultiNodeConfig {
       if (remaining <= 0) {
         context.become(waitingForEndResult)
         targets.foreach(_.tell(End, self))
-      } else
-        target.tell(FlowControl(t0), self)
+      } else {
+        flowControlId += 1
+        pendingFlowControl = pendingFlowControl.updated(flowControlId, targets.size)
+        val flowControlMsg = FlowControl(flowControlId, t0)
+        targets.foreach(_.tell(flowControlMsg, self))
+      }
     }
   }
 
@@ -316,17 +330,19 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
     override def toBinary(o: AnyRef, buf: ByteBuffer): Unit =
       o match {
-        case FlowControl(burstStartTime) ⇒ buf.putLong(burstStartTime)
+        case FlowControl(id, burstStartTime) ⇒
+          buf.putInt(id)
+          buf.putLong(burstStartTime)
       }
 
     override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef =
       manifest match {
-        case FlowControlManifest ⇒ FlowControl(buf.getLong)
+        case FlowControlManifest ⇒ FlowControl(buf.getInt, buf.getLong)
       }
 
     override def toBinary(o: AnyRef): Array[Byte] = o match {
-      case FlowControl(burstStartTime) ⇒
-        val buf = ByteBuffer.allocate(8)
+      case FlowControl(id, burstStartTime) ⇒
+        val buf = ByteBuffer.allocate(12)
         toBinary(o, buf)
         buf.flip()
         val bytes = new Array[Byte](buf.remaining)
