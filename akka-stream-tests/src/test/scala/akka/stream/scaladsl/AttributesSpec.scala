@@ -214,7 +214,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       dispatcher should startWith("AttributesSpec-my-dispatcher")
     }
 
-    "use the least specific dispatcher when specified directly around the graph stage" in {
+    "use the most specific dispatcher when specified directly around the graph stage" in {
       val dispatcher =
         Source.fromGraph(
           // directly on stage
@@ -226,16 +226,33 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       dispatcher should startWith("AttributesSpec-my-dispatcher")
     }
 
-    "use the least specific dispatcher when specified further out from the stage" in {
+    "use the most specific dispatcher when defined on a surrounding composed graph" in {
       val dispatcher =
-        // on the source returned from graph
         Source.fromGraph(
+          // on the composed graph
           new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          .map(identity)
+          // this is now for source -> flow
           .addAttributes(ActorAttributes.dispatcher("my-dispatcher"))
           .runWith(Sink.head)
           .futureValue
 
-      dispatcher should startWith("AttributesSpec-my-dispatcher")
+      dispatcher should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+    }
+
+    "not change dispatcher from one defined on a surrounding graph" in {
+      val dispatcher =
+        Source.fromGraph(
+          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          // this already introduces an async boundary here
+          .map(identity)
+          // this is now just for map since there already is one inbetween stage and map
+          .async // potential sugar .async("my-dispatcher")
+          .addAttributes(ActorAttributes.dispatcher("my-dispatcher"))
+          .runWith(Sink.head)
+          .futureValue
+
+      dispatcher should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
     }
 
   }
