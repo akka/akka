@@ -21,6 +21,8 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.CompletionStage
 
+import akka.stream.stage.{ GraphStage, GraphStageWithMaterializedValue }
+
 import scala.compat.java8.FutureConverters._
 
 /**
@@ -239,9 +241,20 @@ object Source {
   def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
     case s: Source[T, M]         ⇒ s
     case s: javadsl.Source[T, M] ⇒ s.asScala
-    case other ⇒ new Source(
-      LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
-      other.shape)
+    case g: GraphStageWithMaterializedValue[SourceShape[T], M] ⇒
+      // move these from the stage itself to make the returned source
+      // behave as it is the stage with regards to attributes
+      val attrs = g.traversalBuilder.attributes
+      val noAttrStage = g.withAttributes(Attributes.none)
+      new Source(
+        LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
+        noAttrStage.shape
+      ).withAttributes(attrs)
+    case other ⇒
+      // composite source shaped graph
+      new Source(
+        LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
+        other.shape)
   }
 
   /**
