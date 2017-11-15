@@ -173,7 +173,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     }
     system.systemActorOf(Props[ClusterShardingGuardian].withDispatcher(dispatcher), guardianName)
   }
-  
+
   /**
    * Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
    * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
