@@ -171,11 +171,9 @@ object Actor {
    * [[ActorContext]] that allows access to the system, spawning and watching
    * other actors, etc.
    *
-   * This constructor is called immutable because the behavior instance doesn't
-   * have or close over any mutable state. Processing the next message
-   * results in a new behavior that can potentially be different from this one.
-   * State is updated by returning a new behavior that holds the new immutable
-   * state.
+   * This constructor is called immutable because the behavior instance does not
+   * need and in fact should not use (close over) mutable variables, but instead
+   * return a potentially different behavior encapsulating any state changes.
    */
   def immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Immutable[T] =
     new Immutable(onMessage)

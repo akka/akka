@@ -1,3 +1,5 @@
+import akka.AutomaticModuleName
+
 enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish)
 disablePlugins(MimaPlugin)
 
@@ -48,6 +50,7 @@ lazy val root = Project(
 lazy val actor = akkaModule("akka-actor")
   .settings(Dependencies.actor)
   .settings(OSGi.actor)
+  .settings(AutomaticModuleName.settings("akka.actor"))
   .settings(
     unmanagedSourceDirectories in Compile += {
       val ver = scalaVersion.value.take(4)
@@ -66,6 +69,7 @@ lazy val actorTests = akkaModule("akka-actor-tests")
 lazy val agent = akkaModule("akka-agent")
   .dependsOn(actor, testkit % "test->test")
   .settings(Dependencies.agent)
+  .settings(AutomaticModuleName.settings("akka.agent"))
   .settings(OSGi.agent)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
@@ -91,11 +95,13 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
 lazy val camel = akkaModule("akka-camel")
   .dependsOn(actor, slf4j, testkit % "test->test")
   .settings(Dependencies.camel)
+  .settings(AutomaticModuleName.settings("akka.camel"))
   .settings(OSGi.camel)
 
 lazy val cluster = akkaModule("akka-cluster")
   .dependsOn(remote, remoteTests % "test->test" , testkit % "test->test")
   .settings(Dependencies.cluster)
+  .settings(AutomaticModuleName.settings("akka.cluster"))
   .settings(OSGi.cluster)
   .settings(Protobuf.settings)
   .settings(
@@ -109,6 +115,7 @@ lazy val clusterMetrics = akkaModule("akka-cluster-metrics")
   .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", slf4j % "test->compile")
   .settings(OSGi.clusterMetrics)
   .settings(Dependencies.clusterMetrics)
+  .settings(AutomaticModuleName.settings("akka.cluster.metrics"))
   .settings(Protobuf.settings)
   .settings(SigarLoader.sigarSettings)
   .settings(
@@ -129,6 +136,7 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
     clusterTools
   )
   .settings(Dependencies.clusterSharding)
+  .settings(AutomaticModuleName.settings("akka.cluster.sharding"))
   .settings(OSGi.clusterSharding)
   .settings(Protobuf.settings)
   .configs(MultiJvm)
@@ -137,6 +145,7 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
 lazy val clusterTools = akkaModule("akka-cluster-tools")
   .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
   .settings(Dependencies.clusterTools)
+  .settings(AutomaticModuleName.settings("akka.cluster.tools"))
   .settings(OSGi.clusterTools)
   .settings(Protobuf.settings)
   .configs(MultiJvm)
@@ -145,6 +154,7 @@ lazy val clusterTools = akkaModule("akka-cluster-tools")
 lazy val contrib = akkaModule("akka-contrib")
   .dependsOn(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile->compile;test->provided")
   .settings(Dependencies.contrib)
+  .settings(AutomaticModuleName.settings("akka.contrib"))
   .settings(OSGi.contrib)
   .settings(
     description := """|
@@ -165,6 +175,7 @@ lazy val contrib = akkaModule("akka-contrib")
 lazy val distributedData = akkaModule("akka-distributed-data")
   .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
   .settings(Dependencies.distributedData)
+  .settings(AutomaticModuleName.settings("akka.cluster.ddata"))
   .settings(OSGi.distributedData)
   .settings(Protobuf.settings)
   .configs(MultiJvm)
@@ -219,11 +230,13 @@ lazy val docs = akkaModule("akka-docs")
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
   .settings(Protobuf.settings)
+  .settings(AutomaticModuleName.settings("akka.remote.testkit"))
   .settings(AkkaBuild.mayChangeSettings)
 
 lazy val osgi = akkaModule("akka-osgi")
   .dependsOn(actor)
   .settings(Dependencies.osgi)
+  .settings(AutomaticModuleName.settings("akka.osgi"))
   .settings(OSGi.osgi)
   .settings(
     parallelExecution in Test := false
@@ -232,6 +245,7 @@ lazy val osgi = akkaModule("akka-osgi")
 lazy val persistence = akkaModule("akka-persistence")
   .dependsOn(actor, testkit % "test->test", protobuf)
   .settings(Dependencies.persistence)
+  .settings(AutomaticModuleName.settings("akka.persistence"))
   .settings(OSGi.persistence)
   .settings(Protobuf.settings)
   .settings(
@@ -245,6 +259,7 @@ lazy val persistenceQuery = akkaModule("akka-persistence-query")
     streamTestkit % "test"
   )
   .settings(Dependencies.persistenceQuery)
+  .settings(AutomaticModuleName.settings("akka.persistence.query"))
   .settings(OSGi.persistenceQuery)
   .settings(
     fork in Test := true
@@ -254,6 +269,7 @@ lazy val persistenceQuery = akkaModule("akka-persistence-query")
 lazy val persistenceShared = akkaModule("akka-persistence-shared")
   .dependsOn(persistence % "test->test", testkit % "test->test", remote % "test", protobuf)
   .settings(Dependencies.persistenceShared)
+  .settings(AutomaticModuleName.settings("akka.persistence.shared"))
   .settings(
     fork in Test := true
   )
@@ -263,6 +279,7 @@ lazy val persistenceShared = akkaModule("akka-persistence-shared")
 lazy val persistenceTck = akkaModule("akka-persistence-tck")
   .dependsOn(persistence % "compile->compile;provided->provided;test->test", testkit % "compile->compile;test->test")
   .settings(Dependencies.persistenceTck)
+  .settings(AutomaticModuleName.settings("akka.persistence.tck"))
 //.settings(OSGi.persistenceTck) TODO: we do need to export this as OSGi bundle too?
   .settings(
     fork in Test := true
@@ -271,12 +288,14 @@ lazy val persistenceTck = akkaModule("akka-persistence-tck")
 
 lazy val protobuf = akkaModule("akka-protobuf")
   .settings(OSGi.protobuf)
+  .settings(AutomaticModuleName.settings("akka.protobuf"))
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
 
 lazy val remote = akkaModule("akka-remote")
   .dependsOn(actor, stream, actorTests % "test->test", testkit % "test->test", streamTestkit % "test", protobuf)
   .settings(Dependencies.remote)
+  .settings(AutomaticModuleName.settings("akka.remote"))
   .settings(OSGi.remote)
   .settings(Protobuf.settings)
   .settings(
@@ -297,18 +316,22 @@ lazy val remoteTests = akkaModule("akka-remote-tests")
 lazy val slf4j = akkaModule("akka-slf4j")
   .dependsOn(actor, testkit % "test->test")
   .settings(Dependencies.slf4j)
+  .settings(AutomaticModuleName.settings("akka.slf4j"))
   .settings(OSGi.slf4j)
 
 lazy val stream = akkaModule("akka-stream")
   .dependsOn(actor)
   .settings(Dependencies.stream)
+  .settings(AutomaticModuleName.settings("akka.stream"))
   .settings(OSGi.stream)
   .enablePlugins(BoilerplatePlugin)
 
 lazy val streamTestkit = akkaModule("akka-stream-testkit")
   .dependsOn(stream, testkit % "compile->compile;test->test")
   .settings(Dependencies.streamTestkit)
+  .settings(AutomaticModuleName.settings("akka.stream.testkit"))
   .settings(OSGi.streamTestkit)
+  .disablePlugins(MimaPlugin)
 
 lazy val streamTests = akkaModule("akka-stream-tests")
   .dependsOn(streamTestkit % "test->test", stream)
@@ -332,6 +355,7 @@ lazy val streamTestsTck = akkaModule("akka-stream-tests-tck")
 lazy val testkit = akkaModule("akka-testkit")
   .dependsOn(actor)
   .settings(Dependencies.testkit)
+  .settings(AutomaticModuleName.settings("akka.actor.testkit"))
   .settings(OSGi.testkit)
   .settings(
     initialCommands += "import akka.testkit._"
@@ -347,6 +371,9 @@ lazy val typed = akkaModule("akka-typed")
     distributedData % "provided->compile"
   )
   .settings(AkkaBuild.mayChangeSettings)
+  .settings(AutomaticModuleName.settings("akka.typed")) // fine for now, eventually new module name to become typed.actor
+  // To be ablet to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
   .settings(
     initialCommands := """
       import akka.typed._
@@ -361,6 +388,7 @@ lazy val typed = akkaModule("akka-typed")
 
 lazy val typedTestkit = akkaModule("akka-typed-testkit")
   .dependsOn(typed, testkit % "compile->compile;test->test")
+  .settings(AutomaticModuleName.settings("akka.typed.testkit"))
   .disablePlugins(MimaPlugin)
 
 lazy val typedTests = akkaModule("akka-typed-tests")

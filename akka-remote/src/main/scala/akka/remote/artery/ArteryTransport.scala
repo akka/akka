@@ -792,6 +792,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           aeronSource(ordinaryStreamId, envelopeBufferPool)
             .via(hubKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
+            .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
 
         // Select lane based on destination to preserve message order,
         // Also include the uid of the sending system in the hash to spread
@@ -804,7 +805,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
               val hashA = 23 + a
               val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
               math.abs(hash) % inboundLanes
-            case OptionVal.None ⇒ 0
+            case OptionVal.None ⇒
+              // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
+              env.lane
           }
         }
 
@@ -821,13 +824,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           }(collection.breakOut)
 
         import system.dispatcher
-        val completed = Future.sequence(completedValues).map(_ ⇒ Done)
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
-        completed.failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
+        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
 
-        (resourceLife, compressionAccess, completed)
+        val allCompleted = Future.sequence(completedValues).map(_ ⇒ Done)
+
+        (resourceLife, compressionAccess, allCompleted)
       }
 
     _inboundCompressionAccess = OptionVal(inboundCompressionAccesses)

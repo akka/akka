@@ -3,6 +3,7 @@
  */
 package akka.cluster
 
+import akka.actor.ActorSystem
 import akka.cluster.ClusterEvent._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
@@ -10,13 +11,8 @@ import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
-import akka.actor.ActorSystem
-import akka.actor.Props
-import akka.actor.Actor
-import akka.actor.Deploy
-import akka.actor.RootActorPath
 import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -196,7 +192,7 @@ abstract class MultiDcSplitBrainSpec
       enterBarrier("inter-data-center-split-2-done")
     }
 
-    "be able to have data center member restart (same host:port) while there is inter data center split" in within(40.seconds) {
+    "be able to have data center member restart (same host:port) while there is inter data center split" in within(60.seconds) {
       val subscribeProbe = TestProbe()
       runOn(first, second, third, fifth) {
         Cluster(system).subscribe(subscribeProbe.ref, InitialStateAsSnapshot, classOf[MemberUp], classOf[MemberRemoved])
@@ -265,7 +261,8 @@ abstract class MultiDcSplitBrainSpec
       runOn(first, second, third) {
         awaitAssert(clusterView.members.collectFirst {
           case m if m.dataCenter == "dc2" && m.address == fifthOriginalUniqueAddress.get.address ⇒ m.uniqueAddress
-        } should not be (fifthOriginalUniqueAddress)) // different uid
+        } should not be fifthOriginalUniqueAddress) // different uid
+
         subscribeProbe.expectMsgType[MemberUp].member.uniqueAddress should ===(fifthOriginalUniqueAddress.get)
         subscribeProbe.expectMsgType[MemberRemoved].member.uniqueAddress should ===(fifthOriginalUniqueAddress.get)
         subscribeProbe.expectMsgType[MemberUp].member.address should ===(fifthOriginalUniqueAddress.get.address)
@@ -278,14 +275,13 @@ abstract class MultiDcSplitBrainSpec
         Cluster(system).leave(fifthOriginalUniqueAddress.get.address)
       }
       runOn(first, second, third) {
-        awaitAssert(clusterView.members.map(_.address) should ===(Set(address(first), address(second), address(third))))
+        awaitAssert({
+          clusterView.members.map(_.address) should ===(Set(address(first), address(second), address(third)))
+        })
       }
       runOn(remainingRoles: _*) {
-        Thread.sleep(5000) // FIXME remove
         enterBarrier("restarted-fifth-removed")
       }
-
     }
-
   }
 }

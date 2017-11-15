@@ -67,12 +67,12 @@ Java
 
 Just as Akka provides the @ref:[backoff supervision pattern for actors](../general/supervision.md#backoff-supervisor), Akka streams
 also provides a `RestartSource`, `RestartSink` and `RestartFlow` for implementing the so-called *exponential backoff 
-supervision strategy*, starting a stage again when it fails, each time with a growing time delay between restarts.
+supervision strategy*, starting a stage again when it fails or completes, each time with a growing time delay between restarts.
 
 This pattern is useful when the stage fails or completes because some external resource is not available
 and we need to give it some time to start-up again. One of the prime examples when this is useful is
 when a WebSocket connection fails due to the HTTP server it's running on going down, perhaps because it is overloaded. 
-By using an exponential backoff, we avoid going into a tight reconnect look, which both gives the HTTP server some time
+By using an exponential backoff, we avoid going into a tight reconnect loop, which both gives the HTTP server some time
 to recover, and it avoids using needless resources on the client side.
 
 The following snippet shows how to create a backoff supervisor using @scala[`akka.stream.scaladsl.RestartSource`] 

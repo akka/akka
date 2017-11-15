@@ -36,7 +36,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
      akka.test.MaxThroughputSpec.actor-selection = off
      akka {
        loglevel = INFO
-       log-dead-letters = 10000
+       log-dead-letters = 100
        # avoid TestEventListener
        loggers = ["akka.event.Logging$$DefaultLogger"]
        testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
@@ -71,7 +71,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
          }
 
          advanced {
-           inbound-lanes = 1
+           # inbound-lanes = 1
            # buffer-pool-size = 512
          }
        }
@@ -237,7 +237,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
         val throughput = (totalReceived * 1000.0 / took)
 
         reporter.reportResults(
-          s"=== MaxThroughput ${self.path.name}: " +
+          s"=== ${reporter.testName} ${self.path.name}: " +
             f"throughput ${throughput * testSettings.senderReceiverPairs}%,.0f msg/s, " +
             f"${throughput * payloadSize * testSettings.senderReceiverPairs}%,.0f bytes/s (payload), " +
             f"${throughput * totalSize(context.system) * testSettings.senderReceiverPairs}%,.0f bytes/s (total" +

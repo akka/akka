@@ -6,26 +6,29 @@ Useful for integration testing where multiple systems communicate with each othe
 ## Setup
 
 The multi-JVM testing is an sbt plugin that you can find at [https://github.com/sbt/sbt-multi-jvm](https://github.com/sbt/sbt-multi-jvm).
+To configure it in your project you should do the following steps:
 
-You can add it as a plugin by adding the following to your project/plugins.sbt:
+1. Add it as a plugin by adding the following to your project/plugins.sbt:
 
-@@snip [plugins.sbt]($akka$/project/plugins.sbt) { #sbt-multi-jvm }
+    @@snip [plugins.sbt]($akka$/project/plugins.sbt) { #sbt-multi-jvm }
 
-You can then add multi-JVM testing to `build.sbt` or `project/Build.scala` by including the `MultiJvm`
-settings and config. Please note that MultiJvm test sources are located in `src/multi-jvm/...`,
+2. Add multi-JVM testing to `build.sbt` or `project/Build.scala` by enabling `MultiJvmPlugin` and 
+setting the `MultiJvm` config.
+
+    ```none
+    lazy val root = (project in file("."))
+      .enablePlugins(MultiJvmPlugin)
+      .configs(MultiJvm)
+    ```
+    
+**Please note** that by default MultiJvm test sources are located in `src/multi-jvm/...`, 
 and not in `src/test/...`.
-
-You can specify JVM options for the forked JVMs:
-
-```
-jvmOptions in MultiJvm := Seq("-Xmx256M")
-```
 
 Here is an example of a @extref[sample project](samples:akka-sample-multi-node-scala) that uses the `sbt-multi-jvm` plugin.
 
 ## Running tests
 
-The multi-JVM tasks are similar to the normal tasks: `test`, `test-only`,
+The multi-JVM tasks are similar to the normal tasks: `test`, `testOnly`,
 and `run`, but are under the `multi-jvm` configuration.
 
 So in Akka, to run all the multi-JVM tests in the akka-remote project use (at
@@ -43,20 +46,20 @@ project akka-remote-tests
 multi-jvm:test
 ```
 
-To run individual tests use `test-only`:
+To run individual tests use `testOnly`:
 
 ```none
-multi-jvm:test-only akka.remote.RandomRoutedRemoteActor
+multi-jvm:testOnly akka.remote.RandomRoutedRemoteActor
 ```
 
 More than one test name can be listed to run multiple specific
 tests. Tab-completion in sbt makes it easy to complete the test names.
 
-It's also possible to specify JVM options with `test-only` by including those
+It's also possible to specify JVM options with `testOnly` by including those
 options after the test names and `--`. For example:
 
 ```none
-multi-jvm:test-only akka.remote.RandomRoutedRemoteActor -- -Dsome.option=something
+multi-jvm:testOnly akka.remote.RandomRoutedRemoteActor -- -Dsome.option=something
 ```
 
 ## Creating application tests
@@ -112,6 +115,12 @@ spawned, one for each node. It will look like this:
 ```
 
 ## Changing Defaults
+
+You can specify JVM options for the forked JVMs:
+
+```
+jvmOptions in MultiJvm := Seq("-Xmx256M")
+```
 
 You can change the name of the multi-JVM test source directory by adding the following
 configuration to your project:
@@ -190,7 +199,7 @@ class SpecMultiJvmNode2 extends WordSpec with MustMatchers {
 }
 ```
 
-To run just these tests you would call `multi-jvm:test-only sample.Spec` at
+To run just these tests you would call `multi-jvm:testOnly sample.Spec` at
 the sbt prompt.
 
 ## Multi Node Additions
