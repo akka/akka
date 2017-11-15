@@ -195,7 +195,6 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
           dataCenter = None, // by default use own DC
           extractEntityId = extractEntityId,
           extractShardId = extractShardId)
-
         proxy ! GetCount("5")
         expectMsg(1)
       }
