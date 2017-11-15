@@ -60,7 +60,7 @@ object ClusterShardingSpec {
   final case class WhoAreYou(replyTo: ActorRef[String]) extends TestProtocol
   final case class StopPlz() extends TestProtocol
 
-  sealed trait IdTestProtocol { def id: String }
+  sealed trait IdTestProtocol extends java.io.Serializable { def id: String }
   final case class IdReplyPlz(id: String, toMe: ActorRef[String]) extends IdTestProtocol
   final case class IdWhoAreYou(id: String, replyTo: ActorRef[String]) extends IdTestProtocol
   final case class IdStopPlz(id: String) extends IdTestProtocol
@@ -100,7 +100,7 @@ object ClusterShardingSpec {
 
     private def idAndRefFromBinary[T](bytes: Array[Byte]): (String, ActorRef[T]) = {
       val idLength = bytes(0)
-      val id = new String(bytes.slice(1, idLength), StandardCharsets.UTF_8)
+      val id = new String(bytes.slice(1, idLength + 1), StandardCharsets.UTF_8)
       val ref = actorRefFromBinary(bytes.drop(1 + idLength))
       (id, ref)
     }
@@ -197,11 +197,12 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
         10,
         StopPlz())
 
-      val p = TestProbe[String]()
-      ref ! ShardingEnvelope("test", ReplyPlz(p.ref))
-      p.expectMsg(3.seconds, "Hello!")
-
-      ref ! ShardingEnvelope("test", StopPlz())
+      (1 to 10).foreach { n ⇒
+        val p = TestProbe[String]()
+        ref ! ShardingEnvelope(s"test$n", ReplyPlz(p.ref))
+        p.expectMsg(3.seconds, "Hello!")
+        ref ! ShardingEnvelope(s"test$n", StopPlz())
+      }
     }
     def `03 must send messsages via cluster sharding, without envelopes`(): Unit = {
       val ref = sharding.spawn(
@@ -219,11 +220,12 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
         ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, _.id),
         IdStopPlz("THE_ID_HERE"))
 
-      val p = TestProbe[String]()
-      ref ! IdReplyPlz("test", p.ref)
-      p.expectMsg(3.seconds, "Hello!")
-
-      ref ! IdStopPlz("test")
+      (1 to 10).foreach { n ⇒
+        val p = TestProbe[String]()
+        ref ! IdReplyPlz(s"test$n", p.ref)
+        p.expectMsg(3.seconds, "Hello!")
+        ref ! IdStopPlz(s"test$n")
+      }
     }
 
     //    def `04 fail if starting sharding for already used typeName, but with wrong type`(): Unit = {
