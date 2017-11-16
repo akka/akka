@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import java.util.Optional
 import java.util.concurrent.{ CompletableFuture, CompletionStage, TimeUnit }
 
-import akka.Done
+import akka.{ Done, NotUsed }
 import akka.stream.Attributes._
 import akka.stream._
 import akka.stream.javadsl
@@ -113,21 +113,21 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "attributes" must {
+  "an attributes instance" must {
 
     val attributes = Attributes.name("a") and Attributes.name("b") and Attributes.inputBuffer(1, 2)
 
-    "give access to first attribute" in {
+    "give access to the least specific attribute" in {
       attributes.getFirst[Name] should ===(Some(Attributes.Name("a")))
     }
 
-    "give access to attribute byt type" in {
+    "give access to the most specific attribute value" in {
       attributes.get[Name] should ===(Some(Attributes.Name("b")))
     }
 
   }
 
-  "attributes on a stage" must {
+  "attributes on a graph stage" must {
 
     "be appended with addAttributes" in {
       val attributes =
@@ -143,7 +143,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       attributes.get[WhateverAttribute] should contain(WhateverAttribute("other-thing"))
     }
 
-    "be replaced withAttributes" in {
+    "be replaced withAttributes directly on a stage" in {
       val attributes =
         Source.fromGraph(new AttributesSource()
           .withAttributes(Attributes.name("new-name") and whateverAttribute("other-thing"))
@@ -178,11 +178,14 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       // least specific
       attributes.getFirst[Name] should contain(Name("whole-graph"))
     }
+  }
 
-    "replace the attributes directly on a graph stage" in {
+  "attributes on a source" must {
+
+    "make the attributes on fromGraph(single-source-stage) Source behave the same as the stage itself" in {
       val attributes =
         Source.fromGraph(
-          new AttributesSource(Attributes.name("original-name"))
+          new AttributesSource(Attributes.name("original-name") and whateverAttribute("whatever"))
             .withAttributes(Attributes.name("new-name")))
           .toMat(Sink.head)(Keep.left)
           .run()
@@ -203,28 +206,25 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
       // most specific
       attributes.get[Name] should contain(Name("replaced"))
+      attributes.get[WhateverAttribute] shouldBe empty
 
       // least specific
       attributes.getFirst[Name] should contain(Name("whole-graph"))
+      attributes.getFirst[WhateverAttribute] shouldBe empty
     }
 
-    "make the attributes on Flow.fromGraph source behave the same as the stage itself" in {
-      val attributes =
-        Source.maybe
-          .viaMat(
-            Flow.fromGraph(new AttributesFlow(Attributes.name("original-name")))
-              .withAttributes(Attributes.name("replaced")) // this actually replaces now
-          )(Keep.right)
-          .withAttributes(Attributes.name("source-flow"))
-          .toMat(Sink.ignore)(Keep.left)
-          .withAttributes(Attributes.name("whole-graph"))
-          .run()
+    "not replace stage specific attributes with attributes on surrounding composite source" in {
+      val attributes = Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
+        .map(identity)
+        .addAttributes(Attributes.name("composite-graph"))
+        .toMat(Sink.head)(Keep.left)
+        .run()
 
-      // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      // most specific still the original as the attribute was added on the composite source
+      attributes.get[Name] should contain(Name("original-name"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      attributes.getFirst[Name] should contain(Name("composite-graph"))
     }
 
     "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
@@ -252,7 +252,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       dispatcher should startWith("AttributesSpec-my-dispatcher")
     }
 
-    "use the most specific dispatcher when specified directly around the graph stage" in {
+    "use an explicit attribute on the stage to select dispatcher" in {
       val dispatcher =
         Source.fromGraph(
           // directly on stage
@@ -264,13 +264,12 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       dispatcher should startWith("AttributesSpec-my-dispatcher")
     }
 
-    "use the most specific dispatcher when defined on a surrounding composed graph" in {
+    "use the most specific dispatcher when another one is defined on a surrounding composed graph" in {
       val dispatcher =
         Source.fromGraph(
-          // on the composed graph
           new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
           .map(identity)
-          // this is now for source -> flow
+          // this is now for the composed source -> flow graph
           .addAttributes(ActorAttributes.dispatcher("my-dispatcher"))
           .runWith(Sink.head)
           .futureValue
@@ -303,6 +302,78 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .futureValue
 
       dispatcher should startWith("AttributesSpec-my-dispatcher")
+    }
+
+    "change dispatcher when defined on the async call" in {
+      val dispatcher =
+        Source.fromGraph(
+          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          .async("my-dispatcher")
+          .runWith(Sink.head)
+          .futureValue
+
+      dispatcher should startWith("AttributesSpec-my-dispatcher")
+    }
+  }
+
+  "attributes on a Flow" must {
+
+    "make the attributes on fromGraph(flow-stage) Flow behave the same as the stage itself" in {
+      val attributes =
+        Source.empty
+          .viaMat(
+            Flow.fromGraph(new AttributesFlow(Attributes.name("original-name")))
+              .withAttributes(Attributes.name("replaced")) // this actually replaces now
+          )(Keep.right)
+          .withAttributes(Attributes.name("source-flow"))
+          .toMat(Sink.ignore)(Keep.left)
+          .withAttributes(Attributes.name("whole-graph"))
+          .run()
+
+      attributes.get[Name] should contain(Name("replaced"))
+      attributes.getFirst[Name] should contain(Name("whole-graph"))
+    }
+
+    "handle attributes on a composed flow" in {
+      val attributes =
+        Source.empty
+          .viaMat(
+            Flow.fromGraph(new AttributesFlow(Attributes.name("original-name")))
+              .map(identity)
+              .withAttributes(Attributes.name("replaced"))
+              .addAttributes(whateverAttribute("whatever"))
+              .withAttributes(Attributes.name("replaced-again"))
+              .addAttributes(whateverAttribute("replaced"))
+          )(Keep.right)
+          .toMat(Sink.ignore)(Keep.left)
+          .run()
+
+      // this verifies that the old docs on flow.withAttribues was in fact incorrect
+      // there is no sealing going on here
+      attributes.get[Name] should contain(Name("original-name"))
+      attributes.get[WhateverAttribute] should contain(WhateverAttribute("replaced"))
+
+      attributes.getFirst[Name] should contain(Name("replaced-again"))
+      attributes.getFirst[WhateverAttribute] should contain(WhateverAttribute("replaced"))
+    }
+
+  }
+
+  "attributes on a Sink" must {
+    "make the attributes on fromGraph(sink-stage) Sink behave the same as the stage itself" in {
+      val attributes =
+        Source.empty.toMat(
+          Sink.fromGraph(new AttributesSink(Attributes.name("original-name")))
+            .withAttributes(Attributes.name("replaced")) // this actually replaces now
+        )(Keep.right)
+          .withAttributes(Attributes.name("whole-graph"))
+          .run()
+
+      // most specific
+      attributes.get[Name] should contain(Name("replaced"))
+
+      // least specific
+      attributes.getFirst[Name] should contain(Name("whole-graph"))
     }
 
   }
@@ -355,11 +426,11 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "make the attributes on Flow.fromGraph source behave the same as the stage itself" in {
       val attributes: Attributes =
-        javadsl.Source.maybe
+        javadsl.Source.empty[Any]
           .viaMat(
             javadsl.Flow.fromGraph(new AttributesFlow(Attributes.name("original-name")))
               .withAttributes(Attributes.name("replaced")) // this actually replaces now
-              , javadsl.Keep.right[CompletableFuture[Optional[Any]], Attributes])
+              , javadsl.Keep.right[NotUsed, Attributes])
           .withAttributes(Attributes.name("source-flow"))
           .toMat(javadsl.Sink.ignore(), javadsl.Keep.left[Attributes, CompletionStage[Done]])
           .withAttributes(Attributes.name("whole-graph"))
@@ -374,10 +445,10 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
       val attributes: Attributes =
-        javadsl.Source.maybe[Any].toMat(
+        javadsl.Source.empty[Any].toMat(
           javadsl.Sink.fromGraph(new AttributesSink(Attributes.name("original-name")))
             .withAttributes(Attributes.name("replaced")) // this actually replaces now
-            , javadsl.Keep.right[CompletableFuture[Optional[Any]], Attributes])
+            , javadsl.Keep.right[NotUsed, Attributes])
           .withAttributes(Attributes.name("whole-graph"))
           .run(materializer)
 
