@@ -2327,7 +2327,7 @@ abstract class RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
   override def withAttributes(attr: Attributes): RunnableGraph[Mat]
 
   override def addAttributes(attr: Attributes): RunnableGraph[Mat] =
-    withAttributes(traversalBuilder.attributes and attr)
+    withAttributes(attr and traversalBuilder.attributes)
 
   override def named(name: String): RunnableGraph[Mat] =
     withAttributes(Attributes.name(name))

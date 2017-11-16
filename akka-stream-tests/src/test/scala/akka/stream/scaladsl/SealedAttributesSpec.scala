@@ -125,7 +125,33 @@ class SealedAttributesSpec extends StreamSpec(
     s.run()
   }
 
-  "attributes" must {
+  "attributes.get" must {
+    "return None if not present" in {
+      Attributes().get[Name] should ===(None)
+    }
+
+    "return it when present, trivial case " in {
+      val attrs = Attributes(Name("hello"))
+      attrs.get[Name] should ===(Some(Name("hello")))
+    }
+
+    "return override, when has 2 values, no seals" in {
+      val attrs = Attributes(Name("hello") :: Name("default-name") :: Nil)
+      attrs.get[Name] should ===(Some(Name("hello")))
+    }
+
+    "return sealed, when has 2 values, default is sealed" in {
+      val attrs = Attributes(Name("hello") :: Name("default-name").seal("name") :: Nil)
+      attrs.get[Name] should ===(Some(Name("default-name")))
+    }
+
+    "return sealed, when has 2 values, default is sealed, yet we unseal-it" in {
+      val attrs = Attributes(Name("hello").seal("name") :: Name("default-name").seal("name") :: Nil)
+      attrs.get[Name] should ===(Some(Name("hello")))
+    }
+  }
+
+  "attributes applied to flows" must {
 
     import ActorAttributes._
     val DispatcherOuter = ActorAttributes.dispatcher("dispatcher-outer")
@@ -221,7 +247,9 @@ class SealedAttributesSpec extends StreamSpec(
 
       val it = Source.empty.toMat(
         Sink.fromGraph(
-          graphStageSinkShape(_.get[Dispatcher], initialAttr = dispatcher("dispatcher-default-in-stage-initial"))
+          graphStageSinkShape(_.get[Dispatcher], initialAttr = {
+            Attributes(Dispatcher("dispatcher-default-in-stage-initial") :: Name("initInsideGS") :: Nil)
+          })
         ).withAttributes(dispatcher("right-on-sink"))
       )(Keep.right)
 
@@ -239,7 +267,7 @@ class SealedAttributesSpec extends StreamSpec(
 
       val it = Source.empty.toMat(
         Sink.fromGraph(
-          graphStageSinkShape(_.get[Dispatcher], initialAttr = dispatcher("dispatcher-default-in-stage-initial").seal())
+          graphStageSinkShape(_.get[Dispatcher], initialAttr = dispatcher("dispatcher-default-in-stage-initial"))
         ).withAttributes(dispatcher("right-on-sink"))
       )(Keep.right)
 
