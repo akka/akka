@@ -10,9 +10,9 @@ import akka.event.Logging
 import scala.annotation.tailrec
 import scala.reflect.{ ClassTag, classTag }
 import akka.japi.function
-import akka.stream.impl.StreamLayout._
 import java.net.URLEncoder
 
+import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
 
 import scala.compat.java8.OptionConverters._
@@ -34,6 +34,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[stream] def isAsync: Boolean = {
     attributeList.nonEmpty && attributeList.exists {
       case AsyncBoundary                 ⇒ true
@@ -75,27 +76,43 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * Java API: Get the most specific attribute (added last) of a given `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
-  def getAttribute[T <: Attribute](c: Class[T], default: T): T =
-    getAttribute(c).orElse(default)
+  def getMostSpecificOrElse[T <: Attribute](c: Class[T], default: T): T =
+    getMostSpecific(c).orElse(default)
+
+  @deprecated("Replaced with getMostSpecificOrElse", "2.5.7")
+  def getAttribute[T <: Attribute](c: Class[T], default: T): T = getMostSpecificOrElse(c, default)
 
   /**
    * Java API: Get the least specific attribute (added first) of a given `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
-  def getFirstAttribute[T <: Attribute](c: Class[T], default: T): T =
-    getFirstAttribute(c).orElse(default)
+  def getLeastSpecificOrElse[T <: Attribute](c: Class[T], default: T): T =
+    getLeastSpecific(c).orElse(default)
+
+  @deprecated("Replaced with getLeastSpecificOrElse", "2.5.7")
+  def getFirstAttribute[T <: Attribute](c: Class[T], default: T): T = getLeastSpecificOrElse(c, default)
 
   /**
    * Java API: Get the most specific attribute (added last) of a given `Class` or subclass thereof.
+   *
+   * @see [[#getMostSpecificOrElse()]]
    */
-  def getAttribute[T <: Attribute](c: Class[T]): Optional[T] =
+  def getMostSpecific[T <: Attribute](c: Class[T]): Optional[T] =
     (attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }).asJava
+
+  @deprecated("Replaced with getMostSpecific", "2.5.7")
+  def getAttribute[T <: Attribute](c: Class[T]): Optional[T] = getMostSpecific(c)
 
   /**
    * Java API: Get the least specific attribute (added first) of a given `Class` or subclass thereof.
+   *
+   * @see [[#getLeastSpecificOrElse()]]
    */
-  def getFirstAttribute[T <: Attribute](c: Class[T]): Optional[T] =
+  def getLeastSpecific[T <: Attribute](c: Class[T]): Optional[T] =
     attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) ⇒ c cast attr }.asJava
+
+  @deprecated("Replaced with getLeastSpecific", "2.5.7")
+  def getFirstAttribute[T <: Attribute](c: Class[T]): Optional[T] = getLeastSpecific(c)
 
   /**
    * Scala API: get all attributes of a given type (or subtypes thereof).
@@ -108,39 +125,55 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     attributeList.collect { case attr if c.isAssignableFrom(attr.getClass) ⇒ c.cast(attr) }
   }
 
+  @deprecated("Replaced with mostSpecificOrElse", "2.5.7")
+  def get[T <: Attribute: ClassTag](default: T): T = mostSpecificOrElse(default)
+
   /**
    * Scala API: Get the most specific attribute (added last) of a given type parameter T `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
-  def get[T <: Attribute: ClassTag](default: T): T =
-    get[T] match {
+  def mostSpecificOrElse[T <: Attribute: ClassTag](default: T): T =
+    mostSpecific[T] match {
       case Some(a) ⇒ a
       case None    ⇒ default
     }
+
+  @deprecated("Replaced with leastSpecificOrElse", "2.5.7")
+  def getFirst[T <: Attribute: ClassTag](default: T): T = leastSpecificOrElse(default)
 
   /**
    * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
-  def getFirst[T <: Attribute: ClassTag](default: T): T = {
-    getFirst[T] match {
+  def leastSpecificOrElse[T <: Attribute: ClassTag](default: T): T = {
+    leastSpecific[T] match {
       case Some(a) ⇒ a
       case None    ⇒ default
     }
   }
 
+  @deprecated("Replaced with leastSpecificOrElse", "2.5.7")
+  def get[T <: Attribute: ClassTag]: Option[T] = mostSpecific[T]
+
   /**
    * Scala API: Get the most specific attribute (added last) of a given type parameter T `Class` or subclass thereof.
+   *
+   * @see [[#mostSpecificOrElse()]]
    */
-  def get[T <: Attribute: ClassTag]: Option[T] = {
+  def mostSpecific[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
     attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
   }
 
+  @deprecated("Replaced with leastSpecific", "2.5.7")
+  def getFirst[T <: Attribute: ClassTag]: Option[T] = leastSpecific[T]
+
   /**
    * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
+   *
+   * @see [[#leastSpecificOrElse()]]
    */
-  def getFirst[T <: Attribute: ClassTag]: Option[T] = {
+  def leastSpecific[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
     attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
   }

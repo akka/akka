@@ -223,7 +223,7 @@ import scala.collection.JavaConverters._
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with OutHandler with InHandler {
     parent ⇒
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    lazy val decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
     private val activeSubstreamsMap = new java.util.HashMap[Any, SubstreamSource]()
     private val closedSubstreams = new java.util.HashSet[Any]()
     private var timeout: FiniteDuration = _

@@ -32,7 +32,7 @@ import scala.concurrent.{ Future, Promise }
 
     val ioResultPromise = Promise[IOResult]()
     val props = FileSubscriber.props(f, ioResultPromise, settings.maxInputBufferSize, startPosition, options)
-    val dispatcher = context.effectiveAttributes.get[Dispatcher](IODispatcher).dispatcher
+    val dispatcher = context.effectiveAttributes.mostSpecificOrElse[Dispatcher](IODispatcher).dispatcher
 
     val ref = materializer.actorOf(context, props.withDispatcher(dispatcher))
     (akka.stream.actor.ActorSubscriber[ByteString](ref), ioResultPromise.future)

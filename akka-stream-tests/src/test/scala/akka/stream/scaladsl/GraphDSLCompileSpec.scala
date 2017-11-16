@@ -370,8 +370,8 @@ class GraphDSLCompileSpec extends StreamSpec {
         FlowShape(id.in, id.out)
       }.async.addAttributes(none).named("useless")
 
-      ga.traversalBuilder.attributes.getFirst[Name] shouldEqual Some(Name("useless"))
-      ga.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
+      ga.traversalBuilder.attributes.leastSpecific[Name] shouldEqual Some(Name("useless"))
+      ga.traversalBuilder.attributes.leastSpecific[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
     }
   }
 }

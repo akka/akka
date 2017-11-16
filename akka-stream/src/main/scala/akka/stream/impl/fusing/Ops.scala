@@ -40,7 +40,7 @@ import akka.stream.impl.Stages.DefaultAttributes
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
       private def decider =
-        inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+        inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       override def onPush(): Unit = {
         try {
@@ -69,7 +69,7 @@ import akka.stream.impl.Stages.DefaultAttributes
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with OutHandler with InHandler {
-      def decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+      def decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       override def onPush(): Unit = {
         try {
@@ -105,7 +105,7 @@ import akka.stream.impl.Stages.DefaultAttributes
     new GraphStageLogic(shape) with OutHandler with InHandler {
       override def toString = "TakeWhileLogic"
 
-      def decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+      def decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       override def onPush(): Unit = {
         try {
@@ -166,7 +166,7 @@ import akka.stream.impl.Stages.DefaultAttributes
  * INTERNAL API
  */
 @DoNotInherit private[akka] abstract class SupervisedGraphStageLogic(inheritedAttributes: Attributes, shape: Shape) extends GraphStageLogic(shape) {
-  private lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+  private lazy val decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
   def withSupervision[T](f: () ⇒ T): Option[T] =
     try {
@@ -362,7 +362,7 @@ private[stream] object Collect {
       self ⇒
 
       private var aggregator = zero
-      private lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+      private lazy val decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       import Supervision.{ Stop, Resume, Restart }
       import shape.{ in, out }
@@ -429,7 +429,7 @@ private[stream] object Collect {
 
       private def ec = ExecutionContexts.sameThreadExecutionContext
 
-      private lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+      private lazy val decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       private val ZeroHandler: OutHandler with InHandler = new OutHandler with InHandler {
         override def onPush(): Unit = ()
@@ -531,7 +531,7 @@ private[stream] object Collect {
       private var aggregator: Out = zero
 
       private def decider =
-        inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+        inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       override def onPush(): Unit = {
         val elem = grab(in)
@@ -585,7 +585,7 @@ private[stream] object Collect {
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
-      val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+      val decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       private var aggregator: Out = zero
       private var aggregating: Future[Out] = Future.successful(aggregator)
@@ -934,7 +934,7 @@ private[stream] object Collect {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
 
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    lazy val decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
     private var agg: Out = null.asInstanceOf[Out]
     private var left: Long = max
@@ -1139,7 +1139,7 @@ private[stream] object Collect {
       override def toString = s"MapAsync.Logic(buffer=$buffer)"
 
       //FIXME Put Supervision.stoppingDecider as a SupervisionStrategy on DefaultAttributes.mapAsync?
-      lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+      lazy val decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
       var buffer: BufferImpl[Holder[Out]] = _
 
       private val handleSuccessElem: PartialFunction[Try[Out], Unit] = {
@@ -1214,7 +1214,7 @@ private[stream] object Collect {
       override def toString = s"MapAsyncUnordered.Logic(inFlight=$inFlight, buffer=$buffer)"
 
       val decider =
-        inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+        inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       private var inFlight = 0
       private var buffer: BufferImpl[Out] = _
@@ -1293,10 +1293,10 @@ private[stream] object Collect {
       private var logLevels: LogLevels = _
       private var log: LoggingAdapter = _
 
-      def decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+      def decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       override def preStart(): Unit = {
-        logLevels = inheritedAttributes.get[LogLevels](DefaultLogLevels)
+        logLevels = inheritedAttributes.mostSpecificOrElse[LogLevels](DefaultLogLevels)
         log = logAdapter match {
           case Some(l) ⇒ l
           case _ ⇒
@@ -1545,7 +1545,7 @@ private[stream] object Collect {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
     val size =
-      inheritedAttributes.get[InputBuffer] match {
+      inheritedAttributes.mostSpecific[InputBuffer] match {
         case None                        ⇒ throw new IllegalStateException(s"Couldn't find InputBuffer Attribute for $this")
         case Some(InputBuffer(min, max)) ⇒ max
       }
@@ -1721,7 +1721,7 @@ private[stream] object Collect {
     var aggregator: T = _
 
     private def decider =
-      inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+      inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
     def setInitialInHandler(): Unit = {
       // Initial input handler
@@ -1835,7 +1835,7 @@ private[stream] object Collect {
   override def initialAttributes: Attributes = DefaultAttributes.statefulMapConcat
 
   def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    lazy val decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
     var currentIterator: Iterator[Out] = _
     var plainFun = f()
 

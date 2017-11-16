@@ -339,7 +339,7 @@ import akka.util.OptionVal
     val stageLogic = new GraphStageLogic(shape) with InHandler with SinkQueueWithCancel[T] {
       type Received[E] = Try[Option[E]]
 
-      val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+      val maxBuffer = inheritedAttributes.getMostSpecificOrElse(classOf[InputBuffer], InputBuffer(16, 16)).max
       require(maxBuffer > 0, "Buffer size must be greater than 0")
 
       var buffer: Buffer[Received[T]] = _
@@ -470,7 +470,7 @@ import akka.util.OptionVal
   override def toString: String = "LazySink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(stoppingDecider)
+    lazy val decider = inheritedAttributes.mostSpecific[SupervisionStrategy].map(_.decider).getOrElse(stoppingDecider)
 
     var completed = false
     val promise = Promise[M]()

@@ -40,9 +40,9 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
   override val shape: SourceShape[ByteString] = SourceShape.of(out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, OutputStream) = {
-    val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+    val maxBuffer = inheritedAttributes.getMostSpecificOrElse(classOf[InputBuffer], InputBuffer(16, 16)).max
 
-    val dispatcherId = inheritedAttributes.get[Dispatcher](IODispatcher).dispatcher
+    val dispatcherId = inheritedAttributes.mostSpecificOrElse[Dispatcher](IODispatcher).dispatcher
 
     require(maxBuffer > 0, "Buffer size must be greater than 0")
 

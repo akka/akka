@@ -118,11 +118,11 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     val attributes = Attributes.name("a") and Attributes.name("b") and Attributes.inputBuffer(1, 2)
 
     "give access to first attribute" in {
-      attributes.getFirst[Name] should ===(Some(Attributes.Name("a")))
+      attributes.leastSpecific[Name] should ===(Some(Attributes.Name("a")))
     }
 
     "give access to attribute byt type" in {
-      attributes.get[Name] should ===(Some(Attributes.Name("b")))
+      attributes.mostSpecific[Name] should ===(Some(Attributes.Name("b")))
     }
 
   }
@@ -139,8 +139,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .toMat(Sink.head)(Keep.left)
           .run()
 
-      attributes.get[Name] should contain(Name("re-added"))
-      attributes.get[WhateverAttribute] should contain(WhateverAttribute("other-thing"))
+      attributes.mostSpecific[Name] should contain(Name("re-added"))
+      attributes.mostSpecific[WhateverAttribute] should contain(WhateverAttribute("other-thing"))
     }
 
     "be replaced withAttributes" in {
@@ -152,8 +152,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .toMat(Sink.head)(Keep.left)
           .run()
 
-      attributes.get[Name] should contain(Name("re-added"))
-      attributes.get[WhateverAttribute] shouldBe empty
+      attributes.mostSpecific[Name] should contain(Name("re-added"))
+      attributes.mostSpecific[WhateverAttribute] shouldBe empty
     }
 
     "be overridable on a module basis" in {
@@ -162,7 +162,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .toMat(Sink.head)(Keep.left)
           .run()
 
-      attributes.get[Name] should contain(Name("new-name"))
+      attributes.mostSpecific[Name] should contain(Name("new-name"))
     }
 
     "keep the outermost attribute as the least specific" in {
@@ -173,10 +173,10 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
         .run()
 
       // most specific
-      attributes.get[Name] should contain(Name("original-name"))
+      attributes.mostSpecific[Name] should contain(Name("original-name"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      attributes.leastSpecific[Name] should contain(Name("whole-graph"))
     }
 
     "replace the attributes directly on a graph stage" in {
@@ -188,10 +188,10 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .run()
 
       // most specific
-      attributes.get[Name] should contain(Name("new-name"))
+      attributes.mostSpecific[Name] should contain(Name("new-name"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("new-name"))
+      attributes.leastSpecific[Name] should contain(Name("new-name"))
     }
 
     "make the attributes on Source.fromGraph source behave the same as the stage itself" in {
@@ -202,10 +202,10 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .run()
 
       // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      attributes.mostSpecific[Name] should contain(Name("replaced"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      attributes.leastSpecific[Name] should contain(Name("whole-graph"))
     }
 
     "make the attributes on Flow.fromGraph source behave the same as the stage itself" in {
@@ -221,10 +221,10 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .run()
 
       // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      attributes.mostSpecific[Name] should contain(Name("replaced"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      attributes.leastSpecific[Name] should contain(Name("whole-graph"))
     }
 
     "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
@@ -237,10 +237,10 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .run()
 
       // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      attributes.mostSpecific[Name] should contain(Name("replaced"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      attributes.leastSpecific[Name] should contain(Name("whole-graph"))
     }
 
     "use the initial attributes for dispatcher" in {
@@ -347,10 +347,10 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .run(materializer)
 
       // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      attributes.mostSpecific[Name] should contain(Name("replaced"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      attributes.leastSpecific[Name] should contain(Name("whole-graph"))
     }
 
     "make the attributes on Flow.fromGraph source behave the same as the stage itself" in {
@@ -366,10 +366,10 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .run(materializer)
 
       // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      attributes.mostSpecific[Name] should contain(Name("replaced"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      attributes.leastSpecific[Name] should contain(Name("whole-graph"))
     }
 
     "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
@@ -382,10 +382,10 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           .run(materializer)
 
       // most specific
-      attributes.get[Name] should contain(Name("replaced"))
+      attributes.mostSpecific[Name] should contain(Name("replaced"))
 
       // least specific
-      attributes.getFirst[Name] should contain(Name("whole-graph"))
+      attributes.leastSpecific[Name] should contain(Name("whole-graph"))
     }
 
   }
