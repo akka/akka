@@ -1276,7 +1276,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       }
       replyTo ! reply
     } else
-      context.actorOf(ReadAggregator.props(key, consistency, req, nodes, unreachable, localValue, replyTo)
+      context.actorOf(ReadAggregator.props(key, consistency, req, nodes, unreachable, cluster.selfDataCenter, localValue, replyTo)
         .withDispatcher(context.props.dispatcher))
   }
 
@@ -1921,6 +1921,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def nodes: Set[Member]
   def unreachable: Set[Member]
   def reachableNodes: Set[Member] = nodes diff unreachable
+  def arrangedReachable: Vector[Member] = reachableNodes.toVector
+  def arrangedUnreachable: Vector[Member] = unreachable.toVector
 
   import context.dispatcher
   var sendToSecondarySchedule = context.system.scheduler.scheduleOnce(timeout / 5, self, SendToSecondary)
@@ -1936,7 +1938,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       (nodes.map(_.address), Set.empty[Address])
     else {
       // Prefer to use reachable nodes over the unreachable nodes first
-      val orderedNodes = scala.util.Random.shuffle(reachableNodes.toVector) ++ scala.util.Random.shuffle(unreachable.toVector)
+      val orderedNodes = scala.util.Random.shuffle(arrangedReachable) ++ scala.util.Random.shuffle(arrangedUnreachable)
       val (p, s) = orderedNodes.map(_.address).splitAt(primarySize)
       (p, s.take(MaxSecondaryNodes))
     }
@@ -2138,14 +2140,15 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
  */
 @InternalApi private[akka] object ReadAggregator {
   def props(
-    key:         KeyR,
-    consistency: Replicator.ReadConsistency,
-    req:         Option[Any],
-    nodes:       Set[Member],
-    unreachable: Set[Member],
-    localValue:  Option[Replicator.Internal.DataEnvelope],
-    replyTo:     ActorRef): Props =
-    Props(new ReadAggregator(key, consistency, req, nodes, unreachable, localValue, replyTo))
+    key:            KeyR,
+    consistency:    Replicator.ReadConsistency,
+    req:            Option[Any],
+    nodes:          Set[Member],
+    unreachable:    Set[Member],
+    selfDataCenter: DataCenter,
+    localValue:     Option[Replicator.Internal.DataEnvelope],
+    replyTo:        ActorRef): Props =
+    Props(new ReadAggregator(key, consistency, req, nodes, unreachable, selfDataCenter, localValue, replyTo))
       .withDeploy(Deploy.local)
 
 }
@@ -2159,12 +2162,20 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   req:                      Option[Any],
   override val nodes:       Set[Member],
   override val unreachable: Set[Member],
+  selfDataCenter:           DataCenter,
   localValue:               Option[Replicator.Internal.DataEnvelope],
   replyTo:                  ActorRef) extends ReadWriteAggregator {
 
   import Replicator._
   import Replicator.Internal._
   import ReadWriteAggregator._
+
+  // Prefer to use local data center nodes over the remote data center ones
+  def localDataCenterFirst(nodes: Iterable[Member]): Vector[Member] =
+    nodes.toVector.sortBy((m: Member) ⇒ if (m.dataCenter == selfDataCenter) 0 else 1)
+
+  override val arrangedReachable: Vector[Member] = localDataCenterFirst(reachableNodes)
+  override val arrangedUnreachable: Vector[Member] = localDataCenterFirst(unreachable)
 
   override def timeout: FiniteDuration = consistency.timeout
 
