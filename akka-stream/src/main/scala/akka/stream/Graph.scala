@@ -7,6 +7,11 @@ import akka.stream.impl.{ GraphStageTag, IslandTag, TraversalBuilder }
 
 import scala.annotation.unchecked.uncheckedVariance
 
+/**
+ * Not intended to be directly extended by user classes
+ *
+ * @see [[akka.stream.stage.GraphStage]]
+ */
 trait Graph[+S <: Shape, +M] {
   /**
    * Type-level accessor for the shape parameter of this graph.
@@ -54,5 +59,11 @@ trait Graph[+S <: Shape, +M] {
         and Attributes.inputBuffer(inputBufferSize, inputBufferSize)
     )
 
+  /**
+   * Add the given attributes to this [[Graph]]. If the specific attribute was already present
+   * on this graph this means the added attribute will be more specific than the existing one.
+   * If this Source is a composite of multiple graphs, new attributes on the composite will be
+   * less specific than attributes set directly on the individual graphs of the composite.
+   */
   def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
 }
