@@ -489,8 +489,9 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
             matValueStack.addLast(result)
             if (Debug) println(s"COMP: $matValueStack")
           case PushAttributes(attr) ⇒
-            attributesStack.addLast(attributesStack.getLast and attr)
-            if (Debug) println(s"ATTR PUSH: $attr")
+            val mergedAttr = attr and attributesStack.getLast
+            if (Debug) println(s"ATTR PUSH: ${attributesStack.getLast} and $attr = $mergedAttr")
+            attributesStack.addLast(mergedAttr)
           case PopAttributes ⇒
             attributesStack.removeLast()
             if (Debug) println(s"ATTR POP")
