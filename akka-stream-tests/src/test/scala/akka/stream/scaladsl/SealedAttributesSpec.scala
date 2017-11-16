@@ -109,6 +109,7 @@ class SealedAttributesSpec extends StreamSpec(
     dispatcher-default-in-stage-initial = $${akka.actor.default-dispatcher}
     right-on-sink = $${akka.actor.default-dispatcher}
     completely-outside = $${akka.actor.default-dispatcher}
+    outer = $${akka.actor.default-dispatcher}
   """.stripMargin) with ScalaFutures {
   import SealedAttributesSpec._
 
@@ -197,49 +198,7 @@ class SealedAttributesSpec extends StreamSpec(
       maybeAttr.get should equal(DispatcherOuter.attributeList.head)
     }
 
-    //    // current semantics:
-    //    "getInside; initial attrs -- nothing outside" in {
-    //      val it = Source.empty.toMat(
-    //        Sink.fromGraph(graphStageSinkShape(_.get[Name], initialAttr = Attributes.name("initial-inside")))
-    //      )(Keep.right)
-    //
-    //      val maybeAttr = attributesOf(it)
-    //
-    //      info("initialAttributes.get[Name]: " + maybeAttr)
-    //      maybeAttr.get should equal(Attributes.name("initial-inside").attributeList.head)
-    //    }
-    //
-    //    "getInside; initial attrs -- override on stage" in {
-    //      val it = Source.empty.toMat(
-    //        Sink.fromGraph(
-    //          graphStageSinkShape(_.get[Name], initialAttr = Attributes.name("initial-inside"))
-    //        ).named("on-sink-override")
-    //      )(Keep.right)
-    //
-    //      val maybeAttr = attributesOf(it)
-    //
-    //      info("initialAttributes.get[Name]: " + maybeAttr)
-    //      maybeAttr.get should equal(Attributes.name("initial-inside").attributeList.head)
-    //    }
-    //
-    //    "getInside; initial attrs -- override on composite ('complete') stage" in {
-    //      val it = Source.empty.toMat(
-    //        Sink.fromGraph(
-    //          graphStageSinkShape(_.get[Name], initialAttr = Attributes.name("initial-inside"))
-    //        ).named("on-sink-override")
-    //      )(Keep.right).named("on-sink-outside-override")
-    //
-    //      //  >>> inheritedAttributes = Attributes(List(Name(initial-inside), Name(on-sink-override), Name(on-sink-outside-override), Name(on-sink-outside-override), Dispatcher(akka.test.stream-dispatcher), InputBuffer(2,16), SupervisionStrategy(<function1>)))
-    //      // >>> names = initial-inside nested in: on-sink-override nested in: on-sink-outside-override nested in: on-sink-outside-override
-    //      val maybeAttr = attributesOf(it)
-    //
-    //      info("initialAttributes.get[Name]: " + maybeAttr)
-    //      maybeAttr.get should equal(Attributes.name("initial-inside").attributeList.head)
-    //    }
-
-    // new semantics:
-
-    "xoxo getInside; dispatcher, override, no seal; initial attrs -- override on composite ('complete') stage" in {
+    "getInside; dispatcher, override, no seal; initial attrs -- override on composite ('complete') stage" in {
 
       /*
           Here wa have a dispatcher, but we allow it to be overriden
@@ -259,37 +218,35 @@ class SealedAttributesSpec extends StreamSpec(
       maybeAttr.get.dispatcher should equal("right-on-sink")
     }
 
-    "zozo getInside; dispatcher, override, seal; initial attrs -- override on composite ('complete') stage" in {
-
-      /*
-          Here wa have a dispatcher, we don't allow overrides
-       */
+    "getInside; dispatcher, override, seal; initial attrs -- override on composite ('complete') stage" in {
 
       val it = Source.empty.toMat(
         Sink.fromGraph(
-          graphStageSinkShape(_.get[Dispatcher], initialAttr = dispatcher("dispatcher-default-in-stage-initial"))
-        ).withAttributes(dispatcher("right-on-sink"))
+          graphStageSinkShape(
+            _.get[Dispatcher],
+            initialAttr = Attributes(Dispatcher("dispatcher-default-in-stage-initial").seal("dispatcher")))
+        ).withAttributes(dispatcher("right-on-sink").sealAll("dispatcher"))
       )(Keep.right)
 
       val maybeAttr = attributesOf(it)
 
       info("initialAttributes.get[Dispatcher]: " + maybeAttr)
-      maybeAttr.get.dispatcher should equal("dispatcher-default-in-stage-initial")
+      maybeAttr.get.dispatcher should equal("right-on-sink")
     }
+    "getInside; dispatcher, override deep, seal; initial attrs -- override on composite ('complete') stage" in {
 
-    "getInside; initial attrs -- override on composite ('complete') stage" in {
       val it = Source.empty.toMat(
         Sink.fromGraph(
-          graphStageSinkShape(_.get[Name], initialAttr = Attributes.name("initial-inside"))
-        ).named("on-sink-override")
-      )(Keep.right).named("on-sink-outside-override")
+          graphStageSinkShape(
+            _.get[Dispatcher],
+            initialAttr = Attributes(Dispatcher("dispatcher-default-in-stage-initial").seal("dispatcher")))
+        ).withAttributes(dispatcher("right-on-sink").sealAll("dispatcher"))
+      )(Keep.right).withAttributes(dispatcher("outer").sealAll("dispatcher"))
 
-      //  >>> inheritedAttributes = Attributes(List(Name(initial-inside), Name(on-sink-override), Name(on-sink-outside-override), Name(on-sink-outside-override), Dispatcher(akka.test.stream-dispatcher), InputBuffer(2,16), SupervisionStrategy(<function1>)))
-      // >>> names = initial-inside nested in: on-sink-override nested in: on-sink-outside-override nested in: on-sink-outside-override
       val maybeAttr = attributesOf(it)
 
-      info("initialAttributes.get[Name]: " + maybeAttr)
-      maybeAttr.get should equal(Attributes.name("on-sink-outside-override").attributeList.head)
+      info("initialAttributes.get[Dispatcher]: " + maybeAttr)
+      maybeAttr.get.dispatcher should equal("outer")
     }
 
   }

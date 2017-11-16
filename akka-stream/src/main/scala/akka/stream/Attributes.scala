@@ -44,6 +44,9 @@ sealed case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     }
   }
 
+  def sealAll(sealName: String): Attributes =
+    copy(attributeList.map(_.seal(sealName)))
+
   /**
    * Java API
    *
