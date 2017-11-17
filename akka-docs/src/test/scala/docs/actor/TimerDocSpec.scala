@@ -3,18 +3,17 @@
  */
 package docs.actor
 
-import akka.actor.Actor
-import scala.concurrent.duration._
-
 object TimerDocSpec {
   //#timers
+  import scala.concurrent.duration._
+
+  import akka.actor.Actor
   import akka.actor.Timers
 
   object MyActor {
     private case object TickKey
     private case object FirstTick
     private case object Tick
-    private case object LaterTick
   }
 
   class MyActor extends Actor with Timers {
