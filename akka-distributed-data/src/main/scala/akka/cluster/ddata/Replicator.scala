@@ -1294,7 +1294,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def isLocalSender(): Boolean = !replyTo.path.address.hasGlobalScope
 
-  def dataCenters(): Set[DataCenter] = (nodes+cluster.selfMember).map(_.dataCenter)
+  def dataCenters(): Set[DataCenter] = (nodes + cluster.selfMember).map(_.dataCenter)
 
   def receiveUpdate(key: KeyR, modify: Option[ReplicatedData] ⇒ ReplicatedData,
                     writeConsistency: WriteConsistency, req: Option[Any]): Unit = {
@@ -1953,7 +1953,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   def replica(address: Address): ActorSelection =
-    context.actorSelection(context.parent.path.toStringWithAddress(address))
+    context.actorSelection(context.parent.path.parent.toStringWithAddress(address))
 
 }
 
@@ -2074,6 +2074,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       case Some(d) ⇒ d
       case None    ⇒ writeMsg
     }
+    log.info(s"Sending to primary nodes: ${primaryNodes}")
     primaryNodes.foreach { replica(_) ! msg }
 
     if (isDone) reply(isTimeout = false)
@@ -2098,6 +2099,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       if (isDone) reply(isTimeout = false)
 
     case SendToSecondary ⇒
+      log.info(s"Sending to secondary nodes ${secondaryNodes}")
       deltaMsg match {
         case None ⇒
         case Some(d) ⇒
