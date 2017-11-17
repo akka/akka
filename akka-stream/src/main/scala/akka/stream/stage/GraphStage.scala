@@ -1061,8 +1061,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     @tailrec
     final private[stage] def onStart(): Unit = {
       (currentState.getAndSet(Initializing): @unchecked) match {
-        case Pending(l) ⇒ l.reverse.foreach(ack ⇒ {
-          onAsyncInput(ack.e)
+        case Pending(l) ⇒ l.reverse.foreach(evt ⇒ {
+          onAsyncInput(evt.e, evt.handlingPromise)
         })
       }
       if (!currentState.compareAndSet(Initializing, Initialized)) {
@@ -1082,10 +1082,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       waitingForProcessing.clear()
     }
 
-    private def onAsyncInput(event: T) = interpreter.onAsyncInput(GraphStageLogic.this, event, handler.asInstanceOf[Any ⇒ Unit])
+    private def onAsyncInput(event: T, promise: OptionVal[Promise[Done]]) = {
+      interpreter.onAsyncInput(GraphStageLogic.this, event, promise, handler.asInstanceOf[Any ⇒ Unit])
+    }
 
     private def sendEvent(event: T, promise: Promise[Done]): Promise[Done] = {
-      onAsyncInput(event)
+      onAsyncInput(event, OptionVal.Some(promise))
       currentState.get() match {
         case Completed ⇒ failPromiseOnComplete(promise)
         case _         ⇒ promise
@@ -1123,7 +1125,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     private def failPromiseOnComplete(promise: Promise[Done]): Promise[Done] = {
       waitingForProcessing.remove(promise)
-      promise.tryFailure(new StreamDetachedException())
+      promise.tryFailure(new StreamDetachedException("Stage stopped before async invocation was processed"))
       promise
     }
 
@@ -1132,14 +1134,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       @tailrec
       def internalInvoke(event: T): Unit = currentState.get() match {
         // started - can just send message to stream
-        case Initialized       ⇒ onAsyncInput(event)
+        case Initialized       ⇒ onAsyncInput(event, OptionVal.None)
         // not started yet
         case list @ Pending(l) ⇒ if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal.None) :: l))) internalInvoke(event)
         // initializing is in progress in another thread (initializing thread is managed by akka)
         case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal.None) :: Nil))) {
           (currentState.get(): @unchecked) match {
             case list @ Pending(l) ⇒ if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal.None) :: l))) internalInvoke(event)
-            case Initialized       ⇒ onAsyncInput(event)
+            case Initialized       ⇒ onAsyncInput(event, OptionVal.None)
           }
         }
         case Completed ⇒ // do nothing here as stream is completed
@@ -1401,13 +1403,22 @@ trait AsyncCallback[T] {
   /**
    * Dispatch an asynchronous notification. This method is thread-safe and
    * may be invoked from external execution contexts.
+   *
+   * For cases where it is important to know if the notification was ever processed or not
+   * see [AsyncCallback#invokeWithFeedback]]
    */
   def invoke(t: T): Unit
   /**
-   * Dispatch an asynchronous notification.
-   * This method is thread-safe and may be invoked from external execution contexts.
-   * Promise in `HasCallbackPromise` will fail if stream is already closed or closed before
-   * being able to process the event
+   * Dispatch an asynchronous notification. This method is thread-safe and
+   * may be invoked from external execution contexts.
+   *
+   * The method returns directly and the returned future is then completed once the event
+   * has been handled by the stage, if the event triggers an exception from the handler the future
+   * is failed with that exception and finally if the stage was stopped before the event has been
+   * handled the future is failed with `StreamDetachedException`.
+   *
+   * The handling of the returned future incurs a slight overhead, so for cases where it does not matter
+   * to the invoking logic see [[AsyncCallback#invoke]]
    */
   def invokeWithFeedback(t: T): Future[Done]
 }

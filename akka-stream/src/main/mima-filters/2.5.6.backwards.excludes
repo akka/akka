@@ -21,3 +21,13 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.CallbackWrapper")
 
 # Optimize TCP stream writes
 ProblemFilters.exclude[Problem]("akka.stream.impl.io.*")
+
+# #23953 fixes to async callback with feedback
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.fusing.GraphInterpreterShell$AsyncInput$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell#AsyncInput.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.fusing.GraphInterpreter.onAsyncInput")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.fusing.GraphInterpreter.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell#AsyncInput.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.fusing.GraphInterpreterShell#AsyncInput.copy$default$4")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell#AsyncInput.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.runAsyncInput")
