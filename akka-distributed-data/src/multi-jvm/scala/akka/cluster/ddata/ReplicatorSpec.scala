@@ -43,7 +43,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
   val replicator = system.actorOf(Replicator.props(
     ReplicatorSettings(system).withGossipInterval(1.second).withMaxDeltaElements(10)), "replicator")
   val timeout = 3.seconds.dilated
-  val writeTwo = WriteTo(2, timeout)
+  val writeTwo = wrapInDataCenterAware(WriteTo(2, timeout))
   val writeMajority = WriteMajority(timeout)
   val writeAll = WriteAll(timeout)
   val readTwo = ReadFrom(2, timeout)
@@ -77,66 +77,6 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     }
     enterBarrier(from.name + "-joined")
   }
-
-  "work in single node cluster with data center commands" in {
-    join(first, first)
-
-    runOn(first) {
-
-      within(5.seconds) {
-        awaitAssert {
-          replicator ! GetReplicaCount
-          expectMsg(ReplicaCount(1))
-        }
-      }
-
-      val changedProbe = TestProbe()
-      replicator ! Subscribe(KeyA, changedProbe.ref)
-      replicator ! Subscribe(KeyX, changedProbe.ref)
-
-      replicator ! Get(KeyA, ReadLocal)
-      expectMsg(NotFound(KeyA, None))
-
-      val c3 = GCounter() + 3
-      replicator ! Update(KeyA, GCounter(), WriteLocal)(_ + 3)
-      expectMsg(UpdateSuccess(KeyA, None))
-      replicator ! Get(KeyA, ReadLocal)
-      expectMsg(GetSuccess(KeyA, None)(c3)).dataValue should be(c3)
-      changedProbe.expectMsg(Changed(KeyA)(c3)).dataValue should be(c3)
-
-      val changedProbe2 = TestProbe()
-      replicator ! Subscribe(KeyA, changedProbe2.ref)
-      changedProbe2.expectMsg(Changed(KeyA)(c3)).dataValue should be(c3)
-
-      val c4 = c3 + 1
-      replicator ! Update(KeyA, GCounter(), wrapInDataCenterAware(writeTwo))(_ + 1)
-      expectMsg(timeout + 1.second, UpdateTimeout(KeyA, None))
-      replicator ! Get(KeyA, ReadLocal)
-      expectMsg(GetSuccess(KeyA, None)(c4)).dataValue should be(c4)
-      changedProbe.expectMsg(Changed(KeyA)(c4)).dataValue should be(c4)
-
-      val c5 = c4 + 1
-      // too strong consistency level
-      replicator ! Update(KeyA, GCounter(), wrapInDataCenterAware(writeMajority))(_ + 1)
-      expectMsg(UpdateSuccess(KeyA, None))
-      replicator ! Get(KeyA, readMajority)
-      expectMsg(GetSuccess(KeyA, None)(c5)).dataValue should be(c5)
-      changedProbe.expectMsg(Changed(KeyA)(c5)).dataValue should be(c5)
-
-      val c6 = c5 + 1
-      replicator ! Update(KeyA, GCounter(), wrapInDataCenterAware(writeAll))(_ + 1)
-      expectMsg(UpdateSuccess(KeyA, None))
-      replicator ! Get(KeyA, readAll)
-      expectMsg(GetSuccess(KeyA, None)(c6)).dataValue should be(c6)
-      changedProbe.expectMsg(Changed(KeyA)(c6)).dataValue should be(c6)
-
-      replicator ! GetKeyIds
-      expectMsg(GetKeyIdsResult(Set("A")))
-    }
-
-    enterBarrierAfterTestStep()
-  }
-  /*
 
   "Cluster CRDT" must {
 
@@ -215,8 +155,8 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
       enterBarrierAfterTestStep()
     }
-
   }
+
   "merge the update with existing value" in {
     runOn(first) {
       // in case user is not using the passed in existing value
@@ -318,6 +258,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     enterBarrierAfterTestStep()
   }
+  /*
 
   "be replicated after succesful update" in {
     val changedProbe = TestProbe()
@@ -634,7 +575,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 */
 
   private def wrapInDataCenterAware(consistency: WriteConsistency) = {
-    WriteDataCenterAware(timeout, Map("default" -> consistency))
+    WriteDataCenterAware(timeout, _ ⇒ Some(consistency))
   }
 }
 

@@ -1029,6 +1029,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   import PruningState._
   import settings._
 
+  log.info(s"Starting replicator ${self}")
+
   val cluster = Cluster(context.system)
   val selfAddress = cluster.selfAddress
   val selfUniqueAddress = cluster.selfUniqueAddress
@@ -1156,6 +1158,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   override def postStop(): Unit = {
+    log.info(s"Stopping replicator $self")
     cluster.unsubscribe(self)
     gossipTask.cancel()
     deltaPropagationTask.foreach(_.cancel())
@@ -1999,30 +2002,28 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   replyTo:              ActorRef,
   durable:              Boolean) extends Actor with ActorLogging {
 
-  private var children: Map[ActorRef, DataCenter] = _
   private var pendingChildren: Set[ActorRef] = _
 
   override def preStart(): Unit = {
-    children = centers.toStream.flatMap {
-      case dataCenter ⇒
-        def nodesForDataCenter(nodes: Set[Member]) = nodes.filter(_.dataCenter == dataCenter)
+    log.info("DC prestart")
+    pendingChildren = centers.toStream.flatMap { dataCenter ⇒
+      def nodesForDataCenter(nodes: Set[Member]) = nodes.filter(_.dataCenter == dataCenter)
 
-        dcToWriteConsistency(dataCenter).toStream.map(consistency ⇒ {
-          val child = context.actorOf(WriteAggregator.props(key, envelope, delta, consistency, req,
-            nodesForDataCenter(nodes), nodesForDataCenter(unreachable), centers, self, durable))
-
-          (child, dataCenter)
-        })
-    }.toMap
-    pendingChildren = children.keys.toSet
+      dcToWriteConsistency(dataCenter).toStream.map(consistency ⇒ {
+        context.actorOf(WriteAggregator.props(key, envelope, delta, consistency, req,
+          nodesForDataCenter(nodes), nodesForDataCenter(unreachable), centers, self, durable))
+      })
+    }.toSet
+    log.info("/DC prestart")
   }
 
   override def receive = {
     case response ⇒
-      log.debug(s"Got WriteAggregator response $response from ${sender()}")
+      log.info(s"Got WriteAggregator response $response from ${sender()}")
       pendingChildren -= sender()
       if (pendingChildren.isEmpty || (response != DeleteSuccess && response != UpdateSuccess)) {
         replyTo.tell(response, context.parent)
+        log.info("Shutting down DC agg")
         context.stop(self)
       }
   }
@@ -2041,6 +2042,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   import Replicator._
   import Replicator.Internal._
   import ReadWriteAggregator._
+
+  log.info(s"Start WriteAgg ${self}")
 
   val selfUniqueAddress = Cluster(context.system).selfUniqueAddress
 
