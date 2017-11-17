@@ -302,7 +302,7 @@ import scala.util.control.NonFatal
  * defers to the upstream that is connected during materialization. This would
  * be trivial if it were not for materialized value computations that may even
  * spawn the code that does `pub.subscribe(sub)` in a Future, running concurrently
- * with the actual materialization. Therefore we implement a minimial shell here
+ * with the actual materialization. Therefore we implement a minimal shell here
  * that plugs the downstream and the upstream together as soon as both are known.
  * Using a VirtualProcessor would technically also work, but it would defeat the
  * purpose of subscription timeouts—the subscription would always already be
@@ -352,7 +352,7 @@ import scala.util.control.NonFatal
         throw new IllegalStateException(s"internal error, unexpected state: $unexpected")
     }
 
-  override def toString: String = s"VirtualProcessor(state = ${get()})"
+  override def toString: String = s"VirtualPublisher(state = ${get()})"
 }
 
 /**
