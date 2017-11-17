@@ -106,6 +106,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       throughput = 1
     }
   """).withFallback(Utils.UnboundedMailboxConfig)) {
+
   import AttributesSpec._
 
   val settings = ActorMaterializerSettings(system)
@@ -378,7 +379,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
   }
 
-  "attributes in the javadsl" must {
+  "attributes in the javadsl source" must {
 
     "not change dispatcher from one defined on a surrounding graph" in {
       val dispatcherF =
@@ -457,6 +458,30 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
       // least specific
       attributes.getFirst[Name] should contain(Name("whole-graph"))
+    }
+
+  }
+
+  "attributes on the materializer" should {
+
+    "be defaults and not used when more specific attributes are found" in {
+
+      // dispatcher set on the materializer
+      val myDispatcherMaterializer = ActorMaterializer(settings.withDispatcher("my-dispatcher"))
+
+      try {
+        val dispatcher =
+          Source.fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+            .runWith(Sink.head)(myDispatcherMaterializer)
+            .futureValue
+
+        // should not override stage specific dispatcher
+        dispatcher should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+
+      } finally {
+        myDispatcherMaterializer.shutdown()
+      }
+
     }
 
   }
