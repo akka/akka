@@ -7,7 +7,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 
-import akka.NotUsed
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
@@ -76,7 +76,7 @@ import scala.concurrent.{ Future, Promise }
               // stopped.
               thisStage.tell(Unbind, thisStage)
               unbindPromise.future
-            }))
+            }, unbindPromise.future.map(_ ⇒ Done)(ExecutionContexts.sameThreadExecutionContext)))
           case f: CommandFailed ⇒
             val ex = new BindFailedException {
               // cannot modify the actual exception class for compatibility reasons
@@ -84,7 +84,7 @@ import scala.concurrent.{ Future, Promise }
             }
             f.cause.foreach(ex.initCause)
             bindingPromise.failure(ex)
-            unbindPromise.success(() ⇒ Future.successful(()))
+            unbindPromise.tryFailure(ex)
             failStage(ex)
           case c: Connected ⇒
             push(out, connectionFor(c, sender))
@@ -96,8 +96,10 @@ import scala.concurrent.{ Future, Promise }
             if (unbindStarted) {
               unbindCompleted()
             } else {
-              failStage(new IllegalStateException("IO Listener actor terminated unexpectedly for remote endpoint [" +
-                endpoint.getHostString + ":" + endpoint.getPort + "]"))
+              val ex = new IllegalStateException("IO Listener actor terminated unexpectedly for remote endpoint [" +
+                endpoint.getHostString + ":" + endpoint.getPort + "]")
+              unbindPromise.tryFailure(ex)
+              failStage(ex)
             }
         }
       }
@@ -144,6 +146,7 @@ import scala.concurrent.{ Future, Promise }
 
       private def unbindCompleted(): Unit = {
         stageActor.unwatch(listener)
+        unbindPromise.trySuccess(Done)
         if (connectionFlowsAwaitingInitialization.get() == 0) completeStage()
         else scheduleOnce(BindShutdownTimer, bindShutdownTimeout)
       }
@@ -154,7 +157,9 @@ import scala.concurrent.{ Future, Promise }
       }
 
       override def postStop(): Unit = {
-        unbindPromise.trySuccess(())
+        // a bit unexpected to succeed here rather than fail with abrupt stage termination
+        // but there was an existing test case covering this behavior
+        unbindPromise.trySuccess(Done)
         bindingPromise.tryFailure(new NoSuchElementException("Binding was unbound before it was completely finished"))
       }
     }

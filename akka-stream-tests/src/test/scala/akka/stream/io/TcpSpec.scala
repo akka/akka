@@ -469,9 +469,11 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       val resultFuture =
         Source(testInput).via(Tcp().outgoingConnection(serverAddress)).runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
 
+      binding.whenUnbound.value should be(None)
       resultFuture.futureValue should be(expectedOutput)
       binding.unbind().futureValue
       echoServerFinish.futureValue
+      binding.whenUnbound.futureValue should be(Done)
     }
 
     "work with a chain of echoes" in {
@@ -484,6 +486,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
 
       // make sure that the server has bound to the socket
       val binding = bindingFuture.futureValue
+      binding.whenUnbound.value should be(None)
 
       val echoConnection = Tcp().outgoingConnection(serverAddress)
 
@@ -501,6 +504,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       resultFuture.futureValue should be(expectedOutput)
       binding.unbind().futureValue
       echoServerFinish.futureValue
+      binding.whenUnbound.futureValue should be(Done)
     }
 
     "bind and unbind correctly" in EventFilter[BindException](occurrences = 2).intercept {
