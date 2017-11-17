@@ -19,7 +19,7 @@ object ReplicatorSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.log-dead-letters-during-shutdown = off
     #akka.cluster.distributed-data.delta-crdt.enabled = off

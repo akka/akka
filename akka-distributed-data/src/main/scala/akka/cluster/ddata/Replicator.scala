@@ -1035,8 +1035,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   val selfAddress = cluster.selfAddress
   val selfUniqueAddress = cluster.selfUniqueAddress
 
-  def dataCenters(): Set[DataCenter] = nodes.union(unreachable).union(Set(cluster.selfMember)).map(_.dataCenter)
-
   require(!cluster.isTerminated, "Cluster node must not be terminated")
   require(
     roles.subsetOf(cluster.selfRoles),
@@ -1295,6 +1293,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   def isLocalSender(): Boolean = !replyTo.path.address.hasGlobalScope
+
+  def dataCenters(): Set[DataCenter] = (nodes+cluster.selfMember).map(_.dataCenter)
 
   def receiveUpdate(key: KeyR, modify: Option[ReplicatedData] ⇒ ReplicatedData,
                     writeConsistency: WriteConsistency, req: Option[Any]): Unit = {
