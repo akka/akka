@@ -7,6 +7,7 @@ import java.util
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.Done
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.event.Logging
@@ -20,6 +21,7 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.Promise
 import scala.util.control.NonFatal
 
 /**
@@ -447,15 +449,26 @@ import scala.util.control.NonFatal
   private var self: ActorRef = _
   lazy val log = Logging(mat.system.eventStream, self)
 
-  final case class AsyncInput(shell: GraphInterpreterShell, logic: GraphStageLogic, evt: Any, handler: (Any) ⇒ Unit) extends BoundaryEvent {
+  /**
+   * @param promise Will be completed upon processing the event, or failed if processing the event throws
+   *                if the event isn't ever processed the promise (the stage stops) is failed elsewhere
+   */
+  final case class AsyncInput(
+    shell:   GraphInterpreterShell,
+    logic:   GraphStageLogic,
+    evt:     Any,
+    promise: OptionVal[Promise[Done]],
+    handler: (Any) ⇒ Unit) extends BoundaryEvent {
     override def execute(eventLimit: Int): Int = {
       if (!waitingForShutdown) {
-        interpreter.runAsyncInput(logic, evt, handler)
+        interpreter.runAsyncInput(logic, evt, promise, handler)
         if (eventLimit == 1 && interpreter.isSuspended) {
           sendResume(true)
           0
         } else runBatch(eventLimit - 1)
-      } else eventLimit
+      } else {
+        eventLimit
+      }
     }
   }
 
@@ -481,8 +494,8 @@ import scala.util.control.NonFatal
   private var enqueueToShortCircuit: (Any) ⇒ Unit = _
 
   lazy val interpreter: GraphInterpreter = new GraphInterpreter(mat, log, logics, connections,
-    (logic, event, handler) ⇒ {
-      val asyncInput = AsyncInput(this, logic, event, handler)
+    (logic, event, promise, handler) ⇒ {
+      val asyncInput = AsyncInput(this, logic, event, promise, handler)
       val currentInterpreter = GraphInterpreter.currentInterpreterOrNull
       if (currentInterpreter == null || (currentInterpreter.context ne self))
         self ! asyncInput

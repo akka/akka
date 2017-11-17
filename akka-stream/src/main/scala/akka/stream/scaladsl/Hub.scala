@@ -7,14 +7,13 @@ import java.util
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 
 import akka.NotUsed
-import akka.dispatch.AbstractNodeQueue
+import akka.dispatch.{ AbstractNodeQueue, ExecutionContexts }
 import akka.stream._
 import akka.stream.stage._
 
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
-import java.util.Arrays
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReferenceArray
@@ -424,12 +423,19 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
             val startFrom = head
             activeConsumers += 1
             addConsumer(consumer, startFrom)
-            consumer.callback.invoke(Initialize(startFrom))
+            // in case the consumer is already stopped we need to undo registration
+            implicit val ec = materializer.executionContext
+            consumer.callback.invokeWithFeedback(Initialize(startFrom)).onFailure {
+              case _: StreamDetachedException ⇒
+                callbackPromise.future.foreach(callback ⇒
+                  callback.invoke(UnRegister(consumer.id, startFrom, startFrom))
+                )
+            }
           }
 
         case UnRegister(id, previousOffset, finalOffset) ⇒
-          activeConsumers -= 1
-          val consumer = findAndRemoveConsumer(id, previousOffset)
+          if (findAndRemoveConsumer(id, previousOffset) != null)
+            activeConsumers -= 1
           if (activeConsumers == 0) {
             if (isClosed(in)) completeStage()
             else if (head != finalOffset) {
@@ -443,14 +449,15 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
               if (!hasBeenPulled(in)) pull(in)
             }
           } else checkUnblock(previousOffset)
+
         case Advance(id, previousOffset) ⇒
           val newOffset = previousOffset + DemandThreshold
-          // Move the consumer from its last known offest to its new one. Check if we are unblocked.
+          // Move the consumer from its last known offset to its new one. Check if we are unblocked.
           val consumer = findAndRemoveConsumer(id, previousOffset)
           addConsumer(consumer, newOffset)
           checkUnblock(previousOffset)
         case NeedWakeup(id, previousOffset, currentOffset) ⇒
-          // Move the consumer from its last known offest to its new one. Check if we are unblocked.
+          // Move the consumer from its last known offset to its new one. Check if we are unblocked.
           val consumer = findAndRemoveConsumer(id, previousOffset)
           addConsumer(consumer, currentOffset)
 

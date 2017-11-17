@@ -365,6 +365,34 @@ class HubSpec extends StreamSpec {
       }
     }
 
+    "handle cancelled Sink" in assertAllStagesStopped {
+      val in = TestPublisher.probe[Int]()
+      val hubSource = Source.fromPublisher(in).runWith(BroadcastHub.sink(4))
+
+      val out = TestSubscriber.probe[Int]()
+
+      hubSource.runWith(Sink.cancelled)
+      hubSource.runWith(Sink.fromSubscriber(out))
+
+      out.ensureSubscription()
+
+      out.request(10)
+      in.expectRequest()
+      in.sendNext(1)
+      out.expectNext(1)
+      in.sendNext(2)
+      out.expectNext(2)
+      in.sendNext(3)
+      out.expectNext(3)
+      in.sendNext(4)
+      out.expectNext(4)
+      in.sendNext(5)
+      out.expectNext(5)
+
+      in.sendComplete()
+      out.expectComplete()
+    }
+
   }
 
   "PartitionHub" must {
