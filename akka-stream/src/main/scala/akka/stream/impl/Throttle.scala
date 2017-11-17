@@ -71,8 +71,7 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
         override def onPull(): Unit = pull(in)
       }
 
-      setHandler(in, handler)
-      setHandler(out, handler)
+      setHandlers(in, out, handler)
       // After this point, we no longer need the `handler` so it can just fall out of scope.
     }
 
