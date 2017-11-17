@@ -319,7 +319,7 @@ object Replicator {
   }
   final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency
 
-  final case class WriteDataCenterAware(timeout: FiniteDuration, centerToConsistency: DataCenter ⇒ Option[WriteConsistency])
+  final case class DataCenterWriteConsistency(timeout: FiniteDuration, centerToConsistency: DataCenter ⇒ Option[WriteConsistency])
     extends WriteConsistency
 
   /**
@@ -1354,7 +1354,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
             case None    ⇒ (newEnvelope, None)
           }
           val writeAggregator =
-            context.actorOf(WriteAggregator.props(key, writeEnvelope, writeDelta, writeConsistency,
+            context.actorOf(DataCenterWriteAggregator.props(key, writeEnvelope, writeDelta, writeConsistency,
               req, nodes, unreachable, dataCenters(), replyTo, durable)
               .withDispatcher(context.props.dispatcher))
           if (durable) {
@@ -1457,7 +1457,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
             replyTo ! DeleteSuccess(key, req)
         } else {
           val writeAggregator =
-            context.actorOf(WriteAggregator.props(key, DeletedEnvelope, None, consistency, req, nodes, unreachable,
+            context.actorOf(DataCenterWriteAggregator.props(key, DeletedEnvelope, None, consistency, req, nodes, unreachable,
               dataCenters(), replyTo, durable).withDispatcher(context.props.dispatcher))
           if (durable) {
             durableStore ! Store(key.id, new DurableDataEnvelope(DeletedEnvelope),
@@ -1952,9 +1952,38 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     timeoutSchedule.cancel()
   }
 
-  def replica(address: Address): ActorSelection =
+  def replicaForUpdate(address: Address): ActorSelection =
     context.actorSelection(context.parent.path.parent.toStringWithAddress(address))
 
+  def replica(address: Address): ActorSelection =
+    context.actorSelection(context.parent.path.toStringWithAddress(address))
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object DataCenterWriteAggregator {
+  def props(
+    key:         KeyR,
+    envelope:    Internal.DataEnvelope,
+    delta:       Option[Internal.Delta],
+    consistency: WriteConsistency,
+    req:         Option[Any], nodes: Set[Member],
+    unreachable: Set[Member],
+    centers:     Set[DataCenter],
+    replyTo:     ActorRef,
+    durable:     Boolean): Props = {
+
+    consistency match {
+      case DataCenterWriteConsistency(_, dataCenterToConsistency) ⇒
+        Props(new DataCenterWriteAggregator(
+          key, envelope, delta, dataCenterToConsistency, centers, req, nodes, unreachable, replyTo, durable))
+      case _ ⇒
+        Props(new DataCenterWriteAggregator(
+          key, envelope, delta, _ ⇒ Some(consistency), centers, req, nodes, unreachable, replyTo, durable))
+    }
+  }
 }
 
 /**
@@ -1963,27 +1992,16 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 @InternalApi private[akka] object WriteAggregator {
   def props(
     key:         KeyR,
-    envelope:    Replicator.Internal.DataEnvelope,
-    delta:       Option[Replicator.Internal.Delta],
-    consistency: Replicator.WriteConsistency,
-    req:         Option[Any],
-    nodes:       Set[Member],
+    envelope:    Internal.DataEnvelope,
+    delta:       Option[Internal.Delta],
+    consistency: WriteConsistency,
+    req:         Option[Any], nodes: Set[Member],
     unreachable: Set[Member],
     centers:     Set[DataCenter],
     replyTo:     ActorRef,
     durable:     Boolean): Props = {
 
-    consistency match {
-      case WriteDataCenterAware(_, dataCenterToConsistency) ⇒
-        Props(new DataCenterWriteAggregator(
-          key, envelope, delta, dataCenterToConsistency, centers, req, nodes, unreachable, replyTo, durable))
-      case _ ⇒
-        if (centers.size > 1)
-          Props(new DataCenterWriteAggregator(
-            key, envelope, delta, _ ⇒ Some(consistency), centers, req, nodes, unreachable, replyTo, durable))
-        else
-          Props(new WriteAggregator(key, envelope, delta, consistency, req, nodes, unreachable, replyTo, durable))
-    }
+    Props(new WriteAggregator(key, envelope, delta, consistency, req, nodes, unreachable, replyTo, durable))
   }
 }
 
@@ -2030,14 +2048,15 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 }
 @InternalApi private[akka] class WriteAggregator(
   key:                      KeyR,
-  envelope:                 Replicator.Internal.DataEnvelope,
-  delta:                    Option[Replicator.Internal.Delta],
-  consistency:              Replicator.WriteConsistency,
+  envelope:                 Internal.DataEnvelope,
+  delta:                    Option[Internal.Delta],
+  consistency:              WriteConsistency,
   req:                      Option[Any],
   override val nodes:       Set[Member],
   override val unreachable: Set[Member],
   replyTo:                  ActorRef,
-  durable:                  Boolean) extends ReadWriteAggregator with ActorLogging {
+  durable:                  Boolean)
+  extends ReadWriteAggregator with ActorLogging {
 
   import Replicator._
   import Replicator.Internal._
@@ -2075,7 +2094,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       case None    ⇒ writeMsg
     }
     log.info(s"Sending to primary nodes: ${primaryNodes}")
-    primaryNodes.foreach { replica(_) ! msg }
+    primaryNodes.foreach { replicaForUpdate(_) ! msg }
 
     if (isDone) reply(isTimeout = false)
   }
@@ -2106,9 +2125,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           // Deltas must be applied in order and we can't keep track of ordering of
           // simultaneous updates so there is a chance that the delta could not be applied.
           // Try again with the full state to the primary nodes that have not acked.
-          primaryNodes.toSet.intersect(remaining).foreach { replica(_) ! writeMsg }
+          primaryNodes.toSet.intersect(remaining).foreach { replicaForUpdate(_) ! writeMsg }
       }
-      secondaryNodes.foreach { replica(_) ! writeMsg }
+      secondaryNodes.foreach { replicaForUpdate(_) ! writeMsg }
     case ReceiveTimeout ⇒
       reply(isTimeout = true)
   }

@@ -36,7 +36,7 @@ object WriteAggregatorSpec {
                             probes: Map[Address, ActorRef], nodes: Set[Member], unreachable: Set[Member], replyTo: ActorRef, durable: Boolean)
     extends WriteAggregator(key, DataEnvelope(data), delta, consistency, None, nodes, unreachable, replyTo, durable) {
 
-    override def replica(address: Address): ActorSelection =
+    override def replicaForUpdate(address: Address): ActorSelection =
       context.actorSelection(probes(address).path)
 
     override def senderAddress(): Address =

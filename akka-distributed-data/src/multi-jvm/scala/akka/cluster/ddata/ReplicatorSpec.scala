@@ -575,7 +575,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 */
 
   private def wrapInDataCenterAware(consistency: WriteConsistency) = {
-    WriteDataCenterAware(timeout, _ ⇒ Some(consistency))
+    DataCenterWriteConsistency(timeout, _ ⇒ Some(consistency))
   }
 }
 
