@@ -18,6 +18,8 @@ import jdocs.tutorial_4.Device;
 import jdocs.tutorial_4.DeviceManager;
 
 //#device-group-full
+//#device-group-remove
+//#device-group-register
 public class DeviceGroup extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
@@ -27,11 +29,11 @@ public class DeviceGroup extends AbstractActor {
     this.groupId = groupId;
   }
 
-  //#device-group-register
   public static Props props(String groupId) {
     return Props.create(DeviceGroup.class, groupId);
   }
   //#device-group-register
+  //#device-group-remove
 
   public static final class RequestDeviceList {
     final long requestId;
@@ -50,10 +52,8 @@ public class DeviceGroup extends AbstractActor {
       this.ids = ids;
     }
   }
+  //#device-group-remove
   //#device-group-register
-//#device-group-register
-//#device-group-register
-//#device-group-remove
 
   final Map<String, ActorRef> deviceIdToActor = new HashMap<>();
   //#device-group-register
@@ -92,10 +92,13 @@ public class DeviceGroup extends AbstractActor {
       );
     }
   }
+  //#device-group-register
+  //#device-group-remove
 
   private void onDeviceList(RequestDeviceList r) {
     getSender().tell(new ReplyDeviceList(r.requestId, deviceIdToActor.keySet()), getSelf());
   }
+  //#device-group-remove
 
   private void onTerminated(Terminated t) {
     ActorRef deviceActor = t.getActor();
@@ -104,16 +107,21 @@ public class DeviceGroup extends AbstractActor {
     actorToDeviceId.remove(deviceActor);
     deviceIdToActor.remove(deviceId);
   }
+  //#device-group-register
 
   @Override
   public Receive createReceive() {
     return receiveBuilder()
             .match(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
+            //#device-group-register
+            //#device-group-remove
             .match(RequestDeviceList.class, this::onDeviceList)
+            //#device-group-remove
             .match(Terminated.class, this::onTerminated)
+            //#device-group-register
             .build();
   }
 }
-//#device-group-remove
 //#device-group-register
+//#device-group-remove
 //#device-group-full
