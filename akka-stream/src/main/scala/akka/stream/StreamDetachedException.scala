@@ -14,5 +14,4 @@ final class StreamDetachedException(message: String)
   with NoStackTrace {
 
   def this() = this("Stream is terminated. Materialized value is detached.")
-
 }
