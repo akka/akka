@@ -13,6 +13,7 @@ import akka.japi.function
 import java.net.URLEncoder
 
 import akka.annotation.InternalApi
+import akka.stream.Attributes.Important
 import akka.stream.impl.TraversalBuilder
 
 import scala.compat.java8.OptionConverters._
@@ -28,6 +29,18 @@ import akka.util.ByteString
  * Note that the order was the opposite in Akka 2.4.x.
  */
 final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
+  /**
+   * Mark the most recently added attribute as important.
+   *
+   * Meant for the case where a factory method returns an `Attributes` instance instead
+   * of a single `Attribute`. For example `ActorAttributes.dispatcher.important`.
+   *
+   * @see [[Important]]
+   */
+  def important: Attributes = attributeList match {
+    case Nil            ⇒ this
+    case single :: rest ⇒ Attributes(Important(single) :: rest)
+  }
 
   import Attributes._
 
@@ -162,7 +175,14 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   def mostSpecific[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
+    attributeList.collectFirst { case Important(attr) if c.isInstance(attr) ⇒ c.cast(attr) } match {
+      // prefer the important ones
+      case found: Some[T] ⇒
+        found
+      // fallback to "normal"
+      case None ⇒
+        attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
+    }
   }
 
   @deprecated("Replaced with leastSpecific", "2.5.7")
@@ -242,6 +262,22 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 object Attributes {
 
   trait Attribute
+
+  /**
+   * Wrap an attribute with this to mark it as as important.
+   *
+   * When attributes are resolved in the stages, most specific important
+   * attributes are searched first and only if no important attribute of a type is found the
+   * "normal" most specific attributes are looked for
+   *
+   * Should be used sparingly, and especially avoided by libraries as marking an attribute
+   * important inside of a composed graph returned from a user API effectively seals it and
+   * makes it impossible to override the attribute for the end user.
+   *
+   * @param attribute The attribute value marked as important
+   */
+  final case class Important(attribute: Attribute) extends Attribute
+
   final case class Name(n: String) extends Attribute
   final case class InputBuffer(initial: Int, max: Int) extends Attribute
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) extends Attribute

@@ -126,6 +126,16 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       attributes.mostSpecific[Name] should ===(Some(Attributes.Name("b")))
     }
 
+    "prefer most specific important attribute to most specific attribute" in {
+      val attributes = Attributes.name("a")
+        .and(Attributes.name("b").important)
+        .and(Attributes.name("c"))
+        .and(Attributes.name("d").important)
+        .and(Attributes.name("e"))
+
+      attributes.mostSpecific[Name] should ===(Some(Name("d")))
+    }
+
   }
 
   "attributes on a graph stage" must {
@@ -166,6 +176,19 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       attributes.mostSpecific[Name] should contain(Name("new-name"))
     }
 
+  }
+
+  "attributes on a composed graph" must {
+    "allow for overriding the attributes inside the composed graph" in {
+      val attributes =
+        Source.fromGraph(new AttributesSource().addAttributes(whateverAttribute("on-stage")))
+          .toMat(Sink.head)(Keep.left)
+          .addAttributes(whateverAttribute("on-composed").important)
+          .run()
+
+      attributes.mostSpecific[WhateverAttribute] should contain(WhateverAttribute("on-composed"))
+
+    }
   }
 
   "attributes on a source" must {
