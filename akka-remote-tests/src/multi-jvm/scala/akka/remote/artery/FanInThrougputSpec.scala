@@ -43,7 +43,7 @@ object FanInThroughputSpec extends MultiNodeConfig {
        akka.test.FanInThroughputSpec.real-message = off
        akka.test.FanInThroughputSpec.actor-selection = off
        akka.remote.artery.advanced {
-         inbound-lanes = 4
+         # inbound-lanes = 4
        }
        """))
     .withFallback(MaxThroughputSpec.cfg)

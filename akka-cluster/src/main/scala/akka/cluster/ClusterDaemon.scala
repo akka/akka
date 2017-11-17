@@ -945,8 +945,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def gossipSpeedupTick(): Unit =
     if (isGossipSpeedupNeeded) gossip()
 
-  def isGossipSpeedupNeeded: Boolean =
-    (latestGossip.overview.seen.size < latestGossip.members.size / 2)
+  def isGossipSpeedupNeeded: Boolean = {
+    if (latestGossip.isMultiDc)
+      latestGossip.overview.seen.count(membershipState.isInSameDc) < latestGossip.members.count(_.dataCenter == cluster.selfDataCenter) / 2
+    else
+      (latestGossip.overview.seen.size < latestGossip.members.size / 2)
+  }
 
   /**
    * Sends full gossip to `n` other random members.
@@ -970,6 +974,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           else
             gossipTo(peer)
         case None ⇒ // nothing to see here
+          if (cluster.settings.Debug.VerboseGossipLogging)
+            log.debug("Cluster Node [{}] dc [{}] will not gossip this round", selfAddress, cluster.settings.SelfDataCenter)
+
       }
     }
 

@@ -31,6 +31,9 @@ object PersistentActorSpec {
   final case object Increment extends Command
   final case object IncrementLater extends Command
   final case object IncrementAfterReceiveTimeout extends Command
+  final case object IncrementTwiceAndThenLog extends Command
+  final case object DoNothingAndThenLog extends Command
+  final case object EmptyEventsListAndThenLog extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
   private case object Timeout extends Command
 
@@ -41,16 +44,23 @@ object PersistentActorSpec {
 
   case object Tick
 
-  def counter(persistenceId: String): Behavior[Command] = {
+  val firstLogging = "first logging"
+  val secondLogging = "second logging"
+
+  def counter(persistenceId: String)(implicit actorSystem: ActorSystem[TypedSpec.Command], testSettings: TestKitSettings): Behavior[Command] =
+    counter(persistenceId, TestProbe[String].ref)
+
+  def counter(persistenceId: String, loggingActor: ActorRef[String]): Behavior[Command] = {
+
     PersistentActor.immutable[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
-      actions = Actions[Command, Event, State]((ctx, cmd, state) ⇒ cmd match {
+      commandHandler = CommandHandler[Command, Event, State]((ctx, state, cmd) ⇒ cmd match {
         case Increment ⇒
-          Persist(Incremented(1))
+          Effect.persist(Incremented(1))
         case GetValue(replyTo) ⇒
           replyTo ! state
-          PersistNothing()
+          Effect.none
         case IncrementLater ⇒
           // purpose is to test signals
           val delay = ctx.spawnAnonymous(Actor.withTimers[Tick.type] { timers ⇒
@@ -60,19 +70,43 @@ object PersistentActorSpec {
             })
           })
           ctx.watch(delay)
-          PersistNothing()
+          Effect.none
         case IncrementAfterReceiveTimeout ⇒
           ctx.setReceiveTimeout(10.millis, Timeout)
-          PersistNothing()
+          Effect.none
         case Timeout ⇒
           ctx.cancelReceiveTimeout()
-          Persist(Incremented(100))
+          Effect.persist(Incremented(100))
+
+        case IncrementTwiceAndThenLog ⇒
+          Effect
+            .persist(Incremented(1), Incremented(1))
+            .andThen {
+              loggingActor ! firstLogging
+            }
+            .andThen {
+              loggingActor ! secondLogging
+            }
+
+        case EmptyEventsListAndThenLog ⇒
+          Effect
+            .persist(List.empty) // send empty list of events
+            .andThen {
+              loggingActor ! firstLogging
+            }
+
+        case DoNothingAndThenLog ⇒
+          Effect
+            .none
+            .andThen {
+              loggingActor ! firstLogging
+            }
       })
         .onSignal {
-          case (_, Terminated(_), _) ⇒
-            Persist(Incremented(10))
+          case (_, _, Terminated(_)) ⇒
+            Effect.persist(Incremented(10))
         },
-      applyEvent = (evt, state) ⇒ evt match {
+      eventHandler = (state, evt) ⇒ evt match {
         case Incremented(delta) ⇒
           State(state.value + delta, state.history :+ state.value)
       })
@@ -138,6 +172,48 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
         c ! GetValue(probe.ref)
         probe.expectMsg(State(101, Vector(0, 1)))
       }
+    }
+
+    /**
+     * Verify that all side-effects callbacks are called (in order) and only once.
+     * The [[IncrementTwiceAndThenLog]] command will emit two Increment events
+     */
+    def `chainable side effects with events`(): Unit = {
+      val loggingProbe = TestProbe[String]
+      val c = start(counter("c5", loggingProbe.ref))
+
+      val probe = TestProbe[State]
+
+      c ! IncrementTwiceAndThenLog
+      c ! GetValue(probe.ref)
+      probe.expectMsg(State(2, Vector(0, 1)))
+
+      loggingProbe.expectMsg(firstLogging)
+      loggingProbe.expectMsg(secondLogging)
+    }
+
+    /** Proves that side-effects are called when emitting an empty list of events */
+    def `chainable side effects without events`(): Unit = {
+      val loggingProbe = TestProbe[String]
+      val c = start(counter("c6", loggingProbe.ref))
+
+      val probe = TestProbe[State]
+      c ! EmptyEventsListAndThenLog
+      c ! GetValue(probe.ref)
+      probe.expectMsg(State(0, Vector.empty))
+      loggingProbe.expectMsg(firstLogging)
+    }
+
+    /** Proves that side-effects are called when explicitly calling Effect.none */
+    def `chainable side effects when doing nothing (Effect.none)`(): Unit = {
+      val loggingProbe = TestProbe[String]
+      val c = start(counter("c7", loggingProbe.ref))
+
+      val probe = TestProbe[State]
+      c ! DoNothingAndThenLog
+      c ! GetValue(probe.ref)
+      probe.expectMsg(State(0, Vector.empty))
+      loggingProbe.expectMsg(firstLogging)
     }
 
     def `work when wrapped in other behavior`(): Unit = {

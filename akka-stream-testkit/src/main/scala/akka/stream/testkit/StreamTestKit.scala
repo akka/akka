@@ -220,7 +220,7 @@ object TestPublisher {
       this
     }
 
-    def sendError(cause: Exception): Self = {
+    def sendError(cause: Throwable): Self = {
       subscription.sendError(cause)
       this
     }
@@ -795,7 +795,7 @@ private[testkit] object StreamTestKit {
 
     def sendNext(element: I): Unit = subscriber.onNext(element)
     def sendComplete(): Unit = subscriber.onComplete()
-    def sendError(cause: Exception): Unit = subscriber.onError(cause)
+    def sendError(cause: Throwable): Unit = subscriber.onError(cause)
 
     def sendOnSubscribe(): Unit = subscriber.onSubscribe(this)
   }

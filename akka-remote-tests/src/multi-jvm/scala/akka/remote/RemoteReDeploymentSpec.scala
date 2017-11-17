@@ -169,6 +169,10 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
 
       enterBarrier("cable-cut")
 
+      runOn(first) {
+        testConductor.passThrough(second, first, Both).await
+      }
+
       // make sure ordinary communication works
       runOn(second) {
         val sel = sys.actorSelection(node(first) / "user" / "echo")

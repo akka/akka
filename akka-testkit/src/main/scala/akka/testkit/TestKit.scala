@@ -929,7 +929,7 @@ object TestKit {
         val msg = "Failed to stop [%s] within [%s] \n%s".format(actorSystem.name, duration,
           actorSystem.asInstanceOf[ActorSystemImpl].printTree)
         if (verifySystemShutdown) throw new RuntimeException(msg)
-        else actorSystem.log.warning(msg)
+        else println(msg)
     }
   }
 }

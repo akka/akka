@@ -62,7 +62,7 @@ object NoPublish extends AutoPlugin {
 
   override def projectSettings = Seq(
     skip in publish := true,
-    skip in doc := true,
+    sources in (Compile, doc) := Seq.empty
   )
 }
 

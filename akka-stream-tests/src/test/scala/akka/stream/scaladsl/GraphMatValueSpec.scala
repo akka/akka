@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.NotUsed
+import akka.{ Done, NotUsed }
 import akka.stream._
 import akka.stream.testkit._
 
@@ -233,6 +233,25 @@ class GraphMatValueSpec extends StreamSpec {
 
       val m4 = Source.single(1).viaMat(Flow[Int])(Keep.right).to(Sink.ignore).run()
       m4 should ===(NotUsed)
+    }
+
+    "build more complicated graph with flows optimized for identity flows" in {
+      val flow1 = Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(1).viaMat(Flow[Int])(Keep.both))(Keep.both)
+      val (mA, (m1, m2)) = Source.single(8).viaMat(flow1)(Keep.right).to(Sink.ignore).run()
+      Await.result(mA, 1.second) should ===(Done) //from Sink.ignore
+      m1 should ===(NotUsed) //from Source.single(1)
+      m2 should ===(NotUsed) //from Flow[Int]
+
+      val flow2 = Flow.fromSinkAndSourceMat(Sink.ignore, Source.maybe[Int].viaMat(Flow[Int])(Keep.left))(Keep.both)
+      val (mB, m3) = Source.single(8).viaMat(flow2)(Keep.right).to(Sink.ignore).run()
+      Await.result(mB, 1.second) should ===(Done) //from Sink.ignore
+      // Fails with ClassCastException if value is wrong
+      m3.success(None) //from Source.maybe[Int]
+
+      val flow3 = Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(1).viaMat(Flow[Int])(Keep.right))(Keep.both)
+      val (mC, m4) = Source.single(8).viaMat(flow3)(Keep.right).to(Sink.ignore).run()
+      Await.result(mC, 1.second) should ===(Done) //from Sink.ignore
+      m4 should ===(NotUsed) //from Flow[Int]
     }
 
     "provide a new materialized value for each materialization" in {
