@@ -13,6 +13,8 @@ import akka.japi.function
 import akka.stream.impl.StreamLayout._
 import java.net.URLEncoder
 
+import akka.annotation.DoNotInherit
+import akka.stream.Attributes.AttributeSeal
 import akka.stream.impl.TraversalBuilder
 
 import scala.compat.java8.OptionConverters._
@@ -27,7 +29,7 @@ import akka.util.ByteString
  * The ``attributeList`` is ordered with the most specific attribute first, least specific last.
  * Note that the order was the opposite in Akka 2.4.x.
  */
-final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
+sealed case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 
   import Attributes._
 
@@ -41,6 +43,9 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
       case _                             ⇒ false
     }
   }
+
+  def sealAll(sealName: String): Attributes =
+    copy(attributeList.map(_.seal(sealName)))
 
   /**
    * Java API
@@ -130,11 +135,35 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   }
 
   /**
-   * Scala API: Get the most specific attribute (added last) of a given type parameter T `Class` or subclass thereof.
+   * Scala API: Get the attribute of a given type parameter T `Class` or subclass thereof, while adhering to override semantics.
    */
   def get[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
+    var effectiveAttr: Attribute = null
+    // TODO could optimize with knowing count of values
+    val it = attributeList.iterator
+    while (it.hasNext) {
+      val currentAttr = it.next()
+
+      if (c.isInstance(currentAttr)) {
+        currentAttr match {
+          case cur: AttributeSeal ⇒
+            effectiveAttr match {
+              case eff: AttributeSeal ⇒
+                // the `not` looks weird, but is correct:
+                if (!eff.overrides(cur)) effectiveAttr = currentAttr
+
+              case _ ⇒
+                effectiveAttr = currentAttr
+            }
+
+          case _ if effectiveAttr == null ⇒ effectiveAttr = currentAttr // first found, it is in effect
+          case _                          ⇒ // outer overrides this one, we continue scanning though
+        }
+      } // else continue scanning (TODO short-circuit scan)
+    }
+
+    Option(effectiveAttr).asInstanceOf[Option[T]] // we avoid castingN times
   }
 
   /**
@@ -155,6 +184,13 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * already existing attributes of the same type.
    */
   def and(other: Attributes): Attributes = {
+    if (attributeList.isEmpty) other
+    else if (other.attributeList.isEmpty) this
+    else if (other.attributeList.tail.isEmpty) Attributes(other.attributeList.head :: attributeList)
+    else Attributes(other.attributeList ::: attributeList)
+  }
+
+  def merge(other: Attributes): Attributes = {
     if (attributeList.isEmpty) other
     else if (other.attributeList.isEmpty) this
     else if (other.attributeList.tail.isEmpty) Attributes(other.attributeList.head :: attributeList)
@@ -204,15 +240,48 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 }
 
 /**
- * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
+ * Note that more attributes for the [[ActorMaterializer]] are defined in [[akka.stream.ActorAttributes]].
  */
 object Attributes {
 
-  trait Attribute
-  final case class Name(n: String) extends Attribute
-  final case class InputBuffer(initial: Int, max: Int) extends Attribute
-  final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) extends Attribute
-  final case object AsyncBoundary extends Attribute
+  trait Attribute { def seal(key: String): Attribute }
+  trait AttributeSeal {
+    def sealName: String
+    def overrides(a: Attribute): Boolean = {
+
+      a match {
+        case sealedAttr: AttributeSeal ⇒ sealedAttr.sealName == sealName || sealedAttr.sealName == "*"
+        case _                         ⇒ true
+      }
+    }
+
+    override def toString: String = super.toString + s"[seal:${sealName}]"
+  }
+  @DoNotInherit sealed case class Name(n: String) extends Attribute {
+    override def seal(key: String): Attribute =
+      new Name(n) with AttributeSeal {
+        override val sealName = key
+      }
+  }
+  @DoNotInherit sealed case class InputBuffer(initial: Int, max: Int) extends Attribute {
+    override def seal(key: String): Attribute =
+      new InputBuffer(initial, max) with AttributeSeal {
+        override val sealName = key
+      }
+  }
+  @DoNotInherit sealed case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) extends Attribute {
+    override def seal(key: String): Attribute =
+      new LogLevels(onElement, onFinish, onFailure) with AttributeSeal {
+        override val sealName = key
+      }
+  }
+  @DoNotInherit class AsyncBoundary extends Attribute {
+    override def seal(key: String): Attribute =
+      new AsyncBoundary with AttributeSeal {
+        override val sealName = key
+      }
+  }
+  @DoNotInherit final case object AsyncBoundary extends AsyncBoundary
 
   object LogLevels {
     /** Use to disable logging on certain operations when configuring [[Attributes.LogLevels]] */
@@ -285,8 +354,18 @@ object Attributes {
  */
 object ActorAttributes {
   import Attributes._
-  final case class Dispatcher(dispatcher: String) extends Attribute
-  final case class SupervisionStrategy(decider: Supervision.Decider) extends Attribute
+  case class Dispatcher(dispatcher: String) extends Attribute {
+    override def seal(key: String): Attribute =
+      new Dispatcher(dispatcher) with AttributeSeal {
+        override def sealName = key
+      }
+  }
+  case class SupervisionStrategy(decider: Supervision.Decider) extends Attribute {
+    override def seal(key: String): Attribute =
+      new SupervisionStrategy(decider) with AttributeSeal {
+        override def sealName = key
+      }
+  }
 
   val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
 

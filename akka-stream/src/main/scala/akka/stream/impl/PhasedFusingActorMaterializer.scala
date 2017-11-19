@@ -33,7 +33,7 @@ import akka.util.OptionVal
  */
 @InternalApi private[akka] object PhasedFusingActorMaterializer {
 
-  val Debug = false
+  val Debug = true // FIXME
 
   val DefaultPhase: Phase[Any] = new Phase[Any] {
     override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] =
@@ -374,8 +374,16 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
       Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
         ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
         Nil)
-    if (settings.dispatcher == Deploy.NoDispatcherGiven) a
-    else a and ActorAttributes.dispatcher(settings.dispatcher)
+
+    val defaults =
+      if (settings.dispatcher == Deploy.NoDispatcherGiven) a
+      else a and ActorAttributes.dispatcher(settings.dispatcher)
+
+    if (Debug) {
+      println("--- Materializer default attributes ---")
+      defaults.attributeList.foreach(a ⇒ println(" def attr: " + a))
+    }
+    defaults
   }
 
   override def effectiveSettings(opAttr: Attributes): ActorMaterializerSettings = {
@@ -415,25 +423,31 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     materialize(_runnableGraph, defaultInitialAttributes)
 
   override def materialize[Mat](
-    _runnableGraph:    Graph[ClosedShape, Mat],
-    initialAttributes: Attributes): Mat =
+    _runnableGraph:           Graph[ClosedShape, Mat],
+    defaultInitialAttributes: Attributes): Mat =
     materialize(
       _runnableGraph,
-      initialAttributes,
+      defaultInitialAttributes,
       PhasedFusingActorMaterializer.DefaultPhase,
       PhasedFusingActorMaterializer.DefaultPhases)
 
   override def materialize[Mat](
-    graph:             Graph[ClosedShape, Mat],
-    initialAttributes: Attributes,
-    defaultPhase:      Phase[Any],
-    phases:            Map[IslandTag, Phase[Any]]): Mat = {
+    graph:                    Graph[ClosedShape, Mat],
+    defaultInitialAttributes: Attributes,
+    defaultPhase:             Phase[Any],
+    phases:                   Map[IslandTag, Phase[Any]]): Mat = {
     val islandTracking = new IslandTracking(phases, settings, defaultPhase, this, islandNamePrefix = createFlowName() + "-")
 
     var current: Traversal = graph.traversalBuilder.traversal
 
     val attributesStack = new java.util.ArrayDeque[Attributes](8)
-    attributesStack.addLast(initialAttributes and graph.traversalBuilder.attributes)
+    attributesStack.addLast(graph.traversalBuilder.attributes)
+    if (Debug) {
+      println(s"--- graph.traversalBuilder.attributes ---")
+      graph.traversalBuilder.attributes.attributeList.foreach(a ⇒ println(" attr: " + a))
+      println(s"--- initial attributesStack ---")
+      attributesStack.peek().attributeList.foreach(a ⇒ println(" attr: " + a))
+    }
 
     val traversalStack = new java.util.ArrayDeque[Traversal](16)
     traversalStack.addLast(current)
@@ -442,6 +456,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
     if (Debug) {
       println(s"--- Materializing layout:")
+      println(s" init attrs: " + attributesStack.peek())
       TraversalBuilder.printTraversal(current)
       println(s"--- Start materialization")
     }
@@ -454,8 +469,9 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
         var nextStep: Traversal = EmptyTraversal
         current match {
           case MaterializeAtomic(mod, outToSlot) ⇒
-            if (Debug) println(s"materializing module: $mod")
-            val matAndStage = islandTracking.getCurrentPhase.materializeAtomic(mod, attributesStack.getLast)
+            val attributes = defaultInitialAttributes and attributesStack.getLast
+            if (Debug) println(Console.YELLOW + s"materializing module: $mod (attrs: ${attributes})" + Console.RESET)
+            val matAndStage = islandTracking.getCurrentPhase.materializeAtomic(mod, attributes)
             val logic = matAndStage._1
             val matValue = matAndStage._2
             if (Debug) println(s"  materialized value is $matValue")
@@ -489,11 +505,15 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
             matValueStack.addLast(result)
             if (Debug) println(s"COMP: $matValueStack")
           case PushAttributes(attr) ⇒
-            attributesStack.addLast(attributesStack.getLast and attr)
-            if (Debug) println(s"ATTR PUSH: $attr")
+            val lastBefore = attributesStack.getLast
+            if (Debug) println(Console.YELLOW + s"ATTR PUSH: $attr" + Console.RESET)
+            if (Debug) println(Console.YELLOW + s" getLast : ${lastBefore}" + Console.RESET)
+            if (Debug) println(Console.YELLOW + s"    attr : ${attr}" + Console.RESET)
+            attributesStack.addLast(attr merge lastBefore)
+            if (Debug) println(Console.YELLOW + s"  RESULT : ${attributesStack.getLast}" + Console.RESET)
           case PopAttributes ⇒
-            attributesStack.removeLast()
-            if (Debug) println(s"ATTR POP")
+            val it = attributesStack.removeLast()
+            if (Debug) println(Console.YELLOW + s"ATTR POP: (removed: $it)" + Console.RESET)
           case EnterIsland(tag) ⇒
             islandTracking.enterIsland(tag, attributesStack.getLast)
           case ExitIsland ⇒

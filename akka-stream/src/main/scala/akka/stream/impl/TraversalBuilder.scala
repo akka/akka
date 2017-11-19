@@ -275,7 +275,6 @@ import scala.collection.immutable.Map.Map1
    */
   @InternalApi private[impl] def printTraversal(t: Traversal, indent: Int = 0): Unit = {
     var current: Traversal = t
-    var slot = 0
 
     def prindent(s: String): Unit = println(" | " * indent + s)
 
@@ -708,8 +707,10 @@ import scala.collection.immutable.Map.Map1
     applyIslandAndAttributes(traversalSoFar)
   }
 
-  override def internalSetAttributes(attributes: Attributes): LinearTraversalBuilder =
+  override def internalSetAttributes(attributes: Attributes): LinearTraversalBuilder = {
+    println(s"replacing attrs:: from ${this.attributes} ==> ${attributes}")
     copy(attributes = attributes)
+  }
 
   override def setAttributes(attributes: Attributes): LinearTraversalBuilder = {
     if (attributes.isAsync) this.makeIsland(GraphStageTag).internalSetAttributes(attributes)
@@ -723,7 +724,11 @@ import scala.collection.immutable.Map.Map1
     }
 
     if (attributes eq Attributes.none) withIslandTag
-    else PushAttributes(attributes).concat(withIslandTag).concat(PopAttributes)
+    else {
+      val p = PushAttributes(attributes).concat(withIslandTag).concat(PopAttributes)
+      println(s"emit push attributes = ${p}")
+      p
+    }
   }
 
   /**
@@ -958,8 +963,9 @@ import scala.collection.immutable.Map.Map1
         /*
          * We have almost finished the traversal for _this_ builder, we only need to apply attributes and islands.
          */
-        val finalTraversalForThis = {
+        val finalTraversalForThis: Traversal = {
           // Now add the island tags, attributes, and the opcodes that will compose the materialized values with toAppend
+          println(s"assembledTraversalForThis = ${assembledTraversalForThis}")
           LinearTraversalBuilder.addMatCompose(applyIslandAndAttributes(assembledTraversalForThis), matCompose)
         }
 
@@ -980,7 +986,7 @@ import scala.collection.immutable.Map.Map1
               // the inOffset of _this_ gets shifted by toAppend.inSlots, because the traversal of toAppend is _prepended_
               inOffset = inOffset + toAppend.inSlots,
               // Build in reverse so it yields a more efficient layout for left-to-right building
-              traversalSoFar = toAppend.applyIslandAndAttributes(toAppend.traversalSoFar).concat(finalTraversalForThis),
+              traversalSoFar = toAppend.applyIslandAndAttributes(toAppend.traversalSoFar).concat(finalTraversalForThis), // FIXME this is what we reverse!
               pendingBuilder = OptionVal.None,
               attributes = Attributes.none, // attributes are none for the new enclosing builder
               beforeBuilder = EmptyTraversal, // no need for beforeBuilder as there are no composites
@@ -1008,6 +1014,12 @@ import scala.collection.immutable.Map.Map1
                 // Exit the island just after the appended builder (they should not applied to _this_ builder)
                 newTraversalSoFar = ExitIsland.concat(newTraversalSoFar)
             }
+
+            println(" ======= appending ===== ")
+            println(s"  toAppend = {${toAppend.attributes}")
+            println(s"  newBeforeTraversal = {${newBeforeTraversal}")
+            println(s"  NEW newBeforeTraversal = {${PushAttributes(toAppend.attributes).concat(newBeforeTraversal)}")
+            println(" ==== ")
 
             // Secondly, prepare attribute push and pop if Attributes are present
             if (toAppend.attributes ne Attributes.none) {

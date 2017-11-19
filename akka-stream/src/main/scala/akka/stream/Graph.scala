@@ -32,5 +32,5 @@ trait Graph[+S <: Shape, +M] {
    */
   def async: Graph[S, M] = addAttributes(Attributes.asyncBoundary)
 
-  def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
+  def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(attr and traversalBuilder.attributes)
 }
