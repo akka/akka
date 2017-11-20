@@ -20,5 +20,8 @@ object Whitesource extends AutoPlugin {
           if (gitCurrentBranch.value == "master") "master"
         else "adhoc"
         else majorMinor((version in LocalRootProject).value).map(_ + "-stable").getOrElse("adhoc"))
-    })
+    },
+    whitesourceForceCheckAllDependencies := true,
+    whitesourceFailOnError := true,
+  )
 }
