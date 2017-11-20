@@ -61,36 +61,28 @@ object DynamicRuleDispatch {
 
   def __create[P <: Parser, L <: HList](c: whitebox.Context)(ruleNames: c.Expr[String]*)(implicit P: c.WeakTypeTag[P], L: c.WeakTypeTag[L]): c.Expr[(DynamicRuleDispatch[P, L], immutable.Seq[String])] = {
     import c.universe._
-    val names: Array[String] = ruleNames.map {
+    val names = ruleNames.map {
       _.tree match {
         case Literal(Constant(s: String)) ⇒ s
         case x                            ⇒ c.abort(x.pos, s"Invalid `String` argument `x`, only `String` literals are supported!")
       }
-    }(collection.breakOut)
-    java.util.Arrays.sort(names.asInstanceOf[Array[Object]])
+    }
 
-    def rec(start: Int, end: Int): Tree =
-      if (start <= end) {
-        val mid = (start + end) >>> 1
-        val name = names(mid)
-        q"""val c = $name compare ruleName
-            if (c < 0) ${rec(mid + 1, end)}
-            else if (c > 0) ${rec(start, mid - 1)}
-            else
-              Some(new RuleRunner[$P, $L] {
+    def ruleEntry(name: String): Tree =
+      q"""($name, new RuleRunner[$P, $L] {
                 def apply(handler: DynamicRuleHandler[$P, $L]): handler.Result = {
                   val p = handler.parser
                   p.__run[$L](p.${TermName(name).encodedName.toTermName})(handler)
                 }
-              })
-            """
-      } else q"None"
+              })"""
+    val ruleEntries: Seq[Tree] = names.map(ruleEntry(_))
 
     c.Expr[(DynamicRuleDispatch[P, L], immutable.Seq[String])] {
-      q"""val drd =
+      q"""val map: Map[String, RuleRunner[$P, $L]] = Map(..$ruleEntries)
+          val drd =
             new akka.parboiled2.DynamicRuleDispatch[$P, $L] {
               def lookup(ruleName: String): Option[RuleRunner[$P, $L]] =
-                ${rec(0, names.length - 1)}
+                map.get(ruleName)
             }
           (drd, scala.collection.immutable.Seq(..$ruleNames))"""
     }
