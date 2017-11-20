@@ -1029,8 +1029,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   import PruningState._
   import settings._
 
-  log.info(s"Starting replicator ${self}")
-
   val cluster = Cluster(context.system)
   val selfAddress = cluster.selfAddress
   val selfUniqueAddress = cluster.selfUniqueAddress
@@ -1156,7 +1154,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   override def postStop(): Unit = {
-    log.info(s"Stopping replicator $self")
     cluster.unsubscribe(self)
     gossipTask.cancel()
     deltaPropagationTask.foreach(_.cancel())
@@ -2023,7 +2020,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   private var pendingChildren: Set[ActorRef] = _
 
   override def preStart(): Unit = {
-    log.info("DC prestart")
     pendingChildren = centers.toStream.flatMap { dataCenter ⇒
       def nodesForDataCenter(nodes: Set[Member]) = nodes.filter(_.dataCenter == dataCenter)
 
@@ -2032,16 +2028,13 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           nodesForDataCenter(nodes), nodesForDataCenter(unreachable), centers, self, durable))
       })
     }.toSet
-    log.info("/DC prestart")
   }
 
   override def receive = {
     case response ⇒
-      log.info(s"Got WriteAggregator response $response from ${sender()}")
       pendingChildren -= sender()
       if (pendingChildren.isEmpty || (response != DeleteSuccess && response != UpdateSuccess)) {
         replyTo.tell(response, context.parent)
-        log.info("Shutting down DC agg")
         context.stop(self)
       }
   }
@@ -2061,8 +2054,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   import Replicator._
   import Replicator.Internal._
   import ReadWriteAggregator._
-
-  log.info(s"Start WriteAgg ${self}")
 
   val selfUniqueAddress = Cluster(context.system).selfUniqueAddress
 
@@ -2093,7 +2084,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       case Some(d) ⇒ d
       case None    ⇒ writeMsg
     }
-    log.info(s"Sending to primary nodes: ${primaryNodes}")
     primaryNodes.foreach { replicaForUpdate(_) ! msg }
 
     if (isDone) reply(isTimeout = false)
@@ -2118,7 +2108,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       if (isDone) reply(isTimeout = false)
 
     case SendToSecondary ⇒
-      log.info(s"Sending to secondary nodes ${secondaryNodes}")
       deltaMsg match {
         case None ⇒
         case Some(d) ⇒
