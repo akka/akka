@@ -7,9 +7,12 @@ import scala.concurrent.duration._
 
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
+import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.PoisonPill
 import akka.cluster.ClusterEvent.UnreachableMember
+import akka.remote.RARP
+import akka.remote.artery.ArterySettings
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -26,14 +29,14 @@ object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString(
     """
     akka {
-      #loglevel = DEBUG
+      loglevel = DEBUG
       cluster.debug.verbose-heartbeat-logging = on
       loggers = ["akka.testkit.TestEventListener"]
       actor.provider = cluster
 
       testconductor.barrier-timeout = 3 minutes
 
-      cluster.failure-detector.acceptable-heartbeat-pause = 3 s
+      cluster.failure-detector.acceptable-heartbeat-pause = 5 s
 
       remote.artery {
         enabled = on
@@ -128,21 +131,19 @@ abstract class LargeMessageClusterSpec extends MultiNodeSpec(LargeMessageCluster
 
     "not disturb cluster heartbeat messages when saturated" taggedAs LongRunningTest in {
 
+      // FIXME only enabled for Aeron transport until #24576 is fixed
+      val arterySettings = ArterySettings(system.settings.config.getConfig("akka.remote.artery"))
+      if (!arterySettings.Enabled || arterySettings.Transport != ArterySettings.AeronUpd)
+        pending
+
       runOn(second) {
-        val echo2 = identify(second, "echo")
-        val echo3 = identify(third, "echo")
         val largeEcho2 = identify(second, "largeEcho")
         val largeEcho3 = identify(third, "largeEcho")
 
-        val ordinaryMsgSize = 10 * 1024
-        val ordinaryMsg = ("0" * ordinaryMsgSize).getBytes("utf-8")
-        (1 to 5).foreach { _ ⇒
-          echo2.tell(ordinaryMsg, echo3)
-        }
-
-        val largeMsgSize = 2 * 1000 * 1000
+        val largeMsgSize = 1 * 1000 * 1000
         val largeMsg = ("0" * largeMsgSize).getBytes("utf-8")
-        (1 to 5).foreach { _ ⇒
+        (1 to 3).foreach { _ ⇒
+          // this will ping-pong between second and third
           largeEcho2.tell(largeMsg, largeEcho3)
         }
       }

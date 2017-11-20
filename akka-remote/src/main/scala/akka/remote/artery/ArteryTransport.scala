@@ -10,6 +10,7 @@ import java.nio.channels.ServerSocketChannel
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
@@ -36,7 +37,6 @@ import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransport
 import akka.remote.ThisActorSystemQuarantinedEvent
 import akka.remote.UniqueAddress
-import akka.remote.artery.ArteryTransport.ShuttingDown
 import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.Encoder.OutboundCompressionAccess
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
@@ -102,6 +102,8 @@ private[remote] object AssociationState {
     new AssociationState(
       incarnation = 1,
       uniqueRemoteAddressPromise = Promise(),
+      lastUsedTimestamp = new AtomicLong(System.nanoTime()),
+      controlIdleKillSwitch = OptionVal.None,
       quarantined = ImmutableLongMap.empty[QuarantinedTimestamp])
 
   final case class QuarantinedTimestamp(nanoTime: Long) {
@@ -116,6 +118,8 @@ private[remote] object AssociationState {
 private[remote] final class AssociationState(
   val incarnation:                Int,
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
+  val lastUsedTimestamp:          AtomicLong, // System.nanoTime timestamp
+  val controlIdleKillSwitch:      OptionVal[SharedKillSwitch],
   val quarantined:                ImmutableLongMap[AssociationState.QuarantinedTimestamp]) {
 
   import AssociationState.QuarantinedTimestamp
@@ -143,7 +147,8 @@ private[remote] final class AssociationState(
   }
 
   def newIncarnation(remoteAddressPromise: Promise[UniqueAddress]): AssociationState =
-    new AssociationState(incarnation + 1, remoteAddressPromise, quarantined)
+    new AssociationState(incarnation + 1, remoteAddressPromise,
+      lastUsedTimestamp = new AtomicLong(System.nanoTime()), controlIdleKillSwitch, quarantined)
 
   def newQuarantined(): AssociationState =
     uniqueRemoteAddressPromise.future.value match {
@@ -151,6 +156,8 @@ private[remote] final class AssociationState(
         new AssociationState(
           incarnation,
           uniqueRemoteAddressPromise,
+          lastUsedTimestamp = new AtomicLong(System.nanoTime()),
+          controlIdleKillSwitch,
           quarantined = quarantined.updated(a.uid, QuarantinedTimestamp(System.nanoTime())))
       case _ ⇒ this
     }
@@ -163,6 +170,10 @@ private[remote] final class AssociationState(
   }
 
   def isQuarantined(uid: Long): Boolean = quarantined.contains(uid)
+
+  def withControlIdleKillSwitch(killSwitch: OptionVal[SharedKillSwitch]): AssociationState =
+    new AssociationState(incarnation, uniqueRemoteAddressPromise, lastUsedTimestamp,
+      controlIdleKillSwitch = killSwitch, quarantined)
 
   override def toString(): String = {
     val a = uniqueRemoteAddressPromise.future.value match {
@@ -200,6 +211,11 @@ private[remote] trait OutboundContext {
    * address of this association. It will be sent over the control sub-channel.
    */
   def sendControl(message: ControlMessage): Unit
+
+  /**
+   * @return `true` if any of the streams are active (not stopped due to idle)
+   */
+  def isOrdinaryMessageStreamActive(): Boolean
 
   /**
    * An outbound stage can listen to control messages
@@ -364,7 +380,10 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity =
     settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
-  protected val topLevelFREvents =
+  /**
+   * Thread-safe flight recorder for top level events.
+   */
+  val topLevelFlightRecorder: EventSink =
     createFlightRecorderEventSink(synchr = true)
 
   def createFlightRecorderEventSink(synchr: Boolean = false): EventSink = {
@@ -389,6 +408,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       priorityMessageDestinations,
       outboundEnvelopePool))
 
+  def remoteAddresses: Set[Address] = associationRegistry.allAssociations.map(_.remoteAddress)
+
   override def settings: ArterySettings = provider.remoteSettings.Artery
 
   override def start(): Unit = {
@@ -396,7 +417,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       Runtime.getRuntime.addShutdownHook(shutdownHook)
 
     startTransport()
-    topLevelFREvents.loFreq(Transport_Started, NoMetaData)
+    topLevelFlightRecorder.loFreq(Transport_Started, NoMetaData)
 
     val udp = settings.Transport == ArterySettings.AeronUpd
     val port =
@@ -420,7 +441,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       AddressUidExtension(system).longAddressUid)
 
     // TODO: This probably needs to be a global value instead of an event as events might rotate out of the log
-    topLevelFREvents.loFreq(Transport_UniqueAddressSet, _localAddress.toString())
+    topLevelFlightRecorder.loFreq(Transport_UniqueAddressSet, _localAddress.toString())
 
     materializer = ActorMaterializer.systemMaterializer(settings.Advanced.MaterializerSettings, "remote", system)
     controlMaterializer = ActorMaterializer.systemMaterializer(
@@ -428,10 +449,12 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       "remoteControl", system)
 
     messageDispatcher = new MessageDispatcher(system, provider)
-    topLevelFREvents.loFreq(Transport_MaterializerStarted, NoMetaData)
+    topLevelFlightRecorder.loFreq(Transport_MaterializerStarted, NoMetaData)
 
     runInboundStreams()
-    topLevelFREvents.loFreq(Transport_StartupFinished, NoMetaData)
+    topLevelFlightRecorder.loFreq(Transport_StartupFinished, NoMetaData)
+
+    startRemoveQuarantinedAssociationTask()
 
     log.info(
       "Remoting started with transport [Artery {}]; listening on address [{}] with UID [{}]",
@@ -441,6 +464,15 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   protected def startTransport(): Unit
 
   protected def runInboundStreams(): Unit
+
+  private def startRemoveQuarantinedAssociationTask(): Unit = {
+    val removeAfter = settings.Advanced.RemoveQuarantinedAssociationAfter
+    val interval = removeAfter / 2
+    system.scheduler.schedule(removeAfter, interval) {
+      if (!isShutdown)
+        associationRegistry.removeUnusedQuarantined(removeAfter)
+    }(system.dispatcher)
+  }
 
   // Select inbound lane based on destination to preserve message order,
   // Also include the uid of the sending system in the hash to spread
@@ -552,6 +584,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
           case ShuttingDown ⇒ // silence it
         }
       }
+
+      override def controlSubjectCompleted(signal: Try[Done]): Unit = ()
     })
 
   }
@@ -568,6 +602,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       case cause ⇒
         if (restartCounter.restart()) {
           log.error(cause, "{} failed. Restarting it. {}", streamName, cause.getMessage)
+          topLevelFlightRecorder.loFreq(Transport_RestartInbound, s"$localAddress - $streamName")
           restart()
         } else {
           log.error(cause, "{} failed and restarted {} times within {} seconds. Terminating system. {}",
@@ -602,7 +637,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     import system.dispatcher
 
     killSwitch.abort(ShutdownSignal)
-    topLevelFREvents.loFreq(Transport_KillSwitchPulled, NoMetaData)
+    topLevelFlightRecorder.loFreq(Transport_KillSwitchPulled, NoMetaData)
     for {
       _ ← streamsCompleted.recover { case _ ⇒ Done }
       _ ← shutdownTransport().recover { case _ ⇒ Done }
@@ -610,7 +645,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       // no need to explicitly shut down the contained access since it's lifecycle is bound to the Decoder
       _inboundCompressionAccess = OptionVal.None
 
-      topLevelFREvents.loFreq(Transport_FlightRecorderClose, NoMetaData)
+      topLevelFlightRecorder.loFreq(Transport_FlightRecorderClose, NoMetaData)
       flightRecorder.foreach(_.close())
       afrFileChannel.foreach(_.force(true))
       afrFileChannel.foreach(_.close())
@@ -692,8 +727,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   override def completeHandshake(peer: UniqueAddress): Future[Done] = {
     try {
-      val a = associationRegistry.setUID(peer)
-      a.completeHandshake(peer)
+      associationRegistry.setUID(peer).completeHandshake(peer)
     } catch {
       case ShuttingDown ⇒ Future.successful(Done) // silence it
     }
