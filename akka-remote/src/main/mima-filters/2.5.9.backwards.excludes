@@ -26,6 +26,20 @@ ProblemFilters.exclude[Problem]("akka.remote.artery.AeronSource*")
 ProblemFilters.exclude[Problem]("akka.remote.artery.TaskRunner*")
 ProblemFilters.exclude[Problem]("akka.remote.artery.AeronErrorLog*")
 
+# #23967 Stop unused Artery outbound streams
+ProblemFilters.exclude[Problem]("akka.remote.artery.InboundControlJunction*")
+ProblemFilters.exclude[Problem]("akka.remote.artery.Association*")
+ProblemFilters.exclude[Problem]("akka.remote.artery.OutboundContext*")
+ProblemFilters.exclude[Problem]("akka.remote.artery.Decoder*")
+ProblemFilters.exclude[Problem]("akka.remote.artery.AssociationState*")
+ProblemFilters.exclude[Problem]("akka.remote.artery.compress.InboundCompressions*")
+
+
+
+
+
+
+
 
 
 

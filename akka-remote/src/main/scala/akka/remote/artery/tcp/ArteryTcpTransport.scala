@@ -128,13 +128,30 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
           TcpOutbound_Connected,
           s"${outboundContext.remoteAddress.host.get}:${outboundContext.remoteAddress.port.get} " +
             s"/ ${streamName(streamId)}")
-        Flow[ByteString]
-          .prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId)))
-          .via(connectionFlow)
-          .mapMaterializedValue(_ ⇒ NotUsed)
-          .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal ⇒ Source.empty })
-          .log(name = s"outbound connection to [${outboundContext.remoteAddress}], ${streamName(streamId)} stream")
-          .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = Logging.WarningLevel))
+
+        // FIXME use the Flow.lazyInit from https://github.com/akka/akka/pull/24527
+
+        val flow =
+          Flow[ByteString]
+            .prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId)))
+            .via(connectionFlow)
+            .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal ⇒ Source.empty })
+            .log(name = s"outbound connection to [${outboundContext.remoteAddress}], ${streamName(streamId)} stream")
+            .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = Logging.WarningLevel))
+
+        if (streamId == ControlStreamId) {
+          // must replace the KillSwitch when restarted
+          val controlIdleKillSwitch = KillSwitches.shared("outboundControlStreamIdleKillSwitch")
+          Flow[ByteString]
+            .via(controlIdleKillSwitch.flow)
+            .via(flow)
+            .mapMaterializedValue { _ ⇒
+              outboundContext.asInstanceOf[Association].setControlIdleKillSwitch(OptionVal.Some(controlIdleKillSwitch))
+              NotUsed
+            }
+        } else {
+          flow
+        }
       }
 
       if (streamId == ControlStreamId) {
@@ -145,7 +162,6 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
           settings.Advanced.GiveUpSystemMessageAfter, 0.1)(flowFactory)
       } else {
         // Best effort retry a few times
-        // FIXME only restart on failures?, but missing in RestartFlow, see https://github.com/akka/akka/pull/23911
         RestartFlow.withBackoff[ByteString, ByteString](
           settings.Advanced.OutboundRestartBackoff,
           settings.Advanced.OutboundRestartBackoff * 5, 0.1, maxRestarts = 3)(flowFactory)
@@ -397,7 +413,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     implicit val ec: ExecutionContext = materializer.executionContext
     inboundKillSwitch.shutdown()
     unbind().map { _ ⇒
-      topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
+      topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
       Done
     }
   }
@@ -410,7 +426,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
           b ← binding
           _ ← b.unbind()
         } yield {
-          topLevelFREvents.loFreq(TcpInbound_Bound, s"${localAddress.address.host.get}:${localAddress.address.port}")
+          topLevelFlightRecorder.loFreq(TcpInbound_Bound, s"${localAddress.address.host.get}:${localAddress.address.port}")
           Done
         }
       case None ⇒

@@ -143,6 +143,11 @@ private[akka] final class ArterySettings private (config: Config) {
     val GiveUpSystemMessageAfter: FiniteDuration =
       config.getMillisDuration("give-up-system-message-after").requiring(interval ⇒
         interval > Duration.Zero, "give-up-system-message-after must be more than zero")
+    val RemoveQuarantinedAssociationAfter: FiniteDuration =
+      config.getMillisDuration("remove-quarantined-association-after").requiring(interval ⇒
+        interval > Duration.Zero, "remove-quarantined-association-after must be more than zero")
+    val StopIdleOutboundAfter: FiniteDuration = config.getMillisDuration("stop-idle-outbound-after").requiring(interval ⇒
+      interval > Duration.Zero, "stop-idle-outbound-after must be more than zero")
     val ShutdownFlushTimeout: FiniteDuration =
       config.getMillisDuration("shutdown-flush-timeout").requiring(interval ⇒
         interval > Duration.Zero, "shutdown-flush-timeout must be more than zero")

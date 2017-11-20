@@ -24,6 +24,11 @@ private[remote] object FlightRecorderEvents {
   val Transport_MediaFileDeleted = 11
   val Transport_FlightRecorderClose = 12
   val Transport_SendQueueOverflow = 13
+  val Transport_StopIdleOutbound = 14
+  val Transport_Quarantined = 15
+  val Transport_RemovedQuarantined = 16
+  val Transport_RestartOutbound = 17
+  val Transport_RestartInbound = 18
 
   // Aeron Sink events
   val AeronSink_Started = 50
@@ -75,6 +80,11 @@ private[remote] object FlightRecorderEvents {
     Transport_MediaFileDeleted → "Transport: Media file deleted",
     Transport_FlightRecorderClose → "Transport: Flight recorder closed",
     Transport_SendQueueOverflow → "Transport: Send queue overflow",
+    Transport_StopIdleOutbound -> "Transport: Remove idle outbound",
+    Transport_Quarantined -> "Transport: Quarantined association",
+    Transport_RemovedQuarantined -> "Transport: Removed idle quarantined association",
+    Transport_RestartOutbound -> "Transport: Restart outbound",
+    Transport_RestartInbound -> "Transport: Restart outbound",
 
     // Aeron Sink events
     AeronSink_Started → "AeronSink: Started",
