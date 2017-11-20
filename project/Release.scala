@@ -28,7 +28,7 @@ object Release extends ParadoxKeys {
     val state1 = extracted.runAggregated(publishSigned in projectRef, state)
     // Make sure you set "-Dakka.genjavadoc.enabled=true" otherwise no
     // japi will be generated and this following match will fail:
-    val (state2, Seq(api, japi)) = extracted.runTask(unidoc in Compile, state1)
+    val (state2, Seq(japi, api)) = extracted.runTask(unidoc in Compile, state1)
     val (state3, docs) = extracted.runTask(paradox in ProjectRef(projectRef.build, "akka-docs") in Compile, state2)
 
     IO.delete(release)
