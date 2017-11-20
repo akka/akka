@@ -10,7 +10,6 @@ import java.util.Properties
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
 import sbt._
-import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
 import scala.collection.breakOut
 
 object AkkaBuild {
