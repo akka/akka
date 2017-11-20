@@ -169,7 +169,9 @@ private[remote] class Association(
   }
   // keyed by stream queue index
   private[this] val streamMatValues = new AtomicReference(Map.empty[Int, OutboundStreamMatValues])
-  private[this] val idle = new AtomicReference[Option[Cancellable]](None)
+
+  private[this] val idleTask = new AtomicReference[Option[Cancellable]](None)
+  private[this] val quarantinedIdleTask = new AtomicReference[Option[Cancellable]](None)
 
   private[remote] def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] = {
     import transport.system.dispatcher
@@ -275,7 +277,7 @@ private[remote] class Association(
               if (swapState(current, newState)) {
                 current.uniqueRemoteAddressValue() match {
                   case Some(old) ⇒
-                    cancelIdleTimer()
+                    cancelQuarantinedIdleTimer()
                     log.debug(
                       "Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
                       newState.incarnation, peer.address, peer.uid, old.uid)
@@ -298,7 +300,7 @@ private[remote] class Association(
         if (associationState.isQuarantined()) {
           log.debug("Send control message [{}] to quarantined [{}]", Logging.messageClassName(message),
             remoteAddress)
-          startIdleTimer()
+          startQuarantinedIdleTimer()
         }
         outboundControlIngress.sendControlMessage(message)
       }
@@ -323,19 +325,22 @@ private[remote] class Association(
       deadletters ! env
     }
 
-    val quarantined = associationState.isQuarantined()
+    val state = associationState
+    val quarantined = state.isQuarantined()
 
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
     if (message.isInstanceOf[ActorSelectionMessage] || !quarantined || message == ClearSystemMessageDelivery) {
       if (quarantined && message != ClearSystemMessageDelivery) {
         log.debug("Quarantine piercing attempt with message [{}] to [{}]", Logging.messageClassName(message), recipient.getOrElse(""))
-        startIdleTimer()
+        startQuarantinedIdleTimer()
       }
       try {
         message match {
           case _: SystemMessage ⇒
             val outboundEnvelope = createOutboundEnvelope()
+            state.pendingSystemMessagesCount.incrementAndGet()
             if (!controlQueue.offer(createOutboundEnvelope())) {
+              state.pendingSystemMessagesCount.decrementAndGet()
               quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
               dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
             }
@@ -401,11 +406,19 @@ private[remote] class Association(
     }
   }
 
+  def isStreamActive(queueIndex: Int): Boolean = {
+    queues(queueIndex) match {
+      case _: LazyQueueWrapper  ⇒ false
+      case DisabledQueueWrapper ⇒ false
+      case _                    ⇒ true
+    }
+  }
+
   def sendTerminationHint(replyTo: ActorRef): Int = {
     if (!associationState.isQuarantined()) {
       val msg = ActorSystemTerminating(localAddress)
       var sent = 0
-      queues.iterator.filter(_.isEnabled).foreach { queue ⇒
+      queues.iterator.filter(q ⇒ q.isEnabled && !q.isInstanceOf[LazyQueueWrapper]).foreach { queue ⇒
         try {
           val envelope = outboundEnvelopePool.acquire()
             .init(OptionVal.None, msg, OptionVal.Some(replyTo))
@@ -448,7 +461,7 @@ private[remote] class Association(
                 send(ClearSystemMessageDelivery, OptionVal.None, OptionVal.None)
                 // try to tell the other system that we have quarantined it
                 sendControl(Quarantined(localAddress, peer))
-                startIdleTimer()
+                startQuarantinedIdleTimer()
               } else
                 quarantine(reason, uid) // recursive
             }
@@ -467,19 +480,45 @@ private[remote] class Association(
 
   }
 
-  private def cancelIdleTimer(): Unit = {
-    val current = idle.get
+  private def cancelQuarantinedIdleTimer(): Unit = {
+    val current = quarantinedIdleTask.get
     current.foreach(_.cancel())
-    idle.compareAndSet(current, None)
+    quarantinedIdleTask.compareAndSet(current, None)
   }
 
-  private def startIdleTimer(): Unit = {
-    cancelIdleTimer()
-    idle.set(Some(transport.system.scheduler.scheduleOnce(advancedSettings.StopQuarantinedAfterIdle) {
+  private def startQuarantinedIdleTimer(): Unit = {
+    cancelQuarantinedIdleTimer()
+    quarantinedIdleTask.set(Some(transport.system.scheduler.scheduleOnce(advancedSettings.StopQuarantinedAfterIdle) {
       if (associationState.isQuarantined())
         streamMatValues.get.valuesIterator.foreach {
           case OutboundStreamMatValues(killSwitch, _) ⇒ killSwitch.abort(OutboundStreamStopSignal)
         }
+    }(transport.system.dispatcher)))
+  }
+
+  private def cancelIdleTimer(): Unit = {
+    val current = idleTask.get
+    current.foreach(_.cancel())
+    idleTask.compareAndSet(current, None)
+  }
+
+  private def startIdleTimer(): Unit = {
+    cancelIdleTimer()
+    // FIXME config
+    idleTask.set(Some(transport.system.scheduler.schedule(1.second, 1.second) {
+      if (System.currentTimeMillis() - associationState.lastUsedTimestamp.get >= 4000) {
+        val allStopped = true
+        streamMatValues.get.foreach {
+          case (queueIndex, OutboundStreamMatValues(killSwitch, _)) ⇒
+            if (isStreamActive(queueIndex)) {
+              if (queueIndex != ControlQueueIndex || associationState.pendingSystemMessagesCount.get == 0)
+                println(s"# OutboundStreamStopSignal $queueIndex $remoteAddress") // FIXME
+              killSwitch.abort(OutboundStreamStopSignal)
+            }
+        }
+        if (allStopped)
+          cancelIdleTimer()
+      }
     }(transport.system.dispatcher)))
   }
 
@@ -495,6 +534,7 @@ private[remote] class Association(
     if (!controlQueue.isInstanceOf[QueueWrapper])
       throw new IllegalStateException("associate() must only be called once")
     runOutboundStreams()
+    startIdleTimer()
   }
 
   private def runOutboundStreams(): Unit = {
@@ -666,7 +706,11 @@ private[remote] class Association(
         _outboundControlIngress = OptionVal.None
       }
       // LazyQueueWrapper will invoke the `restart` function when first message is offered
-      queues(queueIndex) = LazyQueueWrapper(createQueue(queueCapacity), restart)
+      val restartAndStartIdleTimer: () ⇒ Unit = () ⇒ {
+        restart()
+        startIdleTimer()
+      }
+      queues(queueIndex) = LazyQueueWrapper(createQueue(queueCapacity), restartAndStartIdleTimer)
       queuesVisibility = true // volatile write for visibility of the queues array
     }
 

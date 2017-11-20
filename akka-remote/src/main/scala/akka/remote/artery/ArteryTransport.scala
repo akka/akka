@@ -11,6 +11,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.annotation.tailrec
 import scala.concurrent.{ Await, Future, Promise }
@@ -106,6 +107,8 @@ private[remote] object AssociationState {
     new AssociationState(
       incarnation = 1,
       uniqueRemoteAddressPromise = Promise(),
+      pendingSystemMessagesCount = new AtomicInteger,
+      lastUsedTimestamp = new AtomicLong(System.currentTimeMillis()),
       quarantined = ImmutableLongMap.empty[QuarantinedTimestamp])
 
   final case class QuarantinedTimestamp(nanoTime: Long) {
@@ -120,6 +123,8 @@ private[remote] object AssociationState {
 private[remote] final class AssociationState(
   val incarnation:                Int,
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
+  val pendingSystemMessagesCount: AtomicInteger,
+  val lastUsedTimestamp:          AtomicLong,
   val quarantined:                ImmutableLongMap[AssociationState.QuarantinedTimestamp]) {
 
   import AssociationState.QuarantinedTimestamp
@@ -147,7 +152,8 @@ private[remote] final class AssociationState(
   }
 
   def newIncarnation(remoteAddressPromise: Promise[UniqueAddress]): AssociationState =
-    new AssociationState(incarnation + 1, remoteAddressPromise, quarantined)
+    new AssociationState(incarnation + 1, remoteAddressPromise, pendingSystemMessagesCount = new AtomicInteger,
+      lastUsedTimestamp = new AtomicLong(System.currentTimeMillis()), quarantined)
 
   def newQuarantined(): AssociationState =
     uniqueRemoteAddressPromise.future.value match {
@@ -155,6 +161,8 @@ private[remote] final class AssociationState(
         new AssociationState(
           incarnation,
           uniqueRemoteAddressPromise,
+          pendingSystemMessagesCount = new AtomicInteger,
+          lastUsedTimestamp = new AtomicLong(System.currentTimeMillis()),
           quarantined = quarantined.updated(a.uid, QuarantinedTimestamp(System.nanoTime())))
       case _ ⇒ this
     }

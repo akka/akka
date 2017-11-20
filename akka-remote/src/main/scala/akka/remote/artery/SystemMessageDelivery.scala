@@ -156,6 +156,7 @@ private[remote] class SystemMessageDelivery(
         if (!unacknowledged.isEmpty &&
           unacknowledged.peek().message.asInstanceOf[SystemMessageEnvelope].seqNo <= ackedSeqNo) {
           unacknowledged.removeFirst()
+          outboundContext.associationState.pendingSystemMessagesCount.decrementAndGet()
           if (unacknowledged.isEmpty)
             cancelTimer(resendInterval)
 
