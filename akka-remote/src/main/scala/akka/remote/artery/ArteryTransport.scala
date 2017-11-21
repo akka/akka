@@ -18,6 +18,7 @@ import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
+import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
@@ -212,6 +213,11 @@ private[remote] trait OutboundContext {
    * address of this association. It will be sent over the control sub-channel.
    */
   def sendControl(message: ControlMessage): Unit
+
+  /**
+   * @return `true` if any of the streams are active (not stopped due to idle)
+   */
+  def isActive(): Boolean
 
   /**
    * An outbound stage can listen to control messages
@@ -778,6 +784,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           case ShuttingDown ⇒ // silence it
         }
       }
+
+      override def controlSubjectCompleted(signal: Try[Done]): Unit = ()
     })
 
     updateStreamMatValues(controlStreamId, resourceLife, completed)

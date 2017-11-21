@@ -129,7 +129,6 @@ private[remote] class OutboundHandshake(
         scheduleOnce(InjectHandshakeTick, injectHandshakeInterval)
         val env: OutboundEnvelope = outboundEnvelopePool.acquire().init(
           recipient = OptionVal.None, message = HandshakeReq(outboundContext.localAddress, outboundContext.remoteAddress), sender = OptionVal.None)
-        println(s"# lastUsed ${outboundContext.remoteAddress}: ${System.currentTimeMillis()}") // FIXME
         outboundContext.associationState.lastUsedTimestamp.set(System.currentTimeMillis())
         push(out, env)
       }

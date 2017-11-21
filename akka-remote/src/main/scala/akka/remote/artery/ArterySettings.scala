@@ -120,6 +120,8 @@ private[akka] final class ArterySettings private (config: Config) {
       interval > Duration.Zero, "give-up-message-after must be more than zero")
     val GiveUpSystemMessageAfter = config.getMillisDuration("give-up-system-message-after").requiring(interval ⇒
       interval > Duration.Zero, "give-up-system-message-after must be more than zero")
+    val StopIdleOutboundAfter = config.getMillisDuration("stop-idle-outbound-after").requiring(interval ⇒
+      interval > Duration.Zero, "stop-idle-outbound-after must be more than zero")
     val ShutdownFlushTimeout = config.getMillisDuration("shutdown-flush-timeout").requiring(interval ⇒
       interval > Duration.Zero, "shutdown-flush-timeout must be more than zero")
     val InboundRestartTimeout = config.getMillisDuration("inbound-restart-timeout").requiring(interval ⇒

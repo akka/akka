@@ -406,6 +406,9 @@ private[remote] class Association(
     }
   }
 
+  override def isActive(): Boolean =
+    isStreamActive(ControlQueueIndex) || isStreamActive(OrdinaryQueueIndex) || isStreamActive(LargeQueueIndex)
+
   def isStreamActive(queueIndex: Int): Boolean = {
     queues(queueIndex) match {
       case _: LazyQueueWrapper  ⇒ false
@@ -504,22 +507,35 @@ private[remote] class Association(
 
   private def startIdleTimer(): Unit = {
     cancelIdleTimer()
-    // FIXME config
-    idleTask.set(Some(transport.system.scheduler.schedule(1.second, 1.second) {
-      if (System.currentTimeMillis() - associationState.lastUsedTimestamp.get >= 4000) {
-        val allStopped = true
+    val interval = settings.Advanced.StopIdleOutboundAfter / 2
+    val stopIdleOutboundAfterMillis = settings.Advanced.StopIdleOutboundAfter.toMillis
+    val task: Cancellable = transport.system.scheduler.schedule(interval, interval) {
+      if (System.currentTimeMillis() - associationState.lastUsedTimestamp.get >= stopIdleOutboundAfterMillis) {
+        var allStopped = true
         streamMatValues.get.foreach {
           case (queueIndex, OutboundStreamMatValues(killSwitch, _)) ⇒
             if (isStreamActive(queueIndex)) {
-              if (queueIndex != ControlQueueIndex || associationState.pendingSystemMessagesCount.get == 0)
-                println(s"# OutboundStreamStopSignal $queueIndex $remoteAddress") // FIXME
-              killSwitch.abort(OutboundStreamStopSignal)
+              if (queueIndex != ControlQueueIndex || associationState.pendingSystemMessagesCount.get == 0) {
+                log.debug("Stopping idle outbound stream [{}] to [{}]", queueIndex, remoteAddress)
+                killSwitch.abort(OutboundStreamStopSignal)
+              } else {
+                log.debug(
+                  "Couldn't stop idle outbound control stream to [{}] due to [{}] pending system messages",
+                  remoteAddress, associationState.pendingSystemMessagesCount.get)
+                allStopped = false
+              }
             }
         }
         if (allStopped)
           cancelIdleTimer()
       }
-    }(transport.system.dispatcher)))
+    }(transport.system.dispatcher)
+
+    if (!idleTask.compareAndSet(None, Some(task))) {
+      // another thread did same thing and won
+      task.cancel()
+    }
+
   }
 
   /**

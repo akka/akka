@@ -3,20 +3,16 @@
  */
 package akka.remote.artery
 
-import scala.concurrent.duration._
-
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
 import akka.actor.RootActorPath
 import akka.remote.RARP
-import akka.testkit.SocketUtil._
-import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
-import akka.testkit.TestEvent
 import akka.testkit.TestProbe
 
-class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec("akka.loglevel=DEBUG") with ImplicitSender {
+class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec("""
+  akka.loglevel=DEBUG
+  akka.remote.artery.advanced.stop-idle-outbound-after = 3 s
+  """) with ImplicitSender {
 
   "Idle outbound associations" should {
 

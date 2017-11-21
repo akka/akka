@@ -395,7 +395,7 @@ private[remote] abstract class InboundCompression[T >: Null](
       case None ⇒
         inboundContext.association(originUid) match {
           case OptionVal.Some(association) ⇒
-            if (alive) {
+            if (alive && association.isActive()) {
               val table = prepareCompressionAdvertisement(tables.nextTable.version)
               // TODO expensive, check if building the other way wouldn't be faster?
               val nextState = tables.copy(nextTable = table.invert, advertisementInProgress = Some(table))

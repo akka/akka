@@ -90,6 +90,8 @@ private[remote] class TestOutboundContext(
     _associationState = _associationState.newQuarantined()
   }
 
+  override def isActive(): Boolean = true
+
   override def sendControl(message: ControlMessage) = {
     controlProbe.foreach(_ ! message)
     controlSubject.sendControl(InboundEnvelope(OptionVal.None, message, OptionVal.None, localAddress.uid,
@@ -113,8 +115,6 @@ private[remote] class TestControlMessageSubject extends ControlMessageSubject {
   override def detach(observer: ControlMessageObserver): Unit = {
     observers.remove(observer)
   }
-
-  override def stopped: Future[Done] = Promise[Done]().future
 
   def sendControl(env: InboundEnvelope): Unit = {
     val iter = observers.iterator()
