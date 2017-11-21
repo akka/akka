@@ -235,11 +235,31 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
             case (c, _) ⇒ c isAssignableFrom clazz
           } match {
             case immutable.Seq() ⇒
-              throw new NotSerializableException("No configured serialization-bindings for class [%s]" format clazz.getName)
+              throw new NotSerializableException(s"No configured serialization-bindings for class [${clazz.getName}]")
             case possibilities ⇒
-              if (!unique(possibilities))
-                _log.warning(LogMarker.Security, "Multiple serializers found for " + clazz + ", choosing first: " + possibilities)
-              possibilities(0)._2
+              if (unique(possibilities))
+                possibilities.head._2
+              else {
+                // give JavaSerializer lower priority if multiple serializers found
+                val possibilitiesWithoutJavaSerializer = possibilities.filter {
+                  case (_, _: JavaSerializer)         ⇒ false
+                  case (_, _: DisabledJavaSerializer) ⇒ false
+                  case _                              ⇒ true
+                }
+                if (possibilitiesWithoutJavaSerializer.isEmpty) {
+                  // shouldn't happen
+                  throw new NotSerializableException(s"More than one JavaSerializer configured for class [${clazz.getName}]")
+                }
+
+                if (!unique(possibilitiesWithoutJavaSerializer)) {
+                  _log.warning(LogMarker.Security, "Multiple serializers found for [{}], choosing first of: [{}]",
+                    clazz.getName,
+                    possibilitiesWithoutJavaSerializer.map { case (_, s) ⇒ s.getClass.getName }.mkString(", "))
+                }
+                possibilitiesWithoutJavaSerializer.head._2
+
+              }
+
           }
         }
 
