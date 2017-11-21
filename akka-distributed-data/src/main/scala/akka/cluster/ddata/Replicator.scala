@@ -4,13 +4,11 @@
 package akka.cluster.ddata
 
 import java.security.MessageDigest
-
 import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.ThreadLocalRandom
-
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -35,31 +33,25 @@ import akka.serialization.SerializationExtension
 import akka.util.ByteString
 import com.typesafe.config.Config
 import java.util.function.{ Function ⇒ JFunction }
-
 import akka.dispatch.Dispatchers
 import akka.actor.DeadLetterSuppression
 import akka.cluster.ddata.Key.KeyR
 import java.util.Optional
-
 import akka.cluster.ddata.DurableStore._
 import akka.actor.ExtendedActorSystem
 import akka.actor.SupervisorStrategy
 import akka.actor.OneForOneStrategy
 import akka.actor.ActorInitializationException
 import java.util.concurrent.TimeUnit
-
 import akka.util.Helpers.toRootLowerCase
 import akka.actor.Cancellable
-
 import scala.util.control.NonFatal
 import akka.cluster.ddata.Key.KeyId
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
-
 import scala.collection.immutable.{ Set, TreeSet }
 import akka.cluster.MemberStatus
 import akka.cluster.ddata.Replicator._
-
 import scala.annotation.varargs
 
 object ReplicatorSettings {
