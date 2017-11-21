@@ -243,7 +243,7 @@ private[remote] class Association(
    * @return Whether the previous state matched correctly
    */
   @inline
-  private[this] def swapState(oldState: AssociationState, newState: AssociationState): Boolean =
+  private[artery] def swapState(oldState: AssociationState, newState: AssociationState): Boolean =
     Unsafe.instance.compareAndSwapObject(this, AbstractAssociation.sharedStateOffset, oldState, newState)
 
   /**

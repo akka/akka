@@ -417,6 +417,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       priorityMessageDestinations,
       outboundEnvelopePool))
 
+  // TODO: Consider including in `RemoteTransport`?
+  def remoteAddresses: Set[Address] = associationRegistry.allAssociations.map(_.remoteAddress)
+
   override def settings: ArterySettings = provider.remoteSettings.Artery
 
   override def start(): Unit = {
