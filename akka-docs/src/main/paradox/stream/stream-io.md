@@ -18,7 +18,7 @@ Scala
 Java
 :   @@snip [StreamTcpDocTest.java]($code$/java/jdocs/stream/io/StreamTcpDocTest.java) { #echo-server-simple-bind }
 
-![tcp-stream-bind.png](../../images/tcp-stream-bind.png)
+![tcp-stream-bind.png](../images/tcp-stream-bind.png)
 
 Next, we simply handle *each* incoming connection using a `Flow` which will be used as the processing stage
 to handle and emit `ByteString` s from and to the TCP Socket. Since one `ByteString` does not have to necessarily
@@ -33,7 +33,7 @@ Scala
 Java
 :   @@snip [StreamTcpDocTest.java]($code$/java/jdocs/stream/io/StreamTcpDocTest.java) { #echo-server-simple-handle }
 
-![tcp-stream-run.png](../../images/tcp-stream-run.png)
+![tcp-stream-run.png](../images/tcp-stream-run.png)
 
 Notice that while most building blocks in Akka Streams are reusable and freely shareable, this is *not* the case for the
 incoming connection Flow, since it directly corresponds to an existing, already accepted connection its handling can

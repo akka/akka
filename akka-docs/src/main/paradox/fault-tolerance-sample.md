@@ -2,7 +2,7 @@
 <a id="fault-tolerance-sample"></a>
 # Diagrams of the Fault Tolerance Sample
 
-![faulttolerancesample-normal-flow.png](../images/faulttolerancesample-normal-flow.png)
+![faulttolerancesample-normal-flow.png](./images/faulttolerancesample-normal-flow.png)
 
 *The above diagram illustrates the normal message flow.*
 
@@ -15,7 +15,7 @@
 |3, 4, 5 | When receiving `Do` the `Worker` tells the `CounterService` to increment the counter, three times. The `Increment` message is forwarded to the `Counter`, which updates its counter variable and sends current value to the `Storage`.|
 |6, 7    | The `Worker` asks the `CounterService` of current value of the counter and pipes the result back to the `Listener`.                                                                                                                   |
 
-![faulttolerancesample-failure-flow.png](../images/faulttolerancesample-failure-flow.png)
+![faulttolerancesample-failure-flow.png](./images/faulttolerancesample-failure-flow.png)
 
 *The above diagram illustrates what happens in case of storage failure.*
 

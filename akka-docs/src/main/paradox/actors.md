@@ -377,7 +377,7 @@ The implementations shown above are the defaults provided by the @scala[`Actor` 
 <a id="actor-lifecycle"></a>
 ### Actor Lifecycle
 
-![actor_lifecycle.png](../images/actor_lifecycle.png)
+![actor_lifecycle.png](./images/actor_lifecycle.png)
 
 A path in an actor system represents a "place" which might be occupied
 by a living actor. Initially (apart from system initialized actors) a path is

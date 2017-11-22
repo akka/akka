@@ -23,7 +23,7 @@ test nodes)
 
 This is a schematic overview of the test conductor.
 
-![akka-remote-testconductor.png](../images/akka-remote-testconductor.png)
+![akka-remote-testconductor.png](./images/akka-remote-testconductor.png)
 
 The test conductor server is responsible for coordinating barriers and sending commands to the test conductor
 clients that act upon them, e.g. throttling network traffic to/from another client. More information on the
