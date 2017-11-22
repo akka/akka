@@ -209,10 +209,11 @@ final class Flow[-In, +Out, +Mat](
   }
 
   /**
-   * Change the attributes of this [[Flow]] to the given ones and seal the list
-   * of attributes. This means that further calls will not be able to remove these
-   * attributes, but instead add new ones. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
+   * Replace the attributes of this [[Flow]] with the given ones. If this Flow is a composite
+   * of multiple graphs, new attributes on the composite will be less specific than attributes
+   * set directly on the individual graphs of the composite.
+   *
+   * Note that this operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
@@ -221,10 +222,10 @@ final class Flow[-In, +Out, +Mat](
       shape)
 
   /**
-   * Add the given attributes to this Flow. Further calls to `withAttributes`
-   * will not remove these attributes. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Add the given attributes to this [[Flow]]. If the specific attribute was already present
+   * on this graph this means the added attribute will be more specific than the existing one.
+   * If this Flow is a composite of multiple graphs, new attributes on the composite will be
+   * less specific than attributes set directly on the individual graphs of the composite.
    */
   override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(traversalBuilder.attributes and attr)
 
@@ -236,7 +237,24 @@ final class Flow[-In, +Out, +Mat](
   /**
    * Put an asynchronous boundary around this `Flow`
    */
-  override def async: Repr[Out] = addAttributes(Attributes.asyncBoundary)
+  override def async: Repr[Out] = super.async.asInstanceOf[Repr[Out]]
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): Repr[Out] =
+    super.async(dispatcher).asInstanceOf[Repr[Out]]
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): Repr[Out] =
+    super.async(dispatcher, inputBufferSize).asInstanceOf[Repr[Out]]
 
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
@@ -309,6 +327,16 @@ object Flow {
     g match {
       case f: Flow[I, O, M]         ⇒ f
       case f: javadsl.Flow[I, O, M] ⇒ f.asScala
+      case g: GraphStageWithMaterializedValue[FlowShape[I, O], M] ⇒
+        // move these from the stage itself to make the returned source
+        // behave as it is the stage with regards to attributes
+        val attrs = g.traversalBuilder.attributes
+        val noAttrStage = g.withAttributes(Attributes.none)
+        new Flow(
+          LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
+          noAttrStage.shape
+        ).withAttributes(attrs)
+
       case other ⇒ new Flow(
         LinearTraversalBuilder.fromBuilder(g.traversalBuilder, g.shape, Keep.right),
         g.shape)
@@ -504,7 +532,23 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
   override def named(name: String): RunnableGraph[Mat] =
     addAttributes(Attributes.name(name))
 
-  override def async: RunnableGraph[Mat] = addAttributes(Attributes.asyncBoundary)
+  /**
+   * Note that an async boundary around a runnable graph does not make sense
+   */
+  override def async: RunnableGraph[Mat] =
+    super.async.asInstanceOf[RunnableGraph[Mat]]
+
+  /**
+   * Note that an async boundary around a runnable graph does not make sense
+   */
+  override def async(dispatcher: String): RunnableGraph[Mat] =
+    super.async(dispatcher).asInstanceOf[RunnableGraph[Mat]]
+
+  /**
+   * Note that an async boundary around a runnable graph does not make sense
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): RunnableGraph[Mat] =
+    super.async(dispatcher, inputBufferSize).asInstanceOf[RunnableGraph[Mat]]
 }
 
 /**

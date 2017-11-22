@@ -697,7 +697,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   override def takePublisher(slot: Int, publisher: Publisher[Any]): Unit = {
     val connection = conn(slot)
     // TODO: proper input port debug string (currently prints the stage)
-    val bufferSize = connection.inOwner.attributes.get[InputBuffer].get.max
+    val bufferSize = connection.inOwner.attributes.mostSpecific[InputBuffer].get.max
     val boundary =
       new BatchingActorInputBoundary(bufferSize, shell, publisher, connection.inOwner.toString)
     logics.add(boundary)
