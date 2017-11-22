@@ -19,7 +19,7 @@ object ReplicatorSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.log-dead-letters-during-shutdown = off
     #akka.cluster.distributed-data.delta-crdt.enabled = off
@@ -43,7 +43,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
   val replicator = system.actorOf(Replicator.props(
     ReplicatorSettings(system).withGossipInterval(1.second).withMaxDeltaElements(10)), "replicator")
   val timeout = 3.seconds.dilated
-  val writeTwo = wrapInDataCenterAware(WriteTo(2, timeout))
+  val writeTwo = WriteTo(2, timeout)
   val writeMajority = WriteMajority(timeout)
   val writeAll = WriteAll(timeout)
   val readTwo = ReadFrom(2, timeout)
@@ -258,7 +258,6 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     enterBarrierAfterTestStep()
   }
-  /*
 
   "be replicated after succesful update" in {
     val changedProbe = TestProbe()
@@ -572,10 +571,6 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     enterBarrierAfterTestStep()
   }
-*/
 
-  private def wrapInDataCenterAware(consistency: WriteConsistency) = {
-    DataCenterWriteConsistency(timeout, _ ⇒ Some(consistency))
-  }
 }
 
