@@ -134,7 +134,6 @@ This can also be defined as Java system properties when starting the JVM using t
 Such configuration is typically created dynamically by external tools, see for example:
 
 * [Deploying clustered Akka applications on Kubernetes](http://developer.lightbend.com/guides/k8-akka-cluster/)
-* [ConductR](https://conductr.lightbend.com/docs/2.1.x/AkkaAndPlay#Akka-Clustering)
 * [ConstructR](https://github.com/hseeberger/constructr)
 
 The seed nodes can be started in any order and it is not necessary to have all
