@@ -3,15 +3,15 @@
  */
 package akka.stream.scaladsl
 
-import java.io.{ OutputStream, InputStream }
+import java.io.{ InputStream, OutputStream }
 import java.util.Spliterators
 import java.util.concurrent.atomic.AtomicReference
 import java.util.stream.{ Collector, StreamSupport }
 
-import akka.stream.{ Attributes, SinkShape, IOResult }
+import akka.stream.{ ActorAttributes, Attributes, IOResult, SinkShape }
 import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.io.{ InputStreamSinkStage, OutputStreamSink, OutputStreamSourceStage, InputStreamSource }
+import akka.stream.impl.io.{ InputStreamSinkStage, InputStreamSource, OutputStreamSink, OutputStreamSourceStage }
 import akka.util.ByteString
 
 import scala.concurrent.duration.Duration._
@@ -112,7 +112,7 @@ object StreamConverters {
     Flow[T].fold(() ⇒
       new CollectorState[T, R](collectorFactory().asInstanceOf[Collector[T, Any, R]])) { (state, elem) ⇒ () ⇒ state().update(elem) }
       .map(state ⇒ state().finish())
-      .toMat(Sink.head)(Keep.right).withAttributes(DefaultAttributes.javaCollector)
+      .toMat(Sink.head)(Keep.right).named("javaCollector")
 
   /**
    * Creates a sink which materializes into a ``Future`` which will be completed with result of the Java 8 ``Collector`` transformation
@@ -146,7 +146,7 @@ object StreamConverters {
           .map(state ⇒ state().finish()) ~> sink.in
 
         SinkShape(balance.in)
-      }).withAttributes(DefaultAttributes.javaCollectorParallelUnordered)
+      }).named("javaCollectorParallelUnordered")
     }
   }
 
@@ -165,7 +165,7 @@ object StreamConverters {
    */
   def asJavaStream[T](): Sink[T, java.util.stream.Stream[T]] = {
     // TODO removing the QueueSink name, see issue #22523
-    Sink.fromGraph(new QueueSink[T]().withAttributes(Attributes.none))
+    Sink.fromGraph(new QueueSink[T]())
       .mapMaterializedValue(queue ⇒ StreamSupport.stream(
         Spliterators.spliteratorUnknownSize(new java.util.Iterator[T] {
           var nextElementFuture: Future[Option[T]] = queue.pull()
@@ -182,7 +182,8 @@ object StreamConverters {
             next
           }
         }, 0), false).onClose(new Runnable { def run = queue.cancel() }))
-      .withAttributes(DefaultAttributes.asJavaStream)
+      .named("asJavaStream")
+      .addAttributes(DefaultAttributes.asJavaStream)
   }
 
   /**

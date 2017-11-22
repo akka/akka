@@ -943,6 +943,8 @@ private[stream] object Collect {
 
   override val shape: FlowShape[In, Out] = FlowShape.of(in, out)
 
+  override protected def initialAttributes: Attributes = DefaultAttributes.batch
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
 
     lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)

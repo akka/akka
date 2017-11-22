@@ -55,6 +55,7 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
     _traversalBuilder
   }
 
+  @deprecated("Use addAttributes instead of withAttributes, will be made internal", "2.5.8")
   final override def withAttributes(attr: Attributes): Graph[S, M] =
     new GenericGraphWithChangedAttributes(shape, GraphStageWithMaterializedValue.this.traversalBuilder, attr)
 }

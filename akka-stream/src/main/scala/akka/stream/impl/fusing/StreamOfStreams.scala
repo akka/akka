@@ -87,7 +87,7 @@ import scala.collection.JavaConverters._
       sinkIn.pull()
       sources += sinkIn
       val graph = Source.fromGraph(source).to(sinkIn.sink)
-      interpreter.subFusingMaterializer.materialize(graph, initialAttributes = enclosingAttributes)
+      interpreter.subFusingMaterializer.materialize(graph, defaultAttributes = enclosingAttributes)
     }
 
     def removeSource(src: SubSinkInlet[T]): Unit = {

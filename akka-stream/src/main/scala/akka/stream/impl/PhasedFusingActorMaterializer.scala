@@ -368,8 +368,13 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
   private[this] def createFlowName(): String = flowNames.next()
 
-  /** INTERNAL API */
-  private[akka] val defaultInitialAttributes = {
+  /**
+   * Default attributes for the materializer, are always seen as least specific, so any attribute
+   * specified in the graph or on the stages "wins" over these
+   *
+   * INTERNAL API
+   */
+  private[akka] val defaultAttributes = {
     val a = Attributes(
       Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
         ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
@@ -381,6 +386,9 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   override def effectiveSettings(opAttr: Attributes): ActorMaterializerSettings = {
     import ActorAttributes._
     import Attributes._
+
+    // extracts the most specific InputBuffer, Dispatcher, and SupervisionStrategy (!?) and returns a
+    // ActorMaterializerSettings with those updated
     @tailrec def applyAttributes(attrs: List[Attribute], s: ActorMaterializerSettings,
                                  inputBufferDone: Boolean, dispatcherDone: Boolean, supervisorDone: Boolean): ActorMaterializerSettings = {
       attrs match {
@@ -412,20 +420,20 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     system.scheduler.scheduleOnce(delay, task)(executionContext)
 
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat =
-    materialize(_runnableGraph, defaultInitialAttributes)
+    materialize(_runnableGraph, defaultAttributes)
 
   override def materialize[Mat](
     _runnableGraph:    Graph[ClosedShape, Mat],
-    initialAttributes: Attributes): Mat =
+    defaultAttributes: Attributes): Mat =
     materialize(
       _runnableGraph,
-      initialAttributes,
+      defaultAttributes,
       PhasedFusingActorMaterializer.DefaultPhase,
       PhasedFusingActorMaterializer.DefaultPhases)
 
   override def materialize[Mat](
     graph:             Graph[ClosedShape, Mat],
-    initialAttributes: Attributes,
+    defaultAttributes: Attributes,
     defaultPhase:      Phase[Any],
     phases:            Map[IslandTag, Phase[Any]]): Mat = {
     val islandTracking = new IslandTracking(phases, settings, defaultPhase, this, islandNamePrefix = createFlowName() + "-")
@@ -433,7 +441,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     var current: Traversal = graph.traversalBuilder.traversal
 
     val attributesStack = new java.util.ArrayDeque[Attributes](8)
-    attributesStack.addLast(initialAttributes and graph.traversalBuilder.attributes)
+    attributesStack.addLast(defaultAttributes)
 
     val traversalStack = new java.util.ArrayDeque[Traversal](16)
     traversalStack.addLast(current)
@@ -441,6 +449,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     val matValueStack = new java.util.ArrayDeque[Any](8)
 
     if (Debug) {
+      println(s"--- Initial attribute stack: $attributesStack")
       println(s"--- Materializing layout:")
       TraversalBuilder.printTraversal(current)
       println(s"--- Start materialization")

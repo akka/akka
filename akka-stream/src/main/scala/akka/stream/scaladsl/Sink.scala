@@ -62,6 +62,7 @@ final class Sink[-In, +Mat](
    * of multiple graphs, new attributes on the composite will be less specific than attributes
    * set directly on the individual graphs of the composite.
    */
+  @deprecated("Use addAttributes instead of withAttributes, will be made internal", "2.5.8")
   override def withAttributes(attr: Attributes): Sink[In, Mat] =
     new Sink(
       traversalBuilder.setAttributes(attr),
@@ -74,12 +75,13 @@ final class Sink[-In, +Mat](
    * less specific than attributes set directly on the individual graphs of the composite.
    */
   override def addAttributes(attr: Attributes): Sink[In, Mat] =
-    withAttributes(traversalBuilder.attributes and attr)
+    super.addAttributes(attr).asInstanceOf[Sink[In, Mat]]
 
   /**
    * Add a ``name`` attribute to this Sink.
    */
-  override def named(name: String): Sink[In, Mat] = addAttributes(Attributes.name(name))
+  override def named(name: String): Sink[In, Mat] =
+    super.named(name).asInstanceOf[Sink[In, Mat]]
 
   /**
    * Put an asynchronous boundary around this `Source`
@@ -157,7 +159,7 @@ object Sink {
    * See also [[headOption]].
    */
   def head[T]: Sink[T, Future[T]] =
-    Sink.fromGraph(new HeadOptionStage[T]).withAttributes(DefaultAttributes.headSink)
+    Sink.fromGraph(new HeadOptionStage[T]).named("headSink")
       .mapMaterializedValue(e ⇒ e.map(_.getOrElse(throw new NoSuchElementException("head of empty stream")))(ExecutionContexts.sameThreadExecutionContext))
 
   /**
@@ -168,7 +170,7 @@ object Sink {
    * See also [[head]].
    */
   def headOption[T]: Sink[T, Future[Option[T]]] =
-    Sink.fromGraph(new HeadOptionStage[T]).withAttributes(DefaultAttributes.headOptionSink)
+    Sink.fromGraph(new HeadOptionStage[T]).named("headOptionSink")
 
   /**
    * A `Sink` that materializes into a `Future` of the last value received.
@@ -177,7 +179,7 @@ object Sink {
    *
    * See also [[lastOption]].
    */
-  def last[T]: Sink[T, Future[T]] = Sink.fromGraph(new LastOptionStage[T]).withAttributes(DefaultAttributes.lastSink)
+  def last[T]: Sink[T, Future[T]] = Sink.fromGraph(new LastOptionStage[T]).named("lastSink")
     .mapMaterializedValue(e ⇒ e.map(_.getOrElse(throw new NoSuchElementException("last of empty stream")))(ExecutionContexts.sameThreadExecutionContext))
 
   /**
@@ -187,7 +189,7 @@ object Sink {
    *
    * See also [[last]].
    */
-  def lastOption[T]: Sink[T, Future[Option[T]]] = Sink.fromGraph(new LastOptionStage[T]).withAttributes(DefaultAttributes.lastOptionSink)
+  def lastOption[T]: Sink[T, Future[Option[T]]] = Sink.fromGraph(new LastOptionStage[T]).named("lastOptionSink")
 
   /**
    * A `Sink` that keeps on collecting incoming elements until upstream terminates.

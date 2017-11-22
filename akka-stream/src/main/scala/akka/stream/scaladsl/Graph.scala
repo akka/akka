@@ -30,6 +30,7 @@ private[stream] final class GenericGraph[S <: Shape, Mat](override val shape: S,
 
   override def toString: String = s"GenericGraph($shape)"
 
+  @deprecated("Use addAttributes instead of withAttributes, will be made internal", "2.5.8")
   override def withAttributes(attr: Attributes): Graph[S, Mat] =
     new GenericGraphWithChangedAttributes(shape, traversalBuilder, attr)
 }
@@ -47,6 +48,7 @@ private[stream] final class GenericGraphWithChangedAttributes[S <: Shape, Mat](o
 
   override def toString: String = s"GenericGraphWithChangedAttributes($shape)"
 
+  @deprecated("Use addAttributes instead of withAttributes, will be made internal", "2.5.8")
   override def withAttributes(attr: Attributes): Graph[S, Mat] =
     new GenericGraphWithChangedAttributes(shape, originalTraversalBuilder, attr)
 }

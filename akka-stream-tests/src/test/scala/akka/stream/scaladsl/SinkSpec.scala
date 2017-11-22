@@ -128,15 +128,14 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name")
 
-      s.traversalBuilder.attributes.filtered[Name] shouldEqual List(Name("name"), Name("headSink"))
-      s.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
+      s.traversalBuilder.attributes.filtered[Name] shouldEqual List(Name("name"))
     }
 
     "given one attribute of a class should correctly get it as first attribute with default value" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name")
 
-      s.traversalBuilder.attributes.filtered[Name] shouldEqual List(Name("name"), Name("headSink"))
+      s.traversalBuilder.attributes.filtered[Name] shouldEqual List(Name("name"))
     }
 
     "given one attribute of a class should correctly get it as last attribute with default value" in {
@@ -160,14 +159,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       s.traversalBuilder.attributes.get[Name](Name("default")) shouldEqual Name("default")
     }
 
-    "given multiple attributes of a class when getting first attribute with default value should get first attribute" in {
-      import Attributes._
-      val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(none).async.named("name").named("another_name")
-
-      s.traversalBuilder.attributes.getFirst[Name](Name("default")) shouldEqual Name("name")
-    }
-
-    "given multiple attributes of a class when getting last attribute with default value should get last attribute" in {
+    "given multiple names when getting most specific attribute with default value should get last set" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name").named("another_name")
 

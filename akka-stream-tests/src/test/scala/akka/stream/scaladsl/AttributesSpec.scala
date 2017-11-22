@@ -3,15 +3,13 @@
  */
 package akka.stream.scaladsl
 
-import java.util.Optional
-import java.util.concurrent.{ CompletableFuture, CompletionStage, TimeUnit }
+import java.util.concurrent.{ CompletionStage, TimeUnit }
 
-import akka.{ Done, NotUsed }
 import akka.stream.Attributes._
-import akka.stream._
-import akka.stream.javadsl
+import akka.stream.{ javadsl, _ }
 import akka.stream.stage._
 import akka.stream.testkit._
+import akka.{ Done, NotUsed }
 import com.typesafe.config.ConfigFactory
 
 object AttributesSpec {
@@ -178,6 +176,19 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
       // least specific
       attributes.getFirst[Name] should contain(Name("whole-graph"))
+    }
+
+    "not append when setting name" in {
+      val attributes = Source.fromGraph(new AttributesSource(Attributes.name("originalname")))
+        .named("newname1")
+        .named("newname2")
+        .named("newname2") // mmake sure adding the same name is not a problem
+        .toMat(Sink.head)(Keep.left)
+        .named("surrounding")
+        .run()
+
+      println(attributes)
+      attributes.nameLifted should ===(Some("surrounding-newname2"))
     }
   }
 

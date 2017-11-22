@@ -1482,6 +1482,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
+  @deprecated("Use addAttributes instead of withAttributes, will be made internal", "2.5.8")
   def withAttributes(attr: Attributes): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.withAttributes(attr))
 

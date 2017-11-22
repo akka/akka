@@ -10,8 +10,10 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.OverflowStrategies._
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 import akka.stream.scaladsl.SourceQueueWithComplete
+
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
@@ -35,6 +37,9 @@ import scala.util.control.NonFatal
   import QueueSource._
 
   val out = Outlet[T]("queueSource.out")
+
+  override protected def initialAttributes: Attributes = DefaultAttributes.queueSource
+
   override val shape: SourceShape[T] = SourceShape.of(out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
