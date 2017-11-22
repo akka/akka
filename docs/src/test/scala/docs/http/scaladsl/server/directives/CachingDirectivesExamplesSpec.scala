@@ -131,14 +131,14 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
       responseAs[String] shouldEqual "Request for http://example.com/1 @ count 1"
     }
 
-    for (i <- 1 until 100) {
+    for (i <- 1 until 500) {
       Get(s"/$i") ~> route ~> check {
         responseAs[String] shouldEqual s"Request for http://example.com/$i @ count $i"
       }
     }
 
     Get("/1") ~> route ~> check {
-      responseAs[String] shouldEqual "Request for http://example.com/1 @ count 100"
+      responseAs[String] shouldEqual "Request for http://example.com/1 @ count 500"
     }
   }
 }
