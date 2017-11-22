@@ -253,7 +253,7 @@ Actor classes not included in the whitelist will not be allowed to be remote dep
 
 ## Lifecycle and Failure Recovery Model
 
-![association_lifecycle.png](../images/association_lifecycle.png)
+![association_lifecycle.png](./images/association_lifecycle.png)
 
 Each link with a remote system can be in one of the four states as illustrated above. Before any communication
 happens with a remote system at a given `Address` the state of the association is `Idle`. The first time a message
@@ -311,7 +311,7 @@ order to account for network issues that sometimes occur on such platforms.
 The following chart illustrates how *phi* increase with increasing time since the
 previous heartbeat.
 
-![phi1.png](../images/phi1.png)
+![phi1.png](./images/phi1.png)
 
 Phi is calculated from the mean and standard deviation of historical
 inter arrival times. The previous chart is an example for standard deviation
@@ -319,7 +319,7 @@ of 200 ms. If the heartbeats arrive with less deviation the curve becomes steepe
 i.e. it is possible to determine failure more quickly. The curve looks like this for
 a standard deviation of 100 ms.
 
-![phi2.png](../images/phi2.png)
+![phi2.png](./images/phi2.png)
 
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
@@ -328,7 +328,7 @@ adjust the [Remote Configuration](#remote-configuration) of this depending on yo
 This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 3 seconds.
 
-![phi3.png](../images/phi3.png)
+![phi3.png](./images/phi3.png)
 
 ## Serialization
 

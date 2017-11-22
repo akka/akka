@@ -82,7 +82,7 @@ but unreachability across different data centers don't influence the progress of
 within a data center. Nodes can be added and removed also when there are network partitions between
 data centers, which is impossible if nodes are not grouped into data centers.
 
-![cluster-dc.png](../images/cluster-dc.png)
+![cluster-dc.png](./images/cluster-dc.png)
 
 User actions like joining, leaving, and downing can be sent to any node in the cluster,
 not only to the nodes in the data center of the node. Seed nodes are also global.

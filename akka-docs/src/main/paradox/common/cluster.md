@@ -259,11 +259,11 @@ members in quorum decisions.
 
 #### State Diagram for the Member States (`akka.cluster.allow-weakly-up-members=off`)
 
-![member-states.png](../../images/member-states.png)
+![member-states.png](../images/member-states.png)
 
 #### State Diagram for the Member States (`akka.cluster.allow-weakly-up-members=on`)
 
-![member-states-weakly-up.png](../../images/member-states-weakly-up.png)
+![member-states-weakly-up.png](../images/member-states-weakly-up.png)
 
 #### Member States
 

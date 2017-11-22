@@ -40,7 +40,7 @@ One of the goals of the GraphDSL DSL is to look similar to how one would draw a 
 simple to translate a design from whiteboard to code and be able to relate those two. Let's illustrate this by translating
 the below hand drawn graph into Akka Streams:
 
-![simple-graph-example.png](../../images/simple-graph-example.png)
+![simple-graph-example.png](../images/simple-graph-example.png)
 
 Such graph is simple to translate to the Graph DSL since each linear element corresponds to a `Flow`,
 and each circle corresponds to either a `Junction` or a `Source` or `Sink` if it is beginning

@@ -296,7 +296,7 @@ work on the tasks in parallel. It is important to note that asynchronous boundar
 flow where elements are passed asynchronously (as in other streaming libraries), but instead attributes always work
 by adding information to the flow graph that has been constructed up to this point:
 
-![asyncBoundary.png](../../images/asyncBoundary.png)
+![asyncBoundary.png](../images/asyncBoundary.png)
 
 This means that everything that is inside the red bubble will be executed by one actor and everything outside of it
 by another. This scheme can be applied successively, always having one such boundary enclose the previous ones plus all
