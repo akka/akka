@@ -4,7 +4,9 @@
 package akka.typed
 package scaladsl
 
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.typed
+import akka.typed.internal.BehaviorImpl.{ ImmutableBehavior, PartialBehavior }
 import akka.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl }
 
 import scala.reflect.ClassTag
@@ -178,12 +180,22 @@ object Actor {
   def immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Immutable[T] =
     new Immutable(onMessage)
 
-  final class Immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T])
+  def immutable[T](partial: BehaviorImpl.PartialBehavior[T]): Immutable[T] =
+    new PartialImmutable(partial)
+
+  def partial[T](receive: PartialFunction[(ActorContext[T], T), Behavior[T]]): PartialBehavior[T] =
+    new BehaviorImpl.PartialBehavior[T](receive)
+
+  @DoNotInherit
+  sealed class Immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T])
     extends BehaviorImpl.ImmutableBehavior[T](onMessage) {
 
     def onSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
       new BehaviorImpl.ImmutableBehavior(onMessage, onSignal)
   }
+
+  final class PartialImmutable[T](receive: PartialBehavior[T])
+    extends Immutable[T](receive.onMessage)
 
   /**
    * Construct an actor behavior that can react to lifecycle signals only.

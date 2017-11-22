@@ -77,6 +77,20 @@ import scala.annotation.tailrec
     override def toString = s"Immutable(${LineNumbers(onMessage)})"
   }
 
+  class PartialBehavior[T](
+    receive:  PartialFunction[(SAC[T], T), Behavior[T]],
+    onSignal: PartialFunction[(SAC[T], Signal), Behavior[T]] = Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+    extends ExtensibleBehavior[T] {
+
+    val onMessage: (SAC[T], T) ⇒ Behavior[T] =
+      (ctx, t) ⇒ receive.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ Actor.unhandled[T])
+
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
+      onSignal.applyOrElse((ctx.asScala, msg), Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+    override def receiveMessage(ctx: AC[T], msg: T) = onMessage(ctx.asScala, msg)
+    override def toString = s"Immutable(${LineNumbers(onMessage)})"
+  }
+
   def tap[T](
     onMessage: Function2[SAC[T], T, _],
     onSignal:  Function2[SAC[T], Signal, _],
