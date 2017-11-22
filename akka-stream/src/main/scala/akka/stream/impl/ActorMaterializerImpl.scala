@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.dispatch.Dispatchers
 import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.stream._
@@ -29,12 +30,12 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
   /** INTERNAL API */
   @InternalApi def materialize[Mat](
     _runnableGraph:    Graph[ClosedShape, Mat],
-    initialAttributes: Attributes): Mat
+    defaultAttributes: Attributes): Mat
 
   /** INTERNAL API */
   @InternalApi private[akka] def materialize[Mat](
     graph:             Graph[ClosedShape, Mat],
-    initialAttributes: Attributes,
+    defaultAttributes: Attributes,
     defaultPhase:      Phase[Any],
     phases:            Map[IslandTag, Phase[Any]]): Mat
 
@@ -42,10 +43,13 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
    * INTERNAL API
    */
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
-    val dispatcher =
-      if (props.deploy.dispatcher == Deploy.NoDispatcherGiven) effectiveSettings(context.effectiveAttributes).dispatcher
-      else props.dispatcher
-    actorOf(props.withDispatcher(dispatcher), context.islandName)
+    // if the props already have a dispatcher set we respect that, if not
+    // we take it from the attributes
+    val effectiveProps =
+      if (props.dispatcher == Dispatchers.DefaultDispatcherId)
+        props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+      else props
+    actorOf(effectiveProps, context.islandName)
   }
 
   /**
@@ -88,8 +92,9 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
  */
 private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMaterializer, registerShell: GraphInterpreterShell ⇒ ActorRef) extends Materializer {
   val subFusingPhase = new Phase[Any] {
-    override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] = {
-      new GraphStageIsland(settings, materializer, islandName, OptionVal(registerShell)).asInstanceOf[PhaseIsland[Any]]
+    override def apply(settings: ActorMaterializerSettings, attributes: Attributes,
+                       materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] = {
+      new GraphStageIsland(settings, attributes, materializer, islandName, OptionVal(registerShell)).asInstanceOf[PhaseIsland[Any]]
     }
   }
 
@@ -98,18 +103,18 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
     delegate match {
       case am: PhasedFusingActorMaterializer ⇒
-        materialize(runnable, am.defaultInitialAttributes)
+        materialize(runnable, am.defaultAttributes)
 
       case other ⇒
         throw new IllegalStateException(s"SubFusing only supported by [PhasedFusingActorMaterializer], " +
           s"yet was used with [${other.getClass.getName}]!")
     }
 
-  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat = {
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat = {
     if (PhasedFusingActorMaterializer.Debug) println(s"Using [${getClass.getSimpleName}] to materialize [${runnable}]")
     val phases = PhasedFusingActorMaterializer.DefaultPhases
 
-    delegate.materialize(runnable, initialAttributes, subFusingPhase, phases)
+    delegate.materialize(runnable, defaultAttributes, subFusingPhase, phases)
   }
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable = delegate.scheduleOnce(delay, task)
