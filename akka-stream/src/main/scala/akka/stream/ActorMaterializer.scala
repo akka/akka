@@ -3,7 +3,6 @@
  */
 package akka.stream
 
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -16,7 +15,6 @@ import com.typesafe.config.Config
 
 import scala.concurrent.duration._
 import akka.japi.function
-import akka.stream.impl.fusing.GraphInterpreterShell
 import akka.stream.stage.GraphStageLogic
 
 import scala.util.control.NoStackTrace
@@ -24,9 +22,9 @@ import scala.util.control.NoStackTrace
 object ActorMaterializer {
 
   /**
-   * Scala API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
-   * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
+   * Scala API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]] (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create one actor that in turn creates actors for the transformation steps.
    *
    * The materializer's [[akka.stream.ActorMaterializerSettings]] will be obtained from the
@@ -44,8 +42,9 @@ object ActorMaterializer {
   }
 
   /**
-   * Scala API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * Scala API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
@@ -68,8 +67,9 @@ object ActorMaterializer {
   }
 
   /**
-   * Scala API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * Scala API: * Scala API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
@@ -98,8 +98,9 @@ object ActorMaterializer {
   }
 
   /**
-   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * Java API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
@@ -111,8 +112,9 @@ object ActorMaterializer {
     apply()(context)
 
   /**
-   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * Java API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create one actor that in turn creates actors for the transformation steps.
    */
@@ -120,8 +122,9 @@ object ActorMaterializer {
     apply(Option(settings), None)(context)
 
   /**
-   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * Java API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
@@ -162,17 +165,11 @@ private[akka] object ActorMaterializerHelper {
 }
 
 /**
- * An ActorMaterializer takes the list of transformations comprising a
- * [[akka.stream.scaladsl.Flow]] and materializes them in the form of
- * [[org.reactivestreams.Processor]] instances. How transformation
- * steps are split up into asynchronous regions is implementation
- * dependent.
+ * An ActorMaterializer takes a stream blueprint and turns it into a running stream.
  */
 abstract class ActorMaterializer extends Materializer with MaterializerLoggingProvider {
 
   def settings: ActorMaterializerSettings
-
-  def effectiveSettings(opAttr: Attributes): ActorMaterializerSettings
 
   /**
    * Shuts down this materializer and all the stages that have been materialized through this materializer. After
@@ -313,6 +310,12 @@ object ActorMaterializerSettings {
  * Please refer to the `withX` methods for descriptions of the individual settings.
  */
 final class ActorMaterializerSettings private (
+  /*
+   * Important note: `initialInputBufferSize`, `maxInputBufferSize`, `dispatcher` and
+   * `supervisionDecider` must not be used as values in the materializer, or anything the materializer phases use
+   * since these settings allow for overriding using [[Attributes]]. They must always be gotten from the effective
+   * attributes.
+   */
   val initialInputBufferSize:      Int,
   val maxInputBufferSize:          Int,
   val dispatcher:                  String,
@@ -384,9 +387,12 @@ final class ActorMaterializerSettings private (
   /**
    * Each asynchronous piece of a materialized stream topology is executed by one Actor
    * that manages an input buffer for all inlets of its shape. This setting configures
-   * the initial and maximal input buffer in number of elements for each inlet.
+   * the default for initial and maximal input buffer in number of elements for each inlet.
+   * This can be overridden for individual parts of the
+   * stream topology by using [[akka.stream.Attributes#inputBuffer]].
    *
-   * FIXME: Currently only the initialSize is used, auto-tuning is not yet implemented.
+   * FIXME: this is used for all kinds of buffers, not only the stream actor, some use initial some use max,
+   *        document and or fix if it should not be like that. Search for get[Attributes.InputBuffer] to see how it is used
    */
   def withInputBuffer(initialSize: Int, maxSize: Int): ActorMaterializerSettings = {
     if (initialSize == this.initialInputBufferSize && maxSize == this.maxInputBufferSize) this
@@ -407,6 +413,9 @@ final class ActorMaterializerSettings private (
    * Scala API: Decides how exceptions from application code are to be handled, unless
    * overridden for specific flows of the stream operations with
    * [[akka.stream.Attributes#supervisionStrategy]].
+   *
+   * Note that supervision in streams are implemented on a per stage basis and is not supported
+   * by every stage.
    */
   def withSupervisionStrategy(decider: Supervision.Decider): ActorMaterializerSettings = {
     if (decider eq this.supervisionDecider) this
@@ -417,6 +426,9 @@ final class ActorMaterializerSettings private (
    * Java API: Decides how exceptions from application code are to be handled, unless
    * overridden for specific flows of the stream operations with
    * [[akka.stream.Attributes#supervisionStrategy]].
+   *
+   * Note that supervision in streams are implemented on a per stage basis and is not supported
+   * by every stage.
    */
   def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): ActorMaterializerSettings = {
     import Supervision._

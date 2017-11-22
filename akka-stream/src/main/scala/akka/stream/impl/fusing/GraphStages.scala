@@ -346,7 +346,7 @@ import scala.util.control.NonFatal
         def onFutureSourceCompleted(result: Try[Graph[SourceShape[T], M]]): Unit = {
           result.map { graph ⇒
             val runnable = Source.fromGraph(graph).toMat(sinkIn.sink)(Keep.left)
-            val matVal = interpreter.subFusingMaterializer.materialize(runnable, initialAttributes = attr)
+            val matVal = interpreter.subFusingMaterializer.materialize(runnable, defaultAttributes = attr)
             materialized.success(matVal)
 
             setHandler(out, this)
