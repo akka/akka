@@ -133,7 +133,7 @@ by Actors:
 akka {
   actor {
     debug {
-      # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill et.c.)
+      # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill etc.)
       autoreceive = on
     }
   }
