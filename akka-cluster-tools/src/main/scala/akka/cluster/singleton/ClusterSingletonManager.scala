@@ -5,9 +5,10 @@
 package akka.cluster.singleton
 
 import com.typesafe.config.Config
-
 import scala.concurrent.duration._
 import scala.collection.immutable
+import scala.concurrent.Future
+
 import akka.actor.Actor
 import akka.actor.Deploy
 import akka.actor.ActorSystem
@@ -26,8 +27,8 @@ import akka.AkkaException
 import akka.actor.NoSerializationVerificationNeeded
 import akka.cluster.UniqueAddress
 import akka.cluster.ClusterEvent
-
 import scala.concurrent.Promise
+
 import akka.Done
 import akka.actor.CoordinatedShutdown
 import akka.annotation.DoNotInherit
@@ -254,8 +255,12 @@ object ClusterSingletonManager {
         // should preferably complete before stopping the singleton sharding coordinator on same node.
         val coordShutdown = CoordinatedShutdown(context.system)
         coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "singleton-exiting-1") { () ⇒
-          implicit val timeout = Timeout(coordShutdown.timeout(CoordinatedShutdown.PhaseClusterExiting))
-          self.ask(SelfExiting).mapTo[Done]
+          if (cluster.isTerminated || cluster.selfMember.status == MemberStatus.Down) {
+            Future.successful(Done)
+          } else {
+            implicit val timeout = Timeout(coordShutdown.timeout(CoordinatedShutdown.PhaseClusterExiting))
+            self.ask(SelfExiting).mapTo[Done]
+          }
         }
       }
       override def postStop(): Unit = cluster.unsubscribe(self)
@@ -468,11 +473,19 @@ class ClusterSingletonManager(
   // for CoordinatedShutdown
   val coordShutdown = CoordinatedShutdown(context.system)
   val memberExitingProgress = Promise[Done]()
-  coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "wait-singleton-exiting")(() ⇒
-    memberExitingProgress.future)
+  coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "wait-singleton-exiting") { () ⇒
+    if (cluster.isTerminated || cluster.selfMember.status == MemberStatus.Down)
+      Future.successful(Done)
+    else
+      memberExitingProgress.future
+  }
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "singleton-exiting-2") { () ⇒
-    implicit val timeout = Timeout(coordShutdown.timeout(CoordinatedShutdown.PhaseClusterExiting))
-    self.ask(SelfExiting).mapTo[Done]
+    if (cluster.isTerminated || cluster.selfMember.status == MemberStatus.Down) {
+      Future.successful(Done)
+    } else {
+      implicit val timeout = Timeout(coordShutdown.timeout(CoordinatedShutdown.PhaseClusterExiting))
+      self.ask(SelfExiting).mapTo[Done]
+    }
   }
 
   def logInfo(message: String): Unit =
