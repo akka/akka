@@ -56,7 +56,7 @@ class SubstreamDocSpec extends AkkaSpec {
     val charCount = Source(text.toList)
       .splitAfter { _ == '\n' }
       .filter(_ != '\n')
-      .map(_ => 1)
+      .map(_ ⇒ 1)
       .reduce(_ + _)
       .to(Sink.foreach(println))
       .run()
