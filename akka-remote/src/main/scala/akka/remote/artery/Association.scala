@@ -332,17 +332,16 @@ private[remote] class Association(
         startIdleTimer()
       }
       try {
+        val outboundEnvelope = createOutboundEnvelope()
         message match {
           case _: SystemMessage ⇒
-            val outboundEnvelope = createOutboundEnvelope()
-            if (!controlQueue.offer(createOutboundEnvelope())) {
+            if (!controlQueue.offer(outboundEnvelope)) {
               quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
               dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
             }
           case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | ClearSystemMessageDelivery ⇒
             // ActorSelectionMessage with PriorityMessage is used by cluster and remote failure detector heartbeating
-            val outboundEnvelope = createOutboundEnvelope()
-            if (!controlQueue.offer(createOutboundEnvelope())) {
+            if (!controlQueue.offer(outboundEnvelope)) {
               dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
             }
           case _: DaemonMsgCreate ⇒
@@ -350,11 +349,9 @@ private[remote] class Association(
             // remote deployment process depends on message ordering for DaemonMsgCreate and Watch messages.
             // First ordinary message may arrive earlier but then the resolve in the Decoder is retried
             // so that the first message can be delivered after the remote actor has been created.
-            val outboundEnvelope = createOutboundEnvelope()
             if (!controlQueue.offer(outboundEnvelope))
               dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
           case _ ⇒
-            val outboundEnvelope = createOutboundEnvelope()
             val queueIndex = selectQueue(recipient)
             val queue = queues(queueIndex)
             val offerOk = queue.offer(outboundEnvelope)
