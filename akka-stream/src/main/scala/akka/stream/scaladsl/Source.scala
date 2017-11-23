@@ -21,6 +21,8 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.CompletionStage
 
+import akka.stream.stage.{ GraphStage, GraphStageWithMaterializedValue }
+
 import scala.compat.java8.FutureConverters._
 
 /**
@@ -137,20 +139,18 @@ final class Source[+Out, +Mat](
   def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Done] = runWith(Sink.foreach(f))
 
   /**
-   * Change the attributes of this [[Source]] to the given ones and seal the list
-   * of attributes. This means that further calls will not be able to remove these
-   * attributes, but instead add new ones. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Replace the attributes of this [[Source]] with the given ones. If this Source is a composite
+   * of multiple graphs, new attributes on the composite will be less specific than attributes
+   * set directly on the individual graphs of the composite.
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
     new Source(traversalBuilder.setAttributes(attr), shape)
 
   /**
-   * Add the given attributes to this Source. Further calls to `withAttributes`
-   * will not remove these attributes. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Add the given attributes to this Source. If the specific attribute was already on this source
+   * it will replace the previous value. If this Source is a composite
+   * of multiple graphs, the added attributes will be on the composite and therefore less specific than attributes
+   * set directly on the individual graphs of the composite.
    */
   override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(traversalBuilder.attributes and attr)
 
@@ -162,7 +162,24 @@ final class Source[+Out, +Mat](
   /**
    * Put an asynchronous boundary around this `Source`
    */
-  override def async: Repr[Out] = addAttributes(Attributes.asyncBoundary)
+  override def async: Repr[Out] = super.async.asInstanceOf[Repr[Out]]
+
+  /**
+   * Put an asynchronous boundary around this `Graph`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): Repr[Out] =
+    super.async(dispatcher).asInstanceOf[Repr[Out]]
+
+  /**
+   * Put an asynchronous boundary around this `Graph`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): Repr[Out] =
+    super.async(dispatcher, inputBufferSize).asInstanceOf[Repr[Out]]
 
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.
@@ -239,9 +256,20 @@ object Source {
   def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
     case s: Source[T, M]         ⇒ s
     case s: javadsl.Source[T, M] ⇒ s.asScala
-    case other ⇒ new Source(
-      LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
-      other.shape)
+    case g: GraphStageWithMaterializedValue[SourceShape[T], M] ⇒
+      // move these from the stage itself to make the returned source
+      // behave as it is the stage with regards to attributes
+      val attrs = g.traversalBuilder.attributes
+      val noAttrStage = g.withAttributes(Attributes.none)
+      new Source(
+        LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
+        noAttrStage.shape
+      ).withAttributes(attrs)
+    case other ⇒
+      // composite source shaped graph
+      new Source(
+        LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
+        other.shape)
   }
 
   /**

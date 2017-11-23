@@ -223,4 +223,27 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](delegate: scaladsl.BidiFlow[I1, O
    */
   override def named(name: String): BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(delegate.named(name))
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   */
+  override def async: BidiFlow[I1, O1, I2, O2, Mat] =
+    new BidiFlow(delegate.async)
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): BidiFlow[I1, O1, I2, O2, Mat] =
+    new BidiFlow(delegate.async(dispatcher))
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): BidiFlow[I1, O1, I2, O2, Mat] =
+    new BidiFlow(delegate.async(dispatcher, inputBufferSize))
 }
