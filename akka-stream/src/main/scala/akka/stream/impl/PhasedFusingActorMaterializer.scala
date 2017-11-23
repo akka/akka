@@ -203,7 +203,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
   @InternalApi private[akka] def exitIsland(): Unit = {
     val parentIsland = islandStateStack.remove(islandStateStack.size() - 1)
-    val previousSegmentLength = completeSegment()
+    completeSegment()
 
     // We start a new segment
     currentSegmentGlobalOffset = currentGlobalOffset
@@ -368,8 +368,13 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
   private[this] def createFlowName(): String = flowNames.next()
 
-  /** INTERNAL API */
-  private[akka] val defaultInitialAttributes = {
+  /**
+   * Default attributes for the materializer, are always seen as least specific, so any attribute
+   * specified in the graph or on the stages "wins" over these
+   *
+   * INTERNAL API
+   */
+  private[akka] val defaultAttributes = {
     val a = Attributes(
       Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
         ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
@@ -412,20 +417,20 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     system.scheduler.scheduleOnce(delay, task)(executionContext)
 
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat =
-    materialize(_runnableGraph, defaultInitialAttributes)
+    materialize(_runnableGraph, defaultAttributes)
 
   override def materialize[Mat](
     _runnableGraph:    Graph[ClosedShape, Mat],
-    initialAttributes: Attributes): Mat =
+    defaultAttributes: Attributes): Mat =
     materialize(
       _runnableGraph,
-      initialAttributes,
+      defaultAttributes,
       PhasedFusingActorMaterializer.DefaultPhase,
       PhasedFusingActorMaterializer.DefaultPhases)
 
   override def materialize[Mat](
     graph:             Graph[ClosedShape, Mat],
-    initialAttributes: Attributes,
+    defaultAttributes: Attributes,
     defaultPhase:      Phase[Any],
     phases:            Map[IslandTag, Phase[Any]]): Mat = {
     val islandTracking = new IslandTracking(phases, settings, defaultPhase, this, islandNamePrefix = createFlowName() + "-")
@@ -433,7 +438,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     var current: Traversal = graph.traversalBuilder.traversal
 
     val attributesStack = new java.util.ArrayDeque[Attributes](8)
-    attributesStack.addLast(initialAttributes and graph.traversalBuilder.attributes)
+    attributesStack.addLast(graph.traversalBuilder.attributes)
 
     val traversalStack = new java.util.ArrayDeque[Traversal](16)
     traversalStack.addLast(current)
@@ -455,7 +460,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
         current match {
           case MaterializeAtomic(mod, outToSlot) ⇒
             if (Debug) println(s"materializing module: $mod")
-            val matAndStage = islandTracking.getCurrentPhase.materializeAtomic(mod, attributesStack.getLast)
+            val matAndStage = islandTracking.getCurrentPhase.materializeAtomic(mod, defaultAttributes, attributesStack.getLast)
             val logic = matAndStage._1
             val matValue = matAndStage._2
             if (Debug) println(s"  materialized value is $matValue")
@@ -495,6 +500,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
             attributesStack.removeLast()
             if (Debug) println(s"ATTR POP")
           case EnterIsland(tag) ⇒
+            // TODO we'd want the dispatcher attribute already here, but we haven't seen the stage yet
             islandTracking.enterIsland(tag, attributesStack.getLast)
           case ExitIsland ⇒
             islandTracking.exitIsland()
@@ -576,7 +582,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
   def name: String
 
-  def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (M, Any)
+  def materializeAtomic(mod: AtomicModule[Shape, Any], defaultAttributes: Attributes, attributes: Attributes): (M, Any)
 
   def assignPort(in: InPort, slot: Int, logic: M): Unit
 
@@ -611,6 +617,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   private var maxConnections = 0
   private var outConnections: List[Connection] = Nil
   private var fullIslandName: OptionVal[String] = OptionVal.None
+  private var effectiveAttributes: OptionVal[Attributes] = OptionVal.None
 
   val shell = new GraphInterpreterShell(
     connections = null,
@@ -620,14 +627,16 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
   override def name: String = "Fusing GraphStages phase"
 
-  override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (GraphStageLogic, Any) = {
+  override def materializeAtomic(mod: AtomicModule[Shape, Any], defaultAttributes: Attributes, attributes: Attributes): (GraphStageLogic, Any) = {
     // TODO: bail on unknown types
     val stageModule = mod.asInstanceOf[GraphStageModule[Shape, Any]]
     val stage = stageModule.stage
-    val matAndLogic = stage.createLogicAndMaterializedValue(attributes)
+    val effectiveAttributes = defaultAttributes and stage.defaultAttributes and attributes
+    this.effectiveAttributes = OptionVal.Some(effectiveAttributes)
+    val matAndLogic = stage.createLogicAndMaterializedValue(effectiveAttributes)
     val logic = matAndLogic._1
     logic.originalStage = OptionVal.Some(stage)
-    logic.attributes = attributes
+    logic.attributes = effectiveAttributes
     logics.add(logic)
     logic.stageId = logics.size() - 1
     fullIslandName match {
@@ -733,8 +742,16 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
         fuseIntoExistingInterperter(shell)
 
       case _ ⇒
-        val props = ActorGraphInterpreter.props(shell)
-          .withDispatcher(effectiveSettings.dispatcher)
+        // FIXME there's gotta be a better way to do this than pass it from materializeAtomic like this
+        val dispatcher = effectiveAttributes match {
+          case OptionVal.Some(attrs) ⇒
+            attrs.get[ActorAttributes.Dispatcher] match {
+              case Some(attr) ⇒ attr.dispatcher
+              case None       ⇒ effectiveSettings.dispatcher
+            }
+          case OptionVal.None ⇒ effectiveSettings.dispatcher
+        }
+        val props = ActorGraphInterpreter.props(shell).withDispatcher(dispatcher)
         val actorName = fullIslandName match {
           case OptionVal.Some(n) ⇒ n
           case OptionVal.None    ⇒ islandName
@@ -774,8 +791,8 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   islandName:   String) extends PhaseIsland[Publisher[Any]] {
   override def name: String = s"SourceModule phase"
 
-  override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (Publisher[Any], Any) = {
-    mod.asInstanceOf[SourceModule[Any, Any]].create(MaterializationContext(materializer, attributes,
+  override def materializeAtomic(mod: AtomicModule[Shape, Any], defaultAttributes: Attributes, attributes: Attributes): (Publisher[Any], Any) = {
+    mod.asInstanceOf[SourceModule[Any, Any]].create(MaterializationContext(materializer, defaultAttributes and attributes,
       islandName + "-" + attributes.nameOrDefault()))
   }
 
@@ -804,9 +821,9 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   override def name: String = s"SinkModule phase"
   var subscriberOrVirtualPublisher: AnyRef = _
 
-  override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (AnyRef, Any) = {
+  override def materializeAtomic(mod: AtomicModule[Shape, Any], defaultAttributes: Attributes, attributes: Attributes): (AnyRef, Any) = {
     val subAndMat =
-      mod.asInstanceOf[SinkModule[Any, Any]].create(MaterializationContext(materializer, attributes,
+      mod.asInstanceOf[SinkModule[Any, Any]].create(MaterializationContext(materializer, defaultAttributes and attributes,
         islandName + "-" + attributes.nameOrDefault()))
 
     subscriberOrVirtualPublisher = subAndMat._1
@@ -844,7 +861,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   override def name: String = "ProcessorModulePhase"
   private[this] var processor: Processor[Any, Any] = _
 
-  override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (Processor[Any, Any], Any) = {
+  override def materializeAtomic(mod: AtomicModule[Shape, Any], defaultAttributes: Attributes, attributes: Attributes): (Processor[Any, Any], Any) = {
     val procAndMat = mod.asInstanceOf[ProcessorModule[Any, Any, Any]].createProcessor()
     processor = procAndMat._1
     procAndMat
@@ -873,9 +890,10 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   var tlsActor: ActorRef = _
   var publishers: Vector[ActorPublisher[Any]] = _
 
-  def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (NotUsed, Any) = {
+  def materializeAtomic(mod: AtomicModule[Shape, Any], defaultAttributes: Attributes, attributes: Attributes): (NotUsed, Any) = {
     val tls = mod.asInstanceOf[TlsModule]
 
+    // TODO why is the TLS-actor taking its dispatcher directly from the materializer settings???
     val props =
       TLSActor.props(settings, tls.createSSLEngine, tls.verifySession, tls.closing).withDispatcher(settings.dispatcher)
     tlsActor = materializer.actorOf(props, islandName)
