@@ -7,7 +7,6 @@ import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, function }
-import akka.stream.impl.StreamLayout
 import akka.stream._
 import org.reactivestreams.Processor
 
@@ -2199,20 +2198,21 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.initialDelay(delay))
 
   /**
-   * Change the attributes of this [[Source]] to the given ones and seal the list
-   * of attributes. This means that further calls will not be able to remove these
-   * attributes, but instead add new ones. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
+   * Replace the attributes of this [[Flow]] with the given ones. If this Flow is a composite
+   * of multiple graphs, new attributes on the composite will be less specific than attributes
+   * set directly on the individual graphs of the composite.
+   *
+   * Note that this operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr))
 
   /**
-   * Add the given attributes to this Source. Further calls to `withAttributes`
-   * will not remove these attributes. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Add the given attributes to this [[Flow]]. If the specific attribute was already present
+   * on this graph this means the added attribute will be more specific than the existing one.
+   * If this Flow is a composite of multiple graphs, new attributes on the composite will be
+   * less specific than attributes set directly on the individual graphs of the composite.
    */
   override def addAttributes(attr: Attributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.addAttributes(attr))
@@ -2228,6 +2228,23 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   override def async: javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.async)
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.async(dispatcher))
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.async(dispatcher, inputBufferSize))
 
   /**
    * Logs elements flowing through the stream as well as completion and erroring.
