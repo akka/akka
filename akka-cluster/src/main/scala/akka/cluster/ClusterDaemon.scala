@@ -176,7 +176,7 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterLeave, "leave") {
     val sys = context.system
     () ⇒
-      if (Cluster(sys).isTerminated)
+      if (Cluster(sys).isTerminated || Cluster(sys).selfMember.status == Down)
         Future.successful(Done)
       else {
         implicit val timeout = Timeout(coordShutdown.timeout(CoordinatedShutdown.PhaseClusterLeave))
@@ -190,8 +190,7 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
   override def postStop(): Unit = {
     clusterShutdown.trySuccess(Done)
     if (Cluster(context.system).settings.RunCoordinatedShutdownWhenDown) {
-      // run the last phases e.g. if node was downed (not leaving)
-      coordShutdown.run(Some(CoordinatedShutdown.PhaseClusterShutdown))
+      coordShutdown.run()
     }
   }
 
@@ -325,7 +324,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExitingDone, "exiting-completed") {
     val sys = context.system
     () ⇒
-      if (Cluster(sys).isTerminated)
+      if (Cluster(sys).isTerminated || Cluster(sys).selfMember.status == Down)
         Future.successful(Done)
       else {
         implicit val timeout = Timeout(coordShutdown.timeout(CoordinatedShutdown.PhaseClusterExitingDone))
