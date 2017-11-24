@@ -7,6 +7,8 @@ package jdocs.sharding;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.Optional;
+import java.util.function.Function;
+
 import scala.concurrent.duration.Duration;
 
 import akka.actor.AbstractActor;
@@ -17,7 +19,6 @@ import akka.actor.OneForOneStrategy;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.SupervisorStrategy;
-import akka.actor.Terminated;
 import akka.actor.ReceiveTimeout;
 //#counter-extractor
 import akka.cluster.sharding.ShardRegion;
@@ -31,7 +32,6 @@ import akka.cluster.sharding.ClusterShardingSettings;
 
 //#counter-start
 import akka.persistence.AbstractPersistentActor;
-import akka.cluster.Cluster;
 import akka.japi.pf.DeciderBuilder;
 
 // Doc code, compile only
@@ -85,12 +85,12 @@ public class ClusterShardingTest {
     //#counter-start
     Option<String> roleOption = Option.none();
     ClusterShardingSettings settings = ClusterShardingSettings.create(system);
-    ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter",
-      Props.create(Counter.class), settings, messageExtractor);
+    ActorRef startedCounterRegion = ClusterSharding.get(system).start(Counter.ShardingTypeName,
+      entityId -> Counter.props(entityId), settings, messageExtractor);
     //#counter-start
 
     //#counter-usage
-    ActorRef counterRegion = ClusterSharding.get(system).shardRegion("Counter");
+    ActorRef counterRegion = ClusterSharding.get(system).shardRegion(Counter.ShardingTypeName);
     counterRegion.tell(new Counter.Get(123), getSelf());
 
     counterRegion.tell(new Counter.EntityEnvelope(123,
@@ -99,14 +99,14 @@ public class ClusterShardingTest {
     //#counter-usage
 
     //#counter-supervisor-start
-    ClusterSharding.get(system).start("SupervisedCounter",
-        Props.create(CounterSupervisor.class), settings, messageExtractor);
+    ClusterSharding.get(system).start(CounterSupervisor.ShardingTypeName,
+        entityId -> CounterSupervisor.props(entityId), settings, messageExtractor);
     //#counter-supervisor-start
 
     //#proxy-dc
     ActorRef counterProxyDcB =
       ClusterSharding.get(system).startProxy(
-        "Counter",
+        Counter.ShardingTypeName,
         Optional.empty(),
         Optional.of("B"), // data center name
         messageExtractor);
@@ -189,12 +189,22 @@ public class ClusterShardingTest {
       }
     }
 
+    public static final String ShardingTypeName = "Counter";
+
+    public static Props props(String id) {
+        return Props.create(() -> new Counter(id));
+    }
+
+    final String entityId;
     int count = 0;
 
-    // getSelf().path().name() is the entity identifier (utf-8 URL-encoded)
+    public Counter(String entityId) {
+      this.entityId = entityId;
+    }
+
     @Override
     public String persistenceId() {
-      return "Counter-" + getSelf().path().name();
+      return ShardingTypeName + "-" + entityId;
     }
 
     @Override
@@ -247,9 +257,17 @@ public class ClusterShardingTest {
 
   static//#supervisor
   public class CounterSupervisor extends AbstractActor {
+    public static final String ShardingTypeName = "CounterSupervisor";
 
-    private final ActorRef counter = getContext().actorOf(
-        Props.create(Counter.class), "theCounter");
+    public static Props props(String entityId) {
+        return Props.create(() -> new CounterSupervisor(entityId));
+    }
+
+    private final ActorRef counter;
+
+    public CounterSupervisor(String entityId) {
+        counter = getContext().actorOf(Counter.props(entityId), "theCounter");
+    }
 
     private static final SupervisorStrategy strategy =
       new OneForOneStrategy(DeciderBuilder.
