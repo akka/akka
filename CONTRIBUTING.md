@@ -64,7 +64,7 @@ The steps are exactly the same for everyone involved in the project (be it core 
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
    - Please write additional tests covering your feature and adjust existing ones if needed before submitting your pull request. The `validatePullRequest` sbt task ([explained below](#the-validatepullrequest-task)) may come in handy to verify your changes are correct.
 1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
-1. If it's a new feature, or a change of behaviour, document it on the [akka-docs](https://github.com/akka/akka/tree/master/akka-docs), remember, an undocumented feature is not a feature. If the feature was touching Scala or Java DSL, make sure to document it in both the Java and Scala documentation (usually in a file of the same name, but under `/scala/` instead of `/java/` etc).
+1. If it's a new feature, or a change of behaviour, document it on the [akka-docs](https://github.com/akka/akka/tree/master/akka-docs), remember, an undocumented feature is not a feature. If the feature was touching Scala or Java DSL, make sure to document it in both the Java and Scala documentation.
 1. Now it's finally time to [submit the pull request](https://help.github.com/articles/using-pull-requests)!
 1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](http://www.lightbend.com/contribute/cla) online. CLA stands for Contributor License Agreement and is a way of protecting intellectual property disputes from harming the project.
 1. If you're not already on the contributors white-list, the @akka-ci bot will ask `Can one of the repo owners verify this patch?`, to which a core member will reply by commenting `OK TO TEST`. This is just a sanity check to prevent malicious code from being run on the Jenkins cluster.
@@ -232,48 +232,6 @@ akka-docs/paradox
 ```
 
 The generated html documentation is in `akka-docs/target/paradox/site/main/index.html`.
-
-### Java- or Scala-specific documentation
-
-For new documentation chapters, we recommend adding a page to the `scala` tree documenting both Java and Scala, using [tabs](http://developer.lightbend.com/docs/paradox/latest/features/snippet-inclusion.html) for code snippets and [groups]( http://developer.lightbend.com/docs/paradox/latest/features/groups.html) for other Java- or Scala-specific segments or sections.
-An example of such a 'merged' page is `akka-docs/src/main/paradox/scala/actors.md`.
-
-Add a symlink to the `java` tree to make the page available there as well.
-
-Consolidation of existing pages is tracked in [issue #23052](https://github.com/akka/akka/issues/23052)
-
-### Note for paradox on Windows
-
-On Windows, you need special care to generate html documentation with paradox.
-
-Currently `akka-docs/src/main/paradox/java` has symbolic links which point to directories under `akka-docs/src/main/paradox/scala`.
- 
-- java/additional -> scala/additional
-- java/common -> scala/common
-- java/general -> scala/general
-- java/guide -> scala/project
-- java/security -> scala/security
-
-So, if you just do `git clone <URL>`, then run `sbt akka-docs/paradox`, you will run into an an error like below,
-because symlinks are checked out in a Linux style which doesn't work on Windows.
-
-```
-sbt akka-docs/paradox
-[trace] Stack trace suppressed: run last akka-docs/compile:paradoxMarkdownToHtml for the full output.
-[error] (akka-docs/compile:paradoxMarkdownToHtml) com.lightbend.paradox.markdown.Index$LinkException: Unknown page [common/cluster.md] linked from [java/index-network.md]
-```
-
-As described in http://stackoverflow.com/a/42137273, recent versions of git scm can convert Linux-style symlinks to the Windows style,
-with `git clone`:
-
-- Launch git scm whose version is on or later than 2.11.1
-- **with administrator rights**
-- `git clone -c core.symlinks=true <URL>`
-
-Then the symlinks are checked out in the Windows style, and the paradox command works fine.
-
-In a future version of akka, this trick for Windows should not be needed -  we will use [paradox groups](http://developer.lightbend.com/docs/paradox/latest/features/groups.html) 
-to get rid of duplicate documentation in Java and Scala. At that point we don't need the symlinks anymore. 
 
 ### Scaladoc
 
