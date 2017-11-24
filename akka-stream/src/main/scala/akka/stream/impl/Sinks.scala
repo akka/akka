@@ -174,7 +174,7 @@ import scala.collection.generic.CanBuildFrom
 
   override def create(context: MaterializationContext) = {
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val maxInputBufferSize = context.effectiveAttributes.get[Attributes.InputBuffer].get.max
+    val maxInputBufferSize = context.effectiveAttributes.mandatoryAttribute[Attributes.InputBuffer].max
     val subscriberRef = actorMaterializer.actorOf(
       context,
       ActorRefSinkActor.props(ref, maxInputBufferSize, onCompleteMessage))
@@ -469,7 +469,7 @@ import scala.collection.generic.CanBuildFrom
   override def toString: String = "LazySink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(stoppingDecider)
+    lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
     var completed = false
     val promise = Promise[M]()

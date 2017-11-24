@@ -254,7 +254,7 @@ import akka.event.Logging
   with Pump {
 
   protected val primaryInputs: Inputs = {
-    val initialInputBufferSize = attributes.get[Attributes.InputBuffer].get.initial
+    val initialInputBufferSize = attributes.mandatoryAttribute[Attributes.InputBuffer].initial
     new BatchingInputBuffer(initialInputBufferSize, this) {
       override def inputOnError(e: Throwable): Unit = ActorProcessorImpl.this.onError(e)
     }

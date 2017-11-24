@@ -692,7 +692,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   override def takePublisher(slot: Int, publisher: Publisher[Any]): Unit = {
     val connection = conn(slot)
     // TODO: proper input port debug string (currently prints the stage)
-    val bufferSize = connection.inOwner.attributes.get[InputBuffer].get.max
+    val bufferSize = connection.inOwner.attributes.mandatoryAttribute[InputBuffer].max
     val boundary =
       new BatchingActorInputBoundary(bufferSize, shell, publisher, connection.inOwner.toString)
     logics.add(boundary)
@@ -729,7 +729,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
       case _ ⇒
         val props = ActorGraphInterpreter.props(shell)
-          .withDispatcher(effectiveAttributes.get[ActorAttributes.Dispatcher].get.dispatcher)
+          .withDispatcher(effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
         val actorName = fullIslandName match {
           case OptionVal.Some(n) ⇒ n
           case OptionVal.None    ⇒ islandName
@@ -871,8 +871,8 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (NotUsed, Any) = {
     val tls = mod.asInstanceOf[TlsModule]
 
-    val dispatcher = attributes.get[ActorAttributes.Dispatcher].get.dispatcher
-    val maxInputBuffer = attributes.get[Attributes.InputBuffer].get.max
+    val dispatcher = attributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher
+    val maxInputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer].max
 
     val props =
       TLSActor.props(maxInputBuffer, tls.createSSLEngine, tls.verifySession, tls.closing).withDispatcher(dispatcher)

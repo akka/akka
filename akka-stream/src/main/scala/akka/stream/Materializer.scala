@@ -110,15 +110,4 @@ private[akka] object NoMaterializer extends Materializer {
 private[akka] case class MaterializationContext(
   materializer:        Materializer,
   effectiveAttributes: Attributes,
-  islandName:          String) {
-
-  def dispatcher: String = effectiveAttributes.get[Dispatcher] match {
-    case Some(attr) ⇒ attr.dispatcher
-    case None       ⇒ throw new RuntimeException("Dispatcher attribute missing")
-  }
-
-  def inputBuffer: InputBuffer = effectiveAttributes.get[InputBuffer] match {
-    case Some(b) ⇒ b
-    case None    ⇒ throw new RuntimeException("InputBuffer attribute missing")
-  }
-}
+  islandName:          String)

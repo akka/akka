@@ -107,7 +107,7 @@ import org.reactivestreams.Subscriber
   extends ActorProcessorImpl(attributes, _settings) {
 
   override val primaryOutputs: FanoutOutputs = {
-    val inputBuffer = attributes.get[Attributes.InputBuffer].get
+    val inputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer]
     new FanoutOutputs(inputBuffer.max, inputBuffer.initial, self, this) {
       override def afterShutdown(): Unit = afterFlush()
     }

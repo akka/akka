@@ -16,7 +16,7 @@ import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
 
 import scala.compat.java8.OptionConverters._
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -97,6 +97,32 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   def get[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
     attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
+  }
+
+  /**
+   * Scala API: Get the most specific of one of the mandatory attributes. Mandatory attributes are guaranteed
+   * to always be among the attributes when the attributes are coming from a materialization.
+   */
+  def mandatoryAttribute[T <: MandatoryAttribute: ClassTag]: T = {
+    val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
+    getMandatoryAttribute(c)
+  }
+
+  /**
+   * Java API: Get the most specific of one of the mandatory attributes. Mandatory attributes are guaranteed
+   * to always be among the attributes when the attributes are coming from a materialization.
+   *
+   * @param c A class that is a subtype of [[MandatoryAttribute]]
+   */
+  def getMandatoryAttribute[T <: MandatoryAttribute](c: Class[T]): T = {
+    var found: OptionVal[AnyRef] = OptionVal.None
+    val iterator = attributeList.iterator
+    while (found.isEmpty && iterator.hasNext) {
+      val next = iterator.next()
+      if (c.isInstance(next)) found = OptionVal.Some(next)
+    }
+    if (found.isEmpty) throw new IllegalStateException(s"Mandatory attribute ${c} not found")
+    found.get.asInstanceOf[T]
   }
 
   /**
@@ -251,8 +277,11 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 object Attributes {
 
   trait Attribute
+
+  sealed trait MandatoryAttribute extends Attribute
+
   final case class Name(n: String) extends Attribute
-  final case class InputBuffer(initial: Int, max: Int) extends Attribute
+  final case class InputBuffer(initial: Int, max: Int) extends MandatoryAttribute
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) extends Attribute
   final case object AsyncBoundary extends Attribute
 
@@ -327,8 +356,8 @@ object Attributes {
  */
 object ActorAttributes {
   import Attributes._
-  final case class Dispatcher(dispatcher: String) extends Attribute
-  final case class SupervisionStrategy(decider: Supervision.Decider) extends Attribute
+  final case class Dispatcher(dispatcher: String) extends MandatoryAttribute
+  final case class SupervisionStrategy(decider: Supervision.Decider) extends MandatoryAttribute
 
   val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
 

@@ -126,6 +126,12 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       attributes.get[Name] should ===(Some(Attributes.Name("b")))
     }
 
+    "return a mandatory value without allocating a some" in {
+      val attributes = Attributes.inputBuffer(2, 2)
+
+      attributes.mandatoryAttribute[InputBuffer] should ===(InputBuffer(2, 2))
+    }
+
   }
 
   "attributes on a graph stage" must {
@@ -485,5 +491,4 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     }
 
   }
-
 }

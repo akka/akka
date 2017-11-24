@@ -29,7 +29,7 @@ import scala.concurrent.{ Future, Promise }
   override def create(context: MaterializationContext) = {
     val materializer = ActorMaterializerHelper.downcast(context.materializer)
 
-    val maxInputBufferSize = context.effectiveAttributes.get[Attributes.InputBuffer].get.max
+    val maxInputBufferSize = context.effectiveAttributes.mandatoryAttribute[Attributes.InputBuffer].max
 
     val ioResultPromise = Promise[IOResult]()
     val props = FileSubscriber.props(f, ioResultPromise, maxInputBufferSize, startPosition, options)
@@ -59,7 +59,7 @@ import scala.concurrent.{ Future, Promise }
 
     val os = createOutput() // if it fails, we fail the materialization
 
-    val maxInputBufferSize = context.effectiveAttributes.get[Attributes.InputBuffer].get.max
+    val maxInputBufferSize = context.effectiveAttributes.mandatoryAttribute[Attributes.InputBuffer].max
 
     val props = OutputStreamSubscriber.props(os, ioResultPromise, maxInputBufferSize, autoFlush)
 

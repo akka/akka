@@ -47,7 +47,7 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
     // we take it from the attributes
     val effectiveProps =
       if (props.dispatcher == Dispatchers.DefaultDispatcherId)
-        props.withDispatcher(context.effectiveAttributes.get[ActorAttributes.Dispatcher].get.dispatcher)
+        props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
       else props
     actorOf(effectiveProps, context.islandName)
   }

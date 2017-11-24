@@ -525,7 +525,7 @@ import scala.util.control.NonFatal
    *  because no data can enter “fast enough” from the outside
    */
   // TODO: Fix event limit heuristic
-  val shellEventLimit = attributes.get[Attributes.InputBuffer].get.max * 16
+  val shellEventLimit = attributes.mandatoryAttribute[Attributes.InputBuffer].max * 16
   // Limits the number of events processed by the interpreter on an abort event.
   // TODO: Better heuristic here
   private val abortLimit = shellEventLimit * 2
