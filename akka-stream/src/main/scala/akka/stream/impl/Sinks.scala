@@ -40,8 +40,6 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.event.Logging
 import akka.util.OptionVal
 
-import scala.collection.generic.CanBuildFrom
-
 /**
  * INTERNAL API
  */
@@ -271,7 +269,7 @@ import scala.collection.generic.CanBuildFrom
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class SeqStage[T, That](implicit cbf: CanBuildFrom[Nothing, T, That with immutable.Traversable[_]]) extends GraphStageWithMaterializedValue[SinkShape[T], Future[That]] {
+@InternalApi private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
   val in = Inlet[T]("seq.in")
 
   override def toString: String = "SeqStage"
@@ -281,9 +279,9 @@ import scala.collection.generic.CanBuildFrom
   override protected def initialAttributes: Attributes = DefaultAttributes.seqSink
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val p: Promise[That] = Promise()
+    val p: Promise[immutable.Seq[T]] = Promise()
     val logic = new GraphStageLogic(shape) with InHandler {
-      val buf = cbf()
+      val buf = Vector.newBuilder[T]
 
       override def preStart(): Unit = pull(in)
 
