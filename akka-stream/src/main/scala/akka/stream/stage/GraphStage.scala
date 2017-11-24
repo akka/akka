@@ -44,7 +44,27 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
   @throws(classOf[Exception])
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, M)
 
+  /**
+   * Initial attributes are used as the most specific attributes of a stage, they can only be overridden
+   * directly on the stage, as soon as the stage has been composed with other stages or graphs it is
+   * impossible to modify them for a user, since most specific attributes are what are used by the stage.
+   *
+   * Suitable for example for the `name` attribute, which should only be "overridden" on a per stage basis,
+   * setting it on a composed graphs should not replace the individual names of all composed stages.
+   */
   protected def initialAttributes: Attributes = Attributes.none
+
+  /**
+   * Default attributes are the least specific in the attributes for a stage (with exception for
+   * settings coming from the materializer).
+   *
+   * This means they will only apply if there is no attribute of the same type specified on the graph.
+   *
+   * Suitable for example for the `dispatcher` attribute as the user may want to specify a specific dispatcher
+   * for an entire composed graph but you also want to provide a specific dispatcher to use (for blocking for example)
+   * in case the user has not specified anything.
+   */
+  def defaultAttributes: Attributes = Attributes.none
 
   private var _traversalBuilder: TraversalBuilder = null
 

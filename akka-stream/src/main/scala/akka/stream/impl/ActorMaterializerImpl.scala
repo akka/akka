@@ -33,10 +33,10 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
 
   /** INTERNAL API */
   @InternalApi private[akka] def materialize[Mat](
-    graph:             Graph[ClosedShape, Mat],
-    initialAttributes: Attributes,
-    defaultPhase:      Phase[Any],
-    phases:            Map[IslandTag, Phase[Any]]): Mat
+    graph:                  Graph[ClosedShape, Mat],
+    materializerAttributes: Attributes,
+    defaultPhase:           Phase[Any],
+    phases:                 Map[IslandTag, Phase[Any]]): Mat
 
   /**
    * INTERNAL API
@@ -86,6 +86,7 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
  *
  * The default phases are left in-tact since we still respect `.async` and other tags that were marked within a sub-fused graph.
  */
+@InternalApi
 private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMaterializer, registerShell: GraphInterpreterShell ⇒ ActorRef) extends Materializer {
   val subFusingPhase = new Phase[Any] {
     override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] = {
@@ -98,18 +99,18 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
     delegate match {
       case am: PhasedFusingActorMaterializer ⇒
-        materialize(runnable, am.defaultInitialAttributes)
+        materialize(runnable, am.defaultAttributes)
 
       case other ⇒
         throw new IllegalStateException(s"SubFusing only supported by [PhasedFusingActorMaterializer], " +
           s"yet was used with [${other.getClass.getName}]!")
     }
 
-  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat = {
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat = {
     if (PhasedFusingActorMaterializer.Debug) println(s"Using [${getClass.getSimpleName}] to materialize [${runnable}]")
     val phases = PhasedFusingActorMaterializer.DefaultPhases
 
-    delegate.materialize(runnable, initialAttributes, subFusingPhase, phases)
+    delegate.materialize(runnable, defaultAttributes, subFusingPhase, phases)
   }
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable = delegate.scheduleOnce(delay, task)
