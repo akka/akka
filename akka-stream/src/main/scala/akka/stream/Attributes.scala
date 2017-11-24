@@ -35,6 +35,8 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   import Attributes._
 
   /**
+   * Note that this must only be used during traversal building and not during materialization
+   * as it will then always return true because of the defaults from the ActorMaterializerSettings
    * INTERNAL API
    */
   private[stream] def isAsync: Boolean = {
