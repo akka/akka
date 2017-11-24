@@ -376,6 +376,11 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   /**
    * Default attributes for the materializer, based on the [[ActorMaterializerSettings]] and
    * are always seen as least specific, so any attribute specified in the graph "wins" over these.
+   * In addition to that this also guarantees that the attributes `InputBuffer`, `SupervisionStrategy`,
+   * and `Dispatcher` is _always_ present in the attributes.
+   *
+   * When these attributes are needed later in the materialization process it is important that the
+   * they are gotten through the attributes and not through the [[ActorMaterializerSettings]]
    */
   val defaultAttributes = {
     Attributes(

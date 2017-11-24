@@ -104,7 +104,7 @@ import org.reactivestreams.Subscriber
  * INTERNAL API
  */
 @InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes, _settings: ActorMaterializerSettings)
-  extends ActorProcessorImpl(_settings) {
+  extends ActorProcessorImpl(attributes, _settings) {
 
   override val primaryOutputs: FanoutOutputs = {
     val inputBuffer = attributes.get[Attributes.InputBuffer].get

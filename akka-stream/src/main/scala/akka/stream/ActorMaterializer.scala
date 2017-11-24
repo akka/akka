@@ -22,9 +22,9 @@ import scala.util.control.NoStackTrace
 object ActorMaterializer {
 
   /**
-   * Scala API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
-   * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
+   * Scala API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]] (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create one actor that in turn creates actors for the transformation steps.
    *
    * The materializer's [[akka.stream.ActorMaterializerSettings]] will be obtained from the
@@ -42,8 +42,9 @@ object ActorMaterializer {
   }
 
   /**
-   * Scala API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * Scala API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
@@ -66,8 +67,9 @@ object ActorMaterializer {
   }
 
   /**
-   * Scala API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * Scala API: * Scala API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
@@ -96,8 +98,9 @@ object ActorMaterializer {
   }
 
   /**
-   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * Java API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
@@ -109,8 +112,9 @@ object ActorMaterializer {
     apply()(context)
 
   /**
-   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * Java API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create one actor that in turn creates actors for the transformation steps.
    */
@@ -118,8 +122,9 @@ object ActorMaterializer {
     apply(Option(settings), None)(context)
 
   /**
-   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * Java API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
@@ -160,11 +165,7 @@ private[akka] object ActorMaterializerHelper {
 }
 
 /**
- * An ActorMaterializer takes the list of transformations comprising a
- * [[akka.stream.scaladsl.Flow]] and materializes them in the form of
- * [[org.reactivestreams.Processor]] instances. How transformation
- * steps are split up into asynchronous regions is implementation
- * dependent.
+ * An ActorMaterializer takes a stream blueprint and turns it into a running stream.
  */
 abstract class ActorMaterializer extends Materializer with MaterializerLoggingProvider {
 
