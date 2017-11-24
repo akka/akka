@@ -3,7 +3,6 @@
  */
 package akka.stream
 
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -16,7 +15,6 @@ import com.typesafe.config.Config
 
 import scala.concurrent.duration._
 import akka.japi.function
-import akka.stream.impl.fusing.GraphInterpreterShell
 import akka.stream.stage.GraphStageLogic
 
 import scala.util.control.NoStackTrace
@@ -172,6 +170,12 @@ abstract class ActorMaterializer extends Materializer with MaterializerLoggingPr
 
   def settings: ActorMaterializerSettings
 
+  /**
+   * Some of the [[ActorMaterializerSettings]] comes from attributes, extract those from `opAttr` and return a version
+   * of `settings` with the attributes applied.
+   *
+   * INTERNAL API
+   */
   def effectiveSettings(opAttr: Attributes): ActorMaterializerSettings
 
   /**

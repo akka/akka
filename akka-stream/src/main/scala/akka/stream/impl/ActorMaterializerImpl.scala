@@ -29,12 +29,12 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
   /** INTERNAL API */
   @InternalApi def materialize[Mat](
     _runnableGraph:    Graph[ClosedShape, Mat],
-    initialAttributes: Attributes): Mat
+    defaultAttributes: Attributes): Mat
 
   /** INTERNAL API */
   @InternalApi private[akka] def materialize[Mat](
     graph:             Graph[ClosedShape, Mat],
-    initialAttributes: Attributes,
+    defaultAttributes: Attributes,
     defaultPhase:      Phase[Any],
     phases:            Map[IslandTag, Phase[Any]]): Mat
 
@@ -98,18 +98,18 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
     delegate match {
       case am: PhasedFusingActorMaterializer ⇒
-        materialize(runnable, am.defaultInitialAttributes)
+        materialize(runnable, am.defaultAttributes)
 
       case other ⇒
         throw new IllegalStateException(s"SubFusing only supported by [PhasedFusingActorMaterializer], " +
           s"yet was used with [${other.getClass.getName}]!")
     }
 
-  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat = {
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat = {
     if (PhasedFusingActorMaterializer.Debug) println(s"Using [${getClass.getSimpleName}] to materialize [${runnable}]")
     val phases = PhasedFusingActorMaterializer.DefaultPhases
 
-    delegate.materialize(runnable, initialAttributes, subFusingPhase, phases)
+    delegate.materialize(runnable, defaultAttributes, subFusingPhase, phases)
   }
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable = delegate.scheduleOnce(delay, task)
