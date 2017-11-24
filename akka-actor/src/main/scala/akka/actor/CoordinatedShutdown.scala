@@ -35,7 +35,7 @@ import akka.util.OptionVal
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
   /**
    * The first pre-defined phase that applications can add tasks to.
-   * Note that more phases can be be added in the application's
+   * Note that more phases can be added in the application's
    * configuration by overriding this phase with an additional
    * depends-on.
    */
