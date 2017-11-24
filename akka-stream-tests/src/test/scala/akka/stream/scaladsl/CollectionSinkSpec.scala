@@ -9,7 +9,7 @@ import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMateria
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
 
-class CollectionSinkSpec extends StreamSpec with a {
+class CollectionSinkSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
