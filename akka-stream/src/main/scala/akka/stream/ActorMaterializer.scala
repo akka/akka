@@ -171,14 +171,6 @@ abstract class ActorMaterializer extends Materializer with MaterializerLoggingPr
   def settings: ActorMaterializerSettings
 
   /**
-   * Some of the [[ActorMaterializerSettings]] comes from attributes, extract those from `opAttr` and return a version
-   * of `settings` with the attributes applied.
-   *
-   * INTERNAL API
-   */
-  def effectiveSettings(opAttr: Attributes): ActorMaterializerSettings
-
-  /**
    * Shuts down this materializer and all the stages that have been materialized through this materializer. After
    * having shut down, this materializer cannot be used again. Any attempt to materialize stages after having
    * shut down will result in an IllegalStateException being thrown at materialization time.
@@ -315,6 +307,11 @@ object ActorMaterializerSettings {
 /**
  * This class describes the configurable properties of the [[ActorMaterializer]].
  * Please refer to the `withX` methods for descriptions of the individual settings.
+ *
+ * Important note: `initialInputBufferSize`, `maxInputBufferSize`, `dispatcher` and
+ * `supervisionDecider` must not be used as values in the materializer, or anything the materializer phases use
+ * since these settings allow for overriding using [[Attributes]]. They must always be gotten from the effective
+ * attributes.
  */
 final class ActorMaterializerSettings private (
   val initialInputBufferSize:      Int,
@@ -388,9 +385,12 @@ final class ActorMaterializerSettings private (
   /**
    * Each asynchronous piece of a materialized stream topology is executed by one Actor
    * that manages an input buffer for all inlets of its shape. This setting configures
-   * the initial and maximal input buffer in number of elements for each inlet.
+   * the default for initial and maximal input buffer in number of elements for each inlet.
+   * This can be overridden for individual parts of the
+   * stream topology by using [[akka.stream.Attributes#inputBuffer]].
    *
-   * FIXME: Currently only the initialSize is used, auto-tuning is not yet implemented.
+   * FIXME: this is used for all kinds of buffers, not only the stream actor, some use initial some use max,
+   *        document and or fix if it should not be like that. Search for get[Attributes.InputBuffer] to see how it is used
    */
   def withInputBuffer(initialSize: Int, maxSize: Int): ActorMaterializerSettings = {
     if (initialSize == this.initialInputBufferSize && maxSize == this.maxInputBufferSize) this
@@ -411,6 +411,9 @@ final class ActorMaterializerSettings private (
    * Scala API: Decides how exceptions from application code are to be handled, unless
    * overridden for specific flows of the stream operations with
    * [[akka.stream.Attributes#supervisionStrategy]].
+   *
+   * Note that supervision in streams are implemented on a per stage basis and is not supported
+   * by every stage.
    */
   def withSupervisionStrategy(decider: Supervision.Decider): ActorMaterializerSettings = {
     if (decider eq this.supervisionDecider) this
@@ -421,6 +424,9 @@ final class ActorMaterializerSettings private (
    * Java API: Decides how exceptions from application code are to be handled, unless
    * overridden for specific flows of the stream operations with
    * [[akka.stream.Attributes#supervisionStrategy]].
+   *
+   * Note that supervision in streams are implemented on a per stage basis and is not supported
+   * by every stage.
    */
   def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): ActorMaterializerSettings = {
     import Supervision._

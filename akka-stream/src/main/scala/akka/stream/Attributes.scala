@@ -207,7 +207,6 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     attributeList.collect { case attr if c.isAssignableFrom(attr.getClass) ⇒ c.cast(attr) }
   }
 
-
   /**
    * Java API: Get the least specific attribute (added first) of a given `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.

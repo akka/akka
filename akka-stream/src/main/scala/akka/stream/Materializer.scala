@@ -4,9 +4,11 @@
 package akka.stream
 
 import akka.actor.Cancellable
+import akka.annotation.InternalApi
+import akka.stream.ActorAttributes.Dispatcher
+import akka.stream.Attributes.InputBuffer
 
 import scala.concurrent.ExecutionContextExecutor
-
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -45,9 +47,9 @@ abstract class Materializer {
    * The result can be highly implementation specific, ranging from local actor chains to remote-deployed
    * processing networks.
    */
-  def materialize[Mat](runnable: Graph[ClosedShape, Mat],
-                       @deprecatedName('initialAttributes)
-                       defaultAttributes: Attributes): Mat
+  def materialize[Mat](
+    runnable:                                              Graph[ClosedShape, Mat],
+    @deprecatedName('initialAttributes) defaultAttributes: Attributes): Mat
 
   /**
    * Running a flow graph will require execution resources, as will computations
@@ -80,6 +82,7 @@ abstract class Materializer {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] object NoMaterializer extends Materializer {
   override def withNamePrefix(name: String): Materializer =
     throw new UnsupportedOperationException("NoMaterializer cannot be named")
@@ -99,10 +102,23 @@ private[akka] object NoMaterializer extends Materializer {
 }
 
 /**
- *
  * Context parameter to the `create` methods of sources and sinks.
+ *
+ * INTERNAL API
  */
-case class MaterializationContext(
+@InternalApi
+private[akka] case class MaterializationContext(
   materializer:        Materializer,
   effectiveAttributes: Attributes,
-  islandName:          String)
+  islandName:          String) {
+
+  def dispatcher: String = effectiveAttributes.get[Dispatcher] match {
+    case Some(attr) ⇒ attr.dispatcher
+    case None       ⇒ throw new RuntimeException("Dispatcher attribute missing")
+  }
+
+  def inputBuffer: InputBuffer = effectiveAttributes.get[InputBuffer] match {
+    case Some(b) ⇒ b
+    case None    ⇒ throw new RuntimeException("InputBuffer attribute missing")
+  }
+}

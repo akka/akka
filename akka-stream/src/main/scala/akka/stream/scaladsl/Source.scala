@@ -21,6 +21,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.CompletionStage
 
+import akka.dispatch.Dispatchers
 import akka.stream.stage.{ GraphStage, GraphStageWithMaterializedValue }
 
 import scala.compat.java8.FutureConverters._

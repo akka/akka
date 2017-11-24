@@ -442,6 +442,7 @@ import scala.util.control.NonFatal
   var connections: Array[Connection],
   var logics:      Array[GraphStageLogic],
   settings:        ActorMaterializerSettings,
+  attributes:      Attributes,
   val mat:         ExtendedActorMaterializer) {
 
   import ActorGraphInterpreter._
@@ -524,7 +525,7 @@ import scala.util.control.NonFatal
    *  because no data can enter “fast enough” from the outside
    */
   // TODO: Fix event limit heuristic
-  val shellEventLimit = settings.maxInputBufferSize * 16
+  val shellEventLimit = attributes.get[Attributes.InputBuffer].get.max * 16
   // Limits the number of events processed by the interpreter on an abort event.
   // TODO: Better heuristic here
   private val abortLimit = shellEventLimit * 2

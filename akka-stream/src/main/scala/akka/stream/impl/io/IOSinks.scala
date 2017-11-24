@@ -28,10 +28,11 @@ import scala.concurrent.{ Future, Promise }
 
   override def create(context: MaterializationContext) = {
     val materializer = ActorMaterializerHelper.downcast(context.materializer)
-    val settings = materializer.effectiveSettings(context.effectiveAttributes)
+
+    val maxInputBufferSize = context.effectiveAttributes.get[Attributes.InputBuffer].get.max
 
     val ioResultPromise = Promise[IOResult]()
-    val props = FileSubscriber.props(f, ioResultPromise, settings.maxInputBufferSize, startPosition, options)
+    val props = FileSubscriber.props(f, ioResultPromise, maxInputBufferSize, startPosition, options)
     val dispatcher = context.effectiveAttributes.get[Dispatcher](IODispatcher).dispatcher
 
     val ref = materializer.actorOf(context, props.withDispatcher(dispatcher))
@@ -54,12 +55,13 @@ import scala.concurrent.{ Future, Promise }
 
   override def create(context: MaterializationContext) = {
     val materializer = ActorMaterializerHelper.downcast(context.materializer)
-    val settings = materializer.effectiveSettings(context.effectiveAttributes)
     val ioResultPromise = Promise[IOResult]()
 
     val os = createOutput() // if it fails, we fail the materialization
 
-    val props = OutputStreamSubscriber.props(os, ioResultPromise, settings.maxInputBufferSize, autoFlush)
+    val maxInputBufferSize = context.effectiveAttributes.get[Attributes.InputBuffer].get.max
+
+    val props = OutputStreamSubscriber.props(os, ioResultPromise, maxInputBufferSize, autoFlush)
 
     val ref = materializer.actorOf(context, props)
     (akka.stream.actor.ActorSubscriber[ByteString](ref), ioResultPromise.future)
