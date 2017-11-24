@@ -417,7 +417,7 @@ be inserted which will fail explicitly if attempts to use java serialization are
 
 It will also enable the above mentioned `enable-additional-serialization-bindings`.
 
-The log messages emitted by such serializer SHOULD be be treated as potential
+The log messages emitted by such serializer SHOULD be treated as potential
 attacks which the serializer prevented, as they MAY indicate an external operator
 attempting to send malicious messages intending to use java serialization as attack vector.
 The attempts are logged with the SECURITY marker.
