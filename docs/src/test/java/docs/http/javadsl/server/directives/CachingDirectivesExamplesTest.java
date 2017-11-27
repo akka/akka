@@ -165,7 +165,7 @@ public class CachingDirectivesExamplesTest extends JUnitRouteTest {
       .run(HttpRequest.GET("/1"))
       .assertEntity("Request for http://example.com/1 @ count 1");
 
-    for (int i = 1; i < 100; i++) {
+    for (int i = 1; i < 500; i++) {
       testRoute(route)
         .run(HttpRequest.GET("/" + i))
         .assertEntity("Request for http://example.com/" + i + " @ count " + i);
@@ -173,6 +173,6 @@ public class CachingDirectivesExamplesTest extends JUnitRouteTest {
 
     testRoute(route)
       .run(HttpRequest.GET("/1"))
-      .assertEntity("Request for http://example.com/1 @ count 100");
+      .assertEntity("Request for http://example.com/1 @ count 500");
   }
 }
