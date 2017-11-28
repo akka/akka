@@ -5,27 +5,22 @@ package akka.stream.stage
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.locks.ReentrantLock
 
-import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
 import akka.stream.actor.ActorSubscriberMessage
-import akka.stream.impl.{ NotInitialized, ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
+import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
+import akka.{ Done, NotUsed }
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 import scala.collection.{ immutable, mutable }
-import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
-import scala.util.control.TailCalls.{ TailRec, done, tailcall }
+import scala.concurrent.{ Future, Promise }
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing stage.
@@ -1087,6 +1082,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     // is called from the owning [[GraphStage]]
     private[stage] def onStop(): Unit = {
       currentState.set(Completed)
+      failAndClearAllWaiting()
+    }
+
+    private def failAndClearAllWaiting(): Unit = {
       val iterator = waitingForProcessing.iterator()
       lazy val detachedException = new StreamDetachedException()
       while (iterator.hasNext) { iterator.next().tryFailure(detachedException) }
@@ -1107,31 +1106,32 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     // external call
     override def invokeWithFeedback(event: T): Future[Done] = {
+      @tailrec
+      def invokeWithPromise(event: T, promise: Promise[Done]): Promise[Done] = {
+        currentState.get() match {
+          // not started yet
+          case list @ Pending(_) ⇒
+            if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal(promise)) :: list.pendingEvents)))
+              invokeWithPromise(event, promise) // atomicity is failed - try again
+            else promise
+          // started - can just send message to stream
+          case Initialized ⇒ sendEvent(event, promise)
+          // initializing is in progress in another thread (initializing thread is managed by Akka)
+          case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal(promise)) :: Nil))) {
+            (currentState.get(): @unchecked) match {
+              case Pending(_)  ⇒ invokeWithPromise(event, promise) // atomicity is failed - try again
+              case Initialized ⇒ sendEvent(event, promise)
+            }
+          } else promise
+          // fail promise as stream is completed
+          case Completed ⇒ failPromiseOnComplete(promise)
+        }
+      }
+
       val promise: Promise[Done] = Promise[Done]()
       promise.future.andThen { case _ ⇒ waitingForProcessing.remove(promise) }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
       waitingForProcessing.add(promise)
       invokeWithPromise(event, promise).future
-    }
-
-    private def invokeWithPromise(event: T, promise: Promise[Done]): Promise[Done] = {
-      currentState.get() match {
-        // not started yet
-        case list @ Pending(_) ⇒
-          if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal(promise)) :: list.pendingEvents)))
-            invokeWithPromise(event, promise) // atomicity is failed - try again
-          else promise
-        // started - can just send message to stream
-        case Initialized ⇒ sendEvent(event, promise)
-        // initializing is in progress in another thread (initializing thread is managed by Akka)
-        case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal(promise)) :: Nil))) {
-          (currentState.get(): @unchecked) match {
-            case Pending(_)  ⇒ invokeWithPromise(event, promise) // atomicity is failed - try again
-            case Initialized ⇒ sendEvent(event, promise)
-          }
-        } else promise
-        // fail promise as stream is completed
-        case Completed ⇒ failPromiseOnComplete(promise)
-      }
     }
 
     private def failPromiseOnComplete(promise: Promise[Done]): Promise[Done] = {
@@ -1144,10 +1144,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     override def invoke(event: T): Unit = {
       @tailrec
       def internalInvoke(event: T): Unit = currentState.get() match {
-        // started - can just send message to stream
-        case Initialized       ⇒ onAsyncInput(event, OptionVal.None)
         // not started yet
         case list @ Pending(l) ⇒ if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal.None) :: l))) internalInvoke(event)
+        // started - can just send message to stream
+        case Initialized       ⇒ onAsyncInput(event, OptionVal.None)
         // initializing is in progress in another thread (initializing thread is managed by akka)
         case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal.None) :: Nil))) {
           (currentState.get(): @unchecked) match {
@@ -1161,15 +1161,29 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
 
     // external call
+    @tailrec
     def cancel(): Unit = {
       currentState.get() match {
         case Completed ⇒
+        case list @ Pending(l) ⇒
+          if (!currentState.compareAndSet(list, Completed)) cancel()
+          else {
+            l.foreach { e ⇒
+              e.handlingPromise match {
+                case OptionVal.Some(p) ⇒
+                  p.tryFailure(new StreamDetachedException("AsyncCallback cancelled before async invocation was processed"))
+                case OptionVal.None ⇒
+              }
+            }
+            releaseCallback(this)
+          }
         case previous ⇒
           if (!currentState.compareAndSet(previous, Completed)) cancel()
           else {
             releaseCallback(this)
-            currentState.set(Completed)
+            failAndClearAllWaiting()
           }
+
       }
 
     }

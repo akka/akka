@@ -15,7 +15,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.stream.StreamSubscriptionTimeoutSettings
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
-import org.scalatest.concurrent.PatienceConfiguration.Interval
 
 object FlowSplitAfterSpec {
 

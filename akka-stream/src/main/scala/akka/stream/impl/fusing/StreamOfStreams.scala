@@ -9,22 +9,17 @@ import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.SubscriptionTimeoutException
-import akka.stream.stage._
-import akka.stream.scaladsl._
 import akka.stream.actor.ActorSubscriberMessage
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.{ SubscriptionTimeoutException, Buffer ⇒ BufferImpl }
+import akka.stream.scaladsl._
+import akka.stream.stage._
 
-import scala.collection.{ immutable, mutable }
+import scala.annotation.tailrec
+import scala.collection.JavaConverters._
+import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-import scala.annotation.tailrec
-import akka.stream.impl.PublisherSource
-import akka.stream.impl.CancellingSubscriber
-import akka.stream.impl.{ Buffer ⇒ BufferImpl }
-import akka.util.OptionVal
-
-import scala.collection.JavaConverters._
 
 /**
  * INTERNAL API
