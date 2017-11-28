@@ -10,6 +10,7 @@ import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
+import akka.util.OptionVal
 
 import scala.concurrent.{ Future, Promise }
 import scala.util.Try
@@ -27,9 +28,14 @@ import scala.util.control.NonFatal
   override def initialAttributes: Attributes = DefaultAttributes.unfoldResourceSourceAsync
 
   def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
-    var resource = Promise[S]()
-    var open = false
+    private lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    private var resource = Promise[S]()
+    private var open = false
+    // restarting the stream will create a new callback we need to keep track of
+    // the previous one to not leak a callback for every restart
+    private var currentCallbacks: OptionVal[AsyncCallback[_]] = OptionVal.None
+
+    // FIXME is this is actually not safe? Afair must only be used if callbacks never throws exceptions
     implicit val context = ExecutionContexts.sameThreadExecutionContext
 
     setHandler(out, this)
@@ -37,6 +43,10 @@ import scala.util.control.NonFatal
     override def preStart(): Unit = createStream(false)
 
     private def createStream(withPull: Boolean): Unit = {
+      currentCallbacks match {
+        case OptionVal.Some(cb) ⇒ cb.cancel()
+        case OptionVal.None     ⇒
+      }
       val createdCallback = getAsyncCallback[Try[S]] {
         case scala.util.Success(res) ⇒
           open = true
@@ -44,6 +54,7 @@ import scala.util.control.NonFatal
           if (withPull) onPull()
         case scala.util.Failure(t) ⇒ failStage(t)
       }
+      currentCallbacks = OptionVal.Some(createdCallback)
       try {
         create().onComplete(createdCallback.invoke)
       } catch {

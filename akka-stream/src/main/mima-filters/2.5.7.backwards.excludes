@@ -1,2 +1,6 @@
 # Attributes overhaul
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Graph.async")
+
+# 24046 AsyncCallback memory leak
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.stage.AsyncCallback.cancel")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.fusing.SubSink.this")

@@ -5,27 +5,22 @@ package akka.stream.stage
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.locks.ReentrantLock
 
-import akka.{ Done, NotUsed }
 import akka.actor._
-import akka.annotation.{ ApiMayChange, InternalApi }
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
 import akka.stream.actor.ActorSubscriberMessage
-import akka.stream.impl.{ NotInitialized, ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
+import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
+import akka.{ Done, NotUsed }
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 import scala.collection.{ immutable, mutable }
-import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
-import scala.util.control.TailCalls.{ TailRec, done, tailcall }
+import scala.concurrent.{ Future, Promise }
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing stage.
@@ -235,7 +230,10 @@ object GraphStageLogic {
       behaviour = receive
     }
 
-    def stop(): Unit = cell.removeFunctionRef(functionRef)
+    def stop(): Unit = {
+      cell.removeFunctionRef(functionRef)
+      callback.cancel()
+    }
 
     def watch(actorRef: ActorRef): Unit = functionRef.watch(actorRef)
 
@@ -993,6 +991,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     if (doPull) tryPull(from)
   }
 
+  // cache this as it is used for every new async callback created
+  private lazy val releaseAsyncCallback: ConcurrentAsyncCallback[_] ⇒ Unit =
+    callback ⇒ asyncCallbacksInProgress.remove(callback)
+
   /**
    * Obtain a callback object that can be used asynchronously to re-enter the
    * current [[GraphStage]] with an asynchronous notification. The [[invoke()]] method of the returned
@@ -1008,10 +1010,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Method must be called in thread-safe manner during materialization and in the same thread as materialization
    * process.
    *
-   * This object can be cached and reused within the same [[GraphStageLogic]].
+   * The returned object can be cached and reused within the same [[GraphStageLogic]]
+   *
+   * If a stage creates async callbacks that should not be tied to the lifecycle of the stage itself, that can be
+   * garbage collected earlier than the stage completes, the stage must call [[AsyncCallback#cancel]] when done
+   * with a specific callback instance. This is especially important for stages that create large numbers of callbacks.
    */
   final def getAsyncCallback[T](handler: T ⇒ Unit): AsyncCallback[T] = {
-    val result = new ConcurrentAsyncCallback[T](handler)
+    val result = new ConcurrentAsyncCallback[T](handler, releaseAsyncCallback)
     asyncCallbacksInProgress.add(result)
     if (_interpreter != null) result.onStart()
     result
@@ -1039,7 +1045,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * [[onStop()]] puts class in `Completed` state
    * "Real world" calls of [[invokeWithFeedback()]] always return failed promises for `Completed` state
    */
-  private class ConcurrentAsyncCallback[T](handler: T ⇒ Unit) extends AsyncCallback[T] {
+  private final class ConcurrentAsyncCallback[T](handler: T ⇒ Unit, releaseCallback: ConcurrentAsyncCallback[_] ⇒ Unit) extends AsyncCallback[T] {
 
     sealed trait State
     // waiting for materialization completion
@@ -1053,13 +1059,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     // Event with feedback promise
     private case class Event(e: T, handlingPromise: OptionVal[Promise[Done]])
 
-    val waitingForProcessing = ConcurrentHashMap.newKeySet[Promise[_]]()
+    private[GraphStageLogic] val waitingForProcessing = ConcurrentHashMap.newKeySet[Promise[_]]()
 
     private[this] val currentState = new AtomicReference[State](Pending(Nil))
 
     // is called from the owning [[GraphStage]]
     @tailrec
-    final private[stage] def onStart(): Unit = {
+    private[stage] def onStart(): Unit = {
       (currentState.getAndSet(Initializing): @unchecked) match {
         case Pending(l) ⇒ l.reverse.foreach(evt ⇒ {
           onAsyncInput(evt.e, evt.handlingPromise)
@@ -1074,8 +1080,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
 
     // is called from the owning [[GraphStage]]
-    final private[stage] def onStop(): Unit = {
+    private[stage] def onStop(): Unit = {
       currentState.set(Completed)
+      failAndClearAllWaiting()
+    }
+
+    private def failAndClearAllWaiting(): Unit = {
       val iterator = waitingForProcessing.iterator()
       lazy val detachedException = new StreamDetachedException()
       while (iterator.hasNext) { iterator.next().tryFailure(detachedException) }
@@ -1096,31 +1106,32 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     // external call
     override def invokeWithFeedback(event: T): Future[Done] = {
+      @tailrec
+      def invokeWithPromise(event: T, promise: Promise[Done]): Promise[Done] = {
+        currentState.get() match {
+          // not started yet
+          case list @ Pending(_) ⇒
+            if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal(promise)) :: list.pendingEvents)))
+              invokeWithPromise(event, promise) // atomicity is failed - try again
+            else promise
+          // started - can just send message to stream
+          case Initialized ⇒ sendEvent(event, promise)
+          // initializing is in progress in another thread (initializing thread is managed by Akka)
+          case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal(promise)) :: Nil))) {
+            (currentState.get(): @unchecked) match {
+              case Pending(_)  ⇒ invokeWithPromise(event, promise) // atomicity is failed - try again
+              case Initialized ⇒ sendEvent(event, promise)
+            }
+          } else promise
+          // fail promise as stream is completed
+          case Completed ⇒ failPromiseOnComplete(promise)
+        }
+      }
+
       val promise: Promise[Done] = Promise[Done]()
       promise.future.andThen { case _ ⇒ waitingForProcessing.remove(promise) }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
       waitingForProcessing.add(promise)
       invokeWithPromise(event, promise).future
-    }
-
-    private def invokeWithPromise(event: T, promise: Promise[Done]): Promise[Done] = {
-      currentState.get() match {
-        // not started yet
-        case list @ Pending(_) ⇒
-          if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal(promise)) :: list.pendingEvents)))
-            invokeWithPromise(event, promise) // atomicity is failed - try again
-          else promise
-        // started - can just send message to stream
-        case Initialized ⇒ sendEvent(event, promise)
-        // initializing is in progress in another thread (initializing thread is managed by Akka)
-        case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal(promise)) :: Nil))) {
-          (currentState.get(): @unchecked) match {
-            case Pending(_)  ⇒ invokeWithPromise(event, promise) // atomicity is failed - try again
-            case Initialized ⇒ sendEvent(event, promise)
-          }
-        } else promise
-        // fail promise as stream is completed
-        case Completed ⇒ failPromiseOnComplete(promise)
-      }
     }
 
     private def failPromiseOnComplete(promise: Promise[Done]): Promise[Done] = {
@@ -1133,10 +1144,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     override def invoke(event: T): Unit = {
       @tailrec
       def internalInvoke(event: T): Unit = currentState.get() match {
-        // started - can just send message to stream
-        case Initialized       ⇒ onAsyncInput(event, OptionVal.None)
         // not started yet
         case list @ Pending(l) ⇒ if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal.None) :: l))) internalInvoke(event)
+        // started - can just send message to stream
+        case Initialized       ⇒ onAsyncInput(event, OptionVal.None)
         // initializing is in progress in another thread (initializing thread is managed by akka)
         case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal.None) :: Nil))) {
           (currentState.get(): @unchecked) match {
@@ -1148,6 +1159,34 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       }
       internalInvoke(event)
     }
+
+    // external call
+    @tailrec
+    def cancel(): Unit = {
+      currentState.get() match {
+        case Completed ⇒
+        case list @ Pending(l) ⇒
+          if (!currentState.compareAndSet(list, Completed)) cancel()
+          else {
+            l.foreach { e ⇒
+              e.handlingPromise match {
+                case OptionVal.Some(p) ⇒
+                  p.tryFailure(new StreamDetachedException("AsyncCallback cancelled before async invocation was processed"))
+                case OptionVal.None ⇒
+              }
+            }
+            releaseCallback(this)
+          }
+        case previous ⇒
+          if (!currentState.compareAndSet(previous, Completed)) cancel()
+          else {
+            releaseCallback(this)
+            failAndClearAllWaiting()
+          }
+
+      }
+
+    }
   }
 
   /**
@@ -1158,6 +1197,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * the passed handler will be invoked eventually in a thread-safe way by the execution environment.
    *
    * [[AsyncCallback.invokeWithFeedback()]] has an internal promise that will be failed if event cannot be processed due to stream completion.
+   *
+   * If a stage creates async callbacks that should not be tied to the lifecycle of the stage itself, that can be
+   * garbage collected earlier than the stage completes, the stage must call [[AsyncCallback#cancel]] when done
+   * with a specific callback instance. This is especially important for stages that create large numbers of callbacks.
    *
    * This object can be cached and reused within the same [[GraphStageLogic]].
    */
@@ -1260,7 +1303,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           closed = true
           handler.onUpstreamFailure(ex)
       }
-    }.invoke _)
+    })
 
     def sink: Graph[SinkShape[T], NotUsed] = _sink
 
@@ -1398,8 +1441,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
  *
  * Typical use cases are exchanging messages between stream and substreams or invoking from external world sending
  * event to a stream
+ *
+ * Not intended for user implementations
  */
-trait AsyncCallback[T] {
+@DoNotInherit
+sealed trait AsyncCallback[T] {
   /**
    * Dispatch an asynchronous notification. This method is thread-safe and
    * may be invoked from external execution contexts.
@@ -1421,6 +1467,17 @@ trait AsyncCallback[T] {
    * to the invoking logic see [[AsyncCallback#invoke]]
    */
   def invokeWithFeedback(t: T): Future[Done]
+
+  /**
+   * A callback is created and tracked by the stage it belongs to, this informs the stage that the callback will
+   * no longer be used and should not be tracked, after it has been called no further calls to invoke/invokeWith
+   * feedback must happen.
+   *
+   * Method safe to call from any thread but should only be called once. After it has been called new calls to `invoke`
+   * will be ignored and calls to `invokeWithFeedback` will do nothing and return a failed future.
+   */
+  def cancel(): Unit
+
 }
 
 abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shape) {

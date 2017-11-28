@@ -9,21 +9,17 @@ import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.SubscriptionTimeoutException
-import akka.stream.stage._
-import akka.stream.scaladsl._
 import akka.stream.actor.ActorSubscriberMessage
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.{ SubscriptionTimeoutException, Buffer ⇒ BufferImpl }
+import akka.stream.scaladsl._
+import akka.stream.stage._
 
-import scala.collection.{ immutable, mutable }
+import scala.annotation.tailrec
+import scala.collection.JavaConverters._
+import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-import scala.annotation.tailrec
-import akka.stream.impl.PublisherSource
-import akka.stream.impl.CancellingSubscriber
-import akka.stream.impl.{ Buffer ⇒ BufferImpl }
-
-import scala.collection.JavaConverters._
 
 /**
  * INTERNAL API
@@ -202,6 +198,12 @@ import scala.collection.JavaConverters._
     override def onDownstreamFinish(): Unit = {
       if (!prefixComplete) completeStage()
       // Otherwise substream is open, ignore
+    }
+
+    override def postStop(): Unit = {
+      if (tailSource != null && !tailSource.isClosed) {
+        tailSource.fail(new AbruptStageTerminationException(this))
+      }
     }
 
     setHandlers(in, out, this)
@@ -581,6 +583,8 @@ import scala.collection.JavaConverters._
   /** Not yet materialized and no command has been scheduled */
   case object Uninitialized extends State
 
+  case object Materialized
+
   /** A command was scheduled before materialization */
   sealed abstract class CommandScheduledBeforeMaterialization(val command: Command) extends State
 
@@ -600,11 +604,16 @@ import scala.collection.JavaConverters._
 }
 
 /**
+ * @param externalCallback An async callback specifically for this SubSink instance, will be used for interaction and then
+ *                         cancelled when the SubSink is cancelled
+ *
  * INTERNAL API
  */
-@InternalApi private[stream] final class SubSink[T](name: String, externalCallback: ActorSubscriberMessage ⇒ Unit)
+@InternalApi private[stream] final class SubSink[T](name: String, externalCallback: AsyncCallback[ActorSubscriberMessage])
   extends GraphStage[SinkShape[T]] {
   import SubSink._
+
+  private val sendMessage: ActorSubscriberMessage ⇒ Unit = externalCallback.invoke
 
   private val in = Inlet[T](s"SubSink($name).in")
 
@@ -614,7 +623,10 @@ import scala.collection.JavaConverters._
   private val status = new AtomicReference[ /* State */ AnyRef](Uninitialized)
 
   def pullSubstream(): Unit = dispatchCommand(RequestOneScheduledBeforeMaterialization)
-  def cancelSubstream(): Unit = dispatchCommand(CancelScheduledBeforeMaterialization)
+  def cancelSubstream(): Unit = {
+    dispatchCommand(CancelScheduledBeforeMaterialization)
+    externalCallback.cancel()
+  }
 
   @tailrec
   private def dispatchCommand(newState: CommandScheduledBeforeMaterialization): Unit =
@@ -636,28 +648,39 @@ import scala.collection.JavaConverters._
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) with InHandler {
     setHandler(in, this)
 
-    override def onPush(): Unit = externalCallback(ActorSubscriberMessage.OnNext(grab(in)))
-    override def onUpstreamFinish(): Unit = externalCallback(ActorSubscriberMessage.OnComplete)
-    override def onUpstreamFailure(ex: Throwable): Unit = externalCallback(ActorSubscriberMessage.OnError(ex))
+    override def onPush(): Unit = sendMessage(ActorSubscriberMessage.OnNext(grab(in)))
+    override def onUpstreamFinish(): Unit = sendMessage(ActorSubscriberMessage.OnComplete)
+    override def onUpstreamFailure(ex: Throwable): Unit = sendMessage(ActorSubscriberMessage.OnError(ex))
 
-    @tailrec
-    private def setCallback(callback: Command ⇒ Unit): Unit =
-      status.get match {
-        case Uninitialized ⇒
-          if (!status.compareAndSet(Uninitialized, /* Materialized */ getAsyncCallback[Command](callback)))
-            setCallback(callback)
+    override def postStop(): Unit = {
+      externalCallback.cancel()
+    }
 
-        case cmd: CommandScheduledBeforeMaterialization ⇒
-          if (status.compareAndSet(cmd, /* Materialized */ getAsyncCallback[Command](callback)))
-            // between those two lines a new command might have been scheduled, but that will go through the
-            // async interface, so that the ordering is still kept
-            callback(cmd.command)
-          else
-            setCallback(callback)
+    private def setCallback(callback: Command ⇒ Unit): Unit = {
+      @tailrec
+      def loop(asyncCallback: AsyncCallback[Command]): Unit = {
+        status.get match {
+          case Uninitialized ⇒
+            if (!status.compareAndSet(Uninitialized, /* Materialized */ asyncCallback))
+              loop(asyncCallback)
 
-        case m: /* Materialized */ AsyncCallback[Command @unchecked] ⇒
-          failStage(new IllegalStateException("Substream Source cannot be materialized more than once"))
+          case cmd: CommandScheduledBeforeMaterialization ⇒
+            if (status.compareAndSet(cmd, /* Materialized */ asyncCallback))
+              // between those two lines a new command might have been scheduled, but that will go through the
+              // async interface, so that the ordering is still kept
+              callback(cmd.command)
+            else
+              loop(asyncCallback)
+
+          case m: /* Materialized */ AsyncCallback[Command @unchecked] ⇒
+            asyncCallback.cancel()
+            failStage(new IllegalStateException("Substream Source cannot be materialized more than once"))
+        }
       }
+
+      val asyncCallback = getAsyncCallback[Command](callback)
+      loop(asyncCallback)
+    }
 
     override def preStart(): Unit =
       setCallback {
@@ -670,6 +693,9 @@ import scala.collection.JavaConverters._
 }
 
 /**
+ * @param externalCallback An async callback specifically for this SubSource instance, will be used for interaction and then
+ *                         cancelled when the SubSource is completed or failed
+ *
  * INTERNAL API
  */
 @InternalApi private[akka] final class SubSource[T](name: String, private[fusing] val externalCallback: AsyncCallback[SubSink.Command])
@@ -692,6 +718,9 @@ import scala.collection.JavaConverters._
     case null ⇒
       if (!status.compareAndSet(null, ActorSubscriberMessage.OnComplete))
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(ActorSubscriberMessage.OnComplete)
+      else
+        // not materialized yet, make sure the callback is released
+        externalCallback.cancel()
   }
 
   def failSubstream(ex: Throwable): Unit = status.get match {
@@ -700,34 +729,51 @@ import scala.collection.JavaConverters._
       val failure = ActorSubscriberMessage.OnError(ex)
       if (!status.compareAndSet(null, failure))
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(failure)
+      else
+        // not materialized yet, make sure the callback is released
+        externalCallback.cancel()
   }
 
-  def timeout(d: FiniteDuration): Boolean =
-    status.compareAndSet(null, ActorSubscriberMessage.OnError(new SubscriptionTimeoutException(s"Substream Source has not been materialized in $d")))
+  def timeout(d: FiniteDuration): Boolean = {
+    val failure = ActorSubscriberMessage.OnError(new SubscriptionTimeoutException(s"Substream Source has not been materialized in $d"))
+    // not materialized yet, make sure the callback is released
+    externalCallback.cancel()
+    status.compareAndSet(null, failure)
+  }
 
-  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
-    setHandler(out, this)
+  override def createLogic(inheritedAttributes: Attributes) = {
+    new GraphStageLogic(shape) with OutHandler {
+      private var materializationFailed = false
+      setHandler(out, this)
 
-    @tailrec private def setCB(cb: AsyncCallback[ActorSubscriberMessage]): Unit = {
-      status.get match {
-        case null                               ⇒ if (!status.compareAndSet(null, cb)) setCB(cb)
-        case ActorSubscriberMessage.OnComplete  ⇒ completeStage()
-        case ActorSubscriberMessage.OnError(ex) ⇒ failStage(ex)
-        case _: AsyncCallback[_]                ⇒ failStage(new IllegalStateException("Substream Source cannot be materialized more than once"))
+      @tailrec private def setCB(cb: AsyncCallback[ActorSubscriberMessage]): Unit = {
+        status.get match {
+          case null                               ⇒ if (!status.compareAndSet(null, cb)) setCB(cb)
+          case ActorSubscriberMessage.OnComplete  ⇒ completeStage()
+          case ActorSubscriberMessage.OnError(ex) ⇒ failStage(ex)
+          case _: AsyncCallback[_] ⇒
+            materializationFailed = true
+            failStage(new IllegalStateException("Substream Source cannot be materialized more than once"))
+        }
+      }
+
+      override def preStart(): Unit = {
+        val ourOwnCallback = getAsyncCallback[ActorSubscriberMessage] {
+          case ActorSubscriberMessage.OnComplete   ⇒ completeStage()
+          case ActorSubscriberMessage.OnError(ex)  ⇒ failStage(ex)
+          case ActorSubscriberMessage.OnNext(elem) ⇒ push(out, elem.asInstanceOf[T])
+        }
+        setCB(ourOwnCallback)
+      }
+
+      override def onPull(): Unit = externalCallback.invoke(RequestOne)
+
+      override def onDownstreamFinish(): Unit = externalCallback.invoke(Cancel)
+
+      override def postStop(): Unit = {
+        if (!materializationFailed) externalCallback.cancel()
       }
     }
-
-    override def preStart(): Unit = {
-      val ourOwnCallback = getAsyncCallback[ActorSubscriberMessage] {
-        case ActorSubscriberMessage.OnComplete   ⇒ completeStage()
-        case ActorSubscriberMessage.OnError(ex)  ⇒ failStage(ex)
-        case ActorSubscriberMessage.OnNext(elem) ⇒ push(out, elem.asInstanceOf[T])
-      }
-      setCB(ourOwnCallback)
-    }
-
-    override def onPull(): Unit = externalCallback.invoke(RequestOne)
-    override def onDownstreamFinish(): Unit = externalCallback.invoke(Cancel)
   }
 
   override def toString: String = name
