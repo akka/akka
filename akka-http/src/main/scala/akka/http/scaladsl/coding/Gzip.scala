@@ -27,7 +27,9 @@ object Gzip extends Gzip(Encoder.DefaultFilter) {
   def apply(messageFilter: HttpMessage ⇒ Boolean) = new Gzip(messageFilter)
 }
 
-class GzipCompressor extends DeflateCompressor {
+/** Internal API */
+@InternalApi
+private[coding] class GzipCompressor extends DeflateCompressor {
   override protected lazy val deflater = new Deflater(Deflater.BEST_COMPRESSION, true)
   private val checkSum = new CRC32 // CRC32 of uncompressed data
   private var headerSent = false
@@ -60,7 +62,9 @@ class GzipCompressor extends DeflateCompressor {
   }
 }
 
-class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
+/** Internal API */
+@InternalApi
+private[coding] class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
   override def createLogic(attr: Attributes) = new ParsingLogic {
     private[this] val inflater = new Inflater(true)
     private[this] var crc32: CRC32 = new CRC32

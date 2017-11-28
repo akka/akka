@@ -4,11 +4,13 @@
 
 package akka.http.scaladsl.coding
 
-import java.util.zip.{ Inflater, Deflater }
+import java.util.zip.{ Deflater, Inflater }
+
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import ByteStringParser.{ ParseResult, ParseStep }
-import akka.util.{ ByteStringBuilder, ByteString }
+import akka.annotation.InternalApi
+import akka.util.{ ByteString, ByteStringBuilder }
 
 import scala.annotation.tailrec
 import akka.http.scaladsl.model._
@@ -70,7 +72,9 @@ class DeflateCompressor extends Compressor {
   }
 }
 
-private[http] object DeflateCompressor {
+/** Internal API */
+@InternalApi
+private[coding] object DeflateCompressor {
   val MinBufferSize = 1024
 
   @tailrec
@@ -86,7 +90,9 @@ private[http] object DeflateCompressor {
   }
 }
 
-class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
+/** Internal API */
+@InternalApi
+private[coding] class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
 
   override def createLogic(attr: Attributes) = new ParsingLogic {
     /** Step that probes if the deflate stream contains a zlib wrapper */
@@ -122,7 +128,9 @@ class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefaul
   }
 }
 
-abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault)
+/** Internal API */
+@InternalApi
+private[coding] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault)
   extends ByteStringParser[ByteString] {
 
   class Inflate(inflater: Inflater, noPostProcessing: Boolean, afterInflate: ParseStep[ByteString]) extends ParseStep[ByteString] {
