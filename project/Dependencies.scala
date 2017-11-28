@@ -53,6 +53,7 @@ object Dependencies {
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
     val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.4.0"
+    val jsr305      = "com.google.code.findbugs"      % "jsr305"                       % "3.0.2"             % Provided // ApacheV2
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
@@ -89,7 +90,7 @@ object Dependencies {
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest.value, Test.scalacheck.value, Test.junit)
 
-  lazy val httpCaching = l ++= Seq(caffeine, Test.scalatest.value)
+  lazy val httpCaching = l ++= Seq(caffeine, jsr305, Test.scalatest.value)
 
   lazy val http = l ++= Seq()
 
