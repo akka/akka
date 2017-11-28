@@ -283,7 +283,8 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
         val jar = new java.util.zip.ZipFile(filePath)
         try {
           val entry = jar.getEntry(resourcePath)
-          Option(jar.getInputStream(entry)) map { is ⇒
+          if (entry.isDirectory) None
+          else Option(jar.getInputStream(entry)) map { is ⇒
             is.close()
             ResourceFile(url, entry.getSize, entry.getTime)
           }
