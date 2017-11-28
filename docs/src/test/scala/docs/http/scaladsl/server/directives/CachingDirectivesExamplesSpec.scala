@@ -126,19 +126,7 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
     val route = cache(lfuCache, keyerFunction)(innerRoute)
     //#create-cache
 
-    // tests:
-    Get("/1") ~> route ~> check {
-      responseAs[String] shouldEqual "Request for http://example.com/1 @ count 1"
-    }
-
-    for (i <- 1 until 500) {
-      Get(s"/$i") ~> route ~> check {
-        responseAs[String] shouldEqual s"Request for http://example.com/$i @ count $i"
-      }
-    }
-
-    Get("/1") ~> route ~> check {
-      responseAs[String] shouldEqual "Request for http://example.com/1 @ count 500"
-    }
+    // We don't test the eviction settings here. Deterministic testing of eviction is hard because
+    // caffeine's LFU is probabilistic.
   }
 }
