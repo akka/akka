@@ -5,6 +5,9 @@
 package akka.http.scaladsl.server
 package directives
 
+import scala.concurrent.Future
+import scala.util.{ Failure, Try }
+
 import scala.xml.NodeSeq
 import org.scalatest.Inside
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
@@ -18,8 +21,7 @@ import HttpCharsets._
 import headers._
 import org.xml.sax.SAXParseException
 
-import scala.concurrent.Future
-import scala.util.{ Failure, Try }
+import akka.testkit.EventFilter
 
 class MarshallingDirectivesSpec extends RoutingSpec with Inside {
   import ScalaXmlSupport._
@@ -149,9 +151,11 @@ class MarshallingDirectivesSpec extends RoutingSpec with Inside {
           complete(StatusCodes.NoContent, doSomethingWhichReturnsAFailedFuture())
         }
 
-      Get("/589") ~> route ~> check {
-        response.status shouldEqual StatusCodes.InternalServerError
-        responseAs[String] shouldEqual "There was an internal server error."
+      EventFilter[Exception](pattern = "^Error during processing of request: 'oops'", occurrences = 1) intercept {
+        Get("/589") ~> route ~> check {
+          response.status shouldEqual StatusCodes.InternalServerError
+          responseAs[String] shouldEqual "There was an internal server error."
+        }
       }
     }
     "properly marshal successful Futures even in a NoContent context (#589)" in {
