@@ -5,6 +5,7 @@
 package akka.http.javadsl.server
 
 import java.util.concurrent.TimeUnit
+import java.net.SocketException
 
 import akka.Done
 import akka.http.javadsl.settings.ServerSettings
@@ -12,7 +13,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
 import akka.stream.ActorMaterializer
-import akka.testkit.{ AkkaSpec, SocketUtil }
+import akka.testkit.{ AkkaSpec, SocketUtil, EventFilter }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
@@ -190,8 +191,9 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
       }
 
       "after binding is unsuccessful" in withSneaky { (sneaky, host, _) ⇒
-
-        sneaky.startServer(host, 1, ServerSettings.create(ConfigFactory.load))
+        EventFilter[SocketException](message = "Permission denied", occurrences = 1) intercept {
+          sneaky.startServer(host, 1, system)
+        }
 
         eventually {
           sneaky.postBindingFailureCalled.get() should ===(true)
