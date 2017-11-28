@@ -16,10 +16,8 @@ import scala.annotation.tailrec
 /** INTERNAL API */
 @InternalApi
 private object LineParser {
-
-  private val cr = '\r'.toByte
-
-  private val lf = '\n'.toByte
+  val CR = '\r'.toByte
+  val LF = '\n'.toByte
 }
 
 /** INTERNAL API */
@@ -41,35 +39,35 @@ private final class LineParser(maxLineSize: Int) extends GraphStage[FlowShape[By
       override def onPush() = {
         @tailrec
         def parseLines(
-          bs:          ByteString,
-          from:        Int            = 0,
-          at:          Int            = 0,
-          parsedLines: Vector[String] = Vector.empty,
-          slicedCr:    Boolean        = false): (ByteString, Vector[String], Boolean) =
+          bs:            ByteString,
+          from:          Int            = 0,
+          at:            Int            = 0,
+          parsedLines:   Vector[String] = Vector.empty,
+          lastCharWasCr: Boolean        = false): (ByteString, Vector[String], Boolean) =
           if (at >= bs.length)
-            (bs.drop(from), parsedLines, slicedCr)
+            (bs.drop(from), parsedLines, lastCharWasCr)
           else
             bs(at) match {
-              // Lookahead for LF after CR
-              case `cr` if at < bs.length - 1 && bs(at + 1) == lf ⇒
+              case CR if at < bs.length - 1 && bs(at + 1) == LF ⇒
+                // Lookahead for LF after CR
                 parseLines(bs, at + 2, at + 2, parsedLines :+ bs.slice(from, at).utf8String)
-              // if is a CR but we don't know the next character, slice it but flag that the last character was a CR so if the next happens to be a LF we just ignore
-              case `cr` ⇒
-                parseLines(bs, at + 1, at + 1, parsedLines :+ bs.slice(from, at).utf8String, slicedCr = true)
-              // if is a LF and we just sliced a CR then we simply advance
-              case `lf` if slicedCr ⇒
+              case CR ⇒
+                // if is a CR but we don't know the next character, slice it but flag that the last character was a CR so if the next happens to be a LF we just ignore
+                parseLines(bs, at + 1, at + 1, parsedLines :+ bs.slice(from, at).utf8String, lastCharWasCr = true)
+              case LF if lastCharWasCr ⇒
+                // if is a LF and we just sliced a CR then we simply advance
                 parseLines(bs, at + 1, at + 1, parsedLines)
-              // a CR or LF means we found a new slice
-              case `lf` ⇒
+              case LF ⇒
+                // a LF that wasn't preceded by a CR means we found a new slice
                 parseLines(bs, at + 1, at + 1, parsedLines :+ bs.slice(from, at).utf8String)
-              // for other input, simply advance
               case _ ⇒
+                // for other input, simply advance
                 parseLines(bs, from, at + 1, parsedLines)
             }
 
         // start the search where it ended, prevent iterating over all the buffer again
         val currentBufferStart = math.max(0, buffer.length - 1)
-        buffer = parseLines(buffer ++ grab(in), at = currentBufferStart, slicedCr = lastCharWasCr) match {
+        buffer = parseLines(buffer ++ grab(in), at = currentBufferStart, lastCharWasCr = lastCharWasCr) match {
           case (remaining, _, _) if remaining.size > maxLineSize ⇒
             failStage(new IllegalStateException(s"maxLineSize of $maxLineSize exceeded!"))
             ByteString.empty // Clear buffer
