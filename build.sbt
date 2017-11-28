@@ -166,6 +166,11 @@ lazy val httpTests = project("akka-http-tests")
   .configs(MultiJvm)
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
+lazy val httpJmhBench = project("akka-http-bench-jmh")
+  .dependsOn(http)
+  .enablePlugins(JmhPlugin)
+  .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release benchs
+  .disablePlugins(MimaPlugin)
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   .enablePlugins(NoPublish)
