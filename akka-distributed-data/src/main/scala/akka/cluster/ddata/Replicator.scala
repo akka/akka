@@ -311,8 +311,23 @@ object Replicator {
   }
   final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency
 
-  final case class DataCenterWriteConsistency(timeout: FiniteDuration, centerToConsistency: DataCenter ⇒ Option[WriteConsistency])
-    extends WriteConsistency
+  final case class DataCenterWriteConsistency(timeout: FiniteDuration, dcToConsistency: Map[DataCenter, WriteConsistency])
+    extends WriteConsistency {
+    dcToConsistency.values.foreach(writeConsistency ⇒
+      requireWriteToOrSimilarConsistency(writeConsistency))
+  }
+
+  final case class AllDataCentersWriteConsistency(timeout: FiniteDuration, writeConsistency: WriteConsistency)
+    extends WriteConsistency {
+    requireWriteToOrSimilarConsistency(writeConsistency)
+  }
+
+  private def requireWriteToOrSimilarConsistency(writeConsistency: WriteConsistency): Unit = {
+    require(writeConsistency match {
+      case WriteTo(_, _) | WriteMajority(_, _) | WriteAll(_) ⇒ true
+      case _ ⇒ false
+    })
+  }
 
   /**
    * Java API: The `ReadLocal` instance
@@ -1283,8 +1298,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def isLocalSender(): Boolean = !replyTo.path.address.hasGlobalScope
 
-  def dataCenters(): Set[DataCenter] = (nodes + cluster.selfMember).map(_.dataCenter)
-
   def receiveUpdate(key: KeyR, modify: Option[ReplicatedData] ⇒ ReplicatedData,
                     writeConsistency: WriteConsistency, req: Option[Any]): Unit = {
     val localValue = getData(key.id)
@@ -1344,7 +1357,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           }
           val writeAggregator =
             context.actorOf(DataCenterWriteAggregator.props(key, writeEnvelope, writeDelta, writeConsistency,
-              req, nodes, unreachable, dataCenters(), replyTo, durable)
+              req, nodes, unreachable, replyTo, durable, cluster)
               .withDispatcher(context.props.dispatcher))
           if (durable) {
             durableStore ! Store(key.id, new DurableDataEnvelope(newEnvelope),
@@ -1446,8 +1459,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
             replyTo ! DeleteSuccess(key, req)
         } else {
           val writeAggregator =
-            context.actorOf(DataCenterWriteAggregator.props(key, DeletedEnvelope, None, consistency, req, nodes, unreachable,
-              dataCenters(), replyTo, durable).withDispatcher(context.props.dispatcher))
+            context.actorOf(DataCenterWriteAggregator.props(key, DeletedEnvelope, None, consistency, req,
+              nodes, unreachable, replyTo, durable, cluster)
+              .withDispatcher(context.props.dispatcher))
           if (durable) {
             durableStore ! Store(key.id, new DurableDataEnvelope(DeletedEnvelope),
               Some(StoreReply(DeleteSuccess(key, req), StoreFailure(key, req), writeAggregator)))
@@ -1958,19 +1972,22 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     envelope:    Internal.DataEnvelope,
     delta:       Option[Internal.Delta],
     consistency: WriteConsistency,
-    req:         Option[Any], nodes: Set[Member],
+    req:         Option[Any],
+    nodes:       Set[Member],
     unreachable: Set[Member],
-    centers:     Set[DataCenter],
     replyTo:     ActorRef,
-    durable:     Boolean): Props = {
+    durable:     Boolean,
+    cluster:     Cluster): Props = {
 
     consistency match {
       case DataCenterWriteConsistency(_, dataCenterToConsistency) ⇒
         Props(new DataCenterWriteAggregator(
-          key, envelope, delta, dataCenterToConsistency, centers, req, nodes, unreachable, replyTo, durable))
-      case _ ⇒
+          key, envelope, delta, dataCenterToConsistency, req, nodes, unreachable, replyTo, durable))
+      case AllDataCentersWriteConsistency(_, writeConsistency) ⇒
+        val dataCenters = cluster.state.allDataCenters
+        val dcToConsistency = dataCenters.map(center ⇒ (center, writeConsistency)).toMap
         Props(new DataCenterWriteAggregator(
-          key, envelope, delta, _ ⇒ Some(consistency), centers, req, nodes, unreachable, replyTo, durable))
+          key, envelope, delta, dcToConsistency, req, nodes, unreachable, replyTo, durable))
     }
   }
 }
@@ -1986,7 +2003,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     consistency: WriteConsistency,
     req:         Option[Any], nodes: Set[Member],
     unreachable: Set[Member],
-    centers:     Set[DataCenter],
     replyTo:     ActorRef,
     durable:     Boolean): Props = {
 
@@ -2001,8 +2017,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   key:                  KeyR,
   envelope:             Replicator.Internal.DataEnvelope,
   delta:                Option[Replicator.Internal.Delta],
-  dcToWriteConsistency: DataCenter ⇒ Option[WriteConsistency],
-  centers:              Set[DataCenter],
+  dcToWriteConsistency: Map[DataCenter, WriteConsistency],
   req:                  Option[Any],
   nodes:                Set[Member],
   unreachable:          Set[Member],
@@ -2012,14 +2027,13 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   private var pendingChildren: Set[ActorRef] = _
 
   override def preStart(): Unit = {
-    pendingChildren = centers.toStream.flatMap { dataCenter ⇒
+    pendingChildren = dcToWriteConsistency.keySet.map { dataCenter ⇒
       def nodesForDataCenter(nodes: Set[Member]) = nodes.filter(_.dataCenter == dataCenter)
 
-      dcToWriteConsistency(dataCenter).toStream.map(consistency ⇒ {
-        context.actorOf(WriteAggregator.props(key, envelope, delta, consistency, req,
-          nodesForDataCenter(nodes), nodesForDataCenter(unreachable), centers, self, durable))
-      })
-    }.toSet
+      val consistency = dcToWriteConsistency(dataCenter)
+      context.actorOf(WriteAggregator.props(key, envelope, delta, consistency, req,
+        nodesForDataCenter(nodes), nodesForDataCenter(unreachable), self, durable))
+    }
   }
 
   override def receive = {
