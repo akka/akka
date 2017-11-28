@@ -1985,9 +1985,16 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           key, envelope, delta, dataCenterToConsistency, req, nodes, unreachable, replyTo, durable))
       case AllDataCentersWriteConsistency(_, writeConsistency) ⇒
         val dataCenters = cluster.state.allDataCenters
-        val dcToConsistency = dataCenters.map(center ⇒ (center, writeConsistency)).toMap
+        val dataCenterToConsistency = dataCenters.map(center ⇒ (center, writeConsistency)).toMap
         Props(new DataCenterWriteAggregator(
-          key, envelope, delta, dcToConsistency, req, nodes, unreachable, replyTo, durable))
+          key, envelope, delta, dataCenterToConsistency, req, nodes, unreachable, replyTo, durable))
+      case writeConsistency ⇒
+        //rewrite or reuse with above
+        val dataCenters = cluster.state.allDataCenters
+        //        if(dataCenters.size!=1) log warn
+        val dataCenterToConsistency = dataCenters.map(center ⇒ (center, writeConsistency)).toMap
+        Props(new DataCenterWriteAggregator(
+          key, envelope, delta, dataCenterToConsistency, req, nodes, unreachable, replyTo, durable))
     }
   }
 }
