@@ -89,11 +89,36 @@ private[http] object DeflateCompressor {
 class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
 
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
-    override val inflater: Inflater = new Inflater()
+    var _inflater: Inflater = _
+    override def inflater: Inflater = if (_inflater != null) {
+      _inflater
+    } else {
+      throw new IllegalStateException("Inflater used before the header was analysed for wrapping")
+    }
 
     override val inflateState = new Inflate(true) {
       override def onTruncation(): Unit = completeStage()
+
+      override def parse(reader: ByteStringParser.ByteReader): ParseResult[ByteString] = {
+        val data = reader.remainingData
+        if (_inflater == null) {
+          _inflater = examineAndBuildInflater(data)
+        }
+        super.parse(new ByteStringParser.ByteReader(reader.takeAll()))
+      }
     }
+
+    /**
+     * We examine the head byte of the incoming data stream, looking for the standard 0x8 in the first 4 bits of the  header
+     * that marks a byte stream as using a wrapped deflate stream. If we don't find that header, we fall back to the no-wrap
+     * inflater
+     * More details on the structure of wrap and no-wrap headers of Deflate can be found at:
+     * https://www.ietf.org/rfc/rfc1950.txt (wrap) and
+     * https://www.ietf.org/rfc/rfc1951.txt (no-wrap)
+     */
+    private def examineAndBuildInflater(bytes: ByteString): Inflater =
+      bytes.headOption.filter(b ⇒ (b & 0x0F) != 8)
+        .fold(new Inflater())(_ ⇒ new Inflater(true))
 
     override def afterInflate = inflateState
     override def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit = {}
@@ -106,7 +131,7 @@ abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesP
   extends ByteStringParser[ByteString] {
 
   abstract class DecompressorParsingLogic extends ParsingLogic {
-    val inflater: Inflater
+    def inflater: Inflater
     def afterInflate: ParseStep[ByteString]
     def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit
     val inflateState: Inflate
