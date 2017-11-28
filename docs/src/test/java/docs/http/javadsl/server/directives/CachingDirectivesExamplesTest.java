@@ -160,19 +160,7 @@ public class CachingDirectivesExamplesTest extends JUnitRouteTest {
     final Route route = cache(lfuCache, keyerFunction, () -> innerRoute);
     //#create-cache
 
-    // tests:
-    testRoute(route)
-      .run(HttpRequest.GET("/1"))
-      .assertEntity("Request for http://example.com/1 @ count 1");
-
-    for (int i = 1; i < 500; i++) {
-      testRoute(route)
-        .run(HttpRequest.GET("/" + i))
-        .assertEntity("Request for http://example.com/" + i + " @ count " + i);
-    }
-
-    testRoute(route)
-      .run(HttpRequest.GET("/1"))
-      .assertEntity("Request for http://example.com/1 @ count 500");
+    // We don't test the eviction settings here. Deterministic testing of eviction is hard because
+    // caffeine's LFU is probabilistic.
   }
 }
