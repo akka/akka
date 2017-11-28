@@ -95,7 +95,7 @@ Sometimes it is not possible (or needed) to construct the entire computation gra
 all of its different phases in different places and in the end connect them all into a complete graph and run it.
 
 This can be achieved by @scala[returning a different `Shape` than `ClosedShape`, for example `FlowShape(in, out)`, from the
-function given to `GraphDSL.create`. See [Predefined shapes](#predefined-shapes)) for a list of such predefined shapes.
+function given to `GraphDSL.create`. See [Predefined shapes](#predefined-shapes) for a list of such predefined shapes.
 Making a `Graph` a `RunnableGraph`]@java[using the returned `Graph` from `GraphDSL.create()` rather than
 passing it to `RunnableGraph.fromGraph()` to wrap it in a `RunnableGraph`.The reason of representing it as a different type is that a
 `RunnableGraph`] requires all ports to be connected, and if they are not
@@ -175,7 +175,7 @@ Java
 ## Combining Sources and Sinks with simplified API
 
 There is a simplified API you can use to combine sources and sinks with junctions like:
-@scala[`Broadcast[T]`, `Balance[T]`,`Merge[In]` and `Concat[A]`]@java[`Broadcast<T>`, `Balance<T>`, `Merge<In>` and `Concat<A>`]
+@scala[`Broadcast[T]`, `Balance[T]`, `Merge[In]` and `Concat[A]`]@java[`Broadcast<T>`, `Balance<T>`, `Merge<In>` and `Concat<A>`]
 without the need for using the Graph DSL. The combine method takes care of constructing
 the necessary graph underneath. In following example we combine two sources into one (fan-in):
 
