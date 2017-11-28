@@ -117,14 +117,18 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * @param c A class that is a subtype of [[MandatoryAttribute]]
    */
   def getMandatoryAttribute[T <: MandatoryAttribute](c: Class[T]): T = {
-    var found: OptionVal[AnyRef] = OptionVal.None
-    val iterator = attributeList.iterator
-    while (found.isEmpty && iterator.hasNext) {
-      val next = iterator.next()
-      if (c.isInstance(next)) found = OptionVal.Some(next)
+    @tailrec
+    def find(list: List[Attribute]): OptionVal[Attribute] = list match {
+      case Nil ⇒ OptionVal.None
+      case head :: tail ⇒
+        if (c.isInstance(head)) OptionVal.Some(head)
+        else find(tail)
     }
-    if (found.isEmpty) throw new IllegalStateException(s"Mandatory attribute ${c} not found")
-    found.get.asInstanceOf[T]
+
+    find(attributeList) match {
+      case OptionVal.Some(t) ⇒ t.asInstanceOf[T]
+      case OptionVal.None    ⇒ throw new IllegalStateException(s"Mandatory attribute ${c} not found")
+    }
   }
 
   /**

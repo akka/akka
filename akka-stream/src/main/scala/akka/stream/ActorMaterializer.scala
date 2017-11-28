@@ -308,13 +308,14 @@ object ActorMaterializerSettings {
 /**
  * This class describes the configurable properties of the [[ActorMaterializer]].
  * Please refer to the `withX` methods for descriptions of the individual settings.
- *
- * Important note: `initialInputBufferSize`, `maxInputBufferSize`, `dispatcher` and
- * `supervisionDecider` must not be used as values in the materializer, or anything the materializer phases use
- * since these settings allow for overriding using [[Attributes]]. They must always be gotten from the effective
- * attributes.
  */
 final class ActorMaterializerSettings private (
+  /*
+   * Important note: `initialInputBufferSize`, `maxInputBufferSize`, `dispatcher` and
+   * `supervisionDecider` must not be used as values in the materializer, or anything the materializer phases use
+   * since these settings allow for overriding using [[Attributes]]. They must always be gotten from the effective
+   * attributes.
+   */
   val initialInputBufferSize:      Int,
   val maxInputBufferSize:          Int,
   val dispatcher:                  String,
