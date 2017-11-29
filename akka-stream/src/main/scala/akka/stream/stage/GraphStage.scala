@@ -10,6 +10,7 @@ import java.util.concurrent.locks.ReentrantLock
 import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.dispatch.ExecutionContexts
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
@@ -1012,7 +1013,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   final def getAsyncCallback[T](handler: T ⇒ Unit): AsyncCallback[T] = {
     val result = new ConcurrentAsyncCallback[T](handler)
-    asyncCallbacksInProgress.add(result)
     if (_interpreter != null) result.onStart()
     result
   }
@@ -1039,7 +1039,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * [[onStop()]] puts class in `Completed` state
    * "Real world" calls of [[invokeWithFeedback()]] always return failed promises for `Completed` state
    */
-  private class ConcurrentAsyncCallback[T](handler: T ⇒ Unit) extends AsyncCallback[T] {
+  private final class ConcurrentAsyncCallback[T](handler: T ⇒ Unit) extends AsyncCallback[T] {
 
     sealed trait State
     // waiting for materialization completion
@@ -1059,9 +1059,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     // is called from the owning [[GraphStage]]
     @tailrec
-    final private[stage] def onStart(): Unit = {
+    private[stage] def onStart(): Unit = {
       (currentState.getAndSet(Initializing): @unchecked) match {
         case Pending(l) ⇒ l.reverse.foreach(evt ⇒ {
+          evt.handlingPromise match {
+            case OptionVal.Some(p) ⇒ p.future.onComplete(_ ⇒ onFeedbackCompleted(p))(ExecutionContexts.sameThreadExecutionContext)
+            case OptionVal.None    ⇒
+          }
           onAsyncInput(evt.e, evt.handlingPromise)
         })
       }
@@ -1074,7 +1078,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
 
     // is called from the owning [[GraphStage]]
-    final private[stage] def onStop(): Unit = {
+    private[stage] def onStop(): Unit = {
       currentState.set(Completed)
       val iterator = waitingForProcessing.iterator()
       lazy val detachedException = new StreamDetachedException()
@@ -1097,9 +1101,23 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     // external call
     override def invokeWithFeedback(event: T): Future[Done] = {
       val promise: Promise[Done] = Promise[Done]()
-      promise.future.andThen { case _ ⇒ waitingForProcessing.remove(promise) }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+      promise.future.onComplete {
+        case _ ⇒ onFeedbackCompleted(promise)
+      }(ExecutionContexts.sameThreadExecutionContext)
+
+      if (waitingForProcessing.isEmpty)
+        asyncCallbacksInProgress.add(this)
       waitingForProcessing.add(promise)
+
       invokeWithPromise(event, promise).future
+    }
+
+    private def onFeedbackCompleted(promise: Promise[Done]): Unit = {
+      waitingForProcessing.remove(promise)
+      // make sure we don't leak references - if we have no outstanding
+      // feedback-invokes the stage can let go of the reference
+      if (waitingForProcessing.isEmpty)
+        asyncCallbacksInProgress.remove(this)
     }
 
     private def invokeWithPromise(event: T, promise: Promise[Done]): Promise[Done] = {
