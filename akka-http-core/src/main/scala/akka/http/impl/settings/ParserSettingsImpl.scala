@@ -32,6 +32,7 @@ private[akka] final case class ParserSettingsImpl(
   illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode,
   headerValueCacheLimits:                   Map[String, Int],
   includeTlsSessionInfoHeader:              Boolean,
+  modeledHeaderParsing:                     Boolean,
   customMethods:                            String ⇒ Option[HttpMethod],
   customStatusCodes:                        Int ⇒ Option[StatusCode],
   customMediaTypes:                         MediaTypes.FindCustom)
@@ -82,6 +83,7 @@ object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.ht
       IllegalResponseHeaderValueProcessingMode(c getString "illegal-response-header-value-processing-mode"),
       cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey → cacheConfig.getInt(kvp.getKey))(collection.breakOut),
       c getBoolean "tls-session-info-header",
+      c getBoolean "modeled-header-parsing",
       noCustomMethods,
       noCustomStatusCodes,
       noCustomMediaTypes)
