@@ -301,6 +301,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * INTERNAL API
    */
+  @volatile private var stopped: Boolean = false
+
+  /**
+   * INTERNAL API
+   */
   private[stream] def inHandler(id: Int): InHandler = {
     if (id > inCount) throw new IllegalArgumentException(s"$id not in inHandler range $inCount in $this")
     if (inCount < 1) throw new IllegalArgumentException(s"Tried to access inHandler $id but there are no in ports in $this")
@@ -1012,9 +1017,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * This object can be cached and reused within the same [[GraphStageLogic]].
    */
   final def getAsyncCallback[T](handler: T ⇒ Unit): AsyncCallback[T] = {
-    val result = new ConcurrentAsyncCallback[T](handler)
-    if (_interpreter != null) result.onStart()
-    result
+    val callback = new ConcurrentAsyncCallback[T](handler)
+    if (_interpreter != null) callback.onStart()
+    else callbacksWaitingForInterpreter = callback :: callbacksWaitingForInterpreter
+    callback
   }
 
   /**
@@ -1048,12 +1054,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     private case object Initializing extends State
     // stream is initialized and so no threads can just send events without any synchronization overhead
     private case object Initialized extends State
-    // stage has been shut down, either regularly or it failed
-    private case object Completed extends State
     // Event with feedback promise
     private case class Event(e: T, handlingPromise: OptionVal[Promise[Done]])
 
-    val waitingForProcessing = ConcurrentHashMap.newKeySet[Promise[_]]()
+    private val waitingForProcessing = ConcurrentHashMap.newKeySet[Promise[_]]()
 
     private[this] val currentState = new AtomicReference[State](Pending(Nil))
 
@@ -1072,14 +1076,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       if (!currentState.compareAndSet(Initializing, Initialized)) {
         (currentState.get: @unchecked) match {
           case Pending(_) ⇒ onStart()
-          case Completed  ⇒ () //wonder if this is possible
         }
       }
     }
 
     // is called from the owning [[GraphStage]]
     private[stage] def onStop(): Unit = {
-      currentState.set(Completed)
       val iterator = waitingForProcessing.iterator()
       lazy val detachedException = new StreamDetachedException()
       while (iterator.hasNext) { iterator.next().tryFailure(detachedException) }
@@ -1092,21 +1094,18 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     private def sendEvent(event: T, promise: Promise[Done]): Promise[Done] = {
       onAsyncInput(event, OptionVal.Some(promise))
-      currentState.get() match {
-        case Completed ⇒ failPromiseOnComplete(promise)
-        case _         ⇒ promise
-      }
+      if (stopped) failPromiseOnComplete(promise)
+      else promise
     }
 
     // external call
     override def invokeWithFeedback(event: T): Future[Done] = {
       val promise: Promise[Done] = Promise[Done]()
-      promise.future.onComplete {
-        case _ ⇒ onFeedbackCompleted(promise)
-      }(ExecutionContexts.sameThreadExecutionContext)
+      promise.future.onComplete(_ ⇒ onFeedbackCompleted(promise))(ExecutionContexts.sameThreadExecutionContext)
 
-      if (waitingForProcessing.isEmpty)
+      if (waitingForProcessing.isEmpty) {
         asyncCallbacksInProgress.add(this)
+      }
       waitingForProcessing.add(promise)
 
       invokeWithPromise(event, promise).future
@@ -1121,23 +1120,24 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
 
     private def invokeWithPromise(event: T, promise: Promise[Done]): Promise[Done] = {
-      currentState.get() match {
-        // not started yet
-        case list @ Pending(_) ⇒
-          if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal(promise)) :: list.pendingEvents)))
-            invokeWithPromise(event, promise) // atomicity is failed - try again
-          else promise
-        // started - can just send message to stream
-        case Initialized ⇒ sendEvent(event, promise)
-        // initializing is in progress in another thread (initializing thread is managed by Akka)
-        case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal(promise)) :: Nil))) {
-          (currentState.get(): @unchecked) match {
-            case Pending(_)  ⇒ invokeWithPromise(event, promise) // atomicity is failed - try again
-            case Initialized ⇒ sendEvent(event, promise)
-          }
-        } else promise
-        // fail promise as stream is completed
-        case Completed ⇒ failPromiseOnComplete(promise)
+      if (stopped) promise.failure(new StreamDetachedException())
+      else {
+        currentState.get() match {
+          // not started yet
+          case list @ Pending(_) ⇒
+            if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal(promise)) :: list.pendingEvents)))
+              invokeWithPromise(event, promise) // atomicity is failed - try again
+            else promise
+          // started - can just send message to stream
+          case Initialized ⇒ sendEvent(event, promise)
+          // initializing is in progress in another thread (initializing thread is managed by Akka)
+          case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal(promise)) :: Nil))) {
+            (currentState.get(): @unchecked) match {
+              case Pending(_)  ⇒ invokeWithPromise(event, promise) // atomicity is failed - try again
+              case Initialized ⇒ sendEvent(event, promise)
+            }
+          } else promise
+        }
       }
     }
 
@@ -1162,9 +1162,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
             case Initialized       ⇒ onAsyncInput(event, OptionVal.None)
           }
         }
-        case Completed ⇒ // do nothing here as stream is completed
       }
-      internalInvoke(event)
+      if (!stopped) internalInvoke(event)
     }
   }
 
@@ -1182,6 +1181,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def createAsyncCallback[T](handler: Procedure[T]): AsyncCallback[T] =
     getAsyncCallback(handler.apply)
 
+  private var callbacksWaitingForInterpreter: List[ConcurrentAsyncCallback[_]] = Nil
   private val asyncCallbacksInProgress = mutable.HashSet[ConcurrentAsyncCallback[_]]()
 
   private var _stageActor: StageActor = _
@@ -1224,7 +1224,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   // Internal hooks to avoid reliance on user calling super in preStart
   /** INTERNAL API */
   protected[stream] def beforePreStart(): Unit = {
-    asyncCallbacksInProgress.foreach(_.onStart())
+    callbacksWaitingForInterpreter.foreach(_.onStart())
+    callbacksWaitingForInterpreter = Nil
   }
 
   // Internal hooks to avoid reliance on user calling super in postStop
@@ -1234,6 +1235,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       _stageActor.stop()
       _stageActor = null
     }
+    // make sure any invokeWithFeedback after this fails fast
+    stopped = true
+    // and fail current outstanding invokeWithFeedback promises
     asyncCallbacksInProgress.foreach(_.onStop())
   }
 

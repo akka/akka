@@ -13,6 +13,7 @@ import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit.{ AkkaSpec, TestProbe }
 
 import scala.concurrent.{ Future, Promise }
+import scala.language.reflectiveCalls
 
 class AsyncCallbackSpec extends AkkaSpec {
 
