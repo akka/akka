@@ -301,11 +301,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * INTERNAL API
    */
-  @volatile private var stopped: Boolean = false
-
-  /**
-   * INTERNAL API
-   */
   private[stream] def inHandler(id: Int): InHandler = {
     if (id > inCount) throw new IllegalArgumentException(s"$id not in inHandler range $inCount in $this")
     if (inCount < 1) throw new IllegalArgumentException(s"Tried to access inHandler $id but there are no in ports in $this")
@@ -1104,11 +1099,25 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       promise.future.onComplete(_ ⇒ onFeedbackCompleted(promise))(ExecutionContexts.sameThreadExecutionContext)
 
       if (waitingForProcessing.isEmpty) {
-        asyncCallbacksInProgress.add(this)
+        addToAsyncCallbacksInProgress()
       }
       waitingForProcessing.add(promise)
 
       invokeWithPromise(event, promise).future
+    }
+
+    @tailrec
+    private def addToAsyncCallbacksInProgress(): Unit = {
+      val current = asyncCallbacksInProgress.get()
+      if (current != null && !current.contains(this) && !asyncCallbacksInProgress.compareAndSet(current, current + this))
+        addToAsyncCallbacksInProgress()
+    }
+
+    @tailrec
+    private def removeFromAsyncCallbacksInProgress(): Unit = {
+      val current = asyncCallbacksInProgress.get()
+      if (current != null && current.contains(this) && !asyncCallbacksInProgress.compareAndSet(current, current - this))
+        removeFromAsyncCallbacksInProgress()
     }
 
     private def onFeedbackCompleted(promise: Promise[Done]): Unit = {
@@ -1116,9 +1125,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       // make sure we don't leak references - if we have no outstanding
       // feedback-invokes the stage can let go of the reference
       if (waitingForProcessing.isEmpty)
-        asyncCallbacksInProgress.remove(this)
+        removeFromAsyncCallbacksInProgress()
     }
 
+    @tailrec
     private def invokeWithPromise(event: T, promise: Promise[Done]): Promise[Done] = {
       if (stopped) promise.failure(new StreamDetachedException())
       else {
@@ -1182,7 +1192,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     getAsyncCallback(handler.apply)
 
   private var callbacksWaitingForInterpreter: List[ConcurrentAsyncCallback[_]] = Nil
-  private val asyncCallbacksInProgress = mutable.HashSet[ConcurrentAsyncCallback[_]]()
+  // is used for two purposes: keep track of running callbacks and signal that the
+  // stage has stopped to fail incoming async callback invocations by being set to null
+  private val asyncCallbacksInProgress = new AtomicReference(Set.empty[ConcurrentAsyncCallback[_]])
+
+  private def stopped = asyncCallbacksInProgress.get() == null
 
   private var _stageActor: StageActor = _
   final def stageActor: StageActor = _stageActor match {
@@ -1236,9 +1250,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       _stageActor = null
     }
     // make sure any invokeWithFeedback after this fails fast
-    stopped = true
     // and fail current outstanding invokeWithFeedback promises
-    asyncCallbacksInProgress.foreach(_.onStop())
+    val inProgress = asyncCallbacksInProgress.getAndSet(null)
+    inProgress.foreach(_.onStop())
   }
 
   /**
