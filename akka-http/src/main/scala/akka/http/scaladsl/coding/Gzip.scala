@@ -27,7 +27,9 @@ object Gzip extends Gzip(Encoder.DefaultFilter) {
   def apply(messageFilter: HttpMessage ⇒ Boolean) = new Gzip(messageFilter)
 }
 
-class GzipCompressor extends DeflateCompressor {
+/** Internal API */
+@InternalApi
+private[coding] class GzipCompressor extends DeflateCompressor {
   override protected lazy val deflater = new Deflater(Deflater.BEST_COMPRESSION, true)
   private val checkSum = new CRC32 // CRC32 of uncompressed data
   private var headerSent = false
@@ -60,17 +62,16 @@ class GzipCompressor extends DeflateCompressor {
   }
 }
 
-class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
-  override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
-    override val inflater: Inflater = new Inflater(true)
-    override def afterInflate: ParseStep[ByteString] = ReadTrailer
-    override def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit =
-      crc32.update(buffer, offset, length)
+/** Internal API */
+@InternalApi
+private[coding] class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
+  override def createLogic(attr: Attributes) = new ParsingLogic {
+    private[this] val inflater = new Inflater(true)
+    private[this] var crc32: CRC32 = new CRC32
 
     trait Step extends ParseStep[ByteString] {
       override def onTruncation(): Unit = failStage(new ZipException("Truncated GZIP stream"))
     }
-    override val inflateState = new Inflate(false) with Step
     startWith(ReadHeaders)
 
     /** Reading the header bytes */
@@ -88,10 +89,14 @@ class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) 
 
         inflater.reset()
         crc32.reset()
-        ParseResult(None, inflateState, false)
+        ParseResult(None, GzipDeflate, acceptUpstreamFinish = false)
       }
     }
-    var crc32: CRC32 = new CRC32
+    case object GzipDeflate extends Inflate(inflater, noPostProcessing = false, ReadTrailer) with Step {
+      protected override def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit =
+        crc32.update(buffer, offset, length)
+    }
+
     private def fail(msg: String) = throw new ZipException(msg)
 
     /** Reading the trailer */
@@ -101,7 +106,7 @@ class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) 
         if (readIntLE() != crc32.getValue.toInt) fail("Corrupt data (CRC32 checksum error)")
         if (readIntLE() != inflater.getBytesWritten.toInt /* truncated to 32bit */ )
           fail("Corrupt GZIP trailer ISIZE")
-        ParseResult(None, ReadHeaders, true)
+        ParseResult(None, ReadHeaders, acceptUpstreamFinish = true)
       }
     }
   }

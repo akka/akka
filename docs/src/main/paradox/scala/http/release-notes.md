@@ -1,5 +1,17 @@
 # Release Notes
 
+## 10.0.11
+
+### Incompatible changes to akka.http.{java,scala}dsl.coding classes
+
+To clean up internal code, we made a few incompatible changes to classes that were previously kept public accidentally.
+We now made those classes private and marked them as `@InternalApi`. Affected classes are `akka.http.scaladsl.coding.DeflateDecompressorBase`,
+`akka.http.scaladsl.coding.DeflateCompressor`, and `akka.http.scaladsl.coding.GzipCompressor`.
+This is in violation with a strict reading of our binary compatibility guidelines. We did that change for
+pragmatic reasons because we believe that it is unlikely that these classes have been used or extended by third parties.
+If this assumption turns out to be too optimistic and integration with third-party code breaks because of this,
+please let us know.
+
 ## 10.0.10
 
 ### Support for HTTP(S) proxies with Authorization

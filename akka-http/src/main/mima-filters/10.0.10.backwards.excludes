@@ -1,6 +1,12 @@
 # Mima filters needed to check newer versions against 10.0.10
 
-# Issue #1033 Add multiple file upload directive
+# Issue #1033 Add multiple file upload directive, trait not to be extended by third-party implementors
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FileUploadDirectives.fileUploadAll")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FileUploadDirectives.storeUploadedFile")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FileUploadDirectives.storeUploadedFiles")
+
+# Changes to (now) internal API. These implementation classes were only accidentally public and unlikely to be used by third-party code.
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.coding.DeflateDecompressorBase$DecompressorParsingLogic")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.coding.DeflateDecompressor.createLogic")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.coding.DeflateDecompressorBase$DecompressorParsingLogic$Inflate")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.coding.GzipDecompressor.createLogic")
