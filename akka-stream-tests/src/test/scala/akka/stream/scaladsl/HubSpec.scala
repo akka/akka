@@ -365,6 +365,34 @@ class HubSpec extends StreamSpec {
       }
     }
 
+    "handle cancelled Sink" in assertAllStagesStopped {
+      val in = TestPublisher.probe[Int]()
+      val hubSource = Source.fromPublisher(in).runWith(BroadcastHub.sink(4))
+
+      val out = TestSubscriber.probe[Int]()
+
+      hubSource.runWith(Sink.cancelled)
+      hubSource.runWith(Sink.fromSubscriber(out))
+
+      out.ensureSubscription()
+
+      out.request(10)
+      in.expectRequest()
+      in.sendNext(1)
+      out.expectNext(1)
+      in.sendNext(2)
+      out.expectNext(2)
+      in.sendNext(3)
+      out.expectNext(3)
+      in.sendNext(4)
+      out.expectNext(4)
+      in.sendNext(5)
+      out.expectNext(5)
+
+      in.sendComplete()
+      out.expectComplete()
+    }
+
   }
 
   "PartitionHub" must {
@@ -600,6 +628,15 @@ class HubSpec extends StreamSpec {
       a[TE] shouldBe thrownBy {
         Await.result(source.runWith(Sink.seq), 3.seconds)
       }
+    }
+
+    "drop elements with negative index" in assertAllStagesStopped {
+      val source = Source(0 until 10).runWith(PartitionHub.sink(
+        (size, elem) ⇒ if (elem == 3 || elem == 4) -1 else elem % size, startAfterNrOfConsumers = 2, bufferSize = 8))
+      val result1 = source.runWith(Sink.seq)
+      val result2 = source.runWith(Sink.seq)
+      result1.futureValue should ===((0 to 8 by 2).filterNot(_ == 4))
+      result2.futureValue should ===((1 to 9 by 2).filterNot(_ == 3))
     }
 
   }

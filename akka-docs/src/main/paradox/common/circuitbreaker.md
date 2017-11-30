@@ -59,7 +59,7 @@ The Akka library provides an implementation of a circuit breaker called
     - These are executed in the `ExecutionContext` provided.
    
 
-![circuit-breaker-states.png](../../images/circuit-breaker-states.png)
+![circuit-breaker-states.png](../images/circuit-breaker-states.png)
 
 ## Examples
 

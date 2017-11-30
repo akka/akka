@@ -134,7 +134,6 @@ This can also be defined as Java system properties when starting the JVM using t
 Such configuration is typically created dynamically by external tools, see for example:
 
 * [Deploying clustered Akka applications on Kubernetes](http://developer.lightbend.com/guides/k8-akka-cluster/)
-* [ConductR](https://conductr.lightbend.com/docs/2.1.x/AkkaAndPlay#Akka-Clustering)
 * [ConstructR](https://github.com/hseeberger/constructr)
 
 The seed nodes can be started in any order and it is not necessary to have all
@@ -557,7 +556,7 @@ order to account for network issues that sometimes occur on such platforms.
 The following chart illustrates how *phi* increase with increasing time since the
 previous heartbeat.
 
-![phi1.png](../images/phi1.png)
+![phi1.png](./images/phi1.png)
 
 Phi is calculated from the mean and standard deviation of historical
 inter arrival times. The previous chart is an example for standard deviation
@@ -565,16 +564,16 @@ of 200 ms. If the heartbeats arrive with less deviation the curve becomes steepe
 i.e. it is possible to determine failure more quickly. The curve looks like this for
 a standard deviation of 100 ms.
 
-![phi2.png](../images/phi2.png)
+![phi2.png](./images/phi2.png)
 
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
 `akka.cluster.failure-detector.acceptable-heartbeat-pause`. You may want to
-adjust the [configuration](#cluster-configuration) of this depending on you environment.
+adjust the [configuration](#cluster-configuration) of this depending on your environment.
 This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 3 seconds.
 
-![phi3.png](../images/phi3.png)
+![phi3.png](./images/phi3.png)
 
 Death watch uses the cluster failure detector for nodes in the cluster, i.e. it detects
 network failures and JVM crashes, in addition to graceful termination of watched

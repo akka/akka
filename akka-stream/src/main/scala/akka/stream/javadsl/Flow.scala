@@ -7,7 +7,6 @@ import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, function }
-import akka.stream.impl.StreamLayout
 import akka.stream._
 import org.reactivestreams.Processor
 
@@ -2049,8 +2048,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
    * to allow some burstiness. Whenever stream wants to send an element, it takes as many
-   * tokens from the bucket as number of elements. If there isn't any, throttle waits until the
-   * bucket accumulates enough tokens. Bucket is full when stream just materialized and started.
+   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
    * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
@@ -2060,8 +2060,12 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * the implementation to avoid using the scheduler when input rates fall below the enforced limit and to reduce
    * most of the inaccuracy caused by the scheduler resolution (which is in the range of milliseconds).
    *
-   * Throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
-   * enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
+   *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
+   *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
+   *  case burst is 0 and speed is higher than 30 events per second. You need to consider another solution in case you are expecting
+   *  events being evenly spread with some small interval (30 milliseconds or less).
+   *  In other words the throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
+   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
@@ -2070,6 +2074,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
+   *
+   * @see [[#throttleEven]]
    */
   def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int,
                mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
@@ -2084,14 +2090,25 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
    * to allow some burstiness. Whenever stream wants to send an element, it takes as many
-   * tokens from the bucket as element cost. If there isn't any, throttle waits until the
+   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
    * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
-   * to their cost minus available tokens, meeting the target rate.
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
    * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
    *  cannot emit elements that cost more than the maximumBurst
+   *
+   * It is recommended to use non-zero burst sizes as they improve both performance and throttling precision by allowing
+   * the implementation to avoid using the scheduler when input rates fall below the enforced limit and to reduce
+   * most of the inaccuracy caused by the scheduler resolution (which is in the range of milliseconds).
+   *
+   *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
+   *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
+   *  case burst is 0 and speed is higher than 30 events per second. You need to consider another solution in case you are expecting
+   *  events being evenly spread with some small interval (30 milliseconds or less).
+   *  In other words the throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
+   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
@@ -2100,10 +2117,39 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
+   *
+   *  @see [[#throttleEven]]
    */
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
                costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.throttle(cost, per, maximumBurst, costCalculation.apply, mode))
+
+  /**
+   * This is a simplified version of throttle that spreads events evenly across the given time interval.
+   *
+   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * of time between events.
+   *
+   * If you want to be sure that no time interval has no more than specified number of events you need to use
+   * [[throttle()]] with maximumBurst attribute.
+   * @see [[#throttle]]
+   */
+  def throttleEven(elements: Int, per: FiniteDuration, mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.throttle(elements, per, Integer.MAX_VALUE, mode))
+
+  /**
+   * This is a simplified version of throttle that spreads events evenly across the given time interval.
+   *
+   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * of time between events.
+   *
+   * If you want to be sure that no time interval has no more than specified number of events you need to use
+   * [[throttle()]] with maximumBurst attribute.
+   * @see [[#throttle]]
+   */
+  def throttleEven(cost: Int, per: FiniteDuration,
+                   costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.throttle(cost, per, Integer.MAX_VALUE, costCalculation.apply, mode))
 
   /**
    * Detaches upstream demand from downstream demand without detaching the
@@ -2152,20 +2198,21 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.initialDelay(delay))
 
   /**
-   * Change the attributes of this [[Source]] to the given ones and seal the list
-   * of attributes. This means that further calls will not be able to remove these
-   * attributes, but instead add new ones. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
+   * Replace the attributes of this [[Flow]] with the given ones. If this Flow is a composite
+   * of multiple graphs, new attributes on the composite will be less specific than attributes
+   * set directly on the individual graphs of the composite.
+   *
+   * Note that this operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr))
 
   /**
-   * Add the given attributes to this Source. Further calls to `withAttributes`
-   * will not remove these attributes. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Add the given attributes to this [[Flow]]. If the specific attribute was already present
+   * on this graph this means the added attribute will be more specific than the existing one.
+   * If this Flow is a composite of multiple graphs, new attributes on the composite will be
+   * less specific than attributes set directly on the individual graphs of the composite.
    */
   override def addAttributes(attr: Attributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.addAttributes(attr))
@@ -2181,6 +2228,23 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   override def async: javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.async)
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.async(dispatcher))
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.async(dispatcher, inputBufferSize))
 
   /**
    * Logs elements flowing through the stream as well as completion and erroring.

@@ -6,7 +6,7 @@ package akka.stream.io
 import java.net._
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ ActorSystem, Kill }
+import akka.actor.{ ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Kill }
 import akka.io.Tcp._
 import akka.stream._
 import akka.stream.scaladsl.Tcp.{ IncomingConnection, ServerBinding }
@@ -400,31 +400,49 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
     }
 
     "handle when connection actor terminates unexpectedly" in {
-      val system2 = ActorSystem()
-      import system2.dispatcher
-      val mat2 = ActorMaterializer.create(system2)
+      val system2 = ActorSystem("TcpSpec-unexpected-system2", ConfigFactory.parseString(
+        """
+          akka.loglevel = DEBUG
+        """).withFallback(system.settings.config))
+      try {
+        import system2.dispatcher
+        val mat2 = ActorMaterializer.create(system2)
 
-      val serverAddress = temporaryServerAddress()
-      val binding = Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostString, serverAddress.getPort)(mat2)
+        val serverAddress = temporaryServerAddress()
+        val binding = Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostString, serverAddress.getPort)(mat2)
 
-      val probe = TestProbe()
-      val testMsg = ByteString(0)
-      val result =
-        Source.single(testMsg)
-          .concat(Source.maybe[ByteString])
-          .via(Tcp(system2).outgoingConnection(serverAddress))
-          .runForeach { msg ⇒ probe.ref ! msg }(mat2)
+        val probe = TestProbe()
+        val testMsg = ByteString(0)
+        val result =
+          Source.single(testMsg)
+            .concat(Source.maybe[ByteString])
+            .via(Tcp(system2).outgoingConnection(serverAddress))
+            .runForeach { msg ⇒ probe.ref ! msg }(mat2)
 
-      // Ensure first that the actor is there
-      probe.expectMsg(testMsg)
+        // Ensure first that the actor is there
+        probe.expectMsg(testMsg)
 
-      // Getting rid of existing connection actors by using a blunt instrument
-      system2.actorSelection(akka.io.Tcp(system2).getManager.path / "selectors" / s"$$a" / "*") ! Kill
+        // Getting rid of existing connection actors by using a blunt instrument
+        val path = akka.io.Tcp(system2).getManager.path / "selectors" / s"$$a" / "*"
 
-      result.failed.futureValue shouldBe a[StreamTcpException]
+        // Some more verbose info when #21839 happens again
+        system2.actorSelection(path).tell(Identify(), probe.ref)
+        try {
+          probe.expectMsgType[ActorIdentity].ref.get
+        } catch {
+          case _: AssertionError | _: NoSuchElementException ⇒
+            val tree = system2.asInstanceOf[ExtendedActorSystem].printTree
+            fail(s"No TCP selector actor running at [$path], actor tree: $tree")
+        }
+        system2.actorSelection(path) ! Kill
 
-      binding.map(_.unbind()).recover { case NonFatal(_) ⇒ () }.foreach { _ ⇒
-        shutdown(system2)
+        result.failed.futureValue shouldBe a[StreamTcpException]
+
+        binding.map(_.unbind()).recover { case NonFatal(_) ⇒ () }.foreach { _ ⇒
+          shutdown(system2)
+        }
+      } finally {
+        TestKit.shutdownActorSystem(system2)
       }
     }
 
@@ -451,9 +469,11 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       val resultFuture =
         Source(testInput).via(Tcp().outgoingConnection(serverAddress)).runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
 
+      binding.whenUnbound.value should be(None)
       resultFuture.futureValue should be(expectedOutput)
       binding.unbind().futureValue
       echoServerFinish.futureValue
+      binding.whenUnbound.futureValue should be(Done)
     }
 
     "work with a chain of echoes" in {
@@ -466,6 +486,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
 
       // make sure that the server has bound to the socket
       val binding = bindingFuture.futureValue
+      binding.whenUnbound.value should be(None)
 
       val echoConnection = Tcp().outgoingConnection(serverAddress)
 
@@ -483,6 +504,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       resultFuture.futureValue should be(expectedOutput)
       binding.unbind().futureValue
       echoServerFinish.futureValue
+      binding.whenUnbound.futureValue should be(Done)
     }
 
     "bind and unbind correctly" in EventFilter[BindException](occurrences = 2).intercept {

@@ -75,7 +75,7 @@ object Dependencies {
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.3" % "test"
-      val gson = "com.google.code.gson" % "gson" % "2.8.1" % "test"
+      val gson = "com.google.code.gson" % "gson" % "2.8.2" % "test"
     }
 
     object Test {
@@ -97,10 +97,10 @@ object Dependencies {
       val jimfs = "com.google.jimfs" % "jimfs" % "1.1" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "3.2.4" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "3.2.4" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "3.2.5" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "3.2.5" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "1.0.5" % "test" // Free BSD
-      val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.9" % "test" // CC0
+      val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.10" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
       // sigar logging

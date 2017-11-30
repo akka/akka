@@ -118,7 +118,7 @@ object ConsistentHashingRoutingLogic {
  * The key is part of the message and it's convenient to define it together
  * with the message definition.
  *
- * 3. The messages can be be wrapped in a [[akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope]]
+ * 3. The messages can be wrapped in a [[akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope]]
  * to define what data to use for the consistent hash key. The sender knows
  * the key to use.
  *

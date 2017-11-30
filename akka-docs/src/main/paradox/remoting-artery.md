@@ -491,7 +491,7 @@ order to account for network issues that sometimes occur on such platforms.
 The following chart illustrates how *phi* increase with increasing time since the
 previous heartbeat.
 
-![phi1.png](../images/phi1.png)
+![phi1.png](./images/phi1.png)
 
 Phi is calculated from the mean and standard deviation of historical
 inter arrival times. The previous chart is an example for standard deviation
@@ -499,7 +499,7 @@ of 200 ms. If the heartbeats arrive with less deviation the curve becomes steepe
 i.e. it is possible to determine failure more quickly. The curve looks like this for
 a standard deviation of 100 ms.
 
-![phi2.png](../images/phi2.png)
+![phi2.png](./images/phi2.png)
 
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
@@ -508,7 +508,7 @@ adjust the [Remote Configuration](#remote-configuration-artery) of this dependin
 This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 3 seconds.
 
-![phi3.png](../images/phi3.png)
+![phi3.png](./images/phi3.png)
 
 ## Serialization
 
@@ -592,7 +592,7 @@ be inserted which will fail explicitly if attempts to use java serialization are
 
 It will also enable the above mentioned *enable-additional-serialization-bindings*.
 
-The log messages emitted by such serializer SHOULD be be treated as potential
+The log messages emitted by such serializer SHOULD be treated as potential
 attacks which the serializer prevented, as they MAY indicate an external operator
 attempting to send malicious messages intending to use java serialization as attack vector.
 The attempts are logged with the SECURITY marker.
@@ -628,6 +628,18 @@ together with a tutorial for a more hands-on experience. The source code of this
 @scala[@extref[Akka Samples Repository](samples:akka-sample-remote-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-remote-java)].
 
 ## Performance tuning
+
+### Lanes
+
+Message serialization and deserialization can be a bottleneck for remote communication. Therefore there is support for parallel inbound and outbound lanes to perform serialization and other tasks for different destination actors in parallel. Using multiple lanes is of most value for the inbound messages, since all inbound messages from all remote systems share the same inbound stream. For outbound messages there is already one stream per remote destination system, so multiple outbound lanes only add value when sending to different actors in same destination system.
+
+The selection of lane is based on consistent hashing of the recipient ActorRef to preserve message ordering per receiver.
+
+Note that lowest latency can be achieved with `inbound-lanes=1` and `outbound-lanes=1` because multiple lanes introduce an asynchronous boundary. 
+
+Also note that the total amount of parallel tasks are bound by the `remote-dispatcher` and the thread pool size should not exceed the number of CPU cores minus headroom for actually processing the messages in the application, i.e. in practice the the pool size should be less than half of the number of cores.
+
+See `inbound-lanes` and `outbound-lanes` in the @ref:[reference configuration](general/configuration.md#config-akka-remote-artery) for default values.
 
 ### Dedicated subchannel for large messages
 

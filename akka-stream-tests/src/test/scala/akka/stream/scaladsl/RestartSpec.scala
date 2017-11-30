@@ -17,7 +17,7 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-class RestartSpec extends StreamSpec with DefaultTimeout {
+class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "10s")) with DefaultTimeout {
 
   implicit val mat = ActorMaterializer()
   import system.dispatcher
@@ -175,6 +175,54 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
       Thread.sleep((minBackoff + 100.millis).toMillis)
       created.get() should ===(1)
     }
+
+    "stop on completion if it should only be restarted in failures" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val probe = RestartSource.onFailuresWithBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
+        created.incrementAndGet()
+        Source(List("a", "b", "c"))
+          .map {
+            case "c"   ⇒ if (created.get() == 1) throw TE("failed") else "c"
+            case other ⇒ other
+          }
+      }.runWith(TestSink.probe)
+
+      probe.requestNext("a")
+      probe.requestNext("b")
+      // will fail, and will restart
+      probe.requestNext("a")
+      probe.requestNext("b")
+      probe.requestNext("c")
+      probe.expectComplete()
+
+      created.get() should ===(2)
+
+      probe.cancel()
+    }
+
+    "restart on failure when only due to failures should be restarted" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val probe = RestartSource.onFailuresWithBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
+        created.incrementAndGet()
+        Source(List("a", "b", "c"))
+          .map {
+            case "c"   ⇒ throw TE("failed")
+            case other ⇒ other
+          }
+      }.runWith(TestSink.probe)
+
+      probe.requestNext("a")
+      probe.requestNext("b")
+      probe.requestNext("a")
+      probe.requestNext("b")
+      probe.requestNext("a")
+
+      created.get() should ===(3)
+
+      probe.cancel()
+
+    }
+
   }
 
   "A restart with backoff sink" should {
@@ -435,13 +483,17 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
+      // we need to start counting time before we issue the cancel signal,
+      // as starting the counter anywhere after the cancel signal, might not
+      // capture all of the time, that has been spent for the backoff.
+      val deadline = minBackoff.fromNow
+
       source.sendNext("cancel")
       // This will complete the flow in probe and cancel the flow out probe
       flowInProbe.request(2)
       Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain only ("in complete", "out complete")
 
       source.sendNext("c")
-      val deadline = (minBackoff - 1.millis).fromNow
       flowInProbe.request(1)
       flowInProbe.expectNext("c")
       deadline.isOverdue() should be(true)

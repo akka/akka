@@ -377,7 +377,7 @@ The implementations shown above are the defaults provided by the @scala[`Actor` 
 <a id="actor-lifecycle"></a>
 ### Actor Lifecycle
 
-![actor_lifecycle.png](../images/actor_lifecycle.png)
+![actor_lifecycle.png](./images/actor_lifecycle.png)
 
 A path in an actor system represents a "place" which might be occupied
 by a living actor. Initially (apart from system initialized actors) a path is
@@ -1078,7 +1078,7 @@ The default phases are defined as:
 
 @@snip [reference.conf]($akka$/akka-actor/src/main/resources/reference.conf) { #coordinated-shutdown-phases }
 
-More phases can be be added in the application's configuration if needed by overriding a phase with an
+More phases can be added in the application's configuration if needed by overriding a phase with an
 additional `depends-on`. Especially the phases `before-service-unbind`, `before-cluster-shutdown` and
 `before-actor-system-terminate` are intended for application specific phases or tasks.
 
