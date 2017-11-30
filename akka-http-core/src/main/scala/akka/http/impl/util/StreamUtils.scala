@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import akka.event.Logging
+import akka.http.scaladsl.model.HttpEntity
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -280,6 +281,62 @@ private[http] object StreamUtils {
    * fusing is neither supported nor necessary).
    */
   def fuseAggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] = fuser.aggressive(g)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  object CaptureMaterializationAndTerminationOp extends EntityStreamOp[(Future[Unit], Future[Unit])] {
+    def strictM: (Future[Unit], Future[Unit]) = (Future.successful(()), Future.successful(()))
+    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], (Future[Unit], Future[Unit])) = {
+      val materializationPromise = Promise[Unit]()
+      val (newSource, completion) =
+        StreamUtils.captureTermination(source.mapMaterializedValue { mat ⇒
+          materializationPromise.trySuccess(())
+          mat
+        })
+      (newSource, (materializationPromise.future, completion))
+    }
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  object CaptureTerminationOp extends EntityStreamOp[Future[Unit]] {
+    def strictM: Future[Unit] = Future.successful(())
+    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = StreamUtils.captureTermination(source)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[http] trait EntityStreamOp[M] {
+    def strictM: M
+    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], M)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[http] def transformEntityStream[T <: HttpEntity, M](entity: T, streamOp: EntityStreamOp[M]): (T, M) =
+    entity match {
+      case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] → streamOp.strictM
+      case x: HttpEntity.Default ⇒
+        val (newData, whenCompleted) = streamOp(x.data)
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
+      case x: HttpEntity.Chunked ⇒
+        val (newChunks, whenCompleted) = streamOp(x.chunks)
+        x.copy(chunks = newChunks).asInstanceOf[T] → whenCompleted
+      case x: HttpEntity.CloseDelimited ⇒
+        val (newData, whenCompleted) = streamOp(x.data)
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
+      case x: HttpEntity.IndefiniteLength ⇒
+        val (newData, whenCompleted) = streamOp(x.data)
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
+    }
 }
 
 /**

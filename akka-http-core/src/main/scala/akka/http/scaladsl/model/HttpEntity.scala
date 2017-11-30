@@ -646,21 +646,7 @@ object HttpEntity {
    */
   @InternalApi
   private[http] def captureTermination[T <: HttpEntity](entity: T): (T, Future[Unit]) =
-    entity match {
-      case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] → FastFuture.successful(())
-      case x: HttpEntity.Default ⇒
-        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
-      case x: HttpEntity.Chunked ⇒
-        val (newChunks, whenCompleted) = StreamUtils.captureTermination(x.chunks)
-        x.copy(chunks = newChunks).asInstanceOf[T] → whenCompleted
-      case x: HttpEntity.CloseDelimited ⇒
-        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
-      case x: HttpEntity.IndefiniteLength ⇒
-        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
-    }
+    StreamUtils.transformEntityStream(entity, StreamUtils.CaptureTerminationOp)
 
   /**
    * Represents the currently being-drained HTTP Entity which triggers completion of the contained
