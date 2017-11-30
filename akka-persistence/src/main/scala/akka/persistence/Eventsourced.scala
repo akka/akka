@@ -7,6 +7,8 @@ package akka.persistence
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.UUID
 
+import com.typesafe.config.ConfigFactory
+
 import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.actor.{ DeadLetter, StashOverflowException }
@@ -26,15 +28,19 @@ private[persistence] object Eventsourced {
 
   private sealed trait PendingHandlerInvocation {
     def evt: Any
+
     def handler: Any ⇒ Unit
   }
+
   /** forces actor to stash incoming commands until all these invocations are handled */
   private final case class StashingHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
+
   /** does not force the actor to stash commands; Originates from either `persistAsync` or `defer` calls */
   private final case class AsyncHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
 
   /** message used to detect that recovery timed out */
   private final case class RecoveryTick(snapshot: Boolean)
+
 }
 
 /**
@@ -43,6 +49,7 @@ private[persistence] object Eventsourced {
  * Scala API and implementation details of [[PersistentActor]] and [[AbstractPersistentActor]].
  */
 private[persistence] trait Eventsourced extends Snapshotter with PersistenceStash with PersistenceIdentity with PersistenceRecovery {
+
   import JournalProtocol._
   import SnapshotProtocol.LoadSnapshotResult
   import SnapshotProtocol.LoadSnapshotFailed
@@ -50,15 +57,34 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
   private val extension = Persistence(context.system)
 
-  private[persistence] lazy val journal = extension.journalFor(journalPluginId, journalPluginConfig)
-  private[persistence] lazy val snapshotStore = extension.snapshotStoreFor(snapshotPluginId, snapshotPluginConfig)
+  private[persistence] lazy val journal = {
+    val journalPluginConfig = this match {
+      case c: RuntimePluginConfig ⇒ c.journalPluginConfig
+      case _                      ⇒ ConfigFactory.empty
+    }
+    extension.journalFor(journalPluginId, journalPluginConfig)
+  }
+
+  private[persistence] lazy val snapshotStore = {
+    val snapshotPluginConfig = this match {
+      case c: RuntimePluginConfig ⇒ c.snapshotPluginConfig
+      case _                      ⇒ ConfigFactory.empty
+    }
+    extension.snapshotStoreFor(snapshotPluginId, snapshotPluginConfig)
+  }
 
   private val instanceId: Int = Eventsourced.instanceIdCounter.getAndIncrement()
   private val writerUuid = UUID.randomUUID.toString
 
   private var journalBatch = Vector.empty[PersistentEnvelope]
   // no longer used, but kept for binary compatibility
-  private val maxMessageBatchSize = extension.journalConfigFor(journalPluginId, journalPluginConfig).getInt("max-message-batch-size")
+  private val maxMessageBatchSize = {
+    val journalPluginConfig = this match {
+      case c: RuntimePluginConfig ⇒ c.journalPluginConfig
+      case _                      ⇒ ConfigFactory.empty
+    }
+    extension.journalConfigFor(journalPluginId, journalPluginConfig).getInt("max-message-batch-size")
+  }
   private var writeInProgress = false
   private var sequenceNr: Long = 0L
   private var _lastSequenceNr: Long = 0L
@@ -69,7 +95,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   // Used instead of iterating `pendingInvocations` in order to check if safe to revert to processing commands
   private var pendingStashingPersistInvocations: Long = 0
   // Holds user-supplied callbacks for persist/persistAsync calls
-  private val pendingInvocations = new java.util.LinkedList[PendingHandlerInvocation]() // we only append / isEmpty / get(0) on it
+  private val pendingInvocations = new java.util.LinkedList[PendingHandlerInvocation]()
+  // we only append / isEmpty / get(0) on it
   private var eventBatch: List[PersistentEnvelope] = Nil
 
   private val internalStash = createStash()
@@ -112,7 +139,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    *
    * @param cause failure cause.
    * @param event the event that was processed in `receiveRecover`, if the exception
-   *   was thrown there
+   *              was thrown there
    */
   protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit =
     event match {
@@ -174,7 +201,14 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     if (all) internalStash.unstashAll() else internalStash.unstash()
 
   private def startRecovery(recovery: Recovery): Unit = {
-    changeState(recoveryStarted(recovery.replayMax))
+    val timeout = {
+      val journalPluginConfig = this match {
+        case c: RuntimePluginConfig ⇒ c.journalPluginConfig
+        case _                      ⇒ ConfigFactory.empty
+      }
+      extension.journalConfigFor(journalPluginId, journalPluginConfig).getMillisDuration("recovery-event-timeout")
+    }
+    changeState(recoveryStarted(recovery.replayMax, timeout))
     loadSnapshot(snapshotterId, recovery.fromSnapshot, recovery.toSequenceNr)
   }
 
@@ -187,7 +221,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     require(persistenceId ne null, s"persistenceId is [null] for PersistentActor [${self.path}]")
 
     // Fail fast on missing plugins.
-    val j = journal; val s = snapshotStore
+    val j = journal;
+    val s = snapshotStore
     requestRecoveryPermit()
     super.aroundPreStart()
   }
@@ -398,6 +433,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
   private trait State {
     def stateReceive(receive: Receive, message: Any): Unit
+
     def recoveryRunning: Boolean
   }
 
@@ -412,6 +448,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   private def waitingRecoveryPermit(recovery: Recovery) = new State {
 
     override def toString: String = s"waiting for recovery permit"
+
     override def recoveryRunning: Boolean = true
 
     override def stateReceive(receive: Receive, message: Any) = message match {
@@ -430,11 +467,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * All incoming messages are stashed.
    *
    * @param replayMax maximum number of messages to replay.
+   * @param timeout recovery event timeout
    */
-  private def recoveryStarted(replayMax: Long) = new State {
+  private def recoveryStarted(replayMax: Long, timeout: FiniteDuration) = new State {
 
-    // protect against snapshot stalling forever because of journal overloaded and such
-    val timeout = extension.journalConfigFor(journalPluginId, journalPluginConfig).getMillisDuration("recovery-event-timeout")
     val timeoutCancellable = {
       import context.dispatcher
       context.system.scheduler.scheduleOnce(timeout, self, RecoveryTick(snapshot = true))
@@ -455,6 +491,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     }
 
     override def toString: String = s"recovery started (replayMax = [$replayMax])"
+
     override def recoveryRunning: Boolean = true
 
     override def stateReceive(receive: Receive, message: Any) = try message match {
@@ -608,7 +645,9 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
           try {
             peekApplyHandler(p.payload)
             onWriteMessageComplete(err = false)
-          } catch { case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e }
+          } catch {
+            case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e
+          }
         }
       case WriteMessageRejected(p, cause, id) ⇒
         // instanceId mismatch can happen for persistAsync and defer in case of actor restart
@@ -632,7 +671,9 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
           try {
             peekApplyHandler(l)
             onWriteMessageComplete(err = false)
-          } catch { case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e }
+          } catch {
+            case NonFatal(e) ⇒ onWriteMessageComplete(err = true); throw e
+          }
         }
       case WriteMessagesSuccessful ⇒
         writeInProgress = false
@@ -662,7 +703,9 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
       else try {
         Eventsourced.super.aroundReceive(receive, message)
         aroundReceiveComplete(err = false)
-      } catch { case NonFatal(e) ⇒ aroundReceiveComplete(err = true); throw e }
+      } catch {
+        case NonFatal(e) ⇒ aroundReceiveComplete(err = true); throw e
+      }
 
     private def aroundReceiveComplete(err: Boolean): Unit = {
       if (eventBatch.nonEmpty) flushBatch()

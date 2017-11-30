@@ -97,28 +97,6 @@ trait PersistenceIdentity {
    * Configuration entry must contain few required fields, such as `class`. See `src/main/resources/reference.conf`.
    */
   def snapshotPluginId: String = ""
-
-  /**
-   * Additional configuration of the journal plugin servicing this persistent actor.
-   * When empty, the whole configuration of the journal plugin will be taken from the [[Config]] loaded into the
-   * [[ActorSystem]].
-   * When configured, the journal plugin configuration will be taken from this [[Config]] merged with the [[Config]]
-   * loaded into the [[ActorSystem]].
-   *
-   * @return an additional configuration used to configure the journal plugin.
-   */
-  def journalPluginConfig: Config = ConfigFactory.empty
-
-  /**
-   * Additional configuration of the snapshot plugin servicing this persistent actor.
-   * When empty, the whole configuration of the snapshot plugin will be taken from the [[Config]] loaded into the
-   * [[ActorSystem]].
-   * When configured, the snapshot plugin configuration will be taken from this [[Config]] merged with the [[Config]]
-   * loaded into the [[ActorSystem]].
-   *
-   * @return an additional configuration used to configure the snapshot plugin.
-   */
-  def snapshotPluginConfig: Config = ConfigFactory.empty
 }
 
 //#persistence-identity
@@ -144,6 +122,30 @@ trait PersistenceStash extends Stash with StashFactory {
    */
   def internalStashOverflowStrategy: StashOverflowStrategy =
     Persistence(context.system).defaultInternalStashOverflowStrategy
+}
+
+trait RuntimePluginConfig {
+  /**
+   * Additional configuration of the journal plugin servicing this persistent actor.
+   * When empty, the whole configuration of the journal plugin will be taken from the [[Config]] loaded into the
+   * [[ActorSystem]].
+   * When configured, the journal plugin configuration will be taken from this [[Config]] merged with the [[Config]]
+   * loaded into the [[ActorSystem]].
+   *
+   * @return an additional configuration used to configure the journal plugin.
+   */
+  def journalPluginConfig: Config = ConfigFactory.empty
+
+  /**
+   * Additional configuration of the snapshot plugin servicing this persistent actor.
+   * When empty, the whole configuration of the snapshot plugin will be taken from the [[Config]] loaded into the
+   * [[ActorSystem]].
+   * When configured, the snapshot plugin configuration will be taken from this [[Config]] merged with the [[Config]]
+   * loaded into the [[ActorSystem]].
+   *
+   * @return an additional configuration used to configure the snapshot plugin.
+   */
+  def snapshotPluginConfig: Config = ConfigFactory.empty
 }
 
 /**
