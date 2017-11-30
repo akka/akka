@@ -5,6 +5,7 @@
 package jdocs.persistence;
 
 import akka.persistence.AbstractPersistentActor;
+import akka.persistence.RuntimePluginConfig;
 import akka.persistence.UntypedPersistentActor;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -42,7 +43,7 @@ public class PersistenceMultiDocTest {
     //#override-plugins
 
     //#runtime-config
-    abstract class AbstractPersistentActorWithRuntimeConfig extends AbstractPersistentActor {
+    abstract class AbstractPersistentActorWithRuntimePluginConfig extends AbstractPersistentActor implements RuntimePluginConfig {
         // Variable that is retrieved at runtime, from an external service for instance.
         String runtimeDistinction = "foo";
 
