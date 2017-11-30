@@ -2,21 +2,120 @@
 
 ## 10.0.11
 
+See the [announcement](http://akka.io/news/2017/12/01/akka-http-10.0.11-released.html) and
+closed tickets on the [10.0.11 milestone](https://github.com/akka/akka-http/milestone/31?closed=1).
+
+This release adds the long awaited akka-http-caching module inspired by spray-caching.
+
+It also features a new implementation
+of the client pool infrastructure. This will allow us in the future to finally tackle many of the issues reported for the existing
+infrastructure like request timeouts, handling unread response entities, and other issues more easily.
+
+In an ongoing behind-the-scenes effort, [@jonas](https://github.com/jonas), [@jlprat](https://github.com/jlprat) and others
+continued to improve the structure of our documentation to consolidate Java and Scala documentation. This reduction in duplication
+of documentation content will allow us to make changes to the documentation more easily in the future. Thanks a lot!
+
+### New caching module, akka-http-caching
+
+In a several month long effort members from the community and the Akka team discussed and implemented the long-awaited replacement
+of spray-caching. The new module `akka-http-caching` got quite an overhaul over spray-caching and is now backed by
+[caffeine](https://github.com/ben-manes/caffeine).
+
+Thanks a lot, [@tomrf1](https://github.com/tomrf1), [@jonas](https://github.com/jonas), [@ben-manes](https://github.com/ben-manes),
+[@ianclegg](https://github.com/ianclegg) for the fruitful discussions and for providing the implementation!
+
+The caching API is currently marked with `@ApiMayChange` and thus may change based on feedback from real world usage.
+Some improvements are already planned to make it into
+[future releases](https://github.com/akka/akka-http/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3At%3Acaching+label%3A%22help+wanted%22).
+We hope further collaboration within the community will help us stabilize the API.
+
+See the @ref[documentation](common/caching.md) for more information.
+
+### Http Client Pool Infrastructure Rewrite
+
+The existing host connection pool infrastructure has accrued quite a lot of issues that are hard to fix. Therefore, we
+decided to rewrite the old version which was based on a stream graph jungle with a new version implemented as a single
+`GraphStage` which will be easier to maintain. The new infrastructure already passes all the old tests and is now considered
+ready to be tested. The new implementation can be enabled with the feature flag `akka.http.host-connection-pool.pool-implementation = new`.
+One important feature that is available only with the new pool implementation is a new warning that will be shown
+if user code forgets to read or discard a response entity in time (which is one of the most prominent usage problems with our client
+API). If you experienced problems with the old implementation, please try out the new implementation and report any issues
+you find.
+
+We hope to stabilize the new implementation as soon as possible and are going to make it the default in a future version.
+
 ### Incompatible changes to akka.http.{java,scala}dsl.coding classes
 
 To clean up internal code, we made a few incompatible changes to classes that were previously kept public accidentally.
 We now made those classes private and marked them as `@InternalApi`. Affected classes are `akka.http.scaladsl.coding.DeflateDecompressorBase`,
-`akka.http.scaladsl.coding.DeflateCompressor`, and `akka.http.scaladsl.coding.GzipCompressor`.
-This is in violation with a strict reading of our binary compatibility guidelines. We did that change for
+`akka.http.scaladsl.coding.DeflateCompressor`, and `akka.http.scaladsl.coding.GzipCompressor`. The actual codec APIs,
+`Gzip` and `Deflate`, are not affected.
+This is in violation with a strict reading of our binary compatibility guidelines. We still made that change for
 pragmatic reasons because we believe that it is unlikely that these classes have been used or extended by third parties.
 If this assumption turns out to be too optimistic and integration with third-party code breaks because of this,
 please let us know.
+
+### List of Changes
+
+#### Improvements
+
+##### akka-http-core
+
+ * New host connection pool infrastructure ([#1312](https://github.com/akka/akka-http/issues/1312))
+ * Allow disabling of parsing to modeled headers ([#1550](https://github.com/akka/akka-http/issues/1550))
+ * Convert RFC references in documents in model classes to scaladoc ([#1514](https://github.com/akka/akka-http/issues/1514))
+ * Allow configuration of default http and https ports ([#1449](https://github.com/akka/akka-http/issues/1449))
+ * Remove unnecessary implicit `materializer` parameter in several top-level `Http` entry point APIs ([#1464](https://github.com/akka/akka-http/issues/1464))
+ * Add `X-Forwarded-Proto` and `X-Forwarded-Host` header models ([#1377](https://github.com/akka/akka-http/issues/1377))
+ * Lookup predefined header parsers as early as possible ([#1424](https://github.com/akka/akka-http/issues/1424))
+
+##### akka-http
+
+ * Add multiple file upload directive ([#1033](https://github.com/akka/akka-http/issues/1033))
+ * Add Marshaller.oneOf(m1, m2) to JavaDSL ([#1551](https://github.com/akka/akka-http/issues/1551))
+ * Improve performance of LineParser for SSE unmarshalling ([#1508](https://github.com/akka/akka-http/issues/1508))
+ * Automatically probing and decompression support for zlib wrapped deflate streams ([#1359](https://github.com/akka/akka-http/issues/1359))
+ * Simplify implicit parameter structure in FormFieldDirectives ([#541](https://github.com/akka/akka-http/issues/541))
+ * Return BadRequest when size of FormData exceeds limit of `withSizeLimit` directive ([#1341](https://github.com/akka/akka-http/issues/1341))
+
+##### akka-http-testkit
+
+ * Provide Dilated Timeouts for Java Testkit ([#1271](https://github.com/akka/akka-http/issues/1271))
+ * Add more comprehensive description of the TestRoute run methods ([#1148](https://github.com/akka/akka-http/issues/1148))
+ * Add a runWithRejections method to the Java TestRoute API ([#1148](https://github.com/akka/akka-http/issues/1148))
+ * Support separation of route execution from checking in the Java DSL ([#1148](https://github.com/akka/akka-http/issues/1148))
+
+##### akka-http-caching
+
+ * New module partly ported from spray-caching backed by caffeine ([#213](https://github.com/akka/akka-http/issues/213))
+
+##### Documentation
+
+ * Ongoing work on consolidating Java and Scala documentation ([#1290](https://github.com/akka/akka-http/issues/1290))
+ * Update Paradox and docs to use new features ([#1436](https://github.com/akka/akka-http/issues/1436))
+
+##### Build
+
+ * Update to sbt 1.0.x
+
+#### Bug Fixes
+
+##### akka-http-core
+
+ * Fix userinfo parsing to percent decode input in UriParser ([#1558](https://github.com/akka/akka-http/issues/1558))
+ * Remove duplicate settings from akka.http.host-connection-pool.client so that akka.http.client will be picked up by default ([#1492](https://github.com/akka/akka-http/issues/1492))
+ * Add minConnections modifier to javadsl ConnectionPoolSettings ([#1525](https://github.com/akka/akka-http/issues/1525))
+ * Fix race condition in WebSocket switch leading to broken websocket connections in tests ([#1515](https://github.com/akka/akka-http/issues/1515))
+
+##### akka-http
+
+ * Mark coding implementation classes as internal API ([#1570](https://github.com/akka/akka-http/issues/1570))
 
 ## 10.0.10
 
 ### Support for HTTP(S) proxies with Authorization
 
-It is now possible to connect to @scala[@ref[HTTP(S) Proxies](client-side/client-transport.md)]@java[@ref[HTTP(S) Proxies](client-side/client-transport.md)]
+It is now possible to connect to @ref[HTTP(S) Proxies](client-side/client-transport.md)
 that require an authorization via an `Proxy-Authorization` header. This can be set up directly on the `ClientTransport` object when configuring the proxy. ([#1213](https://github.com/akka/akka-http/issues/1213))
 
 ### Documentation for HTTP 2 support (Preview)

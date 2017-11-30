@@ -36,6 +36,11 @@ echo
 git log --no-merges --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http2-support
 
 echo
+echo "Changes in akka-http-caching"
+echo
+git log --no-merges --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http-caching
+
+echo
 echo "Changes in build"
 echo
 git log --no-merges --oneline ${LAST_VERSION}.. -- $ROOT_DIR/project $ROOT_DIR/*.sbt
