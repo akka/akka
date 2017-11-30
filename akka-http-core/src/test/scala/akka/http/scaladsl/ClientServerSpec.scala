@@ -628,6 +628,39 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       sinkProbe.expectComplete()
     }
 
+    "properly complete a simple request/response cycle when `modeled-header-parsing = off`" in Utils.assertAllStagesStopped {
+      new TestSetup {
+        override def configOverrides = "akka.http.parsing.modeled-header-parsing = off"
+
+        val (clientOut, clientIn) = openNewClientConnection()
+        val (serverIn, serverOut) = acceptConnection()
+
+        val clientOutSub = clientOut.expectSubscription()
+        clientOutSub.expectRequest()
+        clientOutSub.sendNext(HttpRequest(uri = "/abc"))
+
+        val serverInSub = serverIn.expectSubscription()
+        serverInSub.request(1)
+        serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
+
+        val serverOutSub = serverOut.expectSubscription()
+        serverOutSub.expectRequest()
+        serverOutSub.sendNext(HttpResponse(entity = "yeah"))
+
+        val clientInSub = clientIn.expectSubscription()
+        clientInSub.request(1)
+        val response = clientIn.expectNext()
+        toStrict(response.entity) shouldEqual HttpEntity("yeah")
+
+        clientOutSub.sendComplete()
+        serverIn.expectComplete()
+        serverOutSub.expectCancellation()
+        clientIn.expectComplete()
+
+        binding.foreach(_.unbind())
+      }
+    }
+
     "be able to deal with eager closing of the request stream on the client side" in Utils.assertAllStagesStopped {
       new TestSetup {
         val (clientOut, clientIn) = openNewClientConnection()

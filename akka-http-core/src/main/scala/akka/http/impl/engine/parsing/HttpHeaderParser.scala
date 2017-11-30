@@ -428,9 +428,10 @@ private[http] object HttpHeaderParser {
     def illegalHeaderWarnings: Boolean
     def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
     def errorLoggingVerbosity: ErrorLoggingVerbosity
+    def modeledHeaderParsing: Boolean
   }
 
-  private def predefinedHeaders = Seq(
+  private val predefinedHeaders = Seq(
     "Accept: *",
     "Accept: */*",
     "Connection: Keep-Alive",
@@ -440,6 +441,15 @@ private[http] object HttpHeaderParser {
     "Cache-Control: max-age=0",
     "Cache-Control: no-cache",
     "Expect: 100-continue")
+
+  private val alwaysParsedHeaders = Set[String](
+    "connection",
+    "content-length",
+    "content-type",
+    "expect",
+    "host",
+    "transfer-encoding"
+  )
 
   def apply(settings: HttpHeaderParser.Settings, log: LoggingAdapter) =
     prime(unprimed(settings, log, defaultIllegalHeaderHandler(settings, log)))
@@ -454,10 +464,17 @@ private[http] object HttpHeaderParser {
     new HttpHeaderParser(settings, log, warnOnIllegalHeader)
 
   def prime(parser: HttpHeaderParser): HttpHeaderParser = {
+    val headerParserFilter: String ⇒ Boolean =
+      if (parser.settings.modeledHeaderParsing) _ ⇒ true // parse all
+      else alwaysParsedHeaders // only parse essential subset of headers
+
     val valueParsers: Seq[HeaderValueParser] =
-      HeaderParser.ruleNames.map { name ⇒
-        new ModeledHeaderValueParser(name, parser.settings.maxHeaderValueLength, parser.settings.headerValueCacheLimit(name), parser.log, parser.settings)
-      }(collection.breakOut)
+      HeaderParser.ruleNames
+        .filter(headerParserFilter)
+        .map { name ⇒
+          new ModeledHeaderValueParser(name, parser.settings.maxHeaderValueLength, parser.settings.headerValueCacheLimit(name), parser.log, parser.settings)
+        }(collection.breakOut)
+
     def insertInGoodOrder(items: Seq[Any])(startIx: Int = 0, endIx: Int = items.size): Unit =
       if (endIx - startIx > 0) {
         val pivot = (startIx + endIx) / 2
@@ -472,11 +489,13 @@ private[http] object HttpHeaderParser {
         insertInGoodOrder(items)(startIx, pivot)
         insertInGoodOrder(items)(pivot + 1, endIx)
       }
+
     insertInGoodOrder(valueParsers.sortBy(_.headerName))()
     insertInGoodOrder(specializedHeaderValueParsers)()
     insertInGoodOrder(predefinedHeaders.sorted)()
     parser.insert(ByteString("\r\n"), EmptyHeader)()
     parser.insert(ByteString("\n"), EmptyHeader)()
+
     parser
   }
 

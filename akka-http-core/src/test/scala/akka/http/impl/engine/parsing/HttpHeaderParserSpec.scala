@@ -243,6 +243,17 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       noException should be thrownBy parseLine(s"Server: something; something${newLine}x")
       parseAndCache(s"Server: something; something${newLine}x")() shouldEqual RawHeader("server", "something; something")
     }
+
+    "parse most headers to RawHeader when `modeled-header-parsing = off`" in new TestSetup(
+      parserSettings = createParserSettings(system).withModeledHeaderParsing(false)) {
+      // Connection, Host, and Expect should still be modelled
+      parseAndCache(s"Connection: close${newLine}x")(s"CONNECTION: close${newLine}x") shouldEqual Connection("close")
+      parseAndCache(s"Host: spray.io:123${newLine}x")(s"HOST: spray.io:123${newLine}x") shouldEqual Host("spray.io", 123)
+
+      // don't parse other headers
+      parseAndCache(s"User-Agent: hmpf${newLine}x")(s"USER-AGENT: hmpf${newLine}x") shouldEqual RawHeader("User-Agent", "hmpf")
+      parseAndCache(s"X-Forwarded-Host: localhost:8888${newLine}x")(s"X-FORWARDED-Host: localhost:8888${newLine}x") shouldEqual RawHeader("X-Forwarded-Host", "localhost:8888")
+    }
   }
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
