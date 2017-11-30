@@ -1052,8 +1052,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     // Event with feedback promise
     private case class Event(e: T, handlingPromise: OptionVal[Promise[Done]])
 
-    private val waitingForProcessing = ConcurrentHashMap.newKeySet[Promise[_]]()
-
     private[this] val currentState = new AtomicReference[State](Pending(Nil))
 
     // is called from the owning [[GraphStage]]
@@ -1076,11 +1074,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
 
     // is called from the owning [[GraphStage]]
-    private[stage] def onStop(): Unit = {
-      val iterator = waitingForProcessing.iterator()
+    private[stage] def onStop(outstandingPromises: Set[Promise[Done]]): Unit = {
       lazy val detachedException = new StreamDetachedException()
+      val iterator = outstandingPromises.iterator
       while (iterator.hasNext) { iterator.next().tryFailure(detachedException) }
-      waitingForProcessing.clear()
     }
 
     private def onAsyncInput(event: T, promise: OptionVal[Promise[Done]]) = {
@@ -1098,34 +1095,32 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       val promise: Promise[Done] = Promise[Done]()
       promise.future.onComplete(_ ⇒ onFeedbackCompleted(promise))(ExecutionContexts.sameThreadExecutionContext)
 
-      if (waitingForProcessing.isEmpty) {
-        addToAsyncCallbacksInProgress()
+      @tailrec
+      def addToWaiting(): Unit = {
+        val previous = asyncCallbacksInProgress.get()
+        if (previous != null) {
+          val updated = previous + (this -> (previous(this) + promise))
+          if (!asyncCallbacksInProgress.compareAndSet(previous, updated)) addToWaiting()
+        }
       }
-      waitingForProcessing.add(promise)
 
+      addToWaiting()
       invokeWithPromise(event, promise).future
     }
 
-    @tailrec
-    private def addToAsyncCallbacksInProgress(): Unit = {
-      val current = asyncCallbacksInProgress.get()
-      if (current != null && !current.contains(this) && !asyncCallbacksInProgress.compareAndSet(current, current + this))
-        addToAsyncCallbacksInProgress()
-    }
-
-    @tailrec
-    private def removeFromAsyncCallbacksInProgress(): Unit = {
-      val current = asyncCallbacksInProgress.get()
-      if (current != null && current.contains(this) && !asyncCallbacksInProgress.compareAndSet(current, current - this))
-        removeFromAsyncCallbacksInProgress()
-    }
-
     private def onFeedbackCompleted(promise: Promise[Done]): Unit = {
-      waitingForProcessing.remove(promise)
-      // make sure we don't leak references - if we have no outstanding
-      // feedback-invokes the stage can let go of the reference
-      if (waitingForProcessing.isEmpty)
-        removeFromAsyncCallbacksInProgress()
+      @tailrec
+      def removeFromWaiting(): Unit = {
+        val previous = asyncCallbacksInProgress.get()
+        if (previous != null) {
+          val newSet = previous(this) - promise
+          val updated =
+            if (newSet.isEmpty) previous - this // no outstanding promises, remove stage from map to avoid leak
+            else previous + (this -> newSet)
+          if (!asyncCallbacksInProgress.compareAndSet(previous, updated)) removeFromWaiting()
+        }
+      }
+      removeFromWaiting()
     }
 
     @tailrec
@@ -1152,7 +1147,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
 
     private def failPromiseOnComplete(promise: Promise[Done]): Promise[Done] = {
-      waitingForProcessing.remove(promise)
+      onFeedbackCompleted(promise)
       promise.tryFailure(new StreamDetachedException("Stage stopped before async invocation was processed"))
       promise
     }
@@ -1194,7 +1189,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private var callbacksWaitingForInterpreter: List[ConcurrentAsyncCallback[_]] = Nil
   // is used for two purposes: keep track of running callbacks and signal that the
   // stage has stopped to fail incoming async callback invocations by being set to null
-  private val asyncCallbacksInProgress = new AtomicReference(Set.empty[ConcurrentAsyncCallback[_]])
+  private val asyncCallbacksInProgress =
+    new AtomicReference(Map.empty[ConcurrentAsyncCallback[_], Set[Promise[Done]]].withDefaultValue(Set.empty))
 
   private def stopped = asyncCallbacksInProgress.get() == null
 
@@ -1252,7 +1248,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     // make sure any invokeWithFeedback after this fails fast
     // and fail current outstanding invokeWithFeedback promises
     val inProgress = asyncCallbacksInProgress.getAndSet(null)
-    inProgress.foreach(_.onStop())
+    inProgress.foreach { case (acb, promises) ⇒ acb.onStop(promises) }
   }
 
   /**
