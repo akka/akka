@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-import akka.persistence.PersistentActor
+import akka.persistence.{RuntimePluginConfig, PersistentActor}
 import com.typesafe.config.ConfigFactory
 
 object PersistenceMultiDocSpec {
@@ -58,7 +58,7 @@ object PersistenceMultiDocSpec {
   //#override-plugins
 
   //#runtime-config
-  trait ActorWithRuntimeConfig extends PersistentActor {
+  trait ActorWithRuntimePluginConfig extends PersistentActor with RuntimePluginConfig {
     // Variable that is retrieved at runtime, from an external service for instance.
     val runtimeDistinction = "foo"
 
