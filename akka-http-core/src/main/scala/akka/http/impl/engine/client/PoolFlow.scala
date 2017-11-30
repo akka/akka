@@ -5,6 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.impl.engine.client.PoolConductor.PoolSlotsSetting
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 
@@ -16,7 +17,9 @@ import akka.stream.scaladsl._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
 
-private object PoolFlow {
+/** Internal API */
+@InternalApi
+private[client] object PoolFlow {
 
   case class RequestContext(request: HttpRequest, responsePromise: Promise[HttpResponse], retriesLeft: Int) {
     require(retriesLeft >= 0)
