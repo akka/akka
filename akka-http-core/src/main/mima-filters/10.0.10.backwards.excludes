@@ -10,3 +10,8 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings
 # New settings in `@DoNotInherit` classes
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getModeledHeaderParsing")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.modeledHeaderParsing")
+
+# New poolImplementation setting on @DoNotInherit class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.poolImplementation")
+# New responseEntitySubscriptionTimeout setting
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.responseEntitySubscriptionTimeout")
