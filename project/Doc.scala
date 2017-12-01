@@ -121,7 +121,8 @@ object UnidocRoot extends AutoPlugin {
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
     javacOptions in (JavaUnidoc, unidoc) ++= Seq("-Xdoclint:none"),
     // genjavadoc needs to generate synthetic methods since the java code uses them
-    scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
+    // fails since 10.0.11 disabled to get the doc gen to pass, see #1584
+    // scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
     // FIXME: see https://github.com/akka/akka-http/issues/230
     sources in (JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
   )).getOrElse(Nil)

@@ -6,7 +6,7 @@
 1. Create a news item on https://github.com/akka/akka.github.com, using the milestones and `scripts/authors.scala previousVersion thisVersion`
 1. Once the release notes have been merged, create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description linking to announcement, release notes and milestone.
 1. Travis CI will start a [CI build](https://travis-ci.org/akka/akka-http/builds) for the new tag and publish artifacts to Bintray.
-1. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.2 deployRsync akkarepo@repo.akka.io"` to deploy API and reference documentation.
+1. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.2 deployRsync akkarepo@gustav.akka.io"` to deploy API and reference documentation.
 1. Go to https://bintray.com/akka/maven/com.typesafe.akka:akka-http_2.11 and select the just released version
 1. Go to the Maven Central tab and sync with Sonatype
    - (Optional, should happen automatically if selected in Bintray) Log in to Sonatype to Close the staging repository
@@ -15,7 +15,7 @@
 1. Create a new milestone for the next version at https://github.com/akka/akka-http/milestones , move all unclosed issues there and close the version you're releasing
 1. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
 1. Send a release notification to akka-user and tweet using the akka account (or ask someone to) about the new release
-1. Log into repo.akka.io as akkarepo and update the `current` links on repo.akka.io to point to the latest version with `ln -nsf <latestversion> www/docs/akka-http/current; ln -nsf <latestversion> www/api/akka-http/current; ln -nsf <latestversion> www/japi/akka-http/current`.
+1. Log into gustav.akka.io as akkarepo and update the `current` links on repo.akka.io to point to the latest version with `ln -nsf <latestversion> www/docs/akka-http/current; ln -nsf <latestversion> www/api/akka-http/current; ln -nsf <latestversion> www/japi/akka-http/current`.
 
 ### Follow up steps
 
