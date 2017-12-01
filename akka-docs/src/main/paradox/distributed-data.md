@@ -219,7 +219,7 @@ in a 5 node cluster it writes to 3 nodes and reads from 3 nodes. In a 6 node clu
 to 4 nodes and reads from 4 nodes.
 
 You can define a minimum number of nodes for `WriteMajority` and `ReadMajority`,
-this will minimize the risk of reading steal data. Minimum cap is
+this will minimize the risk of reading stale data. Minimum cap is
 provided by minCap property of `WriteMajority` and `ReadMajority` and defines the required majority.
 If the minCap is higher then **N / 2 + 1** the minCap will be used.
 
