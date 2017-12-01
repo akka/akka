@@ -1,0 +1,2 @@
+# #24076 PersistentActor with Timers
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.AbstractPersistentActorLike.createReceiveRecover")
