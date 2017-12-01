@@ -147,9 +147,9 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val SelfDataCenter: DataCenter = cc.getString("multi-data-center.self-data-center")
 
   val Roles: Set[String] = {
-    val configuredRoles = (immutableSeq(cc.getStringList("roles")).toSet) requiring (
+    val configuredRoles = immutableSeq(cc.getStringList("roles")).toSet requiring (
       _.forall(!_.startsWith(DcRolePrefix)),
-      s"Roles must not start with '${DcRolePrefix}' as that is reserved for the cluster self-data-center setting")
+      s"Roles must not start with '$DcRolePrefix' as that is reserved for the cluster self-data-center setting")
 
     configuredRoles + s"$DcRolePrefix$SelfDataCenter"
   }
@@ -174,6 +174,25 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val ReduceGossipDifferentViewProbability: Int = cc.getInt("reduce-gossip-different-view-probability")
   val SchedulerTickDuration: FiniteDuration = cc.getMillisDuration("scheduler.tick-duration")
   val SchedulerTicksPerWheel: Int = cc.getInt("scheduler.ticks-per-wheel")
+
+  val ByPassConfigCompatCheck: Boolean = !cc.getBoolean("configuration-compatibility-check.enforce-on-join")
+  val ConfigCompatCheckers: Set[String] = {
+    import scala.collection.JavaConverters._
+    cc.getConfig("configuration-compatibility-check.checkers")
+      .root.unwrapped.values().asScala
+      .map(_.toString).toSet
+  }
+
+  val SensitiveConfigPaths = {
+    import scala.collection.JavaConverters._
+
+    val sensitiveKeys =
+      cc.getConfig("configuration-compatibility-check.sensitive-config-paths")
+        .root.unwrapped.values().asScala
+        .flatMap(_.asInstanceOf[java.util.List[String]].asScala)
+
+    sensitiveKeys.toSet
+  }
 
   object Debug {
     val VerboseHeartbeatLogging: Boolean = cc.getBoolean("debug.verbose-heartbeat-logging")
