@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-import akka.persistence.{RuntimePluginConfig, PersistentActor}
+import akka.persistence.{ RuntimePluginConfig, PersistentActor }
 import com.typesafe.config.ConfigFactory
 
 object PersistenceMultiDocSpec {
