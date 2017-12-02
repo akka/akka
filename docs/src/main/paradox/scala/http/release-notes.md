@@ -2,7 +2,7 @@
 
 ## 10.0.11
 
-See the [announcement](http://akka.io/news/2017/12/01/akka-http-10.0.11-released.html) and
+See the [announcement](http://akka.io/blog/news/2017/12/01/akka-http-10.0.11-released.html) and
 closed tickets on the [10.0.11 milestone](https://github.com/akka/akka-http/milestone/31?closed=1).
 
 This release adds the long awaited akka-http-caching module inspired by spray-caching.
@@ -260,7 +260,7 @@ please check the @ref[documentation page](routing-dsl/directives/path-directives
 
 ## 10.0.6
 
-See the [announcement](http://akka.io/news/2017/05/03/akka-http-10.0.6-released.html) and
+See the [announcement](http://akka.io/blog/news/2017/05/03/akka-http-10.0.6-released.html) and
 closed tickets on the [10.0.6 milestone](https://github.com/akka/akka-http/milestone/23?closed=1).
 
 10.0.6 is a security and maintenance release in the stable 10.0.x series of Akka HTTP.
@@ -331,7 +331,7 @@ Please update as soon as possible.
 
 ## 10.0.5
 
-See the [announcement](http://akka.io/news/2017/03/17/akka-http-10.0.5-released.html) and
+See the [announcement](http://akka.io/blog/news/2017/03/17/akka-http-10.0.5-released.html) and
 closed tickets on the [10.0.5 milestone](https://github.com/akka/akka-http/milestone/22?closed=1).
 
 This is the fifth maintenance release of the Akka HTTP 10.0 series. It is primarily aimed at stability aligning the internals with the upcoming Akka 2.5 release. These steps are also the groundwork to enable Play to make use of Akka HTTP and the new Akka Streams materializer in the upcoming Play 2.6.
@@ -364,7 +364,7 @@ This version of Akka HTTP must be used with Akka in version at-least 2.4.17, how
 
 ## 10.0.4
 
-See the [announcement](http://akka.io/news/2017/02/23/akka-http-10.0.4-released.html) and
+See the [announcement](http://akka.io/blog/news/2017/02/23/akka-http-10.0.4-released.html) and
 closed tickets on the [10.0.4 milestone](https://github.com/akka/akka-http/milestone/21?closed=1).
 
 This release contains mostly bug fixes and smaller improvements. We strongly recommend updating from 10.0.3 which
@@ -405,7 +405,7 @@ See [#851](https://github.com/akka/akka-http/issues/851) for more information.
 
 ## 10.0.3
 
-See the [announcement](http://akka.io/news/2017/01/26/akka-http-10.0.3-released.html) and
+See the [announcement](http://akka.io/blog/news/2017/01/26/akka-http-10.0.3-released.html) and
 closed tickets on the [10.0.3 milestone](https://github.com/akka/akka-http/milestone/19?closed=1).
 
 This release contains mostly bug fixes, a huge number of contributed documentation fixes and
@@ -483,16 +483,16 @@ previous behavior so we are listing them here to bring attention to potential is
 
 Security patch to prevent denial-of-service due to memory leak in server infrastructure.
 
-See the [announcement](http://akka.io/news/2017/01/23/akka-http-10.0.2-security-fix-released.html),
+See the [announcement](http://akka.io/blog/news/2017/01/23/akka-http-10.0.2-security-fix-released.html),
 @ref[Details](security/2017-01-23-denial-of-service-via-leak-on-unconsumed-closed-connections.md) and
 [changes](https://github.com/akka/akka-http/compare/v10.0.1...v10.0.2).
 
 ## 10.0.1
 
-See the [announcement](http://akka.io/news/2016/12/22/akka-http-10.0.1-released.html) and
+See the [announcement](http://akka.io/blog/news/2016/12/22/akka-http-10.0.1-released.html) and
 closed tickets on the [10.0.1 milestone](https://github.com/akka/akka-http/milestone/17?closed=1)
 
 ## 10.0.0
 
-See the [announcement](http://akka.io/news/2016/11/22/akka-http-10.0.0-released.html) and
+See the [announcement](http://akka.io/blog/news/2016/11/22/akka-http-10.0.0-released.html) and
 closed tickets on the [10.0.0 milestone](https://github.com/akka/akka-http/milestone/14?closed=1)
