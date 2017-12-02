@@ -720,7 +720,7 @@ private[akka] final class FunctionRef(
       case w: Watch   ⇒ addWatcher(w.watchee, w.watcher)
       case u: Unwatch ⇒ remWatcher(u.watchee, u.watcher)
       case DeathWatchNotification(actorRef, _, _) ⇒
-        this.!(Terminated(actorRef)(existenceConfirmed = true, addressTerminated = false))
+        this.!(Terminated(actorRef)(existenceConfirmed = true, addressTerminated = false))(actorRef)
       case _ ⇒ //ignore all other messages
     }
   }
