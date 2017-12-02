@@ -1361,6 +1361,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
      * Push to this output port.
      */
     def push(elem: T): Unit = {
+      require(isAvailable, s"Cannot push twice, or before it being pulled")
       available = false
       _source.pushSubstream(elem)
     }

@@ -4,7 +4,8 @@
 
 package akka.stream.impl
 
-import akka.stream.stage.GraphStageLogic.{ EagerTerminateOutput, EagerTerminateInput }
+import akka.NotUsed
+import akka.stream.stage.GraphStageLogic.{ EagerTerminateInput, EagerTerminateOutput }
 import akka.stream.testkit.StreamSpec
 import akka.stream._
 import akka.stream.scaladsl._
@@ -12,9 +13,11 @@ import akka.stream.stage._
 import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.impl.fusing._
+import org.scalatest.concurrent.ScalaFutures
+
 import scala.concurrent.duration.Duration
 
-class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
+class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with ScalaFutures {
 
   implicit val materializer = ActorMaterializer()
 
@@ -28,6 +31,29 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
       override def preStart(): Unit = {
         emit(out, 1, () ⇒ emit(out, 2))
         emit(out, 3, () ⇒ emit(out, 4))
+      }
+    }
+  }
+
+  class substreamEmit extends GraphStage[SourceShape[Source[Int, NotUsed]]] {
+    val out = Outlet[Source[Int, NotUsed]]("out")
+    override val shape = SourceShape(out)
+
+    override def createLogic(attr: Attributes) = new GraphStageLogic(shape) with OutHandler {
+
+      setHandler(out, this)
+
+      override def onPull(): Unit = {
+        val subOut = new SubSourceOutlet[Int]("subOut")
+        subOut.setHandler(new OutHandler {
+          override def onPull(): Unit = {
+            ()
+          }
+        })
+        subOut.push(1)
+        subOut.push(2) // expecting this to fail!
+
+        ???
       }
     }
   }
@@ -344,6 +370,12 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
           }).async.runWith(Sink.ignore)
       }
       ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
+    }
+
+    "give a good error message if sub source is pushed twice" in {
+      intercept[Exception] {
+        Source.fromGraph(new substreamEmit()).async.runWith(Sink.ignore).futureValue
+      }.getCause.getMessage should startWith("requirement failed: Cannot push twice, or before it being pulled")
     }
 
   }
