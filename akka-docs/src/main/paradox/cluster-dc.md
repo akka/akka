@@ -169,7 +169,7 @@ and regions, isolated from other data centers. If you start an entity type with 
 nodes and you have defined 3 different data centers and then send messages to the same entity id to
 sharding regions in all data centers you will end up with 3 active entity instances for that entity id,
 one in each data center. This is because the region/coordinator is only aware of its own data center
-and will activate the entity there. It's unaware of the existence of corresponding entitiy in the 
+and will activate the entity there. It's unaware of the existence of corresponding entities in the 
 other data centers.
 
 Especially when used together with Akka Persistence that is based on the single-writer principle

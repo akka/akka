@@ -350,7 +350,7 @@ Note that stopped entities will be started again when a new message is targeted 
 ## Graceful Shutdown
 
 You can send the @scala[`ShardRegion.GracefulShutdown`] @java[`ShardRegion.gracefulShutdownInstance`] message
-to the `ShardRegion` actor to handoff all shards that are hosted by that `ShardRegion` and then the
+to the `ShardRegion` actor to hand off all shards that are hosted by that `ShardRegion` and then the
 `ShardRegion` actor will be stopped. You can `watch` the `ShardRegion` actor to know when it is completed.
 During this period other regions will buffer messages for those shards in the same way as when a rebalance is
 triggered by the coordinator. When the shards have been stopped the coordinator will allocate these shards elsewhere.
@@ -464,7 +464,7 @@ the identifiers of the shards running in a Region and what entities are alive fo
 a `ShardRegion.ClusterShardingStats` containing the identifiers of the shards running in each region and a count
 of entities that are alive in each shard.
 
-The type names of all started shards can be aquired via @scala[`ClusterSharding.shardTypeNames`]  @java[`ClusterSharding.getShardTypeNames`].
+The type names of all started shards can be acquired via @scala[`ClusterSharding.shardTypeNames`]  @java[`ClusterSharding.getShardTypeNames`].
 
 The purpose of these messages is testing and monitoring, they are not provided to give access to
 directly sending messages to the individual entities.
