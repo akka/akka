@@ -1100,18 +1100,24 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       promise.future.onComplete(_ ⇒ onFeedbackCompleted(promise))(ExecutionContexts.sameThreadExecutionContext)
 
       @tailrec
-      def addToWaiting(): Unit = {
+      def addToWaiting(): Boolean = {
         val previous = asyncCallbacksInProgress.get()
         if (previous != null) {
           val updated = previous + (this -> (previous(this) + promise))
           if (!asyncCallbacksInProgress.compareAndSet(previous, updated)) addToWaiting()
-        } // if it is null that is handled by the guard inside invokeWithPromise
+          else true
+        } else {
+          false
+        }
       }
 
-      addToWaiting()
-      invokeWithPromise(event, promise).future
+      if (addToWaiting())
+        invokeWithPromise(event, promise).future
+      else
+        Future.failed(new StreamDetachedException())
     }
 
+    // removes the promise from the callbacks in promise on complete, called from onComplete
     private def onFeedbackCompleted(promise: Promise[Done]): Unit = {
       @tailrec
       def removeFromWaiting(): Unit = {
@@ -1128,27 +1134,23 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
 
     @tailrec
-    private def invokeWithPromise(event: T, promise: Promise[Done]): Promise[Done] = {
-      if (stopped) promise.failure(new StreamDetachedException())
-      else {
-        currentState.get() match {
-          // not started yet
-          case list @ Pending(_) ⇒
-            if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal(promise)) :: list.pendingEvents)))
-              invokeWithPromise(event, promise) // atomicity is failed - try again
-            else promise
-          // started - can just send message to stream
-          case Initialized ⇒ sendEvent(event, promise)
-          // initializing is in progress in another thread (initializing thread is managed by Akka)
-          case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal(promise)) :: Nil))) {
-            (currentState.get(): @unchecked) match {
-              case Pending(_)  ⇒ invokeWithPromise(event, promise) // atomicity is failed - try again
-              case Initialized ⇒ sendEvent(event, promise)
-            }
-          } else promise
-        }
+    private def invokeWithPromise(event: T, promise: Promise[Done]): Promise[Done] =
+      currentState.get() match {
+        // started - can just send message to stream
+        case Initialized ⇒ sendEvent(event, promise)
+        // not started yet
+        case list @ Pending(_) ⇒
+          if (!currentState.compareAndSet(list, Pending(Event(event, OptionVal(promise)) :: list.pendingEvents)))
+            invokeWithPromise(event, promise) // atomicity is failed - try again
+          else promise
+        // initializing is in progress in another thread (initializing thread is managed by Akka)
+        case Initializing ⇒ if (!currentState.compareAndSet(Initializing, Pending(Event(event, OptionVal(promise)) :: Nil))) {
+          (currentState.get(): @unchecked) match {
+            case Pending(_)  ⇒ invokeWithPromise(event, promise) // atomicity is failed - try again
+            case Initialized ⇒ sendEvent(event, promise)
+          }
+        } else promise
       }
-    }
 
     private def failPromiseOnComplete(promise: Promise[Done]): Promise[Done] = {
       onFeedbackCompleted(promise)
@@ -1172,7 +1174,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           }
         }
       }
-      if (!stopped) internalInvoke(event)
+      internalInvoke(event)
     }
   }
 
