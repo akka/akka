@@ -1006,8 +1006,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * [[AsyncCallback.invokeWithFeedback()]] has an internal promise that will be failed if event cannot be processed
    * due to stream completion.
    *
-   * Method must be called in thread-safe manner during materialization and in the same thread as materialization
-   * process.
+   * To be thread safe this method must only be called from either the constructor of the graph stage during
+   * materialization or one of the methods invoked by the graph stage machinery, such as `onPush` and `onPull`.
    *
    * This object can be cached and reused within the same [[GraphStageLogic]].
    */
@@ -1075,9 +1075,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     // is called from the owning [[GraphStage]]
     private[stage] def onStop(outstandingPromises: Set[Promise[Done]]): Unit = {
-      lazy val detachedException = new StreamDetachedException()
-      val iterator = outstandingPromises.iterator
-      while (iterator.hasNext) { iterator.next().tryFailure(detachedException) }
+      if (outstandingPromises.nonEmpty) {
+        lazy val detachedException = new StreamDetachedException()
+        val iterator = outstandingPromises.iterator
+        while (iterator.hasNext) {
+          iterator.next().tryFailure(detachedException)
+        }
+      }
     }
 
     private def onAsyncInput(event: T, promise: OptionVal[Promise[Done]]) = {
@@ -1101,7 +1105,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         if (previous != null) {
           val updated = previous + (this -> (previous(this) + promise))
           if (!asyncCallbacksInProgress.compareAndSet(previous, updated)) addToWaiting()
-        }
+        } // if it is null that is handled by the guard inside invokeWithPromise
       }
 
       addToWaiting()
