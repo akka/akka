@@ -55,7 +55,7 @@ class QueueSinkSpec extends StreamSpec {
       val sub = probe.expectSubscription()
 
       queue.pull().pipeTo(testActor)
-      expectNoMsg(noMsgTimeout)
+      expectNoMessage(noMsgTimeout)
 
       sub.sendNext(1)
       expectMsg(Some(1))
@@ -69,7 +69,7 @@ class QueueSinkSpec extends StreamSpec {
       val sub = probe.expectSubscription()
 
       queue.pull().pipeTo(testActor)
-      expectNoMsg(noMsgTimeout)
+      expectNoMessage(noMsgTimeout)
 
       sub.sendError(ex)
       expectMsg(Status.Failure(ex))
@@ -84,13 +84,21 @@ class QueueSinkSpec extends StreamSpec {
       the[Exception] thrownBy { Await.result(queue.pull(), remainingOrDefault) } should be(ex)
     }
 
+    "fail future immediately if stream already canceled" in assertAllStagesStopped {
+      val queue = Source.empty[Int].runWith(Sink.queue())
+      // race here because no way to observe that queue sink saw termination
+      awaitAssert({
+        queue.pull().failed.futureValue shouldBe a[StreamDetachedException]
+      })
+    }
+
     "timeout future when stream cannot provide data" in assertAllStagesStopped {
       val probe = TestPublisher.manualProbe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue())
       val sub = probe.expectSubscription()
 
       queue.pull().pipeTo(testActor)
-      expectNoMsg(noMsgTimeout)
+      expectNoMessage(noMsgTimeout)
 
       sub.sendNext(1)
       expectMsg(Some(1))
@@ -154,7 +162,7 @@ class QueueSinkSpec extends StreamSpec {
       expectMsg(Some(1))
 
       queue.pull().pipeTo(testActor)
-      expectNoMsg(200.millis) // element requested but buffer empty
+      expectNoMessage(200.millis) // element requested but buffer empty
       sub.sendNext(2)
       expectMsg(Some(2))
 
