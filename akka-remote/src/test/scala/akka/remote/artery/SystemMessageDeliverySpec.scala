@@ -22,7 +22,6 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
@@ -33,9 +32,14 @@ object SystemMessageDeliverySpec {
 
   case class TestSysMsg(s: String) extends SystemMessageDelivery.AckedDeliveryMessage
 
+  val config = ConfigFactory.parseString(
+    """
+       akka.loglevel = DEBUG
+    """.stripMargin).withFallback(ArterySpecSupport.defaultConfig)
+
 }
 
-class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) with ImplicitSender {
+class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliverySpec.config) with ImplicitSender {
   import SystemMessageDeliverySpec._
 
   val addressA = UniqueAddress(
@@ -127,7 +131,8 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(ArterySpecSupport.de
         watch(remoteRef)
         remoteRef ! "hello"
         expectMsg("hello")
-        systemC.terminate()
+        Await.ready(systemC.terminate(), 10.seconds)
+        system.log.debug("systemC terminated")
         // DeathWatchNotification is sent from systemC, failure detection takes longer than 3 seconds
         expectTerminated(remoteRef, 10.seconds)
       } finally {
@@ -146,7 +151,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(ArterySpecSupport.de
         .via(drop(dropSeqNumbers = Vector(3L, 4L)))
         .via(inbound(inboundContextB))
         .map(_.message.asInstanceOf[TestSysMsg])
-        .runWith(TestSink.probe)
+        .runWith(TestSink.probe[TestSysMsg])
 
       sink.request(100)
       sink.expectNext(TestSysMsg("msg-1"))
@@ -155,7 +160,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(ArterySpecSupport.de
       replyProbe.expectMsg(Ack(2L, addressB))
       // 3 and 4 was dropped
       replyProbe.expectMsg(Nack(2L, addressB))
-      sink.expectNoMsg(100.millis) // 3 was dropped
+      sink.expectNoMessage(100.millis) // 3 was dropped
       inboundContextB.deliverLastReply()
       // resending 3, 4, 5
       sink.expectNext(TestSysMsg("msg-3"))
@@ -164,7 +169,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(ArterySpecSupport.de
       replyProbe.expectMsg(Ack(4L, addressB))
       sink.expectNext(TestSysMsg("msg-5"))
       replyProbe.expectMsg(Ack(5L, addressB))
-      replyProbe.expectNoMsg(100.millis)
+      replyProbe.expectNoMessage(100.millis)
       inboundContextB.deliverLastReply()
       sink.expectComplete()
     }
@@ -180,12 +185,12 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(ArterySpecSupport.de
         .via(drop(dropSeqNumbers = Vector(1L)))
         .via(inbound(inboundContextB))
         .map(_.message.asInstanceOf[TestSysMsg])
-        .runWith(TestSink.probe)
+        .runWith(TestSink.probe[TestSysMsg])
 
       sink.request(100)
       replyProbe.expectMsg(Nack(0L, addressB)) // from receiving 2
       replyProbe.expectMsg(Nack(0L, addressB)) // from receiving 3
-      sink.expectNoMsg(100.millis) // 1 was dropped
+      sink.expectNoMessage(100.millis) // 1 was dropped
       inboundContextB.deliverLastReply() // it's ok to not delivery all nacks
       // resending 1, 2, 3
       sink.expectNext(TestSysMsg("msg-1"))
@@ -209,7 +214,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(ArterySpecSupport.de
         .via(drop(dropSeqNumbers = Vector(3L)))
         .via(inbound(inboundContextB))
         .map(_.message.asInstanceOf[TestSysMsg])
-        .runWith(TestSink.probe)
+        .runWith(TestSink.probe[TestSysMsg])
 
       sink.request(100)
       sink.expectNext(TestSysMsg("msg-1"))
@@ -218,14 +223,14 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(ArterySpecSupport.de
       sink.expectNext(TestSysMsg("msg-2"))
       replyProbe.expectMsg(Ack(2L, addressB))
       inboundContextB.deliverLastReply()
-      sink.expectNoMsg(200.millis) // 3 was dropped
+      sink.expectNoMessage(200.millis) // 3 was dropped
       // resending 3 due to timeout
       sink.expectNext(TestSysMsg("msg-3"))
       replyProbe.expectMsg(4.seconds, Ack(3L, addressB))
       // continue resending
       replyProbe.expectMsg(4.seconds, Ack(3L, addressB))
       inboundContextB.deliverLastReply()
-      replyProbe.expectNoMsg(2200.millis)
+      replyProbe.expectNoMessage(2200.millis)
       sink.expectComplete()
     }
 
@@ -265,7 +270,5 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(ArterySpecSupport.de
 
       Await.result(output, 20.seconds) should ===((1 to N).map(n ⇒ TestSysMsg("msg-" + n)).toVector)
     }
-
   }
-
 }
