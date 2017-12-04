@@ -206,7 +206,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   }
 
   private def initJvmHook(system: ActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
-    val runByJvmShutdownHook = conf.getBoolean("run-by-jvm-shutdown-hook")
+    val runByJvmShutdownHook = system.settings.JvmShutdownHooks && conf.getBoolean("run-by-jvm-shutdown-hook")
     if (runByJvmShutdownHook) {
       coord.actorSystemJvmHook = OptionVal.Some(coord.addCancellableJvmShutdownHook {
         runningJvmHook = true // avoid System.exit from PhaseActorSystemTerminate task

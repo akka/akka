@@ -315,7 +315,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
         val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
           println(s"User JVM hook from ${newSystem.name}")
         )
-        myHooksCount should ===(2) // one user, one from system
+        myHooksCount should ===(1) // one user, none from system
         cancellable.cancel()
       }
     }
@@ -353,7 +353,23 @@ class CoordinatedShutdownSpec extends AkkaSpec {
         myHooksCount should ===(2) // one user, one from actor system
         cancellable.cancel()
       }
+    }
 
+    "add and remove user JVM hooks with run-by-jvm-shutdown-hook = on, akka.jvm-shutdown-hooks = off" in new JvmHookTest {
+      lazy val systemName = s"CoordinatedShutdownSpec-JvmHooks-4-${System.currentTimeMillis()}"
+      lazy val systemConfig = ConfigFactory.parseString(
+        """
+          akka.jvm-shutdown-hooks = off
+          akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
+        """)
+
+      def withSystemRunning(newSystem: ActorSystem): Unit = {
+        val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
+          println(s"User JVM hook from ${newSystem.name}")
+        )
+        myHooksCount should ===(1) // one user, none from actor system
+        cancellable.cancel()
+      }
     }
   }
 
@@ -366,13 +382,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
     def systemConfig: Config
     def withSystemRunning(system: ActorSystem): Unit
 
-    val newSystem = ActorSystem(
-      systemName,
-      ConfigFactory.parseString(
-        """
-          akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
-          akka.coordinated-shutdown.terminate-actor-system = on
-        """))
+    val newSystem = ActorSystem(systemName, systemConfig)
 
     withSystemRunning(newSystem)
 
