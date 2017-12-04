@@ -67,15 +67,15 @@ import scala.collection.JavaConverters._
  * tagged with a specific role. The `ShardRegion` is created with two application specific
  * functions to extract the entity identifier and the shard identifier from incoming messages.
  * A shard is a group of entities that will be managed together. For the first message in a
- * specific shard the `ShardRegion` request the location of the shard from a central coordinator,
- * the [[ShardCoordinator]]. The `ShardCoordinator` decides which `ShardRegion` that
+ * specific shard the `ShardRegion` requests the location of the shard from a central coordinator,
+ * the [[ShardCoordinator]]. The `ShardCoordinator` decides which `ShardRegion`
  * owns the shard. The `ShardRegion` receives the decided home of the shard
  * and if that is the `ShardRegion` instance itself it will create a local child
  * actor representing the entity and direct all messages for that entity to it.
  * If the shard home is another `ShardRegion` instance messages will be forwarded
  * to that `ShardRegion` instance instead. While resolving the location of a
  * shard incoming messages for that shard are buffered and later delivered when the
- * shard home is known. Subsequent messages to the resolved shard can be delivered
+ * shard location is known. Subsequent messages to the resolved shard can be delivered
  * to the target destination immediately without involving the `ShardCoordinator`.
  *
  * To make sure that at most one instance of a specific entity actor is running somewhere
@@ -106,7 +106,7 @@ import scala.collection.JavaConverters._
  * persistent (durable), e.g. with `akka-persistence`, so that it can be recovered at the new
  * location.
  *
- * The logic that decides which shards to rebalance is defined in a pluggable shard
+ * The logic that decides which shards to rebalance is defined in a plugable shard
  * allocation strategy. The default implementation [[ShardCoordinator.LeastShardAllocationStrategy]]
  * picks shards for handoff from the `ShardRegion` with most number of previously allocated shards.
  * They will then be allocated to the `ShardRegion` with least number of previously allocated shards,
@@ -191,7 +191,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   /**
    * Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
    * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
-   * for this type can later be retrieved with the [[#shardRegion]] method.
+   * for this type can later be retrieved with the [[shardRegion]] method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
@@ -231,7 +231,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   /**
    * Register a named entity type by defining the [[akka.actor.Props]] of the entity actor and
    * functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
-   * for this type can later be retrieved with the [[#shardRegion]] method.
+   * for this type can later be retrieved with the [[shardRegion]] method.
    *
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
    * is used. [[akka.actor.PoisonPill]] is used as `handOffStopMessage`.
