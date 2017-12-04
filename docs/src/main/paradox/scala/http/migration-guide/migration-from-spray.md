@@ -38,7 +38,7 @@ The number of modules has been reduced. Here's an approximate mapping from spray
  * spray-routing ⇒ akka-http
  * spray-client ⇒ parts of high-level client support is now provided via `Http().singleRequest`, other is not yet
    implemented (see also [#113](https://github.com/akka/akka-http/issues/113))
- * spray-caching ⇒ not supported so far
+ * spray-caching ⇒ akka-http-caching (since version 10.0.11, more information here: @ref[Documentation](../common/caching.md))
 
 ### Package name changes
 
