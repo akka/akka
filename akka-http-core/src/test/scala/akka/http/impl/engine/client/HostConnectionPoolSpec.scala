@@ -438,7 +438,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
               .run()(singleElementBufferMaterializer)
         }
 
-        private val serverConnections = TestProbe()
+        private lazy val serverConnections = TestProbe()
 
         def expectNextConnection(): ServerConnection =
           serverConnections.expectMsgType[ServerConnection]
@@ -446,7 +446,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
         def expectNoNewConnection(): Unit =
           serverConnections.expectNoMsg()
 
-        protected lazy val server =
+        protected override lazy val server =
           Flow.fromSinkAndSourceMat(
             // buffer is needed because the async subscriber/publisher boundary will otherwise request > 1
             Flow[HttpRequest].buffer(1, OverflowStrategy.backpressure)
