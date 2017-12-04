@@ -186,6 +186,12 @@ object Actor {
   }
 
   /**
+   * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
+   */
+  def immutablePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Immutable[T] =
+    Actor.immutable[T] { (ctx, t) ⇒ onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ Actor.unhandled[T]) }
+
+  /**
    * Construct an actor behavior that can react to lifecycle signals only.
    */
   def onSignal[T](handler: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
