@@ -549,7 +549,9 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
           setLastSequenceNr(highestSeqNr)
           _recoveryRunning = false
           try Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
-          finally transitToProcessingState()
+          finally transitToProcessingState() // in finally in case exception and resume strategy
+          // if exception from RecoveryCompleted the permit is returned in below catch
+          returnRecoveryPermit()
         case ReplayMessagesFailure(cause) ⇒
           timeoutCancellable.cancel()
           try onRecoveryFailure(cause, event = None) finally context.stop(self)
@@ -575,8 +577,6 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         extension.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, self)
 
       private def transitToProcessingState(): Unit = {
-        returnRecoveryPermit()
-
         if (eventBatch.nonEmpty) flushBatch()
 
         if (pendingStashingPersistInvocations > 0) changeState(persistingEvents)

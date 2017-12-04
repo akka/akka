@@ -34,7 +34,7 @@ FSM of a bundle in an OSGi container:
  1. INSTALLED: A bundle that is installed has been loaded from disk and a classloader instantiated with its capabilities.
 Bundles are iteratively installed manually or through container-specific descriptors. For those familiar with legacy packging
 such as EJB, the modular nature of OSGi means that bundles may be used by multiple applications with overlapping dependencies.
-By resolving them individually from repositories, these overlaps can be de-duplicated across multiple deployemnts to
+By resolving them individually from repositories, these overlaps can be de-duplicated across multiple deployments to
 the same container.
  2. RESOLVED: A bundle that has been resolved is one that has had its requirements (imports) satisfied. Resolution does
 mean that a bundle can be started.

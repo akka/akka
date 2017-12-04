@@ -1,0 +1,5 @@
+# #23527 HandshakeReq in inbound lanes
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.InboundEnvelope.lane")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.InboundEnvelope.copyForLane")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ReusableInboundEnvelope.init")
+

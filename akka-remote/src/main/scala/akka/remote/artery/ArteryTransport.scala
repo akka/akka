@@ -19,6 +19,7 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
+
 import akka.Done
 import akka.NotUsed
 import akka.actor._
@@ -356,6 +357,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .insert(Array("system", "remote-watcher"), NotUsed)
       // these belongs to cluster and should come from there
       .insert(Array("system", "cluster", "core", "daemon", "heartbeatSender"), NotUsed)
+      .insert(Array("system", "cluster", "core", "daemon", "crossDcHeartbeatSender"), NotUsed)
       .insert(Array("system", "cluster", "heartbeatReceiver"), NotUsed)
 
   private def inboundChannel = s"aeron:udp?endpoint=${_bindAddress.address.host.get}:${_bindAddress.address.port.get}"
@@ -530,7 +532,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     val maybeDriver = mediaDriver.getAndSet(None)
     maybeDriver.foreach { driver ⇒
       // this is only for embedded media driver
-      driver.close()
+      try driver.close() catch {
+        case NonFatal(e) ⇒
+          // don't think driver.close will ever throw, but just in case
+          log.warning("Couldn't close Aeron embedded media driver due to [{}]", e.getMessage)
+      }
 
       try {
         if (settings.Advanced.DeleteAeronDirectory) {
@@ -619,12 +625,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         log.debug("Inbound channel is now active")
       } else if (status == ChannelEndpointStatus.ERRORED) {
         areonErrorLog.logErrors(log, 0L)
+        stopMediaDriver()
         throw new RemoteTransportException("Inbound Aeron channel is in errored state. See Aeron logs for details.")
       } else if (status == ChannelEndpointStatus.INITIALIZING && retries > 0) {
         Thread.sleep(waitInterval)
         retry(retries - 1)
       } else {
         areonErrorLog.logErrors(log, 0L)
+        stopMediaDriver()
         throw new RemoteTransportException("Timed out waiting for Aeron transport to bind. See Aeoron logs.")
       }
     }
@@ -785,6 +793,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           aeronSource(ordinaryStreamId, envelopeBufferPool)
             .via(hubKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
+            .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
 
         // Select lane based on destination to preserve message order,
         // Also include the uid of the sending system in the hash to spread
@@ -797,7 +806,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
               val hashA = 23 + a
               val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
               math.abs(hash) % inboundLanes
-            case OptionVal.None ⇒ 0
+            case OptionVal.None ⇒
+              // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
+              env.lane
           }
         }
 
@@ -814,13 +825,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           }(collection.breakOut)
 
         import system.dispatcher
-        val completed = Future.sequence(completedValues).map(_ ⇒ Done)
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
-        completed.failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
+        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
 
-        (resourceLife, compressionAccess, completed)
+        val allCompleted = Future.sequence(completedValues).map(_ ⇒ Done)
+
+        (resourceLife, compressionAccess, allCompleted)
       }
 
     _inboundCompressionAccess = OptionVal(inboundCompressionAccesses)

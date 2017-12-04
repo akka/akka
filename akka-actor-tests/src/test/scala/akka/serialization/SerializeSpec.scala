@@ -14,10 +14,9 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 import com.typesafe.config._
 import akka.pattern.ask
-import org.apache.commons.codec.binary.Hex.encodeHex
+import org.apache.commons.codec.binary.Hex.decodeHex
 import java.nio.ByteOrder
 import java.nio.ByteBuffer
-import akka.actor.NoSerializationVerificationNeeded
 import test.akka.serialization.NoVerification
 
 object SerializationTests {
@@ -28,6 +27,7 @@ object SerializationTests {
         serialize-messages = off
         serializers {
           test = "akka.serialization.NoopSerializer"
+          test2 = "akka.serialization.NoopSerializer2"
         }
 
         serialization-bindings {
@@ -38,6 +38,7 @@ object SerializationTests {
           "akka.serialization.SerializationTests$$A" = java
           "akka.serialization.SerializationTests$$B" = test
           "akka.serialization.SerializationTests$$D" = test
+          "akka.serialization.TestSerializable2" = test2
         }
       }
     }
@@ -63,7 +64,9 @@ object SerializationTests {
 
   class ExtendedPlainMessage extends PlainMessage
 
-  class Both(s: String) extends SimpleMessage(s) with Serializable
+  class BothTestSerializableAndJavaSerializable(s: String) extends SimpleMessage(s) with Serializable
+
+  class BothTestSerializableAndTestSerializable2(s: String) extends TestSerializable with TestSerializable2
 
   trait A
   trait B
@@ -217,18 +220,22 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
       ser.serializerFor(classOf[ExtendedPlainMessage]).getClass should ===(classOf[NoopSerializer])
     }
 
+    "give JavaSerializer lower priority for message with several bindings" in {
+      ser.serializerFor(classOf[BothTestSerializableAndJavaSerializable]).getClass should ===(classOf[NoopSerializer])
+    }
+
     "give warning for message with several bindings" in {
       EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
-        ser.serializerFor(classOf[Both]).getClass should (be(classOf[NoopSerializer]) or be(classOf[JavaSerializer]))
+        ser.serializerFor(classOf[BothTestSerializableAndTestSerializable2]).getClass should (
+          be(classOf[NoopSerializer]) or be(classOf[NoopSerializer2]))
       }
     }
 
     "resolve serializer in the order of the bindings" in {
       ser.serializerFor(classOf[A]).getClass should ===(classOf[JavaSerializer])
       ser.serializerFor(classOf[B]).getClass should ===(classOf[NoopSerializer])
-      EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
-        ser.serializerFor(classOf[C]).getClass should (be(classOf[NoopSerializer]) or be(classOf[JavaSerializer]))
-      }
+      // JavaSerializer lower prio when multiple found
+      ser.serializerFor(classOf[C]).getClass should ===(classOf[NoopSerializer])
     }
 
     "resolve serializer in the order of most specific binding first" in {
@@ -351,7 +358,7 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
 
   "Cross-version serialization compatibility" must {
     def verify(obj: SystemMessage, asExpected: String): Unit = {
-      val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(asExpected)
+      val bytes = decodeHex(asExpected.toCharArray)
       val stream = new ObjectInputStream(new ByteArrayInputStream(bytes))
       val read = stream.readObject()
       read should ===(obj)
@@ -530,11 +537,24 @@ class NoVerificationWarningOffSpec extends AkkaSpec(
 }
 
 protected[akka] trait TestSerializable
+protected[akka] trait TestSerializable2
 
 protected[akka] class NoopSerializer extends Serializer {
   def includeManifest: Boolean = false
 
   def identifier = 9999
+
+  def toBinary(o: AnyRef): Array[Byte] = {
+    Array.empty[Byte]
+  }
+
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null
+}
+
+protected[akka] class NoopSerializer2 extends Serializer {
+  def includeManifest: Boolean = false
+
+  def identifier = 10000
 
   def toBinary(o: AnyRef): Array[Byte] = {
     Array.empty[Byte]

@@ -31,12 +31,12 @@ object PersistentActorCompileOnlyTest {
 
       initialState = ExampleState(Nil),
 
-      actions = Actions.command {
-        case Cmd(data) ⇒ Persist(Evt(data))
+      commandHandler = CommandHandler.command {
+        case Cmd(data) ⇒ Effect.persist(Evt(data))
       },
 
-      applyEvent = {
-        case (Evt(data), state) ⇒ state.copy(data :: state.events)
+      eventHandler = {
+        case (state, Evt(data)) ⇒ state.copy(data :: state.events)
       })
   }
 
@@ -56,14 +56,14 @@ object PersistentActorCompileOnlyTest {
 
       initialState = ExampleState(Nil),
 
-      actions = Actions.command {
+      commandHandler = CommandHandler.command {
         case Cmd(data, sender) ⇒
-          Persist(Evt(data))
+          Effect.persist(Evt(data))
             .andThen { sender ! Ack }
       },
 
-      applyEvent = {
-        case (Evt(data), state) ⇒ state.copy(data :: state.events)
+      eventHandler = {
+        case (state, Evt(data)) ⇒ state.copy(data :: state.events)
       })
   }
 
@@ -98,16 +98,16 @@ object PersistentActorCompileOnlyTest {
 
       initialState = EventsInFlight(0, Map.empty),
 
-      actions = Actions((ctx, cmd, state) ⇒ cmd match {
+      commandHandler = CommandHandler((ctx, state, cmd) ⇒ cmd match {
         case DoSideEffect(data) ⇒
-          Persist(IntentRecorded(state.nextCorrelationId, data)).andThen {
+          Effect.persist(IntentRecorded(state.nextCorrelationId, data)).andThen {
             performSideEffect(ctx.self, state.nextCorrelationId, data)
           }
         case AcknowledgeSideEffect(correlationId) ⇒
-          Persist(SideEffectAcknowledged(correlationId))
+          Effect.persist(SideEffectAcknowledged(correlationId))
       }),
 
-      applyEvent = (evt, state) ⇒ evt match {
+      eventHandler = (state, evt) ⇒ evt match {
         case IntentRecorded(correlationId, data) ⇒
           EventsInFlight(
             nextCorrelationId = correlationId + 1,
@@ -119,7 +119,6 @@ object PersistentActorCompileOnlyTest {
           state.dataByCorrelationId.foreach {
             case (correlationId, data) ⇒ performSideEffect(ctx.self, correlationId, data)
           }
-          state
         }
       }
 
@@ -140,22 +139,22 @@ object PersistentActorCompileOnlyTest {
     val b: Behavior[Command] = PersistentActor.immutable[Command, Event, Mood](
       persistenceId = "myPersistenceId",
       initialState = Happy,
-      actions = Actions.byState {
-        case Happy ⇒ Actions.command {
+      commandHandler = CommandHandler.byState {
+        case Happy ⇒ CommandHandler.command {
           case Greet(whom) ⇒
             println(s"Super happy to meet you $whom!")
-            PersistNothing()
-          case MoodSwing ⇒ Persist(MoodChanged(Sad))
+            Effect.none
+          case MoodSwing ⇒ Effect.persist(MoodChanged(Sad))
         }
-        case Sad ⇒ Actions.command {
+        case Sad ⇒ CommandHandler.command {
           case Greet(whom) ⇒
             println(s"hi $whom")
-            PersistNothing()
-          case MoodSwing ⇒ Persist(MoodChanged(Happy))
+            Effect.none
+          case MoodSwing ⇒ Effect.persist(MoodChanged(Happy))
         }
       },
-      applyEvent = {
-        case (MoodChanged(to), _) ⇒ to
+      eventHandler = {
+        case (_, MoodChanged(to)) ⇒ to
       })
 
     // FIXME this doesn't work, wrapping is not supported
@@ -181,11 +180,11 @@ object PersistentActorCompileOnlyTest {
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "asdf",
       initialState = State(Nil),
-      actions = Actions.command {
-        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
-        case TaskDone(task)     ⇒ Persist(TaskRemoved(task))
+      commandHandler = CommandHandler.command {
+        case RegisterTask(task) ⇒ Effect.persist(TaskRegistered(task))
+        case TaskDone(task)     ⇒ Effect.persist(TaskRemoved(task))
       },
-      applyEvent = (evt, state) ⇒ evt match {
+      eventHandler = (state, evt) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       }).snapshotOnState(_.tasksInFlight.isEmpty)
@@ -208,16 +207,17 @@ object PersistentActorCompileOnlyTest {
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "asdf",
       initialState = State(Nil),
-      actions = Actions((ctx, cmd, _) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
-          .andThen {
-            val child = ctx.spawn[Nothing](worker(task), task)
-            // This assumes *any* termination of the child may trigger a `TaskDone`:
-            ctx.watchWith(child, TaskDone(task))
-          }
-        case TaskDone(task) ⇒ Persist(TaskRemoved(task))
+      commandHandler = CommandHandler((ctx, _, cmd) ⇒ cmd match {
+        case RegisterTask(task) ⇒
+          Effect.persist(TaskRegistered(task))
+            .andThen {
+              val child = ctx.spawn[Nothing](worker(task), task)
+              // This assumes *any* termination of the child may trigger a `TaskDone`:
+              ctx.watchWith(child, TaskDone(task))
+            }
+        case TaskDone(task) ⇒ Effect.persist(TaskRemoved(task))
       }),
-      applyEvent = (evt, state) ⇒ evt match {
+      eventHandler = (state, evt) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       })
@@ -239,21 +239,21 @@ object PersistentActorCompileOnlyTest {
       persistenceId = "asdf",
       initialState = State(Nil),
       // The 'onSignal' seems to break type inference here.. not sure if that can be avoided?
-      actions = Actions[RegisterTask, Event, State]((ctx, cmd, state) ⇒ cmd match {
-        case RegisterTask(task) ⇒ Persist(TaskRegistered(task))
+      commandHandler = CommandHandler[RegisterTask, Event, State]((ctx, state, cmd) ⇒ cmd match {
+        case RegisterTask(task) ⇒ Effect.persist(TaskRegistered(task))
           .andThen {
             val child = ctx.spawn[Nothing](worker(task), task)
             // This assumes *any* termination of the child may trigger a `TaskDone`:
             ctx.watch(child)
           }
       }).onSignal {
-        case (ctx, Terminated(actorRef), _) ⇒
+        case (ctx, _, Terminated(actorRef)) ⇒
           // watchWith (as in the above example) is nicer because it means we don't have to
           // 'manually' associate the task and the child actor, but we wanted to demonstrate
           // signals here:
-          Persist(TaskRemoved(actorRef.path.name))
+          Effect.persist(TaskRemoved(actorRef.path.name))
       },
-      applyEvent = (evt, state) ⇒ evt match {
+      eventHandler = (state, evt) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
       })
@@ -299,44 +299,49 @@ object PersistentActorCompileOnlyTest {
       val adapt = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
 
       def addItem(id: Id, self: ActorRef[Command]) =
-        Persist[Event, List[Id]](ItemAdded(id))
+        Effect
+          .persist[Event, List[Id]](ItemAdded(id))
           .andThen(metadataRegistry ! GetMetaData(id, adapt))
 
       PersistentActor.immutable[Command, Event, List[Id]](
         persistenceId = "basket-1",
         initialState = Nil,
-        actions =
-          Actions.byState(state ⇒
-            if (isFullyHydrated(basket, state)) Actions { (ctx, cmd, state) ⇒
+        commandHandler =
+          CommandHandler.byState(state ⇒
+            if (isFullyHydrated(basket, state)) CommandHandler { (ctx, state, cmd) ⇒
               cmd match {
                 case AddItem(id)    ⇒ addItem(id, ctx.self)
-                case RemoveItem(id) ⇒ Persist(ItemRemoved(id))
+                case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
                 case GotMetaData(data) ⇒
-                  basket = basket.updatedWith(data); PersistNothing()
-                case GetTotalPrice(sender) ⇒ sender ! basket.items.map(_.price).sum; PersistNothing()
+                  basket = basket.updatedWith(data)
+                  Effect.none
+                case GetTotalPrice(sender) ⇒
+                  sender ! basket.items.map(_.price).sum
+                  Effect.none
               }
             }
-            else Actions { (ctx, cmd, state) ⇒
+            else CommandHandler { (ctx, state, cmd) ⇒
               cmd match {
                 case AddItem(id)    ⇒ addItem(id, ctx.self)
-                case RemoveItem(id) ⇒ Persist(ItemRemoved(id))
+                case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
                 case GotMetaData(data) ⇒
                   basket = basket.updatedWith(data)
                   if (isFullyHydrated(basket, state)) {
                     stash.foreach(ctx.self ! _)
                     stash = Nil
                   }
-                  PersistNothing()
-                case cmd: GetTotalPrice ⇒ stash :+= cmd; PersistNothing()
+                  Effect.none
+                case cmd: GetTotalPrice ⇒
+                  stash :+= cmd
+                  Effect.none
               }
             }),
-        applyEvent = (evt, state) ⇒ evt match {
+        eventHandler = (state, evt) ⇒ evt match {
           case ItemAdded(id)   ⇒ id +: state
           case ItemRemoved(id) ⇒ state.filter(_ != id)
         }).onRecoveryCompleted((ctx, state) ⇒ {
           val ad = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
           state.foreach(id ⇒ metadataRegistry ! GetMetaData(id, ad))
-          state
         })
     }
   }
@@ -358,17 +363,17 @@ object PersistentActorCompileOnlyTest {
     case class Remembered(memory: String) extends Event
 
     def changeMoodIfNeeded(currentState: Mood, newMood: Mood): Effect[Event, Mood] =
-      if (currentState == newMood) PersistNothing()
-      else Persist(MoodChanged(newMood))
+      if (currentState == newMood) Effect.none
+      else Effect.persist(MoodChanged(newMood))
 
     PersistentActor.immutable[Command, Event, Mood](
       persistenceId = "myPersistenceId",
       initialState = Sad,
-      actions = Actions { (_, cmd, state) ⇒
+      commandHandler = CommandHandler { (_, state, cmd) ⇒
         cmd match {
           case Greet(whom) ⇒
             println(s"Hi there, I'm $state!")
-            PersistNothing()
+            Effect.none
           case CheerUp(sender) ⇒
             changeMoodIfNeeded(state, Happy)
               .andThen { sender ! Ack }
@@ -376,15 +381,13 @@ object PersistentActorCompileOnlyTest {
             // A more elaborate example to show we still have full control over the effects
             // if needed (e.g. when some logic is factored out but you want to add more effects)
             val commonEffects = changeMoodIfNeeded(state, Happy)
-            CompositeEffect(
-              PersistAll[Event, Mood](commonEffects.events :+ Remembered(memory)),
-              commonEffects.sideEffects)
+            Effect.persist(commonEffects.events :+ Remembered(memory), commonEffects.sideEffects)
 
         }
       },
-      applyEvent = {
-        case (MoodChanged(to), _)   ⇒ to
-        case (Remembered(_), state) ⇒ state
+      eventHandler = {
+        case (_, MoodChanged(to))   ⇒ to
+        case (state, Remembered(_)) ⇒ state
       })
 
   }
@@ -396,22 +399,20 @@ object PersistentActorCompileOnlyTest {
     sealed trait Event
     case object Done extends Event
 
-    type State = Unit
+    class State
 
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "myPersistenceId",
-      initialState = (),
-      actions = Actions { (_, cmd, _) ⇒
-        cmd match {
-          case Enough ⇒
-            Persist(Done)
-              .andThen(
-                SideEffect(_ ⇒ println("yay")),
-                Stop())
-        }
+      initialState = new State,
+      commandHandler = CommandHandler.command {
+        case Enough ⇒
+          Effect.persist(Done)
+            .andThen(println("yay"))
+            .andThenStop
+
       },
-      applyEvent = {
-        case (Done, _) ⇒ ()
+      eventHandler = {
+        case (state, Done) ⇒ state
       })
   }
 

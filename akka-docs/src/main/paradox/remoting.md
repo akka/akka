@@ -253,7 +253,7 @@ Actor classes not included in the whitelist will not be allowed to be remote dep
 
 ## Lifecycle and Failure Recovery Model
 
-![association_lifecycle.png](../images/association_lifecycle.png)
+![association_lifecycle.png](./images/association_lifecycle.png)
 
 Each link with a remote system can be in one of the four states as illustrated above. Before any communication
 happens with a remote system at a given `Address` the state of the association is `Idle`. The first time a message
@@ -311,7 +311,7 @@ order to account for network issues that sometimes occur on such platforms.
 The following chart illustrates how *phi* increase with increasing time since the
 previous heartbeat.
 
-![phi1.png](../images/phi1.png)
+![phi1.png](./images/phi1.png)
 
 Phi is calculated from the mean and standard deviation of historical
 inter arrival times. The previous chart is an example for standard deviation
@@ -319,7 +319,7 @@ of 200 ms. If the heartbeats arrive with less deviation the curve becomes steepe
 i.e. it is possible to determine failure more quickly. The curve looks like this for
 a standard deviation of 100 ms.
 
-![phi2.png](../images/phi2.png)
+![phi2.png](./images/phi2.png)
 
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
@@ -328,7 +328,7 @@ adjust the [Remote Configuration](#remote-configuration) of this depending on yo
 This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 3 seconds.
 
-![phi3.png](../images/phi3.png)
+![phi3.png](./images/phi3.png)
 
 ## Serialization
 
@@ -417,7 +417,7 @@ be inserted which will fail explicitly if attempts to use java serialization are
 
 It will also enable the above mentioned `enable-additional-serialization-bindings`.
 
-The log messages emitted by such serializer SHOULD be be treated as potential
+The log messages emitted by such serializer SHOULD be treated as potential
 attacks which the serializer prevented, as they MAY indicate an external operator
 attempting to send malicious messages intending to use java serialization as attack vector.
 The attempts are logged with the SECURITY marker.
@@ -575,7 +575,7 @@ According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended alg
 You should always check the latest information about security and algorithm recommendations though before you configure your system.
 
 Creating and working with keystores and certificates is well documented in the
-[Generating X.509 Certificates](http://typesafehub.github.io/ssl-config/CertificateGeneration.html#using-keytool)
+[Generating X.509 Certificates](http://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
 section of Lightbend's SSL-Config library.
 
 Since an Akka remoting is inherently @ref:[peer-to-peer](general/remoting.md#symmetric-communication) both the key-store as well as trust-store

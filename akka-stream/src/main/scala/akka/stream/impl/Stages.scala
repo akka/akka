@@ -13,9 +13,11 @@ import akka.stream._
 @InternalApi private[akka] object Stages {
 
   object DefaultAttributes {
+    // reusable common attributes
     val IODispatcher = ActorAttributes.IODispatcher
     val inputBufferOne = inputBuffer(initial = 1, max = 1)
 
+    // stage specific default attributes
     val fused = name("fused")
     val materializedValueSource = name("matValueSource")
     val map = name("map")

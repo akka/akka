@@ -291,7 +291,7 @@ and then you can apply the proposed solutions as explained below.
 
 @@@
 
-![dispatcher-behaviour-on-bad-code.png](../images/dispatcher-behaviour-on-bad-code.png)
+![dispatcher-behaviour-on-bad-code.png](./images/dispatcher-behaviour-on-bad-code.png)
 
 In the above example we put the code under load by sending hundreds of messages to the blocking actor
 which causes threads of the default dispatcher to be blocked.
@@ -334,7 +334,7 @@ Java
 
 The thread pool behaviour is shown in the below diagram.
 
-![dispatcher-behaviour-on-good-code.png](../images/dispatcher-behaviour-on-good-code.png)
+![dispatcher-behaviour-on-good-code.png](./images/dispatcher-behaviour-on-good-code.png)
 
 Messages sent to `SeparateDispatcherFutureActor` and `PrintActor` are easily handled by the default dispatcher - the
 green lines, which represent the actual execution.

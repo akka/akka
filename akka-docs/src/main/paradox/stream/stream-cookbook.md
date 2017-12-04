@@ -206,6 +206,20 @@ Scala
 Java
 :   @@snip [RecipeMultiGroupByTest.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeMultiGroupByTest.java) { #multi-groupby }
 
+### Adhoc source
+
+**Situation:** The idea is that you have a source which you don't want to start until you have a demand.
+Also, you want to shutdown it down when there is no more demand, and start it up again there is new demand again.
+
+You can achieve this behavior by combining `lazily`, `backpressureTimeout` and `recoverWithRetries` as follows:
+
+Scala
+:   @@snip [RecipeAdhocSource.scala]($code$/scala/docs/stream/cookbook/RecipeAdhocSource.scala) { #adhoc-source }
+
+Java
+:   @@snip [RecipeAdhocSourceTest.scala]($code$/java/jdocs/stream/javadsl/cookbook/RecipeAdhocSourceTest.java) { #adhoc-source }
+
+
 ## Working with Graphs
 
 In this collection we show recipes that use stream graph elements to achieve various goals.

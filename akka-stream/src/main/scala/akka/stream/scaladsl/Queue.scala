@@ -5,6 +5,7 @@ package akka.stream.scaladsl
 
 import scala.concurrent.Future
 import akka.Done
+import akka.annotation.DoNotInherit
 import akka.stream.QueueOfferResult
 import akka.stream.stage.GraphStageLogic
 

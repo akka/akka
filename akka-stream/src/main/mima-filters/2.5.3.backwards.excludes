@@ -8,3 +8,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.create")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.MaybeSource.this")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.MaybePublisher$")
+
+# #23917 Add Sink.collection
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SeqStage.this")

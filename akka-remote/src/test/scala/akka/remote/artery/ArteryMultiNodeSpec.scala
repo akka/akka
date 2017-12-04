@@ -3,14 +3,10 @@
  */
 package akka.remote.artery
 
-import java.nio.file.{ FileSystems, Files, Path }
-import java.util.UUID
-
 import akka.actor.{ ActorSystem, RootActorPath }
 import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.Outcome
 
 /**
  * Base class for remoting tests what needs to test interaction between a "local" actor system
@@ -56,5 +52,4 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
     remoteSystems = Vector.empty
     super.afterTermination()
   }
-
 }

@@ -6,6 +6,7 @@ package akka
 import sbt._
 import sbt.Keys._
 import java.io.File
+import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
 
 object Publish extends AutoPlugin {
 
@@ -61,11 +62,9 @@ object NoPublish extends AutoPlugin {
   override def requires = plugins.JvmPlugin
 
   override def projectSettings = Seq(
-    publishArtifact := false,
-    publishArtifact in Compile := false,
-    publish := {},
     skip in publish := true,
-    publishLocal := {}
+    sources in (Compile, doc) := Seq.empty,
+    whitesourceIgnore := true
   )
 }
 

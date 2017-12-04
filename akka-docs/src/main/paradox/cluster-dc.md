@@ -82,7 +82,7 @@ but unreachability across different data centers don't influence the progress of
 within a data center. Nodes can be added and removed also when there are network partitions between
 data centers, which is impossible if nodes are not grouped into data centers.
 
-![cluster-dc.png](../images/cluster-dc.png)
+![cluster-dc.png](./images/cluster-dc.png)
 
 User actions like joining, leaving, and downing can be sent to any node in the cluster,
 not only to the nodes in the data center of the node. Seed nodes are also global.
@@ -169,7 +169,7 @@ and regions, isolated from other data centers. If you start an entity type with 
 nodes and you have defined 3 different data centers and then send messages to the same entity id to
 sharding regions in all data centers you will end up with 3 active entity instances for that entity id,
 one in each data center. This is because the region/coordinator is only aware of its own data center
-and will activate the entity there. It's unaware of the existence of corresponding entitiy in the 
+and will activate the entity there. It's unaware of the existence of corresponding entities in the 
 other data centers.
 
 Especially when used together with Akka Persistence that is based on the single-writer principle

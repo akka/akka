@@ -53,14 +53,14 @@ object ClusterShardingPersistenceSpec {
     PersistentActor.persistentEntity[Command, String, String](
       persistenceIdFromActorName = name ⇒ "Test-" + name,
       initialState = "",
-      actions = Actions((ctx, cmd, state) ⇒ cmd match {
-        case Add(s) ⇒ Persist(s)
+      commandHandler = CommandHandler((ctx, state, cmd) ⇒ cmd match {
+        case Add(s) ⇒ Effect.persist(s)
         case Get(replyTo) ⇒
           replyTo ! state
-          PersistNothing()
-        case StopPlz ⇒ Stop()
+          Effect.none
+        case StopPlz ⇒ Effect.stop
       }),
-      applyEvent = (evt, state) ⇒ if (state.isEmpty) evt else state + "|" + evt)
+      eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt)
 
   val typeKey = EntityTypeKey[Command]("test")
 

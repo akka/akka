@@ -50,9 +50,9 @@ import akka.typed.internal.adapter.ActorRefAdapter
 
   private var state: S = behavior.initialState
 
-  private val actions: Actions[C, E, S] = behavior.actions
+  private val commandHandler: CommandHandler[C, E, S] = behavior.commandHandler
 
-  private val eventHandler: (E, S) ⇒ S = behavior.applyEvent
+  private val eventHandler: (S, E) ⇒ S = behavior.eventHandler
 
   private val ctxAdapter = new ActorContextAdapter[C](context)
   private val ctx = ctxAdapter.asScala
@@ -62,17 +62,17 @@ import akka.typed.internal.adapter.ActorRefAdapter
       state = snapshot.asInstanceOf[S]
 
     case RecoveryCompleted ⇒
-      state = behavior.recoveryCompleted(ctx, state)
+      behavior.recoveryCompleted(ctx, state)
 
     case event: E @unchecked ⇒
       state = applyEvent(state, event)
   }
 
   def applyEvent(s: S, event: E): S =
-    eventHandler.apply(event, s)
+    eventHandler.apply(s, event)
 
-  private val unhandledSignal: PartialFunction[(ActorContext[C], Signal, S), Effect[E, S]] = {
-    case sig ⇒ Unhandled()
+  private val unhandledSignal: PartialFunction[(ActorContext[C], S, Signal), Effect[E, S]] = {
+    case sig ⇒ Effect.unhandled
   }
 
   override def receiveCommand: Receive = {
@@ -84,53 +84,62 @@ import akka.typed.internal.adapter.ActorRefAdapter
         val effects = msg match {
           case a.Terminated(ref) ⇒
             val sig = Terminated(ActorRefAdapter(ref))(null)
-            actions.sigHandler(state).applyOrElse((ctx, sig, state), unhandledSignal)
+            commandHandler.sigHandler(state).applyOrElse((ctx, state, sig), unhandledSignal)
           case a.ReceiveTimeout ⇒
-            actions.commandHandler(ctx, ctxAdapter.receiveTimeoutMsg, state)
+            commandHandler.commandHandler(ctx, state, ctxAdapter.receiveTimeoutMsg)
           // TODO note that PostStop and PreRestart signals are not handled, we wouldn't be able to persist there
           case cmd: C @unchecked ⇒
             // FIXME we could make it more safe by using ClassTag for C
-            actions.commandHandler(ctx, cmd, state)
+            commandHandler.commandHandler(ctx, state, cmd)
         }
 
         applyEffects(msg, effects)
       } catch {
         case e: MatchError ⇒ throw new IllegalStateException(
           s"Undefined state [${state.getClass.getName}] or handler for [${msg.getClass.getName} " +
-            s"in [${behavior.getClass.getName}] with persistenceId [${persistenceId}]")
+            s"in [${behavior.getClass.getName}] with persistenceId [$persistenceId]")
       }
 
   }
 
   private def applyEffects(msg: Any, effect: Effect[E, S], sideEffects: Seq[ChainableEffect[_, S]] = Nil): Unit = effect match {
-    case CompositeEffect(Some(persist), sideEffects) ⇒
-      applyEffects(msg, persist, sideEffects)
-    case CompositeEffect(_, sideEffects) ⇒
-      sideEffects.foreach(applySideEffect)
+    case CompositeEffect(Some(persist), currentSideEffects) ⇒
+      applyEffects(msg, persist, currentSideEffects ++ sideEffects)
+    case CompositeEffect(_, currentSideEffects) ⇒
+      (currentSideEffects ++ sideEffects).foreach(applySideEffect)
     case Persist(event) ⇒
       // apply the event before persist so that validation exception is handled before persisting
       // the invalid event, in case such validation is implemented in the event handler.
+      // also, ensure that there is an event handler for each single event
       state = applyEvent(state, event)
       persist(event) { _ ⇒
         sideEffects.foreach(applySideEffect)
       }
     case PersistAll(events) ⇒
-      // apply the event before persist so that validation exception is handled before persisting
-      // the invalid event, in case such validation is implemented in the event handler.
-      state = events.foldLeft(state)(applyEvent)
-      persistAll(scala.collection.immutable.Seq(events)) { _ ⇒
+      if (events.nonEmpty) {
+        // apply the event before persist so that validation exception is handled before persisting
+        // the invalid event, in case such validation is implemented in the event handler.
+        // also, ensure that there is an event handler for each single event
+        var count = events.size
+        state = events.foldLeft(state)(applyEvent)
+        persistAll(events) { _ ⇒
+          count -= 1
+          if (count == 0) sideEffects.foreach(applySideEffect)
+        }
+      } else {
+        // run side-effects even when no events are emitted
         sideEffects.foreach(applySideEffect)
       }
-    case PersistNothing() ⇒
-    case Unhandled() ⇒
+    case _: PersistNothing.type @unchecked ⇒
+    case _: Unhandled.type @unchecked ⇒
       super.unhandled(msg)
     case c: ChainableEffect[_, S] ⇒
       applySideEffect(c)
   }
 
   def applySideEffect(effect: ChainableEffect[_, S]): Unit = effect match {
-    case Stop()                ⇒ context.stop(self)
-    case SideEffect(callbacks) ⇒ callbacks.apply(state)
+    case _: Stop.type @unchecked ⇒ context.stop(self)
+    case SideEffect(callbacks)   ⇒ callbacks.apply(state)
   }
 }
 

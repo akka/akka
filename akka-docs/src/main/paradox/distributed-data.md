@@ -83,7 +83,7 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 When you specify to write to `n` out of `x`  nodes, the update will first replicate to `n` nodes. 
 If there are not enough Acks after 1/5th of the timeout, the update will be replicated to `n` other 
 nodes. If there are less than n nodes left all of the remaining nodes are used. Reachable nodes 
-are prefered over unreachable nodes.
+are preferred over unreachable nodes.
 
 Note that `WriteMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
 
@@ -219,7 +219,7 @@ in a 5 node cluster it writes to 3 nodes and reads from 3 nodes. In a 6 node clu
 to 4 nodes and reads from 4 nodes.
 
 You can define a minimum number of nodes for `WriteMajority` and `ReadMajority`,
-this will minimize the risk of reading steal data. Minimum cap is
+this will minimize the risk of reading stale data. Minimum cap is
 provided by minCap property of `WriteMajority` and `ReadMajority` and defines the required majority.
 If the minCap is higher then **N / 2 + 1** the minCap will be used.
 

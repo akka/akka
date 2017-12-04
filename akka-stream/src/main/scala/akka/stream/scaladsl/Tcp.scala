@@ -6,8 +6,9 @@ package akka.stream.scaladsl
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
 
-import akka.NotUsed
+import akka.{ Done, NotUsed }
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
 import akka.io.{ IO, Tcp ⇒ IoTcp }
 import akka.stream._
@@ -23,9 +24,18 @@ import scala.util.control.NoStackTrace
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
   /**
-   * * Represents a successful TCP server binding.
+   * Represents a successful TCP server binding.
+   *
+   * Not indented for user construction
+   *
+   * @param localAddress The address the server was bound to
+   * @param unbindAction a function that will trigger unbind of the server
+   * @param whenUnbound A future that is completed when the server is unbound, or failed if the server binding fails
    */
-  final case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
+  final case class ServerBinding @InternalApi private[akka] (localAddress: InetSocketAddress)(
+    private val unbindAction: () ⇒ Future[Unit],
+    val whenUnbound:          Future[Done]
+  ) {
     def unbind(): Future[Unit] = unbindAction()
   }
 
@@ -65,8 +75,10 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import Tcp._
 
+  private val settings = ActorMaterializerSettings(system)
+
   // TODO maybe this should be a new setting, like `akka.stream.tcp.bind.timeout` / `shutdown-timeout` instead?
-  val bindShutdownTimeout = ActorMaterializer()(system).settings.subscriptionTimeoutSettings.timeout
+  val bindShutdownTimeout = settings.subscriptionTimeoutSettings.timeout
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
@@ -103,7 +115,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       options,
       halfClose,
       idleTimeout,
-      bindShutdownTimeout))
+      bindShutdownTimeout,
+      settings.ioSettings))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
@@ -175,7 +188,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       localAddress,
       options,
       halfClose,
-      connectTimeout)).via(detacher[ByteString]) // must read ahead for proper completions
+      connectTimeout,
+      settings.ioSettings)).via(detacher[ByteString]) // must read ahead for proper completions
 
     idleTimeout match {
       case d: FiniteDuration ⇒ tcpFlow.join(TcpIdleTimeout(d, Some(remoteAddress)))
