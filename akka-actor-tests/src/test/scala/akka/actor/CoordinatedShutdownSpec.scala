@@ -12,6 +12,7 @@ import akka.Done
 import akka.testkit.{ AkkaSpec, TestKit }
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.CoordinatedShutdown.Phase
+import akka.actor.CoordinatedShutdown.UnknownReason
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Promise
@@ -41,6 +42,8 @@ class CoordinatedShutdownSpec extends AkkaSpec {
     }
     result
   }
+
+  case object CustomReason extends CoordinatedShutdown.Reason
 
   "CoordinatedShutdown" must {
 
@@ -151,7 +154,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
         testActor ! "C"
         Future.successful(Done)
       }
-      Await.result(co.run(), remainingOrDefault)
+      Await.result(co.run(UnknownReason), remainingOrDefault)
       receiveN(4) should ===(List("A", "B", "B", "C"))
     }
 
@@ -174,8 +177,9 @@ class CoordinatedShutdownSpec extends AkkaSpec {
         testActor ! "C"
         Future.successful(Done)
       }
-      Await.result(co.run(Some("b")), remainingOrDefault)
+      Await.result(co.run(CustomReason, Some("b")), remainingOrDefault)
       receiveN(2) should ===(List("B", "C"))
+      co.shutdownReason() should ===(Some(CustomReason))
     }
 
     "only run once" in {
@@ -186,11 +190,14 @@ class CoordinatedShutdownSpec extends AkkaSpec {
         testActor ! "A"
         Future.successful(Done)
       }
-      Await.result(co.run(), remainingOrDefault)
+      co.shutdownReason() should ===(None)
+      Await.result(co.run(CustomReason), remainingOrDefault)
+      co.shutdownReason() should ===(Some(CustomReason))
       expectMsg("A")
-      Await.result(co.run(), remainingOrDefault)
+      Await.result(co.run(UnknownReason), remainingOrDefault)
       testActor ! "done"
       expectMsg("done") // no additional A
+      co.shutdownReason() should ===(Some(CustomReason))
     }
 
     "continue after timeout or failure" in {
@@ -220,7 +227,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
         testActor ! "C"
         Future.successful(Done)
       }
-      Await.result(co.run(), remainingOrDefault)
+      Await.result(co.run(UnknownReason), remainingOrDefault)
       expectMsg("A")
       expectMsg("A")
       expectMsg("B")
@@ -241,7 +248,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
         testActor ! "C"
         Future.successful(Done)
       }
-      val result = co.run()
+      val result = co.run(UnknownReason)
       expectMsg("B")
       intercept[TimeoutException] {
         Await.result(result, remainingOrDefault)
@@ -263,7 +270,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
         }
         Future.successful(Done)
       }
-      Await.result(co.run(), remainingOrDefault)
+      Await.result(co.run(UnknownReason), remainingOrDefault)
       expectMsg("A")
       expectMsg("B")
     }
@@ -291,8 +298,9 @@ class CoordinatedShutdownSpec extends AkkaSpec {
 
     // this must be the last test, since it terminates the ActorSystem
     "terminate ActorSystem" in {
-      Await.result(CoordinatedShutdown(system).run(), 10.seconds) should ===(Done)
+      Await.result(CoordinatedShutdown(system).run(CustomReason), 10.seconds) should ===(Done)
       system.whenTerminated.isCompleted should ===(true)
+      CoordinatedShutdown(system).shutdownReason() === (Some(CustomReason))
     }
 
     "add and remove user JVM hooks with run-by-jvm-shutdown-hook = off, terminate-actor-system = off" in new JvmHookTest {

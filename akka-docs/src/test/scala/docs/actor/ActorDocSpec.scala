@@ -756,7 +756,7 @@ class ActorDocSpec extends AkkaSpec("""
     // don't run this
     def dummy(): Unit = {
       //#coordinated-shutdown-run
-      val done: Future[Done] = CoordinatedShutdown(system).run()
+      val done: Future[Done] = CoordinatedShutdown(system).run(CoordinatedShutdown.UnknownReason)
       //#coordinated-shutdown-run
     }
   }
