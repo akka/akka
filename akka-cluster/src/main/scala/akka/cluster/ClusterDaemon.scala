@@ -190,7 +190,8 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
   override def postStop(): Unit = {
     clusterShutdown.trySuccess(Done)
     if (Cluster(context.system).settings.RunCoordinatedShutdownWhenDown) {
-      coordShutdown.run()
+      // if it was stopped due to leaving CoordinatedShutdown was started earlier
+      coordShutdown.run(CoordinatedShutdown.ClusterDowningReason)
     }
   }
 
@@ -442,7 +443,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         "shutdown-after-unsuccessful-join-seed-nodes [{}]. Running CoordinatedShutdown.",
       seedNodes.mkString(", "), ShutdownAfterUnsuccessfulJoinSeedNodes)
     joinSeedNodesDeadline = None
-    CoordinatedShutdown(context.system).run()
+    CoordinatedShutdown(context.system).run(CoordinatedShutdown.ClusterDowningReason)
   }
 
   def becomeUninitialized(): Unit = {
@@ -921,7 +922,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         exitingTasksInProgress = true
         logInfo("Exiting, starting coordinated shutdown")
         selfExiting.trySuccess(Done)
-        coordShutdown.run()
+        coordShutdown.run(CoordinatedShutdown.ClusterLeavingReason)
       }
 
       if (talkback) {
@@ -1104,7 +1105,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           exitingTasksInProgress = true
           logInfo("Exiting (leader), starting coordinated shutdown")
           selfExiting.trySuccess(Done)
-          coordShutdown.run()
+          coordShutdown.run(CoordinatedShutdown.ClusterLeavingReason)
         }
 
         exitingConfirmed = exitingConfirmed.filterNot(removedExitingConfirmed)
