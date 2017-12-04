@@ -336,8 +336,6 @@ import scala.collection.generic.CanBuildFrom
   override def toString: String = "QueueSink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    var logicCallback: AsyncCallback[Output[T]] = null
-
     val stageLogic = new GraphStageLogic(shape) with InHandler with SinkQueueWithCancel[T] {
       type Received[E] = Try[Option[E]]
 
@@ -397,18 +395,17 @@ import scala.collection.generic.CanBuildFrom
       override def onUpstreamFinish(): Unit = enqueueAndNotify(Success(None))
       override def onUpstreamFailure(ex: Throwable): Unit = enqueueAndNotify(Failure(ex))
 
-      logicCallback = callback
       setHandler(in, this)
 
       // SinkQueueWithCancel impl
       override def pull(): Future[Option[T]] = {
         val p = Promise[Option[T]]
-        logicCallback.invokeWithFeedback(Pull(p))
+        callback.invokeWithFeedback(Pull(p))
           .onFailure { case NonFatal(e) ⇒ p.tryFailure(e) }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }
       override def cancel(): Unit = {
-        logicCallback.invoke(QueueSink.Cancel)
+        callback.invoke(QueueSink.Cancel)
       }
     }
 
