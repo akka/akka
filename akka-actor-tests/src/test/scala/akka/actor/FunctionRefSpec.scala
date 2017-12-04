@@ -60,7 +60,7 @@ class FunctionRefSpec extends AkkaSpec with ImplicitSender {
       val f = expectMsgType[FunctionRef]
       forwarder.watch(f)
       s ! DropForwarder(f)
-      expectMsg(Forwarded(Terminated(f)(true, false), null))
+      expectMsg(Forwarded(Terminated(f)(true, false), f))
     }
 
     "terminate when their parent terminates" in {
