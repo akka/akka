@@ -128,7 +128,7 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
       source.success(None)
 
       res.futureValue should ===(1)
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
     }
 
     "ignore and log warnings for PoisonPill and Kill messages" in {
