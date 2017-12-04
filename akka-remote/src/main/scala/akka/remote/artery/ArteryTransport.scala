@@ -357,6 +357,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .insert(Array("system", "remote-watcher"), NotUsed)
       // these belongs to cluster and should come from there
       .insert(Array("system", "cluster", "core", "daemon", "heartbeatSender"), NotUsed)
+      .insert(Array("system", "cluster", "core", "daemon", "crossDcHeartbeatSender"), NotUsed)
       .insert(Array("system", "cluster", "heartbeatReceiver"), NotUsed)
 
   private def inboundChannel = s"aeron:udp?endpoint=${_bindAddress.address.host.get}:${_bindAddress.address.port.get}"
