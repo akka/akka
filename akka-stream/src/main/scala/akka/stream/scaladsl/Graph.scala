@@ -1257,6 +1257,22 @@ private[stream] final class OrElse[T] extends GraphStage[UniformFanInShape[T, T]
 
 object GraphDSL extends GraphApply {
 
+  /**
+   * Creates a new [[Graph]] by importing the given graph list `graphs` and passing their [[Shape]]s
+   * along with the [[GraphDSL.Builder]] to the given create function.
+   */
+  def create[S <: Shape, IS <: Shape, Mat](graphs: immutable.Seq[Graph[IS, Mat]])(buildBlock: GraphDSL.Builder[immutable.Seq[Mat]] ⇒ immutable.Seq[IS] ⇒ S): Graph[S, immutable.Seq[Mat]] = {
+    require(graphs.nonEmpty, "The input list must have one or more Graph elements")
+    val builder = new GraphDSL.Builder
+    val toList = (m1: Mat) ⇒ Seq(m1)
+    val combine = (s: Seq[Mat], m2: Mat) ⇒ s :+ m2
+    val sListH = builder.add(graphs.head, toList)
+    val sListT = graphs.tail.map(g ⇒ builder.add(g, combine))
+    val s = buildBlock(builder)(immutable.Seq(sListH) ++ sListT)
+
+    new GenericGraph(s, builder.result(s))
+  }
+
   class Builder[+M] private[stream] () {
     private val unwiredIns = new mutable.HashSet[Inlet[_]]()
     private val unwiredOuts = new mutable.HashSet[Outlet[_]]()
