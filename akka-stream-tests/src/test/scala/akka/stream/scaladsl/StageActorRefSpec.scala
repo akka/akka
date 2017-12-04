@@ -73,7 +73,8 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
       val stageRef = expectMsgType[ActorRef]
       watch(stageRef)
 
-      stageRef ! Add(1)
+      stageRef ! AddAndTell(1)
+      expectMsg(1)
       source.success(None)
 
       res.futureValue should ===(1)
@@ -103,7 +104,8 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
       val stageRef = expectMsgType[ActorRef]
       watch(stageRef)
 
-      stageRef ! Add(1)
+      stageRef ! AddAndTell(1)
+      expectMsg(1)
       source.success(None)
 
       res.futureValue should ===(1)
@@ -121,7 +123,8 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
       watch(stageRef)
       unwatch(stageRef)
 
-      stageRef ! Add(1)
+      stageRef ! AddAndTell(1)
+      expectMsg(1)
       source.success(None)
 
       res.futureValue should ===(1)
