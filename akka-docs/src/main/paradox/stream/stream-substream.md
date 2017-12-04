@@ -127,7 +127,7 @@ Like the `concat` operation on `Flow`, it fully consumes one `Source` after the 
 So, there is only one substream actively running at a given time.
 
 Then once the active substream is fully consumed, the next substream can start running.
-Elements from all the substreams are concatnated to the sink.
+Elements from all the substreams are concatenated to the sink.
 
 ![stream-substream-flatMapConcat2.png](../../images/stream-substream-flatMapConcat2.png)
 

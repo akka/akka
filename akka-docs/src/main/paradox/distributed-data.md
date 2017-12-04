@@ -83,7 +83,7 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 When you specify to write to `n` out of `x`  nodes, the update will first replicate to `n` nodes. 
 If there are not enough Acks after 1/5th of the timeout, the update will be replicated to `n` other 
 nodes. If there are less than n nodes left all of the remaining nodes are used. Reachable nodes 
-are prefered over unreachable nodes.
+are preferred over unreachable nodes.
 
 Note that `WriteMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
 
