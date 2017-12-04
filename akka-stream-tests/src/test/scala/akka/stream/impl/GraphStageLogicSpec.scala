@@ -35,7 +35,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
     }
   }
 
-  class substreamEmit extends GraphStage[SourceShape[Source[Int, NotUsed]]] {
+  class SubstreamEmit extends GraphStage[SourceShape[Source[Int, NotUsed]]] {
     val out = Outlet[Source[Int, NotUsed]]("out")
     override val shape = SourceShape(out)
 
@@ -374,7 +374,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
     "give a good error message if sub source is pushed twice" in {
       intercept[Exception] {
-        Source.fromGraph(new substreamEmit()).async.runWith(Sink.ignore).futureValue
+        Source.fromGraph(new SubstreamEmit()).async.runWith(Sink.ignore).futureValue
       }.getCause.getMessage should startWith("requirement failed: Cannot push port (SubSourceOutlet(subOut)) twice, or before it being pulled")
     }
 
