@@ -726,7 +726,7 @@ object Uri {
           def intValueOfHexChar(j: Int) = {
             val c = string.charAt(j)
             if (HEXDIG(c)) CharUtils.hexValue(c)
-            else throw new IllegalArgumentException("Illegal percent-encoding at pos " + j)
+            else fail("Illegal percent-encoding at pos " + j)
           }
           intValueOfHexChar(i) * 16 + intValueOfHexChar(i + 1)
         }
@@ -734,6 +734,12 @@ object Uri {
         var lastPercentSignIndexPlus3 = ix + 3
         while (lastPercentSignIndexPlus3 < string.length && string.charAt(lastPercentSignIndexPlus3) == '%')
           lastPercentSignIndexPlus3 += 3
+
+        // check % and 2 HEX string at last %.
+        if (string.length < lastPercentSignIndexPlus3) {
+          fail("Illegal percent-encoding at pos " + (lastPercentSignIndexPlus3 - 3))
+        }
+
         val bytesCount = (lastPercentSignIndexPlus3 - ix) / 3
         val bytes = new Array[Byte](bytesCount)
 

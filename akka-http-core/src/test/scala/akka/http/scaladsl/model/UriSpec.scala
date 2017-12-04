@@ -270,6 +270,12 @@ class UriSpec extends WordSpec with Matchers {
       Path("/abc/def/").dropChars(8) shouldEqual Path("/")
       Path("/abc/def/").dropChars(9) shouldEqual Empty
     }
+
+    "not accept illegal parcent-encoding" in {
+      the[IllegalUriException] thrownBy Path("/example/%12%")
+      the[IllegalUriException] thrownBy Path("/example/%12%1")
+      the[IllegalUriException] thrownBy Path("/example/%12%1V")
+    }
   }
 
   "Uri.Query instances" should {
@@ -595,6 +601,14 @@ class UriSpec extends WordSpec with Matchers {
           "Illegal URI reference: Invalid input 'G', expected HEXDIG (line 1, column 13)",
           "http://use%2G@host\n" +
             "            ^")
+      }
+
+      // illegal percent-encoding ends with %
+      the[IllegalUriException] thrownBy Uri("http://www.example.com/%CE%B8%") shouldBe {
+        IllegalUriException(
+          "Illegal URI reference: Unexpected end of input, expected HEXDIG (line 1, column 31)",
+          "http://www.example.com/%CE%B8%\n" +
+            "                              ^")
       }
 
       // illegal path
