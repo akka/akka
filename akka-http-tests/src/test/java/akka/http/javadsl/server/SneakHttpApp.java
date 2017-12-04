@@ -28,7 +28,7 @@ public class SneakHttpApp extends MinimalHttpApp {
   @Override
   protected void postHttpBinding(ServerBinding binding) {
     postBindingCalled.set(true);
-    bindingPromise.complete(Done.getInstance());
+    bindingPromise.complete(binding);
   }
 
   @Override

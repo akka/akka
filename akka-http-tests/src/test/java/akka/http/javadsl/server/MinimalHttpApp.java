@@ -7,7 +7,7 @@ package akka.http.javadsl.server;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ServerBinding;
-import scala.runtime.BoxedUnit;
+import akka.http.scaladsl.Http;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CompletableFuture;
@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 public class MinimalHttpApp extends HttpApp {
 
   CompletableFuture<Done> shutdownTrigger = new CompletableFuture<>();
-  CompletableFuture<Done> bindingPromise = new CompletableFuture<>();
+  CompletableFuture<ServerBinding> bindingPromise = new CompletableFuture<>();
 
 
   public void shutdown() {
@@ -32,7 +32,7 @@ public class MinimalHttpApp extends HttpApp {
   @Override
   protected void postHttpBinding(ServerBinding binding) {
     super.postHttpBinding(binding);
-    bindingPromise.complete(Done.getInstance());
+    bindingPromise.complete(binding);
   }
 
   @Override
