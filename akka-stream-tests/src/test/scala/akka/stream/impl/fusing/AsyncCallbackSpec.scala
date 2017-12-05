@@ -5,14 +5,15 @@ package akka.stream.impl.fusing
 
 import akka.Done
 import akka.actor.ActorRef
-import akka.stream.stage._
 import akka.stream._
 import akka.stream.scaladsl.{ Keep, Sink, Source }
+import akka.stream.stage._
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit.{ AkkaSpec, TestProbe }
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{ Await, Future, Promise }
+import scala.language.reflectiveCalls
 
 class AsyncCallbackSpec extends AkkaSpec {
 
@@ -235,7 +236,58 @@ class AsyncCallbackSpec extends AkkaSpec {
 
       val feedbakF = callback.invokeWithFeedback("fail-the-stage")
       val failure = feedbakF.failed.futureValue
-      failure shouldBe a[StreamDetachedException] // we can't capture the exception in this case
+      failure shouldBe a[StreamDetachedException]
+    }
+
+    "behave with multiple async callbacks" in {
+      import system.dispatcher
+
+      class ManyAsyncCallbacksStage(probe: ActorRef) extends GraphStageWithMaterializedValue[SourceShape[String], Set[AsyncCallback[AnyRef]]] {
+        val out = Outlet[String]("out")
+        val shape = SourceShape(out)
+        def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+          val logic = new GraphStageLogic(shape) {
+            val callbacks = (0 to 10).map(_ ⇒ getAsyncCallback[AnyRef](probe ! _)).toSet
+            setHandler(out, new OutHandler {
+              def onPull(): Unit = ()
+            })
+          }
+          (logic, logic.callbacks)
+        }
+      }
+
+      val acbProbe = TestProbe()
+
+      val out = TestSubscriber.probe[String]()
+
+      val acbs = Source.fromGraph(new ManyAsyncCallbacksStage(acbProbe.ref))
+        .toMat(Sink.fromSubscriber(out))(Keep.left)
+        .run()
+
+      val happyPathFeedbacks =
+        acbs.map(acb ⇒
+          Future { acb.invokeWithFeedback("bö") }.flatMap(identity)
+        )
+      Future.sequence(happyPathFeedbacks).futureValue // will throw on fail or timeout on not completed
+
+      for (_ ← 0 to 10) acbProbe.expectMsg("bö")
+
+      val (half, otherHalf) = acbs.splitAt(4)
+      val firstHalfFutures = half.map(_.invokeWithFeedback("ba"))
+      out.cancel() // cancel in the middle
+      val otherHalfFutures = otherHalf.map(_.invokeWithFeedback("ba"))
+      val unhappyPath = firstHalfFutures ++ otherHalfFutures
+
+      // all futures should either be completed or failed with StreamDetachedException
+      unhappyPath.foreach { future ⇒
+        try {
+          val done = Await.result(future, remainingOrDefault)
+          done should ===(Done)
+        } catch {
+          case _: StreamDetachedException ⇒ // this is fine
+        }
+      }
+
     }
 
   }
