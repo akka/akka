@@ -54,6 +54,8 @@ status shouldEqual 200
 
 The following inspectors are defined:
 
+### Table of Inspectors
+
 |Inspector                                    | Description                                                                                                                                                         |
 |---------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |`charset: HttpCharset`                       | Identical to `contentType.charset`                                                                                                                                  |
