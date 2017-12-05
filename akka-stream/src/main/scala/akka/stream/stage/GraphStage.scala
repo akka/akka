@@ -1076,7 +1076,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     // is called from the owning [[GraphStage]]
     private[stage] def onStop(outstandingPromises: Set[Promise[Done]]): Unit = {
       if (outstandingPromises.nonEmpty) {
-        lazy val detachedException = new StreamDetachedException()
+        val detachedException = new StreamDetachedException()
         val iterator = outstandingPromises.iterator
         while (iterator.hasNext) {
           iterator.next().tryFailure(detachedException)
