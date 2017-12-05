@@ -2,7 +2,7 @@
 
 ## 10.0.11
 
-See the [announcement](http://akka.io/blog/news/2017/12/01/akka-http-10.0.11-released.html) and
+See the [announcement](https://akka.io/blog/news/2017/12/01/akka-http-10.0.11-released.html) and
 closed tickets on the [10.0.11 milestone](https://github.com/akka/akka-http/milestone/31?closed=1).
 
 This release adds the long awaited akka-http-caching module inspired by spray-caching.
