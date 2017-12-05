@@ -160,8 +160,12 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
         CoordinatedShutdown(sys2).run()
         probe.expectMsgType[MemberLeft]
-        probe.expectMsgType[MemberExited]
-        probe.expectMsgType[MemberRemoved]
+        // MemberExited might not be published before MemberRemoved
+        val removed = probe.fishForMessage() {
+          case _: MemberExited  ⇒ false
+          case _: MemberRemoved ⇒ true
+        }.asInstanceOf[MemberRemoved]
+        removed.previousStatus should ===(MemberStatus.Exiting)
       } finally {
         shutdown(sys2)
       }
@@ -183,8 +187,12 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
         Cluster(sys2).leave(Cluster(sys2).selfAddress)
         probe.expectMsgType[MemberLeft]
-        probe.expectMsgType[MemberExited]
-        probe.expectMsgType[MemberRemoved]
+        // MemberExited might not be published before MemberRemoved
+        val removed = probe.fishForMessage() {
+          case _: MemberExited  ⇒ false
+          case _: MemberRemoved ⇒ true
+        }.asInstanceOf[MemberRemoved]
+        removed.previousStatus should ===(MemberStatus.Exiting)
         Await.result(sys2.whenTerminated, 10.seconds)
         Cluster(sys2).isTerminated should ===(true)
       } finally {
