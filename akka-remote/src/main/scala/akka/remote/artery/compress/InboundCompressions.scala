@@ -58,7 +58,7 @@ private[remote] final class InboundCompressionsImpl(
   // TODO would be nice if we can cleanup the tombstones
   // FIXME we should be able to remove the tombstones easily now
   private[this] val _actorRefsIns = new Long2ObjectHashMap[Option[InboundActorRefCompression]]()
-  private[this] val _inboundActorRefsLog = Logging(system, classOf[InboundManifestCompression])
+  private[this] val _inboundActorRefsLog = Logging(system, classOf[InboundActorRefCompression])
   private val createInboundActorRefsForOrigin = new LongFunction[Option[InboundActorRefCompression]] {
     override def apply(originUid: Long): Option[InboundActorRefCompression] = {
       val actorRefHitters = new TopHeavyHitters[ActorRef](settings.ActorRefs.Max)
@@ -329,7 +329,8 @@ private[remote] abstract class InboundCompression[T >: Null](
 
         case _ if incomingVersionIsAdvertisementInProgress(incomingTableVersion) ⇒
           log.debug(
-            "Received first value from originUid [{}] compressed using the advertised compression table, flipping to it (version: {})",
+            "Received first value from originUid [{}] compressed using the advertised compression table, " +
+              "flipping to it (version: {})",
             originUid, current.nextTable.version)
           confirmAdvertisement(incomingTableVersion)
           decompressInternal(incomingTableVersion, idx, attemptCounter + 1) // recurse
@@ -404,7 +405,7 @@ private[remote] abstract class InboundCompression[T >: Null](
               resendCount = 0
               advertiseCompressionTable(association, table)
             } else
-              log.debug("Inbound compression table for originUid [{}] not changed, no need to advertise same.", originUid)
+              log.debug("{} for originUid [{}] not changed, no need to advertise same.", Logging.simpleName(tables.activeTable), originUid)
 
           case OptionVal.None ⇒
             // otherwise it's too early, association not ready yet.
@@ -451,7 +452,7 @@ private[remote] abstract class InboundCompression[T >: Null](
   }
 
   override def toString =
-    s"""${getClass.getSimpleName}(countMinSketch: $cms, heavyHitters: $heavyHitters)"""
+    s"""${Logging.simpleName(getClass)}(countMinSketch: $cms, heavyHitters: $heavyHitters)"""
 
 }
 
