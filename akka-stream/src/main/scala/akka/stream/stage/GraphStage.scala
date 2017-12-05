@@ -1103,7 +1103,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       def addToWaiting(): Boolean = {
         val previous = asyncCallbacksInProgress.get()
         if (previous != null) {
-          val updated = previous + (this -> (previous(this) + promise))
+          val updated = previous.updated(this, previous(this) + promise)
           if (!asyncCallbacksInProgress.compareAndSet(previous, updated)) addToWaiting()
           else true
         } else {
@@ -1126,7 +1126,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           val newSet = previous(this) - promise
           val updated =
             if (newSet.isEmpty) previous - this // no outstanding promises, remove stage from map to avoid leak
-            else previous + (this -> newSet)
+            else previous.updated(this, newSet)
           if (!asyncCallbacksInProgress.compareAndSet(previous, updated)) removeFromWaiting()
         }
       }
