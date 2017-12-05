@@ -8,11 +8,7 @@ import akka.actor.ActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.ControlMessage
 
-// FIXME serialization
 /** INTERNAL API */
-/**
- * INTERNAL API
- */
 private[remote] object CompressionProtocol {
 
   /** INTERNAL API */

@@ -7,7 +7,6 @@ import scala.concurrent.duration._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import java.util.concurrent._
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 import scala.concurrent.Future
@@ -99,6 +98,54 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
    */
   val PhaseActorSystemTerminate = "actor-system-terminate"
 
+  /**
+   * Reason for the shutdown, which can be used by tasks in case they need to do
+   * different things depending on what caused the shutdown. There are some
+   * predefined reasons, but external libraries applications may also define
+   * other reasons.
+   */
+  trait Reason
+
+  /**
+   * Scala API: The reason for the shutdown was unknown. Needed for backwards compatibility.
+   */
+  case object UnknownReason extends Reason
+
+  /**
+   * Java API: The reason for the shutdown was unknown. Needed for backwards compatibility.
+   */
+  def unknownReason: Reason = UnknownReason
+
+  /**
+   * Scala API: The shutdown was initiated by a JVM shutdown hook, e.g. triggered by SIGTERM.
+   */
+  object JvmExitReason extends Reason
+
+  /**
+   * Java API: The shutdown was initiated by a JVM shutdown hook, e.g. triggered by SIGTERM.
+   */
+  def jvmExitReason: Reason = JvmExitReason
+
+  /**
+   * Scala API: The shutdown was initiated by Cluster downing.
+   */
+  object ClusterDowningReason extends Reason
+
+  /**
+   * Java API: The shutdown was initiated by Cluster downing.
+   */
+  def clusterDowningReason: Reason = ClusterDowningReason
+
+  /**
+   * Scala API: The shutdown was initiated by Cluster leaving.
+   */
+  object ClusterLeavingReason extends Reason
+
+  /**
+   * Java API: The shutdown was initiated by Cluster leaving.
+   */
+  def clusterLeavingReason: Reason = ClusterLeavingReason
+
   @volatile private var runningJvmHook = false
 
   override def get(system: ActorSystem): CoordinatedShutdown = super.get(system)
@@ -159,7 +206,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   }
 
   private def initJvmHook(system: ActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
-    val runByJvmShutdownHook = conf.getBoolean("run-by-jvm-shutdown-hook")
+    val runByJvmShutdownHook = system.settings.JvmShutdownHooks && conf.getBoolean("run-by-jvm-shutdown-hook")
     if (runByJvmShutdownHook) {
       coord.actorSystemJvmHook = OptionVal.Some(coord.addCancellableJvmShutdownHook {
         runningJvmHook = true // avoid System.exit from PhaseActorSystemTerminate task
@@ -168,7 +215,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
           try {
             // totalTimeout will be 0 when no tasks registered, so at least 3.seconds
             val totalTimeout = coord.totalTimeout().max(3.seconds)
-            Await.ready(coord.run(), totalTimeout)
+            Await.ready(coord.run(JvmExitReason), totalTimeout)
           } catch {
             case NonFatal(e) ⇒
               coord.log.warning(
@@ -246,6 +293,9 @@ final class CoordinatedShutdown private[akka] (
   system: ExtendedActorSystem,
   phases: Map[String, CoordinatedShutdown.Phase]) extends Extension {
   import CoordinatedShutdown.Phase
+  import CoordinatedShutdown.Reason
+  import CoordinatedShutdown.UnknownReason
+  import CoordinatedShutdown.JvmExitReason
 
   /** INTERNAL API */
   private[akka] val log = Logging(system, getClass)
@@ -253,10 +303,10 @@ final class CoordinatedShutdown private[akka] (
   /** INTERNAL API */
   private[akka] val orderedPhases = CoordinatedShutdown.topologicalSort(phases)
   private val tasks = new ConcurrentHashMap[String, Vector[(String, () ⇒ Future[Done])]]
-  private val runStarted = new AtomicBoolean(false)
+  private val runStarted = new AtomicReference[Option[Reason]](None)
   private val runPromise = Promise[Done]()
 
-  private var _jvmHooksLatch = new AtomicReference[CountDownLatch](new CountDownLatch(0))
+  private val _jvmHooksLatch = new AtomicReference[CountDownLatch](new CountDownLatch(0))
   @volatile private var actorSystemJvmHook: OptionVal[Cancellable] = OptionVal.None
 
   /**
@@ -307,32 +357,50 @@ final class CoordinatedShutdown private[akka] (
     addTask(phase, taskName)(() ⇒ task.get().toScala)
 
   /**
+   * The `Reason` for the shutdown as passed to the `run` method. `None` if the shutdown
+   * has not been started.
+   */
+  def shutdownReason(): Option[Reason] = runStarted.get()
+
+  /**
+   * The `Reason` for the shutdown as passed to the `run` method. `Optional.empty` if the shutdown
+   * has not been started.
+   */
+  def getShutdownReason(): Optional[Reason] = shutdownReason().asJava
+
+  /**
    * Scala API: Run tasks of all phases. The returned
    * `Future` is completed when all tasks have been completed,
    * or there is a failure when recovery is disabled.
    *
-   * It's safe to call this method multiple times. It will only run the once.
+   * It's safe to call this method multiple times. It will only run the shutdown sequence once.
    */
-  def run(): Future[Done] = run(None)
+  def run(reason: Reason): Future[Done] = run(reason, None)
+
+  @deprecated("Use the method with `reason` parameter instead", since = "2.5.8")
+  def run(): Future[Done] = run(UnknownReason)
 
   /**
    * Java API: Run tasks of all phases. The returned
    * `CompletionStage` is completed when all tasks have been completed,
    * or there is a failure when recovery is disabled.
    *
-   * It's safe to call this method multiple times. It will only run the once.
+   * It's safe to call this method multiple times. It will only run the shutdown sequence once.
    */
-  def runAll(): CompletionStage[Done] = run().toJava
+  def runAll(reason: Reason): CompletionStage[Done] = run(reason).toJava
+
+  @deprecated("Use the method with `reason` parameter instead", since = "2.5.8")
+  def runAll(): CompletionStage[Done] = runAll(UnknownReason)
 
   /**
    * Scala API: Run tasks of all phases including and after the given phase.
    * The returned `Future` is completed when all such tasks have been completed,
    * or there is a failure when recovery is disabled.
    *
-   * It's safe to call this method multiple times. It will only run the once.
+   * It's safe to call this method multiple times. It will only run shutdown sequence once.
    */
-  def run(fromPhase: Option[String]): Future[Done] = {
-    if (runStarted.compareAndSet(false, true)) {
+  def run(reason: Reason, fromPhase: Option[String]): Future[Done] = {
+    if (runStarted.compareAndSet(None, Some(reason))) {
       import system.dispatcher
       val debugEnabled = log.isDebugEnabled
       def loop(remainingPhases: List[String]): Future[Done] = {
@@ -409,15 +477,23 @@ final class CoordinatedShutdown private[akka] (
     runPromise.future
   }
 
+  @deprecated("Use the method with `reason` parameter instead", since = "2.5.8")
+  def run(fromPhase: Option[String]): Future[Done] =
+    run(UnknownReason, fromPhase)
+
   /**
    * Java API: Run tasks of all phases including and after the given phase.
    * The returned `CompletionStage` is completed when all such tasks have been completed,
    * or there is a failure when recovery is disabled.
    *
-   * It's safe to call this method multiple times. It will only run once.
+   * It's safe to call this method multiple times. It will only run the shutdown sequence once.
    */
+  def run(reason: Reason, fromPhase: Optional[String]): CompletionStage[Done] =
+    run(reason, fromPhase.asScala).toJava
+
+  @deprecated("Use the method with `reason` parameter instead", since = "2.5.8")
   def run(fromPhase: Optional[String]): CompletionStage[Done] =
-    run(fromPhase.asScala).toJava
+    run(UnknownReason, fromPhase)
 
   /**
    * The configured timeout for a given `phase`.
@@ -462,7 +538,7 @@ final class CoordinatedShutdown private[akka] (
    * shutdown hooks the standard library JVM shutdown hooks APIs are better suited.
    */
   @tailrec def addCancellableJvmShutdownHook[T](hook: ⇒ T): Cancellable = {
-    if (!runStarted.get) {
+    if (runStarted.get == None) {
       val currentLatch = _jvmHooksLatch.get
       val newLatch = new CountDownLatch(currentLatch.getCount.toInt + 1)
       if (_jvmHooksLatch.compareAndSet(currentLatch, newLatch)) {

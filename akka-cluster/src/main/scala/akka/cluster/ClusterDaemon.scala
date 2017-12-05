@@ -176,7 +176,7 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterLeave, "leave") {
     val sys = context.system
     () ⇒
-      if (Cluster(sys).isTerminated)
+      if (Cluster(sys).isTerminated || Cluster(sys).selfMember.status == Down)
         Future.successful(Done)
       else {
         implicit val timeout = Timeout(coordShutdown.timeout(CoordinatedShutdown.PhaseClusterLeave))
@@ -190,8 +190,8 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
   override def postStop(): Unit = {
     clusterShutdown.trySuccess(Done)
     if (Cluster(context.system).settings.RunCoordinatedShutdownWhenDown) {
-      // run the last phases e.g. if node was downed (not leaving)
-      coordShutdown.run(Some(CoordinatedShutdown.PhaseClusterShutdown))
+      // if it was stopped due to leaving CoordinatedShutdown was started earlier
+      coordShutdown.run(CoordinatedShutdown.ClusterDowningReason)
     }
   }
 
@@ -325,7 +325,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExitingDone, "exiting-completed") {
     val sys = context.system
     () ⇒
-      if (Cluster(sys).isTerminated)
+      if (Cluster(sys).isTerminated || Cluster(sys).selfMember.status == Down)
         Future.successful(Done)
       else {
         implicit val timeout = Timeout(coordShutdown.timeout(CoordinatedShutdown.PhaseClusterExitingDone))
@@ -443,7 +443,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         "shutdown-after-unsuccessful-join-seed-nodes [{}]. Running CoordinatedShutdown.",
       seedNodes.mkString(", "), ShutdownAfterUnsuccessfulJoinSeedNodes)
     joinSeedNodesDeadline = None
-    CoordinatedShutdown(context.system).run()
+    CoordinatedShutdown(context.system).run(CoordinatedShutdown.ClusterDowningReason)
   }
 
   def becomeUninitialized(): Unit = {
@@ -922,7 +922,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         exitingTasksInProgress = true
         logInfo("Exiting, starting coordinated shutdown")
         selfExiting.trySuccess(Done)
-        coordShutdown.run()
+        coordShutdown.run(CoordinatedShutdown.ClusterLeavingReason)
       }
 
       if (talkback) {
@@ -1105,7 +1105,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           exitingTasksInProgress = true
           logInfo("Exiting (leader), starting coordinated shutdown")
           selfExiting.trySuccess(Done)
-          coordShutdown.run()
+          coordShutdown.run(CoordinatedShutdown.ClusterLeavingReason)
         }
 
         exitingConfirmed = exitingConfirmed.filterNot(removedExitingConfirmed)

@@ -432,7 +432,8 @@ private[stream] object Collect {
       private lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       private val ZeroHandler: OutHandler with InHandler = new OutHandler with InHandler {
-        override def onPush(): Unit = ()
+        override def onPush(): Unit =
+          throw new IllegalStateException("No push should happen before zero value has been consumed")
 
         override def onPull(): Unit = {
           push(out, current)
@@ -507,7 +508,16 @@ private[stream] object Collect {
         }
       }
 
-      override def onUpstreamFinish(): Unit = {}
+      override def onUpstreamFinish(): Unit = {
+        if (current == zero) {
+          eventualCurrent.value match {
+            case Some(Success(`zero`)) ⇒
+              // #24036 upstream completed without emitting anything but after zero was emitted downstream
+              completeStage()
+            case _ ⇒ // in all other cases we will get a complete when the future completes
+          }
+        }
+      }
 
       override val toString: String = s"ScanAsync.Logic(completed=${eventualCurrent.isCompleted})"
     }

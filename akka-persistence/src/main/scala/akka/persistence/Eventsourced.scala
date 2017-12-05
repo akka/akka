@@ -42,11 +42,20 @@ private[persistence] object Eventsourced {
  *
  * Scala API and implementation details of [[PersistentActor]] and [[AbstractPersistentActor]].
  */
-private[persistence] trait Eventsourced extends Snapshotter with PersistenceStash with PersistenceIdentity with PersistenceRecovery {
+private[persistence] trait Eventsourced extends Snapshotter with PersistenceStash
+  with PersistenceIdentity with PersistenceRecovery {
   import JournalProtocol._
   import SnapshotProtocol.LoadSnapshotResult
   import SnapshotProtocol.LoadSnapshotFailed
   import Eventsourced._
+
+  {
+    val interfaces = getClass.getInterfaces
+    val i = interfaces.indexOf(classOf[PersistentActor])
+    val j = interfaces.indexOf(classOf[akka.actor.Timers])
+    if (i != -1 && j != -1 && i < j)
+      throw new IllegalStateException("use Timers with PersistentActor, instead of PersistentActor with Timers")
+  }
 
   private val extension = Persistence(context.system)
 

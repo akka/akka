@@ -467,8 +467,8 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     val m3 = m1.mergeDelta(m2.delta.get)
     val m4 = m1.merge(m2)
 
-    m3.underlying.values("a").elements should ===(Set()) // tombstone for 'a' - but we can probably optimize that away, read on
-    m4.underlying.values("a").elements should ===(Set()) // tombstone for 'a' - but we can probably optimize that away, read on
+    m3.underlying.values.contains("a") should be(false) // tombstone for 'a' has been optimized away at the end of the mergeDelta
+    m4.underlying.values.contains("a") should be(false) // tombstone for 'a' has been optimized away at the end of the merge
 
     val m5 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A1"))
     (m3 mergeDelta m5.delta.get).entries("a") should ===(Set("A1"))
@@ -489,8 +489,8 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     val um3 = um1.mergeDelta(um2.delta.get)
     val um4 = um1.merge(um2)
 
-    um3.underlying.values("a").elements should ===(Set()) // tombstone for 'a' - but we can probably optimize that away, read on
-    um4.underlying.values("a").elements should ===(Set()) // tombstone for 'a' - but we can probably optimize that away, read on
+    um3.underlying.values.contains("a") should be(false) // tombstone for 'a' has been optimized away at the end of the mergeDelta
+    um4.underlying.values.contains("a") should be(false) // tombstone for 'a' has been optimized away at the end of the merge
 
     val um5 = ORMultiMap.emptyWithValueDeltas[String, String].addBinding(node1, "a", "A1")
     (um3 mergeDelta um5.delta.get).entries("a") should ===(Set("A1"))
@@ -518,11 +518,9 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     tm3.mergeDelta(tm2.delta.get).entries should ===(Map.empty[String, String]) // no tombstone - update delta could not be applied
     tm3.merge(tm2).entries should ===(Map.empty[String, String])
 
-    // This situation gives us possibility of removing the impact of tombstones altogether, as the only valid value for tombstone
-    // created by means of either API call or application of delta propagation would be Set()
-    // then the tombstones being only empty sets can be entirely cleared up
-    // because the merge delta operation will use in that case the natural zero from the delta.
-    // Thus in case of valid API usage and normal operation of delta propagation no tombstones will be created.
+    // The only valid value for tombstone created by means of either API call or application of delta propagation is Set()
+    // which is then garbage collected at every `merge` and `mergeDelta` operation.
+    // Hence in the case of valid API usage and normal operation of delta propagation no tombstones will be permanently created.
   }
 
   "have unapply extractor" in {
