@@ -407,7 +407,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def settings: ArterySettings = provider.remoteSettings.Artery
 
   override def start(): Unit = {
-    Runtime.getRuntime.addShutdownHook(shutdownHook)
+    if (system.settings.JvmShutdownHooks)
+      Runtime.getRuntime.addShutdownHook(shutdownHook)
+
     startMediaDriver()
     startAeron()
     topLevelFREvents.loFreq(Transport_AeronStarted, NoMetaData)
@@ -877,7 +879,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def shutdown(): Future[Done] = {
     if (hasBeenShutdown.compareAndSet(false, true)) {
       log.debug("Shutting down [{}]", localAddress)
-      Runtime.getRuntime.removeShutdownHook(shutdownHook)
+      if (system.settings.JvmShutdownHooks)
+        Runtime.getRuntime.removeShutdownHook(shutdownHook)
       val allAssociations = associationRegistry.allAssociations
       val flushing: Future[Done] =
         if (allAssociations.isEmpty) Future.successful(Done)

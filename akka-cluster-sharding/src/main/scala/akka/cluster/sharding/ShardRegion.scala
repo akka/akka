@@ -406,8 +406,12 @@ private[akka] class ShardRegion(
   CoordinatedShutdown(context.system).addTask(
     CoordinatedShutdown.PhaseClusterShardingShutdownRegion,
     "region-shutdown") { () ⇒
-      self ! GracefulShutdown
-      gracefulShutdownProgress.future
+      if (cluster.isTerminated || cluster.selfMember.status == MemberStatus.Down) {
+        Future.successful(Done)
+      } else {
+        self ! GracefulShutdown
+        gracefulShutdownProgress.future
+      }
     }
 
   // subscribe to MemberEvent, re-subscribe when restart

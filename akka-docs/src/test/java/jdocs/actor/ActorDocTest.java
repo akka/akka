@@ -832,7 +832,8 @@ public class ActorDocTest extends AbstractJavaTest {
     // don't run this
     if (false) {
       //#coordinated-shutdown-run
-      CompletionStage<Done> done = CoordinatedShutdown.get(system).runAll();
+      CompletionStage<Done> done = CoordinatedShutdown.get(system).runAll(
+          CoordinatedShutdown.unknownReason());
       //#coordinated-shutdown-run
     }
   }
