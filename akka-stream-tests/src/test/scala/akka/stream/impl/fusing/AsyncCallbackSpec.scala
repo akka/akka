@@ -236,7 +236,7 @@ class AsyncCallbackSpec extends AkkaSpec {
 
       val feedbakF = callback.invokeWithFeedback("fail-the-stage")
       val failure = feedbakF.failed.futureValue
-      failure shouldBe a[StreamDetachedException] // we can't capture the exception in this case
+      failure shouldBe a[StreamDetachedException]
     }
 
     "behave with multiple async callbacks" in {

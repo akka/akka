@@ -1076,7 +1076,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     // is called from the owning [[GraphStage]]
     private[stage] def onStop(outstandingPromises: Set[Promise[Done]]): Unit = {
       if (outstandingPromises.nonEmpty) {
-        val detachedException = new StreamDetachedException()
+        val detachedException = streamDetatchedException
         val iterator = outstandingPromises.iterator
         while (iterator.hasNext) {
           iterator.next().tryFailure(detachedException)
@@ -1114,7 +1114,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       if (addToWaiting())
         invokeWithPromise(event, promise).future
       else
-        Future.failed(new StreamDetachedException())
+        Future.failed(streamDetatchedException)
     }
 
     // removes the promise from the callbacks in promise on complete, called from onComplete
@@ -1154,7 +1154,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     private def failPromiseOnComplete(promise: Promise[Done]): Promise[Done] = {
       onFeedbackCompleted(promise)
-      promise.tryFailure(new StreamDetachedException("Stage stopped before async invocation was processed"))
+      promise.tryFailure(streamDetatchedException)
       promise
     }
 
@@ -1176,6 +1176,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       }
       internalInvoke(event)
     }
+
+    private def streamDetatchedException =
+      new StreamDetachedException(s"Stage with GraphStageLogic ${this} stopped before async invocation was processed")
+
   }
 
   /**
