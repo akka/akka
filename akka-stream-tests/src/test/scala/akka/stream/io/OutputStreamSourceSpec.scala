@@ -160,7 +160,10 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       s.cancel()
       sourceProbe.expectMsg(GraphStageMessages.DownstreamFinish)
-      the[Exception] thrownBy outputStream.write(bytesArray) shouldBe a[IOException]
+
+      awaitAssert {
+        the[Exception] thrownBy outputStream.write(bytesArray) shouldBe a[IOException]
+      }
     }
 
     "fail to materialize with zero sized input buffer" in {
