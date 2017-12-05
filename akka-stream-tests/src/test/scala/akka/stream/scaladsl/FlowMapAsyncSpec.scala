@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import java.util.concurrent.{ LinkedBlockingQueue, ThreadLocalRandom }
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.stream.ActorAttributes.supervisionStrategy
+import akka.stream.ActorAttributes.{ SupervisionStrategy, supervisionStrategy }
 import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.ReactiveStreamsCompliance
@@ -348,6 +348,48 @@ class FlowMapAsyncSpec extends StreamSpec {
       } finally {
         timer.interrupt()
       }
+    }
+
+    "not invoke the decider twice for the same failed future" in {
+      import system.dispatcher
+      val failCount = new AtomicInteger(0)
+      val result = Source(List(true, false))
+        .mapAsync(1)(elem ⇒
+          Future {
+            if (elem) throw TE("this has gone too far")
+            else elem
+          }
+        ).addAttributes(supervisionStrategy {
+          case TE("this has gone too far") ⇒
+            failCount.incrementAndGet()
+            Supervision.resume
+          case _ ⇒ Supervision.stop
+        })
+        .runWith(Sink.seq)
+
+      result.futureValue should ===(Seq(false))
+      failCount.get() should ===(1)
+    }
+
+    "not invoke the decider twice for the same failure to produce a future" in {
+      import system.dispatcher
+      val failCount = new AtomicInteger(0)
+      val result = Source(List(true, false))
+        .mapAsync(1)(elem ⇒
+          if (elem) throw TE("this has gone too far")
+          else Future {
+            elem
+          }
+        ).addAttributes(supervisionStrategy {
+          case TE("this has gone too far") ⇒
+            failCount.incrementAndGet()
+            Supervision.resume
+          case _ ⇒ Supervision.stop
+        })
+        .runWith(Sink.seq)
+
+      result.futureValue should ===(Seq(false))
+      failCount.get() should ===(1)
     }
 
   }
