@@ -448,8 +448,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       it.chasePull(connection)
     } else {
       // Detailed error information should not add overhead to the hot path
-      require(!isClosed(in), s"Cannot pull closed port ($in)")
-      require(!hasBeenPulled(in), s"Cannot pull port ($in) twice")
+      if (isClosed(in)) throw new IllegalArgumentException(s"Cannot pull closed port ($in)")
+      if (hasBeenPulled(in)) throw new IllegalArgumentException(s"Cannot pull port ($in) twice")
 
       // There were no errors, the pull was simply ignored as the target stage already closed its port. We
       // still need to track proper state though.
@@ -488,7 +488,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       elem.asInstanceOf[T]
     } else {
       // Slow path
-      require(isAvailable(in), s"Cannot get element from already empty input port ($in)")
+      if (!isAvailable(in)) throw new IllegalArgumentException(s"Cannot get element from already empty input port ($in)")
       val failed = connection.slot.asInstanceOf[Failed]
       val elem = failed.previousElem.asInstanceOf[T]
       connection.slot = Failed(failed.ex, Empty)
@@ -552,8 +552,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
       // Detailed error information should not add overhead to the hot path
       ReactiveStreamsCompliance.requireNonNullElement(elem)
-      require(!isClosed(out), s"Cannot push closed port ($out)")
-      require(isAvailable(out), s"Cannot push port ($out) twice, or before it being pulled")
+      if (isClosed(out)) throw new IllegalArgumentException(s"Cannot push closed port ($out)")
+      if (!isAvailable(out)) throw new IllegalArgumentException(s"Cannot push port ($out) twice, or before it being pulled")
 
       // No error, just InClosed caused the actual pull to be ignored, but the status flag still needs to be flipped
       connection.portState = portState ^ PushStartFlip
@@ -1273,15 +1273,15 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     def hasBeenPulled: Boolean = pulled && !isClosed
 
     def grab(): T = {
-      require(elem != null, s"cannot grab element from port ($this) when data have not yet arrived")
+      if (elem == null) throw new IllegalArgumentException(s"cannot grab element from port ($this) when data have not yet arrived")
       val ret = elem
       elem = null.asInstanceOf[T]
       ret
     }
 
     def pull(): Unit = {
-      require(!pulled, s"cannot pull port ($this) twice")
-      require(!closed, s"cannot pull closed port ($this) ")
+      if (pulled) throw new IllegalArgumentException(s"cannot pull port ($this) twice")
+      if (closed) throw new IllegalArgumentException(s"cannot pull closed port ($this)")
       pulled = true
       _sink.pullSubstream()
     }
@@ -1361,7 +1361,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
      * Push to this output port.
      */
     def push(elem: T): Unit = {
-      require(isAvailable, s"Cannot push port ($this) twice, or before it being pulled")
+      if (!isAvailable) throw new IllegalArgumentException(s"Cannot push port ($this) twice, or before it being pulled")
       available = false
       _source.pushSubstream(elem)
     }
