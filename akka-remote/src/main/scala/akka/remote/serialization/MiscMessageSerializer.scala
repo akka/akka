@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets
 import java.util.Optional
 import java.util.concurrent.TimeUnit
 
+import akka.Done
 import akka.actor._
 import akka.dispatch.Dispatchers
 import akka.remote.routing.RemoteRouterConfig
@@ -43,6 +44,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case PoisonPill                           ⇒ ParameterlessSerializedMessage
     case Kill                                 ⇒ ParameterlessSerializedMessage
     case RemoteWatcher.Heartbeat              ⇒ ParameterlessSerializedMessage
+    case Done                                 ⇒ ParameterlessSerializedMessage
     case hbrsp: RemoteWatcher.HeartbeatRsp    ⇒ serializeHeartbeatRsp(hbrsp)
     case rs: RemoteScope                      ⇒ serializeRemoteScope(rs)
     case LocalScope                           ⇒ ParameterlessSerializedMessage
@@ -253,6 +255,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val PoisonPillManifest = "P"
   private val KillManifest = "K"
   private val RemoteWatcherHBManifest = "RWHB"
+  private val DoneManifest = "DONE"
   private val RemoteWatcherHBRespManifest = "RWHR"
   private val ActorInitializationExceptionManifest = "AIEX"
   private val LocalScopeManifest = "LS"
@@ -281,6 +284,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     PoisonPillManifest → ((_) ⇒ PoisonPill),
     KillManifest → ((_) ⇒ Kill),
     RemoteWatcherHBManifest → ((_) ⇒ RemoteWatcher.Heartbeat),
+    DoneManifest → ((_) ⇒ Done),
     RemoteWatcherHBRespManifest → deserializeHeartbeatRsp,
     ActorInitializationExceptionManifest → deserializeActorInitializationException,
     LocalScopeManifest → ((_) ⇒ LocalScope),
@@ -311,6 +315,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       case PoisonPill                         ⇒ PoisonPillManifest
       case Kill                               ⇒ KillManifest
       case RemoteWatcher.Heartbeat            ⇒ RemoteWatcherHBManifest
+      case Done                               ⇒ DoneManifest
       case _: RemoteWatcher.HeartbeatRsp      ⇒ RemoteWatcherHBRespManifest
       case LocalScope                         ⇒ LocalScopeManifest
       case _: RemoteScope                     ⇒ RemoteScopeManifest
