@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, OverflowStrategy }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
@@ -360,7 +360,9 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
     def setupFlow(minBackoff: FiniteDuration, maxBackoff: FiniteDuration) = {
       val created = new AtomicInteger()
-      val (flowInSource, flowInProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
+      val (flowInSource, flowInProbe) = TestSource.probe[String]
+        .buffer(4, OverflowStrategy.backpressure)
+        .toMat(TestSink.probe)(Keep.both).run()
       val (flowOutProbe, flowOutSource) = TestSource.probe[String].toMat(BroadcastHub.sink)(Keep.both).run()
 
       // We can't just use ordinary probes here because we're expecting them to get started/restarted. Instead, we
