@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 @OutputTimeUnit(TimeUnit.SECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
 class InvokeWithFeedbackBenchmark {
-  implicit val system = ActorSystem("EmptySourceBenchmark")
+  implicit val system = ActorSystem("InvokeWithFeedbackBenchmark")
   val materializerSettings = ActorMaterializerSettings(system).withDispatcher("akka.test.stream-dispatcher")
 
   var sourceQueue: SourceQueueWithComplete[Int] = _
