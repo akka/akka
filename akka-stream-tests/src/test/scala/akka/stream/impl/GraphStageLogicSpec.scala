@@ -375,7 +375,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
     "give a good error message if sub source is pushed twice" in {
       intercept[Exception] {
         Source.fromGraph(new SubstreamEmit()).async.runWith(Sink.ignore).futureValue
-      }.getCause.getMessage should startWith("requirement failed: Cannot push port (SubSourceOutlet(subOut)) twice, or before it being pulled")
+      }.getCause.getMessage should startWith("Cannot push port (SubSourceOutlet(subOut)) twice, or before it being pulled")
     }
 
   }
