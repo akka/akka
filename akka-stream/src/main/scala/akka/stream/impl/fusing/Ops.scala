@@ -1162,7 +1162,7 @@ private[stream] object Collect {
       private val futureCB = getAsyncCallback[Holder[Out]](holder ⇒
         holder.elem match {
           case Success(_) ⇒ pushNextIfPossible()
-          case Failure(ex) if NonFatal(ex) ⇒
+          case Failure(NonFatal(ex)) ⇒
             holder.supervisionDirectiveFor(decider, ex) match {
               // fail fast as if supervision says so
               case Supervision.Stop ⇒ failStage(ex)
@@ -1213,7 +1213,7 @@ private[stream] object Collect {
               push(out, elem)
               pullIfNeeded()
 
-            case Failure(ex) if NonFatal(ex) ⇒
+            case Failure(NonFatal(ex)) ⇒
               holder.supervisionDirectiveFor(decider, ex) match {
                 case Supervision.Stop ⇒ failStage(ex)
                 case _ ⇒
@@ -1228,8 +1228,6 @@ private[stream] object Collect {
       }
 
       setHandlers(in, out, this)
-
-      override def toString = s"MapAsync.Logic(buffer=$buffer)"
     }
 }
 
