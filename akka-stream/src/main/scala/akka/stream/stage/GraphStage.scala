@@ -1061,7 +1061,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         case Pending(l) ⇒ l.reverse.foreach(evt ⇒ {
           evt.handlingPromise match {
             case OptionVal.Some(p) ⇒ p.future.onComplete(_ ⇒ onFeedbackCompleted(p))(ExecutionContexts.sameThreadExecutionContext)
-            case OptionVal.None    ⇒
+            case OptionVal.None    ⇒ // buffered invoke without promise
           }
           onAsyncInput(evt.e, evt.handlingPromise)
         })
