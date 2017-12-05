@@ -469,17 +469,6 @@ delivery of deltas. Support for deltas here means that the `ORSet` being underly
 uses delta propagation to deliver updates. Effectively, the update for map is then a pair, consisting of delta for the `ORSet`
 being the key and full update for the respective value (`ORSet`, `PNCounter` or `LWWRegister`) kept in the map.
 
-There is a special version of `ORMultiMap`, created by using separate constructor
-`ORMultiMap.emptyWithValueDeltas[A, B]`, that also propagates the updates to its values (of `ORSet` type) as deltas.
-This means that the `ORMultiMap` initiated with `ORMultiMap.emptyWithValueDeltas` propagates its updates as pairs
-consisting of delta of the key and delta of the value. It is much more efficient in terms of network bandwith consumed.
-However, this behaviour has not been made default for `ORMultiMap` because currently the merge process for
-updates for `ORMultiMap.emptyWithValueDeltas` results in a tombstone (being a form of [CRDT Garbage](#crdt-garbage) )
-in form of additional `ORSet` entry being created in a situation when a key has been added and then removed.
-There is ongoing work aimed at removing necessity of creation of the aforementioned tombstone. Please also note
-that despite having the same Scala type, `ORMultiMap.emptyWithValueDeltas` is not compatible with 'vanilla' `ORMultiMap`,
-because of different replication mechanism.
-
 Scala
 : @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #ormultimap }
 
@@ -487,12 +476,28 @@ Java
 : @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #ormultimap }
 
 When a data entry is changed the full state of that entry is replicated to other nodes, i.e.
-when you update a map the whole map is replicated. Therefore, instead of using one `ORMap`
+when you update a map, the whole map is replicated. Therefore, instead of using one `ORMap`
 with 1000 elements it is more efficient to split that up in 10 top level `ORMap` entries
 with 100 elements each. Top level entries are replicated individually, which has the
 trade-off that different entries may not be replicated at the same time and you may see
 inconsistencies between related entries. Separate top level entries cannot be updated atomically
 together.
+
+There is a special version of `ORMultiMap`, created by using separate constructor
+`ORMultiMap.emptyWithValueDeltas[A, B]`, that also propagates the updates to its values (of `ORSet` type) as deltas.
+This means that the `ORMultiMap` initiated with `ORMultiMap.emptyWithValueDeltas` propagates its updates as pairs
+consisting of delta of the key and delta of the value. It is much more efficient in terms of network bandwith consumed.
+
+However, this behaviour has not been made default for `ORMultiMap` and if you wish to use it in your code, you
+need to replace invocations of `ORMultiMap.empty[A, B]` (or `ORMultiMap()`) with `ORMultiMap.emptyWithValueDeltas[A, B]`
+where `A` and `B` are types respectively of keys and values in the map.
+
+Please also note, that despite having the same Scala type, `ORMultiMap.emptyWithValueDeltas`
+is not compatible with 'vanilla' `ORMultiMap`, because of different replication mechanism.
+One needs to be extra careful not to mix the two, as they have the same
+type, so compiler will not hint the error.
+Nonetheless `ORMultiMap.emptyWithValueDeltas` uses the same `ORMultiMapKey` type as the
+'vanilla' `ORMultiMap` for referencing.
 
 Note that `LWWRegister` and therefore `LWWMap` relies on synchronized clocks and should only be used
 when the choice of value is not important for concurrent updates occurring within the clock skew. Read more
