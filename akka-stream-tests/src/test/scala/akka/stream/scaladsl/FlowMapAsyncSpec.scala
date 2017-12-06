@@ -246,6 +246,22 @@ class FlowMapAsyncSpec extends StreamSpec {
       c.expectComplete()
     }
 
+    "resume after already failed future" in assertAllStagesStopped {
+      val c = TestSubscriber.manualProbe[Int]()
+      implicit val ec = system.dispatcher
+      val p = Source(1 to 5)
+        .mapAsync(4)(n ⇒
+          if (n == 3) Future.failed(new TE("err3"))
+          else Future.successful(n)
+        )
+        .withAttributes(supervisionStrategy(resumingDecider))
+        .to(Sink.fromSubscriber(c)).run()
+      val sub = c.expectSubscription()
+      sub.request(10)
+      for (n ← List(1, 2, 4, 5)) c.expectNext(n)
+      c.expectComplete()
+    }
+
     "resume after multiple failures" in assertAllStagesStopped {
       val futures: List[Future[String]] = List(
         Future.failed(Utils.TE("failure1")),
@@ -376,6 +392,25 @@ class FlowMapAsyncSpec extends StreamSpec {
             if (elem) throw TE("this has gone too far")
             else elem
           }
+        ).addAttributes(supervisionStrategy {
+          case TE("this has gone too far") ⇒
+            failCount.incrementAndGet()
+            Supervision.resume
+          case _ ⇒ Supervision.stop
+        })
+        .runWith(Sink.seq)
+
+      result.futureValue should ===(Seq(false))
+      failCount.get() should ===(1)
+    }
+
+    "not invoke the decider twice for the same already failed future" in {
+      import system.dispatcher
+      val failCount = new AtomicInteger(0)
+      val result = Source(List(true, false))
+        .mapAsync(1)(elem ⇒
+          if (elem) Future.failed(TE("this has gone too far"))
+          else Future.successful(elem)
         ).addAttributes(supervisionStrategy {
           case TE("this has gone too far") ⇒
             failCount.incrementAndGet()
