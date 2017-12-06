@@ -9,12 +9,12 @@ import java.util.UUID
 
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import akka.actor.{ DeadLetter, StashOverflowException }
+import akka.actor.{ StashOverflowException, DeadLetter, ActorCell }
 import akka.annotation.InternalApi
+import akka.dispatch.Envelope
 import akka.util.Helpers.ConfigOps
 import akka.event.Logging
 import akka.event.LoggingAdapter
-
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -397,6 +397,14 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * Returns `true` if this persistent actor has successfully finished recovery.
    */
   def recoveryFinished: Boolean = !recoveryRunning
+
+  override def stash(): Unit = {
+    context.asInstanceOf[ActorCell].currentMessage match {
+      case Envelope(_: JournalProtocol.Response, _) ⇒
+        throw new IllegalStateException("Do not call stash inside of persist callback or during recovery.")
+      case _ ⇒ super.stash()
+    }
+  }
 
   override def unstashAll() {
     // Internally, all messages are processed by unstashing them from
