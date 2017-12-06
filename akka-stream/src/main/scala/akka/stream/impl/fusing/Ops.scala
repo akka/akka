@@ -1197,7 +1197,10 @@ private[stream] object Collect {
             case Some(v) ⇒
               // #20217 the future is already here, avoid scheduling it on the dispatcher
               holder.setElem(v)
-              pushNextIfPossible()
+              v match {
+                case Failure(ex) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop ⇒ failStage(ex)
+                case _ ⇒ pushNextIfPossible()
+              }
           }
 
         } catch {

@@ -80,6 +80,23 @@ class FlowMapAsyncSpec extends StreamSpec {
       c.expectNoMsg(200.millis)
     }
 
+    "signal future already failed" in assertAllStagesStopped {
+      val latch = TestLatch(1)
+      val c = TestSubscriber.manualProbe[Int]()
+      implicit val ec = system.dispatcher
+      val p = Source(1 to 5).mapAsync(4)(n ⇒
+        if (n == 3) Future.failed[Int](new TE("err1"))
+        else Future {
+          Await.ready(latch, 10.seconds)
+          n
+        }
+      ).to(Sink.fromSubscriber(c)).run()
+      val sub = c.expectSubscription()
+      sub.request(10)
+      c.expectError().getMessage should be("err1")
+      latch.countDown()
+    }
+
     "signal future failure" in assertAllStagesStopped {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
