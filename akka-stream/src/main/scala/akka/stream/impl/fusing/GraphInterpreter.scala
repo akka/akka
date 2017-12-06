@@ -445,10 +445,18 @@ import scala.util.control.NonFatal
         activeStage = logic
         try {
           handler(evt)
-          if (promise.isDefined) promise.get.success(Done)
+          if (promise.isDefined) {
+            val p = promise.get
+            p.success(Done)
+            logic.onFeedbackDispatched()
+          }
         } catch {
           case NonFatal(ex) ⇒
-            if (promise.isDefined) promise.get.failure(ex)
+            if (promise.isDefined) {
+              val p = promise.get
+              promise.get.failure(ex)
+              logic.onFeedbackDispatched()
+            }
             logic.failStage(ex)
         }
         afterStageHasRun(logic)
