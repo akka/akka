@@ -15,6 +15,7 @@ import scala.concurrent.duration._
 import java.util.Optional
 import java.io.NotSerializableException
 
+import akka.Done
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
 
@@ -23,6 +24,8 @@ object MiscMessageSerializerSpec {
     """
     akka.actor.serialization-bindings {
       "akka.remote.serialization.MiscMessageSerializerSpec$TestException" = akka-misc
+      # not enabled by default
+      "akka.Done" = akka-misc
     }
     """
 
@@ -85,6 +88,7 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "PoisonPill" → PoisonPill,
       "RemoteWatcher.Heartbeat" → RemoteWatcher.Heartbeat,
       "RemoteWatcher.HertbeatRsp" → RemoteWatcher.HeartbeatRsp(65537),
+      "Done" → Done,
       "LocalScope" → LocalScope,
       "RemoteScope" → RemoteScope(Address("akka", "system", "localhost", 2525)),
       "Config" → system.settings.config,
