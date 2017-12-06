@@ -1172,7 +1172,7 @@ private[stream] object Collect {
       private val futureCB = getAsyncCallback[Holder[Out]](holder ⇒
         holder.elem match {
           case Success(_) ⇒ pushNextIfPossible()
-          case Failure(NonFatal(ex)) ⇒
+          case Failure(ex) ⇒
             holder.supervisionDirectiveFor(decider, ex) match {
               // fail fast as if supervision says so
               case Supervision.Stop ⇒ failStage(ex)
@@ -1200,7 +1200,7 @@ private[stream] object Collect {
               holder.setElem(v)
               v match {
                 // this optimization also requires us to stop the stage to fail fast if the decider says so:
-                case Failure(NonFatal(ex)) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop ⇒ failStage(ex)
+                case Failure(ex) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop ⇒ failStage(ex)
                 case _ ⇒ pushNextIfPossible()
               }
           }

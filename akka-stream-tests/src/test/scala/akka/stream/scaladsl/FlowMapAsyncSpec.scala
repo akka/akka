@@ -444,6 +444,18 @@ class FlowMapAsyncSpec extends StreamSpec {
       failCount.get() should ===(1)
     }
 
+    "not get stuck if fed parallelism number of failed futures and is resuming" in {
+      val failure = Future.failed(TE("böö"))
+      val result = Source((1 to 8).map(_ ⇒ failure))
+        .mapAsync(8)(identity)
+        .addAttributes(supervisionStrategy {
+          case TE("böö") ⇒ Supervision.resume
+          case _         ⇒ Supervision.stop
+        }).runWith(Sink.seq)
+
+      result.futureValue should ===(Seq.empty)
+    }
+
   }
 
 }
