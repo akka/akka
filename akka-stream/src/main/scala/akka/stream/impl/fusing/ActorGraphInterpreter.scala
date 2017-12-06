@@ -457,7 +457,7 @@ import scala.util.control.NonFatal
     shell:   GraphInterpreterShell,
     logic:   GraphStageLogic,
     evt:     Any,
-    promise: OptionVal[Promise[Done]],
+    promise: Promise[Done],
     handler: (Any) ⇒ Unit) extends BoundaryEvent {
     override def execute(eventLimit: Int): Int = {
       if (!waitingForShutdown) {
