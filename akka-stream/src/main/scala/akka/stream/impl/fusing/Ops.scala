@@ -1180,8 +1180,6 @@ private[stream] object Collect {
             }
         })
 
-      private var buffer: BufferImpl[Holder[Out]] = _
-
       override def preStart(): Unit = buffer = BufferImpl(parallelism, materializer)
 
       override def onPull(): Unit = pushNextIfPossible()
