@@ -86,9 +86,9 @@ For example, Journal plugins should document their stream completion strategies.
 
 The predefined queries are:
 
-#### AllPersistenceIdsQuery and CurrentPersistenceIdsQuery
+#### PersistenceIdsQuery and CurrentPersistenceIdsQuery
 
-`allPersistenceIds` which is designed to allow users to subscribe to a stream of all persistent ids in the system.
+`persistenceIds` which is designed to allow users to subscribe to a stream of all persistent ids in the system.
 By default this stream should be assumed to be a "live" stream, which means that the journal should keep emitting new
 persistence ids as they come into the system:
 
