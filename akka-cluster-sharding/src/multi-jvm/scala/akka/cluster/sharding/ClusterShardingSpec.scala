@@ -3,11 +3,10 @@
  */
 package akka.cluster.sharding
 
-import akka.cluster.ddata.{ ReplicatorSettings, Replicator }
-import akka.cluster.sharding.ShardCoordinator.Internal.{ ShardStopped, HandOff }
-import akka.cluster.sharding.ShardRegion.Passivate
-import akka.cluster.sharding.ShardRegion.GetCurrentRegions
-import akka.cluster.sharding.ShardRegion.CurrentRegions
+import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
+import akka.cluster.sharding.ShardCoordinator.Internal.{ HandOff, ShardStopped }
+import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GetCurrentRegions, Passivate }
+
 import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
@@ -24,6 +23,7 @@ import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.testkit.TestEvent.Mute
 import java.io.File
+
 import org.apache.commons.io.FileUtils
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.cluster.singleton.ClusterSingletonManagerSettings
@@ -39,13 +39,17 @@ object ClusterShardingSpec {
   case object Stop
   final case class CounterChanged(delta: Int)
 
-  class Counter extends PersistentActor {
+  object Counter {
+    val ShardingTypeName: String = "Counter"
+    def props(id: String): Props = Props(new Counter(id))
+  }
+
+  class Counter(id: String) extends PersistentActor {
     import ShardRegion.Passivate
 
     context.setReceiveTimeout(120.seconds)
 
-    // self.path.name is the entity identifier (utf-8 URL-encoded)
-    override def persistenceId: String = "Counter-" + self.path.name
+    override def persistenceId: String = s"${Counter.ShardingTypeName}-$id"
 
     var count = 0
     //#counter-actor
@@ -87,18 +91,30 @@ object ClusterShardingSpec {
     case ShardRegion.StartEntity(id) ⇒ (id.toLong % numberOfShards).toString
   }
 
-  def qualifiedCounterProps(typeName: String): Props =
-    Props(new QualifiedCounter(typeName))
-
-  class QualifiedCounter(typeName: String) extends Counter {
-    override def persistenceId: String = typeName + "-" + self.path.name
+  object QualifiedCounter {
+    val ShardingTypeName: String = "QualifiedCounter"
+    def props(typeName: String, id: String): Props = Props(new QualifiedCounter(typeName, id))
   }
 
-  class AnotherCounter extends QualifiedCounter("AnotherCounter")
+  class QualifiedCounter(typeName: String, id: String) extends Counter(id) {
+    override def persistenceId: String = s"$typeName-$id"
+  }
+
+  object AnotherCounter {
+    val ShardingTypeName: String = "AnotherCounter"
+    def props(id: String): Props = Props(new AnotherCounter(id))
+  }
+
+  class AnotherCounter(id: String) extends QualifiedCounter("AnotherCounter", id)
 
   //#supervisor
-  class CounterSupervisor extends Actor {
-    val counter = context.actorOf(Props[Counter], "theCounter")
+  object CounterSupervisor {
+    val ShardingTypeName: String = "CounterSupervisor"
+    def props(id: String): Props = Props(new CounterSupervisor(id))
+  }
+
+  class CounterSupervisor(entityId: String) extends Actor {
+    val counter = context.actorOf(Counter.props(entityId), "theCounter")
 
     override val supervisorStrategy = OneForOneStrategy() {
       case _: IllegalArgumentException     ⇒ SupervisorStrategy.Resume
@@ -329,7 +345,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     system.actorOf(
       ShardRegion.props(
         typeName = typeName,
-        entityProps = qualifiedCounterProps(typeName),
+        entityPropsFactory = entityId ⇒ QualifiedCounter.props(typeName, entityId),
         settings = settings,
         coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
         extractEntityId = extractEntityId,
@@ -459,7 +475,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         val settings = ClusterShardingSettings(cfg)
         val proxy = system.actorOf(
           ShardRegion.proxyProps(
-            typeName = "counter",
+            typeName = Counter.ShardingTypeName,
             dataCenter = None,
             settings,
             coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
@@ -628,23 +644,23 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     runOn(third, fourth, fifth, sixth) {
       //#counter-start
       val counterRegion: ActorRef = ClusterSharding(system).start(
-        typeName = "Counter",
-        entityProps = Props[Counter],
+        typeName = Counter.ShardingTypeName,
+        entityPropsFactory = entityId ⇒ Counter.props(entityId),
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
       //#counter-start
       ClusterSharding(system).start(
-        typeName = "AnotherCounter",
-        entityProps = Props[AnotherCounter],
+        typeName = AnotherCounter.ShardingTypeName,
+        entityPropsFactory = entityId ⇒ AnotherCounter.props(entityId),
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
 
       //#counter-supervisor-start
       ClusterSharding(system).start(
-        typeName = "SupervisedCounter",
-        entityProps = Props[CounterSupervisor],
+        typeName = CounterSupervisor.ShardingTypeName,
+        entityPropsFactory = entityId ⇒ CounterSupervisor.props(entityId),
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
@@ -653,7 +669,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     enterBarrier("extension-started")
     runOn(fifth) {
       //#counter-usage
-      val counterRegion: ActorRef = ClusterSharding(system).shardRegion("Counter")
+      val counterRegion: ActorRef = ClusterSharding(system).shardRegion(Counter.ShardingTypeName)
       counterRegion ! Get(123)
       expectMsg(0)
 
@@ -662,8 +678,8 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
       expectMsg(1)
       //#counter-usage
 
-      ClusterSharding(system).shardRegion("AnotherCounter") ! EntityEnvelope(123, Decrement)
-      ClusterSharding(system).shardRegion("AnotherCounter") ! Get(123)
+      ClusterSharding(system).shardRegion(AnotherCounter.ShardingTypeName) ! EntityEnvelope(123, Decrement)
+      ClusterSharding(system).shardRegion(AnotherCounter.ShardingTypeName) ! Get(123)
       expectMsg(-1)
     }
 
@@ -672,8 +688,8 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     // sixth is a frontend node, i.e. proxy only
     runOn(sixth) {
       for (n ← 1000 to 1010) {
-        ClusterSharding(system).shardRegion("Counter") ! EntityEnvelope(n, Increment)
-        ClusterSharding(system).shardRegion("Counter") ! Get(n)
+        ClusterSharding(system).shardRegion(Counter.ShardingTypeName) ! EntityEnvelope(n, Increment)
+        ClusterSharding(system).shardRegion(Counter.ShardingTypeName) ! Get(n)
         expectMsg(1)
         lastSender.path.address should not be (Cluster(system).selfAddress)
       }
@@ -686,7 +702,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     runOn(first) {
       val counterRegionViaStart: ActorRef = ClusterSharding(system).start(
         typeName = "ApiTest",
-        entityProps = Props[Counter],
+        entityPropsFactory = Counter.props,
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
@@ -703,7 +719,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     runOn(sixth) {
       // #proxy-dc
       val counterProxyDcB: ActorRef = ClusterSharding(system).startProxy(
-        typeName = "Counter",
+        typeName = Counter.ShardingTypeName,
         role = None,
         dataCenter = Some("B"),
         extractEntityId = extractEntityId,
