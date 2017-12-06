@@ -1230,7 +1230,8 @@ private[stream] object Collect {
 
             case Failure(NonFatal(ex)) ⇒
               holder.supervisionDirectiveFor(decider, ex) match {
-                // this shouldn't happen because it would have failed fast for stopping exceptions
+                // this could happen if we are looping in pushNextIfPossible and end up on a failed future before the
+                // onComplete callback has run
                 case Supervision.Stop ⇒ failStage(ex)
                 case _ ⇒
                   // try next element
