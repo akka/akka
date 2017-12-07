@@ -7,7 +7,7 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val jacksonVersion = "2.9.1"
+  val jacksonVersion = "2.9.2"
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
@@ -27,7 +27,7 @@ object Dependencies {
     akkaVersion := System.getProperty("akka.build.version", "2.4.20"),
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.5"),
     scalaTestVersion := "3.0.4",
-    specs2Version := "3.9.5"
+    specs2Version := "4.0.2"
   )
   import Versions._
 
@@ -52,12 +52,12 @@ object Dependencies {
 
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.4.0"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.6.0"
     val jsr305      = "com.google.code.findbugs"      % "jsr305"                       % "3.0.2"             % Provided // ApacheV2
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
-      val gson        = "com.google.code.gson"             % "gson"                    % "2.3.1"             % "test"
+      val gson        = "com.google.code.gson"             % "gson"                    % "2.8.2"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonVersion      % "test" // ApacheV2
     }
 
@@ -83,7 +83,7 @@ object Dependencies {
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
     ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
   )
 
   lazy val httpCore = l ++= Seq(
