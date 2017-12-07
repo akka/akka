@@ -17,4 +17,8 @@ print what type of request it was - independent of what actual HttpMethod it was
 When you define a custom HttpMethod, you can define a route using extractMethod.
 
 >
-@@snip [CustomHttpMethodExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }
+Scala
+:  @@snip [CustomHttpMethodSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
+
+Java
+:  @@snip [CustomHttpMethodExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }

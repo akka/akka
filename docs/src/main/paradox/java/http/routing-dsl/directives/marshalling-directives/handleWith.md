@@ -31,4 +31,8 @@ The following example uses an `updatePerson` function with a `Person` class as a
 
 The following example uses also @ref[Json Support via Jackson](../../../common/json-support.md#json-jackson-support-java) to handle both marshalling and unmarshalling of the Person class.
 
-@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
+Scala
+:  @@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-json-support }
+
+Java
+:  @@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }

@@ -14,4 +14,8 @@ See also @ref[mapResponseHeaders](mapResponseHeaders.md) or @ref[mapResponseEnti
 
 ## Example: Default to empty JSON response on errors
 
-@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapResponse-advanced }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #mapResponse1-advanced }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapResponse-advanced }

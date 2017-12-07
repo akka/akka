@@ -36,4 +36,8 @@ For more information about various timeouts in Akka HTTP see @ref[Akka HTTP Time
 
 With setting the handler at the same time:
 
-@@snip [TimeoutDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java) { #withRequestTimeout-with-handler }
+Scala
+:  @@snip [TimeoutDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/TimeoutDirectivesExamplesSpec.scala) { #withRequestTimeout-with-handler }
+
+Java
+:  @@snip [TimeoutDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java) { #withRequestTimeout-with-handler }

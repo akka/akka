@@ -9,4 +9,8 @@ See @ref[Rejections](../../rejections.md) for general information about options 
 
 ## Example
 
-@@snip [ExecutionDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java) { #handleRejections }
+Scala
+:  @@snip [ExecutionDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ExecutionDirectivesExamplesSpec.scala) { #handleRejections }
+
+Java
+:  @@snip [ExecutionDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java) { #handleRejections }

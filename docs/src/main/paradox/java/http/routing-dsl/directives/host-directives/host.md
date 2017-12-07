@@ -36,4 +36,8 @@ Beware that in the case of introducing multiple capturing groups in the regex su
 directive will fail at runtime, at the moment the route tree is evaluated for the first time. This might cause
 your http handler actor to enter in a fail/restart loop depending on your supervision strategy.
 
-@@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #failing-matchAndExtractHost }
+Scala
+:  @@snip [HostDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #failing-regex }
+
+Java
+:  @@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #failing-matchAndExtractHost }
