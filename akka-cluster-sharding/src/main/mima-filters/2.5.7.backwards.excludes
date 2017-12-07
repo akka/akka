@@ -1,2 +1,0 @@
-# 24058 - Add ClusterSharding.start overloads
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.props")
