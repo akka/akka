@@ -1,11 +1,1 @@
-# TimeoutDirectives
-
-@@toc { depth=1 }
-
-@@@ index
-
-* [withRequestTimeout](withRequestTimeout.md)
-* [withoutRequestTimeout](withoutRequestTimeout.md)
-* [withRequestTimeoutResponse](withRequestTimeoutResponse.md)
-
-@@@
+../../../../../scala/http/routing-dsl/directives/timeout-directives/index.md

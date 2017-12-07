@@ -1,9 +1,1 @@
-# CacheConditionDirectives
-
-@@toc { depth=1 }
-
-@@@ index
-
-* [conditional](conditional.md)
-
-@@@
+../../../../../scala/http/routing-dsl/directives/cache-condition-directives/index.md
