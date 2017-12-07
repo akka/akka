@@ -92,7 +92,6 @@ object ClusterShardingSpec {
   }
 
   object QualifiedCounter {
-    val ShardingTypeName: String = "QualifiedCounter"
     def props(typeName: String, id: String): Props = Props(new QualifiedCounter(typeName, id))
   }
 
@@ -105,7 +104,7 @@ object ClusterShardingSpec {
     def props(id: String): Props = Props(new AnotherCounter(id))
   }
 
-  class AnotherCounter(id: String) extends QualifiedCounter("AnotherCounter", id)
+  class AnotherCounter(id: String) extends QualifiedCounter(AnotherCounter.ShardingTypeName, id)
 
   //#supervisor
   object CounterSupervisor {
@@ -128,6 +127,9 @@ object ClusterShardingSpec {
     }
   }
   //#supervisor
+
+  // must use different unique name for some tests than the one used in API tests
+  val TestCounterShardingTypeName = s"Test${Counter.ShardingTypeName}"
 
 }
 
@@ -314,7 +316,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         ShardCoordinator.props(typeName, settings, allocationStrategy, replicator, majorityMinCap)
     }
 
-    List("counter", "rebalancingCounter", "RememberCounterEntities", "AnotherRememberCounter",
+    List(TestCounterShardingTypeName, "rebalancingCounter", "RememberCounterEntities", "AnotherRememberCounter",
       "RememberCounter", "RebalancingRememberCounter", "AutoMigrateRememberRegionTest").foreach { typeName ⇒
         val rebalanceEnabled = typeName.toLowerCase.startsWith("rebalancing")
         val rememberEnabled = typeName.toLowerCase.contains("remember")
@@ -356,7 +358,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
       name = typeName + "Region")
   }
 
-  lazy val region = createRegion("counter", rememberEntities = false)
+  lazy val region = createRegion(TestCounterShardingTypeName, rememberEntities = false)
   lazy val rebalancingRegion = createRegion("rebalancingCounter", rememberEntities = false)
 
   lazy val persistentEntitiesRegion = createRegion("RememberCounterEntities", rememberEntities = true)
@@ -428,7 +430,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         region ! EntityEnvelope(2, Increment)
         region ! Get(2)
         expectMsg(3)
-        lastSender.path should ===(node(second) / "user" / "counterRegion" / "2" / "2")
+        lastSender.path should ===(node(second) / "user" / s"${TestCounterShardingTypeName}Region" / "2" / "2")
 
         region ! Get(11)
         expectMsg(1)
@@ -436,7 +438,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         lastSender.path should ===(region.path / "11" / "11")
         region ! Get(12)
         expectMsg(1)
-        lastSender.path should ===(node(second) / "user" / "counterRegion" / "0" / "12")
+        lastSender.path should ===(node(second) / "user" / s"${TestCounterShardingTypeName}Region" / "0" / "12")
       }
       enterBarrier("first-update")
 
@@ -475,10 +477,10 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         val settings = ClusterShardingSettings(cfg)
         val proxy = system.actorOf(
           ShardRegion.proxyProps(
-            typeName = Counter.ShardingTypeName,
+            typeName = TestCounterShardingTypeName,
             dataCenter = None,
             settings,
-            coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
+            coordinatorPath = s"/user/${TestCounterShardingTypeName}Coordinator/singleton/coordinator",
             extractEntityId = extractEntityId,
             extractShardId = extractShardId,
             system.deadLetters,
@@ -553,12 +555,12 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         region ! EntityEnvelope(3, Increment)
         region ! Get(3)
         expectMsg(11)
-        lastSender.path should ===(node(third) / "user" / "counterRegion" / "3" / "3")
+        lastSender.path should ===(node(third) / "user" / s"${TestCounterShardingTypeName}Region" / "3" / "3")
 
         region ! EntityEnvelope(4, Increment)
         region ! Get(4)
         expectMsg(21)
-        lastSender.path should ===(node(fourth) / "user" / "counterRegion" / "4" / "4")
+        lastSender.path should ===(node(fourth) / "user" / s"${TestCounterShardingTypeName}Region" / "4" / "4")
       }
       enterBarrier("first-update")
 
@@ -591,7 +593,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
           within(1.second) {
             region.tell(Get(3), probe3.ref)
             probe3.expectMsg(11)
-            probe3.lastSender.path should ===(node(third) / "user" / "counterRegion" / "3" / "3")
+            probe3.lastSender.path should ===(node(third) / "user" / s"${TestCounterShardingTypeName}Region" / "3" / "3")
           }
         }
         val probe4 = TestProbe()
@@ -599,7 +601,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
           within(1.second) {
             region.tell(Get(4), probe4.ref)
             probe4.expectMsg(21)
-            probe4.lastSender.path should ===(node(fourth) / "user" / "counterRegion" / "4" / "4")
+            probe4.lastSender.path should ===(node(fourth) / "user" / s"${TestCounterShardingTypeName}Region" / "4" / "4")
           }
         }
 
@@ -670,16 +672,17 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     runOn(fifth) {
       //#counter-usage
       val counterRegion: ActorRef = ClusterSharding(system).shardRegion(Counter.ShardingTypeName)
-      counterRegion ! Get(123)
+      val entityId = 999
+      counterRegion ! Get(entityId)
       expectMsg(0)
 
-      counterRegion ! EntityEnvelope(123, Increment)
-      counterRegion ! Get(123)
+      counterRegion ! EntityEnvelope(entityId, Increment)
+      counterRegion ! Get(entityId)
       expectMsg(1)
       //#counter-usage
 
-      ClusterSharding(system).shardRegion(AnotherCounter.ShardingTypeName) ! EntityEnvelope(123, Decrement)
-      ClusterSharding(system).shardRegion(AnotherCounter.ShardingTypeName) ! Get(123)
+      ClusterSharding(system).shardRegion(AnotherCounter.ShardingTypeName) ! EntityEnvelope(entityId, Decrement)
+      ClusterSharding(system).shardRegion(AnotherCounter.ShardingTypeName) ! Get(entityId)
       expectMsg(-1)
     }
 
