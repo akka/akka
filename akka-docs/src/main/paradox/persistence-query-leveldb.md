@@ -79,9 +79,9 @@ hint.
 The stream is completed with failure if there is a failure in executing the query in the
 backend journal.
 
-### AllPersistenceIdsQuery and CurrentPersistenceIdsQuery
+### PersistenceIdsQuery and CurrentPersistenceIdsQuery
 
-`allPersistenceIds` is used for retrieving all `persistenceIds` of all persistent actors.
+`persistenceIds` is used for retrieving all `persistenceIds` of all persistent actors.
 
 Scala
 :  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #AllPersistenceIds }
