@@ -33,7 +33,7 @@ object ShardRegion {
    */
   private[akka] def props(
     typeName:           String,
-    entityPropsFactory: String ⇒ Props,
+    entityProps:        Props,
     settings:           ClusterShardingSettings,
     coordinatorPath:    String,
     extractEntityId:    ShardRegion.ExtractEntityId,
@@ -41,7 +41,7 @@ object ShardRegion {
     handOffStopMessage: Any,
     replicator:         ActorRef,
     majorityMinCap:     Int): Props =
-    Props(new ShardRegion(typeName, Some(entityPropsFactory), dataCenter = None, settings, coordinatorPath, extractEntityId,
+    Props(new ShardRegion(typeName, Some(entityProps), dataCenter = None, settings, coordinatorPath, extractEntityId,
       extractShardId, handOffStopMessage, replicator, majorityMinCap)).withDeploy(Deploy.local)
 
   /**
@@ -366,7 +366,7 @@ object ShardRegion {
  */
 private[akka] class ShardRegion(
   typeName:           String,
-  entityPropsFactory: Option[String ⇒ Props],
+  entityProps:        Option[Props],
   dataCenter:         Option[DataCenter],
   settings:           ClusterShardingSettings,
   coordinatorPath:    String,
@@ -682,7 +682,7 @@ private[akka] class ShardRegion(
   }
 
   def registrationMessage: Any =
-    if (entityPropsFactory.isDefined) Register(self) else RegisterProxy(self)
+    if (entityProps.isDefined) Register(self) else RegisterProxy(self)
 
   def requestShardBufferHomes(): Unit = {
     shardBuffers.foreach {
@@ -799,8 +799,8 @@ private[akka] class ShardRegion(
       None
     else {
       shards.get(id).orElse(
-        entityPropsFactory match {
-          case Some(factory) if !shardsByRef.values.exists(_ == id) ⇒
+        entityProps match {
+          case Some(props) if !shardsByRef.values.exists(_ == id) ⇒
             log.debug("Starting shard [{}] in region", id)
 
             val name = URLEncoder.encode(id, "utf-8")
@@ -808,7 +808,7 @@ private[akka] class ShardRegion(
               Shard.props(
                 typeName,
                 id,
-                factory,
+                props,
                 settings,
                 extractEntityId,
                 extractShardId,

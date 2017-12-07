@@ -45,8 +45,8 @@ The above actor uses event sourcing and the support provided in @scala[`Persiste
 It does not have to be a persistent actor, but in case of failure or migration of entities between nodes it must be able to recover
 its state if it is valuable.
 
-Note how the `persistenceId` is defined - it must be unique to the entity, so using the entity identifier is advised. 
-You may define it in other ways, but it must be unique.
+Note how the `persistenceId` is defined. The name of the actor is the entity identifier (utf-8 URL-encoded).
+You may define it another way, but it must be unique.
 
 When using the sharding extension you are first, typically at system startup on each node
 in the cluster, supposed to register the supported entity types with the `ClusterSharding.start`
@@ -57,10 +57,6 @@ Scala
 
 Java
 :  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-start }
-
-In some cases, the actor may need to know the `entityId` associated with it. This can be achieved using the `entityPropsFactory`
-parameter to `ClusterSharding.start`. The entity ID will be passed to the factory as a parameter, which can then be used in
-the creation of the actor (like the above example).
 
 The @scala[`extractEntityId` and `extractShardId` are two] @java[`messageExtractor` defines] application specific @scala[functions] @java[methods] to extract the entity
 identifier and the shard identifier from incoming messages.
