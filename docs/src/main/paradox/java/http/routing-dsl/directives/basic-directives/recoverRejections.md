@@ -1,5 +1,13 @@
 # recoverRejections
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #recoverRejections }
+
+@@@
+
 ## Description
 
 **Low level directive** – unless you're sure you need to be working on this low-level you might instead

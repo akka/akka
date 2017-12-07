@@ -1,5 +1,13 @@
 # pass
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #pass }
+
+@@@
+
 ## Description
 
 A directive that passes the request unchanged to its inner route.

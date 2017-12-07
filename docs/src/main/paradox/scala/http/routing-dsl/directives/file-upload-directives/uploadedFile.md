@@ -1,8 +1,12 @@
 # uploadedFile
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [FileUploadDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala) { #uploadedFile }
+
+@@@
 
 ## Description
 

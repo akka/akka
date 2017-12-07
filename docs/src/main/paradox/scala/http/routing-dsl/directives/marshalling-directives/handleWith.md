@@ -1,8 +1,12 @@
 # handleWith
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [MarshallingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #handleWith }
+
+@@@
 
 ## Description
 

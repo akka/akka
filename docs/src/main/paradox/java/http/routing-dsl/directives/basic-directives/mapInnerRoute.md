@@ -1,5 +1,13 @@
 # mapInnerRoute
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapInnerRoute }
+
+@@@
+
 ## Description
 
 Changes the execution model of the inner route by wrapping it with arbitrary logic.

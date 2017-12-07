@@ -1,5 +1,13 @@
 # optionalHeaderValue
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [HeaderDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue }
+
+@@@
+
 ## Description
 
 Traverses the list of request headers with the specified function and extracts the first value the function returns a non empty `Optional<T>`.

@@ -1,5 +1,13 @@
 # path
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #path }
+
+@@@
+
 ## Description
 
 Matches the complete unmatched path of the @unidoc[RequestContext] against the given `PathMatcher`, potentially extracts

@@ -1,5 +1,13 @@
 # pathSingleSlash
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathSingleSlash }
+
+@@@
+
 ## Description
 
 Only passes the request to its inner route if the unmatched path of the @unidoc[RequestContext]

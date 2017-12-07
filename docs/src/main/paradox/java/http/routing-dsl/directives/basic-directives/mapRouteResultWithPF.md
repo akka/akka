@@ -1,5 +1,13 @@
 # mapRouteResultWithPF
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapRouteResultWithPF }
+
+@@@
+
 ## Description
 
 Asynchronous variant of @ref[mapRouteResultPF](mapRouteResultPF.md).

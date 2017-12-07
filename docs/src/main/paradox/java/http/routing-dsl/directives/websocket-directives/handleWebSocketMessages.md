@@ -1,5 +1,13 @@
 # handleWebSocketMessages
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [WebSocketDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebSocketDirectives.scala) { #handleWebSocketMessages }
+
+@@@
+
 ## Description
 
 The directive first checks if the request was a valid WebSocket handshake request and if yes, it completes the request

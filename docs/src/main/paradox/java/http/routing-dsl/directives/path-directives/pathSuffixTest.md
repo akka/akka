@@ -1,5 +1,13 @@
 # pathSuffixTest
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathSuffixTest }
+
+@@@
+
 ## Description
 
 Checks whether the unmatched path of the @unidoc[RequestContext] has a suffix matched by the given `PathMatcher`.

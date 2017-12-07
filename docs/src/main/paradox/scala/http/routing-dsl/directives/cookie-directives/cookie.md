@@ -1,8 +1,12 @@
 # cookie
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [CookieDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala) { #cookie }
+
+@@@
 
 ## Description
 

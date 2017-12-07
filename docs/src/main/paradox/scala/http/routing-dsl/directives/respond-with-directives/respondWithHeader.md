@@ -1,8 +1,12 @@
 # respondWithHeader
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [RespondWithDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala) { #respondWithHeader }
+
+@@@
 
 ## Description
 

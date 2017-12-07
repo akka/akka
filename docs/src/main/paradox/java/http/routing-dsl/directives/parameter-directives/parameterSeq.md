@@ -1,5 +1,13 @@
 # parameterList
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [ParameterDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala) { #parameterSeq }
+
+@@@
+
 ## Description
 
 Extracts all parameters at once in the original order as (name, value) tuples of type `Map.Entry<String, String>`.

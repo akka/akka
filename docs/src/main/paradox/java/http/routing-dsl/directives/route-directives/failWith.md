@@ -1,5 +1,13 @@
 # failWith
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [RouteDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala) { #failWith }
+
+@@@
+
 ## Description
 
 Bubbles up the given error through the route structure where it is dealt with by the closest `handleExceptions`

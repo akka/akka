@@ -1,5 +1,13 @@
 # entity
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [MarshallingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #entity }
+
+@@@
+
 ## Description
 
 Unmarshalls the request entity to the given type and passes it to its inner Route.  An unmarshaller

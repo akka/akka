@@ -1,5 +1,13 @@
 # mapRouteResultWith
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapRouteResultWith }
+
+@@@
+
 ## Description
 
 Changes the message the inner route sends to the responder.

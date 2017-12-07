@@ -1,5 +1,13 @@
 # extractScheme
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [SchemeDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala) { #extractScheme }
+
+@@@
+
 ## Description
 
 Extracts the Uri scheme (i.e. "`http`", "`https`", etc.) for an incoming request.

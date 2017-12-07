@@ -1,5 +1,13 @@
 # pathSuffix
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathSuffix }
+
+@@@
+
 ## Description
 
 Matches and consumes a suffix of the unmatched path of the @unidoc[RequestContext] against the given `PathMatcher`,

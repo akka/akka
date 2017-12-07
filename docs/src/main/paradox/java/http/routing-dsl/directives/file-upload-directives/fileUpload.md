@@ -1,5 +1,13 @@
 # fileUpload
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [FileUploadDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala) { #fileUpload }
+
+@@@
+
 ## Description
 
 Simple access to the stream of bytes for a file uploaded as a multipart form together with metadata

@@ -1,5 +1,13 @@
 # toStrictEntity
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #toStrictEntity }
+
+@@@
+
 ## Description
 
 Transforms the request entity to strict entity before it is handled by the inner route.

@@ -1,8 +1,12 @@
 # onComplete
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [FutureDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala) { #onComplete }
+
+@@@
 
 ## Description
 

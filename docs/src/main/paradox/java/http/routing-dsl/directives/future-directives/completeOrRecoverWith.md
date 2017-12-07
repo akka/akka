@@ -1,5 +1,13 @@
 # completeOrRecoverWith
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [FutureDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala) { #completeOrRecoverWith }
+
+@@@
+
 ## Description
 
 "Unwraps" a `CompletionStage<T>` and runs the inner route when the stage has failed

@@ -1,5 +1,13 @@
 # conditional
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [CacheConditionDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CacheConditionDirectives.scala) { #conditional }
+
+@@@
+
 ## Description
 
 Wraps its inner route with support for Conditional Requests as defined

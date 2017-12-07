@@ -1,8 +1,12 @@
 # pathSuffixTest
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathSuffixTest }
+
+@@@
 
 ## Description
 

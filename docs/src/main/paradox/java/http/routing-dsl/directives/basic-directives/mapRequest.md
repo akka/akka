@@ -1,5 +1,13 @@
 # mapRequest
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapRequest }
+
+@@@
+
 ## Description
 
 Transforms the request before it is handled by the inner route.

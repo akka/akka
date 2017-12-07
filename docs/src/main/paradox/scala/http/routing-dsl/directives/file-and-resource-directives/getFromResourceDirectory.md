@@ -1,8 +1,12 @@
 # getFromResourceDirectory
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [FileAndResourceDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala) { #getFromResourceDirectory }
+
+@@@
 
 ## Description
 

@@ -1,5 +1,13 @@
 # alwaysCache
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [CachingDirectives.scala](../../../../../../../../../akka-http-caching/src/main/scala/akka/http/scaladsl/server/directives/CachingDirectives.scala) { #alwaysCache }
+
+@@@
+
 ## Description
 
 Like @ref[cache](cache.md) but disregards a `Cache-Control` request header.

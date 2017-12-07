@@ -1,5 +1,13 @@
 # pathPrefixTest
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathPrefixTest }
+
+@@@
+
 ## Description
 
 Checks whether the unmatched path of the @unidoc[RequestContext] has a prefix matched by the given `PathMatcher`.

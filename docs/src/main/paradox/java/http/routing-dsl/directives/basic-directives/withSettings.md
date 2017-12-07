@@ -1,5 +1,13 @@
 # withSettings
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #withSettings }
+
+@@@
+
 ## Description
 
 Allows running an inner route using an alternative @unidoc[RoutingSettings] in place of the default one.

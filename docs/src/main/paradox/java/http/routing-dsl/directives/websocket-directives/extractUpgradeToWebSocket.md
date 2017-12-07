@@ -1,5 +1,13 @@
 # extractUpgradeToWebSocket
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [WebSocketDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebSocketDirectives.scala) { #extractUpgradeToWebSocket }
+
+@@@
+
 ## Description
 
 Extracts the @javadoc:[UpgradeToWebSocket](akka.http.javadsl.model.ws.UpgradeToWebSocket) header if existent. Rejects with an @javadoc:[ExpectedWebSocketRequestRejection](akka.http.javadsl.server.ExpectedWebSocketRequestRejection), otherwise.

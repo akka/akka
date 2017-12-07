@@ -1,5 +1,13 @@
 # extractActorSystem
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #extractActorSystem }
+
+@@@
+
 ## Description
 
 Extracts the @unidoc[ActorSystem] from the @unidoc[RequestContext], which can be useful when the external API

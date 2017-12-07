@@ -1,5 +1,13 @@
 # cancelRejections
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #cancelRejections }
+
+@@@
+
 ## Description
 
 Adds a @unidoc[TransformationRejection] cancelling all rejections created by the inner route for which

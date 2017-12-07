@@ -1,5 +1,13 @@
 # deleteCookie
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [CookieDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala) { #deleteCookie }
+
+@@@
+
 ## Description
 
 Adds a header to the response to request the removal of the cookie with the given name on the client.

@@ -1,5 +1,13 @@
 # extractMatchedPath
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #extractMatchedPath }
+
+@@@
+
 ## Description
 
 Extracts the matched path from the request context.

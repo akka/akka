@@ -1,5 +1,13 @@
 # handleExceptions
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [ExecutionDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala) { #handleExceptions }
+
+@@@
+
 ## Description
 
 Catches exceptions thrown by the inner route and handles them using the specified @unidoc[ExceptionHandler].

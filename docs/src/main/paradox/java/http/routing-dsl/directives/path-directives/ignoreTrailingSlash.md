@@ -1,5 +1,13 @@
 # ignoreTrailingSlash
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #ignoreTrailingSlash }
+
+@@@
+
 ## Description
 
 If the requested path ends with a trailing `/` character and the inner route is rejected with an empty @unidoc[Rejection] list, 

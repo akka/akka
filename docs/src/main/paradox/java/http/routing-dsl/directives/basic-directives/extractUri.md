@@ -1,5 +1,13 @@
 # extractUri
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #extractUri }
+
+@@@
+
 ## Description
 
 Access the full URI of the request.

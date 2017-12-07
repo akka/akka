@@ -1,5 +1,13 @@
 # getFromFile
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [FileAndResourceDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala) { #getFromFile }
+
+@@@
+
 ## Description
 
 Allows exposing a file to be streamed to the client issuing the request.

@@ -1,5 +1,13 @@
 # mapUnmatchedPath
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapUnmatchedPath }
+
+@@@
+
 ## Description
 
 Transforms the unmatchedPath field of the request context for inner routes.

@@ -1,5 +1,13 @@
 # redirect
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [RouteDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala) { #redirect }
+
+@@@
+
 ## Description
 
 Completes the request with a redirection response to a given target URI and of a given redirection type (status code).

@@ -1,5 +1,13 @@
 # scheme
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [SchemeDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala) { #scheme }
+
+@@@
+
 ## Description
 
 Rejects a request if its Uri scheme does not match a given one.

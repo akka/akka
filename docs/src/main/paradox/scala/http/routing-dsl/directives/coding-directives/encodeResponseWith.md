@@ -1,8 +1,12 @@
 # encodeResponseWith
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [CodingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala) { #encodeResponseWith }
+
+@@@
 
 ## Description
 

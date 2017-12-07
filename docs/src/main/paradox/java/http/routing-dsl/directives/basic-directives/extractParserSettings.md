@@ -1,5 +1,13 @@
 # extractParserSettings
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #extractParserSettings }
+
+@@@
+
 ## Description
 
 Extracts the request's underlying @javadoc:[ParserSettings](akka.http.javadsl.settings.ParserSettings), which can be useful when you want to access custom status codes and media types.

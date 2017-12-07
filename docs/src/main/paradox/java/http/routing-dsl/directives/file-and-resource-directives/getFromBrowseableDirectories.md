@@ -1,5 +1,13 @@
 # getFromBrowseableDirectories
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [FileAndResourceDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala) { #getFromBrowseableDirectories }
+
+@@@
+
 ## Description
 
 The `getFromBrowseableDirectories` is a combination of serving files from the specified directories

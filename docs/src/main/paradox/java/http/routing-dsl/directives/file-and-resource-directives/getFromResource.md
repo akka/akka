@@ -1,5 +1,13 @@
 # getFromResource
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [FileAndResourceDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala) { #getFromResource }
+
+@@@
+
 ## Description
 
 Completes `GET` requests with the content of the given classpath resource.

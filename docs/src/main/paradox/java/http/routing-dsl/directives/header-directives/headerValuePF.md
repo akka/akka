@@ -1,5 +1,13 @@
 # headerValuePF
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [HeaderDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #headerValuePF }
+
+@@@
+
 ## Description
 
 Calls the specified partial function with the first request header the function is `isDefinedAt` and extracts the

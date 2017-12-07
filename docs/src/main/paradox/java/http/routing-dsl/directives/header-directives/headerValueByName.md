@@ -1,5 +1,13 @@
 # headerValueByName
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [HeaderDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #headerValueByName }
+
+@@@
+
 ## Description
 
 Extracts the value of the HTTP request header with the given name.

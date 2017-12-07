@@ -1,5 +1,13 @@
 # withPrecompressedMediaTypeSupport
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [CodingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala) { #withPrecompressedMediaTypeSupport }
+
+@@@
+
 ## Description
 
 Inspects the response entity and adds a `Content-Encoding: gzip` response header if
