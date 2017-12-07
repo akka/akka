@@ -800,7 +800,7 @@ private[akka] class ShardRegion(
     else {
       shards.get(id).orElse(
         entityPropsFactory match {
-          case Some(factory) if !shardsByRef.values.exists(_ == id) ⇒
+          case Some(props) if !shardsByRef.values.exists(_ == id) ⇒
             log.debug("Starting shard [{}] in region", id)
 
             val name = URLEncoder.encode(id, "utf-8")
@@ -808,7 +808,7 @@ private[akka] class ShardRegion(
               Shard.props(
                 typeName,
                 id,
-                factory,
+                props(id),
                 settings,
                 extractEntityId,
                 extractShardId,
