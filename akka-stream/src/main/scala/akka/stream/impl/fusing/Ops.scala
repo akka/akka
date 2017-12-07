@@ -1172,7 +1172,7 @@ private[stream] object Collect {
       private val futureCB = getAsyncCallback[Holder[Out]](holder ⇒
         holder.elem match {
           case Success(_) ⇒ pushNextIfPossible()
-          case Failure(NonFatal(ex)) ⇒
+          case Failure(ex) ⇒
             holder.supervisionDirectiveFor(decider, ex) match {
               // fail fast as if supervision says so
               case Supervision.Stop ⇒ failStage(ex)
@@ -1195,9 +1195,14 @@ private[stream] object Collect {
           future.value match {
             case None ⇒ future.onComplete(holder)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
             case Some(v) ⇒
-              // #20217 the future is already here, avoid scheduling it on the dispatcher
+              // #20217 the future is already here, optimization: avoid scheduling it on the dispatcher and
+              // run the logic directly on this thread
               holder.setElem(v)
-              pushNextIfPossible()
+              v match {
+                // this optimization also requires us to stop the stage to fail fast if the decider says so:
+                case Failure(ex) if holder.supervisionDirectiveFor(decider, ex) == Supervision.Stop ⇒ failStage(ex)
+                case _ ⇒ pushNextIfPossible()
+              }
           }
 
         } catch {
@@ -1225,6 +1230,8 @@ private[stream] object Collect {
 
             case Failure(NonFatal(ex)) ⇒
               holder.supervisionDirectiveFor(decider, ex) match {
+                // this could happen if we are looping in pushNextIfPossible and end up on a failed future before the
+                // onComplete callback has run
                 case Supervision.Stop ⇒ failStage(ex)
                 case _ ⇒
                   // try next element
