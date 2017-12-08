@@ -51,7 +51,7 @@ Both `Route`, `RouteResult` and other important core concepts such as `Rejection
 making is much simpler to understand one API based on the other one – tremendously useful when learning about some nice
 pattern from blogs which used Scala, yet need to apply it in Java and the other way around.
 
-It is now possible to implement marshallers using Java. Refer to @ref[Marshalling & Unmarshalling](../../../java/http/routing-dsl/marshalling.md) for details.
+It is now possible to implement marshallers using Java. Refer to @ref[Marshalling](../common/marshalling.md) & @ref[Unmarshalling](../common/unmarshalling.md) for details.
 
 ## Some complete* overloads changed to completeOK*
 

@@ -14,7 +14,6 @@ To use the high-level API you need to add a dependency to the `akka-http` module
 * [overview](overview.md)
 * [routes](routes.md)
 * [directives/index](directives/index.md)
-* [marshalling](marshalling.md)
 * [exception-handling](exception-handling.md)
 * [source-streaming-support](source-streaming-support.md)
 * [rejections](rejections.md)

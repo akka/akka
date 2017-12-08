@@ -47,7 +47,7 @@ public class PetStoreExample {
   public static Route appRoute(final Map<Integer, Pet> pets) {
     PetStoreController controller = new PetStoreController(pets);
 
-    // Defined as Function in order to refere to [pets], but this could also be an ordinary method.
+    // Defined as Function in order to refer to [pets], but this could also be an ordinary method.
     Function<Integer, Route> existingPet = petId -> {
         Pet pet = pets.get(petId);
         return (pet == null) ? reject() : complete(StatusCodes.OK, pet, Jackson.<Pet>marshaller());

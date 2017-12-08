@@ -1,1 +1,0 @@
-../../../scala/http/common/http-model.md
