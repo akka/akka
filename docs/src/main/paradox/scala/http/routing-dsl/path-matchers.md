@@ -11,7 +11,7 @@ or more @ref[pathPrefix](directives/path-directives/pathPrefix.md) or @ref[path]
 left until, in most cases, it eventually has been consumed completely.
 
 What exactly gets matched and consumed as well as extracted from the unmatched path in each directive is defined with
-the patch matching DSL, which is built around these types:
+the path matching DSL, which is built around these types:
 
 ```scala
 trait PathMatcher[L: Tuple]
