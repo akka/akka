@@ -54,7 +54,7 @@ Java
 :   @@snip [RecipeSourceFromFunction.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeSourceFromFunction.java) { #source-from-function }
 
 Note: if the element-builder function touches mutable state, then a guaranteed single-threaded source should be used
-instead; e.g. as `Source.unfold` or `Source.unfoldResource`.
+instead; e.g. `Source.unfold` or `Source.unfoldResource`.
 
 ### Flattening a stream of sequences
 
