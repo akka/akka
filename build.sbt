@@ -404,6 +404,7 @@ lazy val typedTests = akkaModule("akka-typed-tests")
   )
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)
+  .enablePlugins(NoPublish)
 
 
 def akkaModule(name: String): Project =
