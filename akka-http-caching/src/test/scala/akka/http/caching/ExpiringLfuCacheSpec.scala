@@ -47,8 +47,6 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
         }
       )
       val future2 = cache.get(1, () ⇒ "")
-      Thread.sleep(50)
-      cache.store.get(1).getNumberOfDependents should be(2)
 
       latch.countDown()
       Await.result(future1, 3.seconds) should be("A")
@@ -67,7 +65,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "not cache exceptions" in {
       val cache = lfuCache[String]()
       an[RuntimeException] shouldBe thrownBy {
-        Await.result(cache(1, () ⇒ { throw new RuntimeException("Naa"); Future.successful("") }), 5.second)
+        Await.result(cache(1, () ⇒ throw new RuntimeException("Naa")), 5.second)
       }
       Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")
     }

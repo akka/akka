@@ -19,7 +19,8 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.0") // for advan
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.1")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.4")
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.6")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.4") // needs to stay on 0.4 until all docs pages are consolidated
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.7")
 
-libraryDependencies += "org.kohsuke" % "github-api" % "1.68"
+// used in ValidatePullRequest to check github PR comments whether to build all subprojects
+libraryDependencies += "org.kohsuke" % "github-api" % "1.90"
