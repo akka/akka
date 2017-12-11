@@ -73,7 +73,7 @@ lazy val root = Project(
   )
 
 lazy val parsing = project("akka-parsing")
-  .addAkkaModuleDependency("akka-actor")
+  .addAkkaModuleDependency("akka-actor", "provided")
   .settings(Dependencies.parsing)
   .settings(OSGi.parsing)
   .settings(
@@ -86,7 +86,7 @@ lazy val parsing = project("akka-parsing")
 
 lazy val httpCore = project("akka-http-core")
   .dependsOn(parsing)
-  .addAkkaModuleDependency("akka-stream")
+  .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .settings(Dependencies.httpCore)
   .settings(OSGi.httpCore)
@@ -95,6 +95,7 @@ lazy val httpCore = project("akka-http-core")
 
 lazy val http = project("akka-http")
   .dependsOn(httpCore)
+  .addAkkaModuleDependency("akka-stream", "provided")
   .settings(Dependencies.http)
   .settings(OSGi.http)
   .settings(
@@ -104,6 +105,7 @@ lazy val http = project("akka-http")
 
 lazy val http2Support = project("akka-http2-support")
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
+  .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .settings(Dependencies.http2)
   .settings(Dependencies.http2Support)
@@ -164,6 +166,7 @@ lazy val httpTests = project("akka-http-tests")
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
+  .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
@@ -179,11 +182,13 @@ lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
 
 lazy val httpXml =
   httpMarshallersScalaSubproject("xml")
+    .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpXml)
     .settings(OSGi.httpXml)
 
 lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
+    .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpSprayJson)
     .settings(OSGi.httpSprayJson)
 
@@ -194,11 +199,13 @@ lazy val httpMarshallersJava = project("akka-http-marshallers-java")
 
 lazy val httpJackson =
   httpMarshallersJavaSubproject("jackson")
+    .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpJackson)
     .settings(OSGi.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val httpCaching = project("akka-http-caching")
+  .addAkkaModuleDependency("akka-stream", "provided")
   .settings(Dependencies.httpCaching)
   .dependsOn(http, httpCore, httpTestkit % "test")
 
@@ -224,6 +231,7 @@ def httpMarshallersJavaSubproject(name: String) =
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin, MimaPlugin)
+  .addAkkaModuleDependency("akka-stream", "provided")
   .dependsOn(
     httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala, httpCaching,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"

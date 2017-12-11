@@ -20,15 +20,13 @@ of your libraries: `Detected java.lang.NoSuchMethodError error, which MAY be cau
 
 ### Akka HTTP 10.0.x with Akka 2.5.x
 
-Akka HTTP 10.0.x is (binary) compatible with *both* Akka `2.4.x` as well as Akka `2.5.x`, however in order to facilitate 
-this the build (and thus released artifacts) depend on the `2.4` series. Depending on how you structure your dependencies,
-you may encounter a situation where you depended on `akka-actor` of the `2.5` series, and you depend on `akka-http`
-from the `10.0` series, which in turn would transitively pull in the `akka-streams` dependency in version `2.4` which 
-breaks the binary compatibility requirement that all Akka modules must be of the same version, so the `akka-streams` 
-dependency MUST be the same version as `akka-actor` (so the exact version from the `2.5` series).
-
-In order to resolve this dependency issue, you must depend on akka-streams explicitly, and make it the same version as
-the rest of your Akka environment, for example like this:
+Akka HTTP 10.0.x is (binary) compatible with *both* Akka `2.4.x` as well as Akka `2.5.x`. However, using Akka HTTP with Akka 2.5 used to be
+a bit confusing, because Akka HTTP explicitly depended on Akka 2.4. Trying to use it together with Akka 2.5,
+running an Akka HTTP application could fail with class loading issues like the above if you forgot to add a dependency to
+both `akka-actor` *and* `akka-stream` of the same version. For that reason, we changed the policy not to depend on `akka-stream`
+explicitly any more but mark it as a `provided` dependency in our build. That means that you will *always* have to add
+a manual dependency to `akka-stream`. Please make sure you have chosen and added a dependency to `akka-stream` when
+updating to the new version. (Old timers may remember this policy from spray.)
 
 sbt
 :   @@@vars
@@ -47,11 +45,11 @@ sbt
 Gradle
 :   @@@vars
     ```
-    compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$', version: '$project.version$'
-    compile group: 'com.typesafe.akka', name: 'akka-actor_$scala.binary_version$', version: '$akka25.version$'
+    compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$',   version: '$project.version$'
+    compile group: 'com.typesafe.akka', name: 'akka-actor_$scala.binary_version$',  version: '$akka25.version$'
     compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '$akka25.version$'
     // If testkit used, explicitly declare dependency on akka-streams-testkit in same version as akka-actor
-    testCompile group: 'com.typesafe.akka', name: 'akka-http-testkit_$scala.binary_version$', version: '$project.version$'
+    testCompile group: 'com.typesafe.akka', name: 'akka-http-testkit_$scala.binary_version$',   version: '$project.version$'
     testCompile group: 'com.typesafe.akka', name: 'akka-stream-testkit_$scala.binary_version$', version: '$akka25.version$'
     ```
     @@@
