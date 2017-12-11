@@ -17,6 +17,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class RecipeSourceFromFunction extends RecipeTest {
@@ -39,25 +40,23 @@ public class RecipeSourceFromFunction extends RecipeTest {
   @Test
   public void beMappingOfRepeat() throws Exception {
     new TestKit(system) {
-      int counter = 0;
-
-      final int builderFunction() {
-        counter += 1;
-        return counter;
+      final String builderFunction() {
+        return UUID.randomUUID().toString();
       }
+
       {
         //#source-from-function
-        final Source<Integer, NotUsed> source = Source
+        final Source<String, NotUsed> source = Source
           .repeat(NotUsed.getInstance())
           .map(elem -> builderFunction());
         //#source-from-function
 
-        final List<Integer> result = source
-          .take(3)
+        final List<String> result = source
+          .take(2)
           .runWith(Sink.seq(), mat)
           .toCompletableFuture().get(3, TimeUnit.SECONDS);
 
-        Assert.assertArrayEquals(new Integer[] {1, 2, 3}, result.toArray());
+        Assert.assertEquals(2, result.size());
       }
     };
   }
