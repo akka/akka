@@ -29,23 +29,24 @@ class ByteString_dropRight_Benchmark {
   /*
    --------------------------------- BASELINE -----------------------------------------------------------------------
    commit 0f2da7b26b5c4af35be87d2bd4a1a2392365df15
-   [info] Benchmark                                                 Mode  Cnt           Score          Error  Units
-   [info] ByteString_dropRight_Benchmark.bss_avg                   thrpt   40       25626.311 ±     1395.662  ops/s
-   [info] ByteString_dropRight_Benchmark.bss_best                  thrpt   40     8667558.031 ±   200233.008  ops/s
-   [info] ByteString_dropRight_Benchmark.bss_greater_or_eq_to_len  thrpt   40       12658.684 ±      376.730  ops/s
-   [info] ByteString_dropRight_Benchmark.bss_negative              thrpt   40  1214680926.895 ± 10661843.507  ops/s
-   [info] ByteString_dropRight_Benchmark.bss_worst                 thrpt   40       13087.245 ±      246.911  ops/s
+   [info] Benchmark                                                 Mode  Cnt          Score         Error  Units
+   [info] ByteString_dropRight_Benchmark.bss_avg                   thrpt   40      27775.584 ±     153.671  ops/s
+   [info] ByteString_dropRight_Benchmark.bss_best                  thrpt   40    8896435.523 ±   39693.086  ops/s
+   [info] ByteString_dropRight_Benchmark.bss_greater_or_eq_to_len  thrpt   40      13166.278 ±     149.709  ops/s
+   [info] ByteString_dropRight_Benchmark.bss_iteration             thrpt   40          6.361 ±       0.030  ops/s
+   [info] ByteString_dropRight_Benchmark.bss_negative              thrpt   40  348765581.301 ± 5981494.625  ops/s
+   [info] ByteString_dropRight_Benchmark.bss_worst                 thrpt   40      13364.024 ±      69.827  ops/s
 
    --------------------------------- AFTER --------------------------------------------------------------------------
 
    ------ TODAY –––––––
-   [info] Benchmark                                                 Mode  Cnt           Score         Error  Units
-   [info] ByteString_dropRight_Benchmark.bss_avg                   thrpt   40      528969.025 ±    6039.001  ops/s
-   [info] ByteString_dropRight_Benchmark.bss_best                  thrpt   40     7925951.396 ±  249279.950  ops/s
-   [info] ByteString_dropRight_Benchmark.bss_greater_or_eq_to_len  thrpt   40   893475724.604 ± 9836471.105  ops/s
-   [info] ByteString_dropRight_Benchmark.bss_negative              thrpt   40  1182275022.613 ± 9710755.955  ops/s
-   [info] ByteString_dropRight_Benchmark.bss_worst                 thrpt   40      244599.957 ±    3276.140  ops/s
-
+   [info] Benchmark                                                 Mode  Cnt          Score         Error  Units
+   [info] ByteString_dropRight_Benchmark.bss_avg                   thrpt   40    5546191.528 ±  129660.665  ops/s
+   [info] ByteString_dropRight_Benchmark.bss_best                  thrpt   40    3781902.387 ±   71481.259  ops/s
+   [info] ByteString_dropRight_Benchmark.bss_greater_or_eq_to_len  thrpt   40  254119811.602 ± 3464120.268  ops/s
+   [info] ByteString_dropRight_Benchmark.bss_iteratio              thrpt   40        975.490 ±      21.433  ops/s
+   [info] ByteString_dropRight_Benchmark.bss_negative              thrpt   40  275402741.230 ± 8882548.856  ops/s
+   [info] ByteString_dropRight_Benchmark.bss_worst                 thrpt   40   16023701.310 ±  159979.511  ops/s
    */
 
   @Benchmark
@@ -67,4 +68,13 @@ class ByteString_dropRight_Benchmark {
   @Benchmark
   def bss_worst(): ByteString =
     bss.dropRight(n_worst)
+
+  @Benchmark
+  def bss_iteration(): Unit = {
+    var i = 0
+    while (i < len) {
+      bss.dropRight(i)
+      i += 1
+    }
+  }
 }
