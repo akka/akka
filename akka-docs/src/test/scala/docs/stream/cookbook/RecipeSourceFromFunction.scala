@@ -18,7 +18,6 @@ class RecipeSourceFromFunction extends RecipeSpec {
       //#source-from-function
       val source = Source.repeat(NotUsed).map(_ ⇒ builderFunction())
       //#source-from-function
-      Source.unfold()
 
       val f = source.take(2).runWith(Sink.seq)
       f.futureValue.distinct.size should ===(2)
