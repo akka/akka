@@ -235,7 +235,7 @@ final class ClusterShardingSettings(
   /** If true, this node should run the shard region, otherwise just a shard proxy should started on this node. */
   @InternalApi
   private[akka] def shouldHostShard(cluster: Cluster): Boolean =
-    role.isEmpty || cluster.selfMember.roles(role.get)
+    role.forall(cluster.selfMember.roles.contains)
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.roleOption(role))
 

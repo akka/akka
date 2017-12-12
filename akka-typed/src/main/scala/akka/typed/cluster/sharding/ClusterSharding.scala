@@ -101,7 +101,7 @@ trait ShardingMessageExtractor[E, A] {
   def entityMessage(message: E): A // TODO "unwrapMessage" is how I'd call it?
 
   /**
-   * Extract the entity id from an incoming `message`. Only messages that passed the [[#entityId]]
+   * Extract the shard id from an incoming `message`. Only messages that passed the [[#entityId]]
    * function will be used as input to this function.
    */
   def shardId(message: E): String
@@ -227,7 +227,7 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
 
     val ref =
       if (settings.shouldHostShard(cluster)) {
-        system.log.info("Starting Shard Region [{}]...")
+        system.log.info("Starting Shard Region [{}]...", typeKey.name)
 
         val untypedProps = behavior match {
           case u: UntypedBehavior[_] ⇒ u.untypedProps // PersistentBehavior
@@ -242,7 +242,7 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
           defaultShardAllocationStrategy(settings),
           handOffStopMessage)
       } else {
-        system.log.info("Starting Shard Region Proxy [{}] (no actors will be hosted on this node)...")
+        system.log.info("Starting Shard Region Proxy [{}] (no actors will be hosted on this node)...", typeKey.name)
 
         untypedSharding.startProxy(
           typeKey.name,
