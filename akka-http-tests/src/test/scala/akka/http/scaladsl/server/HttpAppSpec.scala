@@ -16,7 +16,7 @@ import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.ActorMaterializer
-import akka.testkit.{ AkkaSpec, EventFilter, SocketUtil }
+import akka.testkit.{ AkkaSpec, EventFilter }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 

@@ -5,7 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.http.impl.util.EnhancedString
-import akka.http.scaladsl.model.headers.{ BasicHttpCredentials, HttpCredentials, `Proxy-Authorization` }
+import akka.http.scaladsl.model.headers.{ BasicHttpCredentials, HttpCredentials }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }

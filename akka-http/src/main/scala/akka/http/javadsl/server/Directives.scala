@@ -8,8 +8,7 @@ import java.util.function.{ BiFunction, Function, Supplier }
 
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
-import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.server.directives.{ FramedEntityStreamingDirectives, TimeoutDirectives }
+import akka.http.javadsl.server.directives.FramedEntityStreamingDirectives
 
 import scala.annotation.varargs
 
@@ -20,8 +19,6 @@ abstract class AllDirectives extends FramedEntityStreamingDirectives
  */
 @InternalApi
 object Directives extends AllDirectives {
-  import JavaMapping.Implicits._
-  import RoutingJavaMapping._
 
   // These are repeated here since sometimes (?) the Scala compiler won't actually generate java-compatible
   // signatures for varargs methods, making them show up as Seq<Object> instead of T... in Java.

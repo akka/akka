@@ -4,10 +4,7 @@
 
 package akka.http.scaladsl.settings
 
-import akka.actor.ActorSystem
 import akka.testkit.AkkaSpec
-import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpec }
 
 class PreviewServerSettingsSpec extends AkkaSpec {
 

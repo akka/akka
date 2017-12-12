@@ -5,10 +5,7 @@
 package akka.http.scaladsl.marshalling
 
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.http.scaladsl.common.EntityStreamingSupport
-import akka.http.scaladsl.model
-import akka.http.scaladsl.model.ContentType.{ Binary, WithFixedCharset }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
@@ -17,7 +14,6 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImplicits {

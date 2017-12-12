@@ -7,10 +7,8 @@ package docs.http.scaladsl
 import akka.http.scaladsl.Http
 
 //#bindAndHandleAsync
-import scala.concurrent.Future
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes }
 
 object Http2Spec {
   val asyncHandler = ???

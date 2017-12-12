@@ -4,21 +4,17 @@
 
 package akka.http.impl.engine.http2
 
-import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FLOW_CONTROL_ERROR, FRAME_SIZE_ERROR }
-import akka.http.scaladsl.model.http2.{ Http2Exception, PeerClosedStreamException }
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
 import akka.http.scaladsl.settings.Http2ServerSettings
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.impl.io.ByteStringParser.ParsingException
-import akka.stream.scaladsl.Source
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
 import akka.util.ByteString
 
-import scala.collection.immutable
 import scala.util.control.NonFatal
 
 /**

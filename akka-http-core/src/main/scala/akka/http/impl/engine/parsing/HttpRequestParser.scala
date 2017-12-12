@@ -31,7 +31,6 @@ private[http] final class HttpRequestParser(
   headerParser:        HttpHeaderParser)
   extends GraphStage[FlowShape[SessionBytes, RequestOutput]] { self ⇒
 
-  import HttpMessageParser._
   import settings._
 
   val in = Inlet[SessionBytes]("HttpRequestParser.in")

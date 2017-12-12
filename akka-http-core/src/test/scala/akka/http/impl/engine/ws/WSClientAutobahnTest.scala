@@ -6,7 +6,7 @@ package akka.http.impl.engine.ws
 
 import akka.Done
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import spray.json._
 import akka.actor.ActorSystem

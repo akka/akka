@@ -22,8 +22,6 @@ import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._
 
-import scala.util.{ Failure, Success }
-
 /**
  * @groupname basic Basic directives
  * @groupprio basic 10

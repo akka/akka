@@ -6,7 +6,7 @@ package akka.http.scaladsl.server
 
 import akka.NotUsed
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
-import akka.stream.{ ActorMaterializer, ActorMaterializerHelper, Materializer }
+import akka.stream.{ ActorMaterializerHelper, Materializer }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import akka.stream.scaladsl.Flow

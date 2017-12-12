@@ -12,10 +12,9 @@ import scala.compat.java8.OptionConverters
 import scala.compat.java8.OptionConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model.headers.{ HttpOriginRange, HttpOriginRanges }
-import akka.http.javadsl.model.{ HttpHeader, StatusCodes }
-import akka.http.javadsl.server.{ InvalidOriginRejection, MissingHeaderRejection, Route }
-import akka.http.scaladsl.model.headers.HttpOriginRange.Default
-import akka.http.scaladsl.model.headers.{ ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin }
+import akka.http.javadsl.model.HttpHeader
+import akka.http.javadsl.server.Route
+import akka.http.scaladsl.model.headers.{ ModeledCustomHeader, ModeledCustomHeaderCompanion }
 import akka.http.scaladsl.server.directives.{ HeaderMagnet, HeaderDirectives ⇒ D }
 
 import scala.reflect.ClassTag

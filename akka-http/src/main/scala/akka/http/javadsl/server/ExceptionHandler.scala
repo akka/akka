@@ -5,7 +5,6 @@
 package akka.http.javadsl.server
 
 import akka.http.scaladsl.server
-import akka.japi.pf.PFBuilder
 import akka.http.javadsl.settings.RoutingSettings
 import akka.http.impl.util.JavaMapping.Implicits._
 import RoutingJavaMapping._

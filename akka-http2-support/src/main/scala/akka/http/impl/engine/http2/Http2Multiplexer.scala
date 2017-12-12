@@ -5,13 +5,12 @@
 package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
-import akka.stream.Attributes
 import akka.stream.scaladsl.Sink
 
 import scala.collection.mutable
 import scala.collection.immutable
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler, StageLogging }
-import akka.util.{ ByteString, OptionVal }
+import akka.util.ByteString
 
 /**
  * INTERNAL API

@@ -6,9 +6,8 @@ package akka.http.impl.model.parser
 
 import akka.annotation.InternalApi
 import akka.parboiled2.Parser
-import akka.http.scaladsl.model.{ RemoteAddress, Uri }
+import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.model.headers._
-import CharacterClasses.`scheme-char`
 
 /**
  * INTERNAL API.

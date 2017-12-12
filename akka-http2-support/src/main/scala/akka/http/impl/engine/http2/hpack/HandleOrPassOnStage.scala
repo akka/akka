@@ -5,7 +5,7 @@
 package akka.http.impl.engine.http2.hpack
 
 import akka.annotation.InternalApi
-import akka.stream.{ FlowShape, Inlet, Outlet, Shape }
+import akka.stream.{ FlowShape, Inlet, Outlet }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 
 /**

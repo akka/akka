@@ -7,7 +7,6 @@ package akka.http.impl.util
 import akka.NotUsed
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.http.scaladsl.model.HttpEntity
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter

@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorSystem
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.settings.ConnectionPoolSettingsImpl
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model._

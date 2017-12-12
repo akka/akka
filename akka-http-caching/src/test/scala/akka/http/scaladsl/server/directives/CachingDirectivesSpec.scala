@@ -4,13 +4,12 @@
 
 package akka.http.scaladsl.server.directives
 
-import akka.http.caching.scaladsl.Cache
 import akka.http.impl.util.SingletonException
 import akka.http.scaladsl.model.{ HttpResponse, Uri }
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ ExceptionHandler, RequestContext, RouteResult }
+import akka.http.scaladsl.server.{ ExceptionHandler, RequestContext }
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.model.HttpMethods.GET
 import org.scalatest.{ Matchers, WordSpec }

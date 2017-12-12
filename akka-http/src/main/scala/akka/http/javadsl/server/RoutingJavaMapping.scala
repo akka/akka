@@ -14,7 +14,6 @@ import akka.http.{ javadsl, scaladsl }
 import akka.http.scaladsl.server.{ directives ⇒ sdirectives }
 import akka.http.scaladsl.{ common ⇒ scommon }
 import akka.http.javadsl.server.{ directives ⇒ jdirectives }
-import akka.http.javadsl.{ common ⇒ jcommon }
 
 import scala.collection.immutable
 

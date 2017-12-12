@@ -4,19 +4,7 @@
 
 package docs.http.scaladsl.server.directives
 
-import akka.NotUsed
-import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSupport }
-import akka.http.scaladsl.marshalling._
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ UnacceptedResponseContentTypeRejection, UnsupportedRequestContentTypeRejection }
-import akka.stream.scaladsl.{ Flow, Source }
-import akka.util.ByteString
-import docs.http.scaladsl.server.RoutingSpec
-import org.scalatest.{ FlatSpec, WordSpec }
-
-import scala.concurrent.Future
+import org.scalatest.WordSpec
 
 class JsonStreamingFullExamples extends WordSpec {
 
@@ -27,20 +15,14 @@ class JsonStreamingFullExamples extends WordSpec {
   import akka.actor.ActorSystem
   import akka.http.scaladsl.Http
   import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSupport }
-  import akka.http.scaladsl.model.{ HttpEntity, StatusCodes, _ }
+  import akka.http.scaladsl.model.{ HttpEntity, _ }
   import akka.http.scaladsl.server.Directives._
   import akka.stream.ActorMaterializer
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-  import akka.http.scaladsl.marshalling.{ Marshaller, ToEntityMarshaller, ToResponseMarshaller }
-  import akka.http.scaladsl.model.TransferEncodings.gzip
-  import akka.http.scaladsl.model.headers.{ HttpEncoding, HttpEncodings }
-  import akka.http.scaladsl.model.ws.{ Message, TextMessage }
-  import akka.stream.scaladsl.{ Flow, Source }
-  import akka.util.ByteString
+  import akka.http.scaladsl.marshalling.{ Marshaller, ToEntityMarshaller }
+  import akka.stream.scaladsl.Source
   import spray.json.DefaultJsonProtocol
-  import spray.json.DefaultJsonProtocol._
 
-  import scala.concurrent.Future
   import scala.io.StdIn
   import scala.util.Random
 

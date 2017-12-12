@@ -28,7 +28,6 @@ import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import scala.compat.java8.FutureConverters._
 import scala.annotation.varargs
 import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers
 
 class RequestContext private (val delegate: scaladsl.server.RequestContext) {
   import RequestContext._

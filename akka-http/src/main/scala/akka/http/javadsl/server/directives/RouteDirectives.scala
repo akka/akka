@@ -10,7 +10,6 @@ import akka.http.javadsl.marshalling.Marshaller
 import akka.http.scaladsl.server._
 import akka.japi.Util
 
-import scala.collection.immutable.Seq
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
 import akka.http.impl.model.JavaUri

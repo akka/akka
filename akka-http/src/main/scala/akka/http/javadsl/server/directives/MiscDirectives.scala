@@ -15,7 +15,6 @@ import scala.collection.JavaConverters._
 import akka.http.javadsl.model.RemoteAddress
 import akka.http.javadsl.model.headers.Language
 import akka.http.impl.util.JavaMapping.Implicits._
-import RoutingJavaMapping._
 
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
