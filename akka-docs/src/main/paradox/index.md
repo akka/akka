@@ -9,6 +9,7 @@
 * [general/index](general/index.md)
 * [index-actors](index-actors.md)
 * [index-network](index-network.md)
+* [index-cluster](index-cluster.md)
 * [stream/index](stream/index.md)
 * [index-futures](index-futures.md)
 * [index-utilities](index-utilities.md)
