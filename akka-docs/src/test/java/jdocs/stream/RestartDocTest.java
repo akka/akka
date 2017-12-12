@@ -56,6 +56,7 @@ public class RestartDocTest {
         Duration.apply(3, TimeUnit.SECONDS), // min backoff
         Duration.apply(30, TimeUnit.SECONDS), // max backoff
         0.2, // adds 20% "noise" to vary the intervals slightly
+        20, // limits the amount of restarts to 20
         () ->
             // Create a source from a future of a source
             Source.fromSourceCompletionStage(
