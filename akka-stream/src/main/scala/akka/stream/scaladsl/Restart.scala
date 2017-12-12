@@ -37,10 +37,11 @@ object RestartSource {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
+   * @param maxRestarts the amount of restarts is capped to this amount
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
-  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(sourceFactory: () ⇒ Source[T, _]): Source[T, NotUsed] = {
-    Source.fromGraph(new RestartWithBackoffSource(sourceFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false))
+  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(sourceFactory: () ⇒ Source[T, _]): Source[T, NotUsed] = {
+    Source.fromGraph(new RestartWithBackoffSource(sourceFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, maxRestarts))
   }
 
   /**
@@ -60,11 +61,12 @@ object RestartSource {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
+   * @param maxRestarts the amount of restarts is capped to this amount
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
-  def onFailuresWithBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(sourceFactory: () ⇒ Source[T, _]): Source[T, NotUsed] = {
-    Source.fromGraph(new RestartWithBackoffSource(sourceFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = true))
+  def onFailuresWithBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(sourceFactory: () ⇒ Source[T, _]): Source[T, NotUsed] = {
+    Source.fromGraph(new RestartWithBackoffSource(sourceFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = true, maxRestarts))
   }
 }
 
@@ -73,13 +75,14 @@ private final class RestartWithBackoffSource[T](
   minBackoff:     FiniteDuration,
   maxBackoff:     FiniteDuration,
   randomFactor:   Double,
-  onlyOnFailures: Boolean) extends GraphStage[SourceShape[T]] { self ⇒
+  onlyOnFailures: Boolean,
+  maxRestarts:    Int) extends GraphStage[SourceShape[T]] { self ⇒
 
   val out = Outlet[T]("RestartWithBackoffSource.out")
 
   override def shape = SourceShape(out)
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Source", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures) {
+    "Source", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures, maxRestarts) {
 
     override protected def logSource = self.getClass
 
@@ -132,10 +135,11 @@ object RestartSink {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
+   * @param maxRestarts the amount of restarts is capped to this amount
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
-  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(sinkFactory: () ⇒ Sink[T, _]): Sink[T, NotUsed] = {
-    Sink.fromGraph(new RestartWithBackoffSink(sinkFactory, minBackoff, maxBackoff, randomFactor))
+  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(sinkFactory: () ⇒ Sink[T, _]): Sink[T, NotUsed] = {
+    Sink.fromGraph(new RestartWithBackoffSink(sinkFactory, minBackoff, maxBackoff, randomFactor, maxRestarts))
   }
 }
 
@@ -143,13 +147,14 @@ private final class RestartWithBackoffSink[T](
   sinkFactory:  () ⇒ Sink[T, _],
   minBackoff:   FiniteDuration,
   maxBackoff:   FiniteDuration,
-  randomFactor: Double) extends GraphStage[SinkShape[T]] { self ⇒
+  randomFactor: Double,
+  maxRestarts:  Int) extends GraphStage[SinkShape[T]] { self ⇒
 
   val in = Inlet[T]("RestartWithBackoffSink.in")
 
   override def shape = SinkShape(in)
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Sink", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false) {
+    "Sink", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, maxRestarts) {
     override protected def logSource = self.getClass
 
     override protected def startGraph() = {
@@ -197,10 +202,11 @@ object RestartFlow {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
+   * @param maxRestarts the amount of restarts is capped to this amount
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
-    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor))
+  def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, maxRestarts))
   }
 }
 
@@ -208,14 +214,15 @@ private final class RestartWithBackoffFlow[In, Out](
   flowFactory:  () ⇒ Flow[In, Out, _],
   minBackoff:   FiniteDuration,
   maxBackoff:   FiniteDuration,
-  randomFactor: Double) extends GraphStage[FlowShape[In, Out]] { self ⇒
+  randomFactor: Double,
+  maxRestarts:  Int) extends GraphStage[FlowShape[In, Out]] { self ⇒
 
   val in = Inlet[In]("RestartWithBackoffFlow.in")
   val out = Outlet[Out]("RestartWithBackoffFlow.out")
 
   override def shape = FlowShape(in, out)
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Flow", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false) {
+    "Flow", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, maxRestarts) {
 
     var activeOutIn: Option[(SubSourceOutlet[In], SubSinkInlet[Out])] = None
 
@@ -266,7 +273,8 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   minBackoff:     FiniteDuration,
   maxBackoff:     FiniteDuration,
   randomFactor:   Double,
-  onlyOnFailures: Boolean) extends TimerGraphStageLogicWithLogging(shape) {
+  onlyOnFailures: Boolean,
+  maxRestarts:    Int) extends TimerGraphStageLogicWithLogging(shape) {
   var restartCount = 0
   var resetDeadline = minBackoff.fromNow
   // This is effectively only used for flows, if either the main inlet or outlet of this stage finishes, then we
@@ -282,7 +290,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     sinkIn.setHandler(new InHandler {
       override def onPush() = push(out, sinkIn.grab())
       override def onUpstreamFinish() = {
-        if (finishing || onlyOnFailures) {
+        if (finishing || maxRestartsReached() || onlyOnFailures) {
           complete(out)
         } else {
           log.debug("Restarting graph due to finished upstream")
@@ -290,7 +298,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         }
       }
       override def onUpstreamFailure(ex: Throwable) = {
-        if (finishing) {
+        if (finishing || maxRestartsReached()) {
           fail(out, ex)
         } else {
           log.error(ex, "Restarting graph due to failure")
@@ -322,7 +330,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         }
       }
       override def onDownstreamFinish() = {
-        if (finishing) {
+        if (finishing || maxRestartsReached()) {
           cancel(in)
         } else {
           log.debug("Graph in finished")
@@ -348,14 +356,17 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     sourceOut
   }
 
-  // Set a timer to restart after the calculated delay
-  protected final def scheduleRestartTimer() = {
+  protected final def maxRestartsReached() = {
     // Check if the last start attempt was more than the minimum backoff
     if (resetDeadline.isOverdue()) {
       log.debug("Last restart attempt was more than {} ago, resetting restart count", minBackoff)
       restartCount = 0
     }
+    restartCount == maxRestarts
+  }
 
+  // Set a timer to restart after the calculated delay
+  protected final def scheduleRestartTimer() = {
     val restartDelay = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
     log.debug("Restarting graph in {}", restartDelay)
     scheduleOnce("RestartTimer", restartDelay)
