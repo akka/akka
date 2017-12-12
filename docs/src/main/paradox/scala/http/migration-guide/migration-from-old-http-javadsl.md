@@ -12,10 +12,10 @@ The most major changes include:
 
 ## HttpApp is gone
 
-`HttpApp` (a helper class containing a `main()` implementation) is gone, as we would like to encourage understanding
+@unidoc[HttpApp] (a helper class containing a `main()` implementation) is gone, as we would like to encourage understanding
 how the various elements of the API fit together.
 
-Instead developers should start applications "manually", by converting a `Route` to a `Flow<HttpRequest, HttpResponse, ?>`
+Instead developers should start applications "manually", by converting a @unidoc[Route] to a @unidoc[Flow[HttpRequest, HttpResponse, ?]]
 using the `Route.flow` method. For examples of full apps refer to @ref[Route Testkit](../routing-dsl/testkit.md).
 
 ## `RequestVal` is gone
@@ -47,7 +47,7 @@ final Route route =
 
 ## All of ScalaDSL routing has corresponding JavaDSL
 
-Both `Route`, `RouteResult` and other important core concepts such as `Rejections` are now modeled 1:1 with Scala,
+Both @unidoc[Route], @unidoc[RouteResult] and other important core concepts such as `Rejections` are now modeled 1:1 with Scala,
 making is much simpler to understand one API based on the other one – tremendously useful when learning about some nice
 pattern from blogs which used Scala, yet need to apply it in Java and the other way around.
 

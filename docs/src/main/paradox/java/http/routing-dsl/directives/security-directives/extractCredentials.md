@@ -2,7 +2,7 @@
 
 ## Description
 
-Extracts the potentially present `HttpCredentials` provided with the request's `Authorization` header,
+Extracts the potentially present @unidoc[HttpCredentials] provided with the request's @unidoc[Authorization] header,
 which can be then used to implement some custom authentication or authorization logic.
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-java) for details about verifying the secret.

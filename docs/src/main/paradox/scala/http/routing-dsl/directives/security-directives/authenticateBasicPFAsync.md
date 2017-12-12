@@ -15,7 +15,7 @@ Provides support for handling [HTTP Basic Authentication](https://en.wikipedia.o
 Refer to @ref[authenticateBasic](authenticateBasic.md) for a detailed description of this directive.
 
 Its semantics are equivalent to `authenticateBasicPF` 's, where not handling a case in the Partial Function (PF)
-leaves the request to be rejected with a `AuthenticationFailedRejection` rejection.
+leaves the request to be rejected with a @unidoc[AuthenticationFailedRejection] rejection.
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-scala) for details about verifying the secret.
 

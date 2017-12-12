@@ -21,14 +21,14 @@ transport layer itself.
 
 ## Configuring Client Transports
 
-A `ClientTransport` is configured slightly differently for the various layers of the HTTP client.
+A @unidoc[ClientTransport] is configured slightly differently for the various layers of the HTTP client.
 Right now, configuration is only possible with code (and not through config files). There's currently no
 predefined way that would allow you to select different transports per target host (but you can easily define any kind
-of strategy by implementing `ClientTransport` yourself).
+of strategy by implementing @unidoc[ClientTransport] yourself).
 
 ### Connection Pool Usage
 
-The `ConnectionPoolSettings` class allows setting a custom transport for any of the pool methods. Use
+The @unidoc[ConnectionPoolSettings] class allows setting a custom transport for any of the pool methods. Use
 `ConnectionPoolSettings.withTransport` to configure a transport and pass those settings to one of the
 pool methods like
 @scala[`Http().singleRequest`, `Http().superPool`, or `Http().cachedHostConnectionPool`]
@@ -70,7 +70,7 @@ Java
 
 ### Use HTTP(S) proxy that requires authentication
 
-In order to use a HTTP(S) proxy that requires authentication, you need to provide `HttpCredentials` that will be used
+In order to use a HTTP(S) proxy that requires authentication, you need to provide @unidoc[HttpCredentials] that will be used
 when making the CONNECT request to the proxy:
 
 

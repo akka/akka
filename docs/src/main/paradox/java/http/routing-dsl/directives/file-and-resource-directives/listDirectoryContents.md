@@ -3,7 +3,7 @@
 ## Description
 
 Completes GET requests with a unified listing of the contents of all given directories. The actual rendering of the
-directory contents is performed by the in-scope `Marshaller[DirectoryListing]`.
+directory contents is performed by the in-scope @unidoc[Marshaller[DirectoryListing]].
 
 To just serve files use @ref[getFromDirectory](getFromDirectory.md).
 

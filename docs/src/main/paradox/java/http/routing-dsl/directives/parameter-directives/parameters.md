@@ -3,7 +3,7 @@
 Extracts multiple *query* parameter values from the request.
 
 If an unmarshaller throws an exception while extracting the value of a parameter, the request will be rejected with a `MissingQueryParameterRejection`
-if the unmarshaller threw an `Unmarshaller.NoContentException` or a `MalformedQueryParamRejection` in all other cases.
+if the unmarshaller threw an `Unmarshaller.NoContentException` or a @unidoc[MalformedQueryParamRejection] in all other cases.
 (see also @ref[Rejections](../../../routing-dsl/rejections.md))
 
 ## Description

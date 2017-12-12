@@ -6,7 +6,7 @@
 want to try the @ref[handleRejections](../execution-directives/handleRejections.md) directive which provides a nicer DSL for building rejection handlers.
 
 Transforms rejections from the inner route with a `Function<Iterable<Rejection>, RouteResult>`.
-A `RouteResult` is either a `Complete` containing the `HttpResponse` or a `Rejected` containing the
+A @unidoc[RouteResult] is either a `Complete` containing the @unidoc[HttpResponse] or a `Rejected` containing the
 rejections.
 
 @@@ note

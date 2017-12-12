@@ -7,7 +7,7 @@ usually aren't used in a route directly but rather in the definition of new dire
 ## Providing Values to Inner Routes
 
 These directives provide values to the inner routes with extractions. They can be distinguished
-on two axes: a) provide a constant value or extract a value from the `RequestContext` b) provide
+on two axes: a) provide a constant value or extract a value from the @unidoc[RequestContext] b) provide
 a single value or a tuple of values.
 
 >

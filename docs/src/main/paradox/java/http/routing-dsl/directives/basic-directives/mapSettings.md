@@ -2,7 +2,7 @@
 
 ## Description
 
-Transforms the `RoutingSettings` with a `Function<RoutingSettings, RoutingSettings>`.
+Transforms the @unidoc[RoutingSettings] with a `Function<RoutingSettings, RoutingSettings>`.
 
 See also @ref[withSettings](withSettings.md) or @ref[extractSettings](extractSettings.md).
 

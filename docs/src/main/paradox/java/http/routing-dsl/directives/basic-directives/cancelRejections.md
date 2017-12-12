@@ -2,7 +2,7 @@
 
 ## Description
 
-Adds a `TransformationRejection` cancelling all rejections created by the inner route for which
+Adds a @unidoc[TransformationRejection] cancelling all rejections created by the inner route for which
 the condition argument function returns `true`.
 
 See also @ref[cancelRejection](cancelRejection.md), for canceling a specific rejection.

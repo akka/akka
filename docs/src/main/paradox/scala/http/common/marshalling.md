@@ -6,34 +6,34 @@ Marshalling is the process of converting a higher-level (object) structure into 
 representation, often a "wire format". Other popular names for marshalling are "serialization" or "pickling".
 
 In Akka HTTP, marshalling means the conversion of an object of type `T` into a lower-level target type,
-e.g. a `MessageEntity` (which forms the "entity body" of an HTTP request or response) or a full `HttpRequest` or
-`HttpResponse`.
+e.g. a `MessageEntity` (which forms the "entity body" of an HTTP request or response) or a full @unidoc[HttpRequest] or
+@unidoc[HttpResponse].
 
 On the server-side, for example, marshalling is used to convert an application-domain object to a response entity. Requests can
-contain an `Accept` header that lists acceptable content types for the client, such as `application/json` and `application/xml`. A marshaller contains the logic to
-negotiate the result content types based on the `Accept` and the `AcceptCharset` headers.
+contain an @unidoc[Accept] header that lists acceptable content types for the client, such as `application/json` and `application/xml`. A marshaller contains the logic to
+negotiate the result content types based on the @unidoc[Accept] and the `AcceptCharset` headers.
 
 ## Basic Design
 
-Marshalling of instances of type `A` into instances of type `B` is performed by a @scala[`Marshaller[A, B]`]@java[`Marshaller<A, B>`].
+Marshalling of instances of type `A` into instances of type `B` is performed by a @scala[@unidoc[Marshaller[A, B]`]@java[@unidoc[Marshaller[A, B]]].
 
-Contrary to what you might initially expect, @scala[`Marshaller[A, B]`]@java[`Marshaller<A, B>`] is not a plain function `A => B` but rather
+Contrary to what you might initially expect, @scala[`Marshaller[A, B]]]@java[@unidoc[Marshaller[A, B]]] is not a plain function `A => B` but rather
 essentially a function @scala[`A => Future[List[Marshalling[B]]]`]@java[`A => CompletionStage<List<Marshalling<B>>>`].
 Let's dissect this rather complicated looking signature piece by piece to understand why marshallers are designed this
 way.
-Given an instance of type `A` a @scala[`Marshaller[A, B]`]@java[`Marshaller<A, B>`] produces:
+Given an instance of type `A` a @scala[@unidoc[Marshaller[A, B]`]@java[@unidoc[Marshaller[A, B]]] produces:
 
 1. A @scala[`Future`]@java[`CompletionStage`]: This is probably quite clear. Marshallers are not required to synchronously produce a result, so instead
 they return a future, which allows for asynchronicity in the marshalling process.
 
 2. of `List`: Rather than only a single target representation for `A` marshallers can offer several ones. Which
 one will be rendered onto the wire in the end is decided by content negotiation.
-For example, the @scala[`Marshaller[OrderConfirmation, MessageEntity]`]@java[`Marshaller<OrderConfirmation, MessageEntity>`] might offer a JSON as well as an XML representation.
-The client can decide through the addition of an `Accept` request header which one is preferred. If the client doesn't
+For example, the @scala[`Marshaller[OrderConfirmation, MessageEntity]`]@java[@unidoc[Marshaller[OrderConfirmation, MessageEntity]]] might offer a JSON as well as an XML representation.
+The client can decide through the addition of an @unidoc[Accept] request header which one is preferred. If the client doesn't
 express a preference the first representation is picked.
 
-3. of @scala[`Marshalling[B]`]@java[`Marshalling<B>`]: Rather than returning an instance of `B` directly marshallers first produce a
-@scala[`Marshalling[B]`]@java[`Marshalling<B>`]. This allows for querying the `MediaType` and potentially the `HttpCharset` that the marshaller
+3. of @scala[`Marshalling[B]]]@java[`Marshalling<B>`]: Rather than returning an instance of `B` directly marshallers first produce a
+@scala[`Marshalling[B]`]@java[`Marshalling<B>`]. This allows for querying the @unidoc[MediaType] and potentially the @unidoc[HttpCharset] that the marshaller
 will produce before the actual marshalling is triggered. Apart from enabling content negotiation this design allows for
 delaying the actual construction of the marshalling target instance to the very last moment when it is really needed.
 
@@ -58,7 +58,7 @@ Specifically these are:
 
  * @scaladoc[PredefinedToEntityMarshallers](akka.http.scaladsl.marshalling.PredefinedToEntityMarshallers)
     * `Array[Byte]`
-    * `ByteString`
+    * @unidoc[ByteString]
     * `Array[Char]`
     * `String`
     * `akka.http.scaladsl.model.FormData`
@@ -66,19 +66,19 @@ Specifically these are:
     * `T <: akka.http.scaladsl.model.Multipart`
  * @scaladoc[PredefinedToResponseMarshallers](akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers)
     * `T`, if a `ToEntityMarshaller[T]` is available
-    * `HttpResponse`
-    * `StatusCode`
+    * @unidoc[HttpResponse]
+    * @unidoc[StatusCode]
     * `(StatusCode, T)`, if a `ToEntityMarshaller[T]` is available
     * `(Int, T)`, if a `ToEntityMarshaller[T]` is available
     * `(StatusCode, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
     * `(Int, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
  * @scaladoc[PredefinedToRequestMarshallers](akka.http.scaladsl.marshalling.PredefinedToRequestMarshallers)
-    * `HttpRequest`
-    * `Uri`
+    * @unidoc[HttpRequest]
+    * @unidoc[Uri]
     * `(HttpMethod, Uri, T)`, if a `ToEntityMarshaller[T]` is available
     * `(HttpMethod, Uri, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
  * @scaladoc[GenericMarshallers](akka.http.scaladsl.marshalling.GenericMarshallers)
-    * `Marshaller[Throwable, T]`
+    * @unidoc[Marshaller[Throwable, T]`
     * `Marshaller[Option[A], B]`, if a `Marshaller[A, B]` and an `EmptyValue[B]` is available
     * `Marshaller[Either[A1, A2], B]`, if a `Marshaller[A1, B]` and a `Marshaller[A2, B]` is available
     * `Marshaller[Future[A], B]`, if a `Marshaller[A, B]` is available
@@ -90,14 +90,14 @@ Specifically these are:
 
  * Predefined @javadoc[RequestEntity](akka.http.javadsl.model.RequestEntity) marshallers:
     * `byte[]`
-    * `ByteString`
+    * @unidoc[ByteString]
     * `char[]`
     * `String`
     * `FormData
  * Predefined @javadoc[HttpResponse](akka.http.javadsl.model.HttpResponse) marshallers:
-    * `T` using an existing `RequestEntity` marshaller for `T`
-    * `T` and `StatusCode` using an existing `RequestEntity` marshaller for `T`
-    * `T`, `StatusCode` and `Iterable[HttpHeader]` using an existing `RequestEntity` marshaller for `T`
+    * `T` using an existing @unidoc[RequestEntity] marshaller for `T`
+    * `T` and @unidoc[StatusCode] using an existing @unidoc[RequestEntity] marshaller for `T`
+    * `T`, @unidoc[StatusCode] and `Iterable[HttpHeader]` using an existing @unidoc[RequestEntity] marshaller for `T`
 
 All marshallers can be found in @javadoc[Marshaller](akka.http.javadsl.marshalling.Marshaller).
 
@@ -107,11 +107,11 @@ All marshallers can be found in @javadoc[Marshaller](akka.http.javadsl.marshalli
 
 ## Implicit Resolution
 
-The marshalling infrastructure of Akka HTTP relies on a type-class based approach, which means that `Marshaller`
+The marshalling infrastructure of Akka HTTP relies on a type-class based approach, which means that @unidoc[Marshaller]
 instances from a certain type `A` to a certain type `B` have to be available implicitly.
 
 The implicits for most of the predefined marshallers in Akka HTTP are provided through the companion object of the
-`Marshaller` trait. This means that they are always available and never need to be explicitly imported.
+@unidoc[Marshaller] trait. This means that they are always available and never need to be explicitly imported.
 Additionally, you can simply "override" them by bringing your own custom version into local scope.
 
 @@@
@@ -121,19 +121,19 @@ Additionally, you can simply "override" them by bringing your own custom version
 Akka HTTP gives you a few convenience tools for constructing marshallers for your own types.
 Before you do that you need to think about what kind of marshaller you want to create.
 If all your marshaller needs to produce is a `MessageEntity` then you should probably provide a
-@scala[`ToEntityMarshaller[T]`]@java[`Marshaller<T, MessageEntity>`]. The advantage here is that it will work on both the client- as well as the server-side since
-a @scala[`ToReponseMarshaller[T]`]@java[`Marshaller<T, HttpResponse>`] as well as a @scala[`ToRequestMarshaller[T]`]@java[`Marshaller<T, HttpRequest>`] can automatically be created if a
-@scala[`ToEntityMarshaller[T]`]@java[`Marshaller<T, MessageEntity>`] is available.
+@scala[`ToEntityMarshaller[T]`]@java[@unidoc[Marshaller[T, MessageEntity]]]. The advantage here is that it will work on both the client- as well as the server-side since
+a @scala[`ToReponseMarshaller[T]`]@java[@unidoc[Marshaller[T, HttpResponse]]] as well as a @scala[`ToRequestMarshaller[T]`]@java[@unidoc[Marshaller[T, HttpRequest]]] can automatically be created if a
+@scala[`ToEntityMarshaller[T]`]@java[@unidoc[Marshaller[T, MessageEntity]]] is available.
 
 If, however, your marshaller also needs to set things like the response status code, the request method, the request URI
-or any headers then a @scala[`ToEntityMarshaller[T]`]@java[`Marshaller<T, MessageEntity`] won't work. You'll need to fall down to providing a
-@scala[`ToResponseMarshaller[T]`]@java[`Marshaller<T, HttpResponse>`] or a @scala[`ToRequestMarshaller[T]`]@java[`Marshaller<T, HttpRequest>`] directly.
+or any headers then a @scala[`ToEntityMarshaller[T]`]@java[@unidoc[Marshaller[T, MessageEntity`] won't work. You'll need to fall down to providing a
+@scala[`ToResponseMarshaller[T]`]@java[`Marshaller[T, HttpResponse]]] or a @scala[`ToRequestMarshaller[T]]]@java[@unidoc[Marshaller[T, HttpRequest]]] directly.
 
-For writing your own marshallers you won't have to "manually" implement the `Marshaller` @scala[trait]@java[class] directly.
+For writing your own marshallers you won't have to "manually" implement the @unidoc[Marshaller] @scala[trait]@java[class] directly.
 
 @@@ div { .group-scala }
 
-Rather, it should be possible to use one of the convenience construction helpers defined on the `Marshaller`
+Rather, it should be possible to use one of the convenience construction helpers defined on the @unidoc[Marshaller]
 companion:
 
 @@snip [Marshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshaller-creation }

@@ -66,7 +66,7 @@ For example, the above screenshot shows an Akka FJP dispatchers threads,
 named "`default-akka.default-dispatcher2,3,4`" going into the blocking state, after having been idle. 
 It can be observed that the number of new threads increases, "`default-akka.actor.default-dispatcher 18,19,20,...`" 
 however they go to sleep state immediately, thus wasting the resources.
-@java[The same happens to the global `ForkJoinPool` when using Java Futures.]
+@java[The same happens to the global @unidoc[ForkJoinPool] when using Java Futures.]
 
 The number of such new threads depends on the default dispatcher configuration,
 but it will likely not exceed 50. Since many POST requests are being processed, the entire

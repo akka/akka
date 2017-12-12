@@ -55,6 +55,6 @@ should be:
 @@snip [CaseClassExtractionExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala) { #example-4 }
 
 If you write your validations like this Akka HTTP's case class extraction logic will properly pick up all error
-messages and generate a `ValidationRejection` if something goes wrong. By default, `ValidationRejections` are
+messages and generate a @unidoc[ValidationRejection] if something goes wrong. By default, `ValidationRejections` are
 converted into `400 Bad Request` error response by the default @ref[RejectionHandler](rejections.md#the-rejectionhandler), if no
 subsequent route successfully handles the request.

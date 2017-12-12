@@ -7,7 +7,7 @@ expensive operation with a caching layer that, based on a certain key of type
 all future accesses for the same key (as long as the respective entry has not
 expired).
 
-Akka HTTP comes with one implementations of the `Cache` API built on [Caffeine]
+Akka HTTP comes with one implementations of the @unidoc[Cache] API built on [Caffeine]
 featuring frequency-biased cache eviction semantics with support for
 time-based entry expiration.
 
@@ -37,8 +37,8 @@ cache which all later requests then "hook into". As soon as the first request
 completes all other ones complete as well. This minimizes processing time and
 server load for all requests.
 
-All Akka HTTP cache implementations adheres to the @java[@javadoc[`Cache`
-interface](akka.http.caching.javadsl.Cache)]@scala[@scaladoc[`Cache`
+All Akka HTTP cache implementations adheres to the @java[@javadoc[@unidoc[Cache]
+interface](akka.http.caching.javadsl.Cache)]@scala[@scaladoc[@unidoc[Cache]
 class](akka.http.caching.scaladsl.Cache)], which allows you to interact with the
 cache.
 
@@ -72,7 +72,7 @@ For simple cases, configure the capacity and expiration settings in your
 `application.conf` file via the settings under `akka.http.caching` and use
 @java[`LfuCache.create()`]@scala[`LfuCache.apply()`] to create the cache.
 For more advanced usage you can create an
-@java[@javadoc[`LfuCache`](akka.http.caching.LfuCache)]@scala[@scaladoc[`LfuCache`](akka.http.caching.LfuCache)]
+@java[@javadoc[@unidoc[LfuCache]](akka.http.caching.LfuCache)]@scala[@scaladoc[@unidoc[LfuCache]](akka.http.caching.LfuCache)]
 with settings specialized for your use case:
 
 Java

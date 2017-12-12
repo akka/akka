@@ -6,7 +6,7 @@
 
 ## Description
 
-Matches the complete unmatched path of the `RequestContext` against the given `PathMatcher`, potentially extracts
+Matches the complete unmatched path of the @unidoc[RequestContext] against the given `PathMatcher`, potentially extracts
 one or more values (depending on the type of the argument).
 
 This directive filters incoming requests based on the part of their URI that hasn't been matched yet by other

@@ -13,9 +13,9 @@ The algorithm implemented by this directive closely follows what is defined in [
 [HTTPbis spec](https://datatracker.ietf.org/wg/httpbis/).
 
 All responses (the ones produces by this directive itself as well as the ones coming back from the inner route) are
-augmented with respective `ETag` and `Last-Modified` response headers.
+augmented with respective @unidoc[ETag] and `Last-Modified` response headers.
 
-Since this directive requires the `EntityTag` and `lastModified` time stamp for the resource as concrete arguments
+Since this directive requires the @unidoc[EntityTag] and `lastModified` time stamp for the resource as concrete arguments
 it is usually used quite deep down in the route structure (i.e. close to the leaf-level), where the exact resource
 targeted by the request has already been established and the respective ETag/Last-Modified values can be determined.
 

@@ -9,7 +9,7 @@ an `Optional` value instead of rejecting the request if no matching header could
 
 @@@ note
 
-Custom headers will only be matched by this directive if they extend `ModeledCustomHeader`
+Custom headers will only be matched by this directive if they extend @unidoc[ModeledCustomHeader]
 from the Scala DSL and there is currently no API for the Java DSL (Ticket #20415)
 
 To learn more about defining custom headers, read: @ref[Custom Headers](../../../common/http-model.md#custom-headers).

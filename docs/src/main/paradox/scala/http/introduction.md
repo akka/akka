@@ -117,7 +117,7 @@ JSON support is possible in `akka-http` by the use of Jackson, an external artif
 for details).
 @@@
 
-The `Route` created using the Route DSL is then "bound" to a port to start serving HTTP requests:
+The @unidoc[Route] created using the Route DSL is then "bound" to a port to start serving HTTP requests:
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #minimal-routing-example }
@@ -174,8 +174,8 @@ Read more about the details of the high level APIs in the section @ref[High-leve
 ## Low-level HTTP server APIs
 
 The low-level Akka HTTP server APIs allows for handling connections or individual requests by accepting
-`HttpRequest` s and answering them by producing `HttpResponse` s. This is provided by the `akka-http-core` module.
-APIs for handling such request-responses as function calls and as a @scala[`Flow[HttpRequest, HttpResponse, _]`]@java[`Flow<HttpRequest, HttpResponse, NotUsed>`] are available.
+@unidoc[HttpRequest] s and answering them by producing @unidoc[HttpResponse] s. This is provided by the `akka-http-core` module.
+APIs for handling such request-responses as function calls and as a @scala[@unidoc[Flow[HttpRequest, HttpResponse, _]]]@java[@unidoc[Flow[HttpRequest, HttpResponse, NotUsed]]] are available.
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }
@@ -187,7 +187,7 @@ Read more details about the low level APIs in the section @ref[Low-Level Server-
 
 ## HTTP client API
 
-The client APIs provide methods for calling a HTTP server using the same `HttpRequest` and `HttpResponse` abstractions
+The client APIs provide methods for calling a HTTP server using the same @unidoc[HttpRequest] and @unidoc[HttpResponse] abstractions
 that Akka HTTP server uses but adds the concept of connection pools to allow multiple requests to the same server to be
 handled more performantly by re-using TCP connections to the server.
 

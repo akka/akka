@@ -54,7 +54,7 @@ found here: <https://datatracker.ietf.org/doc/draft-ietf-httpauth-basicauth-upda
 ## Low-level OAuth2 "Bearer Token" directives
 
 The OAuth2 directives currently provided in Akka HTTP are not a full OAuth2 protocol implementation,
-they are only a means of extracting the so called `Bearer Token` from the `Authorization` HTTP Header,
+they are only a means of extracting the so called `Bearer Token` from the @unidoc[Authorization] HTTP Header,
 as defined in [RFC 6750](https://tools.ietf.org/html/rfc6750), and allow users to validate and complete the protocol.
 
 <a id="credentials-and-timing-attacks-java"></a>

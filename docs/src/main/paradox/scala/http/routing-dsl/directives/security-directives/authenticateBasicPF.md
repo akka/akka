@@ -15,7 +15,7 @@ Provides support for handling [HTTP Basic Authentication](https://en.wikipedia.o
 Refer to @ref[authenticateBasic](authenticateBasic.md) for a detailed description of this directive.
 
 Its semantics are equivalent to `authenticateBasicPF` 's, where not handling a case in the Partial Function (PF)
-leaves the request to be rejected with a `AuthenticationFailedRejection` rejection.
+leaves the request to be rejected with a @unidoc[AuthenticationFailedRejection] rejection.
 
 Longer-running authentication tasks (like looking up credentials in a database) should use @ref[authenticateBasicAsync](authenticateBasicAsync.md)
 or @ref[authenticateBasicPFAsync](authenticateBasicPFAsync.md) if you prefer to use the `PartialFunction` syntax.

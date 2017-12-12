@@ -7,7 +7,7 @@ result of calling the function.
 
 The `headerValuePF` directive is an alternative syntax version of @ref[headerValue](headerValue.md).
 
-If the function throws an exception the request is rejected with a `MalformedHeaderRejection`.
+If the function throws an exception the request is rejected with a @unidoc[MalformedHeaderRejection].
 
 If the function is not defined for any header the request is rejected as "NotFound".
 

@@ -13,7 +13,7 @@ within patch releases.
 
 ### ClientTransport SPI / API Changes
 
-`ClientTransport` SPI and API have changed in @github[#1195](akka/akka-http#1195). `ClientTransport.TCP` is now constant
+@unidoc[ClientTransport] SPI and API have changed in @github[#1195](akka/akka-http#1195). `ClientTransport.TCP` is now constant
 and doesn't take any parameters any more. `ClientTransport.connectTo` now has a new `settings: ClientConnectionSettings` parameter.
 This is a binary and source incompatible change to an `@ApiMayChange` API. So far, this API was not documented or
 exposed so we hope that only few users are affected.

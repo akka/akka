@@ -47,7 +47,7 @@ See the @ref[documentation](common/caching.md) for more information.
 
 The existing host connection pool infrastructure has accrued quite a lot of issues that are hard to fix. Therefore, we
 decided to rewrite the old version which was based on a stream graph jungle with a new version implemented as a single
-`GraphStage` which will be easier to maintain. The new infrastructure already passes all the old tests and is now considered
+@unidoc[GraphStage] which will be easier to maintain. The new infrastructure already passes all the old tests and is now considered
 ready to be tested. The new implementation can be enabled with the feature flag `akka.http.host-connection-pool.pool-implementation = new`.
 One important feature that is available only with the new pool implementation is a new warning that will be shown
 if user code forgets to read or discard a response entity in time (which is one of the most prominent usage problems with our client
@@ -77,7 +77,7 @@ please let us know.
  * Allow disabling of parsing to modeled headers ([#1550](https://github.com/akka/akka-http/issues/1550))
  * Convert RFC references in documents in model classes to scaladoc ([#1514](https://github.com/akka/akka-http/issues/1514))
  * Allow configuration of default http and https ports ([#1449](https://github.com/akka/akka-http/issues/1449))
- * Remove unnecessary implicit `materializer` parameter in several top-level `Http` entry point APIs ([#1464](https://github.com/akka/akka-http/issues/1464))
+ * Remove unnecessary implicit `materializer` parameter in several top-level @unidoc[Http] entry point APIs ([#1464](https://github.com/akka/akka-http/issues/1464))
  * Add `X-Forwarded-Proto` and `X-Forwarded-Host` header models ([#1377](https://github.com/akka/akka-http/issues/1377))
  * Lookup predefined header parsers as early as possible ([#1424](https://github.com/akka/akka-http/issues/1424))
 
@@ -128,7 +128,7 @@ please let us know.
 ### Support for HTTP(S) proxies with Authorization
 
 It is now possible to connect to @ref[HTTP(S) Proxies](client-side/client-transport.md)
-that require an authorization via an `Proxy-Authorization` header. This can be set up directly on the `ClientTransport` object when configuring the proxy. ([#1213](https://github.com/akka/akka-http/issues/1213))
+that require an authorization via an `Proxy-Authorization` header. This can be set up directly on the @unidoc[ClientTransport] object when configuring the proxy. ([#1213](https://github.com/akka/akka-http/issues/1213))
 
 ### Documentation for HTTP 2 support (Preview)
 
@@ -301,7 +301,7 @@ Please update as soon as possible.
 
  * Make marshaller composition more lazy to prevent redundant marshalling when using `Marshaller.oneOf` ([#1019](https://github.com/akka/akka-http/issues/1019))
  * Allow Java-implemented ContentTypeResolver ([#360](https://github.com/akka/akka-http/issues/360))
- * Java DSL routing `complete` now has override that takes`ResponseEntity` as a parameter instead of `RequestEntity` ([#982](https://github.com/akka/akka-http/issues/982))
+ * Java DSL routing `complete` now has override that takes@unidoc[ResponseEntity] as a parameter instead of @unidoc[RequestEntity] ([#982](https://github.com/akka/akka-http/issues/982))
  * Improved usage and documentation of Encoder / Decoder on the Scala and Java side ([#771](https://github.com/akka/akka-http/issues/771))
 
 ##### akka-http2-support
@@ -335,7 +335,7 @@ Please update as soon as possible.
  * Handle failure while parsing the URI in parameter extraction ([#1043](https://github.com/akka/akka-http/issues/1043))
  * Make `extractStrictEntity` provide strict entity for inner routes ([#961](https://github.com/akka/akka-http/issues/961))
  * Enable javadsl to unmarshal with default `ExecutionContext` ([#967](https://github.com/akka/akka-http/issues/967))
- * Smaller fixes for `HttpApp`
+ * Smaller fixes for @unidoc[HttpApp]
 
 ##### akka-http2-support
 
@@ -391,11 +391,11 @@ See [#851](https://github.com/akka/akka-http/issues/851) for more information.
  * Http message and header parser now also accepts LF as end of line (as recommended in the spec) ([#106](https://github.com/akka/akka-http/issues/106))
 
 ##### akka-http
- * `HttpApp` now directly extends from Directives ([#875](https://github.com/akka/akka-http/issues/875))
+ * @unidoc[HttpApp] now directly extends from Directives ([#875](https://github.com/akka/akka-http/issues/875))
  * Added `HttpApp.startServer(host, port)` for even simpler startup. ([#873](https://github.com/akka/akka-http/issues/873))
 
 ##### akka-http2-support
- * Multiplexer infrastructure was rewritten to support plugable `StreamPrioritizer` (not yet surfaced in user API) ([f06ab40](https://github.com/akka/akka-http/commit/f06ab40))
+ * Multiplexer infrastructure was rewritten to support plugable @unidoc[StreamPrioritizer] (not yet surfaced in user API) ([f06ab40](https://github.com/akka/akka-http/commit/f06ab40))
 
 ##### Documentation
  * New documentation page about how to deal with the client-side `max-open-requests` exception ([39f36dd](https://github.com/akka/akka-http/commit/39f36dd))
@@ -425,7 +425,7 @@ small improvements.
 
 ### HttpApp
 
-A notable new feature is the experimental `HttpApp` feature (long time users may know it from spray). It allows
+A notable new feature is the experimental @unidoc[HttpApp] feature (long time users may know it from spray). It allows
 to create an Akka HTTP server with very little boilerplate. See its @ref[documentation](routing-dsl/HttpApp.md). Thanks a lot, [@jlprat](https://github.com/jlprat) for
 contributing this feature and carrying through the PR with the most comments so far.
 

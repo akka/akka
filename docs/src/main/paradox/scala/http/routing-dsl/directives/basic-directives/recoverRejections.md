@@ -10,7 +10,7 @@
 want to try the @ref[handleRejections](../execution-directives/handleRejections.md) directive which provides a nicer DSL for building rejection handlers.
 
 Transforms rejections from the inner route with an `immutable.Seq[Rejection] ⇒ RouteResult` function.
-A `RouteResult` is either a `Complete(HttpResponse(...))` or rejections `Rejected(rejections)`.
+A @unidoc[RouteResult] is either a `Complete(HttpResponse(...))` or rejections `Rejected(rejections)`.
 
 @@@ note
 To learn more about how and why rejections work read the @ref[Rejections](../../rejections.md) section of the documentation.

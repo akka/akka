@@ -10,7 +10,7 @@
 
 Wraps the inner route with OAuth Bearer Token authentication support using a given `AsyncAuthenticator[T]`.
 
-Provides support for extracting the so-called "*Bearer Token*" from the `Authorization` HTTP Header,
+Provides support for extracting the so-called "*Bearer Token*" from the @unidoc[Authorization] HTTP Header,
 which is used to initiate an OAuth2 authorization.
 
 @@@ warning
@@ -19,7 +19,7 @@ by extracting the needed token from the HTTP headers.
 @@@
 
 Given a function returning `Some[T]` upon successful authentication and `None` otherwise,
-respectively applies the inner route or rejects the request with a `AuthenticationFailedRejection` rejection,
+respectively applies the inner route or rejects the request with a @unidoc[AuthenticationFailedRejection] rejection,
 which by default is mapped to an `401 Unauthorized` response.
 
 See also @ref[authenticateOAuth2](authenticateOAuth2.md) if the authorization operation is rather quick, and does not have to execute asynchronously.

@@ -2,7 +2,7 @@
 
 ## Description
 
-Extracts the strict http entity as `HttpEntity.Strict` from the `RequestContext`.
+Extracts the strict http entity as `HttpEntity.Strict` from the @unidoc[RequestContext].
 
 A timeout parameter is given and if the stream isn't completed after the timeout, the directive will be failed.
 

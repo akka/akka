@@ -18,9 +18,9 @@ are mapped to rejections:
 
 |Left(exception)          | Rejection                                                                |
 |-------------------------|--------------------------------------------------------------------------|
-|`ContentExpected`        | `RequestEntityExpectedRejection`                                         |
-|`UnsupportedContentType` | `UnsupportedRequestContentTypeRejection`, which lists the supported types|
-|`MaformedContent`        | `MalformedRequestContentRejection`, with an error message and cause      |
+|`ContentExpected`        | @unidoc[RequestEntityExpectedRejection]                                         |
+|`UnsupportedContentType` | @unidoc[UnsupportedRequestContentTypeRejection], which lists the supported types|
+|`MaformedContent`        | @unidoc[MalformedRequestContentRejection], with an error message and cause      |
 
 ## Examples
 

@@ -4,7 +4,7 @@
 
 Allows exposing a file to be streamed to the client issuing the request.
 
-The `unmatchedPath` (see @ref[extractUnmatchedPath](../basic-directives/extractUnmatchedPath.md)) of the `RequestContext` is first transformed by
+The `unmatchedPath` (see @ref[extractUnmatchedPath](../basic-directives/extractUnmatchedPath.md)) of the @unidoc[RequestContext] is first transformed by
 the given `pathRewriter` function, before being appended to the given directory name to build the final file name.
 
 To files from a given directory use @ref[getFromDirectory](getFromDirectory.md).

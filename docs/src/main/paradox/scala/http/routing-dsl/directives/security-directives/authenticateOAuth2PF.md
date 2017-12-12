@@ -10,7 +10,7 @@
 
 Wraps the inner route with OAuth Bearer Token authentication support using a given `AuthenticatorPF[T]`.
 
-Provides support for extracting the so-called "*Bearer Token*" from the `Authorization` HTTP Header,
+Provides support for extracting the so-called "*Bearer Token*" from the @unidoc[Authorization] HTTP Header,
 which is used to initiate an OAuth2 authorization.
 
 @@@ warning
@@ -21,7 +21,7 @@ by extracting the needed token from the HTTP headers.
 Refer to @ref[authenticateOAuth2](authenticateOAuth2.md) for a detailed description of this directive.
 
 Its semantics are equivalent to `authenticateOAuth2PF` 's, where not handling a case in the Partial Function (PF)
-leaves the request to be rejected with a `AuthenticationFailedRejection` rejection.
+leaves the request to be rejected with a @unidoc[AuthenticationFailedRejection] rejection.
 
 Longer-running authentication tasks (like looking up credentials in a database) should use the @ref[authenticateOAuth2Async](authenticateOAuth2Async.md)
 variant of this directive which allows it to run without blocking routing layer of Akka HTTP, freeing it for other requests.

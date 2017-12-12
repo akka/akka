@@ -18,7 +18,7 @@ Akka HTTP already pre-defines a large number of directives and you can easily co
 Directives create @ref[Routes](../routes.md). To understand how directives work it is helpful to contrast them with the "primitive"
 way of creating routes.
 
-Since `Route` is just a type alias for a function type `Route` instances can be written in any way in which function
+Since @unidoc[Route] is just a type alias for a function type @unidoc[Route] instances can be written in any way in which function
 instances can be written, e.g. as a function literal:
 
 ```scala
@@ -37,7 +37,7 @@ With the @ref[complete](route-directives/complete.md) directive this becomes eve
 val route = complete("yeah")
 ```
 
-These three ways of writing this `Route` are fully equivalent, the created `route` will behave identically in all
+These three ways of writing this @unidoc[Route] are fully equivalent, the created `route` will behave identically in all
 cases.
 
 Let's look at a slightly more complicated example to highlight one important point in particular.
@@ -114,7 +114,7 @@ Here, the inner route of the @ref[get](method-directives/get.md) directive is wr
 However, as you can see from these examples, building routes with directives rather than "manually" results in code that
 is a lot more concise and as such more readable and maintainable. In addition it provides for better composability (as
 you will see in the coming sections). So, when using Akka HTTP's Routing DSL you should almost never have to fall back
-to creating routes via `Route` function literals that directly manipulate the @ref[RequestContext](../routes.md#requestcontext).
+to creating routes via @unidoc[Route] function literals that directly manipulate the @ref[RequestContext](../routes.md#requestcontext).
 
 ## Structure
 
@@ -129,15 +129,15 @@ name(arguments) { extractions =>
 It has a name, zero or more arguments and optionally an inner route (The @ref[RouteDirectives](route-directives/index.md) are special in that they
 are always used at the leaf-level and as such cannot have inner routes).
 Additionally directives can "extract" a number of values and make them available to their inner routes as function
-arguments. When seen "from the outside" a directive with its inner route form an expression of type `Route`.
+arguments. When seen "from the outside" a directive with its inner route form an expression of type @unidoc[Route].
 
 ## What Directives do
 
 A directive can do one or more of the following:
 
- * Transform the incoming `RequestContext` before passing it on to its inner route (i.e. modify the request)
- * Filter the `RequestContext` according to some logic, i.e. only pass on certain requests and reject others
- * Extract values from the `RequestContext` and make them available to its inner route as "extractions"
+ * Transform the incoming @unidoc[RequestContext] before passing it on to its inner route (i.e. modify the request)
+ * Filter the @unidoc[RequestContext] according to some logic, i.e. only pass on certain requests and reject others
+ * Extract values from the @unidoc[RequestContext] and make them available to its inner route as "extractions"
  * Chain some logic into the @ref[RouteResult](../routes.md#routeresult) future transformation chain (i.e. modify the response or rejection)
  * Complete the request
 
@@ -168,7 +168,7 @@ also use the `|` operator on directives. Here is yet another way to write the ex
 
 @@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-3 }
 
-Or better (without dropping down to writing an explicit `Route` function manually):
+Or better (without dropping down to writing an explicit @unidoc[Route] function manually):
 
 @@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-4 }
 

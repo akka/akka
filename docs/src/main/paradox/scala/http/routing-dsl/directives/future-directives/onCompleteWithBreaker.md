@@ -6,10 +6,10 @@
 
 ## Description
 
-Evaluates its parameter of type `Future[T]` protecting it with the specified `CircuitBreaker`.
+Evaluates its parameter of type `Future[T]` protecting it with the specified @unidoc[CircuitBreaker].
 Refer to @extref[Circuit Breaker](akka-docs:common/circuitbreaker.html) for a detailed description of this pattern.
 
-If the `CircuitBreaker` is open, the request is rejected with a `CircuitBreakerOpenRejection`.
+If the @unidoc[CircuitBreaker] is open, the request is rejected with a @unidoc[CircuitBreakerOpenRejection].
 Note that in this case the request's entity databytes stream is cancelled, and the connection is closed
 as a consequence.
 

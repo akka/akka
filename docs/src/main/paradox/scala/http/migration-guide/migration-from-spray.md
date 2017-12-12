@@ -16,14 +16,14 @@ Akka HTTP offers an API based on streams where spray offered an API based on act
 Streaming support is needed to handle request and response entities (or bodies) in a streaming fashion, i.e. being
 able to access the incoming bytes while they come in from the network without having to buffer a potentially big request
 or response in memory. The same is valid for sending out request or response data entities. In the model, the streaming
-underlyings can be seen in the `HttpEntity` type which now has subclasses that allow to specify a `Source[ByteString, Any]`
+underlyings can be seen in the @unidoc[HttpEntity] type which now has subclasses that allow to specify a @unidoc[Source[ByteString, Any]`
 to provide or consume entity data.
 
 In spray, you could configure spray-can to send out `HttpRequestPart` and `HttpResponsePart` messages to receive a request
 or a response in a streaming fashion. The default case was for spray to collect the full entity in memory and send it out
-as a `ByteString` as part of the request or response entity object.
+as a @unidoc[ByteString] as part of the request or response entity object.
 
-In Akka HTTP, handling streaming data is mandatory. When you receive a `HttpRequest` on the server-side or an `HttpResponse`,
+In Akka HTTP, handling streaming data is mandatory. When you receive a @unidoc[HttpRequest] on the server-side or an @unidoc[HttpResponse],
 in the default case it will contain a streamed entity as the `entity` field *which you are required to consume*.
 Otherwise, a connection might be stuck (at least until timeouts kick in).
 See @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md).
@@ -72,7 +72,7 @@ All APIs are also available for Java. See everything under the `akka.http.javads
 
 ### Changes in Route type
 
-Route type has changed from `Route = RequestContext ⇒ Unit` to `Route = RequestContext ⇒ Future[RouteResult]`.
+Route type has changed from `Route = RequestContext ⇒ Unit` to `Route = RequestContext ⇒ Future[RouteResult]].
 Which means that now we must complete the Request inside the controller and we can't simply pass the request to another Actor and complete it there. This has been done intentionally, because in Spray it was easy to forget to `complete` requests but the code would still compile.
 
 The following article mentions a few ways for us to complete the request based on processing outside the controller: 
@@ -146,7 +146,7 @@ Unmarshaller
 
 ### Changes in MediaTypes
 
-`MediaType.custom` can be replaced with specific methods in `MediaType` object.
+`MediaType.custom` can be replaced with specific methods in @unidoc[MediaType] object.
 
 Was:
 

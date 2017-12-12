@@ -32,12 +32,12 @@ For the client side connection pool, the idle period is counted only when the po
 <a id="request-timeout"></a>
 ### Request timeout
 
-Request timeouts are a mechanism that limits the maximum time it may take to produce an `HttpResponse` from a route.
+Request timeouts are a mechanism that limits the maximum time it may take to produce an @unidoc[HttpResponse] from a route.
 If that deadline is not met the server will automatically inject a Service Unavailable HTTP response and close the connection
 to prevent it from leaking and staying around indefinitely (for example if by programming error a Future would never complete,
 never sending the real response otherwise).
 
-The default `HttpResponse` that is written when a request timeout is exceeded looks like this:
+The default @unidoc[HttpResponse] that is written when a request timeout is exceeded looks like this:
 
 @@snip [HttpServerBluePrint.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/impl/engine/server/HttpServerBluePrint.scala) { #default-request-timeout-httpresponse }
 

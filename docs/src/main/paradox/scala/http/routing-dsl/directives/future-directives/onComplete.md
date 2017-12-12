@@ -22,5 +22,5 @@ Using the `onComplete` directive means that you'll have to explicitly and manual
 @@@
 
 @@@ note
-The identically named `onComplete` method of Scala's `Future` (from the standard library) does not work at all in this context since it's just a method that returns `Unit` - whereas Akka HTTP's `onComplete` is a `Directive` that creates a `Route`.
+The identically named `onComplete` method of Scala's `Future` (from the standard library) does not work at all in this context since it's just a method that returns `Unit` - whereas Akka HTTP's `onComplete` is a `Directive` that creates a @unidoc[Route].
 @@@

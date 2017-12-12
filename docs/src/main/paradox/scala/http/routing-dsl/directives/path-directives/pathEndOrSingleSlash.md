@@ -6,7 +6,7 @@
 
 ## Description
 
-Only passes the request to its inner route if the unmatched path of the `RequestContext` is either empty
+Only passes the request to its inner route if the unmatched path of the @unidoc[RequestContext] is either empty
 or contains only one single slash.
 
 This directive is a simple alias for `rawPathPrefix(Slash.? ~ PathEnd)` and is mostly used on an inner-level to

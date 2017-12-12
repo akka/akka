@@ -2,7 +2,7 @@
 
 Path directives are the most basic building blocks for routing requests depending on the URI path.
 
-When a request (or rather the respective `RequestContext` instance) enters the route structure it has an
+When a request (or rather the respective @unidoc[RequestContext] instance) enters the route structure it has an
 "unmatched path" that is identical to the `request.uri.path`. As it descends the routing tree and passes through one
 or more `pathPrefix` or `path` directives the "unmatched path" progressively gets "eaten into" from the
 left until, in most cases, it eventually has been consumed completely.
@@ -22,7 +22,7 @@ variants of those directives on the other side do no such preprocessing, so that
 A path matcher is a description of a part of a path to match. The simplest path matcher is `PathMatcher.segment` which
 matches exactly one path segment against the supplied constant string.
 
-Other path matchers defined in `PathMatchers` match the end of the path (`PathMatchers.END`), a single slash
+Other path matchers defined in @unidoc[PathMatchers] match the end of the path (`PathMatchers.END`), a single slash
 (`PathMatchers.SLASH`), or nothing at all (`PathMatchers.NEUTRAL`).
 
 Many path matchers are hybrids that can both match (by using them with one of the PathDirectives) and extract values,

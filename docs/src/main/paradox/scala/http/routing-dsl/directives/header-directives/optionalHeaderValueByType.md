@@ -19,7 +19,7 @@ an `Option` value instead of rejecting the request if no matching header could b
 
 @@@ note
 
-Custom headers will only be matched by this directive if they extend `ModeledCustomHeader`
+Custom headers will only be matched by this directive if they extend @unidoc[ModeledCustomHeader]
 and provide a companion extending `ModeledCustomHeaderCompanion`, otherwise the routing
 infrastructure does now know where to search for the needed companion and header name.
 

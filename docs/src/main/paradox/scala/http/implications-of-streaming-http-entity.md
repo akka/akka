@@ -1,8 +1,8 @@
 # Implications of the streaming nature of Request/Response Entities
 
 Akka HTTP is streaming *all the way through*, which means that the back-pressure mechanisms enabled by Akka Streams
-are exposed through all layers–from the TCP layer, through the HTTP server, all the way up to the user-facing `HttpRequest`
-and `HttpResponse` and their `HttpEntity` APIs.
+are exposed through all layers–from the TCP layer, through the HTTP server, all the way up to the user-facing @unidoc[HttpRequest]
+and @unidoc[HttpResponse] and their @unidoc[HttpEntity] APIs.
 
 This has surprising implications if you are used to non-streaming / not-reactive HTTP clients.
 Specifically it means that: "*lack of consumption of the HTTP Entity, is signaled as back-pressure to the other
@@ -14,7 +14,7 @@ from overwhelming our application, possibly causing un-necessary buffering of th
 Consuming (or discarding) the Entity of a request is mandatory!
 If *accidentally* left neither consumed or discarded Akka HTTP will
 assume the incoming data should remain back-pressured, and will stall the incoming data via TCP back-pressure mechanisms.
-A client should consume the Entity regardless of the status of the `HttpResponse`.
+A client should consume the Entity regardless of the status of the @unidoc[HttpResponse].
 
 @@@
 

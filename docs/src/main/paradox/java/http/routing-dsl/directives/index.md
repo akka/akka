@@ -15,7 +15,7 @@ Akka HTTP already pre-defines a large number of directives and you can easily co
 
 ## Basics
 
-@ref[Routes](../routes.md) effectively are simply highly specialised functions that take a `RequestContext` and eventually `complete` it, 
+@ref[Routes](../routes.md) effectively are simply highly specialised functions that take a @unidoc[RequestContext] and eventually `complete` it, 
 which could (and often should) happen asynchronously.
 
 With the @ref[complete](route-directives/complete.md) directive this becomes even shorter:
@@ -65,16 +65,16 @@ It has a name, zero or more arguments and optionally an inner route (The @ref[Ro
 are always used at the leaf-level and as such cannot have inner routes).
 
 Additionally directives can "extract" a number of values and make them available to their inner routes as function
-arguments. When seen "from the outside" a directive with its inner route form an expression of type `Route`.
+arguments. When seen "from the outside" a directive with its inner route form an expression of type @unidoc[Route].
 
 ## What Directives do
 
 A directive can do one or more of the following:
 
- * Transform the incoming `RequestContext` before passing it on to its inner route (i.e. modify the request)
- * Filter the `RequestContext` according to some logic, i.e. only pass on certain requests and reject others
- * Extract values from the `RequestContext` and make them available to its inner route as "extractions"
- * Chain some logic into the `RouteResult` future transformation chain (i.e. modify the response or rejection)
+ * Transform the incoming @unidoc[RequestContext] before passing it on to its inner route (i.e. modify the request)
+ * Filter the @unidoc[RequestContext] according to some logic, i.e. only pass on certain requests and reject others
+ * Extract values from the @unidoc[RequestContext] and make them available to its inner route as "extractions"
+ * Chain some logic into the @unidoc[RouteResult] future transformation chain (i.e. modify the response or rejection)
  * Complete the request
 
 This means a `Directive` completely wraps the functionality of its inner route and can apply arbitrarily complex
@@ -113,7 +113,7 @@ Again, instead of extracting own combined directives to its own method, we can m
 
 In this previous example, the the inner route function provided to `allOf` will be called when the request is a `GET` and with the extracted client IP obtained from the second directive.
 
-As you have already seen in the previous section, you can also use the `route` method defined in `RouteDirectives` as an alternative to `orElse` chaining. Here you can see the first example again, rewritten using `route`:
+As you have already seen in the previous section, you can also use the `route` method defined in @unidoc[RouteDirectives] as an alternative to `orElse` chaining. Here you can see the first example again, rewritten using `route`:
 
 @@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingRoute }
 
@@ -149,7 +149,7 @@ anyOf(bindParameter(this::parameter, "foo"), bindParameter(this::parameter, "bar
 ```
 In this previous example we make use of the `bindParameter` function located in `akka-http/akka.http.javadsl.common.PartialApplication`.
 In order to be able to call `anyOf`, we need to convert our directive that takes 2 parameters to a function that takes only 1.
-In this particular case we want to use the `parameter` directive that takes a `String` and a function from `String` to `Route`,
+In this particular case we want to use the `parameter` directive that takes a `String` and a function from `String` to @unidoc[Route],
 so to be able to use it in combination with `anyOf`, we need to bind the first parameter to `foo` and to `bar` in the second one. `bindParameter(this::parameter, "foo")` is equivalent 
 to define your own function like this:
 ```java

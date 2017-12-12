@@ -16,14 +16,14 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 ## Description
 
-Logs the request using the supplied `LoggingMagnet[HttpRequest => Unit]` using the `LoggingAdapter` of the `RequestContext`. The `LoggingMagnet` is a wrapped
+Logs the request using the supplied `LoggingMagnet[HttpRequest => Unit]` using the @unidoc[LoggingAdapter] of the @unidoc[RequestContext]. The `LoggingMagnet` is a wrapped
 function `HttpRequest => Unit` that can be implicitly created from the different constructors shown above. These
 constructors build a `LoggingMagnet` from these components:
 
  * A marker to prefix each log message with.
  * A log level.
  * A `show` function that calculates a string representation for a request.
- * A function that creates a `LogEntry` which is a combination of the elements above.
+ * A function that creates a @unidoc[LogEntry] which is a combination of the elements above.
 
 It is also possible to use any other function `HttpRequest => Unit` for logging by wrapping it with `LoggingMagnet`.
 See the examples for ways to use the `logRequest` directive.

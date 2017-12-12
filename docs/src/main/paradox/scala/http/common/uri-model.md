@@ -1,13 +1,13 @@
 ## The URI model
 
-Akka HTTP offers its own specialised `Uri` model class which is tuned for both performance and idiomatic usage within
-other types of the HTTP model. For example, an `HttpRequest`'s target URI is parsed into this type, where all character
+Akka HTTP offers its own specialised @unidoc[Uri] model class which is tuned for both performance and idiomatic usage within
+other types of the HTTP model. For example, an @unidoc[HttpRequest]'s target URI is parsed into this type, where all character
 escaping and other URI specific semantics are applied.
 
 ### Parsing a URI string
 
 We follow [RFC 3986](http://tools.ietf.org/html/rfc3986#section-1.1.2) to implement the URI parsing rules.
-When you try to parse a URI string, Akka HTTP internally creates an instance of the `Uri` class, which holds the modeled URI components inside.
+When you try to parse a URI string, Akka HTTP internally creates an instance of the @unidoc[Uri] class, which holds the modeled URI components inside.
 
 For example, the following creates an instance of a simple valid URI:
 
@@ -24,7 +24,7 @@ Java
     ```
 
 
-Below are some more examples of valid URI strings, and how you can construct a `Uri` model class instances
+Below are some more examples of valid URI strings, and how you can construct a @unidoc[Uri] model class instances
 @scala[,using `Uri.from()` method by passing `scheme`, `host`, `path` and `query` parameters].
 
 Scala
@@ -89,8 +89,8 @@ URI that was used. For an example check the reference configuration.
 Although any part of URI can have special characters, it is more common for the query string in URI to have special characters,
 which are typically [percent encoded](https://en.wikipedia.org/wiki/Percent-encoding).
 
-@scala[`Uri` class's `query()` method]@java[The method `Uri::query()`] returns the query string of the URI, which is modeled in an instance of the `Query` class.
-When you instantiate a `Uri` class by passing a URI string, the query string is stored in its raw string form.
+@scala[@unidoc[Uri] class's `query()` method]@java[The method `Uri::query()`] returns the query string of the URI, which is modeled in an instance of the `Query` class.
+When you instantiate a @unidoc[Uri] class by passing a URI string, the query string is stored in its raw string form.
 Then, when you call the `query()` method, the query string is parsed from the raw string.
 
 The below code illustrates how valid query strings are parsed.
@@ -202,7 +202,7 @@ Other than specifying the `mode` in the parameters, like when using directives, 
     uri-parsing-mode = strict
 ```
 
-To access the raw, unparsed representation of the query part of a URI use the `rawQueryString` member of the `Uri` class.
+To access the raw, unparsed representation of the query part of a URI use the `rawQueryString` member of the @unidoc[Uri] class.
 
 #### Directives to extract query parameters
 

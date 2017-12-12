@@ -2,7 +2,7 @@
 
 Akka HTTP supports TLS encryption on the server-side as well as on the @ref[client-side](../client-side/client-https-support.md).
 
-The central vehicle for configuring encryption is the `HttpsConnectionContext`, which can be created using
+The central vehicle for configuring encryption is the @unidoc[HttpsConnectionContext], which can be created using
 the static method `ConnectionContext.https` which is defined like this:
 
 Scala
@@ -58,12 +58,12 @@ titled [Generating X.509 Certificates](https://lightbend.github.io/ssl-config/Ce
 <a id="using-https"></a>
 ## Using HTTPS
 
-Once you have obtained the server certificate, using it is as simple as preparing an `HttpsConnectionContext`
-and either setting it as the default one to be used by all servers started by the given `Http` extension
+Once you have obtained the server certificate, using it is as simple as preparing an @unidoc[HttpsConnectionContext]
+and either setting it as the default one to be used by all servers started by the given @unidoc[Http] extension
 or passing it in explicitly when binding the server.
 
 The below example shows how setting up HTTPS works.
-First, you create and configure an instance of `HttpsConnectionContext` :
+First, you create and configure an instance of @unidoc[HttpsConnectionContext] :
 
 Scala
 :  @@snip [HttpsServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #imports #low-level-default }
@@ -116,7 +116,7 @@ Java
 ## Mutual authentication
 
 To require clients to authenticate themselves when connecting, pass in @scala[`Some(TLSClientAuth.Need)`]@java[`Optional.of(TLSClientAuth.need)`] as the `clientAuth` parameter of the
-@scala[@scaladoc[`HttpsConnectionContext`](akka.http.scaladsl.HttpsConnectionContext)]@java[@javadoc[`HttpsConnectionContext`](akka.http.javadsl.HttpsConnectionContext)]
+@scala[@scaladoc[@unidoc[HttpsConnectionContext]](akka.http.scaladsl.HttpsConnectionContext)]@java[@javadoc[@unidoc[HttpsConnectionContext]](akka.http.javadsl.HttpsConnectionContext)]
 and make sure the truststore is populated accordingly. For further (custom) certificate checks you can use the
 @scala[@scaladoc[`Tls-Session-Info`](akka.http.scaladsl.model.headers.Tls$minusSession$minusInfo)]@java[@javadoc[`TlsSessionInfo`](akka.http.javadsl.model.headers.TlsSessionInfo)] synthetic header.
 

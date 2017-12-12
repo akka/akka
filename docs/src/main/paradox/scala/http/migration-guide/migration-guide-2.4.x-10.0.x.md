@@ -20,7 +20,7 @@ Please read @extref[Binary Compatibility Rules](akka-docs:common/binary-compatib
 
 ### `SecurityDirectives#challengeFor` has moved
 
-The `challengeFor` directive was actually more like a factory for `HttpChallenge`,
+The `challengeFor` directive was actually more like a factory for @unidoc[HttpChallenge],
 thus it was moved to become such. It is now available as `akka.http.javadsl.model.headers.HttpChallenge#create[Basic|OAuth2]`
 for JavaDSL and `akka.http.scaladsl.model.headers.HttpChallenges#[basic|oAuth2]` for ScalaDSL.
 
@@ -41,7 +41,7 @@ but are now available from the packages `akka.http.javadsl.unmarshalling` and `a
 
 ## Akka HTTP 2.4.11 -> 10.0.0
 
-### Java DSL `PathDirectives` used Scala Function type
+### Java DSL @unidoc[PathDirectives] used Scala Function type
 
 The Java DSL for the following directives `pathPrefixText`, `rawPathPrefixTest`, `rawPathPrefix`, `pathSuffix`
 accidentally used the Scala function type instead of the `java.util.function.Function` functional interface,

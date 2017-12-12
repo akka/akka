@@ -36,8 +36,8 @@ For further information about this marker, see @extref:[The @DoNotInherit and @A
 in the Akka documentation.
 @@@
 
-To help start a server Akka HTTP provides an experimental helper class called `HttpApp`.
-This is the same example as before rewritten using `HttpApp`:
+To help start a server Akka HTTP provides an experimental helper class called @unidoc[HttpApp].
+This is the same example as before rewritten using @unidoc[HttpApp]:
 
 @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #minimal-routing-example }
 
@@ -65,9 +65,9 @@ refer to the @ref[Handling HTTP Server failures in the Low-Level API](../server-
 
 ### Failures and exceptions inside the Routing DSL
 
-Exception handling within the Routing DSL is done by providing `ExceptionHandler` s which are documented in-depth
+Exception handling within the Routing DSL is done by providing @unidoc[ExceptionHandler] s which are documented in-depth
 in the @ref[Exception Handling](exception-handling.md) section of the documentation. You can use them to transform exceptions into
-`HttpResponse` s with appropriate error codes and human-readable failure descriptions.
+@unidoc[HttpResponse] s with appropriate error codes and human-readable failure descriptions.
 
 ### File uploads
 

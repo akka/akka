@@ -24,3 +24,6 @@ addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.7")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
 libraryDependencies += "org.kohsuke" % "github-api" % "1.90"
+
+// used for @unidoc directive
+libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "2.9.3"

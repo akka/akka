@@ -8,7 +8,7 @@
 
 Explicitly rejects the request optionally using the given rejection(s).
 
-`reject` uses the given rejection instances (which might be the empty `Seq`) to construct a `Route` which simply
+`reject` uses the given rejection instances (which might be the empty `Seq`) to construct a @unidoc[Route] which simply
 calls `requestContext.reject`. See the chapter on @ref[Rejections](../../rejections.md) for more information on what this means.
 
 After the request has been rejected at the respective point it will continue to flow through the routing structure in

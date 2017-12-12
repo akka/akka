@@ -2,7 +2,7 @@
 
 Akka HTTP supports TLS encryption on the client-side as well as on the @ref[server-side](../server-side/server-https-support.md).
 
-The central vehicle for configuring encryption is the `HttpsConnectionContext`, which can be created using
+The central vehicle for configuring encryption is the @unidoc[HttpsConnectionContext], which can be created using
 the static method `ConnectionContext.https` which is defined like this:
 
 Scala
@@ -26,8 +26,8 @@ following logic:
  1. If the optional `httpsContext` method parameter is defined it contains the configuration to be used (and thus
 takes precedence over any potentially set default client-side `HttpsContext`).
  2. If the optional `httpsContext` method parameter is undefined (which is the default) the default client-side
-`HttpsContext` is used, which can be set via the `setDefaultClientHttpsContext` on the `Http` extension.
- 3. If no default client-side `HttpsContext` has been set via the `setDefaultClientHttpsContext` on the `Http`
+`HttpsContext` is used, which can be set via the `setDefaultClientHttpsContext` on the @unidoc[Http] extension.
+ 3. If no default client-side `HttpsContext` has been set via the `setDefaultClientHttpsContext` on the @unidoc[Http]
 extension the default system configuration is used.
 
 Usually the process is, if the default system TLS configuration is not good enough for your application's needs,

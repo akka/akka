@@ -6,7 +6,7 @@
 
 ## Description
 
-Only passes the request to its inner route if the unmatched path of the `RequestContext`
+Only passes the request to its inner route if the unmatched path of the @unidoc[RequestContext]
 contains exactly one single slash.
 
 This directive is a simple alias for `pathPrefix(PathEnd)` and is mostly used for matching requests to the root URI

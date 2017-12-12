@@ -3,27 +3,27 @@
 
 The "Route" is the central concept of Akka HTTP's Routing DSL. All the structures you build with the DSL, no matter
 whether they consists of a single line or span several hundred lines, are @scala[`type`]@java[`function`] turning a 
-`RequestContext` into a @scala[`Future[RouteResult]`]@java[`CompletionStage<RouteResult>`].
+@unidoc[RequestContext] into a @scala[`Future[RouteResult]`]@java[`CompletionStage<RouteResult>`].
 
 @@@ div { .group-scala }
 
 ```scala
 type Route = RequestContext => Future[RouteResult]
 ```
-It's a simple alias for a function turning a `RequestContext` into a `Future[RouteResult]`.
+It's a simple alias for a function turning a @unidoc[RequestContext] into a `Future[RouteResult]`.
 
 @@@
 
 @@@ div { .group-java }
 
-A `Route` itself is a function that operates on a `RequestContext` and returns a `RouteResult`. The
-`RequestContext` is a data structure that contains the current request and auxiliary data like the so far unmatched
+A @unidoc[Route] itself is a function that operates on a @unidoc[RequestContext] and returns a @unidoc[RouteResult]. The
+@unidoc[RequestContext] is a data structure that contains the current request and auxiliary data like the so far unmatched
 path of the request URI that gets passed through the route structure. It also contains the current `ExecutionContext`
 and `akka.stream.Materializer`, so that these don't have to be passed around manually.
 
 @@@
 
-Generally when a route receives a request (or rather a `RequestContext` for it) it can do one of these things:
+Generally when a route receives a request (or rather a @unidoc[RequestContext] for it) it can do one of these things:
 
  * Complete the request by returning the value of `requestContext.complete(...)`
  * Reject the request by returning the value of `requestContext.reject(...)` (see @ref[Rejections](rejections.md#rejections))
@@ -34,32 +34,32 @@ The first case is pretty clear, by calling `complete` a given response is sent t
 request. In the second case "reject" means that the route does not want to handle the request. You'll see further down
 in the section about route composition what this is good for.
 
-A `Route` can be "sealed" using `Route.seal`, which relies on the in-scope `RejectionHandler` and `ExceptionHandler`
+A @unidoc[Route] can be "sealed" using `Route.seal`, which relies on the in-scope `RejectionHandler` and @unidoc[ExceptionHandler]
 instances to convert rejections and exceptions into appropriate HTTP responses for the client.
 @ref[Sealing a Route](#sealing-a-route) is described more in detail later. 
 
 
-Using `Route.handlerFlow` or `Route.asyncHandler` a `Route` can be lifted into a handler `Flow` or async handler
+Using `Route.handlerFlow` or `Route.asyncHandler` a @unidoc[Route] can be lifted into a handler @unidoc[Flow] or async handler
 function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../server-side/low-level-api.md).
 
-Note: There is also an implicit conversion from `Route` to `Flow[HttpRequest, HttpResponse, Unit]` defined in the
-`RouteResult` companion, which relies on `Route.handlerFlow`.
+Note: There is also an implicit conversion from @unidoc[Route] to @unidoc[Flow[HttpRequest, HttpResponse, Unit]] defined in the
+@unidoc[RouteResult] companion, which relies on `Route.handlerFlow`.
 
 <a id="requestcontext"></a>
 ## RequestContext
 
-The request context wraps an `HttpRequest` instance to enrich it with additional information that are typically
-required by the routing logic, like an `ExecutionContext`, `Materializer`, `LoggingAdapter` and the configured
-`RoutingSettings`. It also contains the `unmatchedPath`, a value that describes how much of the request URI has not
+The request context wraps an @unidoc[HttpRequest] instance to enrich it with additional information that are typically
+required by the routing logic, like an `ExecutionContext`, @unidoc[Materializer], @unidoc[LoggingAdapter] and the configured
+@unidoc[RoutingSettings]. It also contains the `unmatchedPath`, a value that describes how much of the request URI has not
 yet been matched by a @ref[Path Directive](directives/path-directives/index.md#pathdirectives).
 
-The `RequestContext` itself is immutable but contains several helper methods which allow for convenient creation of
+The @unidoc[RequestContext] itself is immutable but contains several helper methods which allow for convenient creation of
 modified copies.
 
 <a id="routeresult"></a>
 ## RouteResult
 
-`RouteResult` is a simple abstract data type (ADT) that models the possible non-error results of a `Route`.
+@unidoc[RouteResult] is a simple abstract data type (ADT) that models the possible non-error results of a @unidoc[Route].
 It is defined as such:
 
 @@@ div { .group-scala }
@@ -75,7 +75,7 @@ object RouteResult {
 
 @@@
 
-Usually you don't create any `RouteResult` instances yourself, but rather rely on the pre-defined @ref[RouteDirectives](directives/route-directives/index.md#routedirectives)
+Usually you don't create any @unidoc[RouteResult] instances yourself, but rather rely on the pre-defined @ref[RouteDirectives](directives/route-directives/index.md#routedirectives)
 (like @ref[complete](directives/route-directives/complete.md#complete), @ref[reject](directives/route-directives/reject.md#reject) or @ref[redirect](directives/route-directives/redirect.md#redirect)) or the respective methods on the [RequestContext](#requestcontext)
 instead.
 
@@ -164,7 +164,7 @@ specific cases up front and the most general cases in the back.
 As described in @ref[Rejections](rejections.md#rejections-scala) and @ref[Exception Handling](exception-handling.md#exception-handling-scala),
 there are generally two ways to handle rejections and exceptions.
 
- * Bring rejection/exception handlers @scala[`into implicit scope at the top-level`]@java[`seal()` method of the `Route`]
+ * Bring rejection/exception handlers @scala[`into implicit scope at the top-level`]@java[`seal()` method of the @unidoc[Route]]
  * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directives 
 
 In the first case your handlers will be "sealed", (which means that it will receive the default handler as a fallback for all cases your handler doesn't handle itself) 

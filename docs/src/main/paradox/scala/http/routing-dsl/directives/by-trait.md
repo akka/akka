@@ -1,6 +1,6 @@
 # Predefined Directives (by trait)
 
-All predefined directives are organized into traits that form one part of the overarching `Directives` trait.
+All predefined directives are organized into traits that form one part of the overarching @unidoc[Directives] trait.
 
 <a id="request-directives"></a>
 ## Directives filtering or extracting from the request

@@ -12,7 +12,7 @@ stream semantics prevent that the pool is overloaded with requests. On the other
 up when the rate of new requests is greater than the rate at which the pool can process requests.
 
 In such a situation `max-open-requests` per host connection pool will be queued to buffer short-term peaks of requests.
-Further requests will fail immediately with a `BufferOverflowException` with a message like this:
+Further requests will fail immediately with a @unidoc[BufferOverflowException] with a message like this:
 
 ```
 Exceeded configured max-open-requests value of ...

@@ -17,9 +17,9 @@ Java
 
 This brings all of the most relevant types in scope, mainly:
 
- * `HttpRequest` and `HttpResponse`, the central message model
+ * @unidoc[HttpRequest] and @unidoc[HttpResponse], the central message model
  * `headers`, the package containing all the predefined HTTP header models and supporting types
- * Supporting types like `Uri`, `HttpMethods`, `MediaTypes`, `StatusCodes`, etc.
+ * Supporting types like @unidoc[Uri], @unidoc[HttpMethods], @unidoc[MediaTypes], @unidoc[StatusCodes], etc.
 
 A common pattern is that the model of a certain entity is represented by an immutable type (class or trait),
 while the actual instances of the entity defined by the HTTP spec live in an accompanying object carrying the name of
@@ -27,18 +27,18 @@ the type plus a trailing plural 's'.
 
 For example:
 
- * Defined `HttpMethod` instances @scala[live in]@java[are defined as static fields of] the `HttpMethods` @scala[object]@java[class].
- * Defined `HttpCharset` instances @scala[live in]@java[are defined as static fields of] the `HttpCharsets` @scala[object]@java[class].
- * Defined `HttpEncoding` instances @scala[live in]@java[are defined as static fields of] the `HttpEncodings` @scala[object]@java[class].
- * Defined `HttpProtocol` instances @scala[live in]@java[are defined as static fields of] the `HttpProtocols` @scala[object]@java[class].
- * Defined `MediaType` instances @scala[live in]@java[are defined as static fields of] the `MediaTypes` @scala[object]@java[class].
- * Defined `StatusCode` instances @scala[live in]@java[are defined as static fields of] the `StatusCodes` @scala[object]@java[class].
+ * Defined @unidoc[HttpMethod] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpMethods] @scala[object]@java[class].
+ * Defined @unidoc[HttpCharset] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpCharsets] @scala[object]@java[class].
+ * Defined @unidoc[HttpEncoding] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpEncodings] @scala[object]@java[class].
+ * Defined @unidoc[HttpProtocol] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpProtocols] @scala[object]@java[class].
+ * Defined @unidoc[MediaType] instances @scala[live in]@java[are defined as static fields of] the @unidoc[MediaTypes] @scala[object]@java[class].
+ * Defined @unidoc[StatusCode] instances @scala[live in]@java[are defined as static fields of] the @unidoc[StatusCodes] @scala[object]@java[class].
 
 ## HttpRequest
 
-`HttpRequest` and `HttpResponse` are the basic @scala[case]@java[immutable] classes representing HTTP messages.
+@unidoc[HttpRequest] and @unidoc[HttpResponse] are the basic @scala[case]@java[immutable] classes representing HTTP messages.
 
-An `HttpRequest` consists of
+An @unidoc[HttpRequest] consists of
 
  * a method (GET, POST, etc.)
  * a URI (see @ref[URI model](uri-model.md) for more information)
@@ -46,7 +46,7 @@ An `HttpRequest` consists of
  * an entity (body data)
  * a protocol
 
-Here are some examples how to construct an `HttpRequest`:
+Here are some examples how to construct an @unidoc[HttpRequest]:
 
 Scala
 :   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-request }
@@ -56,7 +56,7 @@ Java
 
 @@@ div { .group-scala }
 All parameters of `HttpRequest.apply` have default values set, so `headers` for example don't need to be specified
-if there are none. Many of the parameters types (like `HttpEntity` and `Uri`) define implicit conversions
+if there are none. Many of the parameters types (like @unidoc[HttpEntity] and @unidoc[Uri]) define implicit conversions
 for common use cases to simplify the creation of request and response instances.
 @@@
 @@@ div { .group-java }
@@ -89,14 +89,14 @@ Java
 
 ## HttpResponse
 
-An `HttpResponse` consists of
+An @unidoc[HttpResponse] consists of
 
  * a status code
  * a @scala[`Seq`]@java[list] of headers
  * an entity (body data)
  * a protocol
 
-Here are some examples how to construct an `HttpResponse`:
+Here are some examples how to construct an @unidoc[HttpResponse]:
 
 Scala
 :   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-response }
@@ -104,37 +104,37 @@ Scala
 Java
 :   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #construct-response }
 
-In addition to the simple @scala[`HttpEntity` constructors]@java[`HttpEntities.create` methods] which create an entity from a fixed `String` or `ByteString`
-as shown here the Akka HTTP model defines a number of subclasses of `HttpEntity` which allow body data to be specified as a
+In addition to the simple @scala[@unidoc[HttpEntity] constructors]@java[`HttpEntities.create` methods] which create an entity from a fixed `String` or @unidoc[ByteString]
+as shown here the Akka HTTP model defines a number of subclasses of @unidoc[HttpEntity] which allow body data to be specified as a
 stream of bytes. @java[All of these types can be created using the method on `HttpEntites`.]
 
 <a id="httpentity"></a>
 ## HttpEntity
 
-An `HttpEntity` carries the data bytes of a message together with its Content-Type and, if known, its Content-Length.
+An @unidoc[HttpEntity] carries the data bytes of a message together with its Content-Type and, if known, its Content-Length.
 In Akka HTTP there are five different kinds of entities which model the various ways that message content can be
 received or sent:
 
 @scala[HttpEntity.Strict]@java[HttpEntityStrict]
 : The simplest entity, which is used when all the entity are already available in memory.
-It wraps a plain `ByteString` and  represents a standard, unchunked entity with a known `Content-Length`.
+It wraps a plain @unidoc[ByteString] and  represents a standard, unchunked entity with a known `Content-Length`.
 
 @scala[HttpEntity.Default]@java[HttpEntityDefault]
 : The general, unchunked HTTP/1.1 message entity.
-It has a known length and presents its data as a @scala[`Source[ByteString]`]@java[`Source<ByteString, ?>`] which can be only materialized once.
+It has a known length and presents its data as a @scala[@unidoc[Source[ByteString]`]@java[@unidoc[Source[ByteString, ?]]] which can be only materialized once.
 It is an error if the provided source doesn't produce exactly as many bytes as specified.
 The distinction of @scala[`Strict`]@java[`HttpEntityStrict`] and @scala[`Default`]@java[`HttpEntityDefault`] is an API-only one. On the wire,
 both kinds of entities look the same.
 
 @scala[HttpEntity.Chunked]@java[HttpEntityChunked]
 : The model for HTTP/1.1 [chunked content](http://tools.ietf.org/html/rfc7230#section-4.1) (i.e. sent with `Transfer-Encoding: chunked`).
-The content length is unknown and the individual chunks are presented as a @scala[`Source[HttpEntity.ChunkStreamPart]`]@java[`Source<ChunkStreamPart, ?>`].
+The content length is unknown and the individual chunks are presented as a @scala[`Source[HttpEntity.ChunkStreamPart]`]@java[@unidoc[Source[ChunkStreamPart, ?]]].
 A `ChunkStreamPart` is either a non-empty @scala[`Chunk`]@java[chunk] or @scala[a `LastChunk`]@java[the empty last chunk] containing optional trailer headers.
 The stream consists of zero or more @scala[`Chunked`]@java[non-empty chunks] parts and can be terminated by an optional @scala[`LastChunk` part]@java[last chunk].
 
 @scala[HttpEntity.CloseDelimited]@java[HttpEntityCloseDelimited]
 : An unchunked entity of unknown length that is implicitly delimited by closing the connection (`Connection: close`).
-The content data are presented as a @scala[`Source[ByteString]`]@java[`Source<ByteString, ?>`].
+The content data are presented as a @scala[`Source[ByteString]`]@java[@unidoc[Source[ByteString, ?]]].
 Since the connection must be closed after sending an entity of this type it can only be used on the server-side for
 sending a response.
 Also, the main purpose of `CloseDelimited` entities is compatibility with HTTP/1.0 peers, which do not support
@@ -147,24 +147,24 @@ reuse which can seriously degrade performance. Use @scala[`HttpEntity.Chunked`]@
 : A streaming entity of unspecified length for use in a `Multipart.BodyPart`.
 
 
-Entity types @scala[`Strict`]@java[`HttpEntityStrict`], @scala[`Default`]@java[`HttpEntityDefault`], and @scala[`Chunked`]@java[`HttpEntityChunked`] are a subtype of @scala[`HttpEntity.Regular`]@java[`RequestEntity`]
+Entity types @scala[`Strict`]@java[`HttpEntityStrict`], @scala[`Default`]@java[`HttpEntityDefault`], and @scala[`Chunked`]@java[`HttpEntityChunked`] are a subtype of @scala[`HttpEntity.Regular`]@java[@unidoc[RequestEntity]]
 which allows to use them for requests and responses. In contrast, @scala[`HttpEntity.CloseDelimited`]@java[`HttpEntityCloseDelimited`] can only be used for responses.
 
 Streaming entity types (i.e. all but @scala[`Strict`]@java[`HttpEntityStrict`]) cannot be shared or serialized. To create a strict, shareable copy of an
 entity or message use `HttpEntity.toStrict` or `HttpMessage.toStrict` which returns a @scala[`Future`]@java[`CompletionStage`] of the object with
-the body data collected into a `ByteString`.
+the body data collected into a @unidoc[ByteString].
 
-The @scala[`HttpEntity` companion object]@java[class `HttpEntities`] contains @scala[several helper constructors]@java[static methods] to create entities from common types easily.
+The @scala[@unidoc[HttpEntity] companion object]@java[class `HttpEntities`] contains @scala[several helper constructors]@java[static methods] to create entities from common types easily.
 
-You can @scala[pattern match over]@java[use] the @scala[subtypes]@java[`isX` methods] of `HttpEntity` @java[to find out of which subclass an entity is] if you want to provide
-special handling for each of the subtypes. However, in many cases a recipient of an `HttpEntity` doesn't care about
+You can @scala[pattern match over]@java[use] the @scala[subtypes]@java[`isX` methods] of @unidoc[HttpEntity] @java[to find out of which subclass an entity is] if you want to provide
+special handling for each of the subtypes. However, in many cases a recipient of an @unidoc[HttpEntity] doesn't care about
 of which subtype an entity is (and how data is transported exactly on the HTTP layer). Therefore, the general method
-@scala[`HttpEntity.dataBytes`]@java[`HttpEntity.getDataBytes()`] is provided which returns a @scala[`Source[ByteString, Any]`]@java[`Source<ByteString, ?>`] that allows access to the data of an
+@scala[`HttpEntity.dataBytes`]@java[`HttpEntity.getDataBytes()`] is provided which returns a @scala[`Source[ByteString, Any]]]@java[@unidoc[Source[ByteString, ?]]] that allows access to the data of an
 entity regardless of its concrete subtype.
 
 @@@ note { title='When to use which subtype?' }
 
- * Use @scala[`Strict`]@java[`HttpEntityStrict`] if the amount of data is "small" and already available in memory (e.g. as a `String` or `ByteString`)
+ * Use @scala[`Strict`]@java[`HttpEntityStrict`] if the amount of data is "small" and already available in memory (e.g. as a `String` or @unidoc[ByteString])
  * Use @scala[`Default`]@java[`HttpEntityDefault`] if the data is generated by a streaming data source and the size of the data is known
  * Use @scala[`Chunked`]@java[`HttpEntityChunked`] for an entity of unknown length
  * Use @scala[`CloseDelimited`]@java[`HttpEntityCloseDelimited`] for a response as a legacy alternative to @scala[`Chunked`]@java[`HttpEntityChunked`] if the client
@@ -193,12 +193,12 @@ However, a single global limit for all requests (or responses) is often too infl
 allow large limits for *some* requests (or responses) but want to clamp down on all messages not belonging into that
 group.
 
-In order to give you maximum flexibility in defining entity size limits according to your needs the `HttpEntity`
+In order to give you maximum flexibility in defining entity size limits according to your needs the @unidoc[HttpEntity]
 features a `withSizeLimit` method, which lets you adjust the globally configured maximum size for this particular
 entity, be it to increase or decrease any previously set value.
 This means that your application will receive all requests (or responses) from the HTTP layer, even the ones whose
 `Content-Length` exceeds the configured limit (because you might want to increase the limit yourself).
-Only when the actual data stream `Source` contained in the entity is materialized will the boundary checks be
+Only when the actual data stream @unidoc[Source] contained in the entity is materialized will the boundary checks be
 actually applied. In case the length verification fails the respective stream will be terminated with an
 `EntityStreamSizeException` either directly at materialization time (if the `Content-Length` is known) or whenever more
 data bytes than allowed have been read.
@@ -245,7 +245,7 @@ header across persistent HTTP connections.
 
 Akka HTTP contains a rich model of the most common HTTP headers. Parsing and rendering is done automatically so that
 applications don't need to care for the actual syntax of headers. Headers not modelled explicitly are represented
-as a `RawHeader` (which is essentially a String/String name/value pair).
+as a @unidoc[RawHeader] (which is essentially a String/String name/value pair).
 
 See these examples of how to deal with headers:
 
@@ -260,13 +260,13 @@ Java
 When the Akka HTTP server receives an HTTP request it tries to parse all its headers into their respective
 model classes. Independently of whether this succeeds or not, the HTTP layer will
 always pass on all received headers to the application. Unknown headers as well as ones with invalid syntax (according
-to the header parser) will be made available as `RawHeader` instances. For the ones exhibiting parsing errors a
+to the header parser) will be made available as @unidoc[RawHeader] instances. For the ones exhibiting parsing errors a
 warning message is logged depending on the value of the `illegal-header-warnings` config setting.
 
 Some headers have special status in HTTP and are therefore treated differently from "regular" headers:
 
 Content-Type
-: The Content-Type of an HTTP message is modeled as the `contentType` field of the `HttpEntity`.
+: The Content-Type of an HTTP message is modeled as the `contentType` field of the @unidoc[HttpEntity].
 The `Content-Type` header therefore doesn't appear in the `headers` sequence of a message.
 Also, a `Content-Type` header instance that is explicitly added to the `headers` of a request or response will
 not be rendered onto the wire and trigger a warning being logged instead!
@@ -295,14 +295,14 @@ User-Agent
 custom one by adding it to the request's `header` sequence.
 
 Date
-: The `Date` response header is added automatically but can be overridden by supplying it manually.
+: The @unidoc[Date] response header is added automatically but can be overridden by supplying it manually.
 
 Connection
 : On the server-side Akka HTTP watches for explicitly added `Connection: close` response headers and as such honors
 the potential wish of the application to close the connection after the respective response has been sent out.
 The actual logic for determining whether to close the connection is quite involved. It takes into account the
-request's method, protocol and potential `Connection` header as well as the response's protocol, entity and
-potential `Connection` header. See @github[this test](/akka-http-core/src/test/scala/akka/http/impl/engine/rendering/ResponseRendererSpec.scala) { #connection-header-table } for a full table of what happens when.
+request's method, protocol and potential @unidoc[Connection] header as well as the response's protocol, entity and
+potential @unidoc[Connection] header. See @github[this test](/akka-http-core/src/test/scala/akka/http/impl/engine/rendering/ResponseRendererSpec.scala) { #connection-header-table } for a full table of what happens when.
 
 Strict-Transport-Security
 : HTTP Strict Transport Security (HSTS) is a web security policy mechanism which is communicated by the
@@ -319,9 +319,9 @@ site should always use TLS/SSL. See also [RFC 6797](http://tools.ietf.org/html/r
 Sometimes you may need to model a custom header type which is not part of HTTP and still be able to use it
 as convenient as is possible with the built-in types.
 
-Because of the number of ways one may interact with headers (i.e. try to @scala[match]@java[convert] a `CustomHeader` @scala[against]@java[to] a `RawHeader`
+Because of the number of ways one may interact with headers (i.e. try to @scala[match]@java[convert] a @unidoc[CustomHeader] @scala[against]@java[to] a @unidoc[RawHeader]
 or the other way around etc), a helper @scala[trait]@java[classes] for custom Header types @scala[and their companions classes ]are provided by Akka HTTP.
-Thanks to extending `ModeledCustomHeader` instead of the plain `CustomHeader` @scala[such header can be matched]@java[the following methods are at your disposal]:
+Thanks to extending @unidoc[ModeledCustomHeader] instead of the plain @unidoc[CustomHeader] @scala[such header can be matched]@java[the following methods are at your disposal]:
 
 Scala
 :   @@snip [ModeledCustomHeaderSpec.scala]($akka-http$/akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #modeled-api-key-custom-header }
@@ -345,14 +345,14 @@ Scala
 Java
 :   @@snip [CustomHeaderExampleTest.java]($test$/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #header-value-pf }
 
-One can also directly extend `CustomHeader` which requires less boilerplate, however that has the downside of
-@scala[matching against `RawHeader`]@java[having to deal with converting `HttpHeader`] instances scala[not working out-of-the-box, thus limiting its usefulness in the routing layer
+One can also directly extend @unidoc[CustomHeader] which requires less boilerplate, however that has the downside of
+@scala[matching against @unidoc[RawHeader]]@java[having to deal with converting @unidoc[HttpHeader]] instances scala[not working out-of-the-box, thus limiting its usefulness in the routing layer
 of Akka HTTP]@java[to your custom one]. For only rendering such header however it would be enough.
 
 @@@ note { .group-scala }
-When defining custom headers, prefer to extend `ModeledCustomHeader` instead of `CustomHeader` directly
+When defining custom headers, prefer to extend @unidoc[ModeledCustomHeader] instead of @unidoc[CustomHeader] directly
 as it will automatically make your header abide all the expected pattern matching semantics one is accustomed to
-when using built-in types (such as matching a custom header against a `RawHeader` as is often the case in routing
+when using built-in types (such as matching a custom header against a @unidoc[RawHeader] as is often the case in routing
 layers of Akka HTTP applications).
 @@@
 
@@ -383,7 +383,7 @@ or @scala[`Http().superPool`]@java[`Http.get(sys).superPool`], usually need the 
 Akka HTTP @scala[@scaladoc[predefines](akka.http.scaladsl.model.MediaTypes$)]@java[@javadoc[predefines](akka.http.javadsl.model.MediaTypes)] most commonly encountered media types and emits them in their well-typed form while parsing http messages.
 Sometimes you may want to define a custom media type and inform the parser infrastructure about how to handle these custom
 media types, e.g. that `application/custom` is to be treated as `NonBinary` with `WithFixedCharset`. To achieve this you
-need to register the custom media type in the server's settings by configuring `ParserSettings` like this:
+need to register the custom media type in the server's settings by configuring @unidoc[ParserSettings] like this:
 
 Scala
 :   @@snip [CustomMediaTypesSpec.scala]($akka-http$/akka-http-tests/src/test/scala/akka/http/scaladsl/CustomMediaTypesSpec.scala) { #application-custom }
@@ -399,7 +399,7 @@ in the right style / place.
 
 Similarly to media types, Akka HTTP @scala[@scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)]@java[@javadoc:[predefines](akka.http.javaadsl.model.StatusCodes)]
 well-known status codes, however sometimes you may need to use a custom one (or are forced to use an API which returns custom status codes).
-Similarily to the media types registration, you can register custom status codes by configuring `ParserSettings` like this:
+Similarily to the media types registration, you can register custom status codes by configuring @unidoc[ParserSettings] like this:
 
 Scala
 :   @@snip [CustomStatusCodesSpec.scala]($akka-http$/akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }

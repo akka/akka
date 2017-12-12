@@ -7,7 +7,7 @@
 ## Description
 
 The `extract` directive is used as a building block for @ref[Custom Directives](../custom-directives.md) to extract data from the
-`RequestContext` and provide it to the inner route. It is a special case for extracting one value of the more
+@unidoc[RequestContext] and provide it to the inner route. It is a special case for extracting one value of the more
 general @ref[textract](textract.md) directive that can be used to extract more than one value.
 
 See @ref[Providing Values to Inner Routes](index.md#providedirectives) for an overview of similar directives.

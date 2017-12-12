@@ -6,7 +6,7 @@
 
 ## Description
 
-Wraps its inner Route with caching support using the given `akka.http.caching.scaladsl.Cache` implementation and the provided keyer function.
+Wraps its inner Route with caching support using the given @unidoc[Cache] implementation and the provided keyer function.
 
 The directive tries to serve the request from the given cache and only if not found runs the inner route to generate a new response. A simple cache can be constructed using `routeCache` constructor.
 

@@ -6,13 +6,13 @@
 
 ## Description
 
-Extracts the request's underlying `RequestContext`.
+Extracts the request's underlying @unidoc[RequestContext].
 
 This directive is used as a building block for most of the other directives,
 which extract the context and by inspecting some of it's values can decide
 what to do with the request - for example provide a value, or reject the request.
 
-See also @ref[extractRequest](extractRequest.md) if only interested in the `HttpRequest` instance itself.
+See also @ref[extractRequest](extractRequest.md) if only interested in the @unidoc[HttpRequest] instance itself.
 
 ## Example
 
