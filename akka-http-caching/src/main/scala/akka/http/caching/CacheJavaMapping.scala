@@ -22,7 +22,6 @@ private[akka] object CacheJavaMapping {
     }
 
   object Implicits {
-    import scala.language.implicitConversions
 
     implicit object CachingSettings extends JavaMapping.Inherited[javadsl.CachingSettings, scaladsl.CachingSettings]
     implicit object LfuCacheSettings extends JavaMapping.Inherited[javadsl.LfuCacheSettings, scaladsl.LfuCacheSettings]

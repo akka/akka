@@ -12,7 +12,6 @@ import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.util.{ Failure, Success }
 import akka.stream.scaladsl._
 import akka.http.javadsl
 

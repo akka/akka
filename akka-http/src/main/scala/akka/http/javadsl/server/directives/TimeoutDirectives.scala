@@ -4,17 +4,13 @@
 
 package akka.http.javadsl.server.directives
 
-import java.lang.{ Iterable ⇒ JIterable }
-import java.util.function.{ BooleanSupplier, Function ⇒ JFunction, Supplier }
+import java.util.function.{ Function ⇒ JFunction, Supplier }
 
-import akka.http.javadsl.model.{ HttpRequest, HttpResponse, RemoteAddress }
-import akka.http.javadsl.model.headers.Language
+import akka.http.javadsl.model.{ HttpRequest, HttpResponse }
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
-import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.Implicits._
-import scala.collection.JavaConverters._
 
 abstract class TimeoutDirectives extends WebSocketDirectives {
 

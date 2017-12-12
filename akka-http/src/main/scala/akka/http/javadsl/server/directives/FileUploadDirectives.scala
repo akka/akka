@@ -9,7 +9,6 @@ import java.util.AbstractMap.SimpleImmutableEntry
 import java.util.function.{ BiFunction, Function ⇒ JFunction }
 
 import akka.annotation.ApiMayChange
-import akka.http.impl.util.JavaMapping.Implicits._
 
 import akka.http.javadsl.model.ContentType
 import akka.http.javadsl.server.Route

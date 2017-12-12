@@ -5,7 +5,6 @@
 package docs.http.scaladsl
 
 import docs.CompileOnlySpec
-import org.scalatest.{ Matchers, WordSpec }
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration._
 import akka.testkit.AkkaSpec

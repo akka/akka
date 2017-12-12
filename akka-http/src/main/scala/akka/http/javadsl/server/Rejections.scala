@@ -301,9 +301,7 @@ trait RejectionError extends RuntimeException {
 }
 
 object Rejections {
-  import akka.http.scaladsl.{ model ⇒ m }
   import akka.http.scaladsl.{ server ⇒ s }
-  import scala.language.implicitConversions
   import JavaMapping.Implicits._
   import RoutingJavaMapping._
 

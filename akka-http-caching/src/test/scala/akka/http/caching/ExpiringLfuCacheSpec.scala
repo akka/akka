@@ -8,7 +8,7 @@ import java.util.Random
 import java.util.concurrent.CountDownLatch
 
 import akka.actor.ActorSystem
-import akka.http.caching.scaladsl.{ CachingSettings, CachingSettingsImpl, LfuCacheSettingsImpl }
+import akka.http.caching.scaladsl.CachingSettings
 import akka.testkit.TestKit
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 

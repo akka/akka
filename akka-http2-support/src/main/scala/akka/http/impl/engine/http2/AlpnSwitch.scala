@@ -3,14 +3,12 @@
  */
 package akka.http.impl.engine.http2
 
-import java.net.InetSocketAddress
 import javax.net.ssl.SSLException
 
 import akka.NotUsed
-import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.TLSProtocol.{ SessionBytes, SessionTruncated, SslTlsInbound, SslTlsOutbound }
-import akka.stream.scaladsl.{ BidiFlow, Flow, GraphDSL, Keep, Sink, Source }
+import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream._
 

@@ -15,7 +15,6 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model.headers.HttpCookie
 import akka.http.javadsl.model.headers.HttpCookiePair
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
 abstract class CookieDirectives extends CodingDirectives {

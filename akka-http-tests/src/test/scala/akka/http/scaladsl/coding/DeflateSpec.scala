@@ -12,7 +12,6 @@ import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest }
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers.{ HttpEncodings, `Content-Encoding` }
-import akka.stream.scaladsl.Flow
 import akka.testkit._
 
 import scala.concurrent.duration._

@@ -12,13 +12,10 @@ import akka.japi.Util
 
 import scala.collection.immutable
 import akka.http.scaladsl.model._
-import akka.http.javadsl
 import akka.http.javadsl.{ model, server ⇒ jserver }
 import headers._
 import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.server.RoutingJavaMapping
-import RoutingJavaMapping._
 import akka.pattern.CircuitBreakerOpenException
 import akka.http.javadsl.model.headers.{ HttpOrigin ⇒ JHttpOrigin }
 import akka.http.scaladsl.model.headers.{ HttpOrigin ⇒ SHttpOrigin }

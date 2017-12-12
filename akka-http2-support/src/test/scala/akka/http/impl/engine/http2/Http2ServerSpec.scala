@@ -1,7 +1,7 @@
 package akka.http.impl.engine.http2
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
-import java.net.{ InetAddress, InetSocketAddress }
+import java.net.InetSocketAddress
 import java.nio.ByteOrder
 
 import akka.NotUsed
@@ -10,9 +10,8 @@ import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ StreamUtils, StringRendering }
-import akka.http.scaladsl.Http.ServerLayer
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader, `Remote-Address` }
+import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.impl.io.ByteStringParser.ByteReader

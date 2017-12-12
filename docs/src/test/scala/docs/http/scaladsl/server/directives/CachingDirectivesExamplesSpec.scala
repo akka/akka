@@ -111,7 +111,6 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
     //#create-cache
     import akka.http.caching.scaladsl.Cache
     import akka.http.caching.scaladsl.CachingSettings
-    import akka.http.caching.scaladsl.LfuCacheSettings
     import akka.http.caching.LfuCache
 
     val defaultCachingSettings = CachingSettings(system)

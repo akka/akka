@@ -20,7 +20,6 @@ import akka.stream.scaladsl.Flow
 /** INTERNAL API */
 @InternalApi
 final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends Route {
-  import RouteAdapter._
 
   override def flow(system: ActorSystem, materializer: Materializer): javadsl.Flow[HttpRequest, HttpResponse, NotUsed] =
     scalaFlow(system, materializer).asJava

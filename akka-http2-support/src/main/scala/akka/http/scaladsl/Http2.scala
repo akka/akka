@@ -11,7 +11,6 @@ import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, Ex
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprint }
-import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.Http.ServerBinding
