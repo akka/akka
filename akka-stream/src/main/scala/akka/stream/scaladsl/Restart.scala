@@ -37,10 +37,11 @@ object RestartSource {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount
+   * @param maxRestarts the amount of restarts is capped to this amount. A value smaller
+   *                    than 1 is considered as unlimited restarts.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
-  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(sourceFactory: () ⇒ Source[T, _]): Source[T, NotUsed] = {
+  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int = -1)(sourceFactory: () ⇒ Source[T, _]): Source[T, NotUsed] = {
     Source.fromGraph(new RestartWithBackoffSource(sourceFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, maxRestarts))
   }
 
@@ -61,11 +62,12 @@ object RestartSource {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount
+   * @param maxRestarts the amount of restarts is capped to this amount. A value smaller
+   *                    than 1 is considered as unlimited restarts.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
-  def onFailuresWithBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(sourceFactory: () ⇒ Source[T, _]): Source[T, NotUsed] = {
+  def onFailuresWithBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int = -1)(sourceFactory: () ⇒ Source[T, _]): Source[T, NotUsed] = {
     Source.fromGraph(new RestartWithBackoffSource(sourceFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = true, maxRestarts))
   }
 }
@@ -135,10 +137,11 @@ object RestartSink {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount
+   * @param maxRestarts the amount of restarts is capped to this amount. A value smaller
+   *                    than 1 is considered as unlimited restarts.
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
-  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(sinkFactory: () ⇒ Sink[T, _]): Sink[T, NotUsed] = {
+  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int = -1)(sinkFactory: () ⇒ Sink[T, _]): Sink[T, NotUsed] = {
     Sink.fromGraph(new RestartWithBackoffSink(sinkFactory, minBackoff, maxBackoff, randomFactor, maxRestarts))
   }
 }
@@ -202,10 +205,11 @@ object RestartFlow {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount
+   * @param maxRestarts the amount of restarts is capped to this amount. A value smaller
+   *                    than 1 is considered as unlimited restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+  def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int = -1)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
     Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, maxRestarts))
   }
 }
@@ -362,7 +366,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
       log.debug("Last restart attempt was more than {} ago, resetting restart count", minBackoff)
       restartCount = 0
     }
-    restartCount == maxRestarts
+    maxRestarts > 0 && restartCount == maxRestarts
   }
 
   // Set a timer to restart after the calculated delay
