@@ -266,8 +266,8 @@ object MemberStatus {
    */
   private[cluster] val allowedTransitions: Map[MemberStatus, Set[MemberStatus]] =
     Map(
-      Joining → Set(WeaklyUp, Up, Down, Removed),
-      WeaklyUp → Set(Up, Down, Removed),
+      Joining → Set(WeaklyUp, Up, Leaving, Down, Removed),
+      WeaklyUp → Set(Up, Leaving, Down, Removed),
       Up → Set(Leaving, Down, Removed),
       Leaving → Set(Exiting, Down, Removed),
       Down → Set(Removed),
