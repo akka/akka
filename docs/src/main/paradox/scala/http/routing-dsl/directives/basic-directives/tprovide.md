@@ -1,3 +1,10 @@
+@@@ div { .group-java }
+
+The `tprovide` directive is not available in the Java API.
+
+@@@
+
+@@@ div { .group-scala }
 # tprovide
 
 ## Signature
@@ -19,3 +26,5 @@ See also @ref[provide](provide.md) for providing a single value.
 ## Example
 
 @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #tprovide }
+
+@@@
