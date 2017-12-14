@@ -4,7 +4,7 @@
 package docs.stream
 
 import akka.NotUsed
-import akka.stream.{ ActorMaterializer, KillSwitches, UniqueKillSwitch }
+import akka.stream.{ ActorMaterializer, KillSwitches, UniqueKillSwitch, DelayOverflowStrategy }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
@@ -63,6 +63,28 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       fromProducer.runForeach(msg ⇒ println("consumer1: " + msg))
       fromProducer.runForeach(msg ⇒ println("consumer2: " + msg))
       //#broadcast-hub
+    }
+
+    "demonstrate creating a dynamic broadcast with retry policy" in compileOnlySpec {
+      //#broadcast-hub-retry
+      // A simple producer that publishes unique "message" every second
+      val producer = Source(1 to 10).map(i ⇒ s"tick $i").delay(1.second, strategy = DelayOverflowStrategy.backpressure)
+
+      // Attach a BroadcastHub Sink to the producer. This will materialize to a
+      // corresponding Source.
+      // (We need to use toMat and Keep.right since by default the materialized
+      // value to the left is used)
+      val runnableGraph: RunnableGraph[Source[String, NotUsed]] =
+        producer.toMat(BroadcastHub.sink(bufferSize = 256, retryBufferSize = 4))(Keep.right)
+      val fromProducer: Source[String, NotUsed] = runnableGraph.run()
+
+      // run first consumer
+      fromProducer.runForeach(msg ⇒ println("consumer1: " + msg))
+
+      // wait some time and add another consumer. This consumer will see skipped records
+      Thread.sleep(2000)
+      fromProducer.runForeach(msg ⇒ println("consumer2: " + msg))
+      //#broadcast-hub-retry
     }
 
     "demonstrate combination" in {

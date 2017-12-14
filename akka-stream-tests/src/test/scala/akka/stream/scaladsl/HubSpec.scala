@@ -276,6 +276,28 @@ class HubSpec extends StreamSpec {
       f2.futureValue should ===(1 to 10)
     }
 
+    "retry last 4 elements to the next consumer" in assertAllStagesStopped {
+      val ((firstElem, lastElem), source) =
+        Source
+          .maybe[Int]
+          .concat(Source(2 to 10))
+          .concatMat(Source.maybe[Int])(Keep.both)
+          .toMat(BroadcastHub.sink(8, 4))(Keep.both).run()
+
+      // Ensure subscription of Sinks. This is racy but there is no event we can hook into here.
+      val (f1Kill, f1) = source.viaMat(KillSwitches.single)(Keep.right).toMat(Sink.seq)(Keep.both).run()
+      Thread.sleep(100)
+      firstElem.success(Some(1))
+      Thread.sleep(100)
+      f1Kill.shutdown()
+      f1.futureValue should ===(1 to 10)
+
+      val f2 = source.runWith(Sink.seq)
+      Thread.sleep(100)
+      lastElem.success(None)
+      f2.futureValue should ===(7 to 10)
+    }
+
     "be able to implement a keep-dropping-if-unsubscribed policy with a simple Sink.ignore" in assertAllStagesStopped {
       val killSwitch = KillSwitches.shared("test-switch")
       val source = Source.fromIterator(() ⇒ Iterator.from(0)).via(killSwitch.flow).runWith(BroadcastHub.sink(8))

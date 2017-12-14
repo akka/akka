@@ -13,6 +13,7 @@ import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.ThrottleMode;
 import akka.stream.UniqueKillSwitch;
+import akka.stream.DelayOverflowStrategy;
 import akka.stream.javadsl.*;
 import akka.stream.javadsl.PartitionHub.ConsumerInfo;
 
@@ -24,6 +25,8 @@ import org.junit.Test;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -99,6 +102,38 @@ public class HubDocTest extends AbstractJavaTest {
     fromProducer.runForeach(msg -> System.out.println("consumer1: " + msg), materializer);
     fromProducer.runForeach(msg -> System.out.println("consumer2: " + msg), materializer);
     //#broadcast-hub
+
+    // Cleanup
+    materializer.shutdown();
+  }
+
+  @Test
+  public void dynamicBroadcastRetry() throws InterruptedException {
+    // Used to be able to clean up the running stream
+    ActorMaterializer materializer = ActorMaterializer.create(system);
+
+    //#broadcast-hub-retry
+    // A simple producer that publishes unique "message" every second
+    Source<String, NotUsed> producer =
+            Source.from(new ArrayList<>(Arrays.asList(1,2,3,4,5,6,7,8,9,10)))
+                    .map(i -> "tick" + i)
+                    .delay(FiniteDuration.apply(1, TimeUnit.SECONDS), DelayOverflowStrategy.backpressure());
+
+    // Attach a BroadcastHub Sink to the producer. This will materialize to a
+    // corresponding Source.
+    // (We need to use toMat and Keep.right since by default the materialized
+    // value to the left is used)
+    RunnableGraph<Source<String, NotUsed>> runnableGraph =
+    producer.toMat(BroadcastHub.of(String.class, 256, 4), Keep.right());
+    Source<String, NotUsed> fromProducer = runnableGraph.run(materializer);
+
+    // run first consumer
+    fromProducer.runForeach(msg -> System.out.println("consumer1: " + msg), materializer);
+
+    // wait some time and add another consumer. This consumer will see skipped records
+    Thread.sleep(2000);
+    fromProducer.runForeach(msg -> System.out.println("consumer2: " + msg), materializer);
+    //#broadcast-hub-retry
 
     // Cleanup
     materializer.shutdown();
