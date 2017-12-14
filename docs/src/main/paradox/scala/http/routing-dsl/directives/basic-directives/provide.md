@@ -13,7 +13,8 @@
 Provides a constant value to the inner route.
 
 The *provide* directive is used as a building block for @ref[Custom Directives](../custom-directives.md) to provide a single value to the
-inner route. To provide several values  use the @ref[tprovide](tprovide.md) directive.
+inner route.
+@scala[To provide several values use the @ref[tprovide](tprovide.md) directive.]
 
 See @ref[Providing Values to Inner Routes](index.md#providedirectives) for an overview of similar directives.
 
