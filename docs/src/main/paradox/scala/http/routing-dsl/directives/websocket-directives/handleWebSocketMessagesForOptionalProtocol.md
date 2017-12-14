@@ -11,12 +11,12 @@
 ## Description
 
 Handles WebSocket requests with the given handler and rejects other requests with an
-@scaladoc:[ExpectedWebSocketRequestRejection](akka.http.scaladsl.server.ExpectedWebSocketRequestRejection$).
+@unidoc[ExpectedWebSocketRequestRejection].
 
 If the `subprotocol` parameter is None any WebSocket request is accepted. If the `subprotocol` parameter is
 `Some(protocol)` a WebSocket request is only accepted if the list of subprotocols supported by the client (as
 announced in the WebSocket request) contains `protocol`. If the client did not offer the protocol in question
-the request is rejected with an @scaladoc:[UnsupportedWebSocketSubprotocolRejection](akka.http.scaladsl.server.UnsupportedWebSocketSubprotocolRejection).
+the request is rejected with an @unidoc[UnsupportedWebSocketSubprotocolRejection].
 
 To support several subprotocols you may chain several `handleWebSocketMessagesForOptionalProtocol` routes.
 
