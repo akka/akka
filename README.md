@@ -16,15 +16,15 @@ have trouble achieving something using a high-level API, there's a good chance
 that you can get it done with a low-level API, which offers more flexibility but
 might require you to write more application code.
 
-Learn more at [akka.io](http://akka.io/).
+Learn more at [akka.io](https://akka.io/).
 
 Documentation
 -------------
 
 The documentation is available at
-[doc.akka.io](http://doc.akka.io/docs/akka-http/current/), for
-[Scala](http://doc.akka.io/docs/akka-http/current/scala/http/) and
-[Java](http://doc.akka.io/docs/akka-http/current/java/http/).
+[doc.akka.io](https://doc.akka.io/docs/akka-http/current/), for
+[Scala](https://doc.akka.io/docs/akka-http/current/scala/http/) and
+[Java](https://doc.akka.io/docs/akka-http/current/java/http/).
 
 
 Community
@@ -40,8 +40,8 @@ All of our forums, chat rooms, and issue trackers are governed by our [Code Of C
 
 In addition to that, you may enjoy following:
 
-- The [news](http://akka.io/news) section of the page, which is updated whenever a new version is released
-- The [Akka Team Blog](http://blog.akka.io)
+- The [news](https://akka.io/blog/news-archive.html) section of the page, which is updated whenever a new version is released
+- The [Akka Team Blog](https://akka.io/blog)
 - [@akkateam](https://twitter.com/akkateam) on Twitter
 - Projects built with Akka HTTP: [![Built with Akka HTTP][scaladex-badge]][scaladex-projects]
 

@@ -3,7 +3,7 @@
 Akka HTTP's @ref[marshalling](marshalling.md) and @ref[unmarshalling](unmarshalling.md) infrastructure makes it rather easy to seamlessly convert application-domain objects from and to JSON.
 Integration with @scala[[spray-json]]@java[[Jackson]] is provided out of the box through the @scala[`akka-http-spray-json`]@java[`akka-http-jackson`] module.
 Integration with other JSON libraries are supported by the community.
-See [the list of current community extensions for Akka HTTP](http://akka.io/community/#extensions-to-akka-http).
+See [the list of current community extensions for Akka HTTP](https://akka.io/community/#extensions-to-akka-http).
 
 @@@ div { .group-scala }
 

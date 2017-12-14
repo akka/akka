@@ -13,7 +13,7 @@ inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
   organizationName := "Lightbend",
   organizationHomepage := Some(url("https://www.lightbend.com")),
-  homepage := Some(url("http://akka.io")),
+  homepage := Some(url("https://akka.io")),
   // https://github.com/dwijnand/sbt-dynver/issues/23
   isSnapshot :=  { isSnapshot.value || hasCommitsAfterTag(dynverGitDescribeOutput.value) },
   apiURL := {

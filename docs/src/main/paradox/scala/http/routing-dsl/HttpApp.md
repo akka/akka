@@ -2,7 +2,7 @@
 
 @@@ warning { title="API may change" }
 This is experimental and the API is subjected to change in future releases of Akka HTTP.
-For further information about this marker, see [The @DoNotInherit and @ApiMayChange markers](http://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#The_@DoNotInherit_and_@ApiMayChange_markers)
+For further information about this marker, see [The @DoNotInherit and @ApiMayChange markers](https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#The_@DoNotInherit_and_@ApiMayChange_markers)
 in the Akka documentation.
 @@@
 
