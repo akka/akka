@@ -297,7 +297,7 @@ The the Java API's `zip` operator on `SubFlow` and `SubSource` has been emiting
 Scala's `Pair` (`Tuple2`) instead of `akka.japi.Pair`. This is fixed in Akka 2.5 where it emits the proper
 Java DSl type.
 
-Please note that the `zip` operator on `Source` and `Flow` has had the correct type, 
+Please note that the `zip` operator on `Source` and `Flow` has had the correct type,
 this change only affects the `Sub...` versions of those classes.
 
 ### Deprecation of ActorSubscriber and ActorPublisher
@@ -351,7 +351,7 @@ versions of akka-remote. This is because in versions of Akka < 2.4.12 the active
 connection will not send over certificates even if asked to.
 
 It is still possible to make a rolling upgrade from a version < 2.4.12 by doing the upgrade stepwise:
-: 
+:
  * first, upgrade Akka to the latest version but keep `akka.remote.netty.ssl.require-mutual-authentication` at `off`
 and do a first rolling upgrade
  * second, turn the setting to `on` and do another rolling upgrade
@@ -384,7 +384,7 @@ the mis-aligned serialization configurations will cause deserialization errors o
 
 ### With serialize-messages the deserialized message is actually sent
 
-The flag `akka.actor.serialize-message = on` triggers serialization and deserialization of each message sent in the
+The flag `akka.actor.serialize-messages = on` triggers serialization and deserialization of each message sent in the
 `ActorSystem`. With this setting enabled the message actually passed on to the actor previously was the original
 message instance, this has now changed to be the deserialized message instance.
 
@@ -420,13 +420,13 @@ and here is a summary of things to consider.
  * [akka.cluster.allow-weakly-up-members](#mig25-weaklyup)
  * [akka.cluster.sharding.state-store-mode](#mig25-sharding-store)
  * [akka.remote.netty.ssl.require-mutual-authentication](#mig25-mutual)
- 
+
 #### Limit lookup of routees to nodes tagged with multiple roles
 
 Starting with 2.5.4, cluster routing supports delivering messages to routees tagged with all specified roles
 using `use-roles` (instead of `use-role` in previous versions). When doing rolling upgrades and using this new feature,
 it is important to first upgrade the existing nodes to the latest version of Akka
-and then start using multiple roles in a separate rolling upgrade. Otherwise, if a new node sends a message 
+and then start using multiple roles in a separate rolling upgrade. Otherwise, if a new node sends a message
 with the restriction `use-roles = ["a", "b"]`, that will only require the "a" role on old nodes.
 
 ### Coordinated Shutdown
@@ -549,7 +549,7 @@ version of Akka.
 
 ### Removal of PersistentView
 
-After being deprecated for a long time, and replaced by 
+After being deprecated for a long time, and replaced by
 @ref:[Persistence Query](../persistence-query.md) `PersistentView` has been removed now removed.
 
 The corresponding query type is `EventsByPersistenceId`. There are several alternatives for connecting the `Source`
@@ -613,7 +613,7 @@ If you use Agents and would like to take over the maintenance thereof, please co
 
 ## Camel
 
-`akka-camel` has been deprecated in favour of [Alpakka](https://github.com/akka/alpakka) , 
+`akka-camel` has been deprecated in favour of [Alpakka](https://github.com/akka/alpakka) ,
 the Akka Streams based collection of integrations to various endpoints (including Camel)
 
 We acknowledge that Akka Camel is a very useful and important module. It will not be removed until
@@ -623,16 +623,16 @@ of Akka Camel.
 
 ## Contrib
 
-`akka-contrib` has been deprecated and is scheduled for removal in the next major version. 
-The reason is to reduce the amount of things to maintain in the core Akka projects. 
-Contributions to the core of Akka or its satellite projects are welcome. Contributions 
-that don't fit into existing modules can be hosted in new Akka GitHub repositories in the 
+`akka-contrib` has been deprecated and is scheduled for removal in the next major version.
+The reason is to reduce the amount of things to maintain in the core Akka projects.
+Contributions to the core of Akka or its satellite projects are welcome. Contributions
+that don't fit into existing modules can be hosted in new Akka GitHub repositories in the
 `akka` GitHub organization or outside of it depending on what kind of library it is.
 Please ask.
 
 ### Aggregator
 
-`Aggregator` has been deprecated. Feel free to copy the source into your project or create a 
+`Aggregator` has been deprecated. Feel free to copy the source into your project or create a
 separate library outside of Akka.
 
 ### CircuitBreakerProxy
@@ -644,7 +644,7 @@ separate library outside of Akka.
 `akka.contrib.jul.JavaLogger` has been deprecated and included in `akka-actor` instead as
 `akka.event.jul.JavaLogger`. See @ref:[documentation](../logging.md#jul).
 
-The `JavaLoggingAdapter` has also been deprecated, but not included in `akka-actor`. 
+The `JavaLoggingAdapter` has also been deprecated, but not included in `akka-actor`.
 Feel free to copy the source into your project or create a separate library outside of Akka.
 
 ### PeekMailbox
