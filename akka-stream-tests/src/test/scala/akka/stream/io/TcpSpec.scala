@@ -4,7 +4,9 @@
 package akka.stream.io
 
 import java.net._
+import java.security.SecureRandom
 import java.util.concurrent.atomic.AtomicInteger
+import javax.net.ssl.{ SSLContext, TrustManagerFactory }
 
 import akka.actor.{ ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Kill }
 import akka.io.Tcp._
@@ -18,6 +20,7 @@ import akka.testkit.SocketUtil.temporaryServerAddress
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
@@ -25,7 +28,10 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.control.NonFatal
 
-class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.timeout = 2s") with TcpHelper {
+class TcpSpec extends StreamSpec("""
+    akka.loglevel = info
+    akka.stream.materializer.subscription-timeout.timeout = 2s
+  """) with TcpHelper {
 
   "Outgoing TCP stream" must {
 
@@ -690,6 +696,90 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
         binding.unbind().futureValue
       } finally sys2.terminate()
     }
+  }
+
+  "TLS client and server convenience methods" should {
+
+    "allow for 'simple' TLS" in {
+      // cert is valid until 2025, so if this tests starts failing after that you need to create a new one
+      val (sslContext, firstSession) = initSslMess()
+      val address = temporaryServerAddress()
+
+      Tcp().bindAndHandleTls(
+        // just echo charactes until we reach '\n', then complete stream
+        // also - byte is our framing
+        Flow[ByteString].mapConcat(_.utf8String.toList)
+          .takeWhile(_ != '\n')
+          .map(c ⇒ ByteString(c)),
+        address.getHostName,
+        address.getPort,
+        sslContext,
+        firstSession
+      ).futureValue
+      system.log.info(s"Server bound to ${address.getHostString}:${address.getPort}")
+
+      val connectionFlow = Tcp().outgoingTlsConnection(address.getHostName, address.getPort, sslContext, firstSession)
+
+      val chars = "hello\n".toList.map(_.toString)
+      val (connectionF, result) =
+        Source(chars).map(c ⇒ ByteString(c))
+          .concat(Source.maybe) // do not complete it from our side
+          .viaMat(connectionFlow)(Keep.right)
+          .map(_.utf8String)
+          .toMat(Sink.fold("")(_ + _))(Keep.both)
+          .run()
+
+      connectionF.futureValue
+      system.log.info(s"Client connected to ${address.getHostString}:${address.getPort}")
+
+      result.futureValue(PatienceConfiguration.Timeout(10.seconds)) should ===("hello")
+    }
+
+    def initSslMess() = {
+      import akka.stream.TLSClientAuth
+      import akka.stream.TLSProtocol
+      import com.typesafe.sslconfig.akka.AkkaSSLConfig
+      import java.security.KeyStore
+      val sslConfig = AkkaSSLConfig.get(system)
+
+      val config = sslConfig.config
+
+      val password = "abcdef".toCharArray
+
+      // trust store and keys in one keystore
+      val keyStore = KeyStore.getInstance("PKCS12")
+      keyStore.load(classOf[TcpSpec].getResourceAsStream("/tcp-spec-keystore.p12"), password)
+
+      val tmf = TrustManagerFactory.getInstance("SunX509")
+      tmf.init(keyStore)
+
+      val keyManagerFactory = sslConfig.buildKeyManagerFactory(config)
+      keyManagerFactory.init(keyStore, password)
+
+      // initial ssl context
+      val sslContext = SSLContext.getInstance("TLS")
+      sslContext.init(keyManagerFactory.getKeyManagers, tmf.getTrustManagers, new SecureRandom)
+
+      // protocols
+      val defaultParams = sslContext.getDefaultSSLParameters
+      val defaultProtocols = defaultParams.getProtocols
+      val protocols = sslConfig.configureProtocols(defaultProtocols, config)
+      defaultParams.setProtocols(protocols)
+
+      // ciphers
+      val defaultCiphers = defaultParams.getCipherSuites
+      val cipherSuites = sslConfig.configureCipherSuites(defaultCiphers, config)
+      defaultParams.setCipherSuites(cipherSuites)
+
+      var firstSession = TLSProtocol.NegotiateNewSession
+        .withCipherSuites(cipherSuites: _*)
+        .withProtocols(protocols: _*)
+        .withParameters(defaultParams)
+        .withClientAuth(TLSClientAuth.None)
+
+      (sslContext, firstSession)
+    }
+
   }
 
   def validateServerClientCommunication(

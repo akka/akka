@@ -24,8 +24,10 @@ import akka.io.Inet.SocketOption
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
+import javax.net.ssl.SSLContext
 
 import akka.annotation.InternalApi
+import akka.stream.TLSProtocol.NegotiateNewSession
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -198,5 +200,78 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
     Flow.fromGraph(delegate.outgoingConnection(new InetSocketAddress(host, port))
       .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
+
+  /**
+   * Creates an [[Tcp.OutgoingConnection]] with TLS.
+   * The returned flow represents a TCP client connection to the given endpoint where all bytes in and
+   * out go through TLS.
+   *
+   * @see [[Tcp.outgoingConnection()]]
+   */
+  def outgoingTlsConnection(host: String, port: Int, sslContext: SSLContext, negotiateNewSession: NegotiateNewSession): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+    Flow.fromGraph(delegate.outgoingTlsConnection(host, port, sslContext, negotiateNewSession)
+      .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
+
+  /**
+   * Creates an [[Tcp.OutgoingConnection]] with TLS.
+   * The returned flow represents a TCP client connection to the given endpoint where all bytes in and
+   * out go through TLS.
+   *
+   * @see [[Tcp.outgoingConnection()]]
+   */
+  def outgoingTlsConnection(
+    remoteAddress:       InetSocketAddress,
+    sslContext:          SSLContext,
+    negotiateNewSession: NegotiateNewSession,
+    localAddress:        Optional[InetSocketAddress],
+    options:             JIterable[SocketOption],
+    connectTimeout:      Duration,
+    idleTimeout:         Duration
+  ): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+    Flow.fromGraph(delegate.outgoingTlsConnection(
+      remoteAddress,
+      sslContext,
+      negotiateNewSession,
+      localAddress.asScala,
+      immutableSeq(options),
+      connectTimeout,
+      idleTimeout)
+      .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
+
+  /**
+   * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
+   * where all incoming and outgoing bytes are passed through TLS.
+   *
+   * @see [[Tcp.bind()]]
+   */
+  def bindTls(
+    interface:           String,
+    port:                Int,
+    sslContext:          SSLContext,
+    negotiateNewSession: NegotiateNewSession,
+    backlog:             Int,
+    options:             JIterable[SocketOption],
+    halfClose:           Boolean,
+    idleTimeout:         Duration
+  ): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+    Source.fromGraph(delegate.bindTls(interface, port, sslContext, negotiateNewSession, backlog, immutableSeq(options), idleTimeout)
+      .map(new IncomingConnection(_))
+      .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
+
+  /**
+   * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
+   * where all incoming and outgoing bytes are passed through TLS.
+   *
+   * @see [[Tcp.bind()]]
+   */
+  def bindTls(
+    interface:           String,
+    port:                Int,
+    sslContext:          SSLContext,
+    negotiateNewSession: NegotiateNewSession
+  ): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+    Source.fromGraph(delegate.bindTls(interface, port, sslContext, negotiateNewSession)
+      .map(new IncomingConnection(_))
+      .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
 
 }
