@@ -11,12 +11,12 @@
 ## Description
 
 Handles WebSocket requests with the given handler and rejects other requests with an
-@javadoc:[ExpectedWebSocketRequestRejection](akka.http.javadsl.server.ExpectedWebSocketRequestRejection$).
+@unidoc[ExpectedWebSocketRequestRejection].
 
 If the `subprotocol` parameter is @javadoc:[empty](java.util.Optional#empty--) any WebSocket request is accepted. If the `subprotocol` parameter is
 a non-empty @javadoc:[Optional](java.util.Optional) a WebSocket request is only accepted if the list of subprotocols supported by the client (as
 announced in the WebSocket request) matches the contained subprotocol. If the client did not offer the protocol in question
-the request is rejected with an @javadoc:[UnsupportedWebSocketSubprotocolRejection](akka.http.javadsl.server.UnsupportedWebSocketSubprotocolRejection).
+the request is rejected with an @unidoc[UnsupportedWebSocketSubprotocolRejection].
 
 To support several subprotocols you may chain several `handleWebSocketMessagesForOptionalProtocol` routes.
 

@@ -37,7 +37,7 @@ Specifically these are:
     * `Double`
     * `Boolean`
  * @scala[@scaladoc[PredefinedFromEntityUnmarshallers](akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers)]
-   @java[@javadoc[Unmarshaller](akka.http.javadsl.unmarshalling.Unmarshaller)]
+   @java[@unidoc[Unmarshaller]]
     * @scala[`Array[Byte]`]@java[`byte[]`]
     * @unidoc[ByteString]
     * @scala[`Array[Char]`]@java[`char[]`]

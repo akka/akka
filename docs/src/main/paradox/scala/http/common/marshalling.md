@@ -88,18 +88,18 @@ Specifically these are:
 
 @@@ div { .group-java }
 
- * Predefined @javadoc[RequestEntity](akka.http.javadsl.model.RequestEntity) marshallers:
+ * Predefined @unidoc[RequestEntity] marshallers:
     * `byte[]`
     * @unidoc[ByteString]
     * `char[]`
     * `String`
     * `FormData
- * Predefined @javadoc[HttpResponse](akka.http.javadsl.model.HttpResponse) marshallers:
+ * Predefined @unidoc[HttpResponse] marshallers:
     * `T` using an existing @unidoc[RequestEntity] marshaller for `T`
     * `T` and @unidoc[StatusCode] using an existing @unidoc[RequestEntity] marshaller for `T`
     * `T`, @unidoc[StatusCode] and `Iterable[HttpHeader]` using an existing @unidoc[RequestEntity] marshaller for `T`
 
-All marshallers can be found in @javadoc[Marshaller](akka.http.javadsl.marshalling.Marshaller).
+All marshallers can be found in @unidoc[Marshaller].
 
 @@@
 

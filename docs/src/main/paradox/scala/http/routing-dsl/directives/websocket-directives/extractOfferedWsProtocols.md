@@ -10,7 +10,7 @@
 
 ## Description
 
-Extracts the list of WebSocket subprotocols as offered by the client in the `Sec-WebSocket-Protocol` header if this is a WebSocket request. Rejects with an @scaladoc:[ExpectedWebSocketRequestRejection](akka.http.scaladsl.server.ExpectedWebSocketRequestRejection), otherwise.
+Extracts the list of WebSocket subprotocols as offered by the client in the `Sec-WebSocket-Protocol` header if this is a WebSocket request. Rejects with an @unidoc[ExpectedWebSocketRequestRejection], otherwise.
 
 The `extractOfferedWsProtocols` directive is used as a building block for @ref[Custom Directives](../custom-directives.md) to provide the extracted protocols to the inner route.
 
