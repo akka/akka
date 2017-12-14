@@ -19,7 +19,7 @@ leaves the request to be rejected with a @unidoc[AuthenticationFailedRejection] 
 
 See also @ref[authenticateOAuth2PF](authenticateOAuth2PF.md) if the authorization operation is rather quick, and does not have to execute asynchronously.
 
-See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-java) for details about verifying the secret.
+See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks) for details about verifying the secret.
 
 For more information on how OAuth2 works see [RFC 6750](https://tools.ietf.org/html/rfc6750).
 

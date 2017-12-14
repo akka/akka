@@ -11,7 +11,7 @@ Refer to @ref[authenticateBasic](authenticateBasic.md) for a detailed descriptio
 Its semantics are equivalent to `authenticateBasicPF` 's, where not handling a case in the Partial Function (PF)
 leaves the request to be rejected with a @unidoc[AuthenticationFailedRejection] rejection.
 
-See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-java) for details about verifying the secret.
+See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks) for details about verifying the secret.
 
 @@@ warning
 Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.

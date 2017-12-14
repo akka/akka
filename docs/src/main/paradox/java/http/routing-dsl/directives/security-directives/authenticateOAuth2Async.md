@@ -18,7 +18,7 @@ which by default is mapped to an `401 Unauthorized` response.
 
 See also @ref[authenticateOAuth2](authenticateOAuth2.md) if the authorization operation is rather quick, and does not have to execute asynchronously.
 
-See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-java) for details about verifying the secret.
+See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks) for details about verifying the secret.
 
 For more information on how OAuth2 works see [RFC 6750](https://tools.ietf.org/html/rfc6750).
 

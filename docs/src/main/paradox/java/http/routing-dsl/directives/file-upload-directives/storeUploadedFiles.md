@@ -1,4 +1,4 @@
-<a id="storeuploadedfiles-java"></a>
+<a id="storeuploadedfiles"></a>
 # storeUploadedFiles
 
 ## Description

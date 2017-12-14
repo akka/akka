@@ -3,7 +3,7 @@
 Basic directives are building blocks for building @ref[Custom Directives](../custom-directives.md). As such they
 usually aren't used in a route directly but rather in the definition of new directives.
 
-<a id="providedirectives-java"></a>
+<a id="providedirectives"></a>
 ## Providing Values to Inner Routes
 
 These directives provide values to the inner routes with extractions. They can be distinguished
@@ -28,7 +28,7 @@ a single value or a tuple of values.
  * @ref[extractUri](extractUri.md)
  * @ref[provide](provide.md)
 
-<a id="request-transforming-directives-java"></a>
+<a id="request-transforming-directives"></a>
 ## Transforming the Request(Context)
 
 >
@@ -42,7 +42,7 @@ a single value or a tuple of values.
  * @ref[withSettings](withSettings.md)
  * @ref[toStrictEntity](toStrictEntity.md)
 
-<a id="response-transforming-directives-java"></a>
+<a id="response-transforming-directives"></a>
 ## Transforming the Response
 
 These directives allow to hook into the response path and transform the complete response or
@@ -53,7 +53,7 @@ the parts of a response or the list of rejections:
  * @ref[mapResponseEntity](mapResponseEntity.md)
  * @ref[mapResponseHeaders](mapResponseHeaders.md)
 
-<a id="result-transformation-directives-java"></a>
+<a id="result-transformation-directives"></a>
 ## Transforming the RouteResult
 
 These directives allow to transform the RouteResult of the inner route.

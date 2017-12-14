@@ -18,7 +18,7 @@ e.g. @ref[authenticateBasic](authenticateBasic.md)) is allowed to access the inn
 See also @ref[authorize](authorize.md) for the synchronous version of this directive.
 
 @@@ note
-See also @ref[Authentication vs. Authorization](index.md#authentication-vs-authorization-java) to understand the differences between those.
+See also @ref[Authentication vs. Authorization](index.md#authentication-vs-authorization) to understand the differences between those.
 @@@
 
 ## Example

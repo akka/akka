@@ -12,7 +12,7 @@
 
 @@@
 
-<a id="which-parameter-directive-java"></a>
+<a id="which-parameter-directive"></a>
 ## When to use which parameter directive?
 
 Usually, you want to use the high-level @ref[parameter](parameter.md) directive. When you need

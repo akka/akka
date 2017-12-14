@@ -1,4 +1,4 @@
-<a id="storeuploadedfile-java"></a>
+<a id="storeuploadedfile"></a>
 # storeUploadedFile
 
 ## Description
@@ -12,7 +12,7 @@ one will be used and the subsequent ones ignored.
 
 @@@ note
 This directive will stream contents of the request into a file, however one can not start processing these
-until the file has been written completely. For streaming APIs it is preferred to use the @ref[fileUpload](fileUpload.md#fileupload-java)
+until the file has been written completely. For streaming APIs it is preferred to use the @ref[fileUpload](fileUpload.md#fileupload)
 directive, as it allows for streaming handling of the incoming data bytes.
 @@@
 

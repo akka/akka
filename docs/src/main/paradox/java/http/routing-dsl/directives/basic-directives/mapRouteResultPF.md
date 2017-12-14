@@ -18,7 +18,7 @@ The `mapRouteResult` directive is used as a building block for @ref[Custom Direc
 @unidoc[RouteResult] coming back from the inner route. It's similar to the @ref[mapRouteResult](mapRouteResult.md) directive but allows to
 specify a partial function that doesn't have to handle all potential @unidoc[RouteResult] instances.
 
-See @ref[Result Transformation Directives](index.md#result-transformation-directives-java) for similar directives.
+See @ref[Result Transformation Directives](index.md#result-transformation-directives) for similar directives.
 
 ## Example
 

@@ -8,7 +8,7 @@ if the unmarshaller threw an `Unmarshaller.NoContentException` or a @unidoc[Malf
 
 ## Description
 
-See @ref[When to use which parameter directive?](index.md#which-parameter-directive-java) to understand when to use which directive.
+See @ref[When to use which parameter directive?](index.md#which-parameter-directive) to understand when to use which directive.
 
 ## Example
 

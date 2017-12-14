@@ -17,7 +17,7 @@ It's similar to @ref[mapRouteResultWith](mapRouteResultWith.md), however it's
 instead of `Function<RouteResult, CompletionStage<RouteResult>>` which may be useful when
 combining multiple transformations and / or wanting to `recover` from a failed route result.
 
-See @ref[Result Transformation Directives](index.md#result-transformation-directives-java) for similar directives.
+See @ref[Result Transformation Directives](index.md#result-transformation-directives) for similar directives.
 
 ## Example
 

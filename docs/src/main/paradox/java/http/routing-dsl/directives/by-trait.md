@@ -2,7 +2,7 @@
 
 All predefined directives are organized into traits that form one part of the overarching @unidoc[Directives] trait.
 
-<a id="request-directives-java"></a>
+<a id="request-directives"></a>
 ## Directives filtering or extracting from the request
 
 @ref[MethodDirectives](method-directives/index.md)
@@ -41,7 +41,7 @@ All predefined directives are organized into traits that form one part of the ov
 @ref[FileUploadDirectives](file-upload-directives/index.md)
 :   Handle file uploads.
 
-<a id="response-directives-java"></a>
+<a id="response-directives"></a>
 ## Directives creating or transforming the response
 
 @ref[CacheConditionDirectives](cache-condition-directives/index.md)

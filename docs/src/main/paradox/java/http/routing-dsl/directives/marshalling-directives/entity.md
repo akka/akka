@@ -32,7 +32,7 @@ are mapped to rejections:
 
 ## Examples
 
-The following example uses @ref[Json Support via Jackson](../../../common/json-support.md#json-jackson-support-java) to unmarshall a json request into a simple `Person`  
+The following example uses @ref[Json Support via Jackson](../../../common/json-support.md#json-jackson-support) to unmarshall a json request into a simple `Person`  
 
 @@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
 

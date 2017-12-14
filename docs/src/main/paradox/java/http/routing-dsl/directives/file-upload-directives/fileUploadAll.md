@@ -1,4 +1,4 @@
-<a id="fileuploadall-java"></a>
+<a id="fileuploadall"></a>
 # fileUploadAll
 
 ## Description

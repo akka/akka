@@ -16,7 +16,7 @@ variant of this directive which allows it to run without blocking routing layer 
 Standard HTTP-based authentication which uses the `WWW-Authenticate` header containing challenge data and
 @unidoc[Authorization] header for receiving credentials is implemented in subclasses of `HttpAuthenticator`.
 
-See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-java) for details about verifying the secret.
+See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks) for details about verifying the secret.
 
 @@@ warning
 Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.
