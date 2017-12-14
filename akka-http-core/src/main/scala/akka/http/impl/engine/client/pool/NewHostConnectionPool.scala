@@ -266,14 +266,13 @@ private[client] object NewHostConnectionPool {
           requestOut:             SubSourceOutlet[HttpRequest],
           responseIn:             SubSinkInlet[HttpResponse],
           val outgoingConnection: Future[Http.OutgoingConnection]
-        ) extends InHandler with OutHandler {
+        ) extends InHandler with OutHandler { connection ⇒
           var ongoingResponseEntity: Option[HttpEntity] = None
 
           /** Will only be executed if this connection is still the current connection for its slot */
           def withSlot(f: Slot ⇒ Unit): Unit =
             if (_slot.isCurrentConnection(this)) f(_slot)
 
-          // FIXME: is this safe? I.e. always pulled?
           def pushRequest(request: HttpRequest): Unit = {
             val newRequest =
               request.entity match {
@@ -290,7 +289,7 @@ private[client] object NewHostConnectionPool {
                   request.withEntity(newEntity)
               }
 
-            requestOut.push(newRequest)
+            emitRequest(newRequest)
           }
           def close(): Unit = {
             requestOut.complete()
@@ -301,7 +300,7 @@ private[client] object NewHostConnectionPool {
           }
           def isClosed: Boolean = requestOut.isClosed || responseIn.isClosed
 
-          def onPush(): Unit = {
+          def onPush(): Unit = try {
             val response = responseIn.grab()
 
             withSlot(_.debug("Received response")) // FIXME: add abbreviated info
@@ -344,11 +343,23 @@ private[client] object NewHostConnectionPool {
               slot.onConnectionFailed(ex)
             }
 
-          def onPull(): Unit = () // FIXME: do we need push / pull handling?
+          def onPull(): Unit = () // emitRequests makes sure not to push too early
 
           override def onDownstreamFinish(): Unit =
             withSlot(_.debug("Connection cancelled"))
 
+          /** Helper that makes sure requestOut is pulled before pushing */
+          private def emitRequest(request: HttpRequest): Unit =
+            if (requestOut.isAvailable) requestOut.push(request)
+            else
+              requestOut.setHandler(new OutHandler {
+                def onPull(): Unit = {
+                  requestOut.push(request)
+                  requestOut.setHandler(connection) // implicit assumption is that connection was the handler before
+                }
+
+                override def onDownstreamFinish(): Unit = connection.onDownstreamFinish()
+              })
         }
         def openConnection(slot: Slot): SlotConnection = {
           val requestOut = new SubSourceOutlet[HttpRequest](s"PoolSlot[${slot.slotId}].requestOut")
