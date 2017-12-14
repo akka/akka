@@ -1,5 +1,13 @@
 # extractOfferedWsProtocols
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [WebSocketDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebSocketDirectives.scala) { #extractOfferedWsProtocols }
+
+@@@
+
 ## Description
 
 Extracts the list of WebSocket subprotocols as offered by the client in the `Sec-WebSocket-Protocol` header if this is a WebSocket request. Rejects with an @javadoc:[ExpectedWebSocketRequestRejection](akka.http.javadsl.server.ExpectedWebSocketRequestRejection), otherwise.
@@ -8,4 +16,8 @@ The `extractOfferedWsProtocols` directive is used as a building block for @ref[C
 
 ## Example
 
-@@snip [WebSocketDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/WebSocketDirectivesExamplesTest.java) { #extractOfferedWsProtocols }
+Scala
+:  @@snip [WebSocketDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #extractOfferedWsProtocols }
+
+Java
+:  @@snip [WebSocketDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/WebSocketDirectivesExamplesTest.java) { #extractOfferedWsProtocols }

@@ -1,5 +1,13 @@
 # mapRouteResultPF
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapRouteResultPF }
+
+@@@
+
 ## Description
 
 *Partial Function* version of @ref[mapRouteResult](mapRouteResult.md).
@@ -14,4 +22,8 @@ See @ref[Result Transformation Directives](index.md#result-transformation-direct
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapRouteResultPF }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #mapRouteResultPF }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapRouteResultPF }

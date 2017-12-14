@@ -1,8 +1,12 @@
 # respondWithDefaultHeader
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [RespondWithDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala) { #respondWithDefaultHeader }
+
+@@@
 
 ## Description
 
@@ -18,4 +22,8 @@ See also @ref[respondWithDefaultHeaders](respondWithDefaultHeaders.md)  if you'd
 
 ## Example
 
-@@snip [RespondWithDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #respondWithDefaultHeader-0 }
+Scala
+:  @@snip [RespondWithDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #respondWithDefaultHeader-0 }
+
+Java
+:  @@snip [RespondWithDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java) { #respondWithDefaultHeader }

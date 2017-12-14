@@ -1,5 +1,13 @@
 # mapRouteResult
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapRouteResult }
+
+@@@
+
 ## Description
 
 Changes the message the inner route sends to the responder.
@@ -11,4 +19,8 @@ See @ref[Result Transformation Directives](index.md#result-transformation-direct
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapRouteResult }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #mapRouteResult0 }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapRouteResult }

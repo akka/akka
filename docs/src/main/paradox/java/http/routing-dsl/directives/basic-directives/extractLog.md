@@ -1,5 +1,13 @@
 # extractLog
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #extractLog }
+
+@@@
+
 ## Description
 
 Extracts a @unidoc[LoggingAdapter] from the request context which can be used for logging inside the route.
@@ -11,4 +19,8 @@ See @ref[extract](extract.md) and @ref[Providing Values to Inner Routes](index.m
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractLog }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #extract0Log }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractLog }

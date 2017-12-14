@@ -1,5 +1,13 @@
 # mapRequest
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapRequest }
+
+@@@
+
 ## Description
 
 Transforms the request before it is handled by the inner route.
@@ -13,4 +21,8 @@ See @ref[Request Transforming Directives](index.md#request-transforming-directiv
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapRequest }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #mapRequest0 }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapRequest }

@@ -1,8 +1,12 @@
 # pass
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #pass }
+
+@@@
 
 ## Description
 
@@ -12,4 +16,8 @@ It is usually used as a "neutral element" when combining directives generically.
 
 ## Example
 
-@@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #pass }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #pass }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #pass }

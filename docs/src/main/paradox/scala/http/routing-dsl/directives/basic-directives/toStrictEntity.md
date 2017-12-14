@@ -1,8 +1,12 @@
 # toStrictEntity
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #toStrictEntity }
+
+@@@
 
 ## Description
 
@@ -20,4 +24,8 @@ overridden by wrapping with @ref[withSizeLimit](../misc-directives/withSizeLimit
 
 ## Example
 
-@@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #toStrictEntity-example }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #toStrictEntity-example }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #toStrictEntity }

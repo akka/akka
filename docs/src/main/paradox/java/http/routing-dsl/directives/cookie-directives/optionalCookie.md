@@ -1,11 +1,1 @@
-# optionalCookie
-
-## Description
-
-Extracts an optional cookie with a given name from a request.
-
-Use the @ref[cookie](cookie.md) directive instead if the inner route does not handle a missing cookie.
-
-## Example
-
-@@snip [CookieDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java) { #optionalCookie }
+../../../../../scala/http/routing-dsl/directives/cookie-directives/optionalCookie.md

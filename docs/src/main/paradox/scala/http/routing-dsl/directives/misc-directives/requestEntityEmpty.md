@@ -1,8 +1,12 @@
 # requestEntityEmpty
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [MiscDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala) { #requestEntityEmpty }
+
+@@@
 
 ## Description
 
@@ -13,4 +17,8 @@ See also @ref[requestEntityPresent](requestEntityPresent.md) for the opposite ef
 
 ## Example
 
-@@snip [MiscDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #requestEntityEmptyPresent-example }
+Scala
+:  @@snip [MiscDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #requestEntityEmptyPresent-example }
+
+Java
+:  @@snip [MiscDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #requestEntity-empty-present-example }

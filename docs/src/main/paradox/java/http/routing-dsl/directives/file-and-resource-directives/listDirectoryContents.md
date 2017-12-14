@@ -1,5 +1,13 @@
 # listDirectoryContents
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [FileAndResourceDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala) { #listDirectoryContents }
+
+@@@
+
 ## Description
 
 Completes GET requests with a unified listing of the contents of all given directories. The actual rendering of the
@@ -16,4 +24,8 @@ Note that it's not required to wrap this directive with `get` as this directive 
 
 ## Example
 
-@@snip [FileAndResourceDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java) { #listDirectoryContents }
+Scala
+:  @@snip [FileAndResourceDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala) { #listDirectoryContents-examples }
+
+Java
+:  @@snip [FileAndResourceDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java) { #listDirectoryContents }

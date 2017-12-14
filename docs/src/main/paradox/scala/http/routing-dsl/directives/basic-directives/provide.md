@@ -1,8 +1,12 @@
 # provide
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #provide }
+
+@@@
 
 ## Description
 
@@ -15,4 +19,8 @@ See @ref[Providing Values to Inner Routes](index.md#providedirectives) for an ov
 
 ## Example
 
-@@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #provide0 }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #provide0 }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #provide }

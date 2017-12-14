@@ -1,5 +1,13 @@
 # pathEnd
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathEnd }
+
+@@@
+
 ## Description
 
 Only passes the request to its inner route if the unmatched path of the @unidoc[RequestContext] is empty, i.e. the request
@@ -10,4 +18,8 @@ inner-level to discriminate "path already fully matched" from other alternatives
 
 ## Example
 
-@@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-end }
+Scala
+:  @@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #pathEnd- }
+
+Java
+:  @@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-end }

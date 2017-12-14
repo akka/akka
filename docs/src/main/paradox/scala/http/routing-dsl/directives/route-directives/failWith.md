@@ -1,8 +1,12 @@
 # failWith
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [RouteDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala) { #failWith }
+
+@@@
 
 ## Description
 
@@ -24,4 +28,8 @@ exception.
 
 ## Example
 
-@@snip [RouteDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #failwith-examples }
+Scala
+:  @@snip [RouteDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #failwith-examples }
+
+Java
+:  @@snip [RouteDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #failWith }

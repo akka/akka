@@ -1,8 +1,12 @@
 # mapRouteResultWith
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapRouteResultWith }
+
+@@@
 
 ## Description
 
@@ -16,4 +20,8 @@ See @ref[Result Transformation Directives](index.md#result-transformation-direct
 
 ## Example
 
-@@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #mapRouteResultWith-0 }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #mapRouteResultWith-0 }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapRouteResultWith }

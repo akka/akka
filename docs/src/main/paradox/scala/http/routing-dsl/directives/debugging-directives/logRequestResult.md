@@ -29,4 +29,8 @@ See @ref[logRequest](logRequest.md) for the general description how these direct
 This example will showcase the advanced logging using the @unidoc[DebuggingDirectives].
 The built *logResponseTime* directive will log the request time (or rejection reason):
 
-@@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResultWithResponseTime }
+Scala
+:  @@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResultWithResponseTime }
+
+Java
+:  @@snip [DebuggingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResultWithResponseTime }

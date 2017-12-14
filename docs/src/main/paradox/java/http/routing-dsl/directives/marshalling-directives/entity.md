@@ -1,5 +1,13 @@
 # entity
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [MarshallingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #entity }
+
+@@@
+
 ## Description
 
 Unmarshalls the request entity to the given type and passes it to its inner Route.  An unmarshaller
@@ -28,4 +36,8 @@ The following example uses @ref[Json Support via Jackson](../../../common/json-s
 
 @@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
 
-@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-entity-with-json }
+Scala
+:  @@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #example-entity-with-raw-json }
+
+Java
+:  @@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-entity-with-json }

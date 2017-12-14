@@ -1,8 +1,12 @@
 # handleWith
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [MarshallingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #handleWith }
+
+@@@
 
 ## Description
 
@@ -35,4 +39,8 @@ The following example uses an `updatePerson` function with a `Person` case class
 
 The PersonJsonSupport object handles both marshalling and unmarshalling of the Person case class.
 
-@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-json-support }
+Scala
+:  @@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-json-support }
+
+Java
+:  @@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }

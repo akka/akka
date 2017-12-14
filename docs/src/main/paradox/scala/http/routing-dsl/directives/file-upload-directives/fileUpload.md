@@ -1,8 +1,12 @@
 # fileUpload
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [FileUploadDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala) { #fileUpload }
+
+@@@
 
 ## Description
 
@@ -20,4 +24,8 @@ be buffered to disk, even if there is only one.
 
 ## Example
 
-@@snip [FileUploadDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FileUploadDirectivesExamplesSpec.scala) { #fileUpload }
+Scala
+:  @@snip [FileUploadDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FileUploadDirectivesExamplesSpec.scala) { #fileUpload }
+
+Java
+:  @@snip [FileUploadDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FileUploadDirectivesExamplesTest.java) { #fileUpload }

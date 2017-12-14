@@ -1,11 +1,1 @@
-# DebuggingDirectives
-
-@@toc { depth=1 }
-
-@@@ index
-
-* [logRequest](logRequest.md)
-* [logRequestResult](logRequestResult.md)
-* [logResult](logResult.md)
-
-@@@
+../../../../../scala/http/routing-dsl/directives/debugging-directives/index.md

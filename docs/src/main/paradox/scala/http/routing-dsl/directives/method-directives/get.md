@@ -15,4 +15,8 @@ by the default @ref[RejectionHandler](../../rejections.md#the-rejectionhandler).
 
 ## Example
 
-@@snip [MethodDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala) { #get-method }
+Scala
+:  @@snip [MethodDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala) { #get-method }
+
+Java
+:  @@snip [MethodDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #get }

@@ -1,5 +1,13 @@
 # respondWithDefaultHeaders
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [RespondWithDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala) { #respondWithDefaultHeaders }
+
+@@@
+
 ## Description
 
 Adds the given HTTP headers to all responses coming back from its inner route only if a respective header with the same

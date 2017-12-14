@@ -1,8 +1,12 @@
 # ignoreTrailingSlash
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #ignoreTrailingSlash }
+
+@@@
 
 ## Description
 
@@ -21,4 +25,8 @@ See also @ref[redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPre
 
 ## Example
 
-@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #ignoreTrailingSlash }
+Scala
+:  @@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #ignoreTrailingSlash }
+
+Java
+:  @@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #ignoreTrailingSlash }

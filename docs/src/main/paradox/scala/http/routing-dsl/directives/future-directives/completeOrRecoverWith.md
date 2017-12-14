@@ -1,8 +1,12 @@
 # completeOrRecoverWith
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [FutureDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala) { #completeOrRecoverWith }
+
+@@@
 
 ## Description
 
@@ -15,4 +19,8 @@ To handle the successful case manually as well, use the @ref[onComplete](onCompl
 
 ## Example
 
-@@snip [FutureDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #completeOrRecoverWith }
+Scala
+:  @@snip [FutureDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #completeOrRecoverWith }
+
+Java
+:  @@snip [FutureDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #completeOrRecoverWith }

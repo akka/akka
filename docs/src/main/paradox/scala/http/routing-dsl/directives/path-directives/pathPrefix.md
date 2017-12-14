@@ -1,8 +1,12 @@
 # pathPrefix
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathPrefix }
+
+@@@
 
 ## Description
 
@@ -26,4 +30,8 @@ so it will match everything and consume nothing. The @ref[path](path.md) provide
 
 ## Example
 
-@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #pathPrefix- }
+Scala
+:  @@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #pathPrefix- }
+
+Java
+:  @@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-prefix }

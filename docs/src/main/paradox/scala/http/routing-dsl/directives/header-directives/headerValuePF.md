@@ -1,8 +1,12 @@
 # headerValuePF
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [HeaderDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #headerValuePF }
+
+@@@
 
 ## Description
 
@@ -17,4 +21,8 @@ If the function is not defined for any header the request is rejected as "NotFou
 
 ## Example
 
-@@snip [HeaderDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala) { #headerValuePF-0 }
+Scala
+:  @@snip [HeaderDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala) { #headerValuePF-0 }
+
+Java
+:  @@snip [HeaderDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java) { #headerValuePF }

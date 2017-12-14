@@ -1,5 +1,13 @@
 # mapRequestContext
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapRequestContext }
+
+@@@
+
 ## Description
 
 Transforms the @unidoc[RequestContext] before it is passed to the inner route.
@@ -12,4 +20,8 @@ See @ref[Request Transforming Directives](index.md#request-transforming-directiv
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapRequestContext }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #mapRequestContext }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapRequestContext }

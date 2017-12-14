@@ -16,4 +16,8 @@ See @ref[logRequest](logRequest.md) for the general description how these direct
 
 This example shows how to log the response time of the request using the Debugging Directive
 
-@@snip [DebuggingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResultWithResponseTime }
+Scala
+:  @@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResultWithResponseTime }
+
+Java
+:  @@snip [DebuggingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResultWithResponseTime }

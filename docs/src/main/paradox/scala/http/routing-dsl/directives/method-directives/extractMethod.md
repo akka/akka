@@ -1,8 +1,12 @@
 # extractMethod
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [MethodDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #extractMethod }
+
+@@@
 
 ## Description
 
@@ -20,4 +24,8 @@ print what type of request it was - independent of what actual HttpMethod it was
 
 When you define a custom HttpMethod, you can define a route using extractMethod.
 
-@@snip [CustomHttpMethodSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
+Scala
+:  @@snip [CustomHttpMethodSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
+
+Java
+:  @@snip [CustomHttpMethodExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }

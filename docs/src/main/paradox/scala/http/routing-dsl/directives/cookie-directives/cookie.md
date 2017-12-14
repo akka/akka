@@ -1,8 +1,12 @@
 # cookie
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [CookieDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala) { #cookie }
+
+@@@
 
 ## Description
 
@@ -13,4 +17,8 @@ Use the @ref[optionalCookie](optionalCookie.md) directive instead if you want to
 
 ## Example
 
-@@snip [CookieDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala) { #cookie }
+Scala
+:  @@snip [CookieDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala) { #cookie }
+
+Java
+:  @@snip [CookieDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java) { #cookie }

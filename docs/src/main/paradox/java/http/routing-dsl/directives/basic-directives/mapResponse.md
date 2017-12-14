@@ -1,5 +1,13 @@
 # mapResponse
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapResponse }
+
+@@@
+
 ## Description
 
 The `mapResponse` directive is used as a building block for @ref[Custom Directives](../custom-directives.md) to transform a response that
@@ -14,4 +22,8 @@ See also @ref[mapResponseHeaders](mapResponseHeaders.md) or @ref[mapResponseEnti
 
 ## Example: Default to empty JSON response on errors
 
-@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapResponse-advanced }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #mapResponse1-advanced }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapResponse-advanced }

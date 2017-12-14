@@ -1,5 +1,13 @@
 # extractUnmatchedPath
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #extractUnmatchedPath }
+
+@@@
+
 ## Description
 
 Extracts the unmatched path from the request context.
@@ -14,4 +22,8 @@ See also @ref[extractMatchedPath](extractMatchedPath.md) to see similar directiv
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractUnmatchedPath }
+Scala
+:  @@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #extractUnmatchedPath-example }
+
+Java
+:  @@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractUnmatchedPath }

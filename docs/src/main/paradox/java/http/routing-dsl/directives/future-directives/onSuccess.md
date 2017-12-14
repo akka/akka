@@ -1,5 +1,13 @@
 # onSuccess
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [FutureDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala) { #onSuccess }
+
+@@@
+
 ## Description
 
 Evaluates its parameter of type `CompletionStage<T>`, and once it has been completed successfully,
@@ -11,4 +19,8 @@ To handle the `Failure` case manually as well, use @ref[onComplete](onComplete.m
 
 ## Example
 
-@@snip [FutureDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onSuccess }
+Scala
+:  @@snip [FutureDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onSuccess }
+
+Java
+:  @@snip [FutureDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onSuccess }

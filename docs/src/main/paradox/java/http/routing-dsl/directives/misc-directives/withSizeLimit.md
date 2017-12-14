@@ -1,5 +1,13 @@
 # withSizeLimit
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [MiscDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala) { #withSizeLimit }
+
+@@@
+
 ## Description
 
 Fails the stream with `EntityStreamSizeException` if its request entity size exceeds given limit. Limit given
@@ -13,4 +21,8 @@ See also @ref[withoutSizeLimit](withoutSizeLimit.md) for skipping request entity
 
 ## Example
 
-@@snip [MiscDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #withSizeLimitExample }
+Scala
+:  @@snip [MiscDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #withSizeLimit-nested-example }
+
+Java
+:  @@snip [MiscDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #withSizeLimitExample }

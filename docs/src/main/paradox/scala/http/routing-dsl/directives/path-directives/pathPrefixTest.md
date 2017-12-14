@@ -1,8 +1,12 @@
 # pathPrefixTest
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathPrefixTest }
+
+@@@
 
 ## Description
 
@@ -24,4 +28,8 @@ the URI. If the match fails the request is rejected with an @ref[empty rejection
 
 ## Example
 
-@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #completeWithUnmatchedPath #pathPrefixTest- }
+Scala
+:  @@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #completeWithUnmatchedPath #pathPrefixTest- }
+
+Java
+:  @@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-prefix-test }

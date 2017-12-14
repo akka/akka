@@ -1,8 +1,12 @@
 # optionalHeaderValuePF
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [HeaderDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValuePF }
+
+@@@
 
 ## Description
 
@@ -14,4 +18,8 @@ value instead of rejecting the request if no matching header could be found.
 
 ## Example
 
-@@snip [HeaderDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala) { #optionalHeaderValuePF-0 }
+Scala
+:  @@snip [HeaderDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala) { #optionalHeaderValuePF-0 }
+
+Java
+:  @@snip [HeaderDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java) { #optionalHeaderValuePF }

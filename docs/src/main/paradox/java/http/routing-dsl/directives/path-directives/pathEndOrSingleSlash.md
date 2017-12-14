@@ -1,5 +1,13 @@
 # pathEndOrSingleSlash
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathEndOrSingleSlash }
+
+@@@
+
 ## Description
 
 Only passes the request to its inner route if the unmatched path of the @unidoc[RequestContext] is either empty
@@ -12,4 +20,8 @@ It is equivalent to `pathEnd | pathSingleSlash` but slightly more efficient.
 
 ## Example
 
-@@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-end-or-single-slash }
+Scala
+:  @@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #pathEndOrSingleSlash- }
+
+Java
+:  @@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-end-or-single-slash }

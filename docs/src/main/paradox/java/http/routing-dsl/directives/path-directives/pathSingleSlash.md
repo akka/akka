@@ -1,5 +1,13 @@
 # pathSingleSlash
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathSingleSlash }
+
+@@@
+
 ## Description
 
 Only passes the request to its inner route if the unmatched path of the @unidoc[RequestContext]
@@ -10,4 +18,8 @@ This directive is a simple alias for `pathPrefix(PathEnd)` and is mostly used fo
 
 ## Example
 
-@@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-single-slash }
+Scala
+:  @@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #pathSingleSlash- }
+
+Java
+:  @@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-single-slash }

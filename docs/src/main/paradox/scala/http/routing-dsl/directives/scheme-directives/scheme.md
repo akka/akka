@@ -1,8 +1,12 @@
 # scheme
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [SchemeDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala) { #scheme }
+
+@@@
 
 ## Description
 
@@ -19,4 +23,8 @@ For simply extracting the scheme name, see the @ref[extractScheme](extractScheme
 
 ## Example
 
-@@snip [SchemeDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala) { #example-2 }
+Scala
+:  @@snip [SchemeDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala) { #example-2 }
+
+Java
+:  @@snip [SchemeDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java) { #scheme }

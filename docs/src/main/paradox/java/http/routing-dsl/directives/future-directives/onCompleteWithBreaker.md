@@ -1,5 +1,13 @@
 # onCompleteWithBreaker
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [FutureDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala) { #onCompleteWithBreaker }
+
+@@@
+
 ## Description
 
 Evaluates its parameter of type `CompletionStage<T>` protecting it with the specified @unidoc[CircuitBreaker].
@@ -13,4 +21,8 @@ Otherwise, the same behaviour provided by @ref[onComplete](onComplete.md) is to 
 
 ## Example
 
-@@snip [FutureDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onCompleteWithBreaker }
+Scala
+:  @@snip [FutureDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onCompleteWithBreaker }
+
+Java
+:  @@snip [FutureDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onCompleteWithBreaker }

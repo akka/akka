@@ -1,5 +1,13 @@
 # formFieldMultiMap
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [FormFieldDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala) { #formFieldMultiMap }
+
+@@@
+
 ## Description
 
 Extracts all HTTP form fields at once as a multi-map of type `Map<String, <List<String>>` mapping
@@ -15,4 +23,8 @@ Use of this directive can result in performance degradation or even in `OutOfMem
 
 ## Example
 
-@@snip [FormFieldDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java) { #formFieldMultiMap }
+Scala
+:  @@snip [FormFieldDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFieldMultiMap }
+
+Java
+:  @@snip [FormFieldDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java) { #formFieldMultiMap }

@@ -1,5 +1,13 @@
 # completeWith
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [MarshallingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #completeWith }
+
+@@@
+
 ## Description
 
 Uses the marshaller for a given type to produce a completion function that is passed to its

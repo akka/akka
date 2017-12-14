@@ -1,9 +1,1 @@
-# RangeDirectives
-
-@@toc { depth=1 }
-
-@@@ index
-
-* [withRangeSupport](withRangeSupport.md)
-
-@@@
+../../../../../scala/http/routing-dsl/directives/range-directives/index.md

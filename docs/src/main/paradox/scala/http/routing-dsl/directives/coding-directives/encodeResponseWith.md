@@ -1,8 +1,12 @@
 # encodeResponseWith
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [CodingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala) { #encodeResponseWith }
+
+@@@
 
 ## Description
 
@@ -17,4 +21,8 @@ response encoding is used. Otherwise the request is rejected.
 
 ## Example
 
-@@snip [CodingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala) { #encodeResponseWith }
+Scala
+:  @@snip [CodingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala) { #encodeResponseWith }
+
+Java
+:  @@snip [CodingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java) { #encodeResponseWith }

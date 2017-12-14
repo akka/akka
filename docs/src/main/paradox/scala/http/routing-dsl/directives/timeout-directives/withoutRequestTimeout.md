@@ -1,8 +1,12 @@
 # withoutRequestTimeout
 
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [TimeoutDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala) { #withoutRequestTimeout }
+
+@@@
 
 ## Description
 
@@ -21,4 +25,8 @@ For more information about various timeouts in Akka HTTP see @ref[Akka HTTP Time
 
 ## Example
 
-@@snip [TimeoutDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/TimeoutDirectivesExamplesSpec.scala) { #withoutRequestTimeout }
+Scala
+:  @@snip [TimeoutDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/TimeoutDirectivesExamplesSpec.scala) { #withoutRequestTimeout }
+
+Java
+:  @@snip [TimeoutDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java) { #withoutRequestTimeout-1 }
