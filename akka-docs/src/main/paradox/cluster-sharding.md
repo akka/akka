@@ -118,7 +118,7 @@ The `ShardRegion` actor is started on each node in the cluster, or group of node
 tagged with a specific role. The `ShardRegion` is created with two application specific
 functions to extract the entity identifier and the shard identifier from incoming messages.
 A shard is a group of entities that will be managed together. For the first message in a
-specific shard the `ShardRegion` request the location of the shard from a central coordinator,
+specific shard the `ShardRegion` requests the location of the shard from a central coordinator,
 the `ShardCoordinator`.
 
 The `ShardCoordinator` decides which `ShardRegion` shall own the `Shard` and informs
