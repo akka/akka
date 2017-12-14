@@ -303,10 +303,10 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     if (selfIndex == 0) {
       testConductor.removeNode(myself)
       within(testConductor.Settings.BarrierTimeout.duration) {
-        awaitCond {
+        awaitCond({
           // Await.result(testConductor.getNodes, remaining).filterNot(_ == myself).isEmpty
-          testConductor.getNodes.await.filterNot(_ == myself).isEmpty
-        }
+          testConductor.getNodes.await.forall(_ == myself)
+        }, message = s"Nodes not shutdown: ${testConductor.getNodes.await}")
       }
     }
     shutdown(system, duration = shutdownTimeout)
