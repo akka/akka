@@ -18,7 +18,7 @@ that handle complete suffixes of paths (like the `getFromDirectory` directives a
 
 Use `mapUnmatchedPath` to change the value of the unmatched path.
 
-See also @ref[extractMatchedPath](extractMatchedPath.md#extractmatchedpath) to see similar directive for matched path.
+See also @ref[extractMatchedPath](extractMatchedPath.md) to see similar directive for matched path.
 
 ## Example
 
