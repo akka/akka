@@ -1,0 +1,4 @@
+# Mima filters needed to check newer versions against 10.0.11
+
+# Issue #1536 - Add a new method to Cache; which is annotated with @ApiMayChange.
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.caching.scaladsl.Cache.getOrLoad")

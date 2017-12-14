@@ -32,6 +32,12 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
       cache.size should be(1)
       cache.keys should be(Set(1))
     }
+    "load uncached values with a given function" in {
+      val cache = lfuCache[Int]()
+      Await.result(cache.getOrLoad(1, key ⇒ Future.successful(key * 2)), 3.seconds) should be(2)
+      cache.size should be(1)
+      cache.keys should be(Set(1))
+    }
     "return stored values upon cache hit on existing values" in {
       val cache = lfuCache[String]()
       Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")

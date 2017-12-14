@@ -4,6 +4,7 @@
 package akka.http.caching
 
 import java.util.concurrent.{ CompletableFuture, Executor, TimeUnit }
+import java.util.function.BiFunction
 
 import akka.actor.ActorSystem
 import akka.annotation.{ ApiMayChange, InternalApi }
@@ -14,7 +15,6 @@ import scala.concurrent.Future
 import com.github.benmanes.caffeine.cache.{ AsyncCacheLoader, AsyncLoadingCache, Caffeine }
 import akka.http.caching.LfuCache.toJavaMappingFunction
 import akka.http.caching.scaladsl.Cache
-
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.caching.CacheJavaMapping.Implicits._
 
@@ -95,8 +95,11 @@ object LfuCache {
       Future.failed[V](new RuntimeException("Dummy loader should not be used by LfuCache")).toJava.toCompletableFuture
   }
 
-  def toJavaMappingFunction[K, V](genValue: () ⇒ Future[V]) =
+  def toJavaMappingFunction[K, V](genValue: () ⇒ Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
     asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) ⇒ genValue().toJava.toCompletableFuture)
+
+  def toJavaMappingFunction[K, V](loadValue: K ⇒ Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
+    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) ⇒ loadValue(k).toJava.toCompletableFuture)
 }
 
 /** INTERNAL API */
@@ -106,6 +109,8 @@ private[caching] class LfuCache[K, V](val store: AsyncLoadingCache[K, V]) extend
   def get(key: K): Option[Future[V]] = Option(store.getIfPresent(key)).map(_.toScala)
 
   def apply(key: K, genValue: () ⇒ Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).toScala
+
+  def getOrLoad(key: K, loadValue: K ⇒ Future[V]) = store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
 
   def remove(key: K): Unit = store.synchronous().invalidate(key)
 

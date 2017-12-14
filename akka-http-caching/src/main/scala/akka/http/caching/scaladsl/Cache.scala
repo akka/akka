@@ -38,6 +38,12 @@ abstract class Cache[K, V] extends akka.http.caching.javadsl.Cache[K, V] {
     apply(key, () ⇒ { val p = Promise[V](); f(p); p.future })
 
   /**
+   * Returns either the cached Future for the given key, or applies the given value loading
+   * function on the key, producing a `Future[V]`.
+   */
+  def getOrLoad(key: K, loadValue: K ⇒ Future[V]): Future[V]
+
+  /**
    * Returns either the cached Future for the given key or the given value as a Future
    */
   def get(key: K, block: () ⇒ V): Future[V] =
