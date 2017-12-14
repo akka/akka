@@ -684,7 +684,7 @@ private[akka] class ActorSystemImpl(
         err.print(cause.getMessage)
         err.print(", ")
         err.print(message)
-        err.print(" for ActorSystem[")
+        err.print(" ActorSystem[")
         err.print(name)
         err.println("]")
         System.err.flush()
