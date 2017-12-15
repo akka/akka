@@ -6,26 +6,26 @@ package akka.stream.io
 import java.net._
 import java.security.SecureRandom
 import java.util.concurrent.atomic.AtomicInteger
-import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
+import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
 
-import akka.actor.{ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Kill}
+import akka.actor.{ ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Kill }
 import akka.io.Tcp._
 import akka.stream._
-import akka.stream.scaladsl.Tcp.{IncomingConnection, ServerBinding}
-import akka.stream.scaladsl.{Flow, _}
+import akka.stream.scaladsl.Tcp.{ IncomingConnection, ServerBinding }
+import akka.stream.scaladsl.{ Flow, _ }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import akka.testkit.{EventFilter, TestKit, TestLatch, TestProbe}
+import akka.testkit.{ EventFilter, TestKit, TestLatch, TestProbe }
 import akka.testkit.SocketUtil.temporaryServerAddress
 import akka.util.ByteString
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{ Await, Future, Promise }
 import scala.util.control.NonFatal
 
 class TcpSpec extends StreamSpec("""
