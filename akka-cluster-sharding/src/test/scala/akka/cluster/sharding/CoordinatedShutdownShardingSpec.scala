@@ -19,7 +19,7 @@ import akka.testkit.TestProbe
 object CoordinatedShutdownShardingSpec {
   val config =
     """
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -81,10 +81,14 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
 
   "Sharding and CoordinatedShutdown" must {
     "init cluster" in {
-      Cluster(sys1).join(Cluster(sys1).selfAddress) // coordinator will initially run on sys2
-      awaitAssert(Cluster(sys1).selfMember.status should ===(MemberStatus.Up))
+      // FIXME this test should also work when coordinator is on the leaving sys1 node,
+      //       but currently there seems to be a race between the CS and the ClusterSingleton observing OldestChanged
+      //       and terminating coordinator singleton before the graceful sharding stop is done.
 
-      Cluster(sys2).join(Cluster(sys1).selfAddress)
+      Cluster(sys2).join(Cluster(sys2).selfAddress) // coordinator will initially run on sys2
+      awaitAssert(Cluster(sys2).selfMember.status should ===(MemberStatus.Up))
+
+      Cluster(sys1).join(Cluster(sys2).selfAddress)
       within(10.seconds) {
         awaitAssert {
           Cluster(sys1).state.members.size should ===(2)
