@@ -1,0 +1,3 @@
+# #23732 Provide complete control over Netty SSL handler in Akka Remoting
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.SSLSettings.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.NettyTransportSettings.this")
