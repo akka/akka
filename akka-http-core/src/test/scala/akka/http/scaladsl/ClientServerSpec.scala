@@ -219,9 +219,9 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "timeouts" should {
-      def bindServer(hostname: String, port: Int, serverTimeout: FiniteDuration): (Promise[Long], ServerBinding) = {
+      def bindServer(hostname: String, port: Int, serverIdleTimeout: FiniteDuration): (Promise[Long], ServerBinding) = {
         val s = ServerSettings(system)
-        val settings = s.withTimeouts(s.timeouts.withIdleTimeout(serverTimeout))
+        val settings = s.withTimeouts(s.timeouts.withIdleTimeout(serverIdleTimeout))
 
         val receivedRequest = Promise[Long]()
 
@@ -237,9 +237,9 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       "support server timeouts" should {
         "close connection with idle client after idleTimeout" in {
-          val serverTimeout = 300.millis
+          val serverIdleTimeout = 300.millis
           val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
+          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverIdleTimeout)
 
           try {
             def runIdleRequest(uri: Uri): Future[HttpResponse] = {
@@ -259,30 +259,29 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
               Await.result(clientsResponseFuture, 2.second.dilated)
             }
 
-            (System.nanoTime() - serverReceivedRequestAtNanos).millis should be >= serverTimeout
+            (System.nanoTime() - serverReceivedRequestAtNanos).millis should be >= serverIdleTimeout
           } finally Await.result(b1.unbind(), 1.second.dilated)
         }
       }
 
       "support client timeouts" should {
         "close connection with idle server after idleTimeout (using connection level client API)" in {
-          val serverTimeout = 10.seconds.dilated
+          val serverIdleTimeout = 10.seconds.dilated
 
-          val cs = ClientConnectionSettings(system)
-          val clientTimeout = 345.millis.dilated
-          val clientSettings = cs.withIdleTimeout(clientTimeout)
+          val clientIdleTimeout = 345.millis.dilated
+          val clientSettings = ClientConnectionSettings(system).withIdleTimeout(clientIdleTimeout)
 
-          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
+          val (receivedRequest: Promise[Long], binding: ServerBinding) = bindServer("localhost", port = 0, serverIdleTimeout)
 
           try {
             def runRequest(uri: Uri): Future[HttpResponse] = {
               val itNeverSends = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
-              Http().outgoingConnection(hostname, port, settings = clientSettings)
+              Http().outgoingConnection(binding.localAddress.getHostName, binding.localAddress.getPort, settings = clientSettings)
                 .runWith(Source.single(HttpRequest(POST, uri, entity = itNeverSends)), Sink.head)
                 ._2
             }
 
+            val clientSentRequestAtNanos = System.nanoTime()
             val clientsResponseFuture = runRequest("/")
 
             // await for the server to get the request
@@ -292,10 +291,10 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
             intercept[TimeoutException] {
               Await.result(clientsResponseFuture, 2.second.dilated)
             }
-            val actualTimeout = System.nanoTime() - serverReceivedRequestAtNanos
-            actualTimeout.nanos should be >= clientTimeout
-            actualTimeout.nanos should be < serverTimeout
-          } finally Await.result(b1.unbind(), 1.second.dilated)
+            val clientSawTimeoutAtNanos = System.nanoTime()
+            (clientSawTimeoutAtNanos - clientSentRequestAtNanos).nanos should be >= clientIdleTimeout
+            (clientSawTimeoutAtNanos - serverReceivedRequestAtNanos).nanos should be < serverIdleTimeout
+          } finally Await.result(binding.unbind(), 1.second.dilated)
         }
 
         "close connection with idle server after idleTimeout (using pool level client API)" in {
