@@ -292,7 +292,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     sinkIn.setHandler(new InHandler {
       override def onPush() = push(out, sinkIn.grab())
       override def onUpstreamFinish() = {
-        if (finishing || maxRestartsReached || onlyOnFailures) {
+        if (finishing || maxRestartsReached() || onlyOnFailures) {
           complete(out)
         } else {
           log.debug("Restarting graph due to finished upstream")
@@ -300,7 +300,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         }
       }
       override def onUpstreamFailure(ex: Throwable) = {
-        if (finishing || maxRestartsReached) {
+        if (finishing || maxRestartsReached()) {
           fail(out, ex)
         } else {
           log.error(ex, "Restarting graph due to failure")
@@ -332,7 +332,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         }
       }
       override def onDownstreamFinish() = {
-        if (finishing || maxRestartsReached) {
+        if (finishing || maxRestartsReached()) {
           cancel(in)
         } else {
           log.debug("Graph in finished")
@@ -358,7 +358,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     sourceOut
   }
 
-  protected final def maxRestartsReached = {
+  protected final def maxRestartsReached() = {
     // Check if the last start attempt was more than the minimum backoff
     if (resetDeadline.isOverdue()) {
       log.debug("Last restart attempt was more than {} ago, resetting restart count", minBackoff)
