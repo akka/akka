@@ -64,3 +64,9 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.IslandTrack
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.GraphStageIsland.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell.this")
 
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartSource.onFailuresWithBackoff")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartSource.withBackoff")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartSink.withBackoff")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartWithBackoffSink.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartWithBackoffFlow.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartFlow.withBackoff")
