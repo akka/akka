@@ -1,12 +1,16 @@
 # method
 
+Matches HTTP requests based on their method.
+
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [MethodDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #method }
 
-## Description
+@@@
 
-Matches HTTP requests based on their method.
+## Description
 
 This directive filters the incoming request by its HTTP method. Only requests with
 the specified method are passed on to the inner route. All others are rejected with a

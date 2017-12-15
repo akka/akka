@@ -1,12 +1,16 @@
 # authorize
 
+Applies the given authorization check to the request.
+
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authorize }
 
-## Description
+@@@
 
-Applies the given authorization check to the request.
+## Description
 
 The user-defined authorization check can either be supplied as a `=> Boolean` value which is calculated
 just from information out of the lexical scope, or as a function `RequestContext => Boolean` which can also
