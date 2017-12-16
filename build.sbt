@@ -37,7 +37,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   slf4j,
   stream, streamTestkit, streamTests, streamTestsTck,
   testkit,
-  typed, typedTests, typedTestkit
+  actorTyped, actorTypedTests, typedTestkit, persistenceTyped, clusterTyped, clusterShardingTyped
 )
 
 lazy val root = Project(
@@ -189,8 +189,9 @@ lazy val docs = akkaModule("akka-docs")
     testkit % "compile->compile;test->test",
     remote % "compile->compile;test->test",
     persistence % "compile->compile;provided->provided;test->test",
-    typed % "compile->compile;test->test",
-    typedTests % "compile->compile;test->test",
+    actorTyped % "compile->compile;test->test",
+    persistenceTyped % "compile->compile;test->test",
+    actorTypedTests % "compile->compile;test->test",
     streamTestkit % "compile->compile;test->test"
   )
   .settings(Dependencies.docs)
@@ -222,7 +223,7 @@ lazy val docs = akkaModule("akka-docs")
     ),
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     resolvers += Resolver.jcenterRepo,
-    deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}"),
+    deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}")
   )
   .enablePlugins(AkkaParadoxPlugin, DeployRsync, NoPublish, ParadoxBrowse, ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
@@ -361,7 +362,7 @@ lazy val testkit = akkaModule("akka-testkit")
     initialCommands += "import akka.testkit._"
   )
 
-lazy val typed = akkaModule("akka-typed")
+lazy val actorTyped = akkaModule("akka-actor-typed")
   .dependsOn(
     testkit % "compile->compile;test->test",
     persistence % "provided->compile",
@@ -371,8 +372,8 @@ lazy val typed = akkaModule("akka-typed")
     distributedData % "provided->compile"
   )
   .settings(AkkaBuild.mayChangeSettings)
-  .settings(AutomaticModuleName.settings("akka.typed")) // fine for now, eventually new module name to become typed.actor
-  // To be ablet to import ContainerFormats.proto
+  .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
+  // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
   .settings(
     initialCommands := """
@@ -386,14 +387,99 @@ lazy val typed = akkaModule("akka-typed")
   )
   .disablePlugins(MimaPlugin)
 
-lazy val typedTestkit = akkaModule("akka-typed-testkit")
-  .dependsOn(typed, testkit % "compile->compile;test->test")
-  .settings(AutomaticModuleName.settings("akka.typed.testkit"))
+lazy val persistenceTyped = akkaModule("akka-persistence-typed")
+  .dependsOn(
+    actorTyped % "provided->compile",
+    testkit % "compile->compile;test->test",
+    typedTestkit % "compile->compile;test->test",
+    actorTypedTests % "test->test",
+    persistence % "provided->compile",
+    cluster % "provided->compile",
+    clusterTools % "provided->compile",
+    clusterSharding % "provided->compile",
+    distributedData % "provided->compile"
+  )
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(AutomaticModuleName.settings("akka.persistence.typed"))
+  // To be able to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
+  .settings(
+    initialCommands := """
+      import akka.typed._
+      import akka.typed.scaladsl.Actor
+      import scala.concurrent._
+      import scala.concurrent.duration._
+      import akka.util.Timeout
+      implicit val timeout = Timeout(5.seconds)
+    """
+  )
   .disablePlugins(MimaPlugin)
 
-lazy val typedTests = akkaModule("akka-typed-tests")
+lazy val clusterTyped = akkaModule("akka-cluster-typed")
   .dependsOn(
-    typed,
+    actorTyped % "provided->compile",
+    testkit % "compile->compile;test->test",
+    typedTestkit % "compile->compile;test->test",
+    actorTypedTests % "test->test",
+    persistence % "provided->compile",
+    cluster % "provided->compile",
+    clusterTools % "provided->compile",
+    clusterSharding % "provided->compile",
+    distributedData % "provided->compile"
+  )
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(AutomaticModuleName.settings("akka.cluster.typed"))
+  // To be able to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
+  .settings(
+    initialCommands := """
+      import akka.typed._
+      import akka.typed.scaladsl.Actor
+      import scala.concurrent._
+      import scala.concurrent.duration._
+      import akka.util.Timeout
+      implicit val timeout = Timeout(5.seconds)
+    """
+  )
+  .disablePlugins(MimaPlugin)
+
+lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
+  .dependsOn(
+    clusterTyped % "provided->compile",
+    testkit % "compile->compile;test->test",
+    typedTestkit % "compile->compile;test->test",
+    actorTypedTests % "test->test",
+    persistence % "provided->compile",
+    cluster % "provided->compile",
+    clusterTools % "provided->compile",
+    clusterSharding % "provided->compile",
+    distributedData % "provided->compile"
+  )
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
+  // To be able to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
+  .settings(
+    initialCommands := """
+      import akka.typed._
+      import akka.typed.scaladsl.Actor
+      import scala.concurrent._
+      import scala.concurrent.duration._
+      import akka.util.Timeout
+      implicit val timeout = Timeout(5.seconds)
+    """
+  )
+  .disablePlugins(MimaPlugin)
+
+
+lazy val typedTestkit = akkaModule("akka-typed-testkit")
+  .dependsOn(actorTyped, testkit % "compile->compile;test->test")
+  .settings(AutomaticModuleName.settings("akka.testkit.typed"))
+  .disablePlugins(MimaPlugin)
+
+lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
+  .dependsOn(
+    actorTyped,
     typedTestkit % "compile->compile;test->provided;test->test",
     // the provided dependencies
     persistence % "compile->compile;test->test",

@@ -1,0 +1,145 @@
+/*
+ * Copyright (C) 2017 Lightbend Inc. <https://www.lightbend.com>
+ */
+package akka.typed.persistence.internal
+
+import akka.{ actor ⇒ a }
+import akka.annotation.InternalApi
+import akka.event.Logging
+import akka.persistence.{ PersistentActor ⇒ UntypedPersistentActor }
+import akka.persistence.RecoveryCompleted
+import akka.persistence.SnapshotOffer
+import akka.typed.Signal
+import akka.typed.internal.adapter.ActorContextAdapter
+import akka.typed.persistence.scaladsl.PersistentActor
+import akka.typed.persistence.scaladsl.PersistentBehavior
+import akka.typed.scaladsl.ActorContext
+import akka.typed.Terminated
+import akka.typed.internal.adapter.ActorRefAdapter
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object PersistentActorImpl {
+
+  /**
+   * Stop the actor for passivation. `PoisonPill` does not work well
+   * with persistent actors.
+   */
+  case object StopForPassivation
+
+  def props[C, E, S](
+    behaviorFactory: () ⇒ PersistentBehavior[C, E, S]): a.Props =
+    a.Props(new PersistentActorImpl(behaviorFactory()))
+
+}
+
+/**
+ * INTERNAL API
+ * The `PersistentActor` that runs a `PersistentBehavior`.
+ */
+@InternalApi private[akka] class PersistentActorImpl[C, E, S](
+  behavior: PersistentBehavior[C, E, S]) extends UntypedPersistentActor {
+
+  import PersistentActorImpl._
+  import PersistentActor._
+
+  private val log = Logging(context.system, behavior.getClass)
+
+  override val persistenceId: String = behavior.persistenceIdFromActorName(self.path.name)
+
+  private var state: S = behavior.initialState
+
+  private val commandHandler: CommandHandler[C, E, S] = behavior.commandHandler
+
+  private val eventHandler: (S, E) ⇒ S = behavior.eventHandler
+
+  private val ctxAdapter = new ActorContextAdapter[C](context)
+  private val ctx = ctxAdapter.asScala
+
+  override def receiveRecover: Receive = {
+    case SnapshotOffer(_, snapshot) ⇒
+      state = snapshot.asInstanceOf[S]
+
+    case RecoveryCompleted ⇒
+      behavior.recoveryCompleted(ctx, state)
+
+    case event: E @unchecked ⇒
+      state = applyEvent(state, event)
+  }
+
+  def applyEvent(s: S, event: E): S =
+    eventHandler.apply(s, event)
+
+  private val unhandledSignal: PartialFunction[(ActorContext[C], S, Signal), Effect[E, S]] = {
+    case sig ⇒ Effect.unhandled
+  }
+
+  override def receiveCommand: Receive = {
+    case PersistentActorImpl.StopForPassivation ⇒
+      context.stop(self)
+
+    case msg ⇒
+      try {
+        val effects = msg match {
+          case a.Terminated(ref) ⇒
+            val sig = Terminated(ActorRefAdapter(ref))(null)
+            commandHandler.sigHandler(state).applyOrElse((ctx, state, sig), unhandledSignal)
+          case a.ReceiveTimeout ⇒
+            commandHandler.commandHandler(ctx, state, ctxAdapter.receiveTimeoutMsg)
+          // TODO note that PostStop and PreRestart signals are not handled, we wouldn't be able to persist there
+          case cmd: C @unchecked ⇒
+            // FIXME we could make it more safe by using ClassTag for C
+            commandHandler.commandHandler(ctx, state, cmd)
+        }
+
+        applyEffects(msg, effects)
+      } catch {
+        case e: MatchError ⇒ throw new IllegalStateException(
+          s"Undefined state [${state.getClass.getName}] or handler for [${msg.getClass.getName} " +
+            s"in [${behavior.getClass.getName}] with persistenceId [$persistenceId]")
+      }
+
+  }
+
+  private def applyEffects(msg: Any, effect: Effect[E, S], sideEffects: Seq[ChainableEffect[_, S]] = Nil): Unit = effect match {
+    case CompositeEffect(Some(persist), currentSideEffects) ⇒
+      applyEffects(msg, persist, currentSideEffects ++ sideEffects)
+    case CompositeEffect(_, currentSideEffects) ⇒
+      (currentSideEffects ++ sideEffects).foreach(applySideEffect)
+    case Persist(event) ⇒
+      // apply the event before persist so that validation exception is handled before persisting
+      // the invalid event, in case such validation is implemented in the event handler.
+      // also, ensure that there is an event handler for each single event
+      state = applyEvent(state, event)
+      persist(event) { _ ⇒
+        sideEffects.foreach(applySideEffect)
+      }
+    case PersistAll(events) ⇒
+      if (events.nonEmpty) {
+        // apply the event before persist so that validation exception is handled before persisting
+        // the invalid event, in case such validation is implemented in the event handler.
+        // also, ensure that there is an event handler for each single event
+        var count = events.size
+        state = events.foldLeft(state)(applyEvent)
+        persistAll(events) { _ ⇒
+          count -= 1
+          if (count == 0) sideEffects.foreach(applySideEffect)
+        }
+      } else {
+        // run side-effects even when no events are emitted
+        sideEffects.foreach(applySideEffect)
+      }
+    case _: PersistNothing.type @unchecked ⇒
+    case _: Unhandled.type @unchecked ⇒
+      super.unhandled(msg)
+    case c: ChainableEffect[_, S] ⇒
+      applySideEffect(c)
+  }
+
+  def applySideEffect(effect: ChainableEffect[_, S]): Unit = effect match {
+    case _: Stop.type @unchecked ⇒ context.stop(self)
+    case SideEffect(callbacks)   ⇒ callbacks.apply(state)
+  }
+}
+
