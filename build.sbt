@@ -191,6 +191,8 @@ lazy val docs = akkaModule("akka-docs")
     persistence % "compile->compile;provided->provided;test->test",
     actorTyped % "compile->compile;test->test",
     persistenceTyped % "compile->compile;test->test",
+    clusterTyped % "compile->compile;test->test",
+    clusterShardingTyped % "compile->compile;test->test",
     actorTypedTests % "compile->compile;test->test",
     streamTestkit % "compile->compile;test->test"
   )
@@ -368,8 +370,6 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
-  // To be able to import ContainerFormats.proto
-  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
   .settings(
     initialCommands := """
       import akka.typed._
@@ -392,18 +392,6 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
-  // To be able to import ContainerFormats.proto
-  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
-  .settings(
-    initialCommands := """
-      import akka.typed._
-      import akka.typed.scaladsl.Actor
-      import scala.concurrent._
-      import scala.concurrent.duration._
-      import akka.util.Timeout
-      implicit val timeout = Timeout(5.seconds)
-    """
-  )
   .disablePlugins(MimaPlugin)
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
@@ -420,18 +408,6 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
-  // To be able to import ContainerFormats.proto
-  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
-  .settings(
-    initialCommands := """
-      import akka.typed._
-      import akka.typed.scaladsl.Actor
-      import scala.concurrent._
-      import scala.concurrent.duration._
-      import akka.util.Timeout
-      implicit val timeout = Timeout(5.seconds)
-    """
-  )
   .disablePlugins(MimaPlugin)
 
 lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
@@ -447,16 +423,6 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
-  .settings(
-    initialCommands := """
-      import akka.typed._
-      import akka.typed.scaladsl.Actor
-      import scala.concurrent._
-      import scala.concurrent.duration._
-      import akka.util.Timeout
-      implicit val timeout = Timeout(5.seconds)
-    """
-  )
   .disablePlugins(MimaPlugin)
 
 
