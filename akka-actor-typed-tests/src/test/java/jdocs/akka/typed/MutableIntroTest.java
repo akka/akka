@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.akka.typed;
+package jdocs.akka.actor.typed;
 
 //#imports
-import akka.typed.ActorRef;
-import akka.typed.Behavior;
-import akka.typed.javadsl.Actor;
-import akka.typed.javadsl.Actor.Receive;
-import akka.typed.javadsl.ActorContext;
+import akka.actor.typed.ActorRef;
+import akka.actor.typed.Behavior;
+import akka.actor.typed.javadsl.Actor;
+import akka.actor.typed.javadsl.Actor.Receive;
+import akka.actor.typed.javadsl.ActorContext;
 //#imports
 import java.util.ArrayList;
 import java.util.List;

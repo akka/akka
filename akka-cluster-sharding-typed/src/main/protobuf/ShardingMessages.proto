@@ -1,9 +1,9 @@
 /**
  * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.typed.cluster.sharding;
+package akka.cluster.sharding.typed;
 
-option java_package = "akka.typed.cluster.sharding.internal.protobuf";
+option java_package = "akka.cluster.sharding.typed.internal.protobuf";
 option optimize_for = SPEED;
 import "ContainerFormats.proto";
 

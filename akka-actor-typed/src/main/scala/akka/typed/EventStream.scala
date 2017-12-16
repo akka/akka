@@ -1,10 +1,7 @@
-/**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com/>
- */
 package akka.typed
 
-import akka.{ event ⇒ e }
-import akka.event.Logging.{ LogEvent, LogLevel, StdOutLogger }
+import akka.actor.typed.ActorRef
+import akka.event.Logging.LogLevel
 
 /**
  * An EventStream allows local actors to register for certain message types, including
@@ -53,6 +50,10 @@ trait EventStream {
   def setLogLevel(loglevel: LogLevel): Unit
 }
 
+import akka.actor.typed.{ ActorRef, Behavior, Settings }
+import akka.{ event ⇒ e }
+import akka.event.Logging.{ LogEvent, StdOutLogger }
+
 abstract class Logger {
   def initialBehavior: Behavior[Logger.Command]
 }
@@ -68,7 +69,7 @@ class DefaultLogger extends Logger with StdOutLogger {
 
   val initialBehavior = {
     // TODO avoid depending on dsl here?
-    import scaladsl.Actor._
+    import akka.actor.typed.scaladsl.Actor._
     deferred[Command] { _ ⇒
       immutable[Command] {
         case (ctx, Initialize(eventStream, replyTo)) ⇒

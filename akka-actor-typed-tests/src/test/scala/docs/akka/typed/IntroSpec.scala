@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package docs.akka.typed
+package docs.akka.actor.typed
 
 //#imports
-import akka.typed._
-import akka.typed.scaladsl.Actor
-import akka.typed.scaladsl.AskPattern._
+import akka.actor.typed._
+import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.AskPattern._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.concurrent.Await

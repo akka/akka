@@ -409,6 +409,8 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
   .dependsOn(
     actorTyped % "provided->compile",
+    persistenceTyped % "provided->test",
+    persistence % "provided->test",
     testkit % "compile->compile;test->test",
     typedTestkit % "compile->compile;test->test",
     actorTypedTests % "test->test",
@@ -435,6 +437,7 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
 lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .dependsOn(
     clusterTyped % "provided->compile",
+    persistenceTyped % "provided->test",
     testkit % "compile->compile;test->test",
     typedTestkit % "compile->compile;test->test",
     actorTypedTests % "test->test",
@@ -457,7 +460,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .disablePlugins(MimaPlugin)
 
 
-lazy val typedTestkit = akkaModule("akka-typed-testkit")
+lazy val typedTestkit = akkaModule("akka-testkit-typed")
   .dependsOn(actorTyped, testkit % "compile->compile;test->test")
   .settings(AutomaticModuleName.settings("akka.testkit.typed"))
   .disablePlugins(MimaPlugin)
