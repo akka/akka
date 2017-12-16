@@ -364,12 +364,7 @@ lazy val testkit = akkaModule("akka-testkit")
 
 lazy val actorTyped = akkaModule("akka-actor-typed")
   .dependsOn(
-    testkit % "compile->compile;test->test",
-    persistence % "provided->compile",
-    cluster % "provided->compile",
-    clusterTools % "provided->compile",
-    clusterSharding % "provided->compile",
-    distributedData % "provided->compile"
+    actor % "provided->compile"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
@@ -393,11 +388,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
     testkit % "compile->compile;test->test",
     typedTestkit % "compile->compile;test->test",
     actorTypedTests % "test->test",
-    persistence % "provided->compile",
-    cluster % "provided->compile",
-    clusterTools % "provided->compile",
-    clusterSharding % "provided->compile",
-    distributedData % "provided->compile"
+    persistence % "provided->compile"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
@@ -421,10 +412,8 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     testkit % "compile->compile;test->test",
     typedTestkit % "compile->compile;test->test",
     actorTypedTests % "test->test",
-    persistence % "provided->compile",
     cluster % "provided->compile",
     clusterTools % "provided->compile",
-    clusterSharding % "provided->compile",
     distributedData % "provided->compile"
   )
   .settings(AkkaBuild.mayChangeSettings)
@@ -449,11 +438,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     testkit % "compile->compile;test->test",
     typedTestkit % "compile->compile;test->test",
     actorTypedTests % "test->test",
-    persistence % "provided->compile",
-    cluster % "provided->compile",
-    clusterTools % "provided->compile",
-    clusterSharding % "provided->compile",
-    distributedData % "provided->compile"
+    clusterSharding % "provided->compile"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
@@ -480,13 +465,7 @@ lazy val typedTestkit = akkaModule("akka-typed-testkit")
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
   .dependsOn(
     actorTyped,
-    typedTestkit % "compile->compile;test->provided;test->test",
-    // the provided dependencies
-    persistence % "compile->compile;test->test",
-    cluster % "test->test",
-    clusterTools,
-    clusterSharding,
-    distributedData
+    typedTestkit % "compile->compile;test->provided;test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)
