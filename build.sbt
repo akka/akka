@@ -384,11 +384,11 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
 
 lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
-    actorTyped % "provided->compile",
-    testkit % "compile->compile;test->test",
-    typedTestkit % "compile->compile;test->test",
+    actorTyped,
+    persistence,
+    testkit % "test->test",
+    typedTestkit % "test->test",
     actorTypedTests % "test->test",
-    persistence % "provided->compile"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
@@ -396,15 +396,15 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
   .dependsOn(
-    actorTyped % "provided->compile",
-    persistenceTyped % "provided->test",
+    actorTyped,
+    cluster,
+    clusterTools,
+    distributedData,
     persistence % "provided->test",
-    testkit % "compile->compile;test->test",
-    typedTestkit % "compile->compile;test->test",
-    actorTypedTests % "test->test",
-    cluster % "provided->compile",
-    clusterTools % "provided->compile",
-    distributedData % "provided->compile"
+    persistenceTyped % "provided->test",
+    testkit % "test->test",
+    typedTestkit % "test->test",
+    actorTypedTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
@@ -412,12 +412,12 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
 
 lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .dependsOn(
-    clusterTyped % "provided->compile",
-    persistenceTyped % "provided->test",
-    testkit % "compile->compile;test->test",
-    typedTestkit % "compile->compile;test->test",
-    actorTypedTests % "test->test",
-    clusterSharding % "provided->compile"
+    clusterTyped,
+    persistenceTyped,
+    clusterSharding,
+    testkit % "test->test",
+    typedTestkit % "test->test",
+    actorTypedTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
