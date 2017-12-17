@@ -387,7 +387,8 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       case ActorIdentity(_, None) ⇒ // ok, use another instead
       case HeartbeatTick ⇒
         failureDetector.heartbeat()
-      case RefreshContactsTick ⇒ sendGetContacts()
+      case ReceptionistShutdown ⇒ // ok, haven't chosen a receptionist yet
+      case RefreshContactsTick  ⇒ sendGetContacts()
       case Send(path, msg, localAffinity) ⇒
         buffer(DistributedPubSubMediator.Send(path, msg, localAffinity))
       case SendToAll(path, msg) ⇒
@@ -409,13 +410,15 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       receptionist forward DistributedPubSubMediator.Publish(topic, msg)
     case HeartbeatTick ⇒
       if (!failureDetector.isAvailable) {
-        log.info("Lost contact with [{}], restablishing connection", receptionist)
-        sendGetContacts()
-        scheduleRefreshContactsTick(establishingGetContactsInterval)
-        context.become(establishing orElse contactPointMessages)
-        failureDetector.heartbeat()
+        log.info("Lost contact with [{}], reestablishing connection", receptionist)
+        reestablish()
       } else
         receptionist ! Heartbeat
+    case ReceptionistShutdown ⇒
+      if (receptionist == sender()) {
+        log.info("Receptionist [{}] is shutting down, reestablishing connection", receptionist)
+        reestablish()
+      }
     case HeartbeatRsp ⇒
       failureDetector.heartbeat()
     case RefreshContactsTick ⇒
@@ -484,6 +487,13 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       subscribers.foreach(_ ! contactPointRemoved)
     }
     contactPathsPublished = contactPaths
+  }
+
+  def reestablish(): Unit = {
+    sendGetContacts()
+    scheduleRefreshContactsTick(establishingGetContactsInterval)
+    context.become(establishing orElse contactPointMessages)
+    failureDetector.heartbeat()
   }
 }
 
@@ -801,6 +811,8 @@ object ClusterReceptionist {
     @SerialVersionUID(1L)
     case object HeartbeatRsp extends ClusterClientMessage with DeadLetterSuppression
     @SerialVersionUID(1L)
+    case object ReceptionistShutdown extends ClusterClientMessage with DeadLetterSuppression
+    @SerialVersionUID(1L)
     case object Ping extends DeadLetterSuppression
     case object CheckDeadlines
 
@@ -967,9 +979,10 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
       }
 
     case MemberRemoved(m, _) ⇒
-      if (m.address == selfAddress)
+      if (m.address == selfAddress) {
+        clientInteractions.keySet.foreach(_ ! ReceptionistShutdown)
         context stop self
-      else if (matchingRole(m)) {
+      } else if (matchingRole(m)) {
         nodes -= m.address
         consistentHash = ConsistentHash(nodes, virtualNodesFactor)
       }
