@@ -953,8 +953,8 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
         if (log.isDebugEnabled)
           log.debug("Client [{}] gets contactPoints [{}]", sender().path, contacts.contactPoints.mkString(","))
         sender() ! contacts
-        updateClientInteractions(sender())
       }
+      updateClientInteractions(sender())
 
     case state: CurrentClusterState ⇒
       nodes = nodes.empty union state.members.collect { case m if m.status != MemberStatus.Joining && matchingRole(m) ⇒ m.address }
