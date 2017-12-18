@@ -17,6 +17,7 @@ import akka.dispatch.sysmsg
   extends ActorRef[T] with internal.ActorRefImpl[T] {
 
   override def path: a.ActorPath = untyped.path
+
   override def tell(msg: T): Unit = {
     if (msg == null) throw new InvalidMessageException("[null] is not an allowed message")
     untyped ! msg

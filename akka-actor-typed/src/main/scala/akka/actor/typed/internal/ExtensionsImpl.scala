@@ -25,7 +25,7 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
   /**
    * Hook for ActorSystem to load extensions on startup
    */
-  protected final def loadExtensions(): Unit = {
+  final def loadExtensions(): Unit = {
     /**
      * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
      */
@@ -56,10 +56,6 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
           singletonAccessor.invoke(null).asInstanceOf[ExtensionId[Extension]]
         }
       }
-
-    // eager initialization of CoordinatedShutdown
-    // TODO coordinated shutdown for akka.actor.typed
-    // CoordinatedShutdown(self)
 
     loadExtensions("akka.typed.library-extensions", throwOnLoadFail = true)
     loadExtensions("akka.typed.extensions", throwOnLoadFail = false)

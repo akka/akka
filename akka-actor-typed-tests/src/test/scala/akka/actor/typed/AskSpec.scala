@@ -56,8 +56,6 @@ class AskSpec extends TypedSpec with ScalaFutures {
     }
   }
 
-  object `Ask pattern (native)` extends Common with NativeSystem
-
   object `Ask pattern (adapted)` extends Common with AdaptedSystem {
 
     import AskSpec._

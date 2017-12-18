@@ -286,7 +286,6 @@ class BehaviorSpec extends TypedSpec {
   trait FullBehavior extends Messages with BecomeWithLifecycle with Stoppable {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = mkFull(monitor) → null
   }
-  object `A Full Behavior (native)` extends FullBehavior with NativeSystem
   object `A Full Behavior (adapted)` extends FullBehavior with AdaptedSystem
 
   trait ImmutableBehavior extends Messages with BecomeWithLifecycle with Stoppable {
@@ -320,7 +319,6 @@ class BehaviorSpec extends TypedSpec {
       }
     }
   }
-  object `A immutable Behavior (native)` extends ImmutableBehavior with NativeSystem
   object `A immutable Behavior (adapted)` extends ImmutableBehavior with AdaptedSystem
 
   trait ImmutableWithSignalScalaBehavior extends Messages with BecomeWithLifecycle with Stoppable {
@@ -356,7 +354,6 @@ class BehaviorSpec extends TypedSpec {
           SActor.same
       }
   }
-  object `A ImmutableWithSignal Behavior (scala,native)` extends ImmutableWithSignalScalaBehavior with NativeSystem
   object `A ImmutableWithSignal Behavior (scala,adapted)` extends ImmutableWithSignalScalaBehavior with AdaptedSystem
 
   trait ImmutableScalaBehavior extends Messages with Become with Stoppable {
@@ -387,7 +384,6 @@ class BehaviorSpec extends TypedSpec {
         }
       }
   }
-  object `A immutable Behavior (scala,native)` extends ImmutableScalaBehavior with NativeSystem
   object `A immutable Behavior (scala,adapted)` extends ImmutableScalaBehavior with AdaptedSystem
 
   trait MutableScalaBehavior extends Messages with Become with Stoppable {
@@ -425,7 +421,6 @@ class BehaviorSpec extends TypedSpec {
         }
       }
   }
-  object `A mutable Behavior (scala,native)` extends MutableScalaBehavior with NativeSystem
   object `A mutable Behavior (scala,adapted)` extends MutableScalaBehavior with AdaptedSystem
 
   trait WidenedScalaBehavior extends ImmutableWithSignalScalaBehavior with Reuse with Siphon {
@@ -436,7 +431,6 @@ class BehaviorSpec extends TypedSpec {
       super.behavior(monitor)._1.widen[Command] { case c ⇒ inbox.ref ! c; c } → inbox
     }
   }
-  object `A widened Behavior (scala,native)` extends WidenedScalaBehavior with NativeSystem
   object `A widened Behavior (scala,adapted)` extends WidenedScalaBehavior with AdaptedSystem
 
   trait DeferredScalaBehavior extends ImmutableWithSignalScalaBehavior {
@@ -453,7 +447,6 @@ class BehaviorSpec extends TypedSpec {
     override def checkAux(signal: Signal, aux: Aux): Unit =
       aux.receiveAll() should ===(Done :: Nil)
   }
-  object `A deferred Behavior (scala,native)` extends DeferredScalaBehavior with NativeSystem
   object `A deferred Behavior (scala,adapted)` extends DeferredScalaBehavior with AdaptedSystem
 
   trait TapScalaBehavior extends ImmutableWithSignalScalaBehavior with Reuse with SignalSiphon {
@@ -462,7 +455,6 @@ class BehaviorSpec extends TypedSpec {
       (SActor.tap((_, msg) ⇒ inbox.ref ! Right(msg), (_, sig) ⇒ inbox.ref ! Left(sig), super.behavior(monitor)._1), inbox)
     }
   }
-  object `A tap Behavior (scala,native)` extends TapScalaBehavior with NativeSystem
   object `A tap Behavior (scala,adapted)` extends TapScalaBehavior with AdaptedSystem
 
   trait RestarterScalaBehavior extends ImmutableWithSignalScalaBehavior with Reuse {
@@ -470,7 +462,6 @@ class BehaviorSpec extends TypedSpec {
       SActor.supervise(super.behavior(monitor)._1).onFailure(SupervisorStrategy.restart) → null
     }
   }
-  object `A restarter Behavior (scala,native)` extends RestarterScalaBehavior with NativeSystem
   object `A restarter Behavior (scala,adapted)` extends RestarterScalaBehavior with AdaptedSystem
 
   /*
@@ -536,7 +527,6 @@ class BehaviorSpec extends TypedSpec {
           SActor.same
         }))
   }
-  object `A ImmutableWithSignal Behavior (java,native)` extends ImmutableWithSignalJavaBehavior with NativeSystem
   object `A ImmutableWithSignal Behavior (java,adapted)` extends ImmutableWithSignalJavaBehavior with AdaptedSystem
 
   trait ImmutableJavaBehavior extends Messages with Become with Stoppable {
@@ -568,7 +558,6 @@ class BehaviorSpec extends TypedSpec {
           })
       }
   }
-  object `A immutable Behavior (java,native)` extends ImmutableJavaBehavior with NativeSystem
   object `A immutable Behavior (java,adapted)` extends ImmutableJavaBehavior with AdaptedSystem
 
   trait WidenedJavaBehavior extends ImmutableWithSignalJavaBehavior with Reuse with Siphon {
@@ -577,7 +566,6 @@ class BehaviorSpec extends TypedSpec {
       JActor.widened(super.behavior(monitor)._1, pf(_.`match`(classOf[Command], fi(x ⇒ { inbox.ref ! x; x })))) → inbox
     }
   }
-  object `A widened Behavior (java,native)` extends WidenedJavaBehavior with NativeSystem
   object `A widened Behavior (java,adapted)` extends WidenedJavaBehavior with AdaptedSystem
 
   trait DeferredJavaBehavior extends ImmutableWithSignalJavaBehavior {
@@ -594,7 +582,6 @@ class BehaviorSpec extends TypedSpec {
     override def checkAux(signal: Signal, aux: Aux): Unit =
       aux.receiveAll() should ===(Done :: Nil)
   }
-  object `A deferred Behavior (java,native)` extends DeferredJavaBehavior with NativeSystem
   object `A deferred Behavior (java,adapted)` extends DeferredJavaBehavior with AdaptedSystem
 
   trait TapJavaBehavior extends ImmutableWithSignalJavaBehavior with Reuse with SignalSiphon {
@@ -606,7 +593,6 @@ class BehaviorSpec extends TypedSpec {
         super.behavior(monitor)._1), inbox)
     }
   }
-  object `A tap Behavior (java,native)` extends TapJavaBehavior with NativeSystem
   object `A tap Behavior (java,adapted)` extends TapJavaBehavior with AdaptedSystem
 
   trait RestarterJavaBehavior extends ImmutableWithSignalJavaBehavior with Reuse {
@@ -615,7 +601,6 @@ class BehaviorSpec extends TypedSpec {
         .onFailure(classOf[Exception], SupervisorStrategy.restart) → null
     }
   }
-  object `A restarter Behavior (java,native)` extends RestarterJavaBehavior with NativeSystem
   object `A restarter Behavior (java,adapted)` extends RestarterJavaBehavior with AdaptedSystem
 
 }

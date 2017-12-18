@@ -418,10 +418,7 @@ class RestarterSpec extends TypedSpec {
 
   }
 
-  object `A restarter (stubbed, native)` extends StubbedTests with NativeSystem
   object `A restarter (stubbed, adapted)` extends StubbedTests with AdaptedSystem
-
-  object `A restarter (real, native)` extends RealTests with NativeSystem
   object `A restarter (real, adapted)` extends RealTests with AdaptedSystem
 
 }

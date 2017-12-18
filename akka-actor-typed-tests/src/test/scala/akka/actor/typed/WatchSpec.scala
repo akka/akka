@@ -66,6 +66,5 @@ class WatchSpec extends TypedSpec {
     }
   }
 
-  object `Actor monitoring (native)` extends Tests with NativeSystem
   object `Actor monitoring (adapted)` extends Tests with AdaptedSystem
 }

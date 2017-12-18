@@ -64,34 +64,6 @@ object Logger {
   // FIXME add Mute/Unmute (i.e. the TestEventListener functionality)
 }
 
-class DefaultLogger extends Logger with StdOutLogger {
-  import Logger._
-
-  val initialBehavior = {
-    // TODO avoid depending on dsl here?
-    import akka.actor.typed.scaladsl.Actor._
-    deferred[Command] { _ ⇒
-      immutable[Command] {
-        case (ctx, Initialize(eventStream, replyTo)) ⇒
-          val log = ctx.spawn(deferred[AnyRef] { childCtx ⇒
-
-            immutable[AnyRef] {
-              case (_, event: LogEvent) ⇒
-                print(event)
-                same
-              case _ ⇒ unhandled
-            }
-          }, "logger")
-
-          ctx.watch(log) // sign death pact
-          replyTo ! log
-
-          empty
-      }
-    }
-  }
-}
-
 class DefaultLoggingFilter(settings: Settings, eventStream: EventStream) extends e.DefaultLoggingFilter(() ⇒ eventStream.logLevel)
 
 /**

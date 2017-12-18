@@ -16,12 +16,10 @@ import scala.util.Success
  * Actor instance. Sending a message to an Actor that has terminated before
  * receiving the message will lead to that message being discarded; such
  * messages are delivered to the [[DeadLetter]] channel of the
- * [[EventStream]] on a best effort basis
+ * [[akka.typed.EventStream]] on a best effort basis
  * (i.e. this delivery is not reliable).
  */
 trait ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] {
-  this: internal.ActorRefImpl[T] ⇒
-
   /**
    * Send a message to the Actor referenced by this ActorRef using *at-most-once*
    * messaging semantics.
@@ -66,22 +64,10 @@ object ActorRef {
    * Create an ActorRef from a Future, buffering up to the given number of
    * messages in while the Future is not fulfilled.
    */
-  def apply[T](f: Future[ActorRef[T]], bufferSize: Int = 1000): ActorRef[T] =
+  private[akka] def apply[T](f: Future[ActorRef[T]], bufferSize: Int = 1000): ActorRef[T] =
     f.value match {
       // an AdaptedActorSystem will always create refs eagerly, so it will take this path
       case Some(Success(ref)) ⇒ ref
-      // for other ActorSystem implementations, this might work, it currently doesn't work
-      // for the adapted system, because the typed FutureRef cannot be watched from untyped
-      case x                  ⇒ new internal.FutureRef(FuturePath, bufferSize, f)
+      case _                  ⇒ throw new IllegalStateException("Only expecting completed futures until the native actor system is implemented")
     }
-
-  /**
-   * Create an ActorRef by providing a function that is invoked for sending
-   * messages and a termination callback.
-   */
-  def apply[T](send: (T, internal.FunctionRef[T]) ⇒ Unit, terminate: internal.FunctionRef[T] ⇒ Unit): ActorRef[T] =
-    new internal.FunctionRef(FunctionPath, send, terminate)
-
-  private[typed] val FuturePath = a.RootActorPath(a.Address("akka.actor.typed.internal", "future"))
-  private[typed] val FunctionPath = a.RootActorPath(a.Address("akka.actor.typed.internal", "function"))
 }

@@ -62,7 +62,7 @@ class PerformanceSpec extends TypedSpec(
         }
       }
 
-    val iterations = nativeSystem.settings.config.getInt("akka.actor.typed.PerformanceSpec.iterations")
+    val iterations = system.settings.config.getInt("akka.actor.typed.PerformanceSpec.iterations")
 
     trait CommonTests {
       implicit def system: ActorSystem[TypedSpec.Command]
@@ -78,8 +78,6 @@ class PerformanceSpec extends TypedSpec(
       def `09 when using 8 pairs with 10 messages`(): Unit = sync(runTest("09")(behavior(8, 10, iterations, "dispatcher-8")))
     }
 
-    object `must be fast with native ActorSystem` extends CommonTests with NativeSystem
     object `must be fast with ActorSystemAdapter` extends CommonTests with AdaptedSystem
   }
-
 }

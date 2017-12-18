@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package docs.akka.actor.typed
+package docs.akka.typed
 
 //#imports
 import akka.actor.typed._
@@ -118,22 +118,24 @@ class IntroSpec extends TypedSpec {
     //#chatroom-gabbler
 
     //#chatroom-main
-    val main: Behavior[akka.NotUsed] =
+    val main: Behavior[String] =
       Actor.deferred { ctx ⇒
         val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
         val gabblerRef = ctx.spawn(gabbler, "gabbler")
         ctx.watch(gabblerRef)
-        chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-        Actor.immutable[akka.NotUsed] {
-          (_, _) ⇒ Actor.unhandled
+        Actor.immutablePartial[String] {
+          case (_, "go") ⇒
+            chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
+            Actor.same
         } onSignal {
-          case (ctx, Terminated(ref)) ⇒
+          case (_, Terminated(ref)) ⇒
             Actor.stopped
         }
       }
 
     val system = ActorSystem(main, "ChatRoomDemo")
+    system ! "go"
     Await.result(system.whenTerminated, 3.seconds)
     //#chatroom-main
   }

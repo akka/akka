@@ -10,6 +10,7 @@ import scala.concurrent._
 import com.typesafe.config.ConfigFactory
 import java.util.concurrent.ThreadFactory
 
+import akka.event.Logging
 import akka.typed.{ BusLogging, DefaultLoggingFilter, EventStream }
 import akka.util.Timeout
 
@@ -37,7 +38,14 @@ private[typed] class ActorSystemStub(val name: String)
   }
 
   override def dynamicAccess: a.DynamicAccess = new a.ReflectiveDynamicAccess(getClass.getClassLoader)
-  override def eventStream: EventStream = new EventStreamImpl(true)(settings.untyped.LoggerStartTimeout)
+  override def eventStream: EventStream = new EventStream {
+    override def subscribe[T](subscriber: ActorRef[T], to: Class[T]) = false
+    override def setLogLevel(loglevel: Logging.LogLevel): Unit = {}
+    override def logLevel = Logging.InfoLevel
+    override def unsubscribe[T](subscriber: ActorRef[T], from: Class[T]) = false
+    override def unsubscribe[T](subscriber: ActorRef[T]): Unit = {}
+    override def publish[T](event: T): Unit = {}
+  }
   override def logFilter: e.LoggingFilter = new DefaultLoggingFilter(settings, eventStream)
   override def log: e.LoggingAdapter = new BusLogging(eventStream, path.parent.toString, getClass, logFilter)
   override def logConfiguration(): Unit = log.info(settings.toString)
