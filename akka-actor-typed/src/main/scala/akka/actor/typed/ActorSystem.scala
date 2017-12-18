@@ -143,7 +143,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
    * invocation when asking the guardian.
    *
    * The returned Future of [[ActorRef]] may be converted into an [[ActorRef]]
-   * to which messages can immediately be sent by using the [[ActorRef.apply[T](s*]]
+   * to which messages can immediately be sent by using the [[ActorRef$.apply[T](s*]]
    * method.
    */
   def systemActorOf[U](behavior: Behavior[U], name: String, props: Props = Props.empty)(implicit timeout: Timeout): Future[ActorRef[U]]

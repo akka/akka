@@ -60,7 +60,9 @@ object ClusterShardingSpec {
   final case class WhoAreYou(replyTo: ActorRef[String]) extends TestProtocol
   final case class StopPlz() extends TestProtocol
 
-  sealed trait IdTestProtocol extends java.io.Serializable { def id: String }
+  sealed trait IdTestProtocol extends java.io.Serializable {
+    def id: String
+  }
   final case class IdReplyPlz(id: String, toMe: ActorRef[String]) extends IdTestProtocol
   final case class IdWhoAreYou(id: String, replyTo: ActorRef[String]) extends IdTestProtocol
   final case class IdStopPlz(id: String) extends IdTestProtocol
@@ -118,6 +120,7 @@ object ClusterShardingSpec {
 }
 
 class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with ScalaFutures with Eventually {
+
   import akka.actor.typed.scaladsl.adapter._
   import ClusterShardingSpec._
 
@@ -164,9 +167,9 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       Actor.same
   }
 
-  object `Typed cluster sharding` {
+  "Typed cluster sharding" must {
 
-    def `01 must join cluster`(): Unit = {
+    "join cluster" in {
       Cluster(system).manager ! Join(Cluster(system).selfMember.address)
       Cluster(system2).manager ! Join(Cluster(system).selfMember.address)
 
@@ -181,7 +184,7 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
 
     }
 
-    def `02 must send messsages via cluster sharding, using envelopes`(): Unit = {
+    "send messsages via cluster sharding, using envelopes" in {
       val ref = sharding.spawn(
         behavior,
         Props.empty,
@@ -204,7 +207,8 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
         ref ! ShardingEnvelope(s"test$n", StopPlz())
       }
     }
-    def `03 must send messsages via cluster sharding, without envelopes`(): Unit = {
+
+    "send messsages via cluster sharding, without envelopes" in {
       val ref = sharding.spawn(
         behaviorWithId,
         Props.empty,
@@ -228,7 +232,7 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       }
     }
 
-    //    def `04 fail if starting sharding for already used typeName, but with wrong type`(): Unit = {
+    //    "04 fail if starting sharding for already used typeName, but with wrong type" in  {
     //      val ex = intercept[Exception] {
     //        sharding.spawn(
     //          Actor.empty[String],
@@ -243,7 +247,7 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
     //      ex.getMessage should include("already started")
     //    }
 
-    def `11 EntityRef - tell`(): Unit = {
+    "EntityRef - tell" in {
       val charlieRef = sharding.entityRefFor(typeKey, "charlie")
 
       val p = TestProbe[String]()
@@ -257,7 +261,7 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       charlieRef ! StopPlz()
     }
 
-    def `12 EntityRef - ask`(): Unit = {
+    "EntityRef - ask" in {
       val bobRef = sharding.entityRefFor(typeKey, "bob")
       val charlieRef = sharding.entityRefFor(typeKey, "charlie")
 
@@ -271,7 +275,5 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
 
       bobRef ! StopPlz()
     }
-
   }
-
 }

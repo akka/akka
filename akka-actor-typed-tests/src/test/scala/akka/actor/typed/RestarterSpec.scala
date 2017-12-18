@@ -10,8 +10,7 @@ import akka.typed.testkit.{ EffectfulActorContext, Inbox, TestKitSettings }
 import scala.util.control.NoStackTrace
 import akka.typed.testkit.scaladsl._
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RestarterSpec extends TypedSpec {
+object RestarterSpec {
 
   sealed trait Command
   case object Ping extends Command
@@ -63,14 +62,17 @@ class RestarterSpec extends TypedSpec {
       same
     }
   }
+}
 
-  trait StubbedTests {
-    def system: ActorSystem[TypedSpec.Command]
+class RestarterSpec extends TypedSpec {
 
-    def mkCtx(behv: Behavior[Command]): EffectfulActorContext[Command] =
-      new EffectfulActorContext("ctx", behv, 1000, system)
+  import RestarterSpec._
 
-    def `must receive message`(): Unit = {
+  def mkCtx(behv: Behavior[Command]): EffectfulActorContext[Command] =
+    new EffectfulActorContext("ctx", behv, 1000, system)
+
+  "A restarter" must {
+    "receive message" in {
       val inbox = Inbox[Event]("evt")
       val behv = supervise(target(inbox.ref)).onFailure[Throwable](SupervisorStrategy.restart)
       val ctx = mkCtx(behv)
@@ -78,7 +80,7 @@ class RestarterSpec extends TypedSpec {
       inbox.receiveMsg() should ===(Pong)
     }
 
-    def `must stop when no supervise`(): Unit = {
+    "stop when no supervise" in {
       val inbox = Inbox[Event]("evt")
       val behv = target(inbox.ref)
       val ctx = mkCtx(behv)
@@ -88,7 +90,7 @@ class RestarterSpec extends TypedSpec {
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
 
-    def `must stop when unhandled exception`(): Unit = {
+    "stop when unhandled exception" in {
       val inbox = Inbox[Event]("evt")
       val behv = supervise(target(inbox.ref)).onFailure[Exc1](SupervisorStrategy.restart)
       val ctx = mkCtx(behv)
@@ -98,7 +100,7 @@ class RestarterSpec extends TypedSpec {
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
 
-    def `must restart when handled exception`(): Unit = {
+    "restart when handled exception" in {
       val inbox = Inbox[Event]("evt")
       val behv = supervise(target(inbox.ref)).onFailure[Exc1](SupervisorStrategy.restart)
       val ctx = mkCtx(behv)
@@ -112,7 +114,7 @@ class RestarterSpec extends TypedSpec {
       inbox.receiveMsg() should ===(State(0, Map.empty))
     }
 
-    def `must resume when handled exception`(): Unit = {
+    "resume when handled exception" in {
       val inbox = Inbox[Event]("evt")
       val behv = supervise(target(inbox.ref)).onFailure[Exc1](SupervisorStrategy.resume)
       val ctx = mkCtx(behv)
@@ -125,7 +127,7 @@ class RestarterSpec extends TypedSpec {
       inbox.receiveMsg() should ===(State(1, Map.empty))
     }
 
-    def `must support nesting to handle different exceptions`(): Unit = {
+    "support nesting to handle different exceptions" in {
       val inbox = Inbox[Event]("evt")
       val behv =
         supervise(
@@ -156,7 +158,7 @@ class RestarterSpec extends TypedSpec {
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
 
-    def `must not catch fatal error`(): Unit = {
+    "not catch fatal error" in {
       val inbox = Inbox[Event]("evt")
       val behv = supervise(target(inbox.ref)).onFailure[Throwable](SupervisorStrategy.restart)
       val ctx = mkCtx(behv)
@@ -166,7 +168,7 @@ class RestarterSpec extends TypedSpec {
       inbox.receiveAll() should ===(Nil)
     }
 
-    def `must stop after restart retries limit`(): Unit = {
+    "stop after restart retries limit" in {
       val inbox = Inbox[Event]("evt")
       val strategy = SupervisorStrategy.restartWithLimit(maxNrOfRetries = 2, withinTimeRange = 1.minute)
       val behv = supervise(target(inbox.ref)).onFailure[Exc1](strategy)
@@ -181,7 +183,7 @@ class RestarterSpec extends TypedSpec {
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
 
-    def `must reset retry limit after withinTimeRange`(): Unit = {
+    "reset retry limit after withinTimeRange" in {
       val inbox = Inbox[Event]("evt")
       val withinTimeRange = 2.seconds
       val strategy = SupervisorStrategy.restartWithLimit(maxNrOfRetries = 2, withinTimeRange)
@@ -203,7 +205,7 @@ class RestarterSpec extends TypedSpec {
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
 
-    def `must stop at first exception when restart retries limit is 0`(): Unit = {
+    "stop at first exception when restart retries limit is 0" in {
       val inbox = Inbox[Event]("evt")
       val strategy = SupervisorStrategy.restartWithLimit(maxNrOfRetries = 0, withinTimeRange = 1.minute)
       val behv = supervise(target(inbox.ref)).onFailure[Exc1](strategy)
@@ -214,7 +216,7 @@ class RestarterSpec extends TypedSpec {
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
 
-    def `must create underlying deferred behavior immediately`(): Unit = {
+    "create underlying deferred behavior immediately" in {
       val inbox = Inbox[Event]("evt")
       val behv = supervise(deferred[Command] { _ ⇒
         inbox.ref ! Started
@@ -225,13 +227,16 @@ class RestarterSpec extends TypedSpec {
       inbox.receiveMsg() should ===(Started)
     }
   }
+}
 
-  trait RealTests extends StartSupport {
-    import akka.actor.typed.scaladsl.adapter._
-    implicit def system: ActorSystem[TypedSpec.Command]
-    implicit val testSettings = TestKitSettings(system)
+class RestarterStubbedSpec extends TypedSpec with StartSupport {
 
-    def `must receive message`(): Unit = {
+  import RestarterSpec._
+
+  implicit val testSettings = TestKitSettings(system)
+
+  "A restart (subbed)" must {
+    "receive message" in {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(target(probe.ref)).onFailure[Throwable](SupervisorStrategy.restart)
       val ref = start(behv)
@@ -239,7 +244,7 @@ class RestarterSpec extends TypedSpec {
       probe.expectMsg(Pong)
     }
 
-    def `must stop when no supervise`(): Unit = {
+    "stop when no supervise" in {
       val probe = TestProbe[Event]("evt")
       val behv = target(probe.ref)
       val ref = start(behv)
@@ -248,7 +253,7 @@ class RestarterSpec extends TypedSpec {
       probe.expectMsg(GotSignal(PostStop))
     }
 
-    def `must stop when unhandled exception`(): Unit = {
+    "stop when unhandled exception" in {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(target(probe.ref)).onFailure[Exc1](SupervisorStrategy.restart)
       val ref = start(behv)
@@ -256,7 +261,7 @@ class RestarterSpec extends TypedSpec {
       probe.expectMsg(GotSignal(PostStop))
     }
 
-    def `must restart when handled exception`(): Unit = {
+    "restart when handled exception" in {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(target(probe.ref)).onFailure[Exc1](SupervisorStrategy.restart)
       val ref = start(behv)
@@ -270,7 +275,7 @@ class RestarterSpec extends TypedSpec {
       probe.expectMsg(State(0, Map.empty))
     }
 
-    def `must NOT stop children when restarting`(): Unit = {
+    "NOT stop children when restarting" in {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(target(probe.ref)).onFailure[Exc1](SupervisorStrategy.restart)
       val ref = start(behv)
@@ -289,7 +294,7 @@ class RestarterSpec extends TypedSpec {
       probe.expectMsgType[State].children.keySet should contain(childName)
     }
 
-    def `must resume when handled exception`(): Unit = {
+    "resume when handled exception" in {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(target(probe.ref)).onFailure[Exc1](SupervisorStrategy.resume)
       val ref = start(behv)
@@ -302,7 +307,7 @@ class RestarterSpec extends TypedSpec {
       probe.expectMsg(State(1, Map.empty))
     }
 
-    def `must support nesting to handle different exceptions`(): Unit = {
+    "support nesting to handle different exceptions" in {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(
         supervise(target(probe.ref)).onFailure[Exc2](SupervisorStrategy.resume)
@@ -328,7 +333,7 @@ class RestarterSpec extends TypedSpec {
       probe.expectMsg(GotSignal(PostStop))
     }
 
-    def `must restart after exponential backoff`(): Unit = {
+    "restart after exponential backoff" in {
       val probe = TestProbe[Event]("evt")
       val startedProbe = TestProbe[Event]("started")
       val minBackoff = 1.seconds
@@ -365,7 +370,7 @@ class RestarterSpec extends TypedSpec {
       probe.expectMsg(State(0, Map.empty))
     }
 
-    def `must reset exponential backoff count after reset timeout`(): Unit = {
+    "reset exponential backoff count after reset timeout" in {
       val probe = TestProbe[Event]("evt")
       val minBackoff = 1.seconds
       val strategy = SupervisorStrategy.restartWithBackoff(minBackoff, 10.seconds, 0.0)
@@ -395,7 +400,7 @@ class RestarterSpec extends TypedSpec {
       probe.expectMsg(State(0, Map.empty))
     }
 
-    def `must create underlying deferred behavior immediately`(): Unit = {
+    "create underlying deferred behavior immediately" in {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(deferred[Command] { _ ⇒
         probe.ref ! Started
@@ -407,7 +412,7 @@ class RestarterSpec extends TypedSpec {
       probe.expectMsg(Started)
     }
 
-    def `must stop when exception from MutableBehavior constructor`(): Unit = {
+    "stop when exception from MutableBehavior constructor" in {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(mutable[Command](_ ⇒ new FailingConstructor(probe.ref))).onFailure[Exception](SupervisorStrategy.restart)
       val ref = start(behv)
@@ -415,10 +420,5 @@ class RestarterSpec extends TypedSpec {
       ref ! Ping
       probe.expectNoMsg(100.millis)
     }
-
   }
-
-  object `A restarter (stubbed, adapted)` extends StubbedTests with AdaptedSystem
-  object `A restarter (real, adapted)` extends RealTests with AdaptedSystem
-
 }

@@ -7,21 +7,13 @@ package scaladsl
 import akka.Done
 import akka.typed.testkit.TestKitSettings
 import akka.typed.testkit.scaladsl.TestProbe
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
-final class OnSignalSpec extends TypedSpec {
+final class OnSignalSpec extends TypedSpec with StartSupport {
 
-  final object `An Actor.onSignal behavior (adapted)` extends Tests with AdaptedSystem
+  private implicit val testSettings = TestKitSettings(system)
 
-  trait Tests extends StartSupport {
-
-    private implicit val testSettings = TestKitSettings(system)
-
-    override implicit def system: ActorSystem[TypedSpec.Command]
-
-    def `must correctly install the signal handler`(): Unit = {
+  "An Actor.OnSignal behavior" must {
+    "must correctly install the signal handler" in {
       val probe = TestProbe[Done]("probe")
       val behavior =
         Actor.deferred[Nothing] { context ⇒

@@ -12,9 +12,7 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.typed.testkit.{ EffectfulActorContext, Inbox, TestKitSettings }
 import akka.typed.testkit.scaladsl._
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class DeferredSpec extends TypedSpec {
-
+object DeferredSpec {
   sealed trait Command
   case object Ping extends Command
 
@@ -28,44 +26,15 @@ class DeferredSpec extends TypedSpec {
         monitor ! Pong
         Actor.same
     })
+}
 
-  trait StubbedTests {
-    def system: ActorSystem[TypedSpec.Command]
+class DeferredSpec extends TypedSpec with StartSupport {
 
-    def mkCtx(behv: Behavior[Command]): EffectfulActorContext[Command] =
-      new EffectfulActorContext("ctx", behv, 1000, system)
+  import DeferredSpec._
+  implicit val testSettings = TestKitSettings(system)
 
-    def `must create underlying deferred behavior immediately`(): Unit = {
-      val inbox = Inbox[Event]("evt")
-      val behv = Actor.deferred[Command] { _ ⇒
-        inbox.ref ! Started
-        target(inbox.ref)
-      }
-      val ctx = mkCtx(behv)
-      // it's supposed to be created immediately (not waiting for first message)
-      inbox.receiveMsg() should ===(Started)
-    }
-
-    def `must stop when exception from factory`(): Unit = {
-      val inbox = Inbox[Event]("evt")
-      val exc = new RuntimeException("simulated exc from factory") with NoStackTrace
-      val behv = Actor.deferred[Command] { _ ⇒
-        inbox.ref ! Started
-        throw exc
-      }
-      intercept[RuntimeException] {
-        mkCtx(behv)
-      } should ===(exc)
-      inbox.receiveMsg() should ===(Started)
-    }
-
-  }
-
-  trait RealTests extends StartSupport {
-    implicit def system: ActorSystem[TypedSpec.Command]
-    implicit val testSettings = TestKitSettings(system)
-
-    def `must create underlying`(): Unit = {
+  "Deferred behaviour" must {
+    "must create underlying" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.deferred[Command] { _ ⇒
         probe.ref ! Started
@@ -77,7 +46,7 @@ class DeferredSpec extends TypedSpec {
       probe.expectMsg(Started)
     }
 
-    def `must stop when exception from factory`(): Unit = {
+    "must stop when exception from factory" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.deferred[Command] { ctx ⇒
         val child = ctx.spawnAnonymous(Actor.deferred[Command] { _ ⇒
@@ -96,7 +65,7 @@ class DeferredSpec extends TypedSpec {
       probe.expectMsg(Pong)
     }
 
-    def `must stop when deferred result it Stopped`(): Unit = {
+    "must stop when deferred result it Stopped" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.deferred[Command] { ctx ⇒
         val child = ctx.spawnAnonymous(Actor.deferred[Command](_ ⇒ Actor.stopped))
@@ -111,7 +80,7 @@ class DeferredSpec extends TypedSpec {
       probe.expectMsg(Pong)
     }
 
-    def `must create underlying when nested`(): Unit = {
+    "must create underlying when nested" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.deferred[Command] { _ ⇒
         Actor.deferred[Command] { _ ⇒
@@ -123,7 +92,7 @@ class DeferredSpec extends TypedSpec {
       probe.expectMsg(Started)
     }
 
-    def `must undefer underlying when wrapped by widen`(): Unit = {
+    "must undefer underlying when wrapped by widen" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.deferred[Command] { _ ⇒
         probe.ref ! Started
@@ -139,7 +108,7 @@ class DeferredSpec extends TypedSpec {
       probe.expectMsg(Pong)
     }
 
-    def `must undefer underlying when wrapped by monitor`(): Unit = {
+    "must undefer underlying when wrapped by monitor" in {
       // monitor is implemented with tap, so this is testing both
       val probe = TestProbe[Event]("evt")
       val monitorProbe = TestProbe[Command]("monitor")
@@ -155,10 +124,40 @@ class DeferredSpec extends TypedSpec {
       monitorProbe.expectMsg(Ping)
       probe.expectMsg(Pong)
     }
-
   }
 
-  object `A DeferredBehavior (stubbed, adapted)` extends StubbedTests with AdaptedSystem
-  object `A DeferredBehavior (real, adapted)` extends RealTests with AdaptedSystem
+}
+
+class DeferredStubbedSpec extends TypedSpec {
+
+  import DeferredSpec._
+
+  def mkCtx(behv: Behavior[Command]): EffectfulActorContext[Command] =
+    new EffectfulActorContext("ctx", behv, 1000, system)
+
+  "must create underlying deferred behavior immediately" in {
+    val inbox = Inbox[Event]("evt")
+    val behv = Actor.deferred[Command] { _ ⇒
+      inbox.ref ! Started
+      target(inbox.ref)
+    }
+    val ctx = mkCtx(behv)
+    // it's supposed to be created immediately (not waiting for first message)
+    inbox.receiveMsg() should ===(Started)
+  }
+
+  "must stop when exception from factory" in {
+    val inbox = Inbox[Event]("evt")
+    val exc = new RuntimeException("simulated exc from factory") with NoStackTrace
+    val behv = Actor.deferred[Command] { _ ⇒
+      inbox.ref ! Started
+      throw exc
+    }
+    intercept[RuntimeException] {
+      mkCtx(behv)
+    } should ===(exc)
+    inbox.receiveMsg() should ===(Started)
+  }
 
 }
+

@@ -9,10 +9,8 @@ import akka.actor.ExtendedActorSystem
 import akka.cluster.Cluster
 import akka.cluster.typed.ActorRefResolver
 import akka.serialization.SerializerWithStringManifest
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.{ ActorRef, ActorSystem, StartSupport, TypedSpec }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.TypedSpec
 import akka.actor.typed.TypedSpec.Command
 import akka.cluster.typed.ActorRefResolver
 import akka.actor.typed.internal.adapter.ActorRefAdapter
@@ -96,45 +94,47 @@ object ClusterReceptionistSpec {
   val PingKey = Receptionist.ServiceKey[PingProtocol]("pingy")
 }
 
-class ClusterReceptionistSpec extends TypedSpec(ClusterReceptionistSpec.config) {
+class ClusterReceptionistSpec extends TypedSpec(ClusterReceptionistSpec.config) with StartSupport {
+
   import ClusterReceptionistSpec._
 
-  val adaptedSystem = system
-  implicit val testSettings = TestKitSettings(adaptedSystem)
-  val untypedSystem1 = ActorSystemAdapter.toUntyped(adaptedSystem)
+  implicit val testSettings = TestKitSettings(system)
+  val untypedSystem1 = ActorSystemAdapter.toUntyped(system)
   val clusterNode1 = Cluster(untypedSystem1)
 
   val system2 = akka.actor.ActorSystem(
-    adaptedSystem.name,
-    adaptedSystem.settings.config)
+    system.name,
+    system.settings.config)
   val adaptedSystem2 = system2.toTyped
   val clusterNode2 = Cluster(system2)
 
   clusterNode1.join(clusterNode1.selfAddress)
   clusterNode2.join(clusterNode1.selfAddress)
 
-  object `The ClusterReceptionist` extends StartSupport {
-    def system: ActorSystem[Command] = adaptedSystem
-    import Receptionist._
+  import Receptionist._
 
-    def `must eventually replicate registrations to the other side`() = new TestSetup {
-      val regProbe = TestProbe[Any]()(adaptedSystem, testSettings)
-      val regProbe2 = TestProbe[Any]()(adaptedSystem2, testSettings)
+  "The cluster receptionist" must {
 
-      adaptedSystem2.receptionist ! Subscribe(PingKey, regProbe2.ref)
-      regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+    "must eventually replicate registrations to the other side" in {
+      new TestSetup {
+        val regProbe = TestProbe[Any]()(system, testSettings)
+        val regProbe2 = TestProbe[Any]()(adaptedSystem2, testSettings)
 
-      val service = start(pingPong)
-      system.receptionist ! Register(PingKey, service, regProbe.ref)
-      regProbe.expectMsg(Registered(PingKey, service))
+        adaptedSystem2.receptionist ! Subscribe(PingKey, regProbe2.ref)
+        regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
 
-      val Listing(PingKey, remoteServiceRefs) = regProbe2.expectMsgType[Listing[PingProtocol]]
-      val theRef = remoteServiceRefs.head
-      theRef ! Ping(regProbe2.ref)
-      regProbe2.expectMsg(Pong)
+        val service = start(pingPong)
+        system.receptionist ! Register(PingKey, service, regProbe.ref)
+        regProbe.expectMsg(Registered(PingKey, service))
 
-      service ! Perish
-      regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+        val Listing(PingKey, remoteServiceRefs) = regProbe2.expectMsgType[Listing[PingProtocol]]
+        val theRef = remoteServiceRefs.head
+        theRef ! Ping(regProbe2.ref)
+        regProbe2.expectMsg(Pong)
+
+        service ! Perish
+        regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+      }
     }
   }
 
@@ -143,7 +143,7 @@ class ClusterReceptionistSpec extends TypedSpec(ClusterReceptionistSpec.config) 
 
   override def afterAll(): Unit = {
     super.afterAll()
-    Await.result(adaptedSystem.terminate(), 3.seconds)
+    Await.result(system.terminate(), 3.seconds)
     Await.result(system2.terminate(), 3.seconds)
   }
 }
