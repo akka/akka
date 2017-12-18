@@ -67,6 +67,14 @@ pragmatic reasons because we believe that it is unlikely that these classes have
 If this assumption turns out to be too optimistic and integration with third-party code breaks because of this,
 please let us know.
 
+### Cleanup of top-level Http APIs (slightly source incompatible)
+
+Several APIs in `Http` previously required an implicit `Materializer` argument (explicit in the Java version) where it
+was not necessary. In [#1464](https://github.com/akka/akka-http/issues/1464), we added new entry points without the
+implicit materializer. The old versions were kept as `private[http]` which makes this a binary compatible change. However,
+if you used to pass in a materializer explicitly, compiling the code will now fail. In that case, you can just remove
+the explicitly passed-in materializer argument.
+
 ### List of Changes
 
 #### Improvements
