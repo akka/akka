@@ -6,8 +6,8 @@ Client side WebSocket support is available through @scala[`Http().singleWebSocke
 A WebSocket consists of two streams of messages, incoming messages (a @unidoc[Sink]) and outgoing messages
 (a @unidoc[Source]) where either may be signalled first; or even be the only direction in which messages flow during
 the lifetime of the connection. Therefore a WebSocket connection is modelled as either something you connect a
-@scala[@unidoc[Flow[Message, Message, Mat]`]@java[@unidoc[Flow[Message, Message, Mat]]] to or a @scala[`Flow[Message, Message, Mat]`]@java[@unidoc[Flow[Message, Message, Mat]]] that you connect a @scala[@unidoc[Source[Message, Mat]`]@java[@unidoc[Source[Message, Mat]]] and
-a @scala[@unidoc[Sink[Message, Mat]`]@java[@unidoc[Sink[Message, Mat]]] to.
+@unidoc[Flow[Message, Message, Mat]] to or a @unidoc[Flow[Message, Message, Mat]] that you connect a @unidoc[Source[Message, Mat]] and
+a @unidoc[Sink[Message, Mat]] to.
 
 A WebSocket request starts with a regular HTTP request which contains an `Upgrade` header (and possibly
 other regular HTTP request properties), so in addition to the flow of messages there also is an initial response
@@ -33,13 +33,13 @@ The strict text is available from @scala[`TextMessage.Strict`]@java[`TextMessage
 @scala[`BinaryMessage.Strict`]@java[`BinaryMessage.getStrictData`].
 
 For streamed messages @scala[`BinaryMessage.Streamed`]@java[`BinaryMessage.getStreamedData`] and @scala[`TextMessage.Streamed`]@java[`TextMessage.getStreamedText`] will be used.
-In these cases the data is provided as a @scala[`Source[ByteString, NotUsed]]]@java[@unidoc[Source[ByteString, NotUsed]]] for binary and @scala[`Source[String, NotUsed]]]@java[@unidoc[Source[String, NotUsed]]] for text messages.
+In these cases the data is provided as a @unidoc[Source[ByteString, NotUsed]] for binary and @unidoc[Source[String, NotUsed]] for text messages.
 
 ## singleWebSocketRequest
 
 `singleWebSocketRequest` takes a @unidoc[WebSocketRequest] and a flow it will connect to the source and
 sink of the WebSocket connection. It will trigger the request right away and returns a tuple containing the
-@scala[`Future[WebSocketUpgradeResponse]]]@java[`CompletionStage<WebSocketUpgradeResponse>`] and the materialized value from the flow passed to the method.
+@scala[`Future[WebSocketUpgradeResponse]`]@java[`CompletionStage<WebSocketUpgradeResponse>`] and the materialized value from the flow passed to the method.
 
 The future will succeed when the WebSocket connection has been established or the server returned a regular
 HTTP response, or fail if the connection fails with an exception.
@@ -129,4 +129,4 @@ Scenarios that exist with the two streams in a WebSocket and possible ways to de
 |--------------------------------------|----------------------------------------------------------------------------------------------------------------------|
 |Two-way communication                 | `Flow.fromSinkAndSource`, or `Flow.map` for a request-response protocol                                              |
 |Infinite incoming stream, no outgoing | @scala[`Flow.fromSinkAndSource(someSink, Source.maybe)`]@java[`Flow.fromSinkAndSource(someSink, Source.maybe())`]    |
-|Infinite outgoing stream, no incoming | @scala[`Flow.fromSinkAndSource(Sink.ignore, yourSource)`]@java[``Flow.fromSinkAndSource(Sink.ignore(), yourSource)``]|
+|Infinite outgoing stream, no incoming | @scala[`Flow.fromSinkAndSource(Sink.ignore, yourSource)`]@java[`Flow.fromSinkAndSource(Sink.ignore(), yourSource)`]|

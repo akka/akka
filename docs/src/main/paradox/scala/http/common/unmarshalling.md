@@ -9,7 +9,7 @@ into an instance of type `T`.
 
 ## Basic Design
 
-Unmarshalling of instances of type `A` into instances of type `B` is performed by an @scala[@unidoc[Unmarshaller[A, B]`]@java[@unidoc[Unmarshaller[A, B]]].
+Unmarshalling of instances of type `A` into instances of type `B` is performed by an @unidoc[Unmarshaller[A, B]].
 
 @@@ div { .group-scala }
 Akka HTTP also predefines a number of helpful aliases for the types of unmarshallers that you'll likely work with most:
@@ -18,7 +18,7 @@ Akka HTTP also predefines a number of helpful aliases for the types of unmarshal
 
 @@@
 
-At its core an @scala[`Unmarshaller[A, B]]]@java[@unidoc[Unmarshaller[A, B]]] is very similar to a @scala[function `A => Future[B]`]@java[`Function<A, CompletionStage<B>>`] and as such quite a bit simpler
+At its core an @unidoc[Unmarshaller[A, B]] is very similar to a @scala[function `A => Future[B]`]@java[`Function<A, CompletionStage<B>>`] and as such quite a bit simpler
 than its @ref[marshalling](marshalling.md) counterpart. The process of unmarshalling does not have to support
 content negotiation which saves two additional layers of indirection that are required on the marshalling side.
 
@@ -46,9 +46,9 @@ Specifically these are:
 
 @@@ div { .group-scala }
  * @scaladoc[GenericUnmarshallers](akka.http.scaladsl.unmarshalling.GenericUnmarshallers)
-    * @unidoc[Unmarshaller[T, T]` (identity unmarshaller)
-    * `Unmarshaller[Option[A], B]`, if an `Unmarshaller[A, B]` is available
-    * `Unmarshaller[A, Option[B]]`, if an `Unmarshaller[A, B]] is available
+    * @unidoc[Unmarshaller[T, T]] (identity unmarshaller)
+    * @unidoc[Unmarshaller[Option[A], B]], if an @unidoc[Unmarshaller[A, B]] is available
+    * @unidoc[Unmarshaller[A, Option[B]]], if an @unidoc[Unmarshaller[A, B]] is available
 @@@
 
 Additional unmarshallers are available in separate modules for specific content types, such as

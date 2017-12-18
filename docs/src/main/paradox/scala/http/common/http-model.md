@@ -121,7 +121,7 @@ It wraps a plain @unidoc[ByteString] and  represents a standard, unchunked entit
 
 @scala[HttpEntity.Default]@java[HttpEntityDefault]
 : The general, unchunked HTTP/1.1 message entity.
-It has a known length and presents its data as a @scala[@unidoc[Source[ByteString]`]@java[@unidoc[Source[ByteString, ?]]] which can be only materialized once.
+It has a known length and presents its data as a @scala[@unidoc[Source[ByteString]]]@java[@unidoc[Source[ByteString, ?]]] which can be only materialized once.
 It is an error if the provided source doesn't produce exactly as many bytes as specified.
 The distinction of @scala[`Strict`]@java[`HttpEntityStrict`] and @scala[`Default`]@java[`HttpEntityDefault`] is an API-only one. On the wire,
 both kinds of entities look the same.
@@ -134,7 +134,7 @@ The stream consists of zero or more @scala[`Chunked`]@java[non-empty chunks] par
 
 @scala[HttpEntity.CloseDelimited]@java[HttpEntityCloseDelimited]
 : An unchunked entity of unknown length that is implicitly delimited by closing the connection (`Connection: close`).
-The content data are presented as a @scala[`Source[ByteString]`]@java[@unidoc[Source[ByteString, ?]]].
+The content data are presented as a @scala[@unidoc[Source[ByteString]]]@java[@unidoc[Source[ByteString, ?]]].
 Since the connection must be closed after sending an entity of this type it can only be used on the server-side for
 sending a response.
 Also, the main purpose of `CloseDelimited` entities is compatibility with HTTP/1.0 peers, which do not support
@@ -159,7 +159,7 @@ The @scala[@unidoc[HttpEntity] companion object]@java[class `HttpEntities`] cont
 You can @scala[pattern match over]@java[use] the @scala[subtypes]@java[`isX` methods] of @unidoc[HttpEntity] @java[to find out of which subclass an entity is] if you want to provide
 special handling for each of the subtypes. However, in many cases a recipient of an @unidoc[HttpEntity] doesn't care about
 of which subtype an entity is (and how data is transported exactly on the HTTP layer). Therefore, the general method
-@scala[`HttpEntity.dataBytes`]@java[`HttpEntity.getDataBytes()`] is provided which returns a @scala[`Source[ByteString, Any]]]@java[@unidoc[Source[ByteString, ?]]] that allows access to the data of an
+@scala[`HttpEntity.dataBytes`]@java[`HttpEntity.getDataBytes()`] is provided which returns a @scala[@unidoc[Source[ByteString, Any]]]@java[@unidoc[Source[ByteString, ?]]] that allows access to the data of an
 entity regardless of its concrete subtype.
 
 @@@ note { title='When to use which subtype?' }

@@ -24,11 +24,11 @@ after a reconnect.
 
 ## Model
 
-Akka HTTP represents event streams as @scala[@unidoc[Source[ServerSentEvent, NotUsed]`]@java[@unidoc[Source[ServerSentEvent, NotUsed]]] where @unidoc[ServerSentEvent] is a
+Akka HTTP represents event streams as @unidoc[Source[ServerSentEvent, NotUsed]] where @unidoc[ServerSentEvent] is a
 @scala[case] class with the following read-only properties:
 
 - @scala[`data: String`]@java[`String data`] – the actual payload, may span multiple lines
-- @scala[`eventType: Option[String]]]@java[`Optional<String> type`] – optional qualifier, e.g. "added", "removed", etc.
+- @scala[`eventType: Option[String]`]@java[`Optional<String> type`] – optional qualifier, e.g. "added", "removed", etc.
 - @scala[`id: Option[String]`]@java[`Optional<String> id`] – optional identifier
 - @scala[`retry: Option[Int]`]@java[`OptionalInt retry`] – optional reconnection delay in milliseconds
 
@@ -48,7 +48,7 @@ Java
 
 ## Client-side usage: unmarshalling
 
-In order to unmarshal an event stream as @scala[@unidoc[Source[ServerSentEvent, NotUsed]`]@java[@unidoc[Source[ServerSentEvent, NotUsed]]], you have to @scala[bring the implicit `FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]]] defined by @unidoc[EventStreamUnmarshalling] into scope]@java[use the `EventStreamUnmarshalling.fromEventStream` unmarshaller]:
+In order to unmarshal an event stream as @unidoc[Source[ServerSentEvent, NotUsed]], you have to @scala[bring the implicit `FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]`] defined by @unidoc[EventStreamUnmarshalling] into scope]@java[use the `EventStreamUnmarshalling.fromEventStream` unmarshaller]:
 
 Scala
 :  @@snip [ServerSentEventsExampleSpec.scala]($test$/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-unmarshalling-example }

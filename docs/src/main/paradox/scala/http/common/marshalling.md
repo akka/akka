@@ -15,24 +15,24 @@ negotiate the result content types based on the @unidoc[Accept] and the `AcceptC
 
 ## Basic Design
 
-Marshalling of instances of type `A` into instances of type `B` is performed by a @scala[@unidoc[Marshaller[A, B]`]@java[@unidoc[Marshaller[A, B]]].
+Marshalling of instances of type `A` into instances of type `B` is performed by a @unidoc[Marshaller[A, B]].
 
-Contrary to what you might initially expect, @scala[`Marshaller[A, B]]]@java[@unidoc[Marshaller[A, B]]] is not a plain function `A => B` but rather
+Contrary to what you might initially expect, @unidoc[Marshaller[A, B]] is not a plain function `A => B` but rather
 essentially a function @scala[`A => Future[List[Marshalling[B]]]`]@java[`A => CompletionStage<List<Marshalling<B>>>`].
 Let's dissect this rather complicated looking signature piece by piece to understand why marshallers are designed this
 way.
-Given an instance of type `A` a @scala[@unidoc[Marshaller[A, B]`]@java[@unidoc[Marshaller[A, B]]] produces:
+Given an instance of type `A` a @unidoc[Marshaller[A, B]] produces:
 
 1. A @scala[`Future`]@java[`CompletionStage`]: This is probably quite clear. Marshallers are not required to synchronously produce a result, so instead
 they return a future, which allows for asynchronicity in the marshalling process.
 
 2. of `List`: Rather than only a single target representation for `A` marshallers can offer several ones. Which
 one will be rendered onto the wire in the end is decided by content negotiation.
-For example, the @scala[`Marshaller[OrderConfirmation, MessageEntity]`]@java[@unidoc[Marshaller[OrderConfirmation, MessageEntity]]] might offer a JSON as well as an XML representation.
+For example, the @unidoc[Marshaller[OrderConfirmation, MessageEntity]] might offer a JSON as well as an XML representation.
 The client can decide through the addition of an @unidoc[Accept] request header which one is preferred. If the client doesn't
 express a preference the first representation is picked.
 
-3. of @scala[`Marshalling[B]]]@java[`Marshalling<B>`]: Rather than returning an instance of `B` directly marshallers first produce a
+3. of @scala[`Marshalling[B]`]@java[`Marshalling<B>`]: Rather than returning an instance of `B` directly marshallers first produce a
 @scala[`Marshalling[B]`]@java[`Marshalling<B>`]. This allows for querying the @unidoc[MediaType] and potentially the @unidoc[HttpCharset] that the marshaller
 will produce before the actual marshalling is triggered. Apart from enabling content negotiation this design allows for
 delaying the actual construction of the marshalling target instance to the very last moment when it is really needed.
@@ -78,11 +78,11 @@ Specifically these are:
     * `(HttpMethod, Uri, T)`, if a `ToEntityMarshaller[T]` is available
     * `(HttpMethod, Uri, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
  * @scaladoc[GenericMarshallers](akka.http.scaladsl.marshalling.GenericMarshallers)
-    * @unidoc[Marshaller[Throwable, T]`
-    * `Marshaller[Option[A], B]`, if a `Marshaller[A, B]` and an `EmptyValue[B]` is available
-    * `Marshaller[Either[A1, A2], B]`, if a `Marshaller[A1, B]` and a `Marshaller[A2, B]` is available
-    * `Marshaller[Future[A], B]`, if a `Marshaller[A, B]` is available
-    * `Marshaller[Try[A], B]`, if a `Marshaller[A, B]` is available
+    * @unidoc[Marshaller[Throwable, T]]
+    * @unidoc[Marshaller[Option[A], B]], if a @unidoc[Marshaller[A, B]] and an `EmptyValue[B]` is available
+    * @unidoc[Marshaller[Either[A1, A2], B]], if a @unidoc[Marshaller[A1, B]] and a @unidoc[Marshaller[A2, B]] is available
+    * @unidoc[Marshaller[Future[A], B]], if a @unidoc[Marshaller[A, B]] is available
+    * @unidoc[Marshaller[Try[A], B]], if a @unidoc[Marshaller[A, B]] is available
 
 @@@
 
@@ -93,7 +93,7 @@ Specifically these are:
     * @unidoc[ByteString]
     * `char[]`
     * `String`
-    * `FormData
+    * @unidoc[FormData]
  * Predefined @unidoc[HttpResponse] marshallers:
     * `T` using an existing @unidoc[RequestEntity] marshaller for `T`
     * `T` and @unidoc[StatusCode] using an existing @unidoc[RequestEntity] marshaller for `T`
@@ -126,8 +126,8 @@ a @scala[`ToReponseMarshaller[T]`]@java[@unidoc[Marshaller[T, HttpResponse]]] as
 @scala[`ToEntityMarshaller[T]`]@java[@unidoc[Marshaller[T, MessageEntity]]] is available.
 
 If, however, your marshaller also needs to set things like the response status code, the request method, the request URI
-or any headers then a @scala[`ToEntityMarshaller[T]`]@java[@unidoc[Marshaller[T, MessageEntity`] won't work. You'll need to fall down to providing a
-@scala[`ToResponseMarshaller[T]`]@java[`Marshaller[T, HttpResponse]]] or a @scala[`ToRequestMarshaller[T]]]@java[@unidoc[Marshaller[T, HttpRequest]]] directly.
+or any headers then a @scala[`ToEntityMarshaller[T]`]@java[@unidoc[Marshaller[T, MessageEntity]]] won't work. You'll need to fall down to providing a
+@scala[`ToResponseMarshaller[T]`]@java[@unidoc[Marshaller[T, HttpResponse]]] or a @scala[`ToRequestMarshaller[T]]]@java[@unidoc[Marshaller[T, HttpRequest]]] directly.
 
 For writing your own marshallers you won't have to "manually" implement the @unidoc[Marshaller] @scala[trait]@java[class] directly.
 

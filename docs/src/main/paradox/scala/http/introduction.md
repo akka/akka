@@ -175,7 +175,7 @@ Read more about the details of the high level APIs in the section @ref[High-leve
 
 The low-level Akka HTTP server APIs allows for handling connections or individual requests by accepting
 @unidoc[HttpRequest] s and answering them by producing @unidoc[HttpResponse] s. This is provided by the `akka-http-core` module.
-APIs for handling such request-responses as function calls and as a @scala[@unidoc[Flow[HttpRequest, HttpResponse, _]]]@java[@unidoc[Flow[HttpRequest, HttpResponse, NotUsed]]] are available.
+APIs for handling such request-responses as function calls and as a @unidoc[Flow[HttpRequest, HttpResponse, NotUsed]] are available.
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }
