@@ -146,7 +146,7 @@ abstract class Props private[akka] () extends Product with Serializable {
  * messages will be dropped.
  *
  * The default mailbox capacity that is used when this option is not given is
- * taken from the `akka.actor.typed.mailbox-capacity` configuration setting.
+ * taken from the `akka.typed.mailbox-capacity` configuration setting.
  */
 @InternalApi
 private[akka] final case class MailboxCapacity(capacity: Int, next: Props = Props.empty) extends Props {

@@ -15,7 +15,7 @@ import akka.actor.typed.Behavior
  * your config
  *
  * <pre><code>
- * akka.actor.typed {
+ * akka.typed {
  *   loggers = ["akka.typed.testkit.TestEventListener"]
  * }
  * </code></pre>

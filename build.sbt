@@ -365,9 +365,7 @@ lazy val testkit = akkaModule("akka-testkit")
   )
 
 lazy val actorTyped = akkaModule("akka-actor-typed")
-  .dependsOn(
-    actor % "provided->compile"
-  )
+  .dependsOn(actor)
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
   .settings(
@@ -388,7 +386,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
     persistence,
     testkit % "test->test",
     typedTestkit % "test->test",
-    actorTypedTests % "test->test",
+    actorTypedTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
