@@ -426,7 +426,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
               .joinMat(clientServerImplementation.get(killSwitch))(Keep.right)
               .recover {
                 case ex ⇒
-                  println(s"Pool failed with error ${ex.getMessage}")
+                  println(s"Server connection failed with error ${ex.getMessage}")
                   ex.printStackTrace()
                   throw ex
               }

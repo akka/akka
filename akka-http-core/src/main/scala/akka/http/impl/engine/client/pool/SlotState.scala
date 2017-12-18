@@ -98,6 +98,13 @@ private[pool] object SlotState {
   sealed trait BusyState extends SlotState {
     final override def isIdle = false // no HTTP pipelining right now
     def ongoingRequest: RequestContext
+
+    override def onShutdown(ctx: SlotContext): Unit = {
+      ctx.dispatchFailure(
+        ongoingRequest,
+        new IllegalStateException(s"Slot shut down with ongoing request [${ongoingRequest.request.debugString}]"))
+      super.onShutdown(ctx)
+    }
   }
 
   case object Unconnected extends SlotState with IdleState {

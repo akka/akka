@@ -20,9 +20,12 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream._
+import akka.util.OptionVal
 
+import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.control.NonFatal
 import scala.util.{ Failure, Success }
 
 /**
@@ -180,43 +183,76 @@ private[client] object NewHostConnectionPool {
           def onConnectionCompleted(): Unit = updateState(_.onConnectionCompleted(this))
           def onConnectionFailed(cause: Throwable): Unit = updateState(_.onConnectionFailed(this, cause))
 
-          protected def updateState(f: SlotState ⇒ SlotState): Unit = {
-            if (currentTimeout ne null) {
-              currentTimeout.cancel()
-              currentTimeout = null
-              currentTimeoutId = -1
-            }
+          type StateTransition = SlotState ⇒ SlotState
+          protected def updateState(f: StateTransition): Unit = {
+            def runOneTransition(f: StateTransition): OptionVal[StateTransition] =
+              try {
+                cancelCurrentTimeout()
 
-            val previousState = state
-            state = f(state)
-            debug(s"State change [${previousState.name}] -> [${state.name}]")
+                val previousState = state
+                state = f(state)
+                debug(s"State change [${previousState.name}] -> [${state.name}]")
 
-            state.stateTimeout match {
-              case Duration.Inf ⇒
-              case d: FiniteDuration ⇒
-                val myTimeoutId = createNewTimeoutId()
-                currentTimeoutId = myTimeoutId
-                currentTimeout =
-                  materializer.scheduleOnce(d, safeRunnable {
-                    if (myTimeoutId == currentTimeoutId) { // timeout may race with state changes, ignore if timeout isn't current any more
-                      debug(s"Slot timeout after $d")
-                      updateState(_.onTimeout(this))
-                    }
-                  })
-            }
+                state.stateTimeout match {
+                  case Duration.Inf ⇒
+                  case d: FiniteDuration ⇒
+                    val myTimeoutId = createNewTimeoutId()
+                    currentTimeoutId = myTimeoutId
+                    currentTimeout =
+                      materializer.scheduleOnce(d, safeRunnable {
+                        if (myTimeoutId == currentTimeoutId) { // timeout may race with state changes, ignore if timeout isn't current any more
+                          debug(s"Slot timeout after $d")
+                          updateState(_.onTimeout(this))
+                        }
+                      })
+                }
 
-            if (!previousState.isIdle && state.isIdle) {
-              debug("Slot became idle... Trying to pull")
-              pullIfNeeded()
-            }
+                if (!previousState.isIdle && state.isIdle) {
+                  debug("Slot became idle... Trying to pull")
+                  pullIfNeeded()
+                }
 
-            if (state == Unconnected && numConnectedSlots < settings.minConnections) {
-              debug(s"Preconnecting because number of connected slots fell down to $numConnectedSlots")
-              updateState(_.onPreConnect(this))
-            }
+                if (state == Unconnected && numConnectedSlots < settings.minConnections) {
+                  debug(s"Preconnecting because number of connected slots fell down to $numConnectedSlots")
+                  OptionVal.Some(_.onPreConnect(this))
+                } else
+                  OptionVal.None
 
-            // put additional bookkeeping here (like keeping track of idle connections)
+                // put additional bookkeeping here (like keeping track of idle connections)
+              } catch {
+                case NonFatal(ex) ⇒
+                  error(
+                    ex,
+                    "Slot execution failed. That's probably a bug. Please file a bug at https://github.com/akka/akka-http/issues. Slot is restarted.")
+
+                  try {
+                    cancelCurrentTimeout()
+                    closeConnection()
+                    state.onShutdown(this)
+                    OptionVal.None
+                  } catch {
+                    case NonFatal(ex) ⇒
+                      error(ex, "Shutting down slot after error failed.")
+                  }
+                  state = Unconnected
+                  OptionVal.Some(_.onPreConnect(this))
+              }
+
+            /** Run a loop of state transitions */
+            @tailrec def loop(f: StateTransition, remainingIterations: Int): Unit =
+              if (remainingIterations > 0)
+                runOneTransition(f) match {
+                  case OptionVal.None       ⇒ // no more changes
+                  case OptionVal.Some(next) ⇒ loop(next, remainingIterations - 1)
+                }
+              else
+                throw new IllegalStateException(
+                  "State transition loop exceeded maximum number of loops. The pool will shutdown itself. " +
+                    "That's probably a bug. Please file a bug at https://github.com/akka/akka-http/issues. ")
+
+            loop(f, 10)
           }
+
           protected def setState(newState: SlotState): Unit =
             updateState(_ ⇒ newState)
 
@@ -231,6 +267,9 @@ private[client] object NewHostConnectionPool {
 
           def warning(msg: String, arg1: AnyRef): Unit =
             log.warning(s"[{} ({})] $msg", slotId, state.productPrefix, arg1)
+
+          def error(cause: Throwable, msg: String): Unit =
+            log.error(cause, s"[{} ({})] $msg", slotId, state.productPrefix)
 
           def settings: ConnectionPoolSettings = _settings
 
@@ -260,20 +299,26 @@ private[client] object NewHostConnectionPool {
           def dispatchResponse(req: RequestContext, res: HttpResponse): Unit = logic.dispatchResponse(req, res)
           def dispatchFailure(req: RequestContext, cause: Throwable): Unit = logic.dispatchFailure(req, cause)
           def willCloseAfter(res: HttpResponse): Boolean = logic.willClose(res)
+
+          private[this] def cancelCurrentTimeout(): Unit =
+            if (currentTimeout ne null) {
+              currentTimeout.cancel()
+              currentTimeout = null
+              currentTimeoutId = -1
+            }
         }
         final class SlotConnection(
           _slot:                  Slot,
           requestOut:             SubSourceOutlet[HttpRequest],
           responseIn:             SubSinkInlet[HttpResponse],
           val outgoingConnection: Future[Http.OutgoingConnection]
-        ) extends InHandler with OutHandler {
+        ) extends InHandler with OutHandler { connection ⇒
           var ongoingResponseEntity: Option[HttpEntity] = None
 
           /** Will only be executed if this connection is still the current connection for its slot */
           def withSlot(f: Slot ⇒ Unit): Unit =
             if (_slot.isCurrentConnection(this)) f(_slot)
 
-          // FIXME: is this safe? I.e. always pulled?
           def pushRequest(request: HttpRequest): Unit = {
             val newRequest =
               request.entity match {
@@ -290,7 +335,7 @@ private[client] object NewHostConnectionPool {
                   request.withEntity(newEntity)
               }
 
-            requestOut.push(newRequest)
+            emitRequest(newRequest)
           }
           def close(): Unit = {
             requestOut.complete()
@@ -344,11 +389,25 @@ private[client] object NewHostConnectionPool {
               slot.onConnectionFailed(ex)
             }
 
-          def onPull(): Unit = () // FIXME: do we need push / pull handling?
+          def onPull(): Unit = () // emitRequests makes sure not to push too early
 
           override def onDownstreamFinish(): Unit =
             withSlot(_.debug("Connection cancelled"))
 
+          /** Helper that makes sure requestOut is pulled before pushing */
+          private def emitRequest(request: HttpRequest): Unit =
+            if (requestOut.isAvailable) requestOut.push(request)
+            else
+              requestOut.setHandler(new OutHandler {
+                def onPull(): Unit = {
+                  requestOut.push(request)
+                  // Implicit assumption is that `connection` was the previous handler. We would just use the
+                  // previous handler if there was a way to get at it... SubSourceOutlet.getHandler seems to be missing.
+                  requestOut.setHandler(connection)
+                }
+
+                override def onDownstreamFinish(): Unit = connection.onDownstreamFinish()
+              })
         }
         def openConnection(slot: Slot): SlotConnection = {
           val requestOut = new SubSourceOutlet[HttpRequest](s"PoolSlot[${slot.slotId}].requestOut")
