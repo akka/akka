@@ -13,8 +13,6 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 final class OnSignalSpec extends TypedSpec {
 
-  final object `An Actor.onSignal behavior (native)` extends Tests with NativeSystem
-
   final object `An Actor.onSignal behavior (adapted)` extends Tests with AdaptedSystem
 
   trait Tests extends StartSupport {

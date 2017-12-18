@@ -99,6 +99,7 @@ class ExtensionsSpec extends TypedSpecSetup {
           akka.typed.extensions = ["akka.actor.typed.FailingToLoadExtension$"]
         """)))
       }
+
       intercept[RuntimeException] {
         create()
       }

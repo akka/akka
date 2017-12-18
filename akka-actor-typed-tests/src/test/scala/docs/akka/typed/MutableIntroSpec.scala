@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package docs.akka.actor.typed
+package docs.akka.typed
 
 //#imports
+import akka.NotUsed
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.AskPattern._
-import scala.concurrent.Future
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 //#imports
@@ -90,22 +90,25 @@ class MutableIntroSpec extends TypedSpec {
     //#chatroom-gabbler
 
     //#chatroom-main
-    val main: Behavior[akka.NotUsed] =
+    val main: Behavior[String] =
       Actor.deferred { ctx ⇒
         val chatRoom = ctx.spawn(ChatRoom.behavior(), "chatroom")
         val gabblerRef = ctx.spawn(gabbler, "gabbler")
         ctx.watch(gabblerRef)
-        chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-        Actor.immutable[akka.NotUsed] {
-          (_, _) ⇒ Actor.unhandled
+        Actor.immutablePartial[String] {
+          case (_, "go") ⇒
+            chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
+            Actor.same
         } onSignal {
-          case (ctx, Terminated(ref)) ⇒
+          case (_, Terminated(ref)) ⇒
+            println("Stopping guardian")
             Actor.stopped
         }
       }
 
     val system = ActorSystem(main, "ChatRoomDemo")
+    system ! "go"
     Await.result(system.whenTerminated, 1.second)
     //#chatroom-main
   }

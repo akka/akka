@@ -9,7 +9,6 @@ import akka.actor.InternalActorRef
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
 import akka.actor.Scheduler
-import akka.actor.typed.internal.FunctionRef
 import akka.actor.RootActorPath
 import akka.actor.Address
 import akka.annotation.InternalApi
@@ -64,7 +63,7 @@ object AskPattern {
       ref match {
         case a: adapt.ActorRefAdapter[_]    ⇒ askUntyped(ref, a.untyped, timeout, f)
         case a: adapt.ActorSystemAdapter[_] ⇒ askUntyped(ref, a.untyped.guardian, timeout, f)
-        case _                              ⇒ ask(ref, timeout, scheduler, f)
+        case a                              ⇒ throw new IllegalStateException("Only expect actor references to be ActorRefAdapter or ActorSystemAdapter until native system is implemented: " + a.getClass)
       }
   }
 
@@ -97,25 +96,6 @@ object AskPattern {
     if (p.promiseRef ne null) p.promiseRef.messageClassName = m.getClass.getName
     target ! m
     p.future
-  }
-
-  private def ask[T, U](actorRef: ActorRef[T], timeout: Timeout, scheduler: Scheduler, f: ActorRef[U] ⇒ T): Future[U] = {
-    import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ ec }
-    val p = Promise[U]
-    val ref = new FunctionRef[U](
-      AskPath,
-      (msg, self) ⇒ {
-        p.trySuccess(msg)
-        self.sendSystem(akka.actor.typed.internal.Terminate())
-      },
-      (self) ⇒ if (!p.isCompleted) p.tryFailure(new NoSuchElementException("ask pattern terminated before value was received")))
-    actorRef ! f(ref)
-    val d = timeout.duration
-    val c = scheduler.scheduleOnce(d)(p.tryFailure(new AskTimeoutException(s"did not receive message within $d")))(ec)
-    val future = p.future
-    future.andThen {
-      case _ ⇒ c.cancel()
-    }(ec)
   }
 
   private[typed] val AskPath = RootActorPath(Address("akka.actor.typed.internal", "ask"))

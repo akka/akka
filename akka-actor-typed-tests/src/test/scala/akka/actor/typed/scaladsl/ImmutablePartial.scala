@@ -13,10 +13,6 @@ import scala.concurrent.duration.DurationInt
 @RunWith(classOf[JUnitRunner])
 final class ImmutablePartialSpec extends TypedSpec {
 
-  final object `An Actor.immutablePartial behavior (native)`
-    extends Tests
-    with NativeSystem
-
   final object `An Actor.immutablePartial behavior (adapted)`
     extends Tests
     with AdaptedSystem

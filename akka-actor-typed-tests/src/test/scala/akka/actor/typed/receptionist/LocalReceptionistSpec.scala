@@ -183,7 +183,5 @@ class LocalReceptionistSpec extends TypedSpec with Eventually {
 
   }
 
-  object `A Receptionist (native)` extends CommonTests with NativeSystem
   object `A Receptionist (adapted)` extends CommonTests with AdaptedSystem
-
 }

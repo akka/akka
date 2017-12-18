@@ -445,3 +445,11 @@ def akkaModule(name: String): Project =
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(akka.Formatting.formatSettings)
     .enablePlugins(BootstrapGenjavadoc)
+
+lazy val typedTests = taskKey[Unit]("Runs all the typed tests")
+typedTests := {
+  (test in(actorTyped, Test)).value
+  (test in(actorTypedTests, Test)).value
+  (test in(clusterTyped, Test)).value
+  (test in(clusterShardingTyped, Test)).value
+}

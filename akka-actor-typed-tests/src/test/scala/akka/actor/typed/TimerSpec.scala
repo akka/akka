@@ -223,7 +223,5 @@ class TimerSpec extends TypedSpec("""
     }
   }
 
-  object `A Restarter (real, native)` extends RealTests with NativeSystem
   object `A Restarter (real, adapted)` extends RealTests with AdaptedSystem
-
 }

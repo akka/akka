@@ -116,7 +116,7 @@ class ClusterSingletonApiSpec extends TypedSpec(ClusterSingletonApiSpec.config) 
       node1UpProbe.expectMsgType[SelfUp]
       node2UpProbe.expectMsgType[SelfUp]
 
-      val cs1 = ClusterSingleton(system)
+      val cs1: ClusterSingleton = ClusterSingleton(system)
       val cs2 = ClusterSingleton(adaptedSystem2)
 
       val settings = ClusterSingletonSettings(system).withRole("singleton")

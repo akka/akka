@@ -25,15 +25,19 @@ import akka.typed.EventStream
 @InternalApi private[akka] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
   extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] with ExtensionsImpl {
 
+  loadExtensions()
+
   import ActorRefAdapter.sendSystemMessage
 
   // Members declared in akka.actor.typed.ActorRef
   override def tell(msg: T): Unit = {
-    if (msg == null) throw new InvalidMessageException("[null] is not an allowed message")
+    if (msg == null) throw InvalidMessageException("[null] is not an allowed message")
     untyped.guardian ! msg
   }
+
   override def isLocal: Boolean = true
   override def sendSystem(signal: internal.SystemMessage): Unit = sendSystemMessage(untyped.guardian, signal)
+
   final override val path: a.ActorPath = a.RootActorPath(a.Address("akka", untyped.name)) / "user"
 
   override def toString: String = untyped.toString
@@ -87,6 +91,7 @@ private[akka] object ActorSystemAdapter {
   class AdapterExtension(system: a.ExtendedActorSystem) extends a.Extension {
     val adapter = new ActorSystemAdapter(system.asInstanceOf[a.ActorSystemImpl])
   }
+
   object AdapterExtension extends a.ExtensionId[AdapterExtension] with a.ExtensionIdProvider {
     override def get(system: a.ActorSystem): AdapterExtension = super.get(system)
     override def lookup = AdapterExtension

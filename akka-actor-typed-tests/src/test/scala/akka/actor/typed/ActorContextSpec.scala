@@ -285,9 +285,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
 
     implicit def system: ActorSystem[TypedSpec.Command]
 
-    private def mySuite: String =
-      if (system eq nativeSystem) suite + "Native"
-      else suite + "Adapted"
+    private def mySuite: String = suite + "Adapted"
 
     def setup(name: String, wrapper: Option[Behavior[Command] ⇒ Behavior[Command]] = None, ignorePostStop: Boolean = true)(
       proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[TypedSpec.Status] =
@@ -635,7 +633,6 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
     override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
       subject(ctx.self, ignorePostStop)
   }
-  object `An ActorContext (native)` extends Normal with NativeSystem
   object `An ActorContext (adapted)` extends Normal with AdaptedSystem
 
   trait Widened extends Tests {
@@ -644,7 +641,6 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
     override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
       subject(ctx.self, ignorePostStop).widen { case x ⇒ x }
   }
-  object `An ActorContext with widened Behavior (native)` extends Widened with NativeSystem
   object `An ActorContext with widened Behavior (adapted)` extends Widened with AdaptedSystem
 
   trait Deferred extends Tests {
@@ -652,7 +648,6 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
     override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
       Actor.deferred(_ ⇒ subject(ctx.self, ignorePostStop))
   }
-  object `An ActorContext with deferred Behavior (native)` extends Deferred with NativeSystem
   object `An ActorContext with deferred Behavior (adapted)` extends Deferred with AdaptedSystem
 
   trait NestedDeferred extends Tests {
@@ -660,7 +655,6 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
     override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
       Actor.deferred(_ ⇒ Actor.deferred(_ ⇒ subject(ctx.self, ignorePostStop)))
   }
-  object `An ActorContext with nested deferred Behavior (native)` extends NestedDeferred with NativeSystem
   object `An ActorContext with nested deferred Behavior (adapted)` extends NestedDeferred with AdaptedSystem
 
   trait Tap extends Tests {
@@ -668,7 +662,5 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
     override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
       Actor.tap((_, _) ⇒ (), (_, _) ⇒ (), subject(ctx.self, ignorePostStop))
   }
-  object `An ActorContext with Tap (old-native)` extends Tap with NativeSystem
   object `An ActorContext with Tap (old-adapted)` extends Tap with AdaptedSystem
-
 }

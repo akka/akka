@@ -22,8 +22,8 @@ object Props {
 
 /**
  * Data structure for describing an actor’s props details like which
- * executor to run it on. For each type of setting (e.g. [[DispatcherSelector]]
- * or [[MailboxCapacity]]) the FIRST occurrence is used when creating the
+ * executor to run it on. For each type of setting (e.g. [[DispatcherSelector]])
+ * the FIRST occurrence is used when creating the
  * actor; this means that adding configuration using the "with" methods
  * overrides what was configured previously.
  *
@@ -77,11 +77,6 @@ abstract class Props private[akka] () extends Product with Serializable {
    * Prepend a selection of the given execution context to this Props.
    */
   def withDispatcherFromExecutionContext(ec: ExecutionContext): Props = DispatcherFromExecutionContext(ec, this)
-
-  /**
-   * Prepend the given mailbox capacity configuration to this Props.
-   */
-  def withMailboxCapacity(capacity: Int): Props = MailboxCapacity(capacity, this)
 
   /**
    * Find the first occurrence of a configuration node of the given type, falling
@@ -138,19 +133,6 @@ abstract class Props private[akka] () extends Product with Serializable {
       }
     link(select(this, Nil), EmptyProps)
   }
-}
-
-/**
- * Configure the maximum mailbox capacity for the actor. If more messages are
- * enqueued because the actor does not process them quickly enough then further
- * messages will be dropped.
- *
- * The default mailbox capacity that is used when this option is not given is
- * taken from the `akka.typed.mailbox-capacity` configuration setting.
- */
-@InternalApi
-private[akka] final case class MailboxCapacity(capacity: Int, next: Props = Props.empty) extends Props {
-  private[akka] override def withNext(next: Props): Props = copy(next = next)
 }
 
 /**

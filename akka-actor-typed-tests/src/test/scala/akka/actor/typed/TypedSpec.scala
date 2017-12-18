@@ -48,6 +48,7 @@ class TypedSpecSetup extends RefSpec with Matchers with BeforeAndAfterAll with S
  * Helper class for writing tests against both ActorSystemImpl and ActorSystemAdapter.
  */
 abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
+
   import TypedSpec._
   import AskPattern._
 
@@ -58,16 +59,8 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
   // extension point
   def setTimeout: Timeout = Timeout(1.minute)
 
-  private var nativeSystemUsed = false
-  lazy val nativeSystem: ActorSystem[TypedSpec.Command] = {
-    val sys = ActorSystem(guardian(), AkkaSpec.getCallerName(classOf[TypedSpec]), config = Some(config withFallback AkkaSpec.testConf))
-    nativeSystemUsed = true
-    sys
-  }
-  private var adaptedSystemUsed = false
   lazy val system: ActorSystem[TypedSpec.Command] = {
-    val sys = ActorSystem.adapter(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
-    adaptedSystemUsed = true
+    val sys = ActorSystem(guardian(), AkkaSpec.getCallerName(classOf[TypedSpec]), config = Some(config withFallback AkkaSpec.testConf))
     sys
   }
 
@@ -85,33 +78,27 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
     }
   }
 
-  trait NativeSystem {
-    def system: ActorSystem[TypedSpec.Command] = nativeSystem
-  }
-
   trait AdaptedSystem {
     def system: ActorSystem[TypedSpec.Command] = TypedSpec.this.system
   }
 
   implicit val timeout = setTimeout
-  implicit def scheduler = nativeSystem.scheduler
+  implicit def scheduler = system.scheduler
+
+  lazy val blackhole = await(system ? Create(immutable[Any] { case _ ⇒ same }, "blackhole"))
 
   override def afterAll(): Unit = {
-    if (nativeSystemUsed)
-      Await.result(nativeSystem.terminate, timeout.duration)
-    if (adaptedSystemUsed)
-      Await.result(system.terminate, timeout.duration)
+    Await.result(system.terminate, timeout.duration)
   }
 
   // TODO remove after basing on ScalaTest 3 with async support
   import akka.testkit._
-  def await[T](f: Future[T]): T = Await.result(f, timeout.duration * 1.1)
 
-  lazy val blackhole = await(nativeSystem ? Create(immutable[Any] { case _ ⇒ same }, "blackhole"))
+  def await[T](f: Future[T]): T = Await.result(f, timeout.duration * 1.1)
 
   /**
    * Run an Actor-based test. The test procedure is most conveniently
-   * formulated using the [[StepWise$]] behavior type.
+   * formulated using the [[StepWise]] behavior type.
    */
   def runTest[T: ClassTag](name: String)(behavior: Behavior[T])(implicit system: ActorSystem[Command]): Future[Status] =
     system ? (RunTest(name, behavior, _, timeout.duration))
@@ -176,6 +163,7 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
 }
 
 object TypedSpec {
+
   import akka.{ typed ⇒ t }
 
   sealed abstract class Start
@@ -246,7 +234,6 @@ class TypedSpecSpec extends TypedSpec {
       }
     }
 
-    object `when using the native implementation` extends CommonTests with NativeSystem
     object `when using the adapted implementation` extends CommonTests with AdaptedSystem
   }
 }

@@ -105,46 +105,10 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
         }
       }
     }
-
-  }
-
-  object `An ActorSystemImpl` extends CommonTests {
-    def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name)
-    def suite = "native"
-
-    // this is essential to complete ActorCellSpec, see there
-    def `must correctly treat Watch dead letters`(): Unit =
-      withSystem("deadletters", Actor.empty[String]) { sys ⇒
-        val client = new DebugRef[Int](sys.path / "debug", true)
-        sys.deadLetters.sorry.sendSystem(Watch(sys, client))
-        client.receiveAll() should ===(Left(DeathWatchNotification(sys, null)) :: Nil)
-      }
-
-    def `must start system actors and mangle their names`(): Unit = {
-      withSystem("systemActorOf", Actor.empty[String]) { sys ⇒
-        import akka.actor.typed.scaladsl.AskPattern._
-        implicit val timeout = Timeout(1.second)
-        implicit val sched = sys.scheduler
-
-        case class Doner(ref: ActorRef[Done])
-
-        val ref1, ref2 = sys.systemActorOf(immutable[Doner] {
-          case (_, doner) ⇒
-            doner.ref ! Done
-            same
-        }, "empty").futureValue
-        (ref1 ? Doner).futureValue should ===(Done)
-        (ref2 ? Doner).futureValue should ===(Done)
-        val RE = "(\\d+)-empty".r
-        val RE(num1) = ref1.path.name.toString
-        val RE(num2) = ref2.path.name.toString
-        num2.toInt should be > num1.toInt
-      }
-    }
   }
 
   object `An ActorSystemAdapter` extends CommonTests {
-    def system[T](behavior: Behavior[T], name: String) = ActorSystem.adapter(name, behavior)
+    def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name)
     def suite = "adapter"
   }
 }

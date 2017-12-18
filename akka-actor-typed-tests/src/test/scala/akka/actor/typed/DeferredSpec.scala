@@ -158,10 +158,7 @@ class DeferredSpec extends TypedSpec {
 
   }
 
-  object `A DeferredBehavior (stubbed, native)` extends StubbedTests with NativeSystem
   object `A DeferredBehavior (stubbed, adapted)` extends StubbedTests with AdaptedSystem
-
-  object `A DeferredBehavior (real, native)` extends RealTests with NativeSystem
   object `A DeferredBehavior (real, adapted)` extends RealTests with AdaptedSystem
 
 }
