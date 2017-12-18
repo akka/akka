@@ -1,12 +1,16 @@
 # head
 
+Matches requests with HTTP method `HEAD`.
+
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [MethodDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #head }
 
-## Description
+@@@
 
-Matches requests with HTTP method `HEAD`.
+## Description
 
 This directive filters the incoming request by its HTTP method. Only requests with
 method `HEAD` are passed on to the inner route. All others are rejected with a

@@ -1,12 +1,16 @@
 # post
 
+Matches requests with HTTP method `POST`.
+
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [MethodDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #post }
 
-## Description
+@@@
 
-Matches requests with HTTP method `POST`.
+## Description
 
 This directive filters the incoming request by its HTTP method. Only requests with
 method `POST` are passed on to the inner route. All others are rejected with a

@@ -1,12 +1,16 @@
 # parameter
 
+Extracts a *query* parameter value from the request.
+
+@@@ div { .group-scala }
+
 ## Signature
 
 @@signature [ParameterDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala) { #parameter }
 
-## Description
+@@@
 
-Extracts a *query* parameter value from the request.
+## Description
 
 See @ref[parameters](parameters.md) for a detailed description of this directive.
 

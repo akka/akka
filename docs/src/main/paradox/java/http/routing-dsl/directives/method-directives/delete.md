@@ -2,6 +2,14 @@
 
 Matches requests with HTTP method `DELETE`.
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [MethodDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #delete }
+
+@@@
+
 ## Description
 
 This directive filters an incoming request by its HTTP method. Only requests with

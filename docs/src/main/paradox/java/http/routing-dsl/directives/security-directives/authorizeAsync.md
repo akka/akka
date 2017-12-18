@@ -2,6 +2,14 @@
 
 Applies the given authorization check to the request.
 
+@@@ div { .group-scala }
+
+## Signature
+
+@@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authorizeAsync }
+
+@@@
+
 ## Description
 
 The user-defined authorization check can either be supplied as a `-> CompletionStage<Boolean>` value which is calculated
