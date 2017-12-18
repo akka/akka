@@ -10,7 +10,7 @@
 
 ## Description
 
-Transforms the @unidoc[RoutingSettings] with a `RoutingSettings ⇒ RoutingSettings` function.
+Transforms the @unidoc[RoutingSettings] with a @scala[`RoutingSettings ⇒ RoutingSettings` function]@java[`Function<RoutingSettings, RoutingSettings>`].
 
 See also @ref[withSettings](withSettings.md) or @ref[extractSettings](extractSettings.md).
 
