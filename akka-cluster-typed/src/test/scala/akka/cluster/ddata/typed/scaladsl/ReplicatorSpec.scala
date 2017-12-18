@@ -4,7 +4,7 @@
 package akka.cluster.ddata.typed.scaladsl
 
 import akka.actor.Scheduler
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, TypedSpec }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, StartSupport, TypedSpec }
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
@@ -22,7 +22,8 @@ import scala.concurrent.duration._
 
 object ReplicatorSpec {
 
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory.parseString(
+    """
     akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -113,16 +114,17 @@ object ReplicatorSpec {
 
 }
 
-class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) with Eventually {
+class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) with Eventually with StartSupport {
+
   import ReplicatorSpec._
 
-  trait RealTests extends StartSupport {
-    implicit def system: ActorSystem[TypedSpec.Command]
-    implicit val testSettings = TestKitSettings(system)
-    val settings = ReplicatorSettings(system)
-    implicit val cluster = Cluster(system.toUntyped)
+  implicit val testSettings = TestKitSettings(system)
+  val settings = ReplicatorSettings(system)
+  implicit val cluster = Cluster(system.toUntyped)
 
-    def `have API for Update and Get`(): Unit = {
+  "Replicator" must {
+
+    "have API for Update and Get" in {
       val replicator = start(Replicator.behavior(settings))
       val c = start(client(replicator))
 
@@ -132,7 +134,7 @@ class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) with Eventually {
       probe.expectMsg(1)
     }
 
-    def `have API for Subscribe`(): Unit = {
+    "have API for Subscribe" in {
       val replicator = start(Replicator.behavior(settings))
       val c = start(client(replicator))
 
@@ -150,7 +152,7 @@ class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) with Eventually {
       }
     }
 
-    def `have an extension`(): Unit = {
+    "have an extension" in {
       val replicator = DistributedData(system).replicator
       val c = start(client(replicator))
 
@@ -159,8 +161,6 @@ class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) with Eventually {
       c ! GetValue(probe.ref)
       probe.expectMsg(1)
     }
-
   }
-
-  object `A ReplicatorBehavior (real, adapted)` extends RealTests with AdaptedSystem
 }
+

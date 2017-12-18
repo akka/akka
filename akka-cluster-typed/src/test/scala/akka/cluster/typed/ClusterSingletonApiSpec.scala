@@ -101,9 +101,9 @@ class ClusterSingletonApiSpec extends TypedSpec(ClusterSingletonApiSpec.config) 
   val adaptedSystem2 = system2.toTyped
   val clusterNode2 = Cluster(adaptedSystem2)
 
-  object `A typed cluster singleton` {
+  "A typed cluster singleton" must {
 
-    def `01 must be accessible from two nodes in a cluster`() = {
+    "be accessible from two nodes in a cluster" in {
       val node1UpProbe = TestProbe[SelfUp]()(system, implicitly[TestKitSettings])
       clusterNode1.subscriptions ! Subscribe(node1UpProbe.ref, classOf[SelfUp])
 

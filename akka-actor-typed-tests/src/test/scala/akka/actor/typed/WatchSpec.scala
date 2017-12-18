@@ -7,15 +7,12 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import akka.actor.typed.scaladsl.Actor._
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.testkit._
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class WatchSpec extends TypedSpec {
 
-  trait Tests {
-    implicit def system: ActorSystem[TypedSpec.Command]
+  "Actor monitoring" must {
 
-    def `get notified of actor termination`(): Unit = {
+    "get notified of actor termination" in {
       case object Stop
       case class StartWatching(watchee: ActorRef[Stop.type])
 
@@ -37,7 +34,7 @@ class WatchSpec extends TypedSpec {
       Await.result(receivedTerminationSignal.future, 3.seconds /*.dilated*/ )
     }
 
-    def `get notified of actor termination with a custom message`(): Unit = {
+    "get notified of actor termination with a custom message" in {
       case object Stop
 
       sealed trait Message
@@ -65,6 +62,4 @@ class WatchSpec extends TypedSpec {
       Await.result(receivedTerminationSignal.future, 3.seconds /*.dilated*/ )
     }
   }
-
-  object `Actor monitoring (adapted)` extends Tests with AdaptedSystem
 }

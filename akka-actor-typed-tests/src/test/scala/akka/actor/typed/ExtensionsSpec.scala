@@ -45,9 +45,8 @@ object InstanceCountingExtension extends ExtensionId[DummyExtension1] {
 
 class ExtensionsSpec extends TypedSpecSetup {
 
-  object `The extensions subsystem` {
-
-    def `01 should return the same instance for the same id`(): Unit =
+  "The extensions subsystem" must {
+    "return the same instance for the same id" in
       withEmptyActorSystem("ExtensionsSpec01") { system ⇒
         val instance1 = system.registerExtension(DummyExtension1)
         val instance2 = system.registerExtension(DummyExtension1)
@@ -61,7 +60,7 @@ class ExtensionsSpec extends TypedSpecSetup {
         instance4 should be theSameInstanceAs instance3
       }
 
-    def `02 should return the same instance for the same id concurrently`(): Unit =
+    "return the same instance for the same id concurrently" in
       withEmptyActorSystem("ExtensionsSpec02") { system ⇒
         // not exactly water tight but better than nothing
         import system.executionContext
@@ -79,7 +78,7 @@ class ExtensionsSpec extends TypedSpecSetup {
         }
       }
 
-    def `03 should load extensions from the configuration`(): Unit =
+    "load extensions from the configuration" in
       withEmptyActorSystem("ExtensionsSpec03", Some(ConfigFactory.parseString(
         """
           akka.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
@@ -92,7 +91,7 @@ class ExtensionsSpec extends TypedSpecSetup {
         system.extension(SlowExtension) shouldBe a[SlowExtension]
       }
 
-    def `04 handle extensions that fail to initialize`(): Unit = {
+    "handle extensions that fail to initialize" in {
       def create(): Unit = {
         ActorSystem[Any](Behavior.EmptyBehavior, "ExtensionsSpec04", config = Some(ConfigFactory.parseString(
           """
@@ -109,7 +108,7 @@ class ExtensionsSpec extends TypedSpecSetup {
       }
     }
 
-    def `05 support multiple instances of the same type of extension (with different ids)`(): Unit =
+    "support multiple instances of the same type of extension (with different ids)" in
       withEmptyActorSystem("ExtensionsSpec06") { system ⇒
         val id1 = new MultiExtensionId(1)
         val id2 = new MultiExtensionId(2)
@@ -119,7 +118,7 @@ class ExtensionsSpec extends TypedSpecSetup {
         system.registerExtension(id1).n should ===(1)
       }
 
-    def `06 allow for auto-loading of library-extensions`(): Unit =
+    "allow for auto-loading of library-extensions" in
       withEmptyActorSystem("ExtensionsSpec06") { system ⇒
         val listedExtensions = system.settings.config.getStringList("akka.typed.library-extensions")
         listedExtensions.size should be > 0
@@ -127,23 +126,23 @@ class ExtensionsSpec extends TypedSpecSetup {
         InstanceCountingExtension.createCount.get() should be > 0
       }
 
-    def `07 fail the system if a library-extension cannot be loaded`(): Unit =
+    "fail the system if a library-extension cannot be loaded" in
       intercept[RuntimeException] {
         withEmptyActorSystem(
           "ExtensionsSpec07",
-          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.actor.typed.FailingToLoadExtension$" """))
+          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.actor.typed.FailingToLoadExtension$""""))
         ) { _ ⇒ () }
       }
 
-    def `08 fail the system if a library-extension cannot be loaded`(): Unit =
+    "fail the system if a library-extension is missing" in
       intercept[RuntimeException] {
         withEmptyActorSystem(
           "ExtensionsSpec08",
-          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.actor.typed.MissingExtension" """))
+          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.actor.typed.MissingExtension""""))
         ) { _ ⇒ () }
       }
 
-    def `09 load an extension implemented in Java`(): Unit =
+    "load an extension implemented in Java" in
       withEmptyActorSystem("ExtensionsSpec09") { system ⇒
         // no way to make apply work cleanly with extensions implemented in Java
         val instance1 = ExtensionsTest.MyExtension.get(system)
@@ -152,7 +151,7 @@ class ExtensionsSpec extends TypedSpecSetup {
         instance1 should be theSameInstanceAs instance2
       }
 
-    def `10 not create an extension multiple times when using the ActorSystemAdapter`(): Unit = {
+    "not create an extension multiple times when using the ActorSystemAdapter" in {
       import akka.actor.typed.scaladsl.adapter._
       val untypedSystem = akka.actor.ActorSystem()
       try {
@@ -168,11 +167,10 @@ class ExtensionsSpec extends TypedSpecSetup {
         untypedSystem.terminate().futureValue
       }
     }
+  }
 
-    def withEmptyActorSystem[T](name: String, config: Option[Config] = None)(f: ActorSystem[_] ⇒ T): T = {
-      val system = ActorSystem[Any](Behavior.EmptyBehavior, name, config = config)
-      try f(system) finally system.terminate().futureValue
-    }
-
+  def withEmptyActorSystem[T](name: String, config: Option[Config] = None)(f: ActorSystem[_] ⇒ T): T = {
+    val system = ActorSystem[Any](Behavior.EmptyBehavior, name, config = config)
+    try f(system) finally system.terminate().futureValue
   }
 }

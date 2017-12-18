@@ -4,7 +4,6 @@
 package docs.akka.typed
 
 //#imports
-import akka.NotUsed
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.ActorContext
@@ -67,50 +66,52 @@ object MutableIntroSpec {
 }
 
 class MutableIntroSpec extends TypedSpec {
+
   import MutableIntroSpec._
 
-  def `must chat`(): Unit = {
-    //#chatroom-gabbler
-    import ChatRoom._
+  "A chat room" must {
+    "chat" in {
+      //#chatroom-gabbler
+      import ChatRoom._
 
-    val gabbler =
-      Actor.immutable[SessionEvent] { (_, msg) ⇒
-        msg match {
-          case SessionDenied(reason) ⇒
-            println(s"cannot start chat room session: $reason")
-            Actor.stopped
-          case SessionGranted(handle) ⇒
-            handle ! PostMessage("Hello World!")
-            Actor.same
-          case MessagePosted(screenName, message) ⇒
-            println(s"message has been posted by '$screenName': $message")
-            Actor.stopped
+      val gabbler =
+        Actor.immutable[SessionEvent] { (_, msg) ⇒
+          msg match {
+            case SessionDenied(reason) ⇒
+              println(s"cannot start chat room session: $reason")
+              Actor.stopped
+            case SessionGranted(handle) ⇒
+              handle ! PostMessage("Hello World!")
+              Actor.same
+            case MessagePosted(screenName, message) ⇒
+              println(s"message has been posted by '$screenName': $message")
+              Actor.stopped
+          }
         }
-      }
-    //#chatroom-gabbler
+      //#chatroom-gabbler
 
-    //#chatroom-main
-    val main: Behavior[String] =
-      Actor.deferred { ctx ⇒
-        val chatRoom = ctx.spawn(ChatRoom.behavior(), "chatroom")
-        val gabblerRef = ctx.spawn(gabbler, "gabbler")
-        ctx.watch(gabblerRef)
+      //#chatroom-main
+      val main: Behavior[String] =
+        Actor.deferred { ctx ⇒
+          val chatRoom = ctx.spawn(ChatRoom.behavior(), "chatroom")
+          val gabblerRef = ctx.spawn(gabbler, "gabbler")
+          ctx.watch(gabblerRef)
 
-        Actor.immutablePartial[String] {
-          case (_, "go") ⇒
-            chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
-            Actor.same
-        } onSignal {
-          case (_, Terminated(ref)) ⇒
-            println("Stopping guardian")
-            Actor.stopped
+          Actor.immutablePartial[String] {
+            case (_, "go") ⇒
+              chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
+              Actor.same
+          } onSignal {
+            case (_, Terminated(ref)) ⇒
+              println("Stopping guardian")
+              Actor.stopped
+          }
         }
-      }
 
-    val system = ActorSystem(main, "ChatRoomDemo")
-    system ! "go"
-    Await.result(system.whenTerminated, 1.second)
-    //#chatroom-main
+      val system = ActorSystem(main, "ChatRoomDemo")
+      system ! "go"
+      Await.result(system.whenTerminated, 1.second)
+      //#chatroom-main
+    }
   }
-
 }

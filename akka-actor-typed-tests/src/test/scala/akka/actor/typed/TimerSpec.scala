@@ -15,10 +15,10 @@ import akka.actor.typed.scaladsl.TimerScheduler
 import akka.typed.testkit.TestKitSettings
 import akka.typed.testkit.scaladsl._
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TimerSpec extends TypedSpec("""
+class TimerSpec extends TypedSpec(
+  """
   #akka.loglevel = DEBUG
-  """) {
+  """) with StartSupport {
 
   sealed trait Command
   case class Tick(n: Int) extends Command
@@ -36,52 +36,51 @@ class TimerSpec extends TypedSpec("""
 
   class Exc extends RuntimeException("simulated exc") with NoStackTrace
 
-  trait RealTests extends StartSupport {
-    implicit def system: ActorSystem[TypedSpec.Command]
-    implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings = TestKitSettings(system)
 
-    val interval = 1.second
-    val dilatedInterval = interval.dilated
+  val interval = 1.second
+  val dilatedInterval = interval.dilated
 
-    def target(monitor: ActorRef[Event], timer: TimerScheduler[Command], bumpCount: Int): Behavior[Command] = {
-      def bump(): Behavior[Command] = {
-        val nextCount = bumpCount + 1
-        timer.startPeriodicTimer("T", Tick(nextCount), interval)
-        target(monitor, timer, nextCount)
-      }
-
-      Actor.immutable[Command] { (ctx, cmd) ⇒
-        cmd match {
-          case Tick(n) ⇒
-            monitor ! Tock(n)
-            Actor.same
-          case Bump ⇒
-            bump()
-          case SlowThenBump(latch) ⇒
-            latch.await(10, TimeUnit.SECONDS)
-            bump()
-          case End ⇒
-            Actor.stopped
-          case Cancel ⇒
-            timer.cancel("T")
-            Actor.same
-          case Throw(e) ⇒
-            throw e
-          case SlowThenThrow(latch, e) ⇒
-            latch.await(10, TimeUnit.SECONDS)
-            throw e
-        }
-      } onSignal {
-        case (ctx, PreRestart) ⇒
-          monitor ! GotPreRestart(timer.isTimerActive("T"))
-          Actor.same
-        case (ctx, PostStop) ⇒
-          monitor ! GotPostStop(timer.isTimerActive("T"))
-          Actor.same
-      }
+  def target(monitor: ActorRef[Event], timer: TimerScheduler[Command], bumpCount: Int): Behavior[Command] = {
+    def bump(): Behavior[Command] = {
+      val nextCount = bumpCount + 1
+      timer.startPeriodicTimer("T", Tick(nextCount), interval)
+      target(monitor, timer, nextCount)
     }
 
-    def `01 must schedule non-repeated ticks`(): Unit = {
+    Actor.immutable[Command] { (ctx, cmd) ⇒
+      cmd match {
+        case Tick(n) ⇒
+          monitor ! Tock(n)
+          Actor.same
+        case Bump ⇒
+          bump()
+        case SlowThenBump(latch) ⇒
+          latch.await(10, TimeUnit.SECONDS)
+          bump()
+        case End ⇒
+          Actor.stopped
+        case Cancel ⇒
+          timer.cancel("T")
+          Actor.same
+        case Throw(e) ⇒
+          throw e
+        case SlowThenThrow(latch, e) ⇒
+          latch.await(10, TimeUnit.SECONDS)
+          throw e
+      }
+    } onSignal {
+      case (ctx, PreRestart) ⇒
+        monitor ! GotPreRestart(timer.isTimerActive("T"))
+        Actor.same
+      case (ctx, PostStop) ⇒
+        monitor ! GotPostStop(timer.isTimerActive("T"))
+        Actor.same
+    }
+  }
+
+  "A timer" must {
+    "schedule non-repeated ticks" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.withTimers[Command] { timer ⇒
         timer.startSingleTimer("T", Tick(1), 10.millis)
@@ -96,7 +95,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectMsg(GotPostStop(false))
     }
 
-    def `02 must schedule repeated ticks`(): Unit = {
+    "schedule repeated ticks" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -114,7 +113,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectMsg(GotPostStop(false))
     }
 
-    def `03 must replace timer`(): Unit = {
+    "replace timer" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -134,7 +133,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectMsg(GotPostStop(false))
     }
 
-    def `04 must cancel timer`(): Unit = {
+    "cancel timer" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -150,7 +149,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectMsg(GotPostStop(false))
     }
 
-    def `05 must discard timers from old incarnation after restart, alt 1`(): Unit = {
+    "discard timers from old incarnation after restart, alt 1" in {
       val probe = TestProbe[Event]("evt")
       val startCounter = new AtomicInteger(0)
       val behv = Actor.supervise(Actor.withTimers[Command] { timer ⇒
@@ -174,7 +173,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectMsg(GotPostStop(false))
     }
 
-    def `06 must discard timers from old incarnation after restart, alt 2`(): Unit = {
+    "discard timers from old incarnation after restart, alt 2" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.supervise(Actor.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -200,7 +199,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectMsg(GotPostStop(false))
     }
 
-    def `07 must cancel timers when stopped from exception`(): Unit = {
+    "cancel timers when stopped from exception" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -211,7 +210,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectMsg(GotPostStop(false))
     }
 
-    def `08 must cancel timers when stopped voluntarily`(): Unit = {
+    "cancel timers when stopped voluntarily" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -222,6 +221,4 @@ class TimerSpec extends TypedSpec("""
       probe.expectMsg(GotPostStop(false))
     }
   }
-
-  object `A Restarter (real, adapted)` extends RealTests with AdaptedSystem
 }

@@ -6,24 +6,15 @@ package scaladsl
 
 import akka.typed.testkit.{ EffectfulActorContext, TestKitSettings }
 import akka.typed.testkit.scaladsl.TestProbe
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import scala.concurrent.duration.DurationInt
 
-@RunWith(classOf[JUnitRunner])
-final class ImmutablePartialSpec extends TypedSpec {
+class ImmutablePartialSpec extends TypedSpec with StartSupport {
 
-  final object `An Actor.immutablePartial behavior (adapted)`
-    extends Tests
-    with AdaptedSystem
+  private implicit val testSettings = TestKitSettings(system)
 
-  trait Tests extends StartSupport {
+  "An immutable partial" must {
 
-    private implicit val testSettings = TestKitSettings(system)
-
-    override implicit def system: ActorSystem[TypedSpec.Command]
-
-    def `must correctly install the message handler`(): Unit = {
+    "correctly install the message handler" in {
       val probe = TestProbe[Command]("probe")
       val behavior =
         Actor.immutablePartial[Command] {

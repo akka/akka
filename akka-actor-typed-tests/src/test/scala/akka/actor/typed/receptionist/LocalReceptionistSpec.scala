@@ -15,7 +15,7 @@ import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
 
-class LocalReceptionistSpec extends TypedSpec with Eventually {
+class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport {
 
   trait ServiceA
   val ServiceKeyA = Receptionist.ServiceKey[ServiceA]("service-a")
@@ -35,15 +35,15 @@ class LocalReceptionistSpec extends TypedSpec with Eventually {
 
   import akka.actor.typed.internal.receptionist.ReceptionistImpl.{ localOnlyBehavior ⇒ behavior }
 
-  trait CommonTests extends StartSupport {
-    implicit def system: ActorSystem[TypedSpec.Command]
-    implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings = TestKitSettings(system)
 
-    abstract class TestSetup {
-      val receptionist = start(behavior)
-    }
+  abstract class TestSetup {
+    val receptionist = start(behavior)
+  }
 
-    def `must register a service`(): Unit = {
+  "A local receptionist" must {
+
+    "must register a service" in {
       val ctx = new EffectfulActorContext("register", behavior, 1000, system)
       val a = Inbox[ServiceA]("a")
       val r = Inbox[Registered[_]]("r")
@@ -57,7 +57,7 @@ class LocalReceptionistSpec extends TypedSpec with Eventually {
       assertEmpty(a, r, q)
     }
 
-    def `must register two services`(): Unit = {
+    "must register two services" in {
       val ctx = new EffectfulActorContext("registertwo", behavior, 1000, system)
       val a = Inbox[ServiceA]("a")
       val r = Inbox[Registered[_]]("r")
@@ -74,7 +74,7 @@ class LocalReceptionistSpec extends TypedSpec with Eventually {
       assertEmpty(a, b, r, q)
     }
 
-    def `must register two services with the same key`(): Unit = {
+    "must register two services with the same key" in {
       val ctx = new EffectfulActorContext("registertwosame", behavior, 1000, system)
       val a1 = Inbox[ServiceA]("a1")
       val r = Inbox[Registered[_]]("r")
@@ -91,97 +91,102 @@ class LocalReceptionistSpec extends TypedSpec with Eventually {
       assertEmpty(a1, a2, r, q)
     }
 
-    def `must unregister services when they terminate`(): Unit = new TestSetup {
-      val regProbe = TestProbe[Any]("regProbe")
+    "must unregister services when they terminate" in {
+      new TestSetup {
+        val regProbe = TestProbe[Any]("regProbe")
 
-      val serviceA = start(stoppableBehavior.narrow[ServiceA])
-      receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
-      regProbe.expectMsg(Registered(ServiceKeyA, serviceA))
+        val serviceA = start(stoppableBehavior.narrow[ServiceA])
+        receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
+        regProbe.expectMsg(Registered(ServiceKeyA, serviceA))
 
-      val serviceB = start(stoppableBehavior.narrow[ServiceB])
-      receptionist ! Register(ServiceKeyB, serviceB, regProbe.ref)
-      regProbe.expectMsg(Registered(ServiceKeyB, serviceB))
+        val serviceB = start(stoppableBehavior.narrow[ServiceB])
+        receptionist ! Register(ServiceKeyB, serviceB, regProbe.ref)
+        regProbe.expectMsg(Registered(ServiceKeyB, serviceB))
 
-      val serviceC = start(stoppableBehavior)
-      receptionist ! Register(ServiceKeyA, serviceC, regProbe.ref)
-      receptionist ! Register(ServiceKeyB, serviceC, regProbe.ref)
-      regProbe.expectMsg(Registered(ServiceKeyA, serviceC))
-      regProbe.expectMsg(Registered(ServiceKeyB, serviceC))
+        val serviceC = start(stoppableBehavior)
+        receptionist ! Register(ServiceKeyA, serviceC, regProbe.ref)
+        receptionist ! Register(ServiceKeyB, serviceC, regProbe.ref)
+        regProbe.expectMsg(Registered(ServiceKeyA, serviceC))
+        regProbe.expectMsg(Registered(ServiceKeyB, serviceC))
 
-      receptionist ! Find(ServiceKeyA, regProbe.ref)
-      regProbe.expectMsg(Listing(ServiceKeyA, Set(serviceA, serviceC)))
-      receptionist ! Find(ServiceKeyB, regProbe.ref)
-      regProbe.expectMsg(Listing(ServiceKeyB, Set(serviceB, serviceC)))
-
-      serviceC ! Stop
-
-      eventually {
         receptionist ! Find(ServiceKeyA, regProbe.ref)
-        regProbe.expectMsg(Listing(ServiceKeyA, Set(serviceA)))
+        regProbe.expectMsg(Listing(ServiceKeyA, Set(serviceA, serviceC)))
         receptionist ! Find(ServiceKeyB, regProbe.ref)
-        regProbe.expectMsg(Listing(ServiceKeyB, Set(serviceB)))
+        regProbe.expectMsg(Listing(ServiceKeyB, Set(serviceB, serviceC)))
+
+        serviceC ! Stop
+
+        eventually {
+          receptionist ! Find(ServiceKeyA, regProbe.ref)
+          regProbe.expectMsg(Listing(ServiceKeyA, Set(serviceA)))
+          receptionist ! Find(ServiceKeyB, regProbe.ref)
+          regProbe.expectMsg(Listing(ServiceKeyB, Set(serviceB)))
+        }
       }
     }
 
-    def `must support subscribing to service changes`(): Unit = new TestSetup {
-      val regProbe = TestProbe[Registered[_]]("regProbe")
+    "must support subscribing to service changes" in {
+      new TestSetup {
+        val regProbe = TestProbe[Registered[_]]("regProbe")
 
-      val aSubscriber = TestProbe[Listing[ServiceA]]("aUser")
-      receptionist ! Subscribe(ServiceKeyA, aSubscriber.ref)
+        val aSubscriber = TestProbe[Listing[ServiceA]]("aUser")
+        receptionist ! Subscribe(ServiceKeyA, aSubscriber.ref)
 
-      aSubscriber.expectMsg(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+        aSubscriber.expectMsg(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
 
-      val serviceA: ActorRef[ServiceA] = start(stoppableBehavior)
-      receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
-      regProbe.expectMsg(Registered(ServiceKeyA, serviceA))
+        val serviceA: ActorRef[ServiceA] = start(stoppableBehavior)
+        receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
+        regProbe.expectMsg(Registered(ServiceKeyA, serviceA))
 
-      aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA)))
+        aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA)))
 
-      val serviceA2: ActorRef[ServiceA] = start(stoppableBehavior)
-      receptionist ! Register(ServiceKeyA, serviceA2, regProbe.ref)
-      regProbe.expectMsg(Registered(ServiceKeyA, serviceA2))
+        val serviceA2: ActorRef[ServiceA] = start(stoppableBehavior)
+        receptionist ! Register(ServiceKeyA, serviceA2, regProbe.ref)
+        regProbe.expectMsg(Registered(ServiceKeyA, serviceA2))
 
-      aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA, serviceA2)))
+        aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA, serviceA2)))
 
-      serviceA ! Stop
-      aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA2)))
-      serviceA2 ! Stop
-      aSubscriber.expectMsg(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+        serviceA ! Stop
+        aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA2)))
+        serviceA2 ! Stop
+        aSubscriber.expectMsg(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+      }
     }
 
-    def `must work with ask`(): Unit = sync(runTest("Receptionist") {
-      StepWise[Registered[ServiceA]] { (ctx, startWith) ⇒
-        val self = ctx.self
-        startWith.withKeepTraces(true) {
-          val r = ctx.spawnAnonymous(behavior)
-          val s = ctx.spawnAnonymous(behaviorA)
-          val f = r ? Register(ServiceKeyA, s)
-          r ! Register(ServiceKeyA, s)(self)
-          (f, s)
-        }.expectMessage(1.second) {
-          case (msg, (f, s)) ⇒
-            msg should be(Registered(ServiceKeyA, s))
-            f.foreach(self ! _)(system.executionContext)
-            s
-        }.expectMessage(1.second) {
-          case (msg, s) ⇒
-            msg should be(Registered(ServiceKeyA, s))
+    "must work with ask" in {
+      sync(runTest("Receptionist") {
+        StepWise[Registered[ServiceA]] { (ctx, startWith) ⇒
+          val self = ctx.self
+          startWith.withKeepTraces(true) {
+            val r = ctx.spawnAnonymous(behavior)
+            val s = ctx.spawnAnonymous(behaviorA)
+            val f = r ? Register(ServiceKeyA, s)
+            r ! Register(ServiceKeyA, s)(self)
+            (f, s)
+          }.expectMessage(1.second) {
+            case (msg, (f, s)) ⇒
+              msg should be(Registered(ServiceKeyA, s))
+              f.foreach(self ! _)(system.executionContext)
+              s
+          }.expectMessage(1.second) {
+            case (msg, s) ⇒
+              msg should be(Registered(ServiceKeyA, s))
+          }
         }
-      }
-    })
+      })
+    }
 
-    def `must be present in the system`(): Unit = sync(runTest("systemReceptionist") {
-      StepWise[Listing[ServiceA]] { (ctx, startWith) ⇒
-        val self = ctx.self
-        startWith.withKeepTraces(true) {
-          system.receptionist ! Find(ServiceKeyA)(self)
-        }.expectMessage(1.second) { (msg, _) ⇒
-          msg.serviceInstances should ===(Set())
+    "must be present in the system" in {
+      sync(runTest("systemReceptionist") {
+        StepWise[Listing[ServiceA]] { (ctx, startWith) ⇒
+          val self = ctx.self
+          startWith.withKeepTraces(true) {
+            system.receptionist ! Find(ServiceKeyA)(self)
+          }.expectMessage(1.second) { (msg, _) ⇒
+            msg.serviceInstances should ===(Set())
+          }
         }
-      }
-    })
-
+      })
+    }
   }
-
-  object `A Receptionist (adapted)` extends CommonTests with AdaptedSystem
 }

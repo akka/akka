@@ -23,9 +23,11 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
   /**
+   * INTERNAL API
+   *
    * Hook for ActorSystem to load extensions on startup
    */
-  final def loadExtensions(): Unit = {
+  @InternalApi private[akka] def loadExtensions(): Unit = {
     /**
      * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
      */

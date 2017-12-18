@@ -65,11 +65,11 @@ class ClusterSingletonPersistenceSpec extends TypedSpec(ClusterSingletonPersiste
   implicit val untypedSystem = system.toUntyped
   private val untypedCluster = akka.cluster.Cluster(untypedSystem)
 
-  object `Typed cluster singleton with persistent actor` {
+  "A typed cluster singleton with persistent actor" must {
 
     untypedCluster.join(untypedCluster.selfAddress)
 
-    def `01 start persistent actor`(): Unit = {
+    "start persistent actor" in {
       val ref = ClusterSingleton(system).spawn(
         behavior = persistentActor,
         singletonName = "singleton",
@@ -86,5 +86,4 @@ class ClusterSingletonPersistenceSpec extends TypedSpec(ClusterSingletonPersiste
       p.expectMsg("a|b|c")
     }
   }
-
 }

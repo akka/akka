@@ -13,7 +13,7 @@ import java.util.Optional;
 import static junit.framework.TestCase.assertSame;
 import static org.junit.Assert.assertTrue;
 
-class ExtensionsTest extends JUnitSuite {
+public class ExtensionsTest extends JUnitSuite {
 
   public static class MyExtImpl implements Extension {
   }
@@ -45,7 +45,7 @@ class ExtensionsTest extends JUnitSuite {
         Behavior.empty(),
         "loadJavaExtensionsFromConfig",
         Optional.empty(),
-        Optional.of(ConfigFactory.parseString("akka.typed.extensions += \"akka.typed.ExtensionsTest$MyExtension\"").resolve()),
+        Optional.of(ConfigFactory.parseString("akka.typed.extensions += \"akka.actor.typed.ExtensionsTest$MyExtension\"").resolve()),
         Optional.empty(),
         Optional.empty()
     );
