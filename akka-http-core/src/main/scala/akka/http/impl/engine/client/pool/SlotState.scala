@@ -13,6 +13,8 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+import scala.util.{ Failure, Success, Try }
 
 /**
  * Internal API
@@ -26,8 +28,7 @@ private[pool] abstract class SlotContext {
   def closeConnection(): Unit
   def isConnectionClosed: Boolean
 
-  def dispatchFailure(req: RequestContext, cause: Throwable): Unit
-  def dispatchResponse(req: RequestContext, res: HttpResponse): Unit
+  def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit
 
   def willCloseAfter(res: HttpResponse): Boolean
 
@@ -57,6 +58,10 @@ private[pool] sealed abstract class SlotState extends Product {
   def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "request entity failed")
 
   def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState = illegalState(ctx, "receive response")
+
+  /** Called when the response out port is ready to receive a further response (successful or failed) */
+  def onResponseDispatchable(ctx: SlotContext): SlotState = illegalState(ctx, "responseDispatched")
+
   def onResponseEntitySubscribed(ctx: SlotContext): SlotState = illegalState(ctx, "responseEntitySubscribed")
 
   /** Will be called either immediately if the response entity is strict or otherwise later */
@@ -100,9 +105,10 @@ private[pool] object SlotState {
     def ongoingRequest: RequestContext
 
     override def onShutdown(ctx: SlotContext): Unit = {
-      ctx.dispatchFailure(
+      // FIXME: would like to dispatch a failure but responseOut might not be ready, what should we do now?
+      /*ctx.dispatchFailure(
         ongoingRequest,
-        new IllegalStateException(s"Slot shut down with ongoing request [${ongoingRequest.request.debugString}]"))
+        new IllegalStateException(s"Slot shut down with ongoing request [${ongoingRequest.request.debugString}]"))*/
       super.onShutdown(ctx)
     }
   }
@@ -143,23 +149,23 @@ private[pool] object SlotState {
       ctx.debug("Connection attempt failed.")
       // FIXME: register failed connection attempt, schedule request for rerun, backoff new connection attempts
       ctx.closeConnection()
-      ctx.dispatchFailure(ongoingRequest, cause)
-      Unconnected
+      // FIXME: register failed connection attempt, backoff new connection attempts
+      WaitingForResponseDispatch(ongoingRequest, Failure(cause))
     }
 
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = {
       ctx.debug("Connection failed.")
       // FIXME: register failed connection attempt, schedule request for rerun, backoff new connection attempts
       ctx.closeConnection()
-      ctx.dispatchFailure(ongoingRequest, cause)
-      Unconnected
+      // FIXME: register failed connection attempt, backoff new connection attempts
+      WaitingForResponseDispatch(ongoingRequest, Failure(cause))
     }
 
     override def onConnectionCompleted(ctx: SlotContext): SlotState = {
       ctx.debug("Connection completed.")
       ctx.closeConnection()
-      ctx.dispatchFailure(ongoingRequest, new IllegalStateException("Connection was completed when waiting for connection establishment"))
-      Unconnected
+      WaitingForResponseDispatch(ongoingRequest, Failure(
+        new IllegalStateException("Connection was completed when waiting for connection establishment") with NoStackTrace))
     }
   }
 
@@ -191,28 +197,32 @@ private[pool] object SlotState {
       Connecting(requestContext)
   }
   final case class WaitingForEndOfRequestEntity(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
-    override def onRequestEntityCompleted(ctx: SlotContext): SlotState = WaitingForResponse(ongoingRequest)
+    override def onRequestEntityCompleted(ctx: SlotContext): SlotState =
+      WaitingForResponse(ongoingRequest)
 
-    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = {
-      ctx.dispatchFailure(ongoingRequest, cause)
-      ctx.closeConnection()
-
-      Unconnected
-    }
-
+    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState =
+      WaitingForResponseDispatch(ongoingRequest, Failure(cause))
   }
   final case class WaitingForResponse(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
-    override def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState = {
-      ctx.dispatchResponse(ongoingRequest, response)
+    override def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState =
+      WaitingForResponseDispatch(ongoingRequest, Success(response))
 
-      WaitingForResponseEntitySubscription(ongoingRequest, response, ctx.settings.responseEntitySubscriptionTimeout)
-    }
+    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState =
+      WaitingForResponseDispatch(ongoingRequest, Failure(cause))
+  }
+  final case class WaitingForResponseDispatch(
+    ongoingRequest: RequestContext,
+    result:         Try[HttpResponse]) extends ConnectedState with BusyState {
+    /** Called when the response out port is ready to receive a further response (successful or failed) */
+    override def onResponseDispatchable(ctx: SlotContext): SlotState = {
+      ctx.dispatchResponseResult(ongoingRequest, result)
 
-    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = {
-      ctx.dispatchFailure(ongoingRequest, cause)
-      ctx.closeConnection()
-
-      Unconnected
+      result match {
+        case Success(res) ⇒ WaitingForResponseEntitySubscription(ongoingRequest, res, ctx.settings.responseEntitySubscriptionTimeout)
+        case Failure(cause) ⇒
+          ctx.closeConnection()
+          Unconnected
+      }
     }
   }
   final case class WaitingForResponseEntitySubscription(
@@ -253,5 +263,4 @@ private[pool] object SlotState {
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = this
     override def onConnectionCompleted(ctx: SlotContext): SlotState = this
   }
-
 }

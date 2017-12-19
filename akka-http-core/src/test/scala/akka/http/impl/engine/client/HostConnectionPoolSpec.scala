@@ -25,6 +25,7 @@ import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit._
 import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
+import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
@@ -47,7 +48,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
      }
      akka.http.client.log-unencrypted-network-bytes = 200
   """
-) {
+) with Eventually {
   implicit val materializer = ActorMaterializer()
   val singleElementBufferMaterializer = materializer // ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))
   val defaultSettings =
@@ -119,6 +120,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
 
         pushRequest(HttpRequest(uri = "/3"))
         conn1.pushResponse(HttpResponse())
+        expectResponse()
         conn1.expectRequestToPath("/3")
       }
       "only buffer a reasonable number of extra requests" in pending
@@ -295,6 +297,20 @@ class HostConnectionPoolSpec extends AkkaSpec(
 
         expectNextConnection()
       }
+      "not buffer an unreasonable number of outgoing responses" in new SetupWithServerProbes(_.withMaxConnections(1).withMinConnections(1)) {
+        val conn1 = expectNextConnection()
+
+        def oneCycle(): Unit = {
+          pushRequest()
+          conn1.expectRequest(within = 100.millis.dilated)
+          conn1.pushResponse()
+        }
+
+        eventually {
+          // should fail eventually because backpressure kicks in and one of the expects / pushes above will timeout
+          a[Throwable] should be thrownBy oneCycle()
+        }
+      }
       "not send requests to known-to-be-closed-soon connections" in pending
       "support retries" in pending
       "strictly enforce number of established connections in longer running case" in pending
@@ -326,7 +342,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
             .via(impl)
             .runWith(Sink.fromSubscriber(responseOut))
 
-        def pushRequest(req: HttpRequest, numRetries: Int = 5): Unit =
+        def pushRequest(req: HttpRequest = HttpRequest(), numRetries: Int = 5): Unit =
           requestIn.sendNext(RequestContext(req, Promise(), numRetries))
 
         def pushChunkedRequest(req: HttpRequest = HttpRequest(), numRetries: Int = 5): TestPublisher.Probe[ByteString] = {
@@ -368,6 +384,9 @@ class HostConnectionPoolSpec extends AkkaSpec(
 
           def expectRequest(): HttpRequest =
             serverRequests.requestNext()
+
+          def expectRequest(within: FiniteDuration): HttpRequest =
+            serverRequests.within(within)(serverRequests.requestNext())
 
           def expectRequestToPath(path: String): Unit =
             expectRequest().uri.path.toString shouldEqual path
