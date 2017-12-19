@@ -203,7 +203,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
   @InternalApi private[akka] def exitIsland(): Unit = {
     val parentIsland = islandStateStack.remove(islandStateStack.size() - 1)
-    val previousSegmentLength = completeSegment()
+    completeSegment()
 
     // We start a new segment
     currentSegmentGlobalOffset = currentGlobalOffset
