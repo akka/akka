@@ -1,7 +1,5 @@
 # parameter
 
-Extracts a *query* parameter value from the request.
-
 @@@ div { .group-scala }
 
 ## Signature
@@ -11,6 +9,8 @@ Extracts a *query* parameter value from the request.
 @@@
 
 ## Description
+
+Extracts a *query* parameter value from the request.
 
 See @ref[parameters](parameters.md) for a detailed description of this directive.
 
