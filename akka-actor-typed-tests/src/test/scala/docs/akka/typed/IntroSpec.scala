@@ -91,11 +91,8 @@ class IntroSpec extends TypedSpec {
 
       for {
         greeting ← future.recover { case ex ⇒ ex.getMessage }
-        done ← {
-          println(s"result: $greeting")
-          system.terminate()
-        }
-      } println("system terminated")
+        _ ← system.terminate()
+      } println(s"Finished, greeting: $greeting")
       //#hello-world
     }
 
