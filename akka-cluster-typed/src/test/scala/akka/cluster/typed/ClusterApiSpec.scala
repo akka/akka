@@ -39,9 +39,9 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
   val clusterNode1 = Cluster(system)
   val untypedSystem1 = system.toUntyped
 
-  object `A typed cluster` {
+  "A typed Cluster" must {
 
-    def `01 must join a cluster and observe events from both sides`() = {
+    "join a cluster and observe events from both sides" in {
 
       val system2 = akka.actor.ActorSystem(system.name, system.settings.config)
       val adaptedSystem2 = system2.toTyped

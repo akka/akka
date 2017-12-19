@@ -3,6 +3,8 @@
  */
 package akka.actor.typed
 
+import akka.annotation.InternalApi
+import akka.event.typed.EventStream
 import akka.{ actor ⇒ a }
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -20,8 +22,6 @@ import scala.util.Success
  * (i.e. this delivery is not reliable).
  */
 trait ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] {
-  this: internal.ActorRefImpl[T] ⇒
-
   /**
    * Send a message to the Actor referenced by this ActorRef using *at-most-once*
    * messaging semantics.
@@ -63,25 +63,14 @@ object ActorRef {
   // FIXME factory methods for below for Java (trait + object)
 
   /**
-   * Create an ActorRef from a Future, buffering up to the given number of
-   * messages in while the Future is not fulfilled.
+   * INTERNAL API
+   *
+   * FIXME, this isn't really used since we removed the native actor system
    */
-  def apply[T](f: Future[ActorRef[T]], bufferSize: Int = 1000): ActorRef[T] =
+  @InternalApi private[akka] def apply[T](f: Future[ActorRef[T]], bufferSize: Int = 1000): ActorRef[T] =
     f.value match {
       // an AdaptedActorSystem will always create refs eagerly, so it will take this path
       case Some(Success(ref)) ⇒ ref
-      // for other ActorSystem implementations, this might work, it currently doesn't work
-      // for the adapted system, because the typed FutureRef cannot be watched from untyped
-      case x                  ⇒ new internal.FutureRef(FuturePath, bufferSize, f)
+      case _                  ⇒ throw new IllegalStateException("Only expecting completed futures until the native actor system is implemented")
     }
-
-  /**
-   * Create an ActorRef by providing a function that is invoked for sending
-   * messages and a termination callback.
-   */
-  def apply[T](send: (T, internal.FunctionRef[T]) ⇒ Unit, terminate: internal.FunctionRef[T] ⇒ Unit): ActorRef[T] =
-    new internal.FunctionRef(FunctionPath, send, terminate)
-
-  private[typed] val FuturePath = a.RootActorPath(a.Address("akka.actor.typed.internal", "future"))
-  private[typed] val FunctionPath = a.RootActorPath(a.Address("akka.actor.typed.internal", "function"))
 }

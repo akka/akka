@@ -15,7 +15,6 @@ import static org.junit.Assert.assertTrue;
 
 public class ExtensionsTest extends JUnitSuite {
 
-
   public static class MyExtImpl implements Extension {
   }
 

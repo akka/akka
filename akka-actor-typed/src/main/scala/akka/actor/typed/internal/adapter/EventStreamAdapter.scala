@@ -7,7 +7,7 @@ package adapter
 
 import akka.{ event ⇒ e }
 import akka.annotation.InternalApi
-import akka.typed.EventStream
+import akka.event.typed.EventStream
 
 /**
  * INTERNAL API
