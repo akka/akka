@@ -801,7 +801,6 @@ import scala.collection.immutable.Map.Map1
             pendingBuilder = OptionVal.None,
             beforeBuilder = EmptyTraversal)
         case OptionVal.None ⇒
-          copy(outPort = OptionVal.None, traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
           copy(
             outPort = OptionVal.None,
             traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
