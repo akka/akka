@@ -142,6 +142,15 @@ private[pool] object SlotState {
     override def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = {
       ctx.debug("Connection attempt failed.")
       // FIXME: register failed connection attempt, schedule request for rerun, backoff new connection attempts
+      ctx.closeConnection()
+      ctx.dispatchFailure(ongoingRequest, cause)
+      Unconnected
+    }
+
+    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = {
+      ctx.debug("Connection failed.")
+      // FIXME: register failed connection attempt, schedule request for rerun, backoff new connection attempts
+      ctx.closeConnection()
       ctx.dispatchFailure(ongoingRequest, cause)
       Unconnected
     }
@@ -155,6 +164,7 @@ private[pool] object SlotState {
     override def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = {
       ctx.debug("Connection attempt failed.")
       // FIXME: register failed connection attempt, schedule request for rerun, backoff new connection attempts
+      ctx.closeConnection()
       Unconnected
     }
 

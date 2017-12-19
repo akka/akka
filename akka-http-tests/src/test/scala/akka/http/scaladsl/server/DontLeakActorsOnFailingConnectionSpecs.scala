@@ -6,6 +6,12 @@ package akka.http.scaladsl.server
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
+import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success, Try }
+
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
@@ -14,18 +20,18 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.testkit.{ TestKit, SocketUtil }
-import com.typesafe.config.ConfigFactory
+
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
-import scala.util.{ Failure, Success, Try }
+abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String) extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
-class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers with BeforeAndAfterAll {
-
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory.parseString(s"""
     akka {
-      # disable logs (very noisy tests - 100 exepected errors)
+      # disable logs (very noisy tests - 100 expected errors)
       loglevel = OFF
       stdout-loglevel = OFF
+
+      http.host-connection-pool.pool-implementation = $poolImplementation
     }""").withFallback(ConfigFactory.load())
   implicit val system = ActorSystem("DontLeakActorsOnFailingConnectionSpecs", config)
   import system.dispatcher
@@ -39,18 +45,21 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
       assertAllStagesStopped {
         val reqsCount = 100
         val clientFlow = Http().superPool[Int]()
-        val (_, port) = SocketUtil.temporaryServerHostnameAndPort()
-        val source = Source(1 to reqsCount).map(i ⇒ HttpRequest(uri = Uri(s"http://127.0.0.1:$port/test/$i")) → i)
+        val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
+        val source = Source(1 to reqsCount)
+          .map(i ⇒ HttpRequest(uri = Uri(s"http://$host:$port/test/$i")) → i)
 
         val countDown = new CountDownLatch(reqsCount)
         val sink = Sink.foreach[(Try[HttpResponse], Int)] {
-          case (resp, id) ⇒ handleResponse(resp, id)
+          case (resp, id) ⇒
+            countDown.countDown()
+            handleResponse(resp, id)
         }
 
-        val resps = source.via(clientFlow).runWith(sink)
-        resps.onComplete({ case _ ⇒ countDown.countDown() })
+        val running = source.via(clientFlow).runWith(sink)
+        countDown.await(10, TimeUnit.SECONDS) should be(true)
+        Await.result(running, 10.seconds)
 
-        countDown.await(10, TimeUnit.SECONDS)
         Thread.sleep(5000)
       }
     }
@@ -69,3 +78,6 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
 
   override def afterAll = TestKit.shutdownActorSystem(system)
 }
+
+class LegacyPoolDontLeakActorsOnFailingConnectionSpecs extends DontLeakActorsOnFailingConnectionSpecs("legacy")
+class NewPoolDontLeakActorsOnFailingConnectionSpecs extends DontLeakActorsOnFailingConnectionSpecs("new")
