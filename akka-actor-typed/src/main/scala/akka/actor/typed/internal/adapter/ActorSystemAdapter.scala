@@ -13,7 +13,7 @@ import akka.util.Timeout
 
 import scala.concurrent.Future
 import akka.annotation.InternalApi
-import akka.typed.EventStream
+import akka.event.typed.EventStream
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).

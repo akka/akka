@@ -4,6 +4,7 @@
 package akka.actor.typed
 
 import akka.annotation.InternalApi
+import akka.event.typed.EventStream
 import akka.{ actor ⇒ a }
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -17,7 +18,7 @@ import scala.util.Success
  * Actor instance. Sending a message to an Actor that has terminated before
  * receiving the message will lead to that message being discarded; such
  * messages are delivered to the [[DeadLetter]] channel of the
- * [[akka.typed.EventStream]] on a best effort basis
+ * [[EventStream]] on a best effort basis
  * (i.e. this delivery is not reliable).
  */
 trait ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] {

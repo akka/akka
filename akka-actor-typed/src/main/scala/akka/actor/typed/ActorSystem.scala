@@ -19,7 +19,7 @@ import java.util.Optional
 
 import akka.actor.BootstrapSetup
 import akka.actor.typed.receptionist.Receptionist
-import akka.typed.EventStream
+import akka.event.typed.EventStream
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using

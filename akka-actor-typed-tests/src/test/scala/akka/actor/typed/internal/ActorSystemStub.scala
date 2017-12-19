@@ -11,7 +11,8 @@ import com.typesafe.config.ConfigFactory
 import java.util.concurrent.ThreadFactory
 
 import akka.event.Logging
-import akka.typed.{ BusLogging, DefaultLoggingFilter, EventStream }
+import akka.event.typed.{ BusLogging, DefaultLoggingFilter, EventStream }
+import akka.event.typed.{ BusLogging, DefaultLoggingFilter }
 import akka.util.Timeout
 
 private[typed] class ActorSystemStub(val name: String)

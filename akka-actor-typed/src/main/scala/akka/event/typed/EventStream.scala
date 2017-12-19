@@ -1,4 +1,4 @@
-package akka.typed
+package akka.event.typed
 
 import akka.actor.typed.ActorRef
 import akka.event.Logging.LogLevel
@@ -51,8 +51,8 @@ trait EventStream {
 }
 
 import akka.actor.typed.{ ActorRef, Behavior, Settings }
+import akka.event.Logging.LogEvent
 import akka.{ event ⇒ e }
-import akka.event.Logging.{ LogEvent, StdOutLogger }
 
 abstract class Logger {
   def initialBehavior: Behavior[Logger.Command]
