@@ -14,7 +14,8 @@ Typed and untyped can interact the following ways:
 * spawn and supervise typed child from untyped parent, and opposite
 * watch typed from untyped, and opposite
 
-For all these examples the `akka.actor` package is aliased to `untyped`
+In the Scala examples the `akka.actor` package is aliased to `untyped`. The Java examples use fully quaified
+class names for the untyped classes.
 
 Scala
 :  @@snip [UntypedWatchingTypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #import-alias }
@@ -27,22 +28,33 @@ it from an untyped actor.
 Scala
 :  @@snip [UntypedWatchingTypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #typed }
 
+Java
+:  @@snip [UntypedWatchingTypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #typed }
+
 The top level untyped actor is created from an untyped actor system:
 
 Scala
 :  @@snip [UntypedWatchingTypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #create-untyped }
 
+Java
+:  @@snip [UntypedWatchingTypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #create-untyped }
 
 Then it can create a typed actor, watch it, and send a message to it:
 
 Scala
 :  @@snip [UntypedWatchingTypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #untyped-watch }
 
+Java
+:  @@snip [UntypedWatchingTypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #untyped-watch }
 
-There is one `import` that is needed to make that work:
+There is one `import` that is needed to make that work for Scala. For Java we import the Adapter class and
+call static methods for conversion.
 
 Scala
 :  @@snip [UntypedWatchingTypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #adapter-import }
+
+Java
+:  @@snip [UntypedWatchingTypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #adapter-import }
 
 
 That adds some implicit extension methods that are added to untyped and typed `ActorSystem` and `ActorContext` in both directions. Note the inline comments in the example above. In the `javadsl` the corresponding adapter methods are static methods in `akka.typed.javadsl.Adapter`.
@@ -57,15 +69,24 @@ untyped actor:
 Scala
 :  @@snip [TypedWatchingUntypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/TypedWatchingUntypedSpec.scala) { #untyped }
 
+Java
+:  @@snip [TypedWatchingUntypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/TypedWatchingUntypedTest.java) { #untyped }
+
 Creating the actor system and the typed actor:
 
 Scala
 :  @@snip [TypedWatchingUntypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/TypedWatchingUntypedSpec.scala) { #create }
 
+Java
+:  @@snip [TypedWatchingUntypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/TypedWatchingUntypedTest.java) { #create }
+
 Then the typed actor creates the untyped actor, watches it and sends and receives a response:
 
 Scala
 :  @@snip [TypedWatchingUntypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/TypedWatchingUntypedSpec.scala) { #typed }
+
+Java
+:  @@snip [TypedWatchingUntypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/TypedWatchingUntypedTest.java) { #typed }
 
 There is one caveat regarding supervision of untyped child from typed parent. If the child throws an exception we would expect it to be restarted, but supervision in Akka Typed defaults to stopping the child in case it fails. The restarting facilities in Akka Typed will not work with untyped children. However, the workaround is simply to add another untyped actor that takes care of the supervision, i.e. restarts in case of failure if that is the desired behavior.
 

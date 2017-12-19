@@ -11,8 +11,7 @@ This module is currently marked as @ref:[may change](common/may-change.md) in th
 
 ## Dependency
 
-Akka Typed APIs for each akka module are in a `akka-$module-typed` e.g. `akka-actor-typed` `akka-persistence-typed`
-For local actors add the following dependency in your project:
+To use typed actors add the following dependency:
 
 sbt
 :   @@@vars
@@ -43,13 +42,9 @@ Maven
 
 ## Introduction
 
-As discussed in @ref:[Actor Systems](general/actor-systems.md) (and following chapters) Actors are about
+As discussed in @ref:[Actor Systems](general/actor-systems.md) Actors are about
 sending messages between independent units of computation, but how does that
 look like? 
-If you have experience with Akka before Typed Actors then the primary differences are:
-
-* Each actor can only receive messages of a certain type (typically a sealed trait with the messages being case classes or case objects)
-* `sender()` has been removed so to implement request/response a sender must be included in the message
 
 In all of the following these imports are assumed:
 
@@ -159,7 +154,7 @@ In the next section we demonstrate this on a more realistic example.
 
 ## A More Complex Example
 
-The next example will demonstrate some important patterns:
+The next example demonstrates some important patterns:
 
 * Using a sealed trait and case class/objects to represent multiple messages an actor can receive
 * Handle incoming messages of different types by using `adapter`s
@@ -198,7 +193,7 @@ Java
 :  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-behavior }
 
 
-The state is managed by changing behavior rather than using any `var`s.
+The state is managed by changing behavior rather than using any variables.
 
  When a new `GetSession` command comes in we add that client to the
 list that is in the returned behavior. Then we also need to create the session’s
@@ -292,17 +287,6 @@ the main Actor terminates there is nothing more to do.
 Therefore after creating the Actor system with the `main` Actor’s
 `Behavior` we just await its termination.
 
-## Types of typed actors
-
-TODO
-
-### Immutable
-
-TODO
-
-### Deferred
-
-TODO
 
 ## Status of this Project and Relation to Akka Actors
 
