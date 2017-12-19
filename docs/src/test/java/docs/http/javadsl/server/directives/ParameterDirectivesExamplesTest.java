@@ -86,7 +86,8 @@ public class ParameterDirectivesExamplesTest extends JUnitRouteTest {
 
     testRoute(route).run(HttpRequest.GET("/?color=blue&count=blub"))
             .assertStatusCode(StatusCodes.BAD_REQUEST)
-            .assertEntity("The query parameter 'count' was malformed:\n'blub' is not a valid 32-bit signed integer value");
+            .assertEntity("The query parameter 'count' was malformed:\n'blub'"
+                          +" is not a valid 32-bit signed integer value");
     //#mapped-value
   }
 
