@@ -7,7 +7,6 @@ package docs.http.javadsl.server;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.PathMatchers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
-
 import org.junit.Test;
 
 public class PathDirectiveExampleTest extends JUnitRouteTest {

@@ -21,7 +21,7 @@
 
 @@@
 
-<a id="overview-path-scala"></a>
+<a id="overview-path"></a>
 ## Overview of path directives
 
 This is a tiny overview for some of the most common path directives:

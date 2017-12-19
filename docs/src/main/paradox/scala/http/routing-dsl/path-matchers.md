@@ -13,28 +13,47 @@ left until, in most cases, it eventually has been consumed completely.
 What exactly gets matched and consumed as well as extracted from the unmatched path in each directive is defined with
 the path matching DSL, which is built around these types:
 
-```scala
+Scala
+:   ```scala
 trait PathMatcher[L: Tuple]
 type PathMatcher0 = PathMatcher[Unit]
 type PathMatcher1[T] = PathMatcher[Tuple1[T]]
+type PathMatcher2[T,U] = PathMatcher[Tuple2[T,U]]
+// .. etc
 ```
 
-The number and types of the values extracted by a `PathMatcher` instance is represented by the `L` type
-parameter which needs to be one of Scala's TupleN types or `Unit` (which is designated by the `Tuple` context bound).
-The convenience alias `PathMatcher0` can be used for all matchers which don't extract anything while `PathMatcher1[T]`
-defines a matcher which only extracts a single value of type `T`.
+Java
+:   ```java
+class PathMatcher0
+class PathMatcher1<T1>
+class PathMatcher2<T1, T2>
+// .. etc
+```
+
+The number and types of the values extracted by a `PathMatcher` instance
+@scala[is represented by the `L` type
+parameter which needs to be one of Scala's TupleN types or `Unit` (which is designated by the `Tuple` context bound).]
+@java[is determined by the class and its type parameters.]
+@scala[The convenience alias `PathMatcher0` can be used for all matchers which don't extract anything while `PathMatcher1[T]`
+defines a matcher which only extracts a single value of type `T`.]
 
 Here is an example of a more complex `PathMatcher` expression:
 
-@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-matcher }
+Scala
+:  @@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-matcher }
 
-This will match paths like `foo/bar/X42/edit` or `foo/bar/X/create`.
+Java
+:  @@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-matcher }
+
+This will match paths like `foo/bar/X42/edit` or @scala[`foo/bar/X/create`]@java[`foo/bar/X37/create`].
 
 @@@ note
 The path matching DSL describes what paths to accept **after** URL decoding. This is why the path-separating
 slashes have special status and cannot simply be specified as part of a string! The string "foo/bar" would match
 the raw URI path "foo%2Fbar", which is most likely not what you want!
 @@@
+
+@@@ div { .group-scala }
 
 ## Basic PathMatchers
 
@@ -145,7 +164,7 @@ Path matcher instances can be transformed with these modifier methods:
 a postfix call. `matcher /` is identical to `matcher ~ Slash` but shorter and easier to read.
 
 ?
-: 
+:
 By postfixing a matcher with `?` you can turn any `PathMatcher` into one that always matches, optionally consumes
 and potentially extracts an `Option` of the underlying matchers extraction. The result type depends on the type
 of the underlying matcher:
@@ -157,7 +176,7 @@ of the underlying matcher:
 |`PathMatcher[L: Tuple]` | `PathMatcher[Option[L]]`|
 
 repeat(separator: PathMatcher0 = PathMatchers.Neutral)
-: 
+:
 By postfixing a matcher with `repeat(separator)` you can turn any `PathMatcher` into one that always matches,
 consumes zero or more times (with the given separator) and potentially extracts a `List` of the underlying matcher's
 extractions. The result type depends on the type of the underlying matcher:
@@ -182,3 +201,5 @@ how to use them.
 ## Examples
 
 @@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-dsl }
+
+@@@
