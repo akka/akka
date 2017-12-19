@@ -47,7 +47,7 @@ public class DataBot extends AbstractActor {
     return receiveBuilder()
       .match(String.class, a -> a.equals(TICK), a -> receiveTick())
       .match(Changed.class, c -> c.key().equals(dataKey), c -> receiveChanged((Changed<ORSet<String>>) c))
-      .match(UpdateResponse.class, r -> receiveUpdateResoponse())
+      .match(UpdateResponse.class, r -> receiveUpdateResponse())
       .build();
   }
 
@@ -81,7 +81,7 @@ public class DataBot extends AbstractActor {
     log.info("Current elements: {}", data.getElements());
   }
   
-  private void receiveUpdateResoponse() {
+  private void receiveUpdateResponse() {
     // ignore
   }
 
