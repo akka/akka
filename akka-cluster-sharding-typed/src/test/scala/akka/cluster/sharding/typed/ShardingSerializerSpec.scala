@@ -12,7 +12,7 @@ import akka.actor.typed.scaladsl.AskPattern._
 
 class ShardingSerializerSpec extends TypedSpec {
 
-  object `The typed ShardingSerializer` {
+  "The typed ShardingSerializer" must {
 
     val serialization = SerializationExtension(ActorSystemAdapter.toUntyped(system))
 
@@ -27,13 +27,12 @@ class ShardingSerializerSpec extends TypedSpec {
       }
     }
 
-    def `must serialize and deserialize ShardingEnvelope`(): Unit = {
+    "must serialize and deserialize ShardingEnvelope" in {
       checkSerialization(ShardingEnvelope("abc", 42))
     }
 
-    def `must serialize and deserialize StartEntity`(): Unit = {
+    "must serialize and deserialize StartEntity" in {
       checkSerialization(StartEntity("abc"))
     }
   }
-
 }

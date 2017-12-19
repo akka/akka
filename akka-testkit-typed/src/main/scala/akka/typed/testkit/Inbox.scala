@@ -6,7 +6,7 @@ package akka.typed.testkit
 import java.util.concurrent.{ ConcurrentLinkedQueue, ThreadLocalRandom }
 
 import akka.actor.{ Address, RootActorPath }
-import akka.actor.typed.{ ActorRef, internal }
+import akka.actor.typed.ActorRef
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -24,7 +24,7 @@ class Inbox[T](name: String) {
   val ref: ActorRef[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
     val path = RootActorPath(Address("akka.actor.typed.inbox", "anonymous")).child(name).withUid(uid)
-    new internal.FunctionRef[T](path, (msg, self) ⇒ q.add(msg), (self) ⇒ ())
+    new FunctionRef[T](path, (msg, self) ⇒ q.add(msg), (self) ⇒ ())
   }
 
   def receiveMsg(): T = q.poll() match {

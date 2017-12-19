@@ -259,7 +259,7 @@ object ActorContextSpec {
 
 }
 
-class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
+abstract class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   """|akka {
      |  loglevel = WARNING
      |  actor.debug {
@@ -268,95 +268,94 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
      |  }
      |  typed.loggers = ["akka.typed.testkit.TestEventListener"]
      |}""".stripMargin)) {
+
   import ActorContextSpec._
 
   val expectTimeout = 3.seconds
 
-  trait Tests {
-    /**
-     * The name for the set of tests to be instantiated, used for keeping the test case actors’ names unique.
-     */
-    def suite: String
+  /**
+   * The name for the set of tests to be instantiated, used for keeping the test case actors’ names unique.
+   */
+  def suite: String
 
-    /**
-     * The behavior against which to run all the tests.
-     */
-    def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command]
+  /**
+   * The behavior against which to run all the tests.
+   */
+  def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command]
 
-    implicit def system: ActorSystem[TypedSpec.Command]
+  private def mySuite: String = suite + "Adapted"
 
-    private def mySuite: String =
-      if (system eq nativeSystem) suite + "Native"
-      else suite + "Adapted"
+  def setup(name: String, wrapper: Option[Behavior[Command] ⇒ Behavior[Command]] = None, ignorePostStop: Boolean = true)(
+    proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[TypedSpec.Status] =
+    runTest(s"$mySuite-$name")(StepWise[Event] { (ctx, startWith) ⇒
+      val b = behavior(ctx, ignorePostStop)
+      val props = wrapper.map(_(b)).getOrElse(b)
+      val steps = startWith.withKeepTraces(true)(ctx.spawn(props, "subject"))
 
-    def setup(name: String, wrapper: Option[Behavior[Command] ⇒ Behavior[Command]] = None, ignorePostStop: Boolean = true)(
-      proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[TypedSpec.Status] =
-      runTest(s"$mySuite-$name")(StepWise[Event] { (ctx, startWith) ⇒
-        val b = behavior(ctx, ignorePostStop)
-        val props = wrapper.map(_(b)).getOrElse(b)
-        val steps = startWith.withKeepTraces(true)(ctx.spawn(props, "subject"))
-
-        proc(ctx, steps)
-      })
-
-    private implicit class MkC(val startWith: StepWise.Steps[Event, ActorRef[Command]]) {
-      /**
-       * Ask the subject to create a child actor, setting its behavior to “inert” if requested.
-       * The latter is very useful in order to avoid disturbances with GotSignal(PostStop) in
-       * test procedures that stop this child.
-       */
-      def mkChild(
-        name:    Option[String],
-        monitor: ActorRef[Event],
-        self:    ActorRef[Event],
-        inert:   Boolean         = false): StepWise.Steps[Event, (ActorRef[Command], ActorRef[Command])] = {
-        val s =
-          startWith.keep { subj ⇒
-            subj ! MkChild(name, monitor, self)
-          }.expectMessage(expectTimeout) { (msg, subj) ⇒
-            val Created(child) = msg
-            (subj, child)
-          }
-
-        if (!inert) s
-        else
-          s.keep {
-            case (subj, child) ⇒
-              child ! BecomeInert(self)
-          }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
-            msg should ===(BecameInert)
-          }
-      }
-    }
-
-    private implicit class MessageStep[T](val startWith: StepWise.Steps[Event, T]) {
-      def stimulate(f: T ⇒ Unit, ev: T ⇒ Event, timeout: FiniteDuration = expectTimeout): StepWise.Steps[Event, T] =
-        startWith.keep(f).expectMessageKeep(timeout) { (msg, v) ⇒
-          msg should ===(ev(v))
-        }
-    }
-
-    protected def stop(ref: ActorRef[Command]) = ref ! Stop
-
-    def `00 must canonicalize behaviors`(): Unit = sync(setup("ctx00") { (ctx, startWith) ⇒
-      val self = ctx.self
-      startWith.keep { subj ⇒
-        subj ! Ping(self)
-      }.expectMessageKeep(expectTimeout) { (msg, subj) ⇒
-        msg should ===(Pong1)
-        subj ! Miss(self)
-      }.expectMessageKeep(expectTimeout) { (msg, subj) ⇒
-        msg should ===(Missed)
-        subj ! Renew(self)
-      }.expectMessage(expectTimeout) { (msg, subj) ⇒
-        msg should ===(Renewed)
-        subj ! Ping(self)
-      }.expectMessage(expectTimeout) { (msg, _) ⇒
-        msg should ===(Pong1)
-      }
+      proc(ctx, steps)
     })
 
-    def `01 must correctly wire the lifecycle hooks`(): Unit =
+  private implicit class MkC(val startWith: StepWise.Steps[Event, ActorRef[Command]]) {
+    /**
+     * Ask the subject to create a child actor, setting its behavior to “inert” if requested.
+     * The latter is very useful in order to avoid disturbances with GotSignal(PostStop) in
+     * test procedures that stop this child.
+     */
+    def mkChild(
+      name:    Option[String],
+      monitor: ActorRef[Event],
+      self:    ActorRef[Event],
+      inert:   Boolean         = false): StepWise.Steps[Event, (ActorRef[Command], ActorRef[Command])] = {
+      val s =
+        startWith.keep { subj ⇒
+          subj ! MkChild(name, monitor, self)
+        }.expectMessage(expectTimeout) { (msg, subj) ⇒
+          val Created(child) = msg
+          (subj, child)
+        }
+
+      if (!inert) s
+      else
+        s.keep {
+          case (subj, child) ⇒
+            child ! BecomeInert(self)
+        }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
+          msg should ===(BecameInert)
+        }
+    }
+  }
+
+  private implicit class MessageStep[T](val startWith: StepWise.Steps[Event, T]) {
+    def stimulate(f: T ⇒ Unit, ev: T ⇒ Event, timeout: FiniteDuration = expectTimeout): StepWise.Steps[Event, T] =
+      startWith.keep(f).expectMessageKeep(timeout) { (msg, v) ⇒
+        msg should ===(ev(v))
+      }
+  }
+
+  protected def stop(ref: ActorRef[Command]) = ref ! Stop
+
+  "An ActorContext" must {
+    "canonicalize behaviors" in {
+      sync(setup("ctx00") { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith.keep { subj ⇒
+          subj ! Ping(self)
+        }.expectMessageKeep(expectTimeout) { (msg, subj) ⇒
+          msg should ===(Pong1)
+          subj ! Miss(self)
+        }.expectMessageKeep(expectTimeout) { (msg, subj) ⇒
+          msg should ===(Missed)
+          subj ! Renew(self)
+        }.expectMessage(expectTimeout) { (msg, subj) ⇒
+          msg should ===(Renewed)
+          subj ! Ping(self)
+        }.expectMessage(expectTimeout) { (msg, _) ⇒
+          msg should ===(Pong1)
+        }
+      })
+    }
+
+    "correctly wire the lifecycle hooks" in {
       sync(setup("ctx01", Some(b ⇒ Actor.supervise(b).onFailure[Throwable](SupervisorStrategy.restart)), ignorePostStop = false) { (ctx, startWith) ⇒
         val self = ctx.self
         val ex = new Exception("KABOOM1")
@@ -373,302 +372,337 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           msg should ===(GotSignal(PostStop))
         }
       })
+    }
 
-    def `02 must signal PostStop after voluntary termination`(): Unit = sync(setup("ctx02", ignorePostStop = false) { (ctx, startWith) ⇒
-      startWith.keep { subj ⇒
-        stop(subj)
-      }.expectMessage(expectTimeout) {
-        case (msg, _) ⇒
-          msg should ===(GotSignal(PostStop))
-      }
-    })
-
-    def `03 must restart and stop a child actor`(): Unit = sync(setup("ctx03") { (ctx, startWith) ⇒
-      val self = ctx.self
-      val ex = new Exception("KABOOM2")
-      startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self) {
-        case (subj, child) ⇒
-          val log = muteExpectedException[Exception]("KABOOM2", occurrences = 1)
-          child ! Throw(ex)
-          (subj, child, log)
-      }.expectMessage(expectTimeout) {
-        case (msg, (subj, child, log)) ⇒
-          msg should ===(ChildEvent(GotSignal(PreRestart)))
-          log.assertDone(expectTimeout)
-          child ! BecomeInert(self) // necessary to avoid PostStop/Terminated interference
-          (subj, child)
-      }.expectMessageKeep(expectTimeout) {
-        case (msg, (subj, child)) ⇒
-          msg should ===(BecameInert)
+    "signal PostStop after voluntary termination" in {
+      sync(setup("ctx02", ignorePostStop = false) { (ctx, startWith) ⇒
+        startWith.keep { subj ⇒
           stop(subj)
-          ctx.watch(child)
-          ctx.watch(subj)
-      }.expectTermination(expectTimeout) {
-        case (t, (subj, child)) ⇒
-          if (t.ref === child) subj
-          else if (t.ref === subj) child
-          else fail(s"expected termination of either $subj or $child but got $t")
-      }.expectTermination(expectTimeout) { (t, subj) ⇒
-        t.ref should ===(subj)
-      }
-    })
-
-    def `04 must stop a child actor`(): Unit = sync(setup("ctx04") { (ctx, startWith) ⇒
-      val self = ctx.self
-      startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self, inert = true) {
-        case (subj, child) ⇒
-          subj ! Kill(child, self)
-          child
-      }.expectMessageKeep(expectTimeout) { (msg, child) ⇒
-        msg should ===(Killed)
-        ctx.watch(child)
-      }.expectTermination(expectTimeout) { (t, child) ⇒
-        t.ref should ===(child)
-      }
-    })
-
-    def `05 must reset behavior upon Restart`(): Unit = sync(setup("ctx05", Some(Actor.supervise(_).onFailure(SupervisorStrategy.restart))) { (ctx, startWith) ⇒
-      val self = ctx.self
-      val ex = new Exception("KABOOM05")
-      startWith
-        .stimulate(_ ! BecomeInert(self), _ ⇒ BecameInert)
-        .stimulate(_ ! Ping(self), _ ⇒ Pong2) { subj ⇒
-          val log = muteExpectedException[Exception]("KABOOM05")
-          subj ! Throw(ex)
-          subj
+        }.expectMessage(expectTimeout) {
+          case (msg, _) ⇒
+            msg should ===(GotSignal(PostStop))
         }
-        .stimulate(_ ! Ping(self), _ ⇒ Pong1)
-    })
+      })
+    }
 
-    def `06 must not reset behavior upon Resume`(): Unit = sync(setup(
-      "ctx06",
-      Some(b ⇒ Actor.supervise(b).onFailure(SupervisorStrategy.resume))) { (ctx, startWith) ⇒
+    "restart and stop a child actor" in {
+      sync(setup("ctx03") { (ctx, startWith) ⇒
         val self = ctx.self
-        val ex = new Exception("KABOOM06")
+        val ex = new Exception("KABOOM2")
+        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self) {
+          case (subj, child) ⇒
+            val log = muteExpectedException[Exception]("KABOOM2", occurrences = 1)
+            child ! Throw(ex)
+            (subj, child, log)
+        }.expectMessage(expectTimeout) {
+          case (msg, (subj, child, log)) ⇒
+            msg should ===(ChildEvent(GotSignal(PreRestart)))
+            log.assertDone(expectTimeout)
+            child ! BecomeInert(self) // necessary to avoid PostStop/Terminated interference
+            (subj, child)
+        }.expectMessageKeep(expectTimeout) {
+          case (msg, (subj, child)) ⇒
+            msg should ===(BecameInert)
+            stop(subj)
+            ctx.watch(child)
+            ctx.watch(subj)
+        }.expectTermination(expectTimeout) {
+          case (t, (subj, child)) ⇒
+            if (t.ref === child) subj
+            else if (t.ref === subj) child
+            else fail(s"expected termination of either $subj or $child but got $t")
+        }.expectTermination(expectTimeout) { (t, subj) ⇒
+          t.ref should ===(subj)
+        }
+      })
+    }
+
+    "stop a child actor" in {
+      sync(setup("ctx04") { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self, inert = true) {
+          case (subj, child) ⇒
+            subj ! Kill(child, self)
+            child
+        }.expectMessageKeep(expectTimeout) { (msg, child) ⇒
+          msg should ===(Killed)
+          ctx.watch(child)
+        }.expectTermination(expectTimeout) { (t, child) ⇒
+          t.ref should ===(child)
+        }
+      })
+    }
+
+    "reset behavior upon Restart" in {
+      sync(setup("ctx05", Some(Actor.supervise(_).onFailure(SupervisorStrategy.restart))) { (ctx, startWith) ⇒
+        val self = ctx.self
+        val ex = new Exception("KABOOM05")
         startWith
           .stimulate(_ ! BecomeInert(self), _ ⇒ BecameInert)
-          .stimulate(_ ! Ping(self), _ ⇒ Pong2).keep { subj ⇒
-            muteExpectedException[Exception]("KABOOM06", occurrences = 1)
+          .stimulate(_ ! Ping(self), _ ⇒ Pong2) { subj ⇒
+            muteExpectedException[Exception]("KABOOM05")
             subj ! Throw(ex)
-          }.stimulate(_ ! Ping(self), _ ⇒ Pong2)
+            subj
+          }
+          .stimulate(_ ! Ping(self), _ ⇒ Pong1)
       })
+    }
 
-    def `07 must stop upon Stop`(): Unit = sync(setup("ctx07", ignorePostStop = false) { (ctx, startWith) ⇒
-      val self = ctx.self
-      val ex = new Exception("KABOOM07")
-      startWith
-        .stimulate(_ ! Ping(self), _ ⇒ Pong1).keep { subj ⇒
-          muteExpectedException[Exception]("KABOOM07", occurrences = 1)
-          subj ! Throw(ex)
-          ctx.watch(subj)
-        }.expectMulti(expectTimeout, 2) { (msgs, subj) ⇒
-          msgs.toSet should ===(Set(Left(Terminated(subj)(null)), Right(GotSignal(PostStop))))
-        }
-    })
+    "not reset behavior upon Resume" in {
+      sync(setup(
+        "ctx06",
+        Some(b ⇒ Actor.supervise(b).onFailure(SupervisorStrategy.resume))) { (ctx, startWith) ⇒
+          val self = ctx.self
+          val ex = new Exception("KABOOM06")
+          startWith
+            .stimulate(_ ! BecomeInert(self), _ ⇒ BecameInert)
+            .stimulate(_ ! Ping(self), _ ⇒ Pong2).keep { subj ⇒
+              muteExpectedException[Exception]("KABOOM06", occurrences = 1)
+              subj ! Throw(ex)
+            }.stimulate(_ ! Ping(self), _ ⇒ Pong2)
+        })
+    }
 
-    def `08 must not stop non-child actor`(): Unit = sync(setup("ctx08") { (ctx, startWith) ⇒
-      val self = ctx.self
-      startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self) {
-        case (subj, child) ⇒
-          val other = ctx.spawn(behavior(ctx, ignorePostStop = true), "A")
-          subj ! Kill(other, ctx.self)
-          child
-      }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
-        msg should ===(NotKilled)
-      }.stimulate(_ ! Ping(self), _ ⇒ Pong1)
-    })
+    "stop upon Stop" in {
+      sync(setup("ctx07", ignorePostStop = false) { (ctx, startWith) ⇒
+        val self = ctx.self
+        val ex = new Exception("KABOOM07")
+        startWith
+          .stimulate(_ ! Ping(self), _ ⇒ Pong1).keep { subj ⇒
+            muteExpectedException[Exception]("KABOOM07", occurrences = 1)
+            subj ! Throw(ex)
+            ctx.watch(subj)
+          }.expectMulti(expectTimeout, 2) { (msgs, subj) ⇒
+            msgs.toSet should ===(Set(Left(Terminated(subj)(null)), Right(GotSignal(PostStop))))
+          }
+      })
+    }
 
-    def `10 must watch a child actor before its termination`(): Unit = sync(setup("ctx10") { (ctx, startWith) ⇒
-      val self = ctx.self
-      startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self) {
-        case (subj, child) ⇒
-          subj ! Watch(child, self)
-          child
-      }.expectMessageKeep(expectTimeout) { (msg, child) ⇒
-        msg should ===(Watched)
-        child ! Stop
-      }.expectMessage(expectTimeout) { (msg, child) ⇒
-        msg should ===(GotSignal(Terminated(child)(null)))
-      }
-    })
+    "not stop non-child actor" in {
+      sync(setup("ctx08") { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self) {
+          case (subj, child) ⇒
+            val other = ctx.spawn(behavior(ctx, ignorePostStop = true), "A")
+            subj ! Kill(other, ctx.self)
+            child
+        }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
+          msg should ===(NotKilled)
+        }.stimulate(_ ! Ping(self), _ ⇒ Pong1)
+      })
+    }
 
-    def `11 must watch a child actor after its termination`(): Unit = sync(setup("ctx11") { (ctx, startWith) ⇒
-      val self = ctx.self
-      startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
-        case (subj, child) ⇒
-          ctx.watch(child)
+    "watch a child actor before its termination" in {
+      sync(setup("ctx10") { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self) {
+          case (subj, child) ⇒
+            subj ! Watch(child, self)
+            child
+        }.expectMessageKeep(expectTimeout) { (msg, child) ⇒
+          msg should ===(Watched)
           child ! Stop
-      }.expectTermination(expectTimeout) {
-        case (t, (subj, child)) ⇒
+        }.expectMessage(expectTimeout) { (msg, child) ⇒
+          msg should ===(GotSignal(Terminated(child)(null)))
+        }
+      })
+    }
+
+    "watch a child actor after its termination" in {
+      sync(setup("ctx11") { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
+          case (subj, child) ⇒
+            ctx.watch(child)
+            child ! Stop
+        }.expectTermination(expectTimeout) {
+          case (t, (subj, child)) ⇒
+            t should ===(Terminated(child)(null))
+            subj ! Watch(child, blackhole)
+            child
+        }.expectMessage(expectTimeout) { (msg, child) ⇒
+          msg should ===(GotSignal(Terminated(child)(null)))
+        }
+      })
+    }
+
+    "unwatch a child actor before its termination" in {
+      sync(setup("ctx12") { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
+          case (subj, child) ⇒
+            subj ! Watch(child, self)
+        }.expectMessageKeep(expectTimeout) {
+          case (msg, (subj, child)) ⇒
+            msg should ===(Watched)
+            subj ! Unwatch(child, self)
+        }.expectMessage(expectTimeout) {
+          case (msg, (subj, child)) ⇒
+            msg should ===(Unwatched)
+            ctx.watch(child)
+            child ! Stop
+            child
+        }.expectTermination(expectTimeout) { (t, child) ⇒
           t should ===(Terminated(child)(null))
-          subj ! Watch(child, blackhole)
-          child
-      }.expectMessage(expectTimeout) { (msg, child) ⇒
-        msg should ===(GotSignal(Terminated(child)(null)))
-      }
-    })
-
-    def `12 must unwatch a child actor before its termination`(): Unit = sync(setup("ctx12") { (ctx, startWith) ⇒
-      val self = ctx.self
-      startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
-        case (subj, child) ⇒
-          subj ! Watch(child, self)
-      }.expectMessageKeep(expectTimeout) {
-        case (msg, (subj, child)) ⇒
-          msg should ===(Watched)
-          subj ! Unwatch(child, self)
-      }.expectMessage(expectTimeout) {
-        case (msg, (subj, child)) ⇒
-          msg should ===(Unwatched)
-          ctx.watch(child)
-          child ! Stop
-          child
-      }.expectTermination(expectTimeout) { (t, child) ⇒
-        t should ===(Terminated(child)(null))
-      }
-    })
-
-    def `13 must terminate upon not handling Terminated`(): Unit = sync(setup("ctx13", ignorePostStop = false) { (ctx, startWith) ⇒
-      val self = ctx.self
-      startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
-        case (subj, child) ⇒
-          muteExpectedException[DeathPactException]()
-          subj ! Watch(child, self)
-      }.expectMessageKeep(expectTimeout) {
-        case (msg, (subj, child)) ⇒
-          msg should ===(Watched)
-          subj ! BecomeCareless(self)
-      }.expectMessageKeep(expectTimeout) {
-        case (msg, (subj, child)) ⇒
-          msg should ===(BecameCareless)
-          child ! Stop
-      }.expectMessage(expectTimeout) {
-        case (msg, (subj, child)) ⇒
-          msg should ===(ChildEvent(GotSignal(PostStop)))
-      }.expectMessage(expectTimeout) {
-        case (msg, _) ⇒
-          msg should ===(GotSignal(PostStop))
-      }
-    })
-
-    def `20 must return the right context info`(): Unit = sync(setup("ctx20") { (ctx, startWith) ⇒
-      startWith.keep(_ ! GetInfo(ctx.self))
-        .expectMessage(expectTimeout) {
-          case (msg: Info, subj) ⇒
-            msg.self should ===(subj)
-            msg.system should ===(system)
-          case (other, _) ⇒
-            fail(s"$other was not an Info(...)")
         }
-    })
+      })
+    }
 
-    def `21 must return right info about children`(): Unit = sync(setup("ctx21") { (ctx, startWith) ⇒
-      val self = ctx.self
-      startWith
-        .mkChild(Some("B"), ctx.spawnAdapter(ChildEvent), self)
-        .stimulate(_._1 ! GetChild("A", self), _ ⇒ Child(None))
-        .stimulate(_._1 ! GetChild("B", self), x ⇒ Child(Some(x._2)))
-        .stimulate(_._1 ! GetChildren(self), x ⇒ Children(Set(x._2)))
-    })
-
-    def `30 must set small receive timeout`(): Unit = sync(setup("ctx30") { (ctx, startWith) ⇒
-      val self = ctx.self
-      startWith
-        .stimulate(_ ! SetTimeout(1.nano, self), _ ⇒ TimeoutSet)
-        .expectMessage(expectTimeout) { (msg, _) ⇒
-          msg should ===(GotReceiveTimeout)
+    "terminate upon not handling Terminated" in {
+      sync(setup("ctx13", ignorePostStop = false) { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
+          case (subj, child) ⇒
+            muteExpectedException[DeathPactException]()
+            subj ! Watch(child, self)
+        }.expectMessageKeep(expectTimeout) {
+          case (msg, (subj, child)) ⇒
+            msg should ===(Watched)
+            subj ! BecomeCareless(self)
+        }.expectMessageKeep(expectTimeout) {
+          case (msg, (subj, child)) ⇒
+            msg should ===(BecameCareless)
+            child ! Stop
+        }.expectMessage(expectTimeout) {
+          case (msg, (subj, child)) ⇒
+            msg should ===(ChildEvent(GotSignal(PostStop)))
+        }.expectMessage(expectTimeout) {
+          case (msg, _) ⇒
+            msg should ===(GotSignal(PostStop))
         }
-    })
+      })
+    }
 
-    def `31 must set large receive timeout`(): Unit = sync(setup("ctx31") { (ctx, startWith) ⇒
-      val self = ctx.self
-      startWith
-        .stimulate(_ ! SetTimeout(1.minute, self), _ ⇒ TimeoutSet)
-        .stimulate(_ ⇒ ctx.schedule(1.second, self, Pong2), _ ⇒ Pong2)
-        .stimulate(_ ! Ping(self), _ ⇒ Pong1)
-    })
+    "return the right context info" in {
+      sync(setup("ctx20") { (ctx, startWith) ⇒
+        startWith.keep(_ ! GetInfo(ctx.self))
+          .expectMessage(expectTimeout) {
+            case (msg: Info, subj) ⇒
+              msg.self should ===(subj)
+              msg.system should ===(system)
+            case (other, _) ⇒
+              fail(s"$other was not an Info(...)")
+          }
+      })
+    }
 
-    def `32 must schedule a message`(): Unit = sync(setup("ctx32") { (ctx, startWith) ⇒
-      startWith(_ ! Schedule(1.nano, ctx.self, Pong2, ctx.self))
-        .expectMultipleMessages(expectTimeout, 2) { (msgs, _) ⇒
-          msgs should ===(Scheduled :: Pong2 :: Nil)
+    "return right info about children" in {
+      sync(setup("ctx21") { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith
+          .mkChild(Some("B"), ctx.spawnAdapter(ChildEvent), self)
+          .stimulate(_._1 ! GetChild("A", self), _ ⇒ Child(None))
+          .stimulate(_._1 ! GetChild("B", self), x ⇒ Child(Some(x._2)))
+          .stimulate(_._1 ! GetChildren(self), x ⇒ Children(Set(x._2)))
+      })
+    }
+
+    "set small receive timeout" in {
+      sync(setup("ctx30") { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith
+          .stimulate(_ ! SetTimeout(1.nano, self), _ ⇒ TimeoutSet)
+          .expectMessage(expectTimeout) { (msg, _) ⇒
+            msg should ===(GotReceiveTimeout)
+          }
+      })
+    }
+
+    "set large receive timeout" in {
+      sync(setup("ctx31") { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith
+          .stimulate(_ ! SetTimeout(1.minute, self), _ ⇒ TimeoutSet)
+          .stimulate(_ ⇒ ctx.schedule(1.second, self, Pong2), _ ⇒ Pong2)
+          .stimulate(_ ! Ping(self), _ ⇒ Pong1)
+
+      })
+    }
+
+    "schedule a message" in {
+      sync(setup("ctx32") { (ctx, startWith) ⇒
+        startWith(_ ! Schedule(1.nano, ctx.self, Pong2, ctx.self))
+          .expectMultipleMessages(expectTimeout, 2) { (msgs, _) ⇒
+            msgs should ===(Scheduled :: Pong2 :: Nil)
+          }
+      })
+    }
+
+    "create a working adapter" in {
+      sync(setup("ctx40", ignorePostStop = false) { (ctx, startWith) ⇒
+        startWith.keep { subj ⇒
+          subj ! GetAdapter(ctx.self)
+        }.expectMessage(expectTimeout) { (msg, subj) ⇒
+          val Adapter(adapter) = msg
+          ctx.watch(adapter)
+          adapter ! Ping(ctx.self)
+          (subj, adapter)
+        }.expectMessage(expectTimeout) {
+          case (msg, (subj, adapter)) ⇒
+            msg should ===(Pong1)
+            ctx.stop(subj)
+            adapter
+        }.expectMulti(expectTimeout, 2) { (msgs, adapter) ⇒
+          msgs.toSet should ===(Set(Left(Terminated(adapter)(null)), Right(GotSignal(PostStop))))
         }
-    })
+      })
+    }
 
-    def `40 must create a working adapter`(): Unit = sync(setup("ctx40", ignorePostStop = false) { (ctx, startWith) ⇒
-      startWith.keep { subj ⇒
-        subj ! GetAdapter(ctx.self)
-      }.expectMessage(expectTimeout) { (msg, subj) ⇒
-        val Adapter(adapter) = msg
-        ctx.watch(adapter)
-        adapter ! Ping(ctx.self)
-        (subj, adapter)
-      }.expectMessage(expectTimeout) {
-        case (msg, (subj, adapter)) ⇒
-          msg should ===(Pong1)
-          ctx.stop(subj)
-          adapter
-      }.expectMulti(expectTimeout, 2) { (msgs, adapter) ⇒
-        msgs.toSet should ===(Set(Left(Terminated(adapter)(null)), Right(GotSignal(PostStop))))
-      }
-    })
-
-    def `41 must create a named adapter`(): Unit = sync(setup("ctx41") { (ctx, startWith) ⇒
-      startWith.keep { subj ⇒
-        subj ! GetAdapter(ctx.self, "named")
-      }.expectMessage(expectTimeout) { (msg, subj) ⇒
-        val Adapter(adapter) = msg
-        adapter.path.name should include("named")
-      }
-    })
-    def `42 must not allow null messages`(): Unit = sync(setup("ctx42") { (ctx, startWith) ⇒
-      startWith.keep { subj ⇒
-        intercept[InvalidMessageException] {
-          subj ! null
+    "create a named adapter" in {
+      sync(setup("ctx41") { (ctx, startWith) ⇒
+        startWith.keep { subj ⇒
+          subj ! GetAdapter(ctx.self, "named")
+        }.expectMessage(expectTimeout) { (msg, subj) ⇒
+          val Adapter(adapter) = msg
+          adapter.path.name should include("named")
         }
-      }
-    })
-  }
+      })
+    }
 
-  trait Normal extends Tests {
-    override def suite = "normal"
-    override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
-      subject(ctx.self, ignorePostStop)
+    "not allow null messages" in {
+      sync(setup("ctx42") { (ctx, startWith) ⇒
+        startWith.keep { subj ⇒
+          intercept[InvalidMessageException] {
+            subj ! null
+          }
+        }
+      })
+    }
   }
-  object `An ActorContext (native)` extends Normal with NativeSystem
-  object `An ActorContext (adapted)` extends Normal with AdaptedSystem
-
-  trait Widened extends Tests {
-    import Actor._
-    override def suite = "widened"
-    override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
-      subject(ctx.self, ignorePostStop).widen { case x ⇒ x }
-  }
-  object `An ActorContext with widened Behavior (native)` extends Widened with NativeSystem
-  object `An ActorContext with widened Behavior (adapted)` extends Widened with AdaptedSystem
-
-  trait Deferred extends Tests {
-    override def suite = "deferred"
-    override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
-      Actor.deferred(_ ⇒ subject(ctx.self, ignorePostStop))
-  }
-  object `An ActorContext with deferred Behavior (native)` extends Deferred with NativeSystem
-  object `An ActorContext with deferred Behavior (adapted)` extends Deferred with AdaptedSystem
-
-  trait NestedDeferred extends Tests {
-    override def suite = "deferred"
-    override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
-      Actor.deferred(_ ⇒ Actor.deferred(_ ⇒ subject(ctx.self, ignorePostStop)))
-  }
-  object `An ActorContext with nested deferred Behavior (native)` extends NestedDeferred with NativeSystem
-  object `An ActorContext with nested deferred Behavior (adapted)` extends NestedDeferred with AdaptedSystem
-
-  trait Tap extends Tests {
-    override def suite = "tap"
-    override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
-      Actor.tap((_, _) ⇒ (), (_, _) ⇒ (), subject(ctx.self, ignorePostStop))
-  }
-  object `An ActorContext with Tap (old-native)` extends Tap with NativeSystem
-  object `An ActorContext with Tap (old-adapted)` extends Tap with AdaptedSystem
-
 }
+
+import ActorContextSpec._
+
+class NormalActorContextSpec extends ActorContextSpec {
+  override def suite = "normal"
+  override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+    subject(ctx.self, ignorePostStop)
+}
+
+class WidenedActorContextSpec extends ActorContextSpec {
+
+  import Actor._
+
+  override def suite = "widened"
+  override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+    subject(ctx.self, ignorePostStop).widen { case x ⇒ x }
+}
+
+class DeferredActorContextSpec extends ActorContextSpec {
+  override def suite = "deferred"
+  override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+    Actor.deferred(_ ⇒ subject(ctx.self, ignorePostStop))
+}
+
+class NestedDeferredActorContextSpec extends ActorContextSpec {
+  override def suite = "nexted-deferred"
+  override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+    Actor.deferred(_ ⇒ Actor.deferred(_ ⇒ subject(ctx.self, ignorePostStop)))
+}
+
+class TapActorContextSpec extends ActorContextSpec {
+  override def suite = "tap"
+  override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+    Actor.tap((_, _) ⇒ (), (_, _) ⇒ (), subject(ctx.self, ignorePostStop))
+}
+

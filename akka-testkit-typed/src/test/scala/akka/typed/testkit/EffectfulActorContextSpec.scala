@@ -80,7 +80,7 @@ object EffectfulActorContextSpec {
 
 class EffectfulActorContextSpec extends FlatSpec with Matchers {
 
-  private val props = Props.empty.withMailboxCapacity(10)
+  private val props = Props.empty
 
   "EffectfulActorContext's spawn" should "create children when no props specified" in {
     val system = ActorSystem.create(Father.init(), "father-system")

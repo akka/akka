@@ -26,10 +26,9 @@ object MiscMessageSerializerSpec {
 
 class MiscMessageSerializerSpec extends TypedSpec(MiscMessageSerializerSpec.config) {
 
-  object `The typed MiscMessageSerializer` {
+  val serialization = SerializationExtension(system.toUntyped)
 
-    val serialization = SerializationExtension(system.toUntyped)
-
+  "MiscMessageSerializer" must {
     def checkSerialization(obj: AnyRef): Unit = {
       serialization.findSerializerFor(obj) match {
         case serializer: MiscMessageSerializer ⇒
@@ -41,10 +40,9 @@ class MiscMessageSerializerSpec extends TypedSpec(MiscMessageSerializerSpec.conf
       }
     }
 
-    def `must serialize and deserialize typed actor refs `(): Unit = {
+    "must serialize and deserialize typed actor refs" in {
       val ref = (system ? Create(Actor.empty[Unit], "some-actor")).futureValue
       checkSerialization(ref)
     }
   }
-
 }

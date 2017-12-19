@@ -14,8 +14,6 @@ import akka.util.OptionVal
  * INTERNAL API
  */
 private[typed] trait SupervisionMechanics[T] {
-  import ActorCell._
-
   /*
    * INTERFACE WITH ACTOR CELL
    */
@@ -46,7 +44,6 @@ private[typed] trait SupervisionMechanics[T] {
    * Process one system message and return whether further messages shall be processed.
    */
   protected def processSignal(message: SystemMessage): Boolean = {
-    if (ActorCell.Debug) println(s"[${Thread.currentThread.getName}] $self processing system message $message")
     message match {
       case Watch(watchee, watcher)      ⇒ { addWatcher(watchee.sorryForNothing, watcher.sorryForNothing); true }
       case Unwatch(watchee, watcher)    ⇒ { remWatcher(watchee.sorryForNothing, watcher.sorryForNothing); true }

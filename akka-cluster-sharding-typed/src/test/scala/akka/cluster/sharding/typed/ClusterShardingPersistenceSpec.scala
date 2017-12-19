@@ -72,11 +72,11 @@ class ClusterShardingPersistenceSpec extends TypedSpec(ClusterShardingPersistenc
   implicit val untypedSystem = system.toUntyped
   private val untypedCluster = akka.cluster.Cluster(untypedSystem)
 
-  object `Typed cluster sharding with persistent actor` {
+  "Typed cluster sharding with persistent actor" must {
 
     untypedCluster.join(untypedCluster.selfAddress)
 
-    def `01 start persistent actor`(): Unit = {
+    "start persistent actor" in {
       ClusterSharding(system).spawn(persistentActor, Props.empty, typeKey,
         ClusterShardingSettings(system), maxNumberOfShards = 100, handOffStopMessage = StopPlz)
 
@@ -90,5 +90,4 @@ class ClusterShardingPersistenceSpec extends TypedSpec(ClusterShardingPersistenc
       p.expectMsg("a|b|c")
     }
   }
-
 }

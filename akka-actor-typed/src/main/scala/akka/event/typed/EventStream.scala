@@ -1,4 +1,4 @@
-package akka.typed
+package akka.event.typed
 
 import akka.actor.typed.ActorRef
 import akka.event.Logging.LogLevel
@@ -51,8 +51,8 @@ trait EventStream {
 }
 
 import akka.actor.typed.{ ActorRef, Behavior, Settings }
+import akka.event.Logging.LogEvent
 import akka.{ event ⇒ e }
-import akka.event.Logging.{ LogEvent, StdOutLogger }
 
 abstract class Logger {
   def initialBehavior: Behavior[Logger.Command]
@@ -62,34 +62,6 @@ object Logger {
   sealed trait Command
   case class Initialize(eventStream: EventStream, replyTo: ActorRef[ActorRef[LogEvent]]) extends Command
   // FIXME add Mute/Unmute (i.e. the TestEventListener functionality)
-}
-
-class DefaultLogger extends Logger with StdOutLogger {
-  import Logger._
-
-  val initialBehavior = {
-    // TODO avoid depending on dsl here?
-    import akka.actor.typed.scaladsl.Actor._
-    deferred[Command] { _ ⇒
-      immutable[Command] {
-        case (ctx, Initialize(eventStream, replyTo)) ⇒
-          val log = ctx.spawn(deferred[AnyRef] { childCtx ⇒
-
-            immutable[AnyRef] {
-              case (_, event: LogEvent) ⇒
-                print(event)
-                same
-              case _ ⇒ unhandled
-            }
-          }, "logger")
-
-          ctx.watch(log) // sign death pact
-          replyTo ! log
-
-          empty
-      }
-    }
-  }
 }
 
 class DefaultLoggingFilter(settings: Settings, eventStream: EventStream) extends e.DefaultLoggingFilter(() ⇒ eventStream.logLevel)

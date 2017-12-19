@@ -17,8 +17,9 @@ import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
 import java.util.Optional
 
+import akka.actor.BootstrapSetup
 import akka.actor.typed.receptionist.Receptionist
-import akka.typed.EventStream
+import akka.event.typed.EventStream
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -29,8 +30,7 @@ import akka.typed.EventStream
  */
 @DoNotInherit
 @ApiMayChange
-abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: internal.ActorRefImpl[T] ⇒
-
+abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
   /**
    * The name of this actor system, used to distinguish multiple ones within
    * the same JVM & class loader.
@@ -139,7 +139,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: inter
    * Ask the system guardian of this system to create an actor from the given
    * behavior and props and with the given name. The name does not need to
    * be unique since the guardian will prefix it with a running number when
-   * creating the child actor. The timeout sets the timeout used for the [[akka.actor.typed.scaladsl.AskPattern$]]
+   * creating the child actor. The timeout sets the timeout used for the [[akka.actor.typed.scaladsl.AskPattern]]
    * invocation when asking the guardian.
    *
    * The returned Future of [[ActorRef]] may be converted into an [[ActorRef]]
@@ -159,9 +159,7 @@ object ActorSystem {
   import internal._
 
   /**
-   * Scala API: Create an ActorSystem implementation that is optimized for running
-   * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
-   * [[akka.actor.Actor]] instances.
+   * Scala API: Create an ActorSystem
    */
   def apply[T](
     guardianBehavior: Behavior[T],
@@ -173,13 +171,11 @@ object ActorSystem {
     Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
-    new ActorSystemImpl(name, appConfig, cl, executionContext, guardianBehavior, guardianProps)
+    createInternal(name, guardianBehavior, guardianProps, Some(appConfig), classLoader, executionContext)
   }
 
   /**
-   * Java API: Create an ActorSystem implementation that is optimized for running
-   * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
-   * [[akka.actor.Actor]] instances.
+   * Java API: Create an ActorSystem
    */
   def create[T](
     guardianBehavior: Behavior[T],
@@ -193,9 +189,7 @@ object ActorSystem {
   }
 
   /**
-   * Java API: Create an ActorSystem implementation that is optimized for running
-   * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
-   * [[akka.actor.Actor]] instances.
+   * Java API: Create an ActorSystem
    */
   def create[T](guardianBehavior: Behavior[T], name: String): ActorSystem[T] =
     apply(guardianBehavior, name)
@@ -205,26 +199,22 @@ object ActorSystem {
    * which runs Akka Typed [[Behavior]] on an emulation layer. In this
    * system typed and untyped actors can coexist.
    */
-  def adapter[T](name: String, guardianBehavior: Behavior[T],
-                 guardianProps:       Props                    = Props.empty,
-                 config:              Option[Config]           = None,
-                 classLoader:         Option[ClassLoader]      = None,
-                 executionContext:    Option[ExecutionContext] = None,
-                 actorSystemSettings: ActorSystemSetup         = ActorSystemSetup.empty): ActorSystem[T] = {
-
-    // TODO I'm not sure how useful this mode is for end-users. It has the limitation that untyped top level
-    // actors can't be created, because we have a custom user guardian. I would imagine that if you have
-    // a system of both untyped and typed actors (e.g. adding some typed actors to an existing application)
-    // you would start an untyped.ActorSystem and spawn typed actors from that system or from untyped actors.
-    // Same thing with `wrap` below.
+  private def createInternal[T](name: String, guardianBehavior: Behavior[T],
+                                guardianProps:    Props                    = Props.empty,
+                                config:           Option[Config]           = None,
+                                classLoader:      Option[ClassLoader]      = None,
+                                executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
 
     Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
+    val setup = ActorSystemSetup(BootstrapSetup(classLoader, config, executionContext))
     val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext,
-      Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps)), actorSystemSettings)
+      Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps)), setup)
     untyped.start()
-    ActorSystemAdapter.AdapterExtension(untyped).adapter
+
+    val adapter: ActorSystemAdapter.AdapterExtension = ActorSystemAdapter.AdapterExtension(untyped)
+    adapter.adapter
   }
 
   /**
@@ -266,10 +256,6 @@ final class Settings(val config: Config, val untyped: a.ActorSystem.Settings, va
     found(name, value.toString)
     value
   }
-
-  val Loggers = getSL("Loggers", "akka.typed.loggers")
-  val LoggingFilter = getS("LoggingFilter", "akka.typed.logging-filter")
-  val DefaultMailboxCapacity = getI("DefaultMailboxCapacity", "akka.typed.mailbox-capacity")
 
   foundSettings = foundSettings.reverse
 

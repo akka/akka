@@ -4,10 +4,7 @@
 package akka.persistence.typed.scaladsl
 
 import scala.concurrent.duration._
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Behavior
-import akka.actor.typed.TypedSpec
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, StartSupport, SupervisorStrategy, Terminated, TypedSpec }
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
@@ -17,8 +14,6 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 import akka.util.Timeout
 import akka.persistence.typed.scaladsl.PersistentActor._
-import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.Terminated
 
 object PersistentActorSpec {
 
@@ -113,14 +108,14 @@ object PersistentActorSpec {
 
 }
 
-class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eventually {
+class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eventually with StartSupport {
   import PersistentActorSpec._
 
-  trait RealTests extends StartSupport {
-    implicit def system: ActorSystem[TypedSpec.Command]
-    implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings = TestKitSettings(system)
 
-    def `persist an event`(): Unit = {
+  "A typed persistent actor" must {
+
+    "persist an event" in {
       val c = start(counter("c1"))
 
       val probe = TestProbe[State]
@@ -129,7 +124,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
       probe.expectMsg(State(1, Vector(0)))
     }
 
-    def `replay stored events`(): Unit = {
+    "replay stored events" in {
       val c = start(counter("c2"))
 
       val probe = TestProbe[State]
@@ -147,7 +142,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
       probe.expectMsg(State(4, Vector(0, 1, 2, 3)))
     }
 
-    def `handle Terminated signal`(): Unit = {
+    "handle Terminated signal" in {
       val c = start(counter("c3"))
 
       val probe = TestProbe[State]
@@ -159,7 +154,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
       }
     }
 
-    def `handle receive timeout`(): Unit = {
+    "handle receive timeout" in {
       val c = start(counter("c4"))
 
       val probe = TestProbe[State]
@@ -177,7 +172,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
      * Verify that all side-effects callbacks are called (in order) and only once.
      * The [[IncrementTwiceAndThenLog]] command will emit two Increment events
      */
-    def `chainable side effects with events`(): Unit = {
+    "chainable side effects with events" in {
       val loggingProbe = TestProbe[String]
       val c = start(counter("c5", loggingProbe.ref))
 
@@ -192,7 +187,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
     }
 
     /** Proves that side-effects are called when emitting an empty list of events */
-    def `chainable side effects without events`(): Unit = {
+    "chainable side effects without events" in {
       val loggingProbe = TestProbe[String]
       val c = start(counter("c6", loggingProbe.ref))
 
@@ -204,7 +199,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
     }
 
     /** Proves that side-effects are called when explicitly calling Effect.none */
-    def `chainable side effects when doing nothing (Effect.none)`(): Unit = {
+    "chainable side effects when doing nothing (Effect.none)" in {
       val loggingProbe = TestProbe[String]
       val c = start(counter("c7", loggingProbe.ref))
 
@@ -215,7 +210,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
       loggingProbe.expectMsg(firstLogging)
     }
 
-    def `work when wrapped in other behavior`(): Unit = {
+    "work when wrapped in other behavior" in {
       // FIXME This is a major problem with current implementation. Since the
       // behavior is running as an untyped PersistentActor it's not possible to
       // wrap it in Actor.deferred or Actor.supervise
@@ -224,8 +219,6 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
         .onFailure(SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.1))
       val c = start(behavior)
     }
-
   }
 
-  object `A PersistentActor (real, adapted)` extends RealTests with AdaptedSystem
 }

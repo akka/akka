@@ -197,25 +197,25 @@ private[akka] sealed trait SystemMessage extends Serializable {
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[typed] final case class Create() extends SystemMessage
+private[akka] final case class Create() extends SystemMessage
 
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[typed] final case class Terminate() extends SystemMessage
+private[akka] final case class Terminate() extends SystemMessage
 
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[typed] final case class Watch(watchee: ActorRef[Nothing], watcher: ActorRef[Nothing]) extends SystemMessage
+private[akka] final case class Watch(watchee: ActorRef[Nothing], watcher: ActorRef[Nothing]) extends SystemMessage
 
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[typed] final case class Unwatch(watchee: ActorRef[Nothing], watcher: ActorRef[Nothing]) extends SystemMessage
+private[akka] final case class Unwatch(watchee: ActorRef[Nothing], watcher: ActorRef[Nothing]) extends SystemMessage
 
 /**
  * INTERNAL API
