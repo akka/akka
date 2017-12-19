@@ -2,12 +2,12 @@ package akka.typed.testkit
 
 import akka.event.Logging.{ LogEvent, StdOutLogger }
 import akka.testkit.{ EventFilter, TestEvent ⇒ TE }
-import akka.typed.Logger
-import akka.typed.Logger.{ Command, Initialize }
+import akka.event.typed.Logger.{ Command, Initialize }
 
 import scala.annotation.tailrec
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.Behavior
+import akka.event.typed.Logger
 
 /**
  * EventListener for running tests, which allows selectively filtering out
