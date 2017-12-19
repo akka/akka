@@ -18,7 +18,11 @@ In the below example our route first matches all `GET` requests, and if an incom
 the matching continues and the extractMethod route will be applied which we can use to programatically
 print what type of request it was - independent of what actual HttpMethod it was:
 
-@@snip [MethodDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala) { #extractMethod-example }
+Scala
+:   @@snip [MethodDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala) { #extractMethod-example }
+
+Java
+:   @@snip [MethodDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #extractMethod }
 
 ## Custom Http Method
 
