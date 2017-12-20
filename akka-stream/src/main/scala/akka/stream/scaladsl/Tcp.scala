@@ -8,19 +8,19 @@ import java.util.concurrent.TimeoutException
 import javax.net.ssl.SSLContext
 
 import akka.actor._
-import akka.annotation.InternalApi
+import akka.annotation.{ApiMayChange, InternalApi}
 import akka.io.Inet.SocketOption
-import akka.io.{ IO, Tcp ⇒ IoTcp }
+import akka.io.{IO, Tcp => IoTcp}
 import akka.stream.TLSProtocol.NegotiateNewSession
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.detacher
-import akka.stream.impl.io.{ ConnectionSourceStage, OutgoingConnectionStage, TcpIdleTimeout }
+import akka.stream.impl.io.{ConnectionSourceStage, OutgoingConnectionStage, TcpIdleTimeout}
 import akka.util.ByteString
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.control.NoStackTrace
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
@@ -74,7 +74,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   def createExtension(system: ExtendedActorSystem): Tcp = new Tcp(system)
 
   // just wraps/unwraps the TLS byte events to provide ByteString, ByteString flows
-  private val tlsSupport: BidiFlow[ByteString, TLSProtocol.SendBytes, TLSProtocol.SslTlsInbound, ByteString, NotUsed] = BidiFlow.fromFlows(
+  private val tlsWrapping: BidiFlow[ByteString, TLSProtocol.SendBytes, TLSProtocol.SslTlsInbound, ByteString, NotUsed] = BidiFlow.fromFlows(
     Flow[ByteString].map(TLSProtocol.SendBytes),
     Flow[TLSProtocol.SslTlsInbound].collect {
       case sb: TLSProtocol.SessionBytes ⇒ sb.bytes
@@ -242,7 +242,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * out go through TLS.
    *
    * @see [[Tcp.outgoingConnection()]]
+   *
+   * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
+  @ApiMayChange
   def outgoingTlsConnection(
     remoteAddress:       InetSocketAddress,
     sslContext:          SSLContext,
@@ -254,7 +257,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 
     val connection = outgoingConnection(remoteAddress, localAddress, options, true, connectTimeout, idleTimeout)
     val tls = TLS(sslContext, negotiateNewSession, TLSRole.client)
-    connection.join(tlsSupport.atop(tls).reversed)
+    connection.join(tlsWrapping.atop(tls).reversed)
   }
 
   /**
@@ -262,7 +265,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * where all incoming and outgoing bytes are passed through TLS.
    *
    * @see [[Tcp.bind()]]
+   *
+   * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
+  @ApiMayChange
   def bindTls(
     interface:           String,
     port:                Int,
@@ -272,11 +278,11 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     options:             immutable.Traversable[SocketOption] = Nil,
     idleTimeout:         Duration                            = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
 
-    val tls = TLS(sslContext, negotiateNewSession, TLSRole.server)
+    val tls = tlsWrapping.atop(TLS(sslContext, negotiateNewSession, TLSRole.server)).reversed
 
     bind(interface, port, backlog, options, true, idleTimeout).map { incomingConnection ⇒
       incomingConnection.copy(
-        flow = incomingConnection.flow.join(tlsSupport.atop(tls).reversed)
+        flow = incomingConnection.flow.join(tls)
       )
     }
   }
@@ -286,7 +292,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * handling the incoming connections through TLS and then run using the provided Flow.
    *
    * @see [[Tcp.bindAndHandle()]]
+   *
+   * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
+  @ApiMayChange
   def bindAndHandleTls(
     handler:             Flow[ByteString, ByteString, _],
     interface:           String,

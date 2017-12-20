@@ -3,10 +3,10 @@
  */
 package akka.stream.javadsl
 
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{Iterable => JIterable}
 import java.util.Optional
 
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
@@ -26,7 +26,7 @@ import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 import javax.net.ssl.SSLContext
 
-import akka.annotation.InternalApi
+import akka.annotation.{ApiMayChange, InternalApi}
 import akka.stream.TLSProtocol.NegotiateNewSession
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
@@ -218,7 +218,10 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * out go through TLS.
    *
    * @see [[Tcp.outgoingConnection()]]
+   *
+   * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
+  @ApiMayChange
   def outgoingTlsConnection(
     remoteAddress:       InetSocketAddress,
     sslContext:          SSLContext,
@@ -243,7 +246,9 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * where all incoming and outgoing bytes are passed through TLS.
    *
    * @see [[Tcp.bind()]]
+   * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
+  @ApiMayChange
   def bindTls(
     interface:           String,
     port:                Int,
