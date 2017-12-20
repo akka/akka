@@ -27,8 +27,8 @@
 This is a tiny overview for some of the most common path directives:
 
 * `rawPathPrefix(x)`: it matches x and leaves a suffix (if any) unmatched.
-* `pathPrefix(x)`: is equivalent to `rawPathPrefix(Slash ~ x)`. It matches a leading slash followed by _x_ and then leaves a suffix unmatched.
-* `path(x)`: is equivalent to `rawPathPrefix(Slash ~ x ~ PathEnd)`. It matches a leading slash followed by _x_ and then the end.
-* `pathEnd`: is equivalent to just `rawPathPrefix(PathEnd)`. It is matched only when there is nothing left to match from the path. This directive should not be used at the root as the minimal path is the single slash.
-* `pathSingleSlash`: is equivalent to `rawPathPrefix(Slash ~ PathEnd)`. It matches when the remaining path is just a single slash.
-* `pathEndOrSingleSlash`: is equivalent to `rawPathPrefix(PathEnd)` or `rawPathPrefix(Slash ~ PathEnd)`. It matches either when there is no remaining path or is just a single slash.
+* `pathPrefix(x)`: is equivalent to @scala[`rawPathPrefix(Slash ~ x)`]@java[`rawPathPrefix(slash().concat(segment(x)))`]. It matches a leading slash followed by _x_ and then leaves a suffix unmatched.
+* `path(x)`: is equivalent to @scala[`rawPathPrefix(Slash ~ x ~ PathEnd)`]@java[`rawPathPrefix(slash().concat(segment(x)).concat(pathEnd()))`]. It matches a leading slash followed by _x_ and then the end.
+* `pathEnd`: is equivalent to just @scala[`rawPathPrefix(PathEnd)`]@java[`rawPathPrefix(pathEnd())`]. It is matched only when there is nothing left to match from the path. This directive should not be used at the root as the minimal path is the single slash.
+* `pathSingleSlash`: is equivalent to @scala[`rawPathPrefix(Slash ~ PathEnd)`]@java[`rawPathPrefix(slash().concat(pathEnd()))`]. It matches when the remaining path is just a single slash.
+* `pathEndOrSingleSlash`: is equivalent to @scala[`rawPathPrefix(PathEnd)`]@java[`rawPathPrefix(pathEnd())`] or @scala[`rawPathPrefix(Slash ~ PathEnd)`]@java[`rawPathPrefix(slash().concat(pathEnd()))`]. It matches either when there is no remaining path or is just a single slash.
