@@ -9,6 +9,7 @@ import akka.http.javadsl.model.headers.AcceptLanguage;
 import akka.http.javadsl.model.headers.Language;
 import akka.http.javadsl.model.headers.LanguageRanges;
 import akka.http.javadsl.model.headers.RemoteAddress;
+import akka.http.javadsl.server.PathMatchers;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
@@ -44,6 +45,31 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(withEntityOfSize.apply(501))
       .assertStatusCode(StatusCodes.BAD_REQUEST);
     //#withSizeLimitExample
+  }
+
+  @Test
+  public void testWithSizeLimitNested() {
+    //#withSizeLimitExampleNested
+    final Route route = withSizeLimit(500, () ->
+            withSizeLimit(800, () ->
+            entity(Unmarshaller.entityToString(), (entity) ->
+                    complete("ok")
+            ))
+    );
+
+    Function<Integer, HttpRequest> withEntityOfSize = (sizeLimit) -> {
+      char[] charArray = new char[sizeLimit];
+      Arrays.fill(charArray, '0');
+      return HttpRequest.POST("/").withEntity(new String(charArray));
+    };
+
+    // tests:
+    testRoute(route).run(withEntityOfSize.apply(800))
+            .assertStatusCode(StatusCodes.OK);
+
+    testRoute(route).run(withEntityOfSize.apply(801))
+            .assertStatusCode(StatusCodes.BAD_REQUEST);
+    //#withSizeLimitExampleNested
   }
 
   @Test
@@ -150,5 +176,27 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/abcdefghijkl"))
       .assertEntity("Path too long: /abcdefghijkl");
     //#validate-example
+  }
+
+  @Test
+  public void testRejectEmptyResponse() {
+    //#rejectEmptyResponse-example
+    final Route route = rejectEmptyResponse(() ->
+            path(PathMatchers.segment("even").slash(PathMatchers.integerSegment()), (value) -> {
+                      String response = "";
+                      if (value % 2 == 0) {
+                        response = "Number " + value + " is even";
+                      }
+                      return complete(response);
+                    }
+            ));
+
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/even/24"))
+      .assertEntity("Number 24 is even");
+    testRoute(route).run(HttpRequest.GET("/even/23"))
+      .assertStatusCode(StatusCodes.NOT_FOUND);
+
+    //#rejectEmptyResponse-example
   }
 }
