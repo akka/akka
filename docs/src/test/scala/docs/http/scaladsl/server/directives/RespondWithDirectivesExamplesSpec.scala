@@ -9,6 +9,14 @@ import docs.http.scaladsl.server.RoutingSpec
 
 class RespondWithDirectivesExamplesSpec extends RoutingSpec {
 
+  "multiple-headers" in {
+    //#multiple-headers
+    respondWithDefaultHeaders(
+      Origin(HttpOrigin("http://akka.io")),
+      RawHeader("X-Fish-Name", "Blippy")) { ??? }
+    //#multiple-headers
+  }
+
   "respondWithHeader-0" in {
     //#respondWithHeader-0
     val route =
