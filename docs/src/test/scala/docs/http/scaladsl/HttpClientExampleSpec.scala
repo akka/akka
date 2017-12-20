@@ -134,7 +134,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
           // a new connection is opened every single time, `runWith` is called. Materialization (the `runWith` call)
           // and opening up a new connection is slow.
           //
-          // The `outgoingConnection` API is very low-level. Use it only if you already have a `Source[HttpRequest]`
+          // The `outgoingConnection` API is very low-level. Use it only if you already have a `Source[HttpRequest, _]`
           // (other than Source.single) available that you want to use to run requests on a single persistent HTTP
           // connection.
           //

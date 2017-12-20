@@ -27,9 +27,9 @@ On the connection level Akka HTTP offers basically the same kind of interface as
 A socket binding is represented as a stream of incoming connections. The application pulls connections from this stream
 source and, for each of them, provides a @unidoc[Flow[HttpRequest, HttpResponse, \_]] to "translate" requests into responses.
 
-Apart from regarding a socket bound on the server-side as a @unidoc[Source[IncomingConnection]] and each connection as a
-@unidoc[Source[HttpRequest]] with a @unidoc[Sink[HttpResponse]] the stream abstraction is also present inside a single HTTP
-message: The entities of HTTP requests and responses are generally modeled as a @unidoc[Source[ByteString]]. See also
+Apart from regarding a socket bound on the server-side as a @unidoc[Source[IncomingConnection, \_]] and each connection as a
+@unidoc[Source[HttpRequest, \_]] with a @unidoc[Sink[HttpResponse, \_]] the stream abstraction is also present inside a single HTTP
+message: The entities of HTTP requests and responses are generally modeled as a @unidoc[Source[ByteString, \_]]. See also
 the @ref[HTTP Model](../common/http-model.md) for more information on how HTTP messages are represented in Akka HTTP.
 
 ## Starting and Stopping

@@ -26,7 +26,7 @@ import java.util.concurrent.CompletionStage;
 import java.io.File;
 
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function; 
+import java.util.function.Function;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Framing;
 import akka.http.javadsl.model.*;
@@ -39,7 +39,7 @@ public class HttpClientExampleDocTest {
   static HttpResponse responseFromSomewhere() {
     return null;
   }
-  
+
   void manualEntityComsumeExample() {
     //#manual-entity-consume-example-1
 
@@ -59,31 +59,31 @@ public class HttpClientExampleDocTest {
       .runWith(FileIO.toPath(new File("/tmp/example.out").toPath()), materializer);
     //#manual-entity-consume-example-1
   }
-  
+
   private static class ConsumeExample2 {
     //#manual-entity-consume-example-2
     final class ExamplePerson {
       final String name;
       public ExamplePerson(String name) { this.name = name; }
     }
-  
-    public ExamplePerson parse(ByteString line) { 
-      return new ExamplePerson(line.utf8String()); 
+
+    public ExamplePerson parse(ByteString line) {
+      return new ExamplePerson(line.utf8String());
     }
 
     final ActorSystem system = ActorSystem.create();
     final ExecutionContextExecutor dispatcher = system.dispatcher();
     final ActorMaterializer materializer = ActorMaterializer.create(system);
-  
+
     final HttpResponse response = responseFromSomewhere();
-    
+
     // toStrict to enforce all data be loaded into memory from the connection
     final CompletionStage<HttpEntity.Strict> strictEntity = response.entity()
         .toStrict(FiniteDuration.create(3, TimeUnit.SECONDS).toMillis(), materializer);
 
     // while API remains the same to consume dataBytes, now they're in memory already:
 
-    final CompletionStage<ExamplePerson> person = 
+    final CompletionStage<ExamplePerson> person =
       strictEntity
         .thenCompose(strict ->
           strict.getDataBytes()
@@ -92,7 +92,7 @@ public class HttpClientExampleDocTest {
         );
     //#manual-entity-consume-example-2
   }
-  
+
   void manualEntityDiscardExample1() {
     //#manual-entity-discard-example-1
     final ActorSystem system = ActorSystem.create();
@@ -102,7 +102,7 @@ public class HttpClientExampleDocTest {
     final HttpResponse response = responseFromSomewhere();
 
     final HttpMessage.DiscardedEntity discarded = response.discardEntityBytes(materializer);
-    
+
     discarded.completionStage().whenComplete((done, ex) -> {
       System.out.println("Entity discarded completely!");
     });
@@ -124,8 +124,8 @@ public class HttpClientExampleDocTest {
     });
     //#manual-entity-discard-example-2
   }
-  
-  
+
+
   // compile only test
   public void testConstructRequest() {
     //#outgoing-connection-example
@@ -140,7 +140,7 @@ public class HttpClientExampleDocTest {
             // a new connection is opened every single time, `runWith` is called. Materialization (the `runWith` call)
             // and opening up a new connection is slow.
             //
-            // The `outgoingConnection` API is very low-level. Use it only if you already have a `Source[HttpRequest]`
+            // The `outgoingConnection` API is very low-level. Use it only if you already have a `Source[HttpRequest, _]`
             // (other than Source.single) available that you want to use to run requests on a single persistent HTTP
             // connection.
             //
@@ -186,7 +186,7 @@ public class HttpClientExampleDocTest {
 
     //#https-proxy-example-single-request
   }
-  
+
   // compile only test
   public void testSingleRequestWithHttpsProxyExampleWithAuth() {
 
@@ -194,11 +194,11 @@ public class HttpClientExampleDocTest {
     final Materializer materializer = ActorMaterializer.create(system);
 
     //#auth-https-proxy-example-single-request
-    InetSocketAddress proxyAddress = 
+    InetSocketAddress proxyAddress =
       InetSocketAddress.createUnresolved("192.168.2.5", 8080);
-    HttpCredentials credentials = 
+    HttpCredentials credentials =
       HttpCredentials.createBasicHttpCredentials("proxy-user", "secret-proxy-pass-dont-tell-anyone");
-    
+
     ClientTransport proxy = ClientTransport.httpsProxy(proxyAddress, credentials); // include credentials
     ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system).withTransport(proxy);
 

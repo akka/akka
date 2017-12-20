@@ -14,7 +14,7 @@ Depending on your application's specific needs you can choose from three differe
 
 @ref[Host-Level Client-Side API](host-level.md)
 : for letting Akka HTTP manage a connection-pool to *one specific* host/port endpoint. Recommended when
-  the user can supply a @unidoc[Source[HttpRequest, NotUsed]] with requests to run against a single host
+  the user can supply a @unidoc[Source[HttpRequest, \_]] with requests to run against a single host
   over multiple pooled connections.
 
 @ref[Connection-Level Client-Side API](connection-level.md)

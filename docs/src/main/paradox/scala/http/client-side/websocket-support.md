@@ -33,7 +33,7 @@ The strict text is available from @scala[`TextMessage.Strict`]@java[`TextMessage
 @scala[`BinaryMessage.Strict`]@java[`BinaryMessage.getStrictData`].
 
 For streamed messages @scala[`BinaryMessage.Streamed`]@java[`BinaryMessage.getStreamedData`] and @scala[`TextMessage.Streamed`]@java[`TextMessage.getStreamedText`] will be used.
-In these cases the data is provided as a @unidoc[Source[ByteString, NotUsed]] for binary and @unidoc[Source[String, NotUsed]] for text messages.
+In these cases the data is provided as a @unidoc[Source[ByteString, \_]] for binary and @unidoc[Source[String, \_]] for text messages.
 
 ## singleWebSocketRequest
 

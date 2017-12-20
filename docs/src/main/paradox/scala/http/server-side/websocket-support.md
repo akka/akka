@@ -41,7 +41,7 @@ certain messages to be strict. (Particularly, note that tests against `localhost
 against remote peers where data is received over a physical network connection.)
 
 For sending data, you can use @scala[`TextMessage.apply(text: String)`]@java[`TextMessage.create(String)`] to create a strict message if the
-complete message has already been assembled. Otherwise, use @scala[`TextMessage.apply(textStream: Source[String, Any])`]@java[`TextMessage.create(Source<String, ?>)`]
+complete message has already been assembled. Otherwise, use @scala[`TextMessage.apply(textStream: Source[String, \_])`]@java[`TextMessage.create(Source<String, ?>)`]
 to create a streaming message from an Akka Stream source.
 
 ## Server API
@@ -70,7 +70,7 @@ scenarios this fits very well and such a @unidoc[Flow] can be constructed from a
 There are other use-cases, e.g. in a server-push model, where a server message is sent spontaneously, or in a
 true bi-directional scenario where input and output aren't logically connected. Providing the handler as a @unidoc[Flow] in
 these cases may not fit. @scala[Another method named `UpgradeToWebSocket.handleMessagesWithSinkSource`]@java[An overload of `UpgradeToWebSocket.handleMessagesWith`] is provided, instead,
-which allows to pass an output-generating @scala[@unidoc[Source[Message, Any]]]@java[@unidoc[Source[Message, ?]]] and an input-receiving @scala[@unidoc[Sink[Message, Any]]]@java[@unidoc[Sink[Message, ?]]] independently.
+which allows to pass an output-generating @unidoc[Source[Message, \_]] and an input-receiving @unidoc[Sink[Message, \_]] independently.
 
 Note that a handler is required to consume the data stream of each message to make place for new messages. Otherwise,
 subsequent messages may be stuck and message traffic in this direction will stall.
