@@ -14,8 +14,13 @@ To enable caching support add a library dependency onto:
   version="$project.version$"
 }
 
-Directives are available by importing
-`akka.http.scaladsl.server.directives.CachingDirectives`.
+Directives are available by importing:
+
+Scala
+:  @@snip [HeaderDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/CachingDirectivesExamplesSpec.scala) { #caching-directives-import }
+
+Java
+:   @@snip [CachingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CachingDirectivesExamplesTest.java) { #caching-directives-import }
 
 @@toc { depth=1 }
 

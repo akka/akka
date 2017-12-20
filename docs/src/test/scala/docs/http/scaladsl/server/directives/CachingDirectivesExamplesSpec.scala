@@ -10,11 +10,13 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
 import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.RouteResult
-import akka.http.scaladsl.server.directives.CachingDirectives
+//#caching-directives-import
+import akka.http.scaladsl.server.directives.CachingDirectives._
+//#caching-directives-import
 import akka.http.scaladsl.model.HttpMethods.GET
 import scala.concurrent.duration._
 
-class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
+class CachingDirectivesExamplesSpec extends RoutingSpec {
 
   "cache" in {
     //#cache
