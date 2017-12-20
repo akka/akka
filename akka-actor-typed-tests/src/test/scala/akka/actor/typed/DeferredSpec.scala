@@ -3,13 +3,11 @@
  */
 package akka.actor.typed
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.Actor.BehaviorDecorators
-import akka.actor.typed.scaladsl.AskPattern._
-import akka.typed.testkit.{ EffectfulActorContext, Inbox, TestKitSettings }
+import akka.typed.testkit.{ BehaviorTestkit, TestInbox, TestKitSettings }
 import akka.typed.testkit.scaladsl._
 
 object DeferredSpec {
@@ -21,7 +19,7 @@ object DeferredSpec {
   case object Started extends Event
 
   def target(monitor: ActorRef[Event]): Behavior[Command] =
-    Actor.immutable((ctx, cmd) ⇒ cmd match {
+    Actor.immutable((_, cmd) ⇒ cmd match {
       case Ping ⇒
         monitor ! Pong
         Actor.same
@@ -92,7 +90,7 @@ class DeferredSpec extends TypedSpec with StartSupport {
       probe.expectMsg(Started)
     }
 
-    "must undefer underlying when wrapped by widen" in {
+    "must un-defer underlying when wrapped by widen" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.deferred[Command] { _ ⇒
         probe.ref ! Started
@@ -108,7 +106,7 @@ class DeferredSpec extends TypedSpec with StartSupport {
       probe.expectMsg(Pong)
     }
 
-    "must undefer underlying when wrapped by monitor" in {
+    "must un-defer underlying when wrapped by monitor" in {
       // monitor is implemented with tap, so this is testing both
       val probe = TestProbe[Event]("evt")
       val monitorProbe = TestProbe[Command]("monitor")
@@ -132,22 +130,22 @@ class DeferredStubbedSpec extends TypedSpec {
 
   import DeferredSpec._
 
-  def mkCtx(behv: Behavior[Command]): EffectfulActorContext[Command] =
-    new EffectfulActorContext("ctx", behv, 1000, system)
+  def mkCtx(behv: Behavior[Command]): BehaviorTestkit[Command] =
+    BehaviorTestkit(behv, "ctx")
 
   "must create underlying deferred behavior immediately" in {
-    val inbox = Inbox[Event]("evt")
+    val inbox = TestInbox[Event]("evt")
     val behv = Actor.deferred[Command] { _ ⇒
       inbox.ref ! Started
       target(inbox.ref)
     }
-    val ctx = mkCtx(behv)
+    mkCtx(behv)
     // it's supposed to be created immediately (not waiting for first message)
     inbox.receiveMsg() should ===(Started)
   }
 
   "must stop when exception from factory" in {
-    val inbox = Inbox[Event]("evt")
+    val inbox = TestInbox[Event]("evt")
     val exc = new RuntimeException("simulated exc from factory") with NoStackTrace
     val behv = Actor.deferred[Command] { _ ⇒
       inbox.ref ! Started

@@ -4,7 +4,7 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.typed.testkit.{ EffectfulActorContext, TestKitSettings }
+import akka.typed.testkit.{ BehaviorTestkit, TestKitSettings }
 import akka.typed.testkit.scaladsl.TestProbe
 import scala.concurrent.duration.DurationInt
 
@@ -22,7 +22,7 @@ class ImmutablePartialSpec extends TypedSpec with StartSupport {
             probe.ref ! Command2
             Actor.same
         }
-      val context = new EffectfulActorContext("ctx", behavior, 42, null)
+      val context = new BehaviorTestkit("ctx", behavior)
 
       context.run(Command1)
       context.currentBehavior shouldBe behavior

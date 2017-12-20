@@ -3,8 +3,9 @@
  */
 package akka.actor.typed.internal
 
-import scala.concurrent.ExecutionContextExecutor
 import java.util.LinkedList
+
+import scala.concurrent.ExecutionContextExecutor
 
 class ControlledExecutor extends ExecutionContextExecutor {
   private val tasks = new LinkedList[Runnable]

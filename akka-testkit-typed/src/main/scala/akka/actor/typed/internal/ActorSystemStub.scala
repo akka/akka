@@ -4,18 +4,21 @@
 package akka.actor.typed
 package internal
 
-import akka.{ actor ⇒ a, event ⇒ e }
-
-import scala.concurrent._
-import com.typesafe.config.ConfigFactory
 import java.util.concurrent.ThreadFactory
 
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.event.typed.{ BusLogging, DefaultLoggingFilter, EventStream }
-import akka.event.typed.{ BusLogging, DefaultLoggingFilter }
 import akka.util.Timeout
+import akka.{ actor ⇒ a, event ⇒ e }
+import com.typesafe.config.ConfigFactory
 
-private[typed] class ActorSystemStub(val name: String)
+import scala.concurrent._
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] class ActorSystemStub(val name: String)
   extends ActorSystem[Nothing] with ActorRef[Nothing] with ActorRefImpl[Nothing] {
 
   override val path: a.ActorPath = a.RootActorPath(a.Address("akka", name)) / "user"

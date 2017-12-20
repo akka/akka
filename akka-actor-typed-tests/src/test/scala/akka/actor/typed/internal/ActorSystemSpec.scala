@@ -7,7 +7,7 @@ package internal
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.Actor._
-import akka.typed.testkit.Inbox
+import akka.typed.testkit.TestInbox
 import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest._
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
@@ -39,7 +39,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
   "An ActorSystem" must {
     "must start the guardian actor and terminate when it terminates" in {
       val t = withSystem("a", immutable[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; stopped }, doTerminate = false) { sys ⇒
-        val inbox = Inbox[String]("a")
+        val inbox = TestInbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually {
           inbox.hasMessages should ===(true)
@@ -52,7 +52,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
     }
 
     "must terminate the guardian actor" in {
-      val inbox = Inbox[String]("terminate")
+      val inbox = TestInbox[String]("terminate")
       val sys = system(
         immutable[Probe] {
           case (_, _) ⇒ unhandled

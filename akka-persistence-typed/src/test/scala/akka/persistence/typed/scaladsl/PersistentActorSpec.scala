@@ -6,13 +6,10 @@ package akka.persistence.typed.scaladsl
 import scala.concurrent.duration._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, StartSupport, SupervisorStrategy, Terminated, TypedSpec }
 import akka.actor.typed.scaladsl.Actor
-import akka.actor.typed.scaladsl.AskPattern._
-import akka.actor.typed.scaladsl.adapter._
 import akka.typed.testkit.TestKitSettings
 import akka.typed.testkit.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
-import akka.util.Timeout
 import akka.persistence.typed.scaladsl.PersistentActor._
 
 object PersistentActorSpec {

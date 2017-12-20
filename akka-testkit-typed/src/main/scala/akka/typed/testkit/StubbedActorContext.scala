@@ -11,7 +11,7 @@ import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import akka.annotation.InternalApi
-import akka.actor.typed.internal.{ ActorContextImpl, ActorRefImpl }
+import akka.actor.typed.internal.{ ActorContextImpl, ActorRefImpl, ActorSystemStub }
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
@@ -31,7 +31,7 @@ private[akka] final class FunctionRef[-T](
     if (msg == null) throw InvalidMessageException("[null] is not an allowed message")
     if (isAlive)
       try send(msg, this) catch {
-        case NonFatal(ex) ⇒ // nothing we can do here
+        case NonFatal(_) ⇒ // nothing we can do here
       }
     else () // we don’t have deadLetters available
   }
@@ -39,12 +39,12 @@ private[akka] final class FunctionRef[-T](
   import internal._
 
   override def sendSystem(signal: SystemMessage): Unit = signal match {
-    case internal.Create()                           ⇒ // nothing to do
-    case internal.DeathWatchNotification(ref, cause) ⇒ // we’re not watching, and we’re not a parent either
-    case internal.Terminate()                        ⇒ doTerminate()
-    case internal.Watch(watchee, watcher)            ⇒ if (watchee == this && watcher != this) addWatcher(watcher.sorryForNothing)
-    case internal.Unwatch(watchee, watcher)          ⇒ if (watchee == this && watcher != this) remWatcher(watcher.sorryForNothing)
-    case NoMessage                                   ⇒ // nothing to do
+    case internal.Create()                     ⇒ // nothing to do
+    case internal.DeathWatchNotification(_, _) ⇒ // we’re not watching, and we’re not a parent either
+    case internal.Terminate()                  ⇒ doTerminate()
+    case internal.Watch(watchee, watcher)      ⇒ if (watchee == this && watcher != this) addWatcher(watcher.sorryForNothing)
+    case internal.Unwatch(watchee, watcher)    ⇒ if (watchee == this && watcher != this) remWatcher(watcher.sorryForNothing)
+    case NoMessage                             ⇒ // nothing to do
   }
 
   override def isLocal = true
@@ -105,27 +105,30 @@ private[typed] object WatchableRef {
 }
 
 /**
+ * INTERNAL API
+ *
  * An [[ActorContext]] for synchronous execution of a [[Behavior]] that
  * provides only stubs for the effects an Actor can perform and replaces
  * created child Actors by a synchronous Inbox (see `Inbox.sync`).
  *
- * See [[EffectfulActorContext]] for more advanced uses.
+ * See [[BehaviorTestkit]] for more advanced uses.
  */
-class StubbedActorContext[T](
-  val name:                     String,
-  override val mailboxCapacity: Int,
-  override val system:          ActorSystem[Nothing]) extends ActorContextImpl[T] {
+@InternalApi private[akka] class StubbedActorContext[T](
+  val name: String) extends ActorContextImpl[T] {
 
-  val selfInbox = Inbox[T](name)
+  private val selfInbox = TestInbox[T](name)
   override val self = selfInbox.ref
+  override val system = new ActorSystemStub("StubbedActorContext")
+  // Not used for a stubbed actor context
+  override def mailboxCapacity = 1
 
-  private var _children = TreeMap.empty[String, Inbox[_]]
+  private var _children = TreeMap.empty[String, TestInbox[_]]
   private val childName = Iterator from 1 map (Helpers.base64(_))
 
   override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ref)
   override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ref)
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
-    val i = Inbox[U](childName.next())
+    val i = TestInbox[U](childName.next())
     _children += i.ref.path.name → i
     i.ref
   }
@@ -134,7 +137,7 @@ class StubbedActorContext[T](
       case Some(_) ⇒ throw untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
         // FIXME correct child path for the Inbox ref
-        val i = Inbox[U](name)
+        val i = TestInbox[U](name)
         _children += name → i
         i.ref
     }
@@ -160,6 +163,7 @@ class StubbedActorContext[T](
     override def isCancelled = true
   }
 
+  // TODO allow overriding of this
   override def executionContext: ExecutionContextExecutor = system.executionContext
 
   /**
@@ -168,7 +172,7 @@ class StubbedActorContext[T](
   @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
-    val i = Inbox[U](n)
+    val i = TestInbox[U](n)
     _children += i.ref.path.name → i
 
     new FunctionRef[U](
@@ -181,8 +185,8 @@ class StubbedActorContext[T](
    * Retrieve the inbox representing the given child actor. The passed ActorRef must be one that was returned
    * by one of the spawn methods earlier.
    */
-  def childInbox[U](child: ActorRef[U]): Inbox[U] = {
-    val inbox = _children(child.path.name).asInstanceOf[Inbox[U]]
+  def childInbox[U](child: ActorRef[U]): TestInbox[U] = {
+    val inbox = _children(child.path.name).asInstanceOf[TestInbox[U]]
     if (inbox.ref != child) throw new IllegalArgumentException(s"$child is not a child of $this")
     inbox
   }
@@ -190,7 +194,7 @@ class StubbedActorContext[T](
   /**
    * Retrieve the inbox representing the child actor with the given name.
    */
-  def childInbox[U](name: String): Inbox[U] = _children(name).asInstanceOf[Inbox[U]]
+  def childInbox[U](name: String): TestInbox[U] = _children(name).asInstanceOf[TestInbox[U]]
 
   /**
    * Remove the given inbox from the list of children, for example after

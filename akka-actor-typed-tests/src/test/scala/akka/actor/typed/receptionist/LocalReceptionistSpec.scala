@@ -7,8 +7,8 @@ import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.typed.testkit.EffectfulActorContext
-import akka.typed.testkit.Inbox
+import akka.typed.testkit.BehaviorTestkit
+import akka.typed.testkit.TestInbox
 import akka.typed.testkit.TestKitSettings
 import akka.typed.testkit.scaladsl.TestProbe
 import org.scalatest.concurrent.Eventually
@@ -26,7 +26,7 @@ class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport 
   val behaviorB = Actor.empty[ServiceB]
 
   case object Stop extends ServiceA with ServiceB
-  val stoppableBehavior = Actor.immutable[Any] { (ctx, msg) ⇒
+  val stoppableBehavior = Actor.immutable[Any] { (_, msg) ⇒
     msg match {
       case Stop ⇒ Behavior.stopped
       case _    ⇒ Behavior.same
@@ -44,29 +44,29 @@ class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport 
   "A local receptionist" must {
 
     "must register a service" in {
-      val ctx = new EffectfulActorContext("register", behavior, 1000, system)
-      val a = Inbox[ServiceA]("a")
-      val r = Inbox[Registered[_]]("r")
+      val ctx = new BehaviorTestkit("register", behavior)
+      val a = TestInbox[ServiceA]("a")
+      val r = TestInbox[Registered[_]]("r")
       ctx.run(Register(ServiceKeyA, a.ref)(r.ref))
-      ctx.getEffect() // watching however that is implemented
+      ctx.retrieveEffect() // watching however that is implemented
       r.receiveMsg() should be(Registered(ServiceKeyA, a.ref))
-      val q = Inbox[Listing[ServiceA]]("q")
+      val q = TestInbox[Listing[ServiceA]]("q")
       ctx.run(Find(ServiceKeyA)(q.ref))
-      ctx.getAllEffects() should be(Nil)
+      ctx.retrieveAllEffects() should be(Nil)
       q.receiveMsg() should be(Listing(ServiceKeyA, Set(a.ref)))
       assertEmpty(a, r, q)
     }
 
     "must register two services" in {
-      val ctx = new EffectfulActorContext("registertwo", behavior, 1000, system)
-      val a = Inbox[ServiceA]("a")
-      val r = Inbox[Registered[_]]("r")
+      val ctx = new BehaviorTestkit("registertwo", behavior)
+      val a = TestInbox[ServiceA]("a")
+      val r = TestInbox[Registered[_]]("r")
       ctx.run(Register(ServiceKeyA, a.ref)(r.ref))
       r.receiveMsg() should be(Registered(ServiceKeyA, a.ref))
-      val b = Inbox[ServiceB]("b")
+      val b = TestInbox[ServiceB]("b")
       ctx.run(Register(ServiceKeyB, b.ref)(r.ref))
       r.receiveMsg() should be(Registered(ServiceKeyB, b.ref))
-      val q = Inbox[Listing[_]]("q")
+      val q = TestInbox[Listing[_]]("q")
       ctx.run(Find(ServiceKeyA)(q.ref))
       q.receiveMsg() should be(Listing(ServiceKeyA, Set(a.ref)))
       ctx.run(Find(ServiceKeyB)(q.ref))
@@ -75,15 +75,15 @@ class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport 
     }
 
     "must register two services with the same key" in {
-      val ctx = new EffectfulActorContext("registertwosame", behavior, 1000, system)
-      val a1 = Inbox[ServiceA]("a1")
-      val r = Inbox[Registered[_]]("r")
+      val ctx = new BehaviorTestkit("registertwosame", behavior)
+      val a1 = TestInbox[ServiceA]("a1")
+      val r = TestInbox[Registered[_]]("r")
       ctx.run(Register(ServiceKeyA, a1.ref)(r.ref))
       r.receiveMsg() should be(Registered(ServiceKeyA, a1.ref))
-      val a2 = Inbox[ServiceA]("a2")
+      val a2 = TestInbox[ServiceA]("a2")
       ctx.run(Register(ServiceKeyA, a2.ref)(r.ref))
       r.receiveMsg() should be(Registered(ServiceKeyA, a2.ref))
-      val q = Inbox[Listing[_]]("q")
+      val q = TestInbox[Listing[_]]("q")
       ctx.run(Find(ServiceKeyA)(q.ref))
       q.receiveMsg() should be(Listing(ServiceKeyA, Set(a1.ref, a2.ref)))
       ctx.run(Find(ServiceKeyB)(q.ref))

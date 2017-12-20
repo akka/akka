@@ -28,7 +28,7 @@ import scala.util.control.NonFatal
 import akka.actor.typed.scaladsl.AskPattern
 
 import scala.util.control.NoStackTrace
-import akka.typed.testkit.{ Inbox, TestKitSettings }
+import akka.typed.testkit.{ TestInbox, TestKitSettings }
 import org.scalatest.time.Span
 
 /**
@@ -145,7 +145,7 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
   /**
    * Group assertion that ensures that the given inboxes are empty.
    */
-  def assertEmpty(inboxes: Inbox[_]*): Unit = {
+  def assertEmpty(inboxes: TestInbox[_]*): Unit = {
     inboxes foreach (i ⇒ withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
   }
 

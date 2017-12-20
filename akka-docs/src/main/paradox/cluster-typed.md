@@ -2,7 +2,7 @@
 
 TODO
 
-## Dependency
+### Dependency
 
 sbt
 :   @@@vars
