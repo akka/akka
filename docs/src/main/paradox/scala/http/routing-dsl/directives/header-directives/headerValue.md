@@ -10,13 +10,13 @@
 
 ## Description
 
-Traverses the list of request headers with the specified function and extracts the first value the function returns as
-`Some(value)`.
+Traverses the list of request headers with the specified function and extracts the first value the function returns
+@scala[as `Some(value)`]@java[a non empty `Optional<T>`].
 
 The [headerValue]() directive is a mixture of `map` and `find` on the list of request headers. The specified function
-is called once for each header until the function returns `Some(value)`. This value is extracted and presented to the
+is called once for each header until the function returns @scala[`Some(value)`]@java[a non empty `Optional<T>`]. This value is extracted and presented to the
 inner route. If the function throws an exception the request is rejected with a @unidoc[MalformedHeaderRejection]. If the
-function returns `None` for every header the request is rejected as "NotFound".
+function returns @scala[`None`]@java[`Optional.empty()`] for every header the request is rejected as "NotFound".
 
 This directive is the basis for building other request header related directives.
 
@@ -24,9 +24,14 @@ See also @ref[headerValuePF](headerValuePF.md) for a nicer syntactic alternative
 
 ## Example
 
-@@snip [HeaderDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala) { #headerValue-0 }
+Scala
+:   @@snip [HeaderDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala) { #headerValue-0 }
 
-### Get headerValue or return a default
+Java
+:   @@snip [HeaderDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java) { #headerValue }
+
+
+### Get headerValue or return a default value
 
 Using @ref[provide](../basic-directives/provide.md) and @ref[composing directives](../index.md#composing-directives) one can build a pattern where a headerValue is extracted if available or a default is returned. 
 

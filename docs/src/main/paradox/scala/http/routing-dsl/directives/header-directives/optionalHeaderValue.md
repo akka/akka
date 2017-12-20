@@ -10,10 +10,10 @@
 
 ## Description
 
-Traverses the list of request headers with the specified function and extracts the first value the function returns as
-`Some(value)`.
+Traverses the list of request headers with the specified function and extracts the first value the function returns
+@scala[as `Some(value)`]@java[a non empty `Optional<T>`].
 
-The `optionalHeaderValue` directive is similar to the @ref[headerValue](headerValue.md) directive but always extracts an `Option`
+The `optionalHeaderValue` directive is similar to the @ref[headerValue](headerValue.md) directive but always extracts an @scala[`Option`]@java[`Optional`]
 value instead of rejecting the request if no matching header could be found.
 
 ## Example
