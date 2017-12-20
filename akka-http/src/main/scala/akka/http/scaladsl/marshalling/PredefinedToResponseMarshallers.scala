@@ -117,10 +117,6 @@ trait LowPriorityToResponseMarshallerImplicits {
   implicit def liftMarshaller[T](implicit m: ToEntityMarshaller[T]): ToResponseMarshaller[T] =
     PredefinedToResponseMarshallers.fromToEntityMarshaller()
 
-  @deprecated("This method exists only for the purpose of binary compatibility, it used to be implicit.", "10.0.2")
-  def fromEntityStreamingSupportAndEntityMarshaller[T, M](s: EntityStreamingSupport, m: ToEntityMarshaller[T]): ToResponseMarshaller[Source[T, M]] =
-    fromEntityStreamingSupportAndEntityMarshaller(s, m, null)
-
   // FIXME deduplicate this!!!
   implicit def fromEntityStreamingSupportAndEntityMarshaller[T, M](implicit s: EntityStreamingSupport, m: ToEntityMarshaller[T], tag: ClassTag[T]): ToResponseMarshaller[Source[T, M]] = {
     Marshaller[Source[T, M], HttpResponse] { implicit ec ⇒ source ⇒

@@ -1,0 +1,2 @@
+# Removal of deprecated methods in 10.0.1
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.marshallers.sprayjson.SprayJsonByteStringParserInput$")

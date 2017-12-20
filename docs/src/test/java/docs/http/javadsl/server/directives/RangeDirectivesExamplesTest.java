@@ -61,7 +61,7 @@ public class RangeDirectivesExamplesTest extends JUnitRouteTest {
         response.assertHeaderKindNotExists("Content-Range");
 
         final CompletionStage<List<Multipart.ByteRanges.BodyPart>> completionStage =
-                response.entity(Unmarshaller.entityToMultipartByteRanges()).getParts()
+                response.entity(Unmarshaller.entityToMultipartByteRangesUnmarshaller()).getParts()
                         .runFold(new ArrayList<>(), (acc, n) -> {
                             acc.add(n);
                             return acc;
