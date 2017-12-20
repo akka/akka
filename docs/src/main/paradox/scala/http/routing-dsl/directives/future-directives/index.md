@@ -1,6 +1,6 @@
 # FuturesDirectives
 
-Future directives can be used to run inner routes once the provided `Future[T]` has been completed.
+Future directives can be used to run inner routes once the provided @scala[`Future[T]`]@java[`CompletionStage<T>`] has been completed.
 
 @@toc { depth=1 }
 

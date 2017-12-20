@@ -10,7 +10,7 @@
 
 ## Description
 
-Evaluates its parameter of type `Future[T]` protecting it with the specified @unidoc[CircuitBreaker].
+Evaluates its parameter of type @scala[`Future[T]`]@java[`CompletionStage<T>`] protecting it with the specified @unidoc[CircuitBreaker].
 Refer to @extref[Circuit Breaker](akka-docs:common/circuitbreaker.html) for a detailed description of this pattern.
 
 If the @unidoc[CircuitBreaker] is open, the request is rejected with a @unidoc[CircuitBreakerOpenRejection].
