@@ -45,7 +45,8 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
       assertAllStagesStopped {
         val reqsCount = 100
         val clientFlow = Http().superPool[Int]()
-        val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
+        val host = "127.0.0.46" // unlikely to be used host / port
+        val port = 34763
         val source = Source(1 to reqsCount)
           .map(i ⇒ HttpRequest(uri = Uri(s"http://$host:$port/test/$i")) → i)
 
