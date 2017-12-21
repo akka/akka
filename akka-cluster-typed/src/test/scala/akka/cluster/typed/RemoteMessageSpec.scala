@@ -6,13 +6,11 @@ package akka.cluster.typed
 import java.nio.charset.StandardCharsets
 
 import akka.Done
-import akka.actor.{ ExtendedActorSystem, ActorSystem ⇒ UntypedActorSystem }
-import akka.serialization.SerializerWithStringManifest
 import akka.testkit.AkkaSpec
-import akka.actor.typed.{ ActorRef, ActorSystem }
+import akka.actor.typed.{ ActorRef, ActorRefResolver }
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.{ ExtendedActorSystem, ActorSystem ⇒ UntypedActorSystem }
-import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
+import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Promise
@@ -93,7 +91,7 @@ class RemoteMessageSpec extends AkkaSpec(RemoteMessageSpec.config) {
           ActorRefResolver(typedSystem2).resolveActorRef[Ping](remoteRefStr)
 
         val pongPromise = Promise[Done]()
-        val recipient = system2.spawn(Actor.immutable[String] { (_, msg) ⇒
+        val recipient = system2.spawn(Actor.immutable[String] { (_, _) ⇒
           pongPromise.success(Done)
           Actor.stopped
         }, "recipient")

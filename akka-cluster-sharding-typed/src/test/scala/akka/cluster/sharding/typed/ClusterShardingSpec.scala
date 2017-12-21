@@ -5,7 +5,7 @@
 package akka.cluster.sharding.typed
 
 import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
-import akka.actor.typed.{ ActorRef, ActorSystem, Props, TypedSpec }
+import akka.actor.typed.{ ActorRef, ActorRefResolver, ActorSystem, Props, TypedSpec }
 import akka.cluster.typed.Cluster
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Actor
@@ -22,7 +22,6 @@ import org.scalatest.concurrent.Eventually
 import akka.cluster.MemberStatus
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
-import akka.cluster.typed.ActorRefResolver
 import java.nio.charset.StandardCharsets
 
 object ClusterShardingSpec {

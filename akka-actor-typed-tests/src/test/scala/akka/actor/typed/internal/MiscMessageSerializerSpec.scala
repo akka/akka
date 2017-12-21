@@ -1,21 +1,20 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.cluster.typed.internal
+package akka.actor.typed.internal
 
-import akka.serialization.{ SerializationExtension, SerializerWithStringManifest }
-import akka.actor.typed.{ ActorRef, TypedSpec }
-import akka.actor.typed.TypedSpec.Create
+import akka.actor.typed.TypedSpec
+import akka.actor.typed.TypedSpec.{ Create ⇒ TCreate }
 import akka.actor.typed.scaladsl.Actor
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.adapter._
+import akka.serialization.SerializationExtension
 import com.typesafe.config.ConfigFactory
 
 object MiscMessageSerializerSpec {
   def config = ConfigFactory.parseString(
     """
       akka.actor {
-        provider = cluster
         serialize-messages = off
         allow-java-serialization = true
       }
@@ -41,7 +40,8 @@ class MiscMessageSerializerSpec extends TypedSpec(MiscMessageSerializerSpec.conf
     }
 
     "must serialize and deserialize typed actor refs" in {
-      val ref = (system ? Create(Actor.empty[Unit], "some-actor")).futureValue
+      val ref = (system ? TCreate(Actor.empty[Unit], "some-actor")).futureValue
+      println(ref.getClass)
       checkSerialization(ref)
     }
   }
