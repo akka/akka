@@ -10,7 +10,7 @@
 
 ## Description
 
-Extracts all parameters at once as a multi-map of type `Map[String, List[String]]` mapping
+Extracts all parameters at once as a multi-map of type @scala[`Map[String, List[String]]`]@java[`Map<String, List<String>>`] mapping
 a parameter name to a list of all its values.
 
 This directive can be used if parameters can occur several times.

@@ -110,7 +110,8 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
 
     Get("/?color=blue&count=blub") ~> Route.seal(route) ~> check {
       status shouldEqual StatusCodes.BadRequest
-      responseAs[String] shouldEqual "The query parameter 'count' was malformed:\n'blub' is not a valid 32-bit signed integer value"
+      responseAs[String] shouldEqual "The query parameter 'count' was malformed:\n'blub'" +
+        " is not a valid 32-bit signed integer value"
     }
     //#mapped-value
   }

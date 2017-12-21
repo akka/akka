@@ -1,12 +1,15 @@
 # parameterMap
 
+@@@ div { .group-scala }
 ## Signature
 
 @@signature [ParameterDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala) { #parameterMap }
 
+@@@
+
 ## Description
 
-Extracts all parameters at once as a `Map[String, String]` mapping parameter names to parameter values.
+Extracts all parameters at once as a @scala[`Map[String, String]`]@java[`Map<String, String>`] mapping parameter names to parameter values.
 
 If a query contains a parameter value several times, the map will contain the last one.
 

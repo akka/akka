@@ -7,6 +7,7 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import org.junit.Test;
 
 import java.util.Map.Entry;
@@ -50,6 +51,44 @@ public class ParameterDirectivesExamplesTest extends JUnitRouteTest {
       .assertStatusCode(StatusCodes.NOT_FOUND)
       .assertEntity("Request is missing required query parameter 'backgroundColor'");
     //#parameters
+  }
+
+  @Test
+  public void testParameterOptional() {
+    //#optional
+    final Route route = parameter("color", color ->
+            parameterOptional("backgroundColor", backgroundColor ->
+                    complete("The color is '" + color
+                            + "' and the background is '" + backgroundColor.orElse("undefined") + "'")
+            )
+    );
+
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/?color=blue&backgroundColor=red"))
+            .assertEntity("The color is 'blue' and the background is 'red'");
+
+    testRoute(route).run(HttpRequest.GET("/?color=blue"))
+            .assertEntity("The color is 'blue' and the background is 'undefined'");
+    //#optional
+  }
+
+  @Test
+  public void testParameterMappedValue() {
+    //#mapped-value
+    final Route route = parameter("color", color ->
+            parameter(StringUnmarshallers.INTEGER,"count", count ->
+                    complete("The color is '" + color + "' and you have " + count + " of it.")
+            )
+    );
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/?color=blue&count=42"))
+            .assertEntity("The color is 'blue' and you have 42 of it.");
+
+    testRoute(route).run(HttpRequest.GET("/?color=blue&count=blub"))
+            .assertStatusCode(StatusCodes.BAD_REQUEST)
+            .assertEntity("The query parameter 'count' was malformed:\n'blub'"
+                          +" is not a valid 32-bit signed integer value");
+    //#mapped-value
   }
 
   @Test

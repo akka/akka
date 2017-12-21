@@ -10,7 +10,7 @@
 
 ## Description
 
-Extracts all parameters at once in the original order as (name, value) tuples of type `(String, String)`.
+Extracts all parameters at once in the original order as (name, value) tuples of type @scala[`(String, String)`]@java[`Map.Entry<String, String>`].
 
 This directive can be used if the exact order of parameters is important or if parameters can occur several times.
 

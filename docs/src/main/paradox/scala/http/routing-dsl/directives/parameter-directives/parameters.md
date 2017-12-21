@@ -1,5 +1,13 @@
 # parameters
 
+@@@ div { .group-java }
+
+This page explains how to extract multiple *query* parameter values from the request, or parameters that might or might 
+not be present.
+
+@@@
+
+@@@ div { .group-scala }
 ## Signature
 
 ```scala
@@ -13,8 +21,11 @@ The signature shown is simplified and written in pseudo-syntax, the real signatu
 
 > <a id="1" href="#^1">[1]</a> See [The Magnet Pattern](http://spray.io/blog/2012-12-13-the-magnet-pattern/) for an explanation of magnet-based overloading.
 
+@@@
+
 ## Description
 
+@@@ div { .group-scala }
 The parameters directive filters on the existence of several query parameters and extract their values.
 
 Query parameters can be either extracted as a String or can be converted to another type. The parameter name
@@ -49,28 +60,52 @@ as required, optional, or repeated, or to filter requests where a parameter has 
 `"distance".as(deserializer).*`
 : extract multiple occurrences of parameter "distance" with an explicit @unidoc[Unmarshaller]
 
-You can use @ref[Case Class Extraction](../../case-class-extraction.md) to group several extracted values together into a case-class
+You can use @scala[@ref[Case Class Extraction](../../case-class-extraction.md)] to group several extracted values together into a case-class
 instance.
 
-Requests missing a required parameter or parameter value will be rejected with an appropriate rejection. 
+@@@
 
-If an unmarshaller throws an exception while extracting the value of a parameter, the request will be rejected with a `MissingQueryParameterRejection` 
+@@@ div { .group-java }
+In order to filter on the existence of several query parameters, you need to nest as many `parameter` directives as desired. 
+
+Query parameters can be either extracted as a String or can be converted to another type. Different methods must be used
+when the desired parameter is required, optional or repeated.
+
+@@@
+
+Requests missing a required parameter @scala[or parameter value ]will be rejected with an appropriate rejection. 
+
+If an unmarshaller throws an exception while extracting the value of a parameter, the request will be rejected with a `MissingQueryParameterRejection`
 if the unmarshaller threw an `Unmarshaller.NoContentException` or a @unidoc[MalformedQueryParamRejection] in all other cases.
 (see also @ref[Rejections](../../../routing-dsl/rejections.md))
 
+@@@ div { .group-scala }
 There's also a singular version, @ref[parameter](parameter.md). Form fields can be handled in a similar way, see `formFields`. If
 you want unified handling for both query parameters and form fields, see `anyParams`.
+
+@@@
+
+See @ref[When to use which parameter directive?](index.md#which-parameter-directive) to understand when to use which directive.
 
 ## Examples
 
 ### Required parameter
 
-@@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #required-1 }
+Scala
+:  @@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #required-1 }
+
+Java
+:  @@snip [ParameterDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java) { #parameters }
 
 ### Optional parameter
 
-@@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #optional }
+Scala
+:   @@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #optional }
 
+Java
+:  @@snip [ParameterDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java) { #optional }
+ 
+@@@ div { .group-scala }
 ### Optional parameter with default value
 
 @@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #optional-with-default }
@@ -79,9 +114,17 @@ you want unified handling for both query parameters and form fields, see `anyPar
 
 @@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #required-value }
 
+@@@
+
 ### Deserialized parameter
 
-@@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #mapped-value }
+Scala
+:   @@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #mapped-value }
+
+Java
+:  @@snip [ParameterDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java) { #mapped-value }
+
+@@@ div { .group-scala }
 
 ### Repeated parameter
 
@@ -93,8 +136,6 @@ you want unified handling for both query parameters and form fields, see `anyPar
 
 ### Repeated, deserialized parameter
 
-Scala
-:  @@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #mapped-repeated }
+@@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #mapped-repeated }
 
-Java
-:  @@snip [ParameterDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java) { #parameters }
+@@@

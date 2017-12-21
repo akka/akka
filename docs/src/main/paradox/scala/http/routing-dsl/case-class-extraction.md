@@ -1,3 +1,10 @@
+@@@ div { .group-java }
+
+This section is only relevant when using the Scala API
+
+@@@
+
+@@@ div { .group-scala }
 # Case Class Extraction
 
 The value extraction performed by @ref[Directives](directives/index.md) is a nice way of providing your route logic with interesting request
@@ -58,3 +65,5 @@ If you write your validations like this Akka HTTP's case class extraction logic 
 messages and generate a @unidoc[ValidationRejection] if something goes wrong. By default, `ValidationRejections` are
 converted into `400 Bad Request` error response by the default @ref[RejectionHandler](rejections.md#the-rejectionhandler), if no
 subsequent route successfully handles the request.
+
+@@@
