@@ -279,6 +279,6 @@ lazy val docs = project("docs")
     additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
-  .settings(ParadoxSupport.paradoxWithSignatureDirective)
+  .settings(ParadoxSupport.paradoxWithCustomDirectives)
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
