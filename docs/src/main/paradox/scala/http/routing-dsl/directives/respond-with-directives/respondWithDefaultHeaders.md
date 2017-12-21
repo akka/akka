@@ -25,14 +25,19 @@ See also @ref[respondWithDefaultHeader](respondWithDefaultHeader.md) if you'd li
 The `respondWithDefaultHeaders` directive is equivalent to the `respondWithDefaultHeader` directive which
 is shown in the example below, however it allows including multiple default headers at once in the directive, like so:
 
-```scala
-respondWithDefaultHeaders(
-  Origin(HttpOrigin("http://akka.io"),
-  RawHeader("X-Fish-Name", "Blippy"))) { /*...*/ }
-```
+Scala
+:   @@snip [RespondWithDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #multiple-headers }
+
+Java
+:   @@snip [RespondWithDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java) { #multiple-headers }
+
 
 The semantics remain the same however, as explained by the following example:
 
-@@snip [RespondWithDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #respondWithDefaultHeader-0 }
+Scala
+:   @@snip [RespondWithDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #respondWithDefaultHeader-0 }
+
+Java
+:   @@snip [RespondWithDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java) { #respondWithDefaultHeaders }
 
 See the @ref[respondWithDefaultHeader](respondWithDefaultHeader.md) directive for an example with only one header.
