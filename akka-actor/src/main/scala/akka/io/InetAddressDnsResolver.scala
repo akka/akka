@@ -35,14 +35,14 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
 
   private lazy val cachePolicy: Int = {
     val n = Try(Security.getProperty(CachePolicyProp).toInt)
-      .orElse(Try(Security.getProperty(CachePolicyPropFallback).toInt))
+      .orElse(Try(System.getProperty(CachePolicyPropFallback).toInt))
       .getOrElse(DefaultPositive) // default
     if (n < 0) Forever else n
   }
 
   private lazy val negativeCachePolicy = {
     val n = Try(Security.getProperty(NegativeCachePolicyProp).toInt)
-      .orElse(Try(Security.getProperty(NegativeCachePolicyPropFallback).toInt))
+      .orElse(Try(System.getProperty(NegativeCachePolicyPropFallback).toInt))
       .getOrElse(0) // default
     if (n < 0) Forever else n
   }
