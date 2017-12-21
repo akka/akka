@@ -57,12 +57,8 @@ object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
   def entityToCharArray: Unmarshaller[HttpEntity, Array[Char]] = unmarshalling.Unmarshaller.charArrayUnmarshaller
   def entityToString: Unmarshaller[HttpEntity, String]         = unmarshalling.Unmarshaller.stringUnmarshaller
 
-  @deprecated("Use `entityToWwwUrlEncodedFormData` instead. This method leaks a Scala DSL class", "10.0.1")
-  def entityToUrlEncodedFormData: Unmarshaller[HttpEntity, SFormData]   = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller
   def entityToWwwUrlEncodedFormData: Unmarshaller[HttpEntity, FormData] = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller.map(scalaFormData => new FormData(JavaQuery(scalaFormData.fields)))
 
-  @deprecated("Use `entityToMultipartByteRangesUnmarshaller` instead. This method leaks a Scala DSL class", "10.0.1")
-  def entityToMultipartByteRanges: Unmarshaller[HttpEntity, SMultipart.ByteRanges]            = unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller
   def entityToMultipartByteRangesUnmarshaller: Unmarshaller[HttpEntity, Multipart.ByteRanges] = downcast(unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller, classOf[Multipart.ByteRanges])
   def entityToMultipartFormData: Unmarshaller[HttpEntity, Multipart.FormData]                 = downcast(unmarshalling.MultipartUnmarshallers.multipartFormDataUnmarshaller, classOf[Multipart.FormData])
   // format: ON
@@ -133,12 +129,6 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
    * If you expect the marshalling to be heavy, it is suggested to provide a specialized context for those operations.
    */
   def unmarshal(value: A, mat: Materializer): CompletionStage[B] = unmarshal(value, mat.executionContext, mat)
-
-  /**
-   * Deprecated in favor of [[unmarshal]].
-   */
-  @deprecated("Use unmarshal instead.", "10.0.2")
-  def unmarshall(a: A, ec: ExecutionContext, mat: Materializer): CompletionStage[B] = unmarshal(a, ec, mat)
 
   /**
    * Transform the result `B` of this unmarshaller to a `C` producing a marshaller that turns `A`s into `C`s

@@ -34,7 +34,7 @@ public class UnmarshallerTest extends JUnitRouteTest {
 
     {
       CompletionStage<String> resultStage =
-        both.unmarshall(
+        both.unmarshal(
           HttpEntities.create(ContentTypes.TEXT_XML_UTF8, "<suchXml/>"),
           system().dispatcher(),
           materializer());
@@ -45,7 +45,7 @@ public class UnmarshallerTest extends JUnitRouteTest {
 
     {
       CompletionStage<String> resultStage =
-        both.unmarshall(
+        both.unmarshal(
           HttpEntities.create(ContentTypes.APPLICATION_JSON, "{}"),
           system().dispatcher(),
           materializer());
@@ -63,7 +63,7 @@ public class UnmarshallerTest extends JUnitRouteTest {
 
     {
       CompletionStage<String> resultStage =
-        xmlUnmarshaller.unmarshall(
+        xmlUnmarshaller.unmarshal(
           HttpEntities.create(ContentTypes.TEXT_XML_UTF8, "<suchXml/>"),
           system().dispatcher(),
           materializer());
@@ -73,7 +73,7 @@ public class UnmarshallerTest extends JUnitRouteTest {
 
     {
       CompletionStage<String> resultStage =
-        xmlUnmarshaller.unmarshall(
+        xmlUnmarshaller.unmarshal(
           HttpEntities.create(ContentTypes.create(MediaTypes.APPLICATION_XML, HttpCharsets.UTF_8), "<suchXml/>"),
           system().dispatcher(),
           materializer());
