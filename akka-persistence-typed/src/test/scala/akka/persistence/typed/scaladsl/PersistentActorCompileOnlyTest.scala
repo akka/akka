@@ -5,9 +5,7 @@ package akka.persistence.typed.scaladsl
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.Terminated
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.TimerScheduler
@@ -17,26 +15,40 @@ object PersistentActorCompileOnlyTest {
   import akka.persistence.typed.scaladsl.PersistentActor._
 
   object Simple {
-    sealed trait MyCommand
-    case class Cmd(data: String) extends MyCommand
+    //#command
+    sealed trait SimpleCommand
+    case class Cmd(data: String) extends SimpleCommand
 
-    sealed trait MyEvent
-    case class Evt(data: String) extends MyEvent
+    sealed trait SimpleEvent
+    case class Evt(data: String) extends SimpleEvent
+    //#command
 
+    //#state
     case class ExampleState(events: List[String] = Nil)
+    //#state
 
-    PersistentActor.immutable[MyCommand, MyEvent, ExampleState](
-      persistenceId = "sample-id-1",
-
-      initialState = ExampleState(Nil),
-
-      commandHandler = CommandHandler.command {
+    //#command-handler
+    val commandHandler: CommandHandler[SimpleCommand, SimpleEvent, ExampleState] =
+      CommandHandler.command {
         case Cmd(data) ⇒ Effect.persist(Evt(data))
-      },
+      }
+    //#command-handler
 
-      eventHandler = {
-        case (state, Evt(data)) ⇒ state.copy(data :: state.events)
-      })
+    //#event-handler
+    val eventHandler: (ExampleState, SimpleEvent) ⇒ (ExampleState) = {
+      case (state, Evt(data)) ⇒ state.copy(data :: state.events)
+    }
+    //#event-handler
+
+    //#behavior
+    val simpleBehavior: PersistentBehavior[SimpleCommand, SimpleEvent, ExampleState] =
+      PersistentActor.immutable[SimpleCommand, SimpleEvent, ExampleState](
+        persistenceId = "sample-id-1",
+        initialState = ExampleState(Nil),
+        commandHandler = commandHandler,
+        eventHandler = eventHandler)
+    //#behavior
+
   }
 
   object WithAck {
@@ -58,7 +70,9 @@ object PersistentActorCompileOnlyTest {
       commandHandler = CommandHandler.command {
         case Cmd(data, sender) ⇒
           Effect.persist(Evt(data))
-            .andThen { sender ! Ack }
+            .andThen {
+              sender ! Ack
+            }
       },
 
       eventHandler = {
@@ -375,7 +389,9 @@ object PersistentActorCompileOnlyTest {
             Effect.none
           case CheerUp(sender) ⇒
             changeMoodIfNeeded(state, Happy)
-              .andThen { sender ! Ack }
+              .andThen {
+                sender ! Ack
+              }
           case Remember(memory) ⇒
             // A more elaborate example to show we still have full control over the effects
             // if needed (e.g. when some logic is factored out but you want to add more effects)
