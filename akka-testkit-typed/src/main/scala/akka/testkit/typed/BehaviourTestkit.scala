@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.typed.testkit
+package akka.testkit.typed
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -144,6 +144,8 @@ class BehaviorTestkit[T](_name: String, _initialBehavior: Behavior[T]) {
     assert(inbox.isDefined, s"Child not created: $name. Children created: ${ctx.childrenNames}")
     inbox.get
   }
+
+  def selfInbox(): TestInbox[T] = ctx.selfInbox
 
   /**
    * Requests all the effects. The effects are consumed, subsequent calls will only

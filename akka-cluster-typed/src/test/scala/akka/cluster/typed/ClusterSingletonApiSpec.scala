@@ -9,8 +9,8 @@ import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._
-import akka.typed.testkit.TestKitSettings
-import akka.typed.testkit.scaladsl.TestProbe
+import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedSpec }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures

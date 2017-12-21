@@ -4,8 +4,8 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.typed.testkit.{ BehaviorTestkit, TestKitSettings }
-import akka.typed.testkit.scaladsl.TestProbe
+import akka.testkit.typed.{ BehaviorTestkit, TestKitSettings }
+import akka.testkit.typed.scaladsl.TestProbe
 import scala.concurrent.duration.DurationInt
 
 class ImmutablePartialSpec extends TypedSpec with StartSupport {

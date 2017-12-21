@@ -13,33 +13,13 @@ This module is currently marked as @ref:[may change](common/may-change.md) in th
 To use the testkit add the following dependency:
 To use the testkit add the following dependency:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-testkit-typed" % "$akka.version$"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    dependencies {
-      compile group: 'com.typesafe.akka', name: 'akka-testkit-typed_2.11', version: '$akka.version$'
-    }
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-testkit-typed_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
-    
+@@dependency [sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-testkit-typed_2.11
+  version=$version$
+  scope=test
+}
+   
 Testing can either be done asynchronously using a real `ActorSystem` or synchronously on the testing thread using the `BehaviousTestKit`.  
 
 For testing logic in a `Behavior` in isolation synchronous testing is preferred. For testing interactions between multiple
@@ -136,7 +116,7 @@ Java
 
 ### Testing other effects
 
-The `BehaviorTestkit` keeps track other effects you can verify, look at the sub-classes of `akka.typed.testkit.Effect`
+The `BehaviorTestkit` keeps track other effects you can verify, look at the sub-classes of `akka.testkit.typed.Effect`
  
  * SpawnedAdapter
  * Stopped
@@ -154,13 +134,6 @@ The minimal setup consists of the test procedure, which provides the desired sti
 and an actor receiving replies. Bigger systems replace the actor under test with a network of actors, apply stimuli 
 at varying injection points and arrange results to be sent from different emission points, but the basic principle stays 
 the same in that a single procedure drives the test.
-
-@scala[
-If you are familiar with testing untyped actors there are some differences:
-
-* No `ImplicitSender`, instead create `TestProbe[T]` that will be in the messages sent to your actor
-* No test actor so all assertions are done with `TestProbe`s
-]
 
 ### Basic example
 

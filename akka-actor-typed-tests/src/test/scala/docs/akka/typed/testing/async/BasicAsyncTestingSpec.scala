@@ -2,8 +2,8 @@ package docs.akka.typed.testing.async
 
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed._
-import akka.typed.testkit.TestKit
-import akka.typed.testkit.scaladsl._
+import akka.testkit.typed.TestKit
+import akka.testkit.typed.scaladsl._
 import org.scalatest._
 
 object BasicAsyncTestingSpec {

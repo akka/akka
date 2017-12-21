@@ -5,10 +5,10 @@ package akka.actor.typed
 
 import scala.concurrent.duration._
 import akka.actor.typed.scaladsl.Actor._
-import akka.typed.testkit.{ BehaviorTestkit, TestInbox, TestKitSettings }
+import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKitSettings }
 
 import scala.util.control.NoStackTrace
-import akka.typed.testkit.scaladsl._
+import akka.testkit.typed.scaladsl._
 
 object RestarterSpec {
 

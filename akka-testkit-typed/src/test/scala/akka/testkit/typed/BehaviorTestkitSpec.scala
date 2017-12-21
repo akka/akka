@@ -2,12 +2,12 @@
  * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.typed.testkit
+package akka.testkit.typed
 
 import akka.actor.typed.scaladsl.Actor
-import akka.typed.testkit.Effect.{ Spawned, SpawnedAdapter, SpawnedAnonymous }
-import akka.typed.testkit.BehaviorTestkitSpec.{ Child, Father }
-import akka.typed.testkit.BehaviorTestkitSpec.Father._
+import akka.testkit.typed.Effect.{ Spawned, SpawnedAdapter, SpawnedAnonymous }
+import akka.testkit.typed.BehaviorTestkitSpec.{ Child, Father }
+import akka.testkit.typed.BehaviorTestkitSpec.Father._
 import akka.actor.typed.{ Behavior, Props }
 import org.scalatest.{ FlatSpec, Matchers }
 

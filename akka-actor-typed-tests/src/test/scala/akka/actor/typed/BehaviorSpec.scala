@@ -10,7 +10,7 @@ import akka.japi.pf.{ FI, PFBuilder }
 import java.util.function.{ Function ⇒ F1 }
 
 import akka.Done
-import akka.typed.testkit.{ BehaviorTestkit, TestInbox }
+import akka.testkit.typed.{ BehaviorTestkit, TestInbox }
 
 object BehaviorSpec {
   sealed trait Command {
@@ -70,9 +70,9 @@ object BehaviorSpec {
 
     case class Init(behv: Behavior[Command], inbox: TestInbox[Event], aux: Aux) {
       def mkCtx(): Setup = {
-        val ctx = BehaviorTestkit(behv, "ctx")
+        val testkit = BehaviorTestkit(behv)
         inbox.receiveAll()
-        Setup(ctx, inbox, aux)
+        Setup(testkit, inbox, aux)
       }
     }
     case class Setup(testKit: BehaviorTestkit[Command], inbox: TestInbox[Event], aux: Aux)
@@ -263,9 +263,9 @@ object BehaviorSpec {
   trait Stoppable extends Common {
     "Stopping" must {
       "must stop" in {
-        val Setup(ctx, _, aux) = mkCtx()
-        ctx.run(Stop)
-        ctx.currentBehavior should be(Behavior.StoppedBehavior)
+        val Setup(testkit, _, aux) = mkCtx()
+        testkit.run(Stop)
+        testkit.currentBehavior should be(Behavior.StoppedBehavior)
         checkAux(Stop, aux)
       }
     }

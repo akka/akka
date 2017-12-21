@@ -1,4 +1,4 @@
-package akka.typed.testkit
+package akka.testkit.typed
 
 import akka.event.Logging.{ LogEvent, StdOutLogger }
 import akka.testkit.{ EventFilter, TestEvent ⇒ TE }
@@ -16,7 +16,7 @@ import akka.event.typed.Logger
  *
  * <pre><code>
  * akka.typed {
- *   loggers = ["akka.typed.testkit.TestEventListener"]
+ *   loggers = ["akka.testkit.typed.TestEventListener"]
  * }
  * </code></pre>
  */

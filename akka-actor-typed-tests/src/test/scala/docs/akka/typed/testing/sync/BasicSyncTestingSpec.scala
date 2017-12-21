@@ -3,8 +3,8 @@ package docs.akka.typed.testing.sync
 //#imports
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
-import akka.typed.testkit._
-import akka.typed.testkit.Effect._
+import akka.testkit.typed._
+import akka.testkit.typed.Effect._
 //#imports
 import org.scalatest.{ Matchers, WordSpec }
 
@@ -17,21 +17,24 @@ object BasicSyncTestingSpec {
 
   //#under-test
   sealed trait Cmd
-  case class DoAnEffect(cmd: String) extends Cmd
+  case object CreateAnonymousChild extends Cmd
+  case class CreateChild(childName: String) extends Cmd
+  case class SayHelloToChild(childName: String) extends Cmd
+  case object SayHelloToAnonymousChild extends Cmd
   case class SayHello(who: ActorRef[String]) extends Cmd
 
   val myBehaviour = Actor.immutablePartial[Cmd] {
-    case (ctx, DoAnEffect("create child")) ⇒
-      ctx.spawn(childActor, "child")
+    case (ctx, CreateChild(name)) ⇒
+      ctx.spawn(childActor, name)
       Actor.same
-    case (ctx, DoAnEffect("nameless child")) ⇒
+    case (ctx, CreateAnonymousChild) ⇒
       ctx.spawnAnonymous(childActor)
       Actor.same
-    case (ctx, DoAnEffect("say hello to child")) ⇒
-      val child: ActorRef[String] = ctx.spawn(childActor, "child")
+    case (ctx, SayHelloToChild(childName)) ⇒
+      val child: ActorRef[String] = ctx.spawn(childActor, childName)
       child ! "hello"
       Actor.same
-    case (ctx, DoAnEffect("say hello to nameless child")) ⇒
+    case (ctx, SayHelloToAnonymousChild) ⇒
       val child: ActorRef[String] = ctx.spawnAnonymous(childActor)
       child ! "hello stranger"
       Actor.same
@@ -52,7 +55,7 @@ class BasicSyncTestingSpec extends WordSpec with Matchers {
     "record spawning" in {
       //#test-child
       val testKit = BehaviorTestkit(myBehaviour)
-      testKit.run(DoAnEffect("create child"))
+      testKit.run(CreateChild("child"))
       testKit.expectEffect(Spawned(childActor, "child"))
       //#test-child
     }
@@ -60,7 +63,7 @@ class BasicSyncTestingSpec extends WordSpec with Matchers {
     "record spawning anonymous" in {
       //#test-anonymous-child
       val testKit = BehaviorTestkit(myBehaviour)
-      testKit.run(DoAnEffect("nameless child"))
+      testKit.run(CreateAnonymousChild)
       testKit.expectEffect(SpawnedAnonymous(childActor))
       //#test-anonymous-child
     }
@@ -77,7 +80,7 @@ class BasicSyncTestingSpec extends WordSpec with Matchers {
     "send a message to a spawned child" in {
       //#test-child-message
       val testKit = BehaviorTestkit(myBehaviour)
-      testKit.run(DoAnEffect("say hello to child"))
+      testKit.run(SayHelloToChild("child"))
       val childInbox = testKit.childInbox[String]("child")
       childInbox.expectMsg("hello")
       //#test-child-message
@@ -86,7 +89,7 @@ class BasicSyncTestingSpec extends WordSpec with Matchers {
     "send a message to an anonymous spawned child" in {
       //#test-child-message-anonymous
       val testKit = BehaviorTestkit(myBehaviour)
-      testKit.run(DoAnEffect("say hello to nameless child"))
+      testKit.run(SayHelloToAnonymousChild)
       // Anonymous actors are created as: $a $b etc
       val childInbox = testKit.childInbox[String]("$a")
       childInbox.expectMsg("hello stranger")

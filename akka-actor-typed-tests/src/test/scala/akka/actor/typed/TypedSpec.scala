@@ -22,13 +22,12 @@ import akka.actor.typed.scaladsl.Actor._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalactic.CanEqual
-import org.junit.runner.RunWith
 
 import scala.util.control.NonFatal
 import akka.actor.typed.scaladsl.AskPattern
 
 import scala.util.control.NoStackTrace
-import akka.typed.testkit.{ TestInbox, TestKitSettings }
+import akka.testkit.typed.{ TestInbox, TestKitSettings }
 import org.scalatest.time.Span
 
 /**
@@ -52,7 +51,7 @@ trait StartSupport {
 
   def start[T](behv: Behavior[T]): ActorRef[T] = {
     import akka.actor.typed.scaladsl.AskPattern._
-    import akka.typed.testkit.scaladsl._
+    import akka.testkit.typed.scaladsl._
     implicit val testSettings = TestKitSettings(system)
     Await.result(system ? TypedSpec.Create(behv, nextName()), 3.seconds.dilated)
   }
@@ -162,8 +161,6 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
 }
 
 object TypedSpec {
-
-  import akka.{ typed ⇒ t }
 
   sealed abstract class Start
   case object Start extends Start

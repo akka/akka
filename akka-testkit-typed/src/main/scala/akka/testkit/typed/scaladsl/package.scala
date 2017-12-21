@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.typed.testkit
+package akka.testkit.typed
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.reflect.ClassTag
@@ -18,7 +18,7 @@ package object scaladsl {
    *
    * {{{
    * import scala.concurrent.duration._
-   * import akka.typed.testkit.scaladsl._
+   * import akka.testkit.typed.scaladsl._
    * 10.milliseconds.dilated
    * }}}
    *

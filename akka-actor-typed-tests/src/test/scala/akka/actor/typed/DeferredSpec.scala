@@ -7,8 +7,8 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.Actor.BehaviorDecorators
-import akka.typed.testkit.{ BehaviorTestkit, TestInbox, TestKitSettings }
-import akka.typed.testkit.scaladsl._
+import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKitSettings }
+import akka.testkit.typed.scaladsl._
 
 object DeferredSpec {
   sealed trait Command

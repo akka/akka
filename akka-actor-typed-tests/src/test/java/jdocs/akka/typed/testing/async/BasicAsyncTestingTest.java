@@ -7,8 +7,8 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Actor;
-import akka.typed.testkit.javadsl.TestProbe;
-import akka.typed.testkit.TestKit;
+import akka.testkit.typed.javadsl.TestProbe;
+import akka.testkit.typed.TestKit;
 import org.junit.AfterClass;
 import org.junit.Test;
 

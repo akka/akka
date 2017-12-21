@@ -3,7 +3,7 @@ package jdocs.akka.typed.testing.sync;
 //#imports
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
-import akka.typed.testkit.*;
+import akka.testkit.typed.*;
 //#imports
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
@@ -16,9 +16,19 @@ public class BasicSyncTestingTest extends JUnitSuite {
 
   //#under-test
   interface Command { }
-  public static class CreateAChild implements Command { }
+  public static class CreateAChild implements Command {
+    private final String childName;
+    public CreateAChild(String childName) {
+      this.childName = childName;
+    }
+  }
   public static class CreateAnAnonymousChild implements Command { }
-  public static class SayHelloToChild implements Command { }
+  public static class SayHelloToChild implements Command {
+    private final String childName;
+    public SayHelloToChild(String childName) {
+      this.childName = childName;
+    }
+  }
   public static class SayHelloToAnonymousChild implements Command { }
   public static class SayHello implements Command {
     private final ActorRef<String> who;
@@ -30,7 +40,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
 
   public static Behavior<Command> myBehaviour = Actor.immutable(Command.class)
     .onMessage(CreateAChild.class, (ctx, msg) -> {
-      ctx.spawn(childActor, "child");
+      ctx.spawn(childActor, msg.childName);
       return Actor.same();
     })
     .onMessage(CreateAnAnonymousChild.class, (ctx, msg) -> {
@@ -38,7 +48,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
       return Actor.same();
     })
     .onMessage(SayHelloToChild.class, (ctx, msg) -> {
-      ActorRef<String> child = ctx.spawn(childActor, "child");
+      ActorRef<String> child = ctx.spawn(childActor, msg.childName);
       child.tell("hello");
       return Actor.same();
     })
@@ -57,7 +67,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
   public void testSpawning() {
     //#test-child
     BehaviorTestkit<Command> test = BehaviorTestkit.create(myBehaviour);
-    test.run(new CreateAChild());
+    test.run(new CreateAChild("child"));
     test.expectEffect(new Effect.Spawned(childActor, "child", Props.empty()));
     //#test-child
   }
@@ -85,7 +95,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
   public void testMessageToChild() {
      //#test-child-message
      BehaviorTestkit<Command> testKit = BehaviorTestkit.create(myBehaviour);
-     testKit.run(new SayHelloToChild());
+     testKit.run(new SayHelloToChild("child"));
      TestInbox<String> childInbox = testKit.childInbox("child");
      childInbox.expectMsg("hello");
      //#test-child-message

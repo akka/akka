@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.typed.testkit
+package akka.testkit.typed
 
 import com.typesafe.config.Config
 import scala.concurrent.duration.FiniteDuration

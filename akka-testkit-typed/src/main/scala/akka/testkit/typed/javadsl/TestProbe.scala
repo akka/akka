@@ -1,15 +1,15 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.typed.testkit.javadsl
+package akka.testkit.typed.javadsl
 
 import akka.actor.typed.ActorSystem
-import akka.typed.testkit.TestKitSettings
+import akka.testkit.typed.TestKitSettings
 
 /**
  * Java API:
  */
-class TestProbe[M](name: String, system: ActorSystem[_], settings: TestKitSettings) extends akka.typed.testkit.scaladsl.TestProbe[M](name)(system, settings) {
+class TestProbe[M](name: String, system: ActorSystem[_], settings: TestKitSettings) extends akka.testkit.typed.scaladsl.TestProbe[M](name)(system, settings) {
 
   def this(system: ActorSystem[_], settings: TestKitSettings) = this("testProbe", system, settings)
 

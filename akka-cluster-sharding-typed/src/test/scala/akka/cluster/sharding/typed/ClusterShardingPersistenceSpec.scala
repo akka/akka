@@ -10,8 +10,8 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
 import akka.actor.typed.Behavior
-import akka.typed.testkit.TestKitSettings
-import akka.typed.testkit.scaladsl.TestProbe
+import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.scaladsl.TestProbe
 import akka.persistence.typed.scaladsl.PersistentActor
 import akka.persistence.typed.scaladsl.PersistentActor.PersistNothing
 

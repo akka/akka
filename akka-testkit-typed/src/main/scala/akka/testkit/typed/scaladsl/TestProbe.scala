@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.typed.testkit.scaladsl
+package akka.testkit.typed.scaladsl
 
 import scala.concurrent.duration._
 import java.util.concurrent.BlockingDeque
@@ -18,7 +18,7 @@ import akka.util.PrettyDuration.PrettyPrintableDuration
 
 import scala.concurrent.Await
 import com.typesafe.config.Config
-import akka.typed.testkit.TestKitSettings
+import akka.testkit.typed.TestKitSettings
 import akka.util.BoxedType
 
 import scala.annotation.tailrec

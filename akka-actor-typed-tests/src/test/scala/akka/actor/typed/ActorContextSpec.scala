@@ -266,7 +266,7 @@ abstract class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
      |    lifecycle = off
      |    autoreceive = off
      |  }
-     |  typed.loggers = ["akka.typed.testkit.TestEventListener"]
+     |  typed.loggers = ["akka.testkit.typed.TestEventListener"]
      |}""".stripMargin)) {
 
   import ActorContextSpec._

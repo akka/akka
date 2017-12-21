@@ -7,10 +7,10 @@ import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.typed.testkit.BehaviorTestkit
-import akka.typed.testkit.TestInbox
-import akka.typed.testkit.TestKitSettings
-import akka.typed.testkit.scaladsl.TestProbe
+import akka.testkit.typed.BehaviorTestkit
+import akka.testkit.typed.TestInbox
+import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.scaladsl.TestProbe
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._

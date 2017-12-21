@@ -10,8 +10,8 @@ import akka.actor.typed.Props
 import akka.actor.typed.TypedSpec
 import akka.persistence.typed.scaladsl.PersistentActor
 import akka.persistence.typed.scaladsl.PersistentActor.{ CommandHandler, Effect }
-import akka.typed.testkit.TestKitSettings
-import akka.typed.testkit.scaladsl.TestProbe
+import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 

@@ -1,4 +1,4 @@
-package akka.typed.testkit
+package akka.testkit.typed
 
 import akka.actor.InvalidMessageException
 import akka.{ actor ⇒ untyped }
@@ -116,7 +116,11 @@ private[typed] object WatchableRef {
 @InternalApi private[akka] class StubbedActorContext[T](
   val name: String) extends ActorContextImpl[T] {
 
-  private val selfInbox = TestInbox[T](name)
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] val selfInbox = TestInbox[T](name)
+
   override val self = selfInbox.ref
   override val system = new ActorSystemStub("StubbedActorContext")
   // Not used for a stubbed actor context

@@ -1,4 +1,4 @@
-package akka.typed.testkit
+package akka.testkit.typed
 
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.annotation.ApiMayChange

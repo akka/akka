@@ -6,9 +6,7 @@ package internal
 
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Actor
-import akka.actor.typed.scaladsl.Actor._
-import akka.typed.testkit.TestInbox
-import org.scalactic.ConversionCheckedTripleEquals
+import akka.testkit.typed.TestInbox
 import org.scalatest._
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 
@@ -16,7 +14,8 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 
-class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with Eventually with ConversionCheckedTripleEquals {
+class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
+  with ScalaFutures with Eventually {
 
   override implicit val patienceConfig = PatienceConfig(1.second)
   def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name)
@@ -37,46 +36,56 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
   }
 
   "An ActorSystem" must {
-    "must start the guardian actor and terminate when it terminates" in {
-      val t = withSystem("a", immutable[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; stopped }, doTerminate = false) { sys ⇒
-        val inbox = TestInbox[String]("a")
-        sys ! Probe("hello", inbox.ref)
-        eventually {
-          inbox.hasMessages should ===(true)
+    "start the guardian actor and terminate when it terminates" in {
+      val t = withSystem(
+        "a",
+        Actor.immutable[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; Actor.stopped }, doTerminate = false) { sys ⇒
+          val inbox = TestInbox[String]("a")
+          sys ! Probe("hello", inbox.ref)
+          eventually {
+            inbox.hasMessages should ===(true)
+          }
+          inbox.receiveAll() should ===("hello" :: Nil)
         }
-        inbox.receiveAll() should ===("hello" :: Nil)
-      }
       val p = t.ref.path
       p.name should ===("/")
       p.address.system should ===(suite + "-a")
     }
 
-    "must terminate the guardian actor" in {
+    // see issue #24172
+    "shutdown if guardian shuts down immediately" in {
+      pending
+      withSystem("shutdown", Actor.stopped[String], doTerminate = false) { sys: ActorSystem[String] ⇒
+        sys.whenTerminated.futureValue
+      }
+    }
+
+    "terminate the guardian actor" in {
       val inbox = TestInbox[String]("terminate")
       val sys = system(
-        immutable[Probe] {
-          case (_, _) ⇒ unhandled
+        Actor.immutable[Probe] {
+          case (_, _) ⇒ Actor.unhandled
         } onSignal {
-          case (ctx, PostStop) ⇒
+          case (_, PostStop) ⇒
             inbox.ref ! "done"
-            same
+            Actor.same
         },
         "terminate")
       sys.terminate().futureValue
       inbox.receiveAll() should ===("done" :: Nil)
     }
 
-    "must log to the event stream" in {
+    "log to the event stream" in {
       pending
     }
 
-    "must have a name" in {
+    "have a name" in {
       withSystem("name", Actor.empty[String]) { sys ⇒
         sys.name should ===(suite + "-name")
       }
     }
 
-    "must report its uptime" in {
+    "report its uptime" in {
       withSystem("uptime", Actor.empty[String]) { sys ⇒
         sys.uptime should be < 1L
         Thread.sleep(1000)
@@ -84,7 +93,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       }
     }
 
-    "must have a working thread factory" in {
+    "have a working thread factory" in {
       withSystem("thread", Actor.empty[String]) { sys ⇒
         val p = Promise[Int]
         sys.threadFactory.newThread(new Runnable {
@@ -94,14 +103,14 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       }
     }
 
-    "must be able to run Futures" in {
+    "be able to run Futures" in {
       withSystem("futures", Actor.empty[String]) { sys ⇒
         val f = Future(42)(sys.executionContext)
         f.futureValue should ===(42)
       }
     }
 
-    "must not allow null messages" in {
+    "not allow null messages" in {
       withSystem("null-messages", Actor.empty[String]) { sys ⇒
         intercept[InvalidMessageException] {
           sys ! null

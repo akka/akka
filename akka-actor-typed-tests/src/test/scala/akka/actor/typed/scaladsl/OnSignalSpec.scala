@@ -5,8 +5,8 @@ package akka.actor.typed
 package scaladsl
 
 import akka.Done
-import akka.typed.testkit.TestKitSettings
-import akka.typed.testkit.scaladsl.TestProbe
+import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.scaladsl.TestProbe
 
 final class OnSignalSpec extends TypedSpec with StartSupport {
 
