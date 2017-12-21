@@ -1,0 +1,16 @@
+# Static fields with racy Java initialization
+ProblemFilters.exclude[MissingFieldProblem]("akka.http.javadsl.model.HttpEntity.EMPTY")
+ProblemFilters.exclude[MissingFieldProblem]("akka.http.javadsl.model.RemoteAddress.UNKNOWN")
+ProblemFilters.exclude[MissingFieldProblem]("akka.http.javadsl.model.headers.LanguageRange.ALL")
+ProblemFilters.exclude[MissingFieldProblem]("akka.http.javadsl.model.headers.EntityTagRange.ALL")
+ProblemFilters.exclude[MissingFieldProblem]("akka.http.javadsl.model.headers.HttpOriginRange.ALL")
+ProblemFilters.exclude[MissingFieldProblem]("akka.http.javadsl.model.headers.HttpEncodingRange.ALL")
+
+# Returned Scala DSL model, now fixed to return Java DSL model
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.model.HttpMethod.requestEntityAcceptance")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMethod.requestEntityAcceptance")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.javadsl.model.HttpMethods.custom")
+
+# Renamed to fromFile to match the fromPath version
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.apply$default$3")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.model.HttpEntity.apply")

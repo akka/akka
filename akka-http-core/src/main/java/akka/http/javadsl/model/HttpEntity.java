@@ -48,14 +48,6 @@ public interface HttpEntity {
     ContentType getContentType();
 
     /**
-     * The empty entity.
-     *
-     * @deprecated Will be removed in Akka HTTP 11.x, use {@link HttpEntities#EMPTY} instead.
-     */
-    @Deprecated
-    HttpEntity.Strict EMPTY = HttpEntities.EMPTY;
-
-    /**
      * Returns if this entity is known to be empty. Open-ended entity types like
      * HttpEntityChunked and HttpCloseDelimited will always return false here.
      */

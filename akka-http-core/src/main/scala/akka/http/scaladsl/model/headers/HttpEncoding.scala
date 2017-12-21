@@ -4,8 +4,6 @@
 
 package akka.http.scaladsl.model.headers
 
-import akka.http.impl.model.JavaInitialization
-
 import language.implicitConversions
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
@@ -28,10 +26,7 @@ object HttpEncodingRange {
     def withQValue(qValue: Float) =
       if (qValue == 1.0f) `*` else if (qValue != this.qValue) `*`(qValue.toFloat) else this
   }
-  object `*` extends `*`(1.0f) {
-    JavaInitialization.initializeStaticFieldWith(
-      this, classOf[jm.headers.HttpEncodingRange].getField("ALL"))
-  }
+  object `*` extends `*`(1.0f)
 
   final case class One(encoding: HttpEncoding, qValue: Float) extends HttpEncodingRange {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")

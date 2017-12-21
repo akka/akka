@@ -42,10 +42,6 @@ public final class HttpEntities {
         return HttpEntity$.MODULE$.apply((akka.http.scaladsl.model.ContentType) contentType, bytes);
     }
 
-    /**
-     * @deprecated Will be removed in Akka HTTP 11.x, use {@link #create(ContentType, Path)} instead.
-     */
-    @Deprecated
     public static UniversalEntity create(ContentType contentType, File file) {
         return JavaAccessors.HttpEntity(contentType, file);
     }
@@ -54,12 +50,8 @@ public final class HttpEntities {
         return JavaAccessors.HttpEntity(contentType, file);
     }
 
-    /**
-     * @deprecated Will be removed in Akka HTTP 11.x, use {@link #create(ContentType, Path, int)} instead.
-     */
-    @Deprecated
     public static UniversalEntity create(ContentType contentType, File file, int chunkSize) {
-        return HttpEntity$.MODULE$.apply((akka.http.scaladsl.model.ContentType) contentType, file, chunkSize);
+        return create(contentType, file.toPath(), chunkSize);
     }
 
     public static UniversalEntity create(ContentType contentType, Path file, int chunkSize) {

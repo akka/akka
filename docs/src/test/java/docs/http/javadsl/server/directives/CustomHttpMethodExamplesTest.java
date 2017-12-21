@@ -43,7 +43,7 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
 
     // define custom method type:
     HttpMethod BOLT =
-      HttpMethods.createCustom("BOLT", false, true, Expected);
+      HttpMethods.custom("BOLT", false, true, Expected);
 
     // add custom method to parser settings:
     final ParserSettings parserSettings =

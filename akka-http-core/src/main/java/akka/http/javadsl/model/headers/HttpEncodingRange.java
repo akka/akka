@@ -18,12 +18,4 @@ public abstract class HttpEncodingRange {
     public static HttpEncodingRange create(HttpEncoding encoding) {
         return HttpEncodingRange$.MODULE$.apply((akka.http.scaladsl.model.headers.HttpEncoding) encoding);
     }
-
-    /**
-     * @deprecated because of troublesome initialisation order (with regards to scaladsl class implementing this class).
-     *             In some edge cases this field could end up containing a null value.
-     *             Will be removed in Akka HTTP 11.x, use {@link HttpEncodingRanges#ALL} instead.
-     */
-    @Deprecated
-    public static final HttpEncodingRange ALL = akka.http.scaladsl.model.headers.HttpEncodingRange.$times$.MODULE$;
 }

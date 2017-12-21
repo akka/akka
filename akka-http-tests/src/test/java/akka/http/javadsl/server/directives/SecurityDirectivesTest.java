@@ -130,7 +130,7 @@ public class SecurityDirectivesTest extends JUnitRouteTest {
           if (cred.isPresent()) {
             return CompletableFuture.completedFuture(Right.apply(cred.get().token()));
           } else {
-            return CompletableFuture.completedFuture(Left.apply(HttpChallenge.create("Basic", "test-realm")));
+            return CompletableFuture.completedFuture(Left.apply(HttpChallenge.createBasic("test-realm")));
           }
         }, this::securedRoute)
       )

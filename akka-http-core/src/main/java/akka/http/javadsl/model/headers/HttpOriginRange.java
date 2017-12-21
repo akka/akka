@@ -16,12 +16,4 @@ public abstract class HttpOriginRange {
   public static HttpOriginRange create(HttpOrigin... origins) {
     return HttpOriginRange$.MODULE$.apply(Util.<HttpOrigin, akka.http.scaladsl.model.headers.HttpOrigin>convertArray(origins));
   }
-
-  /**
-   * @deprecated because of troublesome initialisation order (with regards to scaladsl class implementing this class).
-   * In some edge cases this field could end up containing a null value.
-   * Will be removed in Akka HTTP 11.x, use {@link HttpEncodingRanges#ALL} instead.
-   */
-  @Deprecated
-  public static final HttpOriginRange ALL = akka.http.scaladsl.model.headers.HttpOriginRange.$times$.MODULE$;
 }

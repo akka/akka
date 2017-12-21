@@ -6,8 +6,6 @@ package akka.http.scaladsl.model
 
 import java.util.OptionalLong
 
-import akka.http.impl.model.JavaInitialization
-
 import language.implicitConversions
 import java.io.File
 import java.nio.file.{ Files, Path }
@@ -278,8 +276,7 @@ object HttpEntity {
    *
    * If the given `chunkSize` is -1 the default chunk size is used.
    */
-  @deprecated("Use `fromPath` instead", "2.4.5")
-  def apply(contentType: ContentType, file: File, chunkSize: Int = -1): UniversalEntity =
+  def fromFile(contentType: ContentType, file: File, chunkSize: Int = -1): UniversalEntity =
     fromPath(contentType, file.toPath, chunkSize)
 
   /**
@@ -302,9 +299,6 @@ object HttpEntity {
   def empty(contentType: ContentType): HttpEntity.Strict =
     if (contentType == Empty.contentType) Empty
     else HttpEntity.Strict(contentType, data = ByteString.empty)
-
-  JavaInitialization.initializeStaticFieldWith(
-    Empty, classOf[jm.HttpEntity].getField("EMPTY"))
 
   // TODO: re-establish serializability
   // TODO: equal/hashcode ?

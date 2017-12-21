@@ -6,7 +6,6 @@ package akka.http.scaladsl.model
 
 import java.net.{ InetSocketAddress, UnknownHostException, InetAddress }
 import java.util.Optional
-import akka.http.impl.model.JavaInitialization
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -31,9 +30,6 @@ object RemoteAddress {
     def render[R <: Rendering](r: R): r.type = r ~~ "unknown"
 
     def isUnknown = true
-
-    JavaInitialization.initializeStaticFieldWith(
-      this, classOf[jm.RemoteAddress].getField("UNKNOWN"))
   }
 
   final case class IP(ip: InetAddress, port: Option[Int] = None) extends RemoteAddress {

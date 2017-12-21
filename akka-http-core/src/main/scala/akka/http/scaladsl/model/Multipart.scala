@@ -416,7 +416,6 @@ object Multipart {
      * To create an instance with several parts or for multiple files, use
      * `FormData(BodyPart.fromFile("field1", ...), BodyPart.fromFile("field2", ...)`
      */
-    @deprecated("Use `fromPath` instead", "2.4.5")
     def fromFile(name: String, contentType: ContentType, file: File, chunkSize: Int = -1): Multipart.FormData =
       fromPath(name, contentType, file.toPath, chunkSize)
 
@@ -514,7 +513,6 @@ object Multipart {
       /**
        * Creates a BodyPart backed by a File that will be streamed using a FileSource.
        */
-      @deprecated("Use `fromPath` instead", since = "2.4.5")
       def fromFile(name: String, contentType: ContentType, file: File, chunkSize: Int = -1): BodyPart =
         fromPath(name, contentType, file.toPath, chunkSize)
 
