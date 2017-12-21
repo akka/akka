@@ -26,13 +26,12 @@ On the other hand, if you prefer to build your applications with the guidance of
 ## Using Akka HTTP
 
 Akka HTTP is provided as independent modules from Akka itself under its own release cycle. Akka HTTP is @ref[compatible](compatibility-guidelines.md)
-with Akka 2.4 and 2.5. The modules, however, do *not* depend on `akka-actor` or `akka-stream`, so the user is required to
+with Akka 2.5 and any later 2.x versions released during the lifetime of Akka HTTP 10.1.x. The modules, however, do *not* depend on `akka-actor` or `akka-stream`, so the user is required to
 choose an Akka version to run against and add a manual dependency to `akka-stream` of the chosen version.
 
 sbt
 :   @@@vars
     ```
-    // For Akka 2.4.x or 2.5.x
     "com.typesafe.akka" %% "akka-http"   % "$project.version$" $crossString$
     "com.typesafe.akka" %% "akka-stream" % "$akka25.version$" // or whatever the latest version is
     ```
@@ -41,7 +40,6 @@ sbt
 Gradle
 :   @@@vars
     ```
-    // For Akka 2.4.x or 2.5.x
     compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$',   version: '$project.version$'
     compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '$akka25.version$'
     ```
@@ -50,7 +48,6 @@ Gradle
 Maven
 :   @@@vars
     ```
-    <!-- For Akka 2.4.x or 2.5.x -->
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-http_$scala.binary_version$</artifactId>
@@ -68,9 +65,6 @@ Maven
 Mind that Akka HTTP comes in two main modules: `akka-http` and `akka-http-core`. Because `akka-http`
 depends on `akka-http-core` you don't need to bring the latter explicitly. Still you may need to this in case you rely
 solely on the low-level API; make sure the Scala version is a recent release of version `2.11` or `2.12`.
-
-For more information about running against Akka 2.5 see also the
-@ref[Compatibility Notes](compatibility-guidelines.md#akka-http-10-0-x-with-akka-2-5-x).
 
 Alternatively, you can bootstrap a new sbt project with Akka HTTP already
 configured using the [Giter8](http://www.foundweekends.org/giter8/) template:

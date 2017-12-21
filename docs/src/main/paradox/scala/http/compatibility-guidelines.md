@@ -18,15 +18,13 @@ In this section we discuss some of the specific cases of compatibility between v
 For example, you may be interested in those examples if you encountered the following exception in your system when upgrading parts 
 of your libraries: `Detected java.lang.NoSuchMethodError error, which MAY be caused by incompatible Akka versions on the classpath. Please note that a given Akka version MUST be the same across all modules of Akka that you are using, e.g. if you use akka-actor [2.5.3 (resolved from current classpath)] all other core Akka modules MUST be of the same version. External projects like Alpakka, Persistence plugins or Akka HTTP etc. have their own version numbers - please make sure you're using a compatible set of libraries.`
 
-### Akka HTTP 10.0.x with Akka 2.5.x
+### Compatibility with Akka
 
-Akka HTTP 10.0.x is (binary) compatible with *both* Akka `2.4.x` as well as Akka `2.5.x`. However, using Akka HTTP with Akka 2.5 used to be
-a bit confusing, because Akka HTTP explicitly depended on Akka 2.4. Trying to use it together with Akka 2.5,
-running an Akka HTTP application could fail with class loading issues like the above if you forgot to add a dependency to
-both `akka-actor` *and* `akka-stream` of the same version. For that reason, we changed the policy not to depend on `akka-stream`
-explicitly any more but mark it as a `provided` dependency in our build. That means that you will *always* have to add
-a manual dependency to `akka-stream`. Please make sure you have chosen and added a dependency to `akka-stream` when
-updating to the new version. (Old timers may remember this policy from spray.)
+Akka HTTP 10.1.x is (binary) compatible with Akka `2.5.x`
+and future Akka 2.x versions that are released during the lifetime of Akka HTTP 10.1.x.
+To facilitate supporting multiple minor versions of Akka we do not depend on `akka-stream`
+explicitly but mark it as a `provided` dependency in our build. That means that you will *always* have to add
+a manual dependency to `akka-stream`.
 
 sbt
 :   @@@vars
@@ -60,7 +58,7 @@ Maven
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-actor_$scala.binary_version$</artifactId>
-      <version>2.5.[...]</version>
+      <version>$akka25.version$</version>
     </dependency>
     <!-- Explicitly depend on akka-streams in same version as akka-actor-->
     <dependency>
@@ -71,13 +69,13 @@ Maven
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-http_$scala.binary_version$</artifactId>
-      <version>$akka25.version$</version>
+      <version>$project.version$</version>
     </dependency>
     <!-- If testkit used, explicitly declare dependency on akka-streams-testkit in same version as akka-actor-->
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-http-testkit_$scala.binary_version$</artifactId>
-      <version>$akka25.version$</version>
+      <version>$project.version$</version>
       <scope>test</scope>
     </dependency>
     <dependency>
