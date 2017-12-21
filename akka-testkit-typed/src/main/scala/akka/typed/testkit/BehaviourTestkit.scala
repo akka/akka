@@ -139,6 +139,12 @@ class BehaviorTestkit[T](_name: String, _initialBehavior: Behavior[T]) {
     case x    ⇒ x
   }
 
+  def childInbox[U](name: String): TestInbox[U] = {
+    val inbox = ctx.childInbox[U](name)
+    assert(inbox.isDefined, s"Child not created: $name. Children created: ${ctx.childrenNames}")
+    inbox.get
+  }
+
   /**
    * Requests all the effects. The effects are consumed, subsequent calls will only
    * see new effects.
@@ -177,12 +183,18 @@ class BehaviorTestkit[T](_name: String, _initialBehavior: Behavior[T]) {
       throw e
   }
 
+  /**
+   * Send the msg to the behavior and record any [[Effect]]s
+   */
   def run(msg: T): Unit = {
     try {
       current = Behavior.canonicalize(Behavior.interpretMessage(current, ctx, msg), current, ctx)
     } catch handleException
   }
 
+  /**
+   * Send the signal to the beheavior and record any [[Effect]]s
+   */
   def signal(signal: Signal): Unit = {
     try {
       current = Behavior.canonicalize(Behavior.interpretSignal(current, ctx, signal), current, ctx)

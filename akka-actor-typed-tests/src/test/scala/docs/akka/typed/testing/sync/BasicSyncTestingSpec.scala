@@ -27,7 +27,15 @@ object BasicSyncTestingSpec {
     case (ctx, DoAnEffect("nameless child")) ⇒
       ctx.spawnAnonymous(childActor)
       Actor.same
-    case (ctx, SayHello(who)) ⇒
+    case (ctx, DoAnEffect("say hello to child")) ⇒
+      val child: ActorRef[String] = ctx.spawn(childActor, "child")
+      child ! "hello"
+      Actor.same
+    case (ctx, DoAnEffect("say hello to nameless child")) ⇒
+      val child: ActorRef[String] = ctx.spawnAnonymous(childActor)
+      child ! "hello stranger"
+      Actor.same
+    case (_, SayHello(who)) ⇒
       who ! "hello"
       Actor.same
     //#under-test
@@ -64,6 +72,25 @@ class BasicSyncTestingSpec extends WordSpec with Matchers {
       testKit.run(SayHello(inbox.ref))
       inbox.expectMsg("hello")
       //#test-message
+    }
+
+    "send a message to a spawned child" in {
+      //#test-child-message
+      val testKit = BehaviorTestkit(myBehaviour)
+      testKit.run(DoAnEffect("say hello to child"))
+      val childInbox = testKit.childInbox[String]("child")
+      childInbox.expectMsg("hello")
+      //#test-child-message
+    }
+
+    "send a message to an anonymous spawned child" in {
+      //#test-child-message-anonymous
+      val testKit = BehaviorTestkit(myBehaviour)
+      testKit.run(DoAnEffect("say hello to nameless child"))
+      // Anonymous actors are created as: $a $b etc
+      val childInbox = testKit.childInbox[String]("$a")
+      childInbox.expectMsg("hello stranger")
+      //#test-child-message-anonymous
     }
   }
 }

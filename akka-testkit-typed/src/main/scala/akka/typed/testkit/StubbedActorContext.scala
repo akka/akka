@@ -123,10 +123,13 @@ private[typed] object WatchableRef {
   override def mailboxCapacity = 1
 
   private var _children = TreeMap.empty[String, TestInbox[_]]
-  private val childName = Iterator from 1 map (Helpers.base64(_))
+  private val childName = Iterator from 0 map (Helpers.base64(_))
 
   override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ref)
+  def childrenNames: Iterable[String] = _children.keys
+
   override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ref)
+
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
     val i = TestInbox[U](childName.next())
     _children += i.ref.path.name → i
@@ -194,7 +197,7 @@ private[typed] object WatchableRef {
   /**
    * Retrieve the inbox representing the child actor with the given name.
    */
-  def childInbox[U](name: String): TestInbox[U] = _children(name).asInstanceOf[TestInbox[U]]
+  def childInbox[U](name: String): Option[TestInbox[U]] = _children.get(name).map(_.asInstanceOf[TestInbox[U]])
 
   /**
    * Remove the given inbox from the list of children, for example after

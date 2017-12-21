@@ -18,6 +18,8 @@ public class BasicSyncTestingTest extends JUnitSuite {
   interface Command { }
   public static class CreateAChild implements Command { }
   public static class CreateAnAnonymousChild implements Command { }
+  public static class SayHelloToChild implements Command { }
+  public static class SayHelloToAnonymousChild implements Command { }
   public static class SayHello implements Command {
     private final ActorRef<String> who;
 
@@ -35,7 +37,16 @@ public class BasicSyncTestingTest extends JUnitSuite {
       ctx.spawnAnonymous(childActor);
       return Actor.same();
     })
-    .onMessage(SayHello.class, (ctx, msg) -> {
+    .onMessage(SayHelloToChild.class, (ctx, msg) -> {
+      ActorRef<String> child = ctx.spawn(childActor, "child");
+      child.tell("hello");
+      return Actor.same();
+    })
+    .onMessage(SayHelloToAnonymousChild.class, (ctx, msg) -> {
+      ActorRef<String> child = ctx.spawnAnonymous(childActor);
+      child.tell("hello stranger");
+      return Actor.same();
+    }).onMessage(SayHello.class, (ctx, msg) -> {
       msg.who.tell("hello");
       return Actor.same();
     }).build();
@@ -68,5 +79,26 @@ public class BasicSyncTestingTest extends JUnitSuite {
     test.run(new SayHello(inbox.ref()));
     inbox.expectMsg("hello");
     //#test-message
+  }
+
+  @Test
+  public void testMessageToChild() {
+     //#test-child-message
+     BehaviorTestkit<Command> testKit = BehaviorTestkit.create(myBehaviour);
+     testKit.run(new SayHelloToChild());
+     TestInbox<String> childInbox = testKit.childInbox("child");
+     childInbox.expectMsg("hello");
+     //#test-child-message
+  }
+
+  @Test
+  public void testMessageToAnonymousChild() {
+     //#test-child-message-anonymous
+     BehaviorTestkit<Command> testKit = BehaviorTestkit.create(myBehaviour);
+     testKit.run(new SayHelloToAnonymousChild());
+     // Anonymous actors are created as: $a $b etc
+     TestInbox<String> childInbox = testKit.childInbox("$a");
+     childInbox.expectMsg("hello stranger");
+     //#test-child-message-anonymous
   }
 }

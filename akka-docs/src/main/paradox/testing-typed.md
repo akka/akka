@@ -56,6 +56,7 @@ The following demonstrates how to test:
 * Spawning child actors
 * Spawning child actors anonymously
 * Sending a message either as a reply or to another actor
+* Sending a message to a child actor
 
 The examples below require the following imports:
 
@@ -116,6 +117,25 @@ Scala
 Java
 :  @@snip [BasicSyncTestingTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/testing/sync/BasicSyncTestingTest.java) { #test-message } 
 
+Another use case is sending a message to a child actor you can do this by looking up the 'TestInbox' for
+a child actor from the 'BehaviorTestKit':
+
+Scala
+:  @@snip [BasicSyncTestingSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/testing/sync/BasicSyncTestingSpec.scala) { #test-child-message }
+
+Java
+:  @@snip [BasicSyncTestingTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/testing/sync/BasicSyncTestingTest.java) { #test-child-message } 
+
+For anonymous children the actor names are generated in a deterministic way:
+
+Scala
+:  @@snip [BasicSyncTestingSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/testing/sync/BasicSyncTestingSpec.scala) { #test-child-message-anonymous }
+
+Java
+:  @@snip [BasicSyncTestingTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/testing/sync/BasicSyncTestingTest.java) { #test-child-message-anonymous } 
+
+### Testing other effects
+
 The `BehaviorTestkit` keeps track other effects you can verify, look at the sub-classes of `akka.typed.testkit.Effect`
  
  * SpawnedAdapter
@@ -124,7 +144,7 @@ The `BehaviorTestkit` keeps track other effects you can verify, look at the sub-
  * Unwatched
  * Scheduled
  
-See the other public methods and API documentation on `BehaviourTestkit` for other typed of verification.
+See the other public methods and API documentation on `BehaviourTestkit` for other types of verification.
    
 ## Asynchronous testing
 
