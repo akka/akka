@@ -422,14 +422,15 @@ private[client] object NewHostConnectionPool {
               .toMat(responseIn.sink)(Keep.left)
               .run()(subFusingMaterializer)
 
-          connection.onComplete(safely {
-            case Success(outgoingConnection) ⇒ slot.onConnected(outgoingConnection)
-            case Failure(cause)              ⇒ slot.onConnectFailed(cause)
-          })(ExecutionContexts.sameThreadExecutionContext)
-
           val slotCon = new SlotConnection(slot, requestOut, responseIn, connection)
           requestOut.setHandler(slotCon)
           responseIn.setHandler(slotCon)
+
+          connection.onComplete(safely {
+            case Success(outgoingConnection) ⇒ slotCon.withSlot(_.onConnected(outgoingConnection))
+            case Failure(cause)              ⇒ slotCon.withSlot(_.onConnectFailed(cause))
+          })(ExecutionContexts.sameThreadExecutionContext)
+
           slotCon
         }
 
