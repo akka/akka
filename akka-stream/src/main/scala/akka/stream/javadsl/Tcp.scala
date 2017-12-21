@@ -3,10 +3,10 @@
  */
 package akka.stream.javadsl
 
-import java.lang.{Iterable => JIterable}
+import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
@@ -26,7 +26,7 @@ import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 import javax.net.ssl.SSLContext
 
-import akka.annotation.{ApiMayChange, InternalApi}
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.TLSProtocol.NegotiateNewSession
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {

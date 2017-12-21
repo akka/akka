@@ -8,19 +8,19 @@ import java.util.concurrent.TimeoutException
 import javax.net.ssl.SSLContext
 
 import akka.actor._
-import akka.annotation.{ApiMayChange, InternalApi}
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.io.Inet.SocketOption
-import akka.io.{IO, Tcp => IoTcp}
+import akka.io.{ IO, Tcp ⇒ IoTcp }
 import akka.stream.TLSProtocol.NegotiateNewSession
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.detacher
-import akka.stream.impl.io.{ConnectionSourceStage, OutgoingConnectionStage, TcpIdleTimeout}
+import akka.stream.impl.io.{ ConnectionSourceStage, OutgoingConnectionStage, TcpIdleTimeout }
 import akka.util.ByteString
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.control.NoStackTrace
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
