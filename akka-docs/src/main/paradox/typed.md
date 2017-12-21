@@ -13,32 +13,11 @@ This module is currently marked as @ref:[may change](common/may-change.md) in th
 
 To use typed actors add the following dependency:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-actor-typed" % "$akka.version$"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    dependencies {
-      compile group: 'com.typesafe.akka', name: 'akka-actor-typed_2.11', version: '$akka.version$'
-    }
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-actor-typed_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-actor-typed_2.11
+  version=$version$
+}
 
 ## Introduction
 
@@ -195,7 +174,7 @@ Java
 
 The state is managed by changing behavior rather than using any variables.
 
- When a new `GetSession` command comes in we add that client to the
+When a new `GetSession` command comes in we add that client to the
 list that is in the returned behavior. Then we also need to create the session’s
 `ActorRef` that will be used to post messages. In this case we want to
 create a very simple Actor that just repackages the `PostMessage`

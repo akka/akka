@@ -14,8 +14,8 @@ Typed and untyped can interact the following ways:
 * spawn and supervise typed child from untyped parent, and opposite
 * watch typed from untyped, and opposite
 
-In the Scala examples the `akka.actor` package is aliased to `untyped`. The Java examples use fully quaified
-class names for the untyped classes.
+@scala[In the examples the `akka.actor` package is aliased to `untyped`.] @java[The examples use fully qualified
+class names for the untyped classes to distinguish between typed and untyped classes with the same name.]
 
 Scala
 :  @@snip [UntypedWatchingTypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #import-alias }
@@ -47,8 +47,8 @@ Scala
 Java
 :  @@snip [UntypedWatchingTypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #untyped-watch }
 
-There is one `import` that is needed to make that work for Scala. For Java we import the Adapter class and
-call static methods for conversion.
+@scala[There is one `import` that is needed to make that work.] @java[We import the Adapter class and
+call static methods for conversion.]
 
 Scala
 :  @@snip [UntypedWatchingTypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #adapter-import }
@@ -57,7 +57,8 @@ Java
 :  @@snip [UntypedWatchingTypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #adapter-import }
 
 
-That adds some implicit extension methods that are added to untyped and typed `ActorSystem` and `ActorContext` in both directions. Note the inline comments in the example above. In the `javadsl` the corresponding adapter methods are static methods in `akka.typed.javadsl.Adapter`.
+@scala[That adds some implicit extension methods that are added to untyped and typed `ActorSystem` and `ActorContext` in both directions.]
+@java[To convert between typed and untyped there are adapter methods in `akka.typed.javadsl.Adapter`.] Note the inline comments in the example above. 
 
 ### Typed to untyped
 

@@ -75,7 +75,7 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
   @Test
   public void testItWorks() {
     //#create
-    ActorSystem as = ActorSystem.apply();
+    ActorSystem as = ActorSystem.create();
     ActorRef<Typed.Command> typed = Adapter.spawn(as, Typed.behavior(), "Typed");
     //#create
     TestProbe probe = new TestProbe(as);
