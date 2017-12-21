@@ -8,7 +8,7 @@ import akka.annotation.InternalApi
 import akka.http.impl.engine.client.PoolFlow.RequestContext
 import akka.http.impl.util._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 
 import scala.concurrent.Future
@@ -162,6 +162,11 @@ private[pool] object SlotState {
     }
 
     override def onConnectionCompleted(ctx: SlotContext): SlotState = {
+      // How would that happen at all? Shouldn't the connection attempt fail instead? It has two reasons:
+      //  1) We create the outgoing client connection stream before the TCP is established. This means there's a race
+      //     between failing the materialized future and failing the connection stream
+      //  2) Failures on the TCP layer don't necessarily propagate through the stack as failures because of the notorious
+      //     cancel/failure propagation which can convert failures into completion.
       ctx.debug("Connection completed.")
       ctx.closeConnection()
       WaitingForResponseDispatch(ongoingRequest, Failure(
@@ -200,6 +205,9 @@ private[pool] object SlotState {
     override def onRequestEntityCompleted(ctx: SlotContext): SlotState =
       WaitingForResponse(ongoingRequest)
 
+    override def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState =
+      WaitingForResponseDispatch(ongoingRequest, Failure(cause))
+
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState =
       WaitingForResponseDispatch(ongoingRequest, Failure(cause))
   }
@@ -224,6 +232,11 @@ private[pool] object SlotState {
           Unconnected
       }
     }
+
+    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState =
+      // we just ignore this error: either it will not matter in which case everyhing is fine, or
+      // else it will be reported through an entity stream failure as well
+      this
   }
   final case class WaitingForResponseEntitySubscription(
     ongoingRequest:  RequestContext,
