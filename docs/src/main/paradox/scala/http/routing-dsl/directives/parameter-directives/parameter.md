@@ -12,7 +12,7 @@
 
 Extracts a *query* parameter value from the @scala[request]@java[request and provides it to the inner route as a `String`].
 
-@scala[In the Scala API, `parameter` is a an alias for `parameters` and you can use both directives to extract any number of parameter values.]
+@scala[In the Scala API, `parameter` is an alias for `parameters` and you can use both directives to extract any number of parameter values.]
 For a detailed description about how to extract one or more parameters see @ref[parameters](parameters.md).
 
 See @ref[When to use which parameter directive?](index.md#which-parameter-directive) to understand when to use which directive.
