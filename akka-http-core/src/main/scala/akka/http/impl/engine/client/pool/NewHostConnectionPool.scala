@@ -180,7 +180,6 @@ private[client] object NewHostConnectionPool {
                 debug(s"State change [${previousState.name}] -> [${state.name}]")
 
                 state.stateTimeout match {
-                  case Duration.Inf ⇒
                   case d: FiniteDuration ⇒
                     val myTimeoutId = createNewTimeoutId()
                     currentTimeoutId = myTimeoutId
@@ -191,6 +190,7 @@ private[client] object NewHostConnectionPool {
                           updateState(_.onTimeout(this))
                         }
                       })
+                  case _ ⇒ // no timeout set, nothing to do
                 }
 
                 if (!previousState.isIdle && state.isIdle) {
@@ -366,6 +366,7 @@ private[client] object NewHostConnectionPool {
                       case Success(_)     ⇒ withSlot(_.onResponseEntityCompleted())
                       case Failure(cause) ⇒ withSlot(_.onResponseEntityFailed(cause))
                     })(ExecutionContexts.sameThreadExecutionContext)
+                  case Failure(_) ⇒ throw new IllegalStateException("Should never fail")
                 })(ExecutionContexts.sameThreadExecutionContext)
 
                 withSlot(_.onResponseReceived(response.withEntity(newEntity)))

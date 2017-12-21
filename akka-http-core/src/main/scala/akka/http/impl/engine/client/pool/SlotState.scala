@@ -100,7 +100,7 @@ private[pool] object SlotState {
   sealed trait IdleState extends SlotState {
     final override def isIdle = true
   }
-  sealed trait BusyState extends SlotState {
+  sealed private[pool] /* to avoid warnings */ trait BusyState extends SlotState {
     final override def isIdle = false // no HTTP pipelining right now
     def ongoingRequest: RequestContext
 
