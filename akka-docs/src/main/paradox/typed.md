@@ -1,4 +1,4 @@
-# Akka Typed
+# Actors 
 
 @@@ warning
 
@@ -11,41 +11,21 @@ This module is currently marked as @ref:[may change](common/may-change.md) in th
 
 ## Dependency
 
-Akka Typed APIs for each akka module are in a `akka-$module-typed` e.g. `akka-actor-typed` `akka-persistence-typed`
-For the following examples make sure that you have the following dependency in your project:
+To use typed actors add the following dependency:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-actor-typed" % "$akka.version$"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    dependencies {
-      compile group: 'com.typesafe.akka', name: 'akka-actor-typed_2.11', version: '$akka.version$'
-    }
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-actor-typed_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
+@@dependency [sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-actor-typed_2.11
+  version=$version$
+}
 
 ## Introduction
 
-As discussed in @ref:[Actor Systems](general/actor-systems.md) (and following chapters) Actors are about
+As discussed in @ref:[Actor Systems](general/actor-systems.md) Actors are about
 sending messages between independent units of computation, but how does that
-look like? In all of the following these imports are assumed:
+look like? 
+
+In all of the following these imports are assumed:
 
 Scala
 :  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #imports }
@@ -78,7 +58,7 @@ behavior that holds the new immutable state. In this case we don't need to
 update any state, so we return `Same`.
 
 The type of the messages handled by this behavior is declared to be of class
-`Greet`, which implies that the supplied function’s `msg` argument is
+`Greet`, meaning that `msg` argument is
 also typed as such. This is why we can access the `whom` and `replyTo`
 members without needing to use a pattern match.
 
@@ -138,8 +118,6 @@ the reply message to that `ActorRef` the message that fulfills the
 
 We use this here to send the `Greet` command to the Actor and when the
 reply comes back we will print it out and tell the actor system to shut down.
-Once that is done as well we print the `"system terminated"` messages and the
-program ends.
 
 @@@ div {.group-scala}
 
@@ -151,67 +129,16 @@ a timeout then no `greeting` would be extracted and nothing would happen.
 
 @@@
 
-This shows that there are aspects of Actor messaging that can be type-checked
-by the compiler, but this ability is not unlimited, there are bounds to what we
-can statically express. Before we go on with a more complex (and realistic)
-example we make a small detour to highlight some of the theory behind this.
-
-## A Little Bit of Theory
-
-The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) as defined by
-Hewitt, Bishop and Steiger in 1973 is a computational model that expresses
-exactly what it means for computation to be distributed. The processing
-units—Actors—can only communicate by exchanging messages and upon reception of a
-message an Actor can do the following three fundamental actions:
-
-  1. send a finite number of messages to Actors it knows
-  2. create a finite number of new Actors
-  3. designate the behavior to be applied to the next message
-
-The Akka Typed project expresses these actions using behaviors and addresses.
-Messages can be sent to an address and behind this façade there is a behavior
-that receives the message and acts upon it. The binding between address and
-behavior can change over time as per the third point above, but that is not
-visible on the outside.
-
-With this preamble we can get to the unique property of this project, namely
-that it introduces static type checking to Actor interactions: addresses are
-parameterized and only messages that are of the specified type can be sent to
-them. The association between an address and its type parameter must be made
-when the address (and its Actor) is created. For this purpose each behavior is
-also parameterized with the type of messages it is able to process. Since the
-behavior can change behind the address façade, designating the next behavior is
-a constrained operation: the successor must handle the same type of messages as
-its predecessor. This is necessary in order to not invalidate the addresses
-that refer to this Actor.
-
-What this enables is that whenever a message is sent to an Actor we can
-statically ensure that the type of the message is one that the Actor declares
-to handle—we can avoid the mistake of sending completely pointless messages.
-What we cannot statically ensure, though, is that the behavior behind the
-address will be in a given state when our message is received. The fundamental
-reason is that the association between address and behavior is a dynamic
-runtime property, the compiler cannot know it while it translates the source
-code.
-
-This is the same as for normal Java objects with internal variables: when
-compiling the program we cannot know what their value will be, and if the
-result of a method call depends on those variables then the outcome is
-uncertain to a degree—we can only be certain that the returned value is of a
-given type.
-
-We have seen above that the return type of an Actor command is described by the
-type of reply-to address that is contained within the message. This allows a
-conversation to be described in terms of its types: the reply will be of type
-A, but it might also contain an address of type B, which then allows the other
-Actor to continue the conversation by sending a message of type B to this new
-address. While we cannot statically express the “current” state of an Actor, we
-can express the current state of a protocol between two Actors, since that is
-just given by the last message type that was received or sent.
-
 In the next section we demonstrate this on a more realistic example.
 
 ## A More Complex Example
+
+The next example demonstrates some important patterns:
+
+* Using a sealed trait and case class/objects to represent multiple messages an actor can receive
+* Handle incoming messages of different types by using `adapter`s
+* Handling state by changing behavior
+* Using multiple typed actors to represent different parts of a protocol in a type safe way
 
 Consider an Actor that runs a chat room: client Actors may connect by sending
 a message that contains their screen name and then they can post messages. The
@@ -236,8 +163,7 @@ that the client has revealed its own address, via the `replyTo` argument, so tha
 This illustrates how Actors can express more than just the equivalent of method
 calls on Java objects. The declared message types and their contents describe a
 full protocol that can involve multiple Actors and that can evolve over
-multiple steps. The implementation of the chat room protocol would be as simple
-as the following:
+multiple steps. Here's the implementation of the chat room protocol:
 
 Scala
 :  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-behavior }
@@ -245,10 +171,10 @@ Scala
 Java
 :  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-behavior }
 
-The core of this behavior is stateful, the chat room itself does not change
-into something else when sessions are established, but we introduce a variable
-that tracks the opened sessions. Note that by using a method parameter a `var`
-is not needed. When a new `GetSession` command comes in we add that client to the
+
+The state is managed by changing behavior rather than using any variables.
+
+When a new `GetSession` command comes in we add that client to the
 list that is in the returned behavior. Then we also need to create the session’s
 `ActorRef` that will be used to post messages. In this case we want to
 create a very simple Actor that just repackages the `PostMessage`
@@ -340,6 +266,7 @@ the main Actor terminates there is nothing more to do.
 Therefore after creating the Actor system with the `main` Actor’s
 `Behavior` we just await its termination.
 
+
 ## Status of this Project and Relation to Akka Actors
 
 Akka Typed is the result of many years of research and previous attempts
@@ -375,3 +302,57 @@ having to worry about timeouts and spurious failures. Another side-effect is
 that behaviors can nicely be composed and decorated, see `tap`, or
 @scala[`widen`]@java[`widened`] combinators; nothing about these is special or internal, new
 combinators can be written as external libraries or tailor-made for each project.
+
+## A Little Bit of Theory
+
+The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) as defined by
+Hewitt, Bishop and Steiger in 1973 is a computational model that expresses
+exactly what it means for computation to be distributed. The processing
+units—Actors—can only communicate by exchanging messages and upon reception of a
+message an Actor can do the following three fundamental actions:
+
+  1. send a finite number of messages to Actors it knows
+  2. create a finite number of new Actors
+  3. designate the behavior to be applied to the next message
+
+The Akka Typed project expresses these actions using behaviors and addresses.
+Messages can be sent to an address and behind this façade there is a behavior
+that receives the message and acts upon it. The binding between address and
+behavior can change over time as per the third point above, but that is not
+visible on the outside.
+
+With this preamble we can get to the unique property of this project, namely
+that it introduces static type checking to Actor interactions: addresses are
+parameterized and only messages that are of the specified type can be sent to
+them. The association between an address and its type parameter must be made
+when the address (and its Actor) is created. For this purpose each behavior is
+also parameterized with the type of messages it is able to process. Since the
+behavior can change behind the address façade, designating the next behavior is
+a constrained operation: the successor must handle the same type of messages as
+its predecessor. This is necessary in order to not invalidate the addresses
+that refer to this Actor.
+
+What this enables is that whenever a message is sent to an Actor we can
+statically ensure that the type of the message is one that the Actor declares
+to handle—we can avoid the mistake of sending completely pointless messages.
+What we cannot statically ensure, though, is that the behavior behind the
+address will be in a given state when our message is received. The fundamental
+reason is that the association between address and behavior is a dynamic
+runtime property, the compiler cannot know it while it translates the source
+code.
+
+This is the same as for normal Java objects with internal variables: when
+compiling the program we cannot know what their value will be, and if the
+result of a method call depends on those variables then the outcome is
+uncertain to a degree—we can only be certain that the returned value is of a
+given type.
+
+We have seen above that the return type of an Actor command is described by the
+type of reply-to address that is contained within the message. This allows a
+conversation to be described in terms of its types: the reply will be of type
+A, but it might also contain an address of type B, which then allows the other
+Actor to continue the conversation by sending a message of type B to this new
+address. While we cannot statically express the “current” state of an Actor, we
+can express the current state of a protocol between two Actors, since that is
+just given by the last message type that was received or sent.
+
