@@ -167,6 +167,7 @@ private[http] object HeaderParser {
     "proxy-authorization",
     "range",
     "referer",
+    "retry-after",
     "server",
     "sec-websocket-accept",
     "sec-websocket-extensions",

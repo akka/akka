@@ -62,6 +62,24 @@ class HeaderSpec extends FreeSpec with Matchers {
     }
   }
 
+  "Retry-After should" - {
+    "provide parseFromValueString method" - {
+      "successful parse run" in {
+        headers.`Retry-After`.parseFromValueString("120") shouldEqual Right(headers.`Retry-After`(120))
+        headers.`Retry-After`.parseFromValueString("Wed, 21 Oct 2015 07:28:00 GMT") shouldEqual
+          Right(headers.`Retry-After`(DateTime(2015, 10, 21, 7, 28)))
+      }
+      "failing parse run" in {
+        val Left(List(ErrorInfo(summary, detail))) = `Retry-After`.parseFromValueString("011")
+        summary shouldEqual "Illegal HTTP header 'Retry-After': Invalid input '1', expected OWS or 'EOI' (line 1, column 2)"
+        val Left(List(ErrorInfo(summary2, detail2))) = `Retry-After`.parseFromValueString("-10")
+        summary2 shouldEqual "Illegal HTTP header 'Retry-After': Invalid input '-', expected HTTP-date or delta-seconds (line 1, column 1)"
+        val Left(List(ErrorInfo(summary3, detail3))) = `Retry-After`.parseFromValueString("2015-10-21H07:28:00Z")
+        summary3 shouldEqual "Illegal HTTP header 'Retry-After': Invalid input '-', expected DIGIT, OWS or 'EOI' (line 1, column 5)"
+      }
+    }
+  }
+
   "Strict-Transport-Security should" - {
     "provide parseFromValueString method" - {
       "successful parse run" in {
@@ -165,7 +183,8 @@ class HeaderSpec extends FreeSpec with Matchers {
         `Set-Cookie`(HttpCookie("sessionId", "b0eb8b8b3ad246")),
         `Transfer-Encoding`(TransferEncodings.chunked),
         Upgrade(Vector(UpgradeProtocol("HTTP", Some("2.0")))),
-        `WWW-Authenticate`(HttpChallenge("Basic", Some("example.com"))))
+        `WWW-Authenticate`(HttpChallenge("Basic", Some("example.com"))),
+        `Retry-After`(120))
 
       responseHeaders.foreach { header ⇒
         header shouldBe 'renderInResponses

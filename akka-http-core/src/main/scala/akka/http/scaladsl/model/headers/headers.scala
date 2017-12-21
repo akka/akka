@@ -703,6 +703,28 @@ final case class Referer(uri: Uri) extends jm.headers.Referer with RequestHeader
   def getUri: akka.http.javadsl.model.Uri = uri.asJava
 }
 
+object `Retry-After` extends ModeledCompanion[`Retry-After`] {
+  def apply(delaySeconds: Long): `Retry-After` = apply(RetryAfterDuration(delaySeconds))
+  def apply(timestamp: DateTime): `Retry-After` = apply(RetryAfterDateTime(timestamp))
+}
+
+final case class `Retry-After`(delaySecondsOrDateTime: RetryAfterParameter) extends jm.headers.RetryAfter with ResponseHeader {
+  def renderValue[R <: Rendering](r: R): r.type = delaySecondsOrDateTime match {
+    case RetryAfterDuration(delay)    ⇒ r ~~ delay
+    case RetryAfterDateTime(dateTime) ⇒ dateTime.renderRfc1123DateTimeString(r)
+  }
+
+  protected def companion = `Retry-After`
+
+  /** Java API suppport */
+  override protected def delaySeconds(): Option[java.lang.Long] = PartialFunction.condOpt(delaySecondsOrDateTime) {
+    case RetryAfterDuration(delay) ⇒ Long.box(delay)
+  }
+  override protected def dateTime(): Option[DateTime] = PartialFunction.condOpt(delaySecondsOrDateTime) {
+    case RetryAfterDateTime(dateTime) ⇒ dateTime
+  }
+}
+
 /**
  * INTERNAL API
  */

@@ -412,6 +412,11 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         "Referer header URI must not contain a fragment")
     }
 
+    "Retry-After" in {
+      "Retry-After: 120" =!= `Retry-After`(120)
+      "Retry-After: Wed, 21 Oct 2015 07:28:00 GMT" =!= `Retry-After`(DateTime(2015, 10, 21, 7, 28))
+    }
+
     "Server" in {
       "Server: as fghf.fdf/xx" =!= `Server`(Vector(ProductVersion("as"), ProductVersion("fghf.fdf", "xx")))
     }
