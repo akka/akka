@@ -505,13 +505,24 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Same as [[cachedHostConnectionPool]] but with HTTPS encryption.
    *
-   * The given [[ConnectionContext]] will be used for encryption on the connection.
+   * When an [[HttpConnectionContext]] is defined in the given [[ConnectHttp]] it will be used, otherwise the default client-side context will be used.
    */
   def cachedHostConnectionPoolHttps[T](
     to:       ConnectHttp,
     settings: ConnectionPoolSettings,
     log:      LoggingAdapter): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow(delegate.cachedHostConnectionPoolHttpsImpl[T](to.host, to.port, to.effectiveHttpsConnectionContext(defaultClientHttpsContext).asScala, settings.asScala, log)
+      .mapMaterializedValue(_.toJava))
+
+  /**
+   * Same as [[cachedHostConnectionPool]] but with HTTPS encryption.
+   *
+   * When an [[HttpConnectionContext]] is defined in the given [[ConnectHttp]] it will be used, otherwise the default client-side context will be used.
+   */
+  def cachedHostConnectionPoolHttps[T](
+    to: ConnectHttp
+  ): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
+    adaptTupleFlow(delegate.cachedHostConnectionPoolHttpsImpl[T](to.host, to.port, to.effectiveHttpsConnectionContext(defaultClientHttpsContext).asScala)
       .mapMaterializedValue(_.toJava))
 
   /**
