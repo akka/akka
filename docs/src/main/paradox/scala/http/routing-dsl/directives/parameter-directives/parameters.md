@@ -66,7 +66,7 @@ instance.
 @@@
 
 @@@ div { .group-java }
-In order to filter on the existence of several query parameters, you need to nest as many `parameter` directives as desired. 
+In order to filter on the existence of several query parameters, you need to nest as many @ref[parameter](parameter.md) directives as desired.
 
 Query parameters can be either extracted as a String or can be converted to another type. Different methods must be used
 when the desired parameter is required, optional or repeated.
