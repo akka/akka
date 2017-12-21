@@ -2,6 +2,7 @@ package docs.akka.typed.coexistence
 
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Actor
+import akka.testkit.TestKit
 //#adapter-import
 // adds support for typed actors to an untyped actor system and context
 import akka.actor.typed.scaladsl.adapter._
@@ -78,7 +79,7 @@ class UntypedWatchingTypedSpec extends WordSpec {
       val probe = TestProbe()(system)
       probe.watch(untypedActor)
       probe.expectTerminated(untypedActor, 200.millis)
-      system.terminate()
+      TestKit.shutdownActorSystem(system)
     }
 
     "support converting an untyped actor system to a typed actor system" in {
@@ -86,9 +87,7 @@ class UntypedWatchingTypedSpec extends WordSpec {
       val system = akka.actor.ActorSystem("UntypedToTypedSystem")
       val typedSystem: ActorSystem[Nothing] = system.toTyped
       //#convert-untyped
-      typedSystem.terminate()
+      TestKit.shutdownActorSystem(system)
     }
-
   }
-
 }

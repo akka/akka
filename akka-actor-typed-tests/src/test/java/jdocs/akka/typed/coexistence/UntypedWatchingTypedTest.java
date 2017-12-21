@@ -13,6 +13,7 @@ import akka.actor.typed.javadsl.Actor;
 import akka.actor.typed.javadsl.Adapter;
 //#adapter-import
 import akka.testkit.TestProbe;
+import akka.testkit.javadsl.TestKit;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
@@ -84,7 +85,7 @@ public class UntypedWatchingTypedTest extends JUnitSuite {
     TestProbe probe = new TestProbe(as);
     probe.watch(untyped);
     probe.expectTerminated(untyped, Duration.create(1, "second"));
-    as.terminate();
+    TestKit.shutdownActorSystem(as);
   }
 
   @Test
@@ -93,6 +94,6 @@ public class UntypedWatchingTypedTest extends JUnitSuite {
     akka.actor.ActorSystem untypedActorSystem = akka.actor.ActorSystem.create();
     ActorSystem<Void> typedActorSystem = Adapter.toTyped(untypedActorSystem);
     //#convert-untyped
-    typedActorSystem.terminate();
+    TestKit.shutdownActorSystem(untypedActorSystem);
   }
 }

@@ -11,6 +11,7 @@ import akka.actor.typed.Behavior;
 // in Java use the static methods on Adapter to convert from untyped to typed
 import akka.actor.typed.javadsl.Adapter;
 //#adapter-import
+import akka.testkit.javadsl.TestKit;
 import akka.testkit.TestProbe;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
@@ -81,6 +82,6 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
     TestProbe probe = new TestProbe(as);
     probe.watch(Adapter.toUntyped(typed));
     probe.expectTerminated(Adapter.toUntyped(typed), Duration.create(1, "second"));
-    as.terminate();
+    TestKit.shutdownActorSystem(as);
   }
 }
