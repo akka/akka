@@ -15,7 +15,7 @@
 <a id="which-parameter-directive"></a>
 ## When to use which parameter directive?
 
-Usually, you want to use the high-level @scala[@ref[parameters](parameters.md)]@java[@ref[parameter](parameter.md)] directive. When you need
+Usually, you want to use the high-level @ref[parameters](parameters.md)] directive. When you need
 more low-level access you can use the table below to decide which directive
 to use which shows properties of different parameter directives.
 
