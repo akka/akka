@@ -24,7 +24,7 @@ import akka.util.OptionVal
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
@@ -86,10 +86,6 @@ private[client] object NewHostConnectionPool {
             slotsWaitingForDispatch.pollFirst().onResponseDispatchable()
         // else push when next slot becomes dispatchable
 
-        def manageState(): Unit = {
-          pullIfNeeded()
-        }
-
         def pullIfNeeded(): Unit =
           if (hasIdleSlots)
             if (!retryBuffer.isEmpty) {
@@ -142,7 +138,7 @@ private[client] object NewHostConnectionPool {
             }
 
           def onConnected(outgoing: Http.OutgoingConnection): Unit =
-            updateState(_.onConnectedAttemptSucceeded(this, outgoing))
+            updateState(_.onConnectionAttemptSucceeded(this, outgoing))
 
           def onConnectFailed(cause: Throwable): Unit =
             updateState(_.onConnectionAttemptFailed(this, cause))
@@ -256,19 +252,32 @@ private[client] object NewHostConnectionPool {
             updateState(_ ⇒ newState)
 
           def debug(msg: String): Unit =
-            log.debug("[{} ({})] {}", slotId, state.productPrefix, msg)
+            if (log.isDebugEnabled)
+              log.debug("[{} ({})] {}", slotId, state.productPrefix, msg)
 
           def debug(msg: String, arg1: AnyRef): Unit =
-            log.debug(s"[{} ({})] $msg", slotId, state.productPrefix, arg1)
+            if (log.isDebugEnabled)
+              log.debug(s"[{} ({})] $msg", slotId, state.productPrefix, arg1)
+
+          def debug(msg: String, arg1: AnyRef, arg2: AnyRef): Unit =
+            if (log.isDebugEnabled)
+              log.debug(s"[{} ({})] $msg", slotId, state.productPrefix, arg1, arg2)
+
+          def debug(msg: String, arg1: AnyRef, arg2: AnyRef, arg3: AnyRef): Unit =
+            if (log.isDebugEnabled)
+              log.debug(log.format(s"[{} ({})] $msg", slotId, state.productPrefix, arg1, arg2, arg3))
 
           def warning(msg: String): Unit =
-            log.warning("[{} ({})] {}", slotId, state.productPrefix, msg)
+            if (log.isWarningEnabled)
+              log.warning("[{} ({})] {}", slotId, state.productPrefix, msg)
 
           def warning(msg: String, arg1: AnyRef): Unit =
-            log.warning(s"[{} ({})] $msg", slotId, state.productPrefix, arg1)
+            if (log.isWarningEnabled)
+              log.warning(s"[{} ({})] $msg", slotId, state.productPrefix, arg1)
 
           def error(cause: Throwable, msg: String): Unit =
-            log.error(cause, s"[{} ({})] $msg", slotId, state.productPrefix)
+            if (log.isErrorEnabled)
+              log.error(cause, s"[{} ({})] $msg", slotId, state.productPrefix)
 
           def settings: ConnectionPoolSettings = _settings
 

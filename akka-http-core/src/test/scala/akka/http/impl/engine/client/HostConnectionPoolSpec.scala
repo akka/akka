@@ -7,6 +7,7 @@ package akka.http.impl.engine.client
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.impl.util._
 import akka.event.LoggingAdapter
@@ -178,7 +179,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
         reqBytesOut.sendNext(ByteString("hello"))
         reqBytesIn.expectUtf8EncodedString("hello")
 
-        reqBytesOut.sendError(new RuntimeException("oops"))
+        reqBytesOut.sendError(new RuntimeException("oops, could not finish sending request"))
 
         // expectRequestStreamError(reqBytesIn)
 
@@ -438,17 +439,12 @@ class HostConnectionPoolSpec extends AkkaSpec(
               case TestSubscriber.OnComplete ⇒
             }
 
-          lazy val outgoingConnection: Future[Http.OutgoingConnection] =
+          lazy val (outgoingConnection: Future[Http.OutgoingConnection], terminationWatch: Future[Done]) =
             Flow.fromSinkAndSource(
               Sink.fromSubscriber(serverRequests),
               Source.fromPublisher(serverResponses))
               .joinMat(clientServerImplementation.get(killSwitch))(Keep.right)
-              .recover {
-                case ex ⇒
-                  println(s"Server connection failed with error ${ex.getMessage}")
-                  ex.printStackTrace()
-                  throw ex
-              }
+              .watchTermination()(Keep.both)
               .join(
                 Flow.fromSinkAndSource(
                   Sink.fromSubscriber(responseSubscriber),
