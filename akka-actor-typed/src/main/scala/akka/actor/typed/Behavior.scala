@@ -290,7 +290,7 @@ object Behavior {
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = msg match {
           case signal: Signal ⇒ ext.receiveSignal(ctx, signal)
-          case msg            ⇒ ext.receiveMessage(ctx, msg.asInstanceOf[T])
+          case m              ⇒ ext.receiveMessage(ctx, m.asInstanceOf[T])
         }
         undefer(possiblyDeferredResult, ctx)
     }

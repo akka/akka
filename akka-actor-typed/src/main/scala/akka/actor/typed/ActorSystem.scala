@@ -139,8 +139,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
    * Ask the system guardian of this system to create an actor from the given
    * behavior and props and with the given name. The name does not need to
    * be unique since the guardian will prefix it with a running number when
-   * creating the child actor. The timeout sets the timeout used for the [[akka.actor.typed.scaladsl.AskPattern]]
-   * invocation when asking the guardian.
+   * creating the child actor.
    *
    * The returned Future of [[ActorRef]] may be converted into an [[ActorRef]]
    * to which messages can immediately be sent by using the [[ActorRef$.apply[T](s*]]
@@ -156,8 +155,6 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
 }
 
 object ActorSystem {
-  import internal._
-
   /**
    * Scala API: Create an ActorSystem
    */
@@ -229,8 +226,6 @@ object ActorSystem {
  * This class is immutable.
  */
 final class Settings(val config: Config, val untyped: a.ActorSystem.Settings, val name: String) {
-  import collection.JavaConverters._
-
   def this(_cl: ClassLoader, _config: Config, name: String) = this({
     val config = _config.withFallback(ConfigFactory.defaultReference(_cl))
     config.checkValid(ConfigFactory.defaultReference(_cl), "akka")
@@ -240,22 +235,6 @@ final class Settings(val config: Config, val untyped: a.ActorSystem.Settings, va
   def this(untyped: a.ActorSystem.Settings) = this(untyped.config, untyped, untyped.name)
 
   private var foundSettings = List.empty[String]
-  private def found(name: String, value: String): Unit = foundSettings ::= s"$name = $value"
-  private def getS(name: String, path: String): String = {
-    val value = config.getString(path)
-    found(name, value)
-    value
-  }
-  private def getSL(name: String, path: String): List[String] = {
-    val value = config.getStringList(path)
-    found(name, value.toString)
-    value.asScala.toList
-  }
-  private def getI(name: String, path: String): Int = {
-    val value = config.getInt(path)
-    found(name, value.toString)
-    value
-  }
 
   foundSettings = foundSettings.reverse
 

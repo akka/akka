@@ -24,7 +24,7 @@ import scala.concurrent.ExecutionContextExecutor
       case None    ⇒ Optional.empty()
     }
 
-  override def getChildren: java.util.List[akka.actor.typed.ActorRef[Void]] = {
+  override def getChildren: java.util.List[ActorRef[Void]] = {
     val c = children
     val a = new ArrayList[ActorRef[Void]](c.size)
     val i = c.iterator
@@ -57,10 +57,10 @@ import scala.concurrent.ExecutionContextExecutor
     internalSpawnAdapter(f, "")
 
   override def spawnAdapter[U](f: java.util.function.Function[U, T]): akka.actor.typed.ActorRef[U] =
-    internalSpawnAdapter(f.apply _, "")
+    internalSpawnAdapter(f.apply, "")
 
   override def spawnAdapter[U](f: java.util.function.Function[U, T], name: String): akka.actor.typed.ActorRef[U] =
-    internalSpawnAdapter(f.apply _, name)
+    internalSpawnAdapter(f.apply, name)
 
   /**
    * INTERNAL API: Needed to make Scala 2.12 compiler happy.

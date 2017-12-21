@@ -97,7 +97,7 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
         //Always notify listeners of the inProcess signal
         inProcessOfRegistration.countDown()
       }
-      case other ⇒
+      case _ ⇒
         //Someone else is in process of registering an extension for this Extension, retry
         registerExtension(ext)
     }

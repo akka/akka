@@ -8,11 +8,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Behavior
-import akka.actor.typed.Props
-import akka.actor.typed.EmptyProps
+import akka.actor.typed._
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -30,7 +26,7 @@ import akka.actor.typed.EmptyProps
  *
  * An `ActorContext` in addition provides access to the Actor’s own identity (“`self`”),
  * the [[ActorSystem]] it is part of, methods for querying the list of child Actors it
- * created, access to [[Terminated DeathWatch]] and timed message scheduling.
+ * created, access to [[Terminated]] and timed message scheduling.
  */
 @DoNotInherit
 @ApiMayChange
@@ -90,7 +86,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
   def stop[U](child: ActorRef[U]): Boolean
 
   /**
-   * Register for [[Terminated]] notification once the Actor identified by the
+   * Register for [[akka.actor.typed.Terminated]] notification once the Actor identified by the
    * given [[ActorRef]] terminates. This message is also sent when the watched actor
    * is on a node that has been removed from the cluster when using akka-cluster
    * or has been marked unreachable when using akka-remote directly

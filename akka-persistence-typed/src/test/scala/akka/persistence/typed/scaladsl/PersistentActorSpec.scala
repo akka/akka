@@ -17,7 +17,8 @@ import akka.persistence.typed.scaladsl.PersistentActor._
 
 object PersistentActorSpec {
 
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory.parseString(
+    """
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """)
 
@@ -109,6 +110,7 @@ object PersistentActorSpec {
 }
 
 class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eventually with StartSupport {
+
   import PersistentActorSpec._
 
   implicit val testSettings = TestKitSettings(system)
@@ -215,9 +217,13 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
       // behavior is running as an untyped PersistentActor it's not possible to
       // wrap it in Actor.deferred or Actor.supervise
       pending
+      val probe = TestProbe[State]
       val behavior = Actor.supervise[Command](counter("c13"))
         .onFailure(SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.1))
       val c = start(behavior)
+      c ! Increment
+      c ! GetValue(probe.ref)
+      probe.expectMsg(State(1, Vector(0)))
     }
   }
 

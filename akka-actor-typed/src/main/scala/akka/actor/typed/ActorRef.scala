@@ -60,8 +60,6 @@ object ActorRef {
     def !(msg: T): Unit = ref.tell(msg)
   }
 
-  // FIXME factory methods for below for Java (trait + object)
-
   /**
    * INTERNAL API
    *
