@@ -4,8 +4,8 @@
 package jdocs.akka.typed.coexistence;
 
 import akka.actor.AbstractActor;
-import akka.actor.ActorSystem;
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Actor;
 //#adapter-import
@@ -78,12 +78,21 @@ public class UntypedWatchingTypedTest extends JUnitSuite {
   @Test
   public void testItWorks() {
     //#create-untyped
-    ActorSystem as = ActorSystem.apply();
+    akka.actor.ActorSystem as = akka.actor.ActorSystem.create();
     akka.actor.ActorRef untyped = as.actorOf(Untyped.props());
     //#create-untyped
     TestProbe probe = new TestProbe(as);
     probe.watch(untyped);
     probe.expectTerminated(untyped, Duration.create(1, "second"));
     as.terminate();
+  }
+
+  @Test
+  public void testConversionFromUnTypedSystemToTyped() {
+    //#convert-untyped
+    akka.actor.ActorSystem untypedActorSystem = akka.actor.ActorSystem.create();
+    ActorSystem<Void> typedActorSystem = Adapter.toTyped(untypedActorSystem);
+    //#convert-untyped
+    typedActorSystem.terminate();
   }
 }

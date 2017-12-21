@@ -71,15 +71,24 @@ class UntypedWatchingTypedSpec extends WordSpec {
 
   "Untyped -> Typed" must {
     "support creating, watching and messaging" in {
+      val system = untyped.ActorSystem("Coexistence")
       //#create-untyped
-      val system = akka.actor.ActorSystem("Coexistence")
-      val untyped = system.actorOf(Untyped.props())
+      val untypedActor = system.actorOf(Untyped.props())
       //#create-untyped
       val probe = TestProbe()(system)
-      probe.watch(untyped)
-      probe.expectTerminated(untyped, 200.millis)
+      probe.watch(untypedActor)
+      probe.expectTerminated(untypedActor, 200.millis)
       system.terminate()
     }
+
+    "support converting an untyped actor system to a typed actor system" in {
+      //#convert-untyped
+      val system = akka.actor.ActorSystem("UntypedToTypedSystem")
+      val typedSystem: ActorSystem[Nothing] = system.toTyped
+      //#convert-untyped
+      typedSystem.terminate()
+    }
+
   }
 
 }

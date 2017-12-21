@@ -7,12 +7,15 @@ There are two different `ActorSystem`s: `akka.actor.ActorSystem` and `akka.actor
 The latter should only be used for greenfield projects that are only using typed actors. The `akka.actor.ActorSystem`
 can be adapted so that it can create typed actors.
 
+Currently the typed actor system is implemented using an untyped actor system under the hood. This may change in the future.
+
 Typed and untyped can interact the following ways:
 
 * untyped actor systems can create typed actors
 * typed actors can send messages to untyped actors, and opposite
 * spawn and supervise typed child from untyped parent, and opposite
 * watch typed from untyped, and opposite
+* untyped actor system can be converted to a typed actor system
 
 @scala[In the examples the `akka.actor` package is aliased to `untyped`.] @java[The examples use fully qualified
 class names for the untyped classes to distinguish between typed and untyped classes with the same name.]
@@ -20,9 +23,18 @@ class names for the untyped classes to distinguish between typed and untyped cla
 Scala
 :  @@snip [UntypedWatchingTypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #import-alias }
 
-### Untyped to typed 
+## Untyped to typed 
 
-For the following typed actor here's how you create, watch and send messages to
+While coexisting your application will likely still have an untyped ActorSystem. This can be converted to a typed ActorSystem
+so that new code and migrated parts don't rely on the untyped system:
+
+Scala
+:  @@snip [UntypedWatchingTypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #convert-untyped }
+
+Java
+:  @@snip [UntypedWatchingTypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #convert-untyped }
+
+Then for new typed actors here's how you create, watch and send messages to
 it from an untyped actor.
 
 Scala
@@ -31,7 +43,7 @@ Scala
 Java
 :  @@snip [UntypedWatchingTypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #typed }
 
-The top level untyped actor is created from an untyped actor system:
+The top level untyped actor is created in the usual way:
 
 Scala
 :  @@snip [UntypedWatchingTypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #create-untyped }
@@ -60,7 +72,7 @@ Java
 @scala[That adds some implicit extension methods that are added to untyped and typed `ActorSystem` and `ActorContext` in both directions.]
 @java[To convert between typed and untyped there are adapter methods in `akka.typed.javadsl.Adapter`.] Note the inline comments in the example above. 
 
-### Typed to untyped
+## Typed to untyped
 
 Let's turn the example upside down and first start the typed actor and then the untyped as a child.
 
