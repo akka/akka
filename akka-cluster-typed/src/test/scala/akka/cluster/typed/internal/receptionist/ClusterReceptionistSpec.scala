@@ -7,15 +7,9 @@ import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
 import akka.cluster.Cluster
-import akka.cluster.typed.ActorRefResolver
 import akka.serialization.SerializerWithStringManifest
-import akka.actor.typed.{ ActorRef, ActorSystem, StartSupport, TypedSpec }
+import akka.actor.typed.{ ActorRef, ActorRefResolver, StartSupport, TypedSpec }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.TypedSpec.Command
-import akka.cluster.typed.ActorRefResolver
-import akka.actor.typed.internal.adapter.ActorRefAdapter
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.internal.receptionist.ReceptionistImpl
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._

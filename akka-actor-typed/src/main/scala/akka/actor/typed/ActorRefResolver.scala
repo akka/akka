@@ -1,10 +1,9 @@
 /**
  * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.cluster.typed
+package akka.actor.typed
 
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
 
 object ActorRefResolver extends ExtensionId[ActorRefResolver] {
   def get(system: ActorSystem[_]): ActorRefResolver = apply(system)
