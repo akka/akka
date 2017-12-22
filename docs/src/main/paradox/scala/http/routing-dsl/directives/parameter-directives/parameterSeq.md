@@ -1,4 +1,4 @@
-# parameterSeq
+# @scala[parameterSeq]@java[parameterList]
 
 @@@ div { .group-scala }
 
