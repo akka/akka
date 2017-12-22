@@ -3,21 +3,34 @@
  */
 package docs.http.javadsl.server.directives;
 
-import akka.http.javadsl.model.HttpEntities;
-import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.Uri;
+import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.ContentType;
-import akka.http.javadsl.model.ContentTypes;
-import akka.http.javadsl.model.HttpResponse;
-import akka.http.javadsl.model.StatusCodes;
+import akka.http.javadsl.model.headers.Location;
 import akka.http.javadsl.server.Rejections;
+import akka.http.javadsl.server.RequestContext;
 import akka.http.javadsl.server.Route;
+import akka.http.javadsl.server.RouteResult;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 public class RouteDirectivesExamplesTest extends JUnitRouteTest {
+
+  @Test
+  public void testShowRedirectOnCompleteWithTerms() {
+    final StatusCode redirectionType = StatusCodes.FOUND;
+    final Uri uri = Uri.create("http://akka.io");
+    final Function<RequestContext, CompletionStage<RouteResult>> route = rc ->
+            //#red-impl
+            rc.completeWith(HttpResponse.create()
+                    .withStatus(redirectionType)
+                    .addHeader(Location.create(uri))
+            //#red-impl
+            );
+  }
 
   @Test
   public void testComplete() {

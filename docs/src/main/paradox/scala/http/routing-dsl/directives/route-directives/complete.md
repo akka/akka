@@ -1,5 +1,6 @@
 # complete
 
+@@@ div { .group-scala }
 ## Signature
 
 ```scala
@@ -16,6 +17,8 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 > <a id="1" href="#^1">[1]</a> See [The Magnet Pattern](http://spray.io/blog/2012-12-13-the-magnet-pattern/) for an explanation of magnet-based overloading.
 
+@@@
+
 ## Description
 
 Completes the request using the given argument(s).
@@ -24,6 +27,8 @@ Completes the request using the given argument(s).
 with the respective @unidoc[HttpResponse] instance.
 Completing the request will send the response "back up" the route structure where all the logic runs that wrapping
 directives have potentially chained into the @ref[RouteResult](../../routes.md#routeresult) future transformation chain.
+
+@java[Please note that the `complete` directive has multiple variants, like the ones showed in the examples.]
 
 ## Example
 
