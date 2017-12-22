@@ -15,10 +15,10 @@ import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 class MiscMessageSerializer(val system: akka.actor.ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
 
   private val resolver = ActorRefResolver(system.toTyped)
-  private val actorRefManifest = "a"
+  private val ActorRefManifest = "a"
 
   def manifest(o: AnyRef): String = o match {
-    case ref: ActorRef[_] ⇒ actorRefManifest
+    case ref: ActorRef[_] ⇒ ActorRefManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -30,7 +30,7 @@ class MiscMessageSerializer(val system: akka.actor.ExtendedActorSystem) extends 
   }
 
   def fromBinary(bytes: Array[Byte], manifest: String): ActorRef[Any] = manifest match {
-    case `actorRefManifest` ⇒ resolver.resolveActorRef(new String(bytes, StandardCharsets.UTF_8))
+    case ActorRefManifest ⇒ resolver.resolveActorRef(new String(bytes, StandardCharsets.UTF_8))
     case _ ⇒
       throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
