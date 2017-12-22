@@ -13,8 +13,8 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._
-import akka.typed.testkit.TestKitSettings
-import akka.typed.testkit.scaladsl.TestProbe
+import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await

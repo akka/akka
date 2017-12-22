@@ -4,11 +4,17 @@
 package akka.actor.typed
 package internal
 
-import akka.{ actor ⇒ a }
 import java.util.concurrent.ConcurrentLinkedQueue
+
+import akka.annotation.InternalApi
+import akka.{ actor ⇒ a }
+
 import scala.annotation.tailrec
 
-private[typed] class DebugRef[T](override val path: a.ActorPath, override val isLocal: Boolean)
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] class DebugRef[T](override val path: a.ActorPath, override val isLocal: Boolean)
   extends ActorRef[T] with ActorRefImpl[T] {
 
   private val q = new ConcurrentLinkedQueue[Either[SystemMessage, T]]

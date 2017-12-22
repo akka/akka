@@ -10,7 +10,7 @@ import java.lang.annotation.*;
  * Marks APIs that are meant to evolve towards becoming stable APIs, but are not stable APIs yet.
  * 
  * Evolving interfaces MAY change from one patch release to another (i.e. 2.4.10 to 2.4.11) without up-front notice.
- * A best-effort approach is taken to not cause more breakage than really neccessary, and usual deprecation techniques 
+ * A best-effort approach is taken to not cause more breakage than really necessary, and usual deprecation techniques
  * are utilised while evolving these APIs, however there is NO strong guarantee regarding the source or binary 
  * compatibility of APIs marked using this annotation. 
  * 

@@ -10,7 +10,7 @@ import akka.japi.pf.{ FI, PFBuilder }
 import java.util.function.{ Function ⇒ F1 }
 
 import akka.Done
-import akka.typed.testkit.{ EffectfulActorContext, Inbox }
+import akka.testkit.typed.{ BehaviorTestkit, TestInbox }
 
 object BehaviorSpec {
   sealed trait Command {
@@ -68,23 +68,23 @@ object BehaviorSpec {
     def checkAux(signal: Signal, aux: Aux): Unit = ()
     def checkAux(command: Command, aux: Aux): Unit = ()
 
-    case class Init(behv: Behavior[Command], inbox: Inbox[Event], aux: Aux) {
+    case class Init(behv: Behavior[Command], inbox: TestInbox[Event], aux: Aux) {
       def mkCtx(): Setup = {
-        val ctx = new EffectfulActorContext("ctx", behv, 1000, system)
-        val msgs = inbox.receiveAll()
-        Setup(ctx, inbox, aux)
+        val testkit = BehaviorTestkit(behv)
+        inbox.receiveAll()
+        Setup(testkit, inbox, aux)
       }
     }
-    case class Setup(ctx: EffectfulActorContext[Command], inbox: Inbox[Event], aux: Aux)
+    case class Setup(testKit: BehaviorTestkit[Command], inbox: TestInbox[Event], aux: Aux)
 
     def init(): Init = {
-      val inbox = Inbox[Event]("evt")
+      val inbox = TestInbox[Event]("evt")
       val (behv, aux) = behavior(inbox.ref)
       Init(behv, inbox, aux)
     }
 
     def init(factory: ActorRef[Event] ⇒ (Behavior[Command], Aux)): Init = {
-      val inbox = Inbox[Event]("evt")
+      val inbox = TestInbox[Event]("evt")
       val (behv, aux) = factory(inbox.ref)
       Init(behv, inbox, aux)
     }
@@ -94,20 +94,20 @@ object BehaviorSpec {
 
     implicit class Check(val setup: Setup) {
       def check(signal: Signal): Setup = {
-        setup.ctx.signal(signal)
+        setup.testKit.signal(signal)
         setup.inbox.receiveAll() should ===(GotSignal(signal) :: Nil)
         checkAux(signal, setup.aux)
         setup
       }
       def check(command: Command): Setup = {
-        setup.ctx.run(command)
-        setup.inbox.receiveAll() should ===(command.expectedResponse(setup.ctx))
+        setup.testKit.run(command)
+        setup.inbox.receiveAll() should ===(command.expectedResponse(setup.testKit.ctx))
         checkAux(command, setup.aux)
         setup
       }
       def check2(command: Command): Setup = {
-        setup.ctx.run(command)
-        val expected = command.expectedResponse(setup.ctx)
+        setup.testKit.run(command)
+        val expected = command.expectedResponse(setup.testKit.ctx)
         setup.inbox.receiveAll() should ===(expected ++ expected)
         checkAux(command, setup.aux)
         setup
@@ -118,7 +118,7 @@ object BehaviorSpec {
   }
 
   trait Siphon extends Common {
-    override type Aux = Inbox[Command]
+    override type Aux = TestInbox[Command]
 
     override def checkAux(command: Command, aux: Aux): Unit = {
       aux.receiveAll() should ===(command :: Nil)
@@ -126,7 +126,7 @@ object BehaviorSpec {
   }
 
   trait SignalSiphon extends Common {
-    override type Aux = Inbox[Either[Signal, Command]]
+    override type Aux = TestInbox[Either[Signal, Command]]
 
     override def checkAux(command: Command, aux: Aux): Unit = {
       aux.receiveAll() should ===(Right(command) :: Nil)
@@ -142,25 +142,25 @@ object BehaviorSpec {
       case (ctx, GetSelf) ⇒
         monitor ! Self(ctx.self)
         SActor.same
-      case (ctx, Miss) ⇒
+      case (_, Miss) ⇒
         monitor ! Missed
         SActor.unhandled
-      case (ctx, Ignore) ⇒
+      case (_, Ignore) ⇒
         monitor ! Ignored
         SActor.same
-      case (ctx, Ping) ⇒
+      case (_, Ping) ⇒
         monitor ! Pong
         mkFull(monitor, state)
-      case (ctx, Swap) ⇒
+      case (_, Swap) ⇒
         monitor ! Swapped
         mkFull(monitor, state.next)
-      case (ctx, GetState()) ⇒
+      case (_, GetState()) ⇒
         monitor ! state
         SActor.same
-      case (ctx, Stop) ⇒ SActor.stopped
-      case (_, _)      ⇒ SActor.unhandled
+      case (_, Stop) ⇒ SActor.stopped
+      case (_, _)    ⇒ SActor.unhandled
     } onSignal {
-      case (ctx, signal) ⇒
+      case (_, signal) ⇒
         monitor ! GotSignal(signal)
         SActor.same
     }
@@ -220,15 +220,15 @@ object BehaviorSpec {
       }
 
       "must react to Terminated" in {
-        mkCtx().check(Terminated(Inbox("x").ref)(null))
+        mkCtx().check(Terminated(TestInbox("x").ref)(null))
       }
 
       "must react to Terminated after a message" in {
-        mkCtx().check(GetSelf).check(Terminated(Inbox("x").ref)(null))
+        mkCtx().check(GetSelf).check(Terminated(TestInbox("x").ref)(null))
       }
 
       "must react to a message after Terminated" in {
-        mkCtx().check(Terminated(Inbox("x").ref)(null)).check(GetSelf)
+        mkCtx().check(Terminated(TestInbox("x").ref)(null)).check(GetSelf)
       }
     }
   }
@@ -250,10 +250,10 @@ object BehaviorSpec {
   }
 
   trait Unhandled extends Common {
-    "Unahndled" must {
+    "Unhandled" must {
       "must return Unhandled" in {
-        val Setup(ctx, inbox, aux) = mkCtx()
-        Behavior.interpretMessage(ctx.currentBehavior, ctx, Miss) should be(Behavior.UnhandledBehavior)
+        val Setup(testKit, inbox, aux) = mkCtx()
+        Behavior.interpretMessage(testKit.currentBehavior, testKit.ctx, Miss) should be(Behavior.UnhandledBehavior)
         inbox.receiveAll() should ===(Missed :: Nil)
         checkAux(Miss, aux)
       }
@@ -263,16 +263,16 @@ object BehaviorSpec {
   trait Stoppable extends Common {
     "Stopping" must {
       "must stop" in {
-        val Setup(ctx, inbox, aux) = mkCtx()
-        ctx.run(Stop)
-        ctx.currentBehavior should be(Behavior.StoppedBehavior)
+        val Setup(testkit, _, aux) = mkCtx()
+        testkit.run(Stop)
+        testkit.currentBehavior should be(Behavior.StoppedBehavior)
         checkAux(Stop, aux)
       }
     }
   }
 
   trait Become extends Common with Unhandled {
-    private implicit val inbox = Inbox[State]("state")
+    private implicit val inbox = TestInbox[State]("state")
 
     "Becoming" must {
       "must be in state A" in {
@@ -308,15 +308,15 @@ object BehaviorSpec {
       }
 
       "react to Terminated after swap" in {
-        mkCtx().check(Swap).check(Terminated(Inbox("x").ref)(null))
+        mkCtx().check(Swap).check(Terminated(TestInbox("x").ref)(null))
       }
 
       "react to Terminated after a message after swap" in {
-        mkCtx().check(Swap).check(GetSelf).check(Terminated(Inbox("x").ref)(null))
+        mkCtx().check(Swap).check(GetSelf).check(Terminated(TestInbox("x").ref)(null))
       }
 
       "react to a message after Terminated after swap" in {
-        mkCtx().check(Swap).check(Terminated(Inbox("x").ref)(null)).check(GetSelf)
+        mkCtx().check(Swap).check(Terminated(TestInbox("x").ref)(null)).check(GetSelf)
       }
     }
   }
@@ -368,7 +368,7 @@ class ImmutableBehaviorSpec extends TypedSpec with Messages with BecomeWithLifec
       case (_, Stop)       ⇒ SActor.stopped
       case (_, _: AuxPing) ⇒ SActor.unhandled
     } onSignal {
-      case (ctx, signal) ⇒
+      case (_, signal) ⇒
         monitor ! GotSignal(signal)
         SActor.same
     }
@@ -405,7 +405,7 @@ class ImmutableWithSignalScalaBehaviorSpec extends TypedSpec with Messages with 
           case _: AuxPing ⇒ SActor.unhandled
         }
     } onSignal {
-      case (ctx, sig) ⇒
+      case (_, sig) ⇒
         monitor ! GotSignal(sig)
         SActor.same
     }
@@ -485,17 +485,17 @@ class WidenedScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with
   import SActor.BehaviorDecorators
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    val inbox = Inbox[Command]("widenedListener")
+    val inbox = TestInbox[Command]("widenedListener")
     super.behavior(monitor)._1.widen[Command] { case c ⇒ inbox.ref ! c; c } → inbox
   }
 }
 
 class DeferredScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec {
-  override type Aux = Inbox[Done]
+  override type Aux = TestInbox[Done]
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    val inbox = Inbox[Done]("deferredListener")
-    (SActor.deferred(ctx ⇒ {
+    val inbox = TestInbox[Done]("deferredListener")
+    (SActor.deferred(_ ⇒ {
       inbox.ref ! Done
       super.behavior(monitor)._1
     }), inbox)
@@ -507,7 +507,7 @@ class DeferredScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec {
 
 class TapScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse with SignalSiphon {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    val inbox = Inbox[Either[Signal, Command]]("tapListener")
+    val inbox = TestInbox[Either[Signal, Command]]("tapListener")
     (SActor.tap((_, msg) ⇒ inbox.ref ! Right(msg), (_, sig) ⇒ inbox.ref ! Left(sig), super.behavior(monitor)._1), inbox)
   }
 }
@@ -544,7 +544,7 @@ class ImmutableWithSignalJavaBehaviorSpec extends TypedSpec with Messages with B
         case Stop       ⇒ SActor.stopped
         case _: AuxPing ⇒ SActor.unhandled
       }),
-      fs((ctx, sig) ⇒ {
+      fs((_, sig) ⇒ {
         monitor ! GotSignal(sig)
         SActor.same
       }))
@@ -582,7 +582,7 @@ class ImmutableJavaBehaviorSpec extends TypedSpec with Messages with Become with
 
 class WidenedJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse with Siphon {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    val inbox = Inbox[Command]("widenedListener")
+    val inbox = TestInbox[Command]("widenedListener")
     JActor.widened(super.behavior(monitor)._1, pf(_.`match`(classOf[Command], fi(x ⇒ {
       inbox.ref ! x
       x
@@ -591,11 +591,11 @@ class WidenedJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with R
 }
 
 class DeferredJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec {
-  override type Aux = Inbox[Done]
+  override type Aux = TestInbox[Done]
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    val inbox = Inbox[Done]("deferredListener")
-    (JActor.deferred(df(ctx ⇒ {
+    val inbox = TestInbox[Done]("deferredListener")
+    (JActor.deferred(df(_ ⇒ {
       inbox.ref ! Done
       super.behavior(monitor)._1
     })), inbox)
@@ -607,7 +607,7 @@ class DeferredJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec {
 
 class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse with SignalSiphon {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    val inbox = Inbox[Either[Signal, Command]]("tapListener")
+    val inbox = TestInbox[Either[Signal, Command]]("tapListener")
     (JActor.tap(
       pc((_, msg) ⇒ inbox.ref ! Right(msg)),
       ps((_, sig) ⇒ inbox.ref ! Left(sig)),

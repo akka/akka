@@ -2,7 +2,7 @@
 
 TODO
 
-## Dependency
+### Dependency
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.typesafe.akka
