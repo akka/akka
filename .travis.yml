@@ -34,7 +34,6 @@ deploy:
   provider: script
   script:
     - sbt -J-XX:ReservedCodeCacheSize=256m +publish
-    - sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceUpdate
 #    - sbt -J-XX:ReservedCodeCacheSize=256m +publish akka-http/bintraySyncMavenCentral # enable if we want to sync to central automatically
   on:
     tags: true
