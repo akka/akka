@@ -8,3 +8,5 @@ RedirectMatch 301 ^(.*)/http/websocket-support.html$ $1/http/server-side/websock
 
 RedirectMatch 301 ^(.*)/formFieldList.html$ $1/formFieldSeq.html
 RedirectMatch 301 ^(.*)/extractHostName.html$ $1/extractHost.html
+
+RedirectMatch 301 ^(.*)/release-notes.html$ $1/release-notes/
