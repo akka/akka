@@ -19,6 +19,6 @@ Akka HTTP API - @scala[@scaladoc:[ScalaDoc](akka.http.scaladsl.index)]@java[@jav
 * [handling-blocking-operations-in-akka-http-routes](handling-blocking-operations-in-akka-http-routes.md)
 * [migration-guides](migration-guide/index.md)
 * [Compatibility Guidelines](compatibility-guidelines.md)
-* [Release Notes](release-notes.md)
+* [Release Notes](release-notes/index.md)
 
 @@@
