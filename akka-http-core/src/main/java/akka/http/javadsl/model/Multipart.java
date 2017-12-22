@@ -37,15 +37,6 @@ public interface Multipart {
     CompletionStage<? extends Multipart.Strict> toStrict(long timeoutMillis, Materializer materializer);
 
     /**
-     * Creates an entity from this multipart object.
-     *
-     * @deprecated This variant of `toEntity` is not supported any more. The charset parameter will be ignored.
-     * Please use the variant without specifying the charset.
-     */
-    @Deprecated
-    RequestEntity toEntity(HttpCharset charset, String boundary);
-
-    /**
      * Creates an entity from this multipart object using the specified boundary.
      */
     RequestEntity toEntity(String boundary);
@@ -59,15 +50,6 @@ public interface Multipart {
         Source<? extends Multipart.BodyPart.Strict, Object> getParts();
 
         Iterable<? extends Multipart.BodyPart.Strict> getStrictParts();
-
-        /**
-         * Creates an entity from this multipart object.
-         *
-         * @deprecated This variant of `toEntity` is not supported any more. The charset parameter will be ignored.
-         * Please use the variant without specifying the charset.
-         */
-        @Deprecated
-        HttpEntity.Strict toEntity(HttpCharset charset, String boundary);
 
         /**
          * Creates an entity from this multipart object using the specified boundary.
