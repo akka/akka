@@ -1,7 +1,7 @@
 # FileAndResourceDirectives
 
 Like the @ref[RouteDirectives](../route-directives/index.md) the @unidoc[FileAndResourceDirectives] are somewhat special in akka-http's routing DSL.
-Contrary to all other directives they do not produce instances of type `Directive[L <: HList]` but rather "plain"
+Contrary to all other directives they do not produce instances of type @scala[`Directive[L <: HList]`]@java[`Directive<L extends HList>`] but rather "plain"
 routes of type @unidoc[Route].
 The reason is that they are not meant for wrapping an inner route (like most other directives, as intermediate-level
 elements of a route structure, do) but rather form the actual route structure **leaves**.
