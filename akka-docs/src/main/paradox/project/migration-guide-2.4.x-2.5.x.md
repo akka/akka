@@ -382,6 +382,10 @@ akka.actor {
 Please note that this setting must be the same on all nodes participating in a cluster, otherwise
 the mis-aligned serialization configurations will cause deserialization errors on the receiving nodes.
 
+After performing a rolling upgrade from 2.4 to 2.5 with `enable-additional-serialization-bindings = off`
+you can perform another rolling upgrade and change this setting to `on`.
+See also @ref:[Rolling upgrades](../serialization.md#rolling-upgrades).
+
 ### With serialize-messages the deserialized message is actually sent
 
 The flag `akka.actor.serialize-messages = on` triggers serialization and deserialization of each message sent in the
@@ -394,7 +398,7 @@ either not rely on messages being the same instance or turn the setting off.
 
 ### Wire Protocol Compatibility
 
-It is possible to use Akka Remoting between nodes running Akka 2.4.16 and 2.5-M1, but some settings have changed so you might need
+It is possible to use Akka Remoting between nodes running Akka 2.4.16 and 2.5.x, but some settings have changed so you might need
 to adjust some configuration as described in [Rolling Update](#mig25-rolling).
 
 Note however that if using Java serialization it will not be possible to mix nodes using Scala 2.11 and 2.12.
@@ -404,16 +408,16 @@ Note however that if using Java serialization it will not be possible to mix nod
 <a id="mig25-rolling"></a>
 ### Rolling Update
 
-It is possible to do a rolling update from Akka 2.4.16 to 2.5-M1, i.e. running a cluster of 2.4.16 nodes and
-join nodes running 2.5-M1 followed by shutting down the old nodes.
+It is possible to do a rolling update from Akka 2.4.16 to 2.5.x, i.e. running a cluster of 2.4.16 nodes and
+join nodes running 2.5.x followed by shutting down the old nodes.
 
 You must first update all nodes to 2.4.16. It's not supported to update directly from an older version than
-2.4.16 to 2.5-M1. For example, if you are running 2.4.11 you must first do a rolling update to 2.4.16, shut down
-all 2.4.11 nodes, and then do the rolling update to 2.5-M1.
+2.4.16 to 2.5.x. For example, if you are running 2.4.11 you must first do a rolling update to 2.4.16, shut down
+all 2.4.11 nodes, and then do the rolling update to 2.5.x.
 
 For some configuration settings it's important to use the same values on all nodes in the cluster.
-Some settings have changed default value in 2.5-M1 and therefore you need to review your configuration
-before doing a rolling update to 2.5-M1. Such settings are mentioned elsewhere in this migration guide
+Some settings have changed default value in 2.5.0 and therefore you need to review your configuration
+before doing a rolling update to 2.5.x. Such settings are mentioned elsewhere in this migration guide
 and here is a summary of things to consider.
 
  * [akka.actor.additional-serialization-bindings](#mig25-addser)
