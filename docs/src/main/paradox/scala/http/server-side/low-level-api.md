@@ -1,6 +1,6 @@
-# Low-Level Server-Side API
+# Core Server API
 
-The low-level server-side API is scoped with a clear focus on the essential functionality of an HTTP/1.1 server:
+The core Server API is scoped with a clear focus on the essential functionality of an HTTP/1.1 server:
 
  * Connection management
  * Parsing and rendering of messages and headers

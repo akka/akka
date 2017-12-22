@@ -1,6 +1,6 @@
-# High-level Server-Side API
+# Routing DSL
 
-In addition to the @ref[Low-Level Server-Side API](../server-side/low-level-api.md) Akka HTTP provides a very flexible "Routing DSL" for elegantly
+In addition to the @ref[Core Server API](../server-side/low-level-api.md) Akka HTTP provides a very flexible "Routing DSL" for elegantly
 defining RESTful web services. It picks up where the low-level API leaves off and offers much of the higher-level
 functionality of typical web servers or frameworks, like deconstruction of URIs, content negotiation or
 static content serving.

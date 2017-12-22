@@ -1,4 +1,4 @@
-# Release Notes
+# 0. Release Notes
 
 @@toc { depth=2 }
 

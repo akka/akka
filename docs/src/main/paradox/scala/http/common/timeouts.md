@@ -1,4 +1,4 @@
-# Akka HTTP Timeouts
+# Timeouts
 
 Akka HTTP comes with a variety of built-in timeout mechanisms to protect your servers from malicious attacks or
 programming mistakes. Some of these are simply configuration options (which may be overridden in code) while others
