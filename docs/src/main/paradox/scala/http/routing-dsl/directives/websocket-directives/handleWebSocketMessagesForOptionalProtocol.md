@@ -13,9 +13,9 @@
 Handles WebSocket requests with the given handler and rejects other requests with an
 @unidoc[ExpectedWebSocketRequestRejection].
 
-If the `subprotocol` parameter is None any WebSocket request is accepted. If the `subprotocol` parameter is
-`Some(protocol)` a WebSocket request is only accepted if the list of subprotocols supported by the client (as
-announced in the WebSocket request) contains `protocol`. If the client did not offer the protocol in question
+If the `subprotocol` parameter is @scala[None]@java[@javadoc:[empty](java.util.optional#empty--)] any WebSocket request is accepted. If the `subprotocol` parameter is
+@scala[`Some(protocol)`]@java[a non-empty @javadoc:[Optional](java.util.Optional)] a WebSocket request is only accepted if the list of subprotocols supported by the client (as
+announced in the WebSocket request) @scala[contains `protocol`]@java[matches the contained subprotocol]. If the client did not offer the protocol in question
 the request is rejected with an @unidoc[UnsupportedWebSocketSubprotocolRejection].
 
 To support several subprotocols you may chain several `handleWebSocketMessagesForOptionalProtocol` routes.
