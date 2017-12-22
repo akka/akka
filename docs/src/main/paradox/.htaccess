@@ -7,3 +7,4 @@ RedirectMatch 301 ^(.*)/routing-dsl/marshalling.html$ $1/common/marshalling.html
 RedirectMatch 301 ^(.*)/http/websocket-support.html$ $1/http/server-side/websocket-support.html
 
 RedirectMatch 301 ^(.*)/formFieldList.html$ $1/formFieldSeq.html
+RedirectMatch 301 ^(.*)/extractHostName.html$ $1/extractHost.html
