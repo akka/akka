@@ -28,7 +28,7 @@ with the respective @unidoc[HttpResponse] instance.
 Completing the request will send the response "back up" the route structure where all the logic runs that wrapping
 directives have potentially chained into the @ref[RouteResult](../../routes.md#routeresult) future transformation chain.
 
-@java[Please note that the `complete` directive has multiple variants, like the ones showed in the examples.]
+@java[Please note that the `complete` directive has multiple variants, like the ones shown in the examples.]
 
 ## Example
 
