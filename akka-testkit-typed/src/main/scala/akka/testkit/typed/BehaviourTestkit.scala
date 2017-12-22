@@ -103,7 +103,7 @@ object BehaviorTestkit {
   def apply[T](initialBehavior: Behavior[T], name: String): BehaviorTestkit[T] =
     new BehaviorTestkit[T](name, initialBehavior)
   def apply[T](initialBehavior: Behavior[T]): BehaviorTestkit[T] =
-    apply(initialBehavior, "ctx")
+    apply(initialBehavior, "testkit")
 
   /**
    * JAVA API
@@ -141,7 +141,7 @@ class BehaviorTestkit[T](_name: String, _initialBehavior: Behavior[T]) {
 
   def childInbox[U](name: String): TestInbox[U] = {
     val inbox = ctx.childInbox[U](name)
-    assert(inbox.isDefined, s"Child not created: $name. Children created: ${ctx.childrenNames}")
+    assert(inbox.isDefined, s"Child not created: $name. Children created: [${ctx.childrenNames.mkString(",")}]")
     inbox.get
   }
 

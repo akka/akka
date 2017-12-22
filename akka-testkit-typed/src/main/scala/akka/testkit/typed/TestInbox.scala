@@ -41,7 +41,7 @@ class TestInbox[T](name: String) {
   /**
    * Assert and remove the the oldest message.
    */
-  def expectMsg(expectedMessage: String): TestInbox[T] = {
+  def expectMsg(expectedMessage: T): TestInbox[T] = {
     q.poll() match {
       case null    ⇒ assert(assertion = false, s"expected msg: $expectedMessage but no messages were received")
       case message ⇒ assert(message == expectedMessage, s"expected: $expectedMessage but received $message")
@@ -59,6 +59,8 @@ class TestInbox[T](name: String) {
   }
 
   def hasMessages: Boolean = q.peek() != null
+
+  // TODO expectNoMsg etc
 }
 
 @ApiMayChange
