@@ -50,8 +50,6 @@ object Marshaller {
 
   def byteStringToEntity: Marshaller[ByteString, RequestEntity] = fromScala(marshalling.Marshaller.ByteStringMarshaller)
 
-  @deprecated("Use `formDataToEntity` instead", "10.0.10")
-  def fromDataToEntity: Marshaller[FormData, RequestEntity] = formDataToEntity
   def formDataToEntity: Marshaller[FormData, RequestEntity] = fromScala(marshalling.Marshaller.FormDataMarshaller)
 
   def byteStringMarshaller(t: ContentType): Marshaller[ByteString, RequestEntity] =

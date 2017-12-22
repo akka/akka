@@ -22,9 +22,6 @@ trait Decoder {
       message.transformEntityDataBytes(decoderFlow).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
     else message.self
 
-  @deprecated("Use Decoder#decodeMessage instead. No need for implicit mapper.", since = "10.0.6")
-  def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self = decodeMessage(message)
-
   def decodeData[T](t: T)(implicit mapper: DataMapper[T]): T = mapper.transformDataBytes(t, decoderFlow)
 
   def maxBytesPerChunk: Int
