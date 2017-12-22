@@ -27,7 +27,7 @@ import akka.actor.typed.Behavior.UntypedBehavior
     ActorContextAdapter.spawnAnonymous(untyped, behavior, props)
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty) =
     ActorContextAdapter.spawn(untyped, behavior, name, props)
-  override def stop[U](child: ActorRef[U]) =
+  override def stop[U](child: ActorRef[U]): Boolean =
     toUntyped(child) match {
       case f: akka.actor.FunctionRef ⇒
         val cell = untyped.asInstanceOf[akka.actor.ActorCell]
@@ -63,7 +63,6 @@ import akka.actor.typed.Behavior.UntypedBehavior
     val ref = cell.addFunctionRef((_, msg) ⇒ untyped.self ! f(msg.asInstanceOf[U]), _name)
     ActorRefAdapter[U](ref)
   }
-
 }
 
 /**

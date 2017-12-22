@@ -6,11 +6,8 @@ package akka.actor.typed.javadsl
 import java.util.function.{ Function ⇒ JFunction }
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
+import akka.actor.typed._
 import java.util.Optional
-import akka.actor.typed.Behavior
-import akka.actor.typed.Props
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContextExecutor
 
@@ -30,7 +27,7 @@ import scala.concurrent.ExecutionContextExecutor
  *
  * An `ActorContext` in addition provides access to the Actor’s own identity (“`getSelf`”),
  * the [[ActorSystem]] it is part of, methods for querying the list of child Actors it
- * created, access to [[Terminated DeathWatch]] and timed message scheduling.
+ * created, access to [[Terminated]] and timed message scheduling.
  */
 @DoNotInherit
 @ApiMayChange
