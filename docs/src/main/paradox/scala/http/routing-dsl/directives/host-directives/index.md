@@ -7,7 +7,7 @@ contained in incoming requests as well as extracting its value for usage in inne
 
 @@@ index
 
-* [extractHost](extractHost.md)
 * [host](host.md)
+* [extractHost](extractHost.md)
 
 @@@
