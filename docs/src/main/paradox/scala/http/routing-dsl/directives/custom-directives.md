@@ -18,12 +18,24 @@ named configurations of more low-level directives.
 The basic technique is explained in the chapter about Composing Directives, where, for example, a new directive
 `getOrPut` is defined like this:
 
-@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #labeling }
+Scala
+:   @@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #labeling }
+
+Java
+:   @@snip [CustomDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #labeling-1 #labeling-2 }
+
+@@@ div { .group-java }
+Multiple directives can be nested to produce a single directive out of multiple like this:
+
+@@snip [CustomDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #composition-1 #composition-2 }
+
+@@@
 
 Another example is the @ref[MethodDirectives](method-directives/index.md) which are simply instances of a preconfigured @ref[method](method-directives/method.md) directive.
 The low-level directives that most often form the basis of higher-level “named configuration” directives are grouped
 together in the @ref[BasicDirectives](basic-directives/index.md) trait.
 
+@@@ div { .group-scala }
 ## Transforming Directives
 
 The second option for creating new directives is to transform an existing one using one of the
@@ -185,3 +197,5 @@ where you’ll really have to fall back to defining a directive from scratch sho
 be very small. In fact, if you find yourself in a position where a “from scratch”
 directive is your only option, we’d like to hear about it,
 so we can provide a higher-level “something” for other users.
+
+@@@
