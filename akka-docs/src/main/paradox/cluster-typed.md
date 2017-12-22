@@ -1,9 +1,5 @@
 # Cluster
 
-TODO
-
-## Dependency
-
 sbt
 :   @@@vars
     ```
@@ -30,3 +26,5 @@ Maven
     </dependency>
     ```
     @@@
+
+TODO    

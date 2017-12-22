@@ -8,8 +8,8 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, StartSupport, TypedSp
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
-import akka.typed.testkit.TestKitSettings
-import akka.typed.testkit.scaladsl._
+import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.scaladsl._
 import akka.cluster.Cluster
 import akka.cluster.ddata.{ GCounter, GCounterKey, ReplicatedData }
 import akka.cluster.ddata.typed.scaladsl.Replicator._

@@ -12,8 +12,8 @@ import scala.util.control.NoStackTrace
 
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.TimerScheduler
-import akka.typed.testkit.TestKitSettings
-import akka.typed.testkit.scaladsl._
+import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.scaladsl._
 
 class TimerSpec extends TypedSpec(
   """
