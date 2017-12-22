@@ -5,7 +5,7 @@
 @@@ index
 
 * [formField](formField.md)
-* [formFields](formFields.md)
+* @scala[[formFields](formFields.md)]
 * [formFieldSeq](formFieldSeq.md)
 * [formFieldMap](formFieldMap.md)
 * [formFieldMultiMap](formFieldMultiMap.md)

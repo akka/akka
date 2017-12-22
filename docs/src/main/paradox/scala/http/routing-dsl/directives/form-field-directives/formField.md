@@ -10,9 +10,9 @@
 
 ## Description
 
-Allows extracting a single Form field sent in the request.
+Allows extracting a single Form field sent in the request. Data posted from [HTML Forms](http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4) is either of type `application/x-www-form-urlencoded` or of type `multipart/form-data`.
 
-See @ref[formFields](formFields.md) for an in-depth description.
+@scala[See @ref[formFields](formFields.md) for an in-depth description.]
 
 ## Example
 

@@ -1,3 +1,10 @@
+@@@ div { .group-java }
+
+The `formFields` directive is not available for Java, see @ref[formField](formField.md) and @ref[formFieldList](formFieldSeq.md).
+
+@@@
+
+@@@ div { .group-scala }
 # formFields
 
 ## Signature
@@ -102,3 +109,5 @@ to provide a `FromStrictFormFieldUnmarshaller[T]`.
 @@snip [FormFieldDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFields }
 
 For more examples about the way how fields can specified see the examples for the `parameters` directive.
+
+@@@
