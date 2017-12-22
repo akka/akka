@@ -4,7 +4,7 @@
 
 @@@ index
 
-* [actors](typed.md)
+* [actors](actors-typed.md)
 * [coexisting](coexisting.md)
 * [cluster](cluster-typed.md)
 * [cluster-sharding](cluster-sharding-typed.md)
