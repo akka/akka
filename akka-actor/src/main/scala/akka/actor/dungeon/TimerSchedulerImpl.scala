@@ -45,7 +45,10 @@ import akka.util.OptionVal
     }
     val nextGen = nextTimerGen()
 
-    val timerMsg = TimerMsg(key, nextGen, this)
+    val timerMsg = msg match {
+      case _: AutoReceivedMessage ⇒ msg
+      case _                      ⇒ TimerMsg(key, nextGen, this)
+    }
     val task =
       if (repeat)
         ctx.system.scheduler.schedule(timeout, timeout, ctx.self, timerMsg)(ctx.dispatcher)
