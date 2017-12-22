@@ -5,3 +5,5 @@ RedirectMatch 301 ^(.*)/server-side-https-support.html$ $1/server-side/https-sup
 RedirectMatch 301 ^(.*)/routing-dsl/marshalling.html$ $1/common/marshalling.html
 # Root at (java|scala)/http to avoid loops.
 RedirectMatch 301 ^(.*)/http/websocket-support.html$ $1/http/server-side/websocket-support.html
+
+RedirectMatch 301 ^(.*)/formFieldList.html$ $1/formFieldSeq.html
