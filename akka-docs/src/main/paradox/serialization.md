@@ -250,6 +250,31 @@ If using the Akka Protobuf serializers (implicitly with `akka.actor.allow-java-s
 Scala version however you must also ensure the serializers used for your own types does not introduce the same
 incompatibility as Java serialization does.
 
+## Rolling upgrades
+
+A serialized remote message (or persistent event) consists of serializer-id, the manifest, and the binary payload.
+When deserializing it is only looking at the serializer-id to pick which `Serializer` to use for `fromBinary`.
+The message class (the bindings) is not used for deserialization. The manifest is only used within the 
+`Serializer` to decide how to deserialize the payload, so one `Serializer` can handle many classes.
+
+That means that it is possible to change serialization for a message by performing two rolling upgrade steps to
+switch to the new serializer.
+
+1. Add the `Serializer` class and define it in `akka.actor.serializers` config section, but not in 
+  `akka.actor.serialization-bindings`. Perform a rolling upgrade for this change. This means that the
+  serializer class exists on all nodes and is registered, but it is still not used for serializing any
+  messages. That is important because during the rolling upgrade the old nodes still don't know about
+  the new serializer and would not be able to deserialize messages with that format.
+
+1. The second change is to register that the serializer is to be used for certain classes by defining
+   those in the `akka.actor.serialization-bindings` config section. Perform a rolling upgrade for this
+   change. This means that new nodes will use the new serializer when sending messages and old nodes will
+   be able to deserialize the new format. Old nodes will continue to use the old serializer when sending
+   messages and new nodes will be able to deserialize the old format.
+
+As an optional third step the old serializer can be completely removed if it was not used for persistent events.
+It must still be possible to deserialize the events that were stored with the old serializer.     
+
 ## External Akka Serializers
 
 [Akka-quickser by Roman Levenstein](https://github.com/romix/akka-quickser-serialization)
