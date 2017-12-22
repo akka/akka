@@ -75,7 +75,6 @@ lazy val root = Project(
 lazy val parsing = project("akka-parsing")
   .addAkkaModuleDependency("akka-actor", "provided")
   .settings(Dependencies.parsing)
-  .settings(OSGi.parsing)
   .settings(
     scalacOptions := scalacOptions.value.filterNot(Set("-Xfatal-warnings", "-Xlint", "-Ywarn-dead-code").contains), // disable warnings for parboiled code
     scalacOptions += "-language:_",
@@ -89,7 +88,6 @@ lazy val httpCore = project("akka-http-core")
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .settings(Dependencies.httpCore)
-  .settings(OSGi.httpCore)
   .settings(VersionGenerator.versionSettings)
   .enablePlugins(BootstrapGenjavadoc)
 
@@ -97,7 +95,6 @@ lazy val http = project("akka-http")
   .dependsOn(httpCore)
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(Dependencies.http)
-  .settings(OSGi.http)
   .settings(
     scalacOptions in Compile += "-language:_"
   )
@@ -109,7 +106,6 @@ lazy val http2Support = project("akka-http2-support")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .settings(Dependencies.http2)
   .settings(Dependencies.http2Support)
-  .settings(OSGi.http2Support)
   .settings {
     lazy val h2specPath = Def.task {
       (target in Test).value / h2specName / h2specExe
@@ -148,7 +144,6 @@ lazy val httpTestkit = project("akka-http-testkit")
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream-testkit")
   .settings(Dependencies.httpTestkit)
-  .settings(OSGi.httpTestkit)
   .settings(
     // don't ignore Suites which is the default for the junit-interface
     testOptions += Tests.Argument(TestFrameworks.JUnit, "--ignore-runners="),
@@ -185,13 +180,11 @@ lazy val httpXml =
   httpMarshallersScalaSubproject("xml")
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpXml)
-    .settings(OSGi.httpXml)
 
 lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpSprayJson)
-    .settings(OSGi.httpSprayJson)
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .enablePlugins(NoPublish)
@@ -202,7 +195,6 @@ lazy val httpJackson =
   httpMarshallersJavaSubproject("jackson")
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpJackson)
-    .settings(OSGi.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val httpCaching = project("akka-http-caching")
