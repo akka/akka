@@ -22,10 +22,10 @@ class LineParserBenchmark {
 
   // @formatter:off
   @Param(Array(
-    "1024",     // around 1   KB event
-    "130945",   // around 128 KB event
-    "523777",   // around 512 KB event
-    "1129129"   // around 1   MB event
+    "1024", // around 1   KB event
+    "130945", // around 128 KB event
+    "523777", // around 512 KB event
+    "1129129" // around 1   MB event
   ))
   var lineSize = 0
   // @formatter:on
