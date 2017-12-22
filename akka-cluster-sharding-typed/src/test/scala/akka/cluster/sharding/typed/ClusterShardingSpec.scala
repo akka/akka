@@ -4,25 +4,17 @@
 
 package akka.cluster.sharding.typed
 
-import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
-import akka.actor.typed.{ ActorRef, ActorRefResolver, ActorSystem, Props, TypedSpec }
-import akka.cluster.typed.Cluster
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
+import java.nio.charset.StandardCharsets
+
+import akka.actor.ExtendedActorSystem
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 
 import scala.concurrent.duration._
-import scala.concurrent.Await
-import akka.cluster.typed.Join
-import org.scalatest.concurrent.Eventually
-import akka.cluster.MemberStatus
-import akka.actor.ExtendedActorSystem
-import akka.serialization.SerializerWithStringManifest
-import java.nio.charset.StandardCharsets
 
 object ClusterShardingSpec {
   val config = ConfigFactory.parseString(
@@ -118,23 +110,24 @@ object ClusterShardingSpec {
 
 }
 
-class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with ScalaFutures with Eventually {
+class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterShardingSpec.config)
+  with TypedAkkaSpecWithShutdown with ScalaFutures with Eventually {
 
-  import akka.actor.typed.scaladsl.adapter._
   import ClusterShardingSpec._
+  import akka.actor.typed.scaladsl.adapter._
 
   implicit val s = system
-  implicit val testkitSettings = TestKitSettings(system)
   val sharding = ClusterSharding(system)
 
   implicit val untypedSystem = system.toUntyped
+  implicit val timeout = Timeout(1.second)
 
   val untypedSystem2 = akka.actor.ActorSystem(system.name, system.settings.config)
   val system2 = untypedSystem2.toTyped
   val sharding2 = ClusterSharding(system2)
 
   override def afterAll(): Unit = {
-    Await.result(system2.terminate, timeout.duration)
+    system2.terminate().futureValue
     super.afterAll()
   }
 
@@ -173,17 +166,17 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       Cluster(system2).manager ! Join(Cluster(system).selfMember.address)
 
       eventually {
-        Cluster(system).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(system).state.members.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
         Cluster(system).state.members.size should ===(2)
       }
       eventually {
-        Cluster(system2).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(system2).state.members.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
         Cluster(system2).state.members.size should ===(2)
       }
 
     }
 
-    "send messsages via cluster sharding, using envelopes" in {
+    "send messages via cluster sharding, using envelopes" in {
       val ref = sharding.spawn(
         behavior,
         Props.empty,
@@ -207,7 +200,7 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
       }
     }
 
-    "send messsages via cluster sharding, without envelopes" in {
+    "send messages via cluster sharding, without envelopes" in {
       val ref = sharding.spawn(
         behaviorWithId,
         Props.empty,
@@ -263,8 +256,6 @@ class ClusterShardingSpec extends TypedSpec(ClusterShardingSpec.config) with Sca
     "EntityRef - ask" in {
       val bobRef = sharding.entityRefFor(typeKey, "bob")
       val charlieRef = sharding.entityRefFor(typeKey, "charlie")
-
-      val p = TestProbe[String]()
 
       val reply1 = bobRef ? WhoAreYou // TODO document that WhoAreYou(_) would not work
       reply1.futureValue should ===("I'm bob")

@@ -4,15 +4,16 @@
 package akka.cluster.ddata.typed.scaladsl
 
 import akka.actor.Scheduler
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, StartSupport, TypedSpec }
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl._
 import akka.cluster.Cluster
-import akka.cluster.ddata.{ GCounter, GCounterKey, ReplicatedData }
 import akka.cluster.ddata.typed.scaladsl.Replicator._
+import akka.cluster.ddata.{GCounter, GCounterKey, ReplicatedData}
+import akka.testkit.typed.scaladsl._
+import akka.testkit.typed.{TestKit, TestKitSettings}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
@@ -107,14 +108,14 @@ object ReplicatorSpec {
 
       val reply4: Future[ReplicaCount] = replicator ? Replicator.GetReplicaCount()
 
-      // supress unused compiler warnings
+      // suppress unused compiler warnings
       println("" + reply1 + reply2 + reply3 + reply4)
     }
   }
 
 }
 
-class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) with Eventually with StartSupport {
+class ReplicatorSpec extends TestKit(ReplicatorSpec.config) with TypedAkkaSpecWithShutdown with Eventually {
 
   import ReplicatorSpec._
 
@@ -125,8 +126,8 @@ class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) with Eventually wi
   "Replicator" must {
 
     "have API for Update and Get" in {
-      val replicator = start(Replicator.behavior(settings))
-      val c = start(client(replicator))
+      val replicator = spawn(Replicator.behavior(settings))
+      val c = spawn(client(replicator))
 
       val probe = TestProbe[Int]
       c ! Increment
@@ -135,8 +136,8 @@ class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) with Eventually wi
     }
 
     "have API for Subscribe" in {
-      val replicator = start(Replicator.behavior(settings))
-      val c = start(client(replicator))
+      val replicator = spawn(Replicator.behavior(settings))
+      val c = spawn(client(replicator))
 
       val probe = TestProbe[Int]
       c ! Increment
@@ -154,7 +155,7 @@ class ReplicatorSpec extends TypedSpec(ReplicatorSpec.config) with Eventually wi
 
     "have an extension" in {
       val replicator = DistributedData(system).replicator
-      val c = start(client(replicator))
+      val c = spawn(client(replicator))
 
       val probe = TestProbe[Int]
       c ! Increment

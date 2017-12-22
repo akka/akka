@@ -65,6 +65,7 @@ private[typed] abstract class WatchableRef[-T](override val path: a.ActorPath) e
   protected def terminate(): Unit
 
   type S = Set[ActorRefImpl[Nothing]]
+
   @volatile private[this] var _watchedBy: S = Set.empty
 
   protected def isAlive: Boolean = _watchedBy != null

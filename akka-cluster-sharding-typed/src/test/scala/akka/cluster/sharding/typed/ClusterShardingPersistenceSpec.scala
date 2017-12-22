@@ -1,7 +1,6 @@
 /*
  * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
  */
-
 package akka.cluster.sharding.typed
 
 import akka.actor.typed.{ ActorRef, Props, TypedSpec }
@@ -48,7 +47,7 @@ object ClusterShardingPersistenceSpec {
     PersistentActor.persistentEntity[Command, String, String](
       persistenceIdFromActorName = name ⇒ "Test-" + name,
       initialState = "",
-      commandHandler = CommandHandler((ctx, state, cmd) ⇒ cmd match {
+      commandHandler = CommandHandler((_, state, cmd) ⇒ cmd match {
         case Add(s) ⇒ Effect.persist(s)
         case Get(replyTo) ⇒
           replyTo ! state
@@ -61,12 +60,12 @@ object ClusterShardingPersistenceSpec {
 
 }
 
-class ClusterShardingPersistenceSpec extends TypedSpec(ClusterShardingPersistenceSpec.config) with ScalaFutures {
-  import akka.actor.typed.scaladsl.adapter._
+class ClusterShardingPersistenceSpec extends TestKit("ClusterShardingPersistenceSPec", ClusterShardingPersistenceSpec.config)
+  with TypedAkkaSpecWithShutdown {
   import ClusterShardingPersistenceSpec._
+  import akka.actor.typed.scaladsl.adapter._
 
   implicit val s = system
-  implicit val testkitSettings = TestKitSettings(system)
   val sharding = ClusterSharding(system)
 
   implicit val untypedSystem = system.toUntyped

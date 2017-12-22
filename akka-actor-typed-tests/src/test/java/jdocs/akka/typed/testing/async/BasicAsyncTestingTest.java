@@ -15,7 +15,7 @@ import org.junit.Test;
 //#test-header
 public class BasicAsyncTestingTest extends TestKit {
   public BasicAsyncTestingTest() {
-    super(ActorSystem.create(Actor.empty(), "BasicAsyncTestingTest"));
+    super("BasicAsyncTestingTest");
   }
 //#test-header
 
@@ -54,7 +54,7 @@ public class BasicAsyncTestingTest extends TestKit {
   public void testVerifyingAResponse() {
     //#test
     TestProbe<Pong> probe = new TestProbe<>(system(), testkitSettings());
-    ActorRef<Ping> pinger = actorOf(echoActor, "ping");
+    ActorRef<Ping> pinger = systemActor(echoActor, "ping");
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMsg(new Pong("hello"));
     //#test

@@ -7,15 +7,13 @@ import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.testkit.typed.BehaviorTestkit
-import akka.testkit.typed.TestInbox
-import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKit, TestKitSettings }
 import akka.testkit.typed.scaladsl.TestProbe
 import org.scalatest.concurrent.Eventually
 
-import scala.concurrent.duration._
+import scala.concurrent.Future
 
-class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport {
+class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with Eventually {
 
   trait ServiceA
   val ServiceKeyA = Receptionist.ServiceKey[ServiceA]("service-a")
@@ -33,18 +31,18 @@ class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport 
     }
   }
 
-  import akka.actor.typed.internal.receptionist.ReceptionistImpl.{ localOnlyBehavior ⇒ behavior }
+  import akka.actor.typed.internal.receptionist.ReceptionistImpl.{ localOnlyBehavior ⇒ receptionistBehavior }
 
   implicit val testSettings = TestKitSettings(system)
 
   abstract class TestSetup {
-    val receptionist = start(behavior)
+    val receptionist = spawn(receptionistBehavior)
   }
 
   "A local receptionist" must {
 
-    "must register a service" in {
-      val ctx = new BehaviorTestkit("register", behavior)
+    "register a service" in {
+      val ctx = new BehaviorTestkit("register", receptionistBehavior)
       val a = TestInbox[ServiceA]("a")
       val r = TestInbox[Registered[_]]("r")
       ctx.run(Register(ServiceKeyA, a.ref)(r.ref))
@@ -57,8 +55,8 @@ class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport 
       assertEmpty(a, r, q)
     }
 
-    "must register two services" in {
-      val ctx = new BehaviorTestkit("registertwo", behavior)
+    "register two services" in {
+      val ctx = new BehaviorTestkit("registertwo", receptionistBehavior)
       val a = TestInbox[ServiceA]("a")
       val r = TestInbox[Registered[_]]("r")
       ctx.run(Register(ServiceKeyA, a.ref)(r.ref))
@@ -74,8 +72,8 @@ class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport 
       assertEmpty(a, b, r, q)
     }
 
-    "must register two services with the same key" in {
-      val ctx = new BehaviorTestkit("registertwosame", behavior)
+    "register two services with the same key" in {
+      val ctx = new BehaviorTestkit("registertwosame", receptionistBehavior)
       val a1 = TestInbox[ServiceA]("a1")
       val r = TestInbox[Registered[_]]("r")
       ctx.run(Register(ServiceKeyA, a1.ref)(r.ref))
@@ -91,19 +89,19 @@ class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport 
       assertEmpty(a1, a2, r, q)
     }
 
-    "must unregister services when they terminate" in {
+    "unregister services when they terminate" in {
       new TestSetup {
         val regProbe = TestProbe[Any]("regProbe")
 
-        val serviceA = start(stoppableBehavior.narrow[ServiceA])
+        val serviceA = spawn(stoppableBehavior.narrow[ServiceA])
         receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
         regProbe.expectMsg(Registered(ServiceKeyA, serviceA))
 
-        val serviceB = start(stoppableBehavior.narrow[ServiceB])
+        val serviceB = spawn(stoppableBehavior.narrow[ServiceB])
         receptionist ! Register(ServiceKeyB, serviceB, regProbe.ref)
         regProbe.expectMsg(Registered(ServiceKeyB, serviceB))
 
-        val serviceC = start(stoppableBehavior)
+        val serviceC = spawn(stoppableBehavior)
         receptionist ! Register(ServiceKeyA, serviceC, regProbe.ref)
         receptionist ! Register(ServiceKeyB, serviceC, regProbe.ref)
         regProbe.expectMsg(Registered(ServiceKeyA, serviceC))
@@ -125,7 +123,7 @@ class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport 
       }
     }
 
-    "must support subscribing to service changes" in {
+    "support subscribing to service changes" in {
       new TestSetup {
         val regProbe = TestProbe[Registered[_]]("regProbe")
 
@@ -134,13 +132,13 @@ class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport 
 
         aSubscriber.expectMsg(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
 
-        val serviceA: ActorRef[ServiceA] = start(stoppableBehavior)
+        val serviceA: ActorRef[ServiceA] = spawn(stoppableBehavior)
         receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
         regProbe.expectMsg(Registered(ServiceKeyA, serviceA))
 
         aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA)))
 
-        val serviceA2: ActorRef[ServiceA] = start(stoppableBehavior)
+        val serviceA2: ActorRef[ServiceA] = spawn(stoppableBehavior)
         receptionist ! Register(ServiceKeyA, serviceA2, regProbe.ref)
         regProbe.expectMsg(Registered(ServiceKeyA, serviceA2))
 
@@ -153,40 +151,18 @@ class LocalReceptionistSpec extends TypedSpec with Eventually with StartSupport 
       }
     }
 
-    "must work with ask" in {
-      sync(runTest("Receptionist") {
-        StepWise[Registered[ServiceA]] { (ctx, startWith) ⇒
-          val self = ctx.self
-          startWith.withKeepTraces(true) {
-            val r = ctx.spawnAnonymous(behavior)
-            val s = ctx.spawnAnonymous(behaviorA)
-            val f = r ? Register(ServiceKeyA, s)
-            r ! Register(ServiceKeyA, s)(self)
-            (f, s)
-          }.expectMessage(1.second) {
-            case (msg, (f, s)) ⇒
-              msg should be(Registered(ServiceKeyA, s))
-              f.foreach(self ! _)(system.executionContext)
-              s
-          }.expectMessage(1.second) {
-            case (msg, s) ⇒
-              msg should be(Registered(ServiceKeyA, s))
-          }
-        }
-      })
+    "work with ask" in {
+      val receptionist = spawn(receptionistBehavior)
+      val serviceA = spawn(behaviorA)
+      val f: Future[Registered[ServiceA]] = receptionist ? Register(ServiceKeyA, serviceA)
+      f.futureValue should be(Registered(ServiceKeyA, serviceA))
     }
 
-    "must be present in the system" in {
-      sync(runTest("systemReceptionist") {
-        StepWise[Listing[ServiceA]] { (ctx, startWith) ⇒
-          val self = ctx.self
-          startWith.withKeepTraces(true) {
-            system.receptionist ! Find(ServiceKeyA)(self)
-          }.expectMessage(1.second) { (msg, _) ⇒
-            msg.serviceInstances should ===(Set())
-          }
-        }
-      })
+    "be present in the system" in {
+      val probe = TestProbe[Receptionist.Listing[_]]()
+      system.receptionist ! Find(ServiceKeyA)(probe.ref)
+      val listing: Listing[_] = probe.expectMsgType[Listing[_]]
+      listing.serviceInstances should be(Set())
     }
   }
 }

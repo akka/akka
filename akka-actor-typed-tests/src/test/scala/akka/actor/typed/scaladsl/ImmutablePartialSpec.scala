@@ -4,13 +4,12 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.testkit.typed.{ BehaviorTestkit, TestKitSettings }
+import akka.testkit.typed.{ BehaviorTestkit, TestKit, TestKitSettings }
 import akka.testkit.typed.scaladsl.TestProbe
+
 import scala.concurrent.duration.DurationInt
 
-class ImmutablePartialSpec extends TypedSpec with StartSupport {
-
-  private implicit val testSettings = TestKitSettings(system)
+class ImmutablePartialSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   "An immutable partial" must {
 

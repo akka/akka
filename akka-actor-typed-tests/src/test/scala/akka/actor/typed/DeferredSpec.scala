@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.Actor.BehaviorDecorators
-import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKitSettings }
+import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKit, TestKitSettings }
 import akka.testkit.typed.scaladsl._
 
 object DeferredSpec {
@@ -26,7 +26,7 @@ object DeferredSpec {
     })
 }
 
-class DeferredSpec extends TypedSpec with StartSupport {
+class DeferredSpec extends TestKit("DeferredSpec") with TypedAkkaSpec {
 
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)
@@ -39,7 +39,7 @@ class DeferredSpec extends TypedSpec with StartSupport {
         target(probe.ref)
       }
       probe.expectNoMsg(100.millis) // not yet
-      start(behv)
+      spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
       probe.expectMsg(Started)
     }
@@ -58,7 +58,7 @@ class DeferredSpec extends TypedSpec with StartSupport {
             Actor.stopped
         }
       }
-      start(behv)
+      spawn(behv)
       probe.expectMsg(Started)
       probe.expectMsg(Pong)
     }
@@ -74,7 +74,7 @@ class DeferredSpec extends TypedSpec with StartSupport {
             Actor.stopped
         }
       }
-      start(behv)
+      spawn(behv)
       probe.expectMsg(Pong)
     }
 
@@ -86,7 +86,7 @@ class DeferredSpec extends TypedSpec with StartSupport {
           target(probe.ref)
         }
       }
-      start(behv)
+      spawn(behv)
       probe.expectMsg(Started)
     }
 
@@ -99,7 +99,7 @@ class DeferredSpec extends TypedSpec with StartSupport {
         case m ⇒ m
       }
       probe.expectNoMsg(100.millis) // not yet
-      val ref = start(behv)
+      val ref = spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
       probe.expectMsg(Started)
       ref ! Ping
@@ -115,7 +115,7 @@ class DeferredSpec extends TypedSpec with StartSupport {
         target(probe.ref)
       })
       probe.expectNoMsg(100.millis) // not yet
-      val ref = start(behv)
+      val ref = spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
       probe.expectMsg(Started)
       ref ! Ping
@@ -123,15 +123,11 @@ class DeferredSpec extends TypedSpec with StartSupport {
       probe.expectMsg(Pong)
     }
   }
-
 }
 
-class DeferredStubbedSpec extends TypedSpec {
+class DeferredStubbedSpec extends TypedAkkaSpec {
 
   import DeferredSpec._
-
-  def mkCtx(behv: Behavior[Command]): BehaviorTestkit[Command] =
-    BehaviorTestkit(behv, "ctx")
 
   "must create underlying deferred behavior immediately" in {
     val inbox = TestInbox[Event]("evt")
@@ -139,7 +135,7 @@ class DeferredStubbedSpec extends TypedSpec {
       inbox.ref ! Started
       target(inbox.ref)
     }
-    mkCtx(behv)
+    BehaviorTestkit(behv, "ctx")
     // it's supposed to be created immediately (not waiting for first message)
     inbox.receiveMsg() should ===(Started)
   }
@@ -152,7 +148,7 @@ class DeferredStubbedSpec extends TypedSpec {
       throw exc
     }
     intercept[RuntimeException] {
-      mkCtx(behv)
+      BehaviorTestkit(behv, "ctx")
     } should ===(exc)
     inbox.receiveMsg() should ===(Started)
   }

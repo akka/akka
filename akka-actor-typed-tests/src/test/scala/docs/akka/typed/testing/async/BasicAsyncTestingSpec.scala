@@ -22,7 +22,7 @@ object BasicAsyncTestingSpec {
 }
 
 //#test-header
-class BasicAsyncTestingSpec extends TestKit(ActorSystem(Actor.empty, "BasicTestingSpec"))
+class BasicAsyncTestingSpec extends TestKit("BasicTestingSpec")
   with WordSpecLike with BeforeAndAfterAll {
   //#test-header
 
@@ -32,7 +32,7 @@ class BasicAsyncTestingSpec extends TestKit(ActorSystem(Actor.empty, "BasicTesti
     "support verifying a response" in {
       //#test
       val probe = TestProbe[Pong]()
-      val pinger = actorOf(echoActor, "ping")
+      val pinger = systemActor(echoActor, "ping")
       pinger ! Ping("hello", probe.ref)
       probe.expectMsg(Pong("hello"))
       //#test

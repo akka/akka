@@ -3,7 +3,7 @@
  */
 package akka.actor.typed
 
-class PropsSpec extends TypedSpecSetup {
+class PropsSpec extends TypedAkkaSpec {
 
   val dispatcherFirst = DispatcherDefault(DispatcherFromConfig("pool"))
 

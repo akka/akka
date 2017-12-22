@@ -7,6 +7,7 @@ package docs.akka.typed
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.ActorContext
+import akka.testkit.typed.TestKit
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -65,7 +66,7 @@ object MutableIntroSpec {
 
 }
 
-class MutableIntroSpec extends TypedSpec {
+class MutableIntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   import MutableIntroSpec._
 
@@ -102,7 +103,7 @@ class MutableIntroSpec extends TypedSpec {
               chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
               Actor.same
           } onSignal {
-            case (_, Terminated(ref)) ⇒
+            case (_, Terminated(_)) ⇒
               println("Stopping guardian")
               Actor.stopped
           }

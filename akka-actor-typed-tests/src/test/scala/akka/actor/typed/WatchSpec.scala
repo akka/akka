@@ -3,63 +3,72 @@
  */
 package akka.actor.typed
 
-import scala.concurrent._
-import scala.concurrent.duration._
-import akka.actor.typed.scaladsl.Actor._
-import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.Actor
 
-class WatchSpec extends TypedSpec {
+import scala.concurrent._
+import akka.testkit.typed.TestKit
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+
+object WatchSpec {
+  case object Stop
+
+  val terminatorBehavior =
+    Actor.immutable[Stop.type] {
+      case (_, `Stop`) ⇒ Actor.stopped
+    }
+
+  sealed trait Message
+  case object CustomTerminationMessage extends Message
+  case class StartWatchingWith(watchee: ActorRef[Stop.type], msg: CustomTerminationMessage.type) extends Message
+}
+
+class WatchSpec extends TestKit("WordSpec")
+  with WordSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures {
+
+  import WatchSpec._
+
+  override protected def afterAll(): Unit = shutdown()
 
   "Actor monitoring" must {
-
     "get notified of actor termination" in {
-      case object Stop
       case class StartWatching(watchee: ActorRef[Stop.type])
+      val terminator = systemActor(terminatorBehavior)
+      val receivedTerminationSignal: Promise[ActorRef[Nothing]] = Promise()
 
-      val terminator = Await.result(system ? TypedSpec.Create(immutable[Stop.type] {
-        case (ctx, `Stop`) ⇒ stopped
-      }, "t1"), 3.seconds /*.dilated*/ )
-
-      val receivedTerminationSignal: Promise[Unit] = Promise()
-
-      val watcher = Await.result(system ? TypedSpec.Create(immutable[StartWatching] {
-        case (ctx, StartWatching(watchee)) ⇒ ctx.watch(watchee); same
+      val watcher = systemActor(Actor.immutable[StartWatching] {
+        case (ctx, StartWatching(watchee)) ⇒
+          ctx.watch(watchee)
+          Actor.same
       }.onSignal {
-        case (ctx, Terminated(_)) ⇒ receivedTerminationSignal.success(()); stopped
-      }, "w1"), 3.seconds /*.dilated*/ )
+        case (_, Terminated(stopped)) ⇒
+          receivedTerminationSignal.success(stopped)
+          Actor.stopped
+      })
 
       watcher ! StartWatching(terminator)
       terminator ! Stop
 
-      Await.result(receivedTerminationSignal.future, 3.seconds /*.dilated*/ )
+      receivedTerminationSignal.future.futureValue shouldEqual terminator
     }
 
     "get notified of actor termination with a custom message" in {
-      case object Stop
+      val terminator = systemActor(terminatorBehavior)
+      val receivedTerminationSignal: Promise[Message] = Promise()
 
-      sealed trait Message
-      case object CustomTerminationMessage extends Message
-      case class StartWatchingWith(watchee: ActorRef[Stop.type], msg: CustomTerminationMessage.type) extends Message
-
-      val terminator = Await.result(system ? TypedSpec.Create(immutable[Stop.type] {
-        case (ctx, `Stop`) ⇒ stopped
-      }, "t2"), 3.seconds /*.dilated*/ )
-
-      val receivedTerminationSignal: Promise[Unit] = Promise()
-
-      val watcher = Await.result(system ? TypedSpec.Create(immutable[Message] {
+      val watcher = systemActor(Actor.immutable[Message] {
         case (ctx, StartWatchingWith(watchee, msg)) ⇒
           ctx.watchWith(watchee, msg)
-          same
-        case (ctx, `CustomTerminationMessage`) ⇒
-          receivedTerminationSignal.success(())
-          stopped
-      }, "w2"), 3.seconds /*.dilated*/ )
+          Actor.same
+        case (_, msg) ⇒
+          receivedTerminationSignal.success(msg)
+          Actor.stopped
+      })
 
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
       terminator ! Stop
 
-      Await.result(receivedTerminationSignal.future, 3.seconds /*.dilated*/ )
+      receivedTerminationSignal.future.futureValue shouldEqual CustomTerminationMessage
     }
   }
 }

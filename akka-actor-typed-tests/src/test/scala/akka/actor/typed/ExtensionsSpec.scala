@@ -43,7 +43,7 @@ object InstanceCountingExtension extends ExtensionId[DummyExtension1] {
   }
 }
 
-class ExtensionsSpec extends TypedSpecSetup {
+class ExtensionsSpec extends TypedAkkaSpec {
 
   "The extensions subsystem" must {
     "return the same instance for the same id" in

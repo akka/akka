@@ -5,7 +5,7 @@ package akka.cluster.typed
 
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.actor.typed.TypedSpec
+import akka.actor.typed.{TypedAkkaSpec, TypedAkkaSpecWithShutdown, TypedSpec}
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.typed.TestKitSettings
@@ -33,7 +33,7 @@ object ClusterApiSpec {
     """)
 }
 
-class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures {
+class ClusterApiSpec extends TestKit("ClusterApiSpec", ClusterApiSpec.config) with TypedAkkaSpecWithShutdown with ScalaFutures {
 
   val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)

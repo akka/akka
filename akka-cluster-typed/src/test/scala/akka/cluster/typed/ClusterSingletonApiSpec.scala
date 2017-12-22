@@ -6,14 +6,12 @@ package akka.cluster.typed
 import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
-import akka.serialization.SerializerWithStringManifest
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedSpec }
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -84,7 +82,7 @@ object ClusterSingletonApiSpec {
   }
 }
 
-class ClusterSingletonApiSpec extends TypedSpec(ClusterSingletonApiSpec.config) with ScalaFutures {
+class ClusterSingletonApiSpec extends TestKit("ClusterSingletonApiSpec", ClusterSingletonApiSpec.config) with TypedAkkaSpecWithShutdown {
   import ClusterSingletonApiSpec._
 
   implicit val testSettings = TestKitSettings(system)

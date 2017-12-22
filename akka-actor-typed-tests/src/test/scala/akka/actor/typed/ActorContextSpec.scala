@@ -3,13 +3,19 @@
  */
 package akka.actor.typed
 
-import scala.concurrent.duration._
-import scala.concurrent.Future
+import akka.actor.typed.scaladsl.Actor._
+import akka.actor.typed.scaladsl.{ Actor, AskPattern }
+import akka.actor.{ ActorInitializationException, DeadLetterSuppression, InvalidMessageException }
+import akka.testkit.AkkaSpec
+import akka.testkit.TestEvent.Mute
 import com.typesafe.config.ConfigFactory
-import akka.actor.{ DeadLetterSuppression, InvalidMessageException }
-import akka.actor.typed.scaladsl.Actor
+import org.scalactic.CanEqual
 
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
 import scala.language.existentials
+import scala.reflect.ClassTag
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 object ActorContextSpec {
 
@@ -227,8 +233,8 @@ object ActorContextSpec {
         case BecomeInert(replyTo) ⇒
           replyTo ! BecameInert
           Actor.immutable[Command] {
-            case (_, Ping(replyTo)) ⇒
-              replyTo ! Pong2
+            case (_, Ping(r)) ⇒
+              r ! Pong2
               Actor.same
             case (_, Throw(ex)) ⇒
               throw ex
@@ -257,21 +263,136 @@ object ActorContextSpec {
     }
   }
 
+  sealed abstract class Start
+  case object Start extends Start
+
+  sealed trait GuardianCommand
+  case class RunTest[T](name: String, behavior: Behavior[T], replyTo: ActorRef[Status], timeout: FiniteDuration) extends GuardianCommand
+  case class Terminate(reply: ActorRef[Status]) extends GuardianCommand
+  case class Create[T](behavior: Behavior[T], name: String)(val replyTo: ActorRef[ActorRef[T]]) extends GuardianCommand
+
+  sealed trait Status
+  case object Success extends Status
+  case class Failed(thr: Throwable) extends Status
+  case object Timedout extends Status
+
+  class SimulatedException(message: String) extends RuntimeException(message) with NoStackTrace
+
+  def guardian(outstanding: Map[ActorRef[_], ActorRef[Status]] = Map.empty): Behavior[GuardianCommand] =
+    Actor.immutable[GuardianCommand] {
+      case (ctx, r: RunTest[t]) ⇒
+        val test = ctx.spawn(r.behavior, r.name)
+        ctx.schedule(r.timeout, r.replyTo, Timedout)
+        ctx.watch(test)
+        guardian(outstanding + ((test, r.replyTo)))
+      case (_, Terminate(reply)) ⇒
+        reply ! Success
+        stopped
+      case (ctx, c: Create[t]) ⇒
+        c.replyTo ! ctx.spawn(c.behavior, c.name)
+        same
+    } onSignal {
+      case (ctx, t @ Terminated(test)) ⇒
+        outstanding get test match {
+          case Some(reply) ⇒
+            if (t.failure eq null) reply ! Success
+            else reply ! Failed(t.failure)
+            guardian(outstanding - test)
+          case None ⇒ same
+        }
+      case _ ⇒ same
+    }
 }
 
-abstract class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
-  """|akka {
+abstract class ActorContextSpec extends TypedAkkaSpec {
+  import ActorContextSpec._
+
+  val config = ConfigFactory.parseString(
+    """|akka {
      |  loglevel = WARNING
      |  actor.debug {
      |    lifecycle = off
      |    autoreceive = off
      |  }
      |  typed.loggers = ["akka.testkit.typed.TestEventListener"]
-     |}""".stripMargin)) {
+     |}""".stripMargin)
 
-  import ActorContextSpec._
+  implicit lazy val system: ActorSystem[GuardianCommand] =
+    ActorSystem(guardian(), AkkaSpec.getCallerName(classOf[ActorContextSpec]), config = Some(config withFallback AkkaSpec.testConf))
 
   val expectTimeout = 3.seconds
+  import AskPattern._
+
+  implicit def scheduler = system.scheduler
+
+  lazy val blackhole = await(system ? Create(immutable[Any] { case _ ⇒ same }, "blackhole"))
+
+  override def afterAll(): Unit = {
+    Await.result(system.terminate, timeout.duration)
+  }
+
+  // TODO remove after basing on ScalaTest 3 with async support
+  import akka.testkit._
+
+  def await[T](f: Future[T]): T = Await.result(f, timeout.duration * 1.1)
+
+  /**
+   * Run an Actor-based test. The test procedure is most conveniently
+   * formulated using the [[StepWise]] behavior type.
+   */
+  def runTest[T: ClassTag](name: String)(behavior: Behavior[T])(implicit system: ActorSystem[GuardianCommand]): Future[Status] =
+    system ? (RunTest(name, behavior, _, timeout.duration))
+
+  // TODO remove after basing on ScalaTest 3 with async support
+  def sync(f: Future[Status])(implicit system: ActorSystem[GuardianCommand]): Unit = {
+    def unwrap(ex: Throwable): Throwable = ex match {
+      case ActorInitializationException(_, _, ex) ⇒ ex
+      case other                                  ⇒ other
+    }
+
+    try await(f) match {
+      case Success ⇒ ()
+      case Failed(ex) ⇒
+        unwrap(ex) match {
+          case ex2: SimulatedException ⇒
+            throw ex2
+          case _ ⇒
+            println(system.printTree)
+            throw unwrap(ex)
+        }
+      case Timedout ⇒
+        println(system.printTree)
+        fail("test timed out")
+    } catch {
+      case ex: SimulatedException ⇒
+        throw ex
+      case NonFatal(ex) ⇒
+        println(system.printTree)
+        throw ex
+    }
+  }
+
+  def muteExpectedException[T <: Exception: ClassTag](
+    message:     String = null,
+    source:      String = null,
+    start:       String = "",
+    pattern:     String = null,
+    occurrences: Int    = Int.MaxValue)(implicit system: ActorSystem[GuardianCommand]): EventFilter = {
+    val filter = EventFilter(message, source, start, pattern, occurrences)
+    system.eventStream.publish(Mute(filter))
+    filter
+  }
+
+  // for ScalaTest === compare of Class objects
+  implicit def classEqualityConstraint[A, B]: CanEqual[Class[A], Class[B]] =
+    new CanEqual[Class[A], Class[B]] {
+      def areEqual(a: Class[A], b: Class[B]) = a == b
+    }
+
+  implicit def setEqualityConstraint[A, T <: Set[_ <: A]]: CanEqual[Set[A], T] =
+    new CanEqual[Set[A], T] {
+      def areEqual(a: Set[A], b: T) = a == b
+    }
 
   /**
    * The name for the set of tests to be instantiated, used for keeping the test case actors’ names unique.
@@ -286,7 +407,7 @@ abstract class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   private def mySuite: String = suite + "Adapted"
 
   def setup(name: String, wrapper: Option[Behavior[Command] ⇒ Behavior[Command]] = None, ignorePostStop: Boolean = true)(
-    proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[TypedSpec.Status] =
+    proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[Status] =
     runTest(s"$mySuite-$name")(StepWise[Event] { (ctx, startWith) ⇒
       val b = behavior(ctx, ignorePostStop)
       val props = wrapper.map(_(b)).getOrElse(b)
@@ -671,7 +792,7 @@ abstract class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   }
 }
 
-import ActorContextSpec._
+import akka.actor.typed.ActorContextSpec._
 
 class NormalActorContextSpec extends ActorContextSpec {
   override def suite = "normal"
@@ -705,4 +826,3 @@ class TapActorContextSpec extends ActorContextSpec {
   override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
     Actor.tap((_, _) ⇒ (), (_, _) ⇒ (), subject(ctx.self, ignorePostStop))
 }
-

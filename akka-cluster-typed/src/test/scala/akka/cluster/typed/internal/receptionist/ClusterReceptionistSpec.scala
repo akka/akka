@@ -6,9 +6,6 @@ package akka.cluster.typed.internal.receptionist
 import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
-import akka.cluster.Cluster
-import akka.serialization.SerializerWithStringManifest
-import akka.actor.typed.{ ActorRef, ActorRefResolver, StartSupport, TypedSpec }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Actor
@@ -51,7 +48,7 @@ object ClusterReceptionistSpec {
 
   case object Perish extends PingProtocol
 
-  val pingPong = Actor.immutable[PingProtocol] { (ctx, msg) ⇒
+  val pingPong = Actor.immutable[PingProtocol] { (_, msg) ⇒
 
     msg match {
       case Ping(respondTo) ⇒
@@ -61,7 +58,6 @@ object ClusterReceptionistSpec {
       case Perish ⇒
         Actor.stopped
     }
-
   }
 
   class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
@@ -88,7 +84,8 @@ object ClusterReceptionistSpec {
   val PingKey = Receptionist.ServiceKey[PingProtocol]("pingy")
 }
 
-class ClusterReceptionistSpec extends TypedSpec(ClusterReceptionistSpec.config) with StartSupport {
+class ClusterReceptionistSpec extends TestKit("CluserReceptionishSpec", ClusterReceptionistSpec.config)
+  with TypedAkkaSpecWithShutdown {
 
   import ClusterReceptionistSpec._
 
@@ -117,7 +114,7 @@ class ClusterReceptionistSpec extends TypedSpec(ClusterReceptionistSpec.config) 
         adaptedSystem2.receptionist ! Subscribe(PingKey, regProbe2.ref)
         regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
 
-        val service = start(pingPong)
+        val service = spawn(pingPong)
         system.receptionist ! Register(PingKey, service, regProbe.ref)
         regProbe.expectMsg(Registered(PingKey, service))
 
