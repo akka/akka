@@ -1,5 +1,7 @@
 # logRequestResult
 
+@@@ div { .group-scala }
+
 ## Signature
 
 ```scala
@@ -12,9 +14,11 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 > <a id="1" href="#^1">[1]</a> See [The Magnet Pattern](http://spray.io/blog/2012-12-13-the-magnet-pattern/) for an explanation of magnet-based overloading.
 
+@@@
+
 ## Description
 
-Logs both, the request and the response using the @unidoc[LoggingAdapter] of the @unidoc[RequestContext].
+Logs both, the request and the response@scala[ using the @unidoc[LoggingAdapter] of the @unidoc[RequestContext]].
 
 This directive is a combination of @ref[logRequest](logRequest.md) and @ref[logResult](logResult.md).
 
@@ -22,7 +26,11 @@ See @ref[logRequest](logRequest.md) for the general description how these direct
 
 ## Example
 
-@@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResult }
+Scala
+:  @@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResult }
+
+Java
+:  @@snip [DebuggingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResult }
 
 ## Building Advanced Directives
 
