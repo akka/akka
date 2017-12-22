@@ -1,1 +1,0 @@
-../../../../../scala/http/routing-dsl/directives/file-and-resource-directives/getFromDirectory.md

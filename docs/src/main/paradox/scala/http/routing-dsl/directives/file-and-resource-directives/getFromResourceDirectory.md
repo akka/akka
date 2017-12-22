@@ -10,7 +10,7 @@
 
 ## Description
 
-Completes GET requests with the content of the given classpath resource directory.
+Completes `GET` requests with the content of the given classpath resource directory.
 
 For details refer to @ref[getFromDirectory](getFromDirectory.md) which works the same way but obtaining the file from the filesystem
 instead of the applications classpath.
