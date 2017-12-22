@@ -171,6 +171,7 @@ lazy val httpTests = project("akka-http-tests")
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
   .dependsOn(http)
+  .addAkkaModuleDependency("akka-stream")
   .enablePlugins(JmhPlugin)
   .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release benchs
   .disablePlugins(MimaPlugin)
@@ -240,7 +241,7 @@ lazy val docs = project("docs")
   .settings(
     name := "akka-http-docs",
     resolvers += Resolver.jcenterRepo,
-    paradoxGroups := Map("Languages" -> Seq("Scala", "Java")),
+    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",
       "akka.version" -> Dependencies.akkaVersion.value,
