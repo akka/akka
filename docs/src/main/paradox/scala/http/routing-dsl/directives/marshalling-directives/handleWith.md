@@ -16,7 +16,7 @@ the in-scope marshaller.  `handleWith` can be a convenient method combining `ent
 `complete`.
 
 The `handleWith` directive is used when you want to handle a route with a given function of
-type A ⇒ B.  `handleWith` will use both an in-scope unmarshaller to convert a request into 
+type @scala[A ⇒ B]@java[Function<A,B>].  `handleWith` will use both an in-scope unmarshaller to convert a request into 
 type A and an in-scope marshaller to convert type B into a response. This is helpful when your 
 core business logic resides in some other class or you want your business logic to be independent
 of the REST interface written with akka-http. You can use `handleWith` to "hand off" processing
@@ -31,16 +31,25 @@ on marshalling entities with akka-http.
 
 ## Examples
 
-The following example uses an `updatePerson` function with a `Person` case class as an input and output.  We plug this function into our route using `handleWith`.
-
-@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-case-class }
-
-@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #example-handleWith-with-json }
-
-The PersonJsonSupport object handles both marshalling and unmarshalling of the Person case class.
+The following example uses an `updatePerson` function with a `Person` @scala[case ]class as an input and output. We plug this function into our route using `handleWith`.
 
 Scala
-:  @@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-json-support }
+:   @@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-case-class }
 
 Java
-:  @@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
+:   @@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
+
+
+Scala
+:   @@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #example-handleWith-with-json }
+
+Java
+:   @@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-handleWith-with-json }
+
+
+The @scala[PersonJsonSupport object handles]@java[previous example uses also @ref[Json Support via Jackson](../../../common/json-support.md#json-jackson-support) to handle] both marshalling and unmarshalling of the Person case class.
+
+@@@ div { .group-scala }
+@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-json-support }
+
+@@@
