@@ -1,4 +1,4 @@
-# Introduction
+# 1. Introduction
 
 The Akka HTTP modules implement a full server- and client-side HTTP stack on top of *akka-actor* and *akka-stream*. It's
 not a web-framework but rather a more general toolkit for providing and consuming HTTP-based services. While interaction
@@ -177,7 +177,7 @@ Scala
 Java
 :   @@snip [HttpServerLowLevelExample.java]($test$/java/docs/http/javadsl/HttpServerLowLevelExample.java) { #low-level-server-example }
 
-Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](server-side/low-level-api.md).
+Read more details about the low level APIs in the section @ref[Core Server API](server-side/low-level-api.md).
 
 ## HTTP client API
 
@@ -206,7 +206,7 @@ with Akka HTTP. Details can be found in the section @ref[High-level Server-Side 
 
 akka-http-core
 : A complete, mostly low-level, server- and client-side implementation of HTTP (incl. WebSockets)
-Details can be found in sections @ref[Low-Level Server-Side API](server-side/low-level-api.md) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md)
+Details can be found in sections @ref[Core Server API](server-side/low-level-api.md) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md)
 
 akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations

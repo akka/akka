@@ -1,4 +1,4 @@
-# Server-Side WebSocket Support
+# Server WebSocket Support
 
 WebSocket is a protocol that provides a bi-directional channel between browser and webserver usually run over an
 upgraded HTTP(S) connection. Data is exchanged in messages whereby a message can either be binary data or Unicode text.

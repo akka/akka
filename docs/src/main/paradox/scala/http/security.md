@@ -1,4 +1,4 @@
-# Security Announcements
+# ! Security Announcements !
 
 ## Receiving Security Advisories
 The best way to receive any and all security announcements is to subscribe to the [Akka security list](https://groups.google.com/forum/#!forum/akka-security).

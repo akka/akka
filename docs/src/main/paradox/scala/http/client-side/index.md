@@ -1,4 +1,4 @@
-# Consuming HTTP-based Services (Client-Side)
+# 5. Client API
 
 All client-side functionality of Akka HTTP, for consuming HTTP-based services offered by other endpoints, is currently
 provided by the `akka-http-core` module.

@@ -1,4 +1,4 @@
-# Server-Side API
+# 4. Server API
 
 Apart from the @ref[HTTP Client](../client-side/index.md) Akka HTTP also provides an embedded,
 [Reactive-Streams](http://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of @scala[@extref[Streams](akka-docs:scala/stream/index.html)]@java[@extref[Streams](akka-docs:java/stream/index.html)].
@@ -13,7 +13,7 @@ It sports the following features:
 
 The server-side components of Akka HTTP are split into two layers:
 
-@ref[Low-Level Server-Side API](low-level-api.md)
+@ref[Core Server API](low-level-api.md)
 :  The basic low-level server implementation in the `akka-http-core` module.
 
 @ref[High-level Server-Side API](../routing-dsl/index.md)
@@ -37,6 +37,7 @@ from a background with non-"streaming first" HTTP Servers.
 @@@ index
 
 * [low-level-api](low-level-api.md)
+* [routing-dsl/index](../routing-dsl/index.md)
 * [websocket-support](websocket-support.md)
 * [server-https-support](server-https-support.md)
 * [http2](http2.md)
