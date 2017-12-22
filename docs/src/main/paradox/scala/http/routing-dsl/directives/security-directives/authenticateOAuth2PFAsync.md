@@ -1,14 +1,17 @@
 # authenticateOAuth2PFAsync
 
-Wraps the inner route with OAuth Bearer Token authentication support using a given `AsyncAuthenticatorPF[T]`.
-
+@@@ div { .group-scala }
 ## Signature
 
 @@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #AsyncAuthenticatorPF }
 
 @@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateOAuth2PFAsync }
 
+@@@
+
 ## Description
+
+Wraps the inner route with OAuth Bearer Token authentication support using a given @scala[`AsyncAuthenticatorPF[T]`]@java[`AsyncAuthenticatorPF<T>`].
 
 Provides support for extracting the so-called "*Bearer Token*" from the @unidoc[Authorization] HTTP Header,
 which is used to initiate an OAuth2 authorization.
@@ -25,7 +28,7 @@ leaves the request to be rejected with a @unidoc[AuthenticationFailedRejection] 
 
 See also @ref[authenticateOAuth2PF](authenticateOAuth2PF.md) if the authorization operation is rather quick, and does not have to execute asynchronously.
 
-See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-scala) for details about verifying the secret.
+See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks) for details about verifying the secret.
 
 For more information on how OAuth2 works see [RFC 6750](https://tools.ietf.org/html/rfc6750).
 

@@ -20,7 +20,7 @@
 
 @@@
 
-<a id="authentication-vs-authorization-scala"></a>
+<a id="authentication-vs-authorization"></a>
 ## Authentication vs. Authorization
 
 **Authentication** is the process of establishing a known identity for the user, whereby 'identity' is defined in the
@@ -57,7 +57,7 @@ The OAuth2 directives currently provided in Akka HTTP are not a full OAuth2 prot
 they are only a means of extracting the so called `Bearer Token` from the @unidoc[Authorization] HTTP Header,
 as defined in [RFC 6750](https://tools.ietf.org/html/rfc6750), and allow users to validate and complete the protocol.
 
-<a id="credentials-and-timing-attacks-scala"></a>
+<a id="credentials-and-timing-attacks"></a>
 ## Credentials and password timing attacks
 
 When transforming request `Credentials` into an application specific user identifier the naive solution for

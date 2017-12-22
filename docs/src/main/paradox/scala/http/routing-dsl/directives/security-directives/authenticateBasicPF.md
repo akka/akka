@@ -1,14 +1,17 @@
 # authenticateBasicPF
 
+@@@ div { .group-scala }
 ## Signature
 
 @@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #AuthenticatorPF }
 
 @@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateBasicPF }
 
+@@@
+
 ## Description
 
-Wraps the inner route with Http Basic authentication support using a given `AuthenticatorPF[T]`.
+Wraps the inner route with Http Basic authentication support using a given @scala[`AuthenticatorPF[T]`]@java[`AuthenticatorPF<T>`].
 
 Provides support for handling [HTTP Basic Authentication](https://en.wikipedia.org/wiki/Basic_auth).
 
@@ -20,7 +23,7 @@ leaves the request to be rejected with a @unidoc[AuthenticationFailedRejection] 
 Longer-running authentication tasks (like looking up credentials in a database) should use @ref[authenticateBasicAsync](authenticateBasicAsync.md)
 or @ref[authenticateBasicPFAsync](authenticateBasicPFAsync.md) if you prefer to use the `PartialFunction` syntax.
 
-See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-scala) for details about verifying the secret.
+See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks) for details about verifying the secret.
 
 @@@ warning
 Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.
