@@ -15,7 +15,11 @@ Completes the request with a redirection response to a given target URI and of a
 `redirect` is a convenience helper for completing the request with a redirection response.
 It is equivalent to this snippet relying on the `complete` method on @unidoc[RequestContext] (a directive is also available):
 
-@@snip [RequestContextImpl.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/RequestContextImpl.scala) { #red-impl }
+Scala
+:   @@snip [RequestContextImpl.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/RequestContextImpl.scala) { #red-impl }
+
+Java
+:  @@snip [RouteDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #red-impl }
 
 ## Example
 
