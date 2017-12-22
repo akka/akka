@@ -391,7 +391,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     }, () -> echoRequestHeaders);
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/").addHeaders(
+    testRoute(route).run(HttpRequest.GET("/").withHeaders(
       Arrays.asList(RawHeader.create("id", "12345"),RawHeader.create("id2", "67890"))))
       .assertHeaderKindNotExists("id")
       .assertHeaderExists("id2", "67890");

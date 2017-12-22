@@ -48,6 +48,11 @@ public interface HttpEntity {
     ContentType getContentType();
 
     /**
+     * Returns a copy of this entity with new content type./
+     */
+    HttpEntity withContentType(ContentType contentType);
+
+    /**
      * Returns if this entity is known to be empty. Open-ended entity types like
      * HttpEntityChunked and HttpCloseDelimited will always return false here.
      */

@@ -3,3 +3,11 @@ ProblemFilters.exclude[Problem]("akka.http.impl.*")
 
 # New method in @DoNotInherit class
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.HostConnectionPool.shutdown")
+
+# Java API additions https://github.com/akka/akka-http/pull/1679
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpEntity.withContentType")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.withHeaders")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.toStrict")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.withContentType")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.withHeaders")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.toStrict")

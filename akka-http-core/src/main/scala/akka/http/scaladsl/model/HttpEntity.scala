@@ -172,6 +172,11 @@ sealed trait HttpEntity extends jm.HttpEntity {
   override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
     toStrict(timeoutMillis.millis)(materializer).toJava
 
+  /** Java API */
+  override def withContentType(contentType: jm.ContentType): HttpEntity = {
+    import JavaMapping.Implicits._
+    withContentType(contentType.asScala)
+  }
 }
 
 /* An entity that can be used for body parts */

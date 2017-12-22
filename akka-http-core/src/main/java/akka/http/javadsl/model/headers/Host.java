@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.model.headers;
 
+import akka.http.javadsl.model.Authority;
+
 import java.net.InetSocketAddress;
 
 public abstract class Host extends akka.http.scaladsl.model.HttpHeader {
@@ -18,6 +20,10 @@ public abstract class Host extends akka.http.scaladsl.model.HttpHeader {
 
     public static Host create(String host, int port) {
       return akka.http.scaladsl.model.headers.Host.apply(host, port);
+    }
+
+    public static Host create(Authority authority) {
+      return akka.http.scaladsl.model.headers.Host.apply((akka.http.scaladsl.model.Uri.Authority)authority);
     }
 
     public abstract akka.http.javadsl.model.Host host();

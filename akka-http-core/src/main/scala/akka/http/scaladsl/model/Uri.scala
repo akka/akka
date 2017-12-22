@@ -359,7 +359,7 @@ object Uri {
    *                 after the colon (`:`). Therefore, it is not guaranteed that future versions of this class will
    *                 preserve full userinfo between parsing and rendering (even if it might do so right now).
    */
-  final case class Authority(host: Host, port: Int = 0, userinfo: String = "") {
+  final case class Authority(host: Host, port: Int = 0, userinfo: String = "") extends jm.Authority {
     def isEmpty = equals(Authority.Empty)
     def nonEmpty = !isEmpty
     def normalizedForHttp(encrypted: Boolean = false) =
