@@ -12,7 +12,7 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.client.PoolFlow.{ RequestContext, ResponseContext }
-import akka.http.impl.engine.client.pool.SlotState.Unconnected
+import akka.http.impl.engine.client.pool.SlotState.{ Unconnected, WaitingForEndOfResponseEntity, WaitingForResponseDispatch, WaitingForResponseEntitySubscription }
 import akka.http.impl.util.{ StageLoggingWithOverride, StreamUtils }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse, headers }
@@ -24,9 +24,9 @@ import akka.util.OptionVal
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-import scala.util.{ Failure, Success }
+import scala.util.{ Failure, Success, Try }
 
 /**
  * Internal API
@@ -36,15 +36,8 @@ import scala.util.{ Failure, Success }
  * Backpressure logic of the external interface:
  *
  *  * pool pulls if there's a free slot
- *  * pool buffers responses until they are pulled. The buffer is unlimited in theory with the reasoning that
- *    reasonable behavior can be expected from downstream consumers, i.e. at least one pull for every request sent in.
- *
- *    It's hard to say if that's reasonable enough. As we can only ever receive a single pull we will always need a
- *    buffer of at least `max-connections` elements to allow for any parallelism. So, an alternative strategy could be
- *    to leave a response in its slot until it is fetched.
- *
- *    (The old implementation may or may not have implemented similar behavior. It probably had a buffer because of
- *     the merge in the involved graph structure.)
+ *  * pool buffers outgoing response in a slot and registers them for becoming dispatchable. When a response is pulled
+ *    a waiting slot is notified and the response is then dispatched.
  *
  * The implementation is split up into this class which does all the stream-based wiring. It contains a vector of
  * slots that contain the mutable slot state for every slot.
@@ -76,7 +69,7 @@ private[client] object NewHostConnectionPool {
         private[this] var lastTimeoutId = 0L
 
         val slots = Vector.tabulate(_settings.maxConnections)(new Slot(_))
-        val outBuffer: util.Deque[ResponseContext] = new util.ArrayDeque[ResponseContext]
+        val slotsWaitingForDispatch: util.Deque[Slot] = new util.ArrayDeque[Slot]
         val retryBuffer: util.Deque[RequestContext] = new util.ArrayDeque[RequestContext]
 
         override def preStart(): Unit = {
@@ -89,12 +82,9 @@ private[client] object NewHostConnectionPool {
           pullIfNeeded()
         }
         def onPull(): Unit =
-          if (!outBuffer.isEmpty)
-            push(responsesOut, outBuffer.pollFirst())
-
-        def manageState(): Unit = {
-          pullIfNeeded()
-        }
+          if (!slotsWaitingForDispatch.isEmpty)
+            slotsWaitingForDispatch.pollFirst().onResponseDispatchable()
+        // else push when next slot becomes dispatchable
 
         def pullIfNeeded(): Unit =
           if (hasIdleSlots)
@@ -108,22 +98,12 @@ private[client] object NewHostConnectionPool {
           // TODO: optimize by keeping track of idle connections?
           slots.exists(_.isIdle)
 
-        def dispatchResponse(req: RequestContext, res: HttpResponse): Unit =
-          dispatchResponseContext(ResponseContext(req, Success(res)))
-
-        def dispatchFailure(req: RequestContext, cause: Throwable): Unit = {
-          if (req.retriesLeft > 0) {
+        def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit =
+          if (result.isFailure && req.retriesLeft > 0) {
             log.debug("Request has {} retries left, retrying...", req.retriesLeft)
             retryBuffer.addLast(req.copy(retriesLeft = req.retriesLeft - 1))
           } else
-            dispatchResponseContext(ResponseContext(req, Failure(cause)))
-        }
-
-        def dispatchResponseContext(resCtx: ResponseContext): Unit =
-          if (outBuffer.isEmpty && isAvailable(responsesOut))
-            push(responsesOut, resCtx)
-          else
-            outBuffer.addLast(resCtx)
+            push(responsesOut, ResponseContext(req, result))
 
         def dispatchRequest(req: RequestContext): Unit = {
           val slot =
@@ -158,7 +138,7 @@ private[client] object NewHostConnectionPool {
             }
 
           def onConnected(outgoing: Http.OutgoingConnection): Unit =
-            updateState(_.onConnectedAttemptSucceeded(this, outgoing))
+            updateState(_.onConnectionAttemptSucceeded(this, outgoing))
 
           def onConnectFailed(cause: Throwable): Unit =
             updateState(_.onConnectionAttemptFailed(this, cause))
@@ -173,6 +153,8 @@ private[client] object NewHostConnectionPool {
 
           def onResponseReceived(response: HttpResponse): Unit =
             updateState(_.onResponseReceived(this, response))
+          def onResponseDispatchable(): Unit =
+            updateState(_.onResponseDispatchable(this))
           def onResponseEntitySubscribed(): Unit =
             updateState(_.onResponseEntitySubscribed(this))
           def onResponseEntityCompleted(): Unit =
@@ -194,7 +176,6 @@ private[client] object NewHostConnectionPool {
                 debug(s"State change [${previousState.name}] -> [${state.name}]")
 
                 state.stateTimeout match {
-                  case Duration.Inf ⇒
                   case d: FiniteDuration ⇒
                     val myTimeoutId = createNewTimeoutId()
                     currentTimeoutId = myTimeoutId
@@ -205,6 +186,7 @@ private[client] object NewHostConnectionPool {
                           updateState(_.onTimeout(this))
                         }
                       })
+                  case _ ⇒ // no timeout set, nothing to do
                 }
 
                 if (!previousState.isIdle && state.isIdle) {
@@ -212,11 +194,24 @@ private[client] object NewHostConnectionPool {
                   pullIfNeeded()
                 }
 
-                if (state == Unconnected && numConnectedSlots < settings.minConnections) {
-                  debug(s"Preconnecting because number of connected slots fell down to $numConnectedSlots")
-                  OptionVal.Some(_.onPreConnect(this))
-                } else
-                  OptionVal.None
+                state match {
+                  case _: WaitingForResponseDispatch ⇒
+                    if (isAvailable(responsesOut)) OptionVal.Some(_.onResponseDispatchable(this))
+                    else {
+                      logic.slotsWaitingForDispatch.addLast(this)
+                      OptionVal.None
+                    }
+                  case WaitingForResponseEntitySubscription(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _) ⇒
+                    // the connection cannot drive these for a strict entity so we have to loop ourselves
+                    OptionVal.Some(_.onResponseEntitySubscribed(this))
+                  case WaitingForEndOfResponseEntity(_, HttpResponse(_, _, _: HttpEntity.Strict, _)) ⇒
+                    // the connection cannot drive these for a strict entity so we have to loop ourselves
+                    OptionVal.Some(_.onResponseEntityCompleted(this))
+                  case Unconnected if numConnectedSlots < settings.minConnections ⇒
+                    debug(s"Preconnecting because number of connected slots fell down to $numConnectedSlots")
+                    OptionVal.Some(_.onPreConnect(this))
+                  case _ ⇒ OptionVal.None
+                }
 
                 // put additional bookkeeping here (like keeping track of idle connections)
               } catch {
@@ -257,19 +252,32 @@ private[client] object NewHostConnectionPool {
             updateState(_ ⇒ newState)
 
           def debug(msg: String): Unit =
-            log.debug("[{} ({})] {}", slotId, state.productPrefix, msg)
+            if (log.isDebugEnabled)
+              log.debug("[{} ({})] {}", slotId, state.productPrefix, msg)
 
           def debug(msg: String, arg1: AnyRef): Unit =
-            log.debug(s"[{} ({})] $msg", slotId, state.productPrefix, arg1)
+            if (log.isDebugEnabled)
+              log.debug(s"[{} ({})] $msg", slotId, state.productPrefix, arg1)
+
+          def debug(msg: String, arg1: AnyRef, arg2: AnyRef): Unit =
+            if (log.isDebugEnabled)
+              log.debug(s"[{} ({})] $msg", slotId, state.productPrefix, arg1, arg2)
+
+          def debug(msg: String, arg1: AnyRef, arg2: AnyRef, arg3: AnyRef): Unit =
+            if (log.isDebugEnabled)
+              log.debug(log.format(s"[{} ({})] $msg", slotId, state.productPrefix, arg1, arg2, arg3))
 
           def warning(msg: String): Unit =
-            log.warning("[{} ({})] {}", slotId, state.productPrefix, msg)
+            if (log.isWarningEnabled)
+              log.warning("[{} ({})] {}", slotId, state.productPrefix, msg)
 
           def warning(msg: String, arg1: AnyRef): Unit =
-            log.warning(s"[{} ({})] $msg", slotId, state.productPrefix, arg1)
+            if (log.isWarningEnabled)
+              log.warning(s"[{} ({})] $msg", slotId, state.productPrefix, arg1)
 
           def error(cause: Throwable, msg: String): Unit =
-            log.error(cause, s"[{} ({})] $msg", slotId, state.productPrefix)
+            if (log.isErrorEnabled)
+              log.error(cause, s"[{} ({})] $msg", slotId, state.productPrefix)
 
           def settings: ConnectionPoolSettings = _settings
 
@@ -296,8 +304,8 @@ private[client] object NewHostConnectionPool {
           def isCurrentConnection(conn: SlotConnection): Boolean = connection eq conn
           def isConnectionClosed: Boolean = (connection eq null) || connection.isClosed
 
-          def dispatchResponse(req: RequestContext, res: HttpResponse): Unit = logic.dispatchResponse(req, res)
-          def dispatchFailure(req: RequestContext, cause: Throwable): Unit = logic.dispatchFailure(req, cause)
+          def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit = logic.dispatchResponseResult(req, result)
+
           def willCloseAfter(res: HttpResponse): Boolean = logic.willClose(res)
 
           private[this] def cancelCurrentTimeout(): Unit =
@@ -352,10 +360,7 @@ private[client] object NewHostConnectionPool {
             withSlot(_.debug("Received response")) // FIXME: add abbreviated info
 
             response.entity match {
-              case _: HttpEntity.Strict ⇒
-                withSlot(_.onResponseReceived(response))
-                withSlot(_.onResponseEntitySubscribed())
-                withSlot(_.onResponseEntityCompleted())
+              case _: HttpEntity.Strict ⇒ withSlot(_.onResponseReceived(response))
               case e ⇒
                 ongoingResponseEntity = Some(e)
 
@@ -370,6 +375,7 @@ private[client] object NewHostConnectionPool {
                       case Success(_)     ⇒ withSlot(_.onResponseEntityCompleted())
                       case Failure(cause) ⇒ withSlot(_.onResponseEntityFailed(cause))
                     })(ExecutionContexts.sameThreadExecutionContext)
+                  case Failure(_) ⇒ throw new IllegalStateException("Should never fail")
                 })(ExecutionContexts.sameThreadExecutionContext)
 
                 withSlot(_.onResponseReceived(response.withEntity(newEntity)))
@@ -411,7 +417,6 @@ private[client] object NewHostConnectionPool {
         }
         def openConnection(slot: Slot): SlotConnection = {
           val requestOut = new SubSourceOutlet[HttpRequest](s"PoolSlot[${slot.slotId}].requestOut")
-
           val responseIn = new SubSinkInlet[HttpResponse](s"PoolSlot[${slot.slotId}].responseIn")
           responseIn.pull()
 

@@ -531,21 +531,25 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val responseSize = 200000
 
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val request = HttpRequest(uri = s"http://$hostname:$port", headers = headers.Connection("close") :: Nil)
-      val response = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString("t" * responseSize)))
+      def request(i: Int) = HttpRequest(uri = s"http://$hostname:$port/$i", headers = headers.Connection("close") :: Nil)
+      def response(req: HttpRequest) = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString(req.uri.path.toString.takeRight(1) * responseSize)))
 
       // settings adapting network buffer sizes
       val serverSettings = ServerSettings(system).withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
       val clientSettings = ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
 
-      val server = Http().bindAndHandleSync(_ ⇒ response, hostname, port, settings = serverSettings)
-      def runOnce() =
-        Http().singleRequest(request, settings = clientSettings).futureValue
-          .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue
+      val server = Http().bindAndHandleSync(response, hostname, port, settings = serverSettings)
+      def runOnce(i: Int) =
+        Http().singleRequest(request(i), settings = clientSettings).futureValue
+          .entity.dataBytes.runFold(ByteString.empty) { (prev, cur) ⇒
+            val res = prev ++ cur
+            println(s"Received ${res.size} of [${res.take(1).utf8String}]")
+            res
+          }.futureValue
           .size shouldBe responseSize
 
       try {
-        (1 to 10).foreach(_ ⇒ runOnce())
+        (1 to 10).foreach(runOnce)
       } finally server.foreach(_.unbind())
     }
 
