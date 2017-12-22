@@ -1,1 +1,0 @@
-../../../../../scala/http/routing-dsl/directives/websocket-directives/handleWebSocketMessagesForProtocol.md
