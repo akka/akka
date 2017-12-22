@@ -153,16 +153,15 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
   /**
    * Called when the journal rejected `persist` of an event. The event was not
-   * stored. By default this method logs the problem as a warning, and the actor continues.
+   * stored. By default this method logs the problem as an error, and the actor continues.
    * The callback handler that was passed to the `persist` method will not be invoked.
    *
    * @param cause failure cause
    * @param event the event that was to be persisted
    */
   protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
-    log.warning(
-      "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
-      event.getClass.getName, seqNr, persistenceId, cause.getMessage)
+    log.error(cause, "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}].",
+      event.getClass.getName, seqNr, persistenceId)
   }
 
   private def stashInternally(currMsg: Any): Unit =
