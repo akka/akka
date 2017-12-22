@@ -184,7 +184,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
           .concat(Source.fromFuture(errorOnConnection1.future))
           .log("test")
 
-      val laterData = Promise[ByteString]()
       val laterHandler = Promise[(HttpRequest ⇒ Future[HttpResponse]) ⇒ Unit]()
 
       override def asyncTestServerHandler(connNr: Int): HttpRequest ⇒ Future[HttpResponse] = { req ⇒

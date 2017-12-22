@@ -53,7 +53,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def `nested-comment` = {
     var saved: String = null
-    rule { &('(') ~ run(saved = sb.toString) ~ (comment ~ prependSB(saved + " (") ~ appendSB(')') | setSB(saved) ~ test(false)) }
+    rule { &('(') ~ run { saved = sb.toString } ~ (comment ~ prependSB(saved + " (") ~ appendSB(')') | setSB(saved) ~ test(false)) }
   }
 
   def ctext = rule { (`ctext-base` | `obs-text`) ~ appendSB() }

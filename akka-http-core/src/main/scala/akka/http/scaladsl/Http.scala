@@ -905,16 +905,19 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   final case class HostConnectionPool private[http] (setup: HostConnectionPoolSetup)(
     private[http] val gateway: PoolGateway) { // enable test access
 
+    @deprecated("In favor of method that takes no execution context.", since = "10.1.0")
+    private[http] def shutdown(ec: ExecutionContextExecutor): Future[Done] = shutdown()
+
     /**
      * Asynchronously triggers the shutdown of the host connection pool.
      *
      * The produced [[scala.concurrent.Future]] is fulfilled when the shutdown has been completed.
      */
-    def shutdown()(implicit ec: ExecutionContextExecutor): Future[Done] = gateway.shutdown()
+    def shutdown(): Future[Done] = gateway.shutdown()
 
     private[http] def toJava = new akka.http.javadsl.HostConnectionPool {
       override def setup = HostConnectionPool.this.setup
-      override def shutdown(executor: ExecutionContextExecutor): CompletionStage[Done] = HostConnectionPool.this.shutdown()(executor).toJava
+      def shutdown(): CompletionStage[Done] = HostConnectionPool.this.shutdown().toJava
     }
   }
 

@@ -293,7 +293,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
         expectResponse()
         conn1.completeConnection()
 
-        val conn2 = expectNextConnection()
+        expectNextConnection()
       }
       "not send requests to known-to-be-closed-soon connections" in pending
       "support retries" in pending

@@ -919,7 +919,7 @@ class HttpServerSpec extends AkkaSpec(
                |
                |""")
 
-        val req = expectRequest()
+        expectRequest()
         // entity was not read
 
         // send out an 200 OK response
@@ -940,7 +940,7 @@ class HttpServerSpec extends AkkaSpec(
                |0
                |""")
 
-        val req = expectRequest()
+        expectRequest()
         // entity was not read
 
         // send out an 200 OK response
@@ -959,7 +959,7 @@ class HttpServerSpec extends AkkaSpec(
                |
                |""")
 
-        val req = expectRequest()
+        expectRequest()
         // entity was not read
 
         // send out an 200 OK response

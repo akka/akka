@@ -30,7 +30,6 @@ class SslConfigWarningsSpec extends WordSpec with Matchers {
 
     "warn if SNI is disabled globally" in {
       implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-      implicit val materializer = ActorMaterializer()
 
       val p = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[Logging.LogEvent])
@@ -49,7 +48,6 @@ class SslConfigWarningsSpec extends WordSpec with Matchers {
 
     "warn if hostname verification is disabled globally" in {
       implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-      implicit val materializer = ActorMaterializer()
 
       val p = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[Logging.LogEvent])

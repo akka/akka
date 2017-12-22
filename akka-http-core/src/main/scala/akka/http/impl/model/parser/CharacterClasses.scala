@@ -74,7 +74,7 @@ private[http] object CharacterClasses {
 
   // helpers
   val `qdtext-base` = CharPredicate(HTAB, SP, '\u0021', '\u0023' to '\u005B', '\u005D' to '\u007E')
-  val `ctext-base` = CharPredicate(HTAB, SP, '\u0021' to '\u0027', '\u002A' to '\u005B', '\u005D' to '\u007E')
+  val `ctext-base` = CharPredicate(HTAB, SP, '\u0021' to '\'' /* \u0027 */ , '\u002A' to '\u005B', '\u005D' to '\u007E')
   val `quotable-base` = CharPredicate(HTAB, SP, VCHAR)
   val `etagc-base` = VCHAR -- '"'
   val DIGIT04 = CharPredicate('0' to '4')

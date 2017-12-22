@@ -62,7 +62,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val binding = Http().bind(hostname, port).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
       val sub = probe.expectSubscription() // if we get it we are bound
-      val address = Await.result(binding, 1.second.dilated).localAddress
+      Await.result(binding, 1.second.dilated)
       sub.cancel()
     }
 

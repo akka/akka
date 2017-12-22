@@ -273,7 +273,6 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
       "don't overflow the stack for large buffers of chunks" in new Test {
         override val awaitAtMost = 10000.millis.dilated
 
-        val x = NotEnoughDataException
         val numChunks = 12000 // failed starting from 4000 with sbt started with `-Xss2m`
         val oneChunk = s"1${newLine}z\n"
         val manyChunks = (oneChunk * numChunks) + s"0${newLine}"

@@ -41,7 +41,7 @@ class ClientSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       Await.result(Http().poolSize, 1.second.dilated) shouldEqual 1
 
-      val respFuture2 = Http().singleRequest(HttpRequest(POST, s"http://$hostname:$port/"))
+      Http().singleRequest(HttpRequest(POST, s"http://$hostname:$port/"))
       val resp2 = Await.result(respFuture, 3.seconds.dilated)
       resp2.status shouldBe StatusCodes.OK
 

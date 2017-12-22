@@ -77,7 +77,7 @@ lazy val parsing = project("akka-parsing")
   .settings(Dependencies.parsing)
   .settings(OSGi.parsing)
   .settings(
-    scalacOptions := scalacOptions.value.filterNot(_ == "-Xfatal-warnings"),
+    scalacOptions := scalacOptions.value.filterNot(Set("-Xfatal-warnings", "-Xlint", "-Ywarn-dead-code").contains), // disable warnings for parboiled code
     scalacOptions += "-language:_",
     unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
   )

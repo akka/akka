@@ -1,2 +1,5 @@
 # Don't monitor changes to internal API
 ProblemFilters.exclude[Problem]("akka.http.impl.*")
+
+# New method in @DoNotInherit class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.HostConnectionPool.shutdown")

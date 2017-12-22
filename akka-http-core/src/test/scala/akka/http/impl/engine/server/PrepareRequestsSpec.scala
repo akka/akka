@@ -192,7 +192,7 @@ class PrepareRequestsSpec extends AkkaSpec {
         .withAttributes(Attributes.inputBuffer(1, 1))
         .run()
 
-      val entitySub = entityProbe.expectSubscription()
+      entityProbe.expectSubscription()
 
       // incoming stream is completed, but we never got the chunk end
       inSub.sendComplete()

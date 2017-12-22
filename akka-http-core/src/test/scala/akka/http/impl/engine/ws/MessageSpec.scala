@@ -175,7 +175,6 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
           val data = ByteString(msg, "UTF-8")
           val data0 = data.slice(0, 2)
           val data1 = data.slice(2, 5)
-          val data2 = data.slice(5, data.size)
           val input = frameHeader(Opcode.Text, data.size, fin = true) ++ data0
 
           pushInput(input)
@@ -615,7 +614,6 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
         expectNoNetworkData() // wait for peer to close regularly
 
-        val mask = Random.nextInt()
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
 
         expectComplete(messageIn)
