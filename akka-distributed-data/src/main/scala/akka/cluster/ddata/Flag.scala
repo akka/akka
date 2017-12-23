@@ -8,11 +8,16 @@ object Flag {
    * `Flag` that is initialized to `false`.
    */
   val empty = new Flag(false)
-  def apply(): Flag = empty
+
+  val Disabled = empty
+
+  val Enabled = new Flag(true)
+
+  def apply(): Flag = Disabled
   /**
    * Java API: `Flag` that is initialized to `false`.
    */
-  def create(): Flag = empty
+  def create(): Flag = Disabled
 
   // unapply from case class
 }
@@ -30,7 +35,7 @@ final case class Flag(enabled: Boolean) extends ReplicatedData with ReplicatedDa
 
   def switchOn: Flag =
     if (enabled) this
-    else Flag(true)
+    else Flag.Enabled
 
   override def merge(that: Flag): Flag =
     if (that.enabled) that

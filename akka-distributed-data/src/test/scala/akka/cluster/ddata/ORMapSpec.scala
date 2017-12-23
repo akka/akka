@@ -569,7 +569,7 @@ class ORMapSpec extends WordSpec with Matchers {
 
     "work with deltas and updated for Flag elements type" in {
       val m1 = ORMap.empty.put(node1, "a", Flag(false))
-      val m2 = m1.resetDelta.updated(node1, "a", Flag.empty)(_.switchOn)
+      val m2 = m1.resetDelta.updated(node1, "a", Flag.Disabled)(_.switchOn)
       val m3 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get)
       val Flag(d3) = m3.entries("a")
       d3 should be(true)

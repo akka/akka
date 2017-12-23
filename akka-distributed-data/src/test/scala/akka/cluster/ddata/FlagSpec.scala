@@ -31,7 +31,7 @@ class FlagSpec extends WordSpec with Matchers {
     }
 
     "have unapply extractor" in {
-      val f1 = Flag.empty.switchOn
+      val f1 = Flag.Disabled.switchOn
       val Flag(value1) = f1
       val value2: Boolean = value1
       Changed(FlagKey("key"))(f1) match {
