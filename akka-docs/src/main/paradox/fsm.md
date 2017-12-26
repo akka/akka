@@ -71,7 +71,7 @@ handled (could potentially be multiple ones, the passed
  * finally starting it up using `initialize`, which performs the
 transition into the initial state and sets up timers (if required).
 
-In this case, we start out in the `Idle` and `Uninitialized` state, where
+In this case, we start out in the `Idle` state with `Uninitialized` data, where
 only the `SetTarget()` message is handled; `stay` prepares to end this
 event’s processing for not leaving the current state, while the `using`
 modifier makes the FSM replace the internal state (which is `Uninitialized`
