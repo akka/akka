@@ -87,6 +87,32 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseRunHead() {
+      final TestKit probe = new TestKit(system);
+      final java.lang.Iterable<String> input = Arrays.asList("a", "b", "c");
+      Source<String, NotUsed> ints = Source.from(input);
+
+      final CompletionStage<String> completion = ints.runHead(materializer);
+
+      completion.thenAccept(elem -> probe.getRef().tell(String.valueOf(elem), ActorRef.noSender()));
+
+      probe.expectMsgEquals("a");
+    }
+
+    @Test
+    public void mustBeAbleToUseRunHeadOptional() {
+        final TestKit probe = new TestKit(system);
+        final java.lang.Iterable<String> input = Arrays.asList("a", "b", "c");
+        Source<String, NotUsed> ints = Source.from(input);
+
+        final CompletionStage<Optional<String>> completion = ints.runHeadOption(materializer);
+
+        completion.thenAccept(elem -> probe.getRef().tell(String.valueOf(elem.orElse("d")), ActorRef.noSender()));
+
+        probe.expectMsgEquals("a");
+    }
+
+  @Test
   public void mustBeAbleToUseVia() {
     final TestKit probe = new TestKit(system);
     final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);

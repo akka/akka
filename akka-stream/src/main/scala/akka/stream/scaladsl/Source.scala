@@ -139,6 +139,26 @@ final class Source[+Out, +Mat](
   def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Done] = runWith(Sink.foreach(f))
 
   /**
+   * Shortcut for running this `Source` to retrieve the first value received.
+   * If the stream completes before signaling at least a single element, the Future will be failed with a [[NoSuchElementException]].
+   * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
+   *
+   * See also [[runHeadOption]].
+   */
+  def runHead(implicit materializer: Materializer): Future[Out] =
+    runWith(Sink.head)
+
+  /**
+   * Shortcut for running this `Source` to retrieve the first value received.
+   * If the stream completes before signaling at least a single element, the value of the Future will be [[None]].
+   * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
+   *
+   * See also [[runHead]].
+   */
+  def runHeadOption(implicit materializer: Materializer): Future[Option[Out]] =
+    runWith(Sink.headOption)
+
+  /**
    * Replace the attributes of this [[Source]] with the given ones. If this Source is a composite
    * of multiple graphs, new attributes on the composite will be less specific than attributes
    * set directly on the individual graphs of the composite.
