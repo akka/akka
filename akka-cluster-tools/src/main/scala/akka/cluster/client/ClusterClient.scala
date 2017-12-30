@@ -387,8 +387,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       case ActorIdentity(_, None) ⇒ // ok, use another instead
       case HeartbeatTick ⇒
         failureDetector.heartbeat()
-      case ReceptionistShutdown ⇒ // ok, haven't chosen a receptionist yet
-      case RefreshContactsTick  ⇒ sendGetContacts()
+      case RefreshContactsTick ⇒ sendGetContacts()
       case Send(path, msg, localAffinity) ⇒
         buffer(DistributedPubSubMediator.Send(path, msg, localAffinity))
       case SendToAll(path, msg) ⇒
@@ -398,6 +397,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       case ReconnectTimeout ⇒
         log.warning("Receptionist reconnect not successful within {} stopping cluster client", settings.reconnectTimeout)
         context.stop(self)
+      case ReceptionistShutdown ⇒ // ok, haven't chosen a receptionist yet
     }
   }
 
@@ -414,11 +414,6 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
         reestablish()
       } else
         receptionist ! Heartbeat
-    case ReceptionistShutdown ⇒
-      if (receptionist == sender()) {
-        log.info("Receptionist [{}] is shutting down, reestablishing connection", receptionist)
-        reestablish()
-      }
     case HeartbeatRsp ⇒
       failureDetector.heartbeat()
     case RefreshContactsTick ⇒
@@ -431,6 +426,11 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       }
       publishContactPoints()
     case _: ActorIdentity ⇒ // ok, from previous establish, already handled
+    case ReceptionistShutdown ⇒
+      if (receptionist == sender()) {
+        log.info("Receptionist [{}] is shutting down, reestablishing connection", receptionist)
+        reestablish()
+      }
   }
 
   def contactPointMessages: Actor.Receive = {
@@ -919,6 +919,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
     super.postStop()
     cluster unsubscribe self
     checkDeadlinesTask.cancel()
+    clientInteractions.keySet.foreach(_ ! ReceptionistShutdown)
   }
 
   def matchingRole(m: Member): Boolean = role.forall(m.hasRole)
@@ -979,10 +980,9 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
       }
 
     case MemberRemoved(m, _) ⇒
-      if (m.address == selfAddress) {
-        clientInteractions.keySet.foreach(_ ! ReceptionistShutdown)
+      if (m.address == selfAddress)
         context stop self
-      } else if (matchingRole(m)) {
+      else if (matchingRole(m)) {
         nodes -= m.address
         consistentHash = ConsistentHash(nodes, virtualNodesFactor)
       }

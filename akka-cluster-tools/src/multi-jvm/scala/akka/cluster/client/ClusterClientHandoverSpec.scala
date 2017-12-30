@@ -3,12 +3,11 @@
  */
 package akka.cluster.client
 
-import akka.actor.{ Actor, ActorRef, Props }
+import akka.actor.ActorRef
 import akka.cluster.{ Cluster, ClusterReadView, MemberStatus }
-import akka.cluster.pubsub.{ DistributedPubSub, DistributedPubSubMediator }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
-import akka.testkit.ImplicitSender
+import akka.testkit.{ ImplicitSender, TestActors }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
@@ -29,12 +28,6 @@ object ClusterClientHandoverSpec extends MultiNodeConfig {
     }
     akka.test.filter-leeway = 10s
   """))
-
-  class Service extends Actor {
-    def receive = {
-      case msg ⇒ sender() ! msg
-    }
-  }
 }
 
 class ClusterClientHandoverMultiJvmNode1 extends ClusterClientHandoverSpec
@@ -75,7 +68,7 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
     "startup cluster with a single node" in within(30.seconds) {
       join(first, first)
       runOn(first) {
-        val service = system.actorOf(Props(classOf[Service]), "testService")
+        val service = system.actorOf(TestActors.echoActorProps, "testService")
         ClusterClientReceptionist(system).registerService(service)
         awaitUp(1)
       }
@@ -99,7 +92,7 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
     "bring the second node into the cluster" in {
       join(second, first)
       runOn(second) {
-        val service = system.actorOf(Props(classOf[Service]), "testService")
+        val service = system.actorOf(TestActors.echoActorProps, "testService")
         ClusterClientReceptionist(system).registerService(service)
         awaitUp(2)
       }
