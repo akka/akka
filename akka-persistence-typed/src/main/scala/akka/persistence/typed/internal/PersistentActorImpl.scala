@@ -16,6 +16,7 @@ import akka.persistence.typed.scaladsl.PersistentBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.Terminated
 import akka.actor.typed.internal.adapter.ActorRefAdapter
+import akka.persistence.journal.Tagged
 
 /**
  * INTERNAL API
@@ -110,7 +111,9 @@ import akka.actor.typed.internal.adapter.ActorRefAdapter
       // the invalid event, in case such validation is implemented in the event handler.
       // also, ensure that there is an event handler for each single event
       state = applyEvent(state, event)
-      persist(event) { _ ⇒
+      val tags = behavior.taggingFunction(event)
+      val eventToPersist = if (tags.size > 0) Tagged(event, tags.toSet) else event
+      persist(eventToPersist) { _ ⇒
         sideEffects.foreach(applySideEffect)
       }
     case PersistAll(events) ⇒
@@ -120,7 +123,11 @@ import akka.actor.typed.internal.adapter.ActorRefAdapter
         // also, ensure that there is an event handler for each single event
         var count = events.size
         state = events.foldLeft(state)(applyEvent)
-        persistAll(events) { _ ⇒
+        val eventsToPersist = events.map { event ⇒
+          val tags = behavior.taggingFunction(event)
+          if (tags.size > 0) Tagged(event, tags.toSet) else event
+        }
+        persistAll(eventsToPersist) { _ ⇒
           count -= 1
           if (count == 0) sideEffects.foreach(applySideEffect)
         }

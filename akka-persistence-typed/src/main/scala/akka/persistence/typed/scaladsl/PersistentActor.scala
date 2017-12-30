@@ -3,12 +3,13 @@
  */
 package akka.persistence.typed.scaladsl
 
-import scala.collection.{ immutable ⇒ im }
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.actor.typed.Behavior.UntypedBehavior
 import akka.actor.typed.Signal
-import akka.persistence.typed.internal.PersistentActorImpl
 import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.persistence.typed.internal.PersistentActorImpl
+
+import scala.collection.{ immutable ⇒ im }
 
 object PersistentActor {
 
@@ -16,11 +17,12 @@ object PersistentActor {
    * Create a `Behavior` for a persistent actor.
    */
   def immutable[Command, Event, State](
-    persistenceId:  String,
-    initialState:   State,
-    commandHandler: CommandHandler[Command, Event, State],
-    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, eventHandler)
+    persistenceId:   String,
+    initialState:    State,
+    commandHandler:  CommandHandler[Command, Event, State],
+    eventHandler:    (State, Event) ⇒ State,
+    taggingFunction: Event ⇒ Seq[String]                   = (_: Event) ⇒ Seq.empty): PersistentBehavior[Command, Event, State] =
+    persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, eventHandler, taggingFunction)
 
   /**
    * Create a `Behavior` for a persistent actor in Cluster Sharding, when the persistenceId is not known
@@ -33,12 +35,14 @@ object PersistentActor {
     persistenceIdFromActorName: String ⇒ String,
     initialState:               State,
     commandHandler:             CommandHandler[Command, Event, State],
-    eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
+    eventHandler:               (State, Event) ⇒ State,
+    taggingFunction:            Event ⇒ Seq[String]                   = (_: Event) ⇒ Seq.empty): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
-      recoveryCompleted = (_, _) ⇒ ())
+      recoveryCompleted = (_, _) ⇒ (),
+      taggingFunction)
 
   /**
-   * Factories for effects - how a persitent actor reacts on a command
+   * Factories for effects - how a persistent actor reacts on a command
    */
   object Effect {
 
@@ -232,7 +236,8 @@ class PersistentBehavior[Command, Event, State](
   val initialState:                                          State,
   val commandHandler:                                        PersistentActor.CommandHandler[Command, Event, State],
   val eventHandler:                                          (State, Event) ⇒ State,
-  val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit) extends UntypedBehavior[Command] {
+  val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit,
+  val taggingFunction:                                       Event ⇒ Seq[String]) extends UntypedBehavior[Command] {
   import PersistentActor._
 
   /** INTERNAL API */
@@ -260,6 +265,7 @@ class PersistentBehavior[Command, Event, State](
     initialState:               State                                 = initialState,
     commandHandler:             CommandHandler[Command, Event, State] = commandHandler,
     eventHandler:               (State, Event) ⇒ State                = eventHandler,
-    recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted)
+    recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted,
+    taggingFunction:            Event ⇒ Seq[String]                   = taggingFunction): PersistentBehavior[Command, Event, State] =
+    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, taggingFunction)
 }
