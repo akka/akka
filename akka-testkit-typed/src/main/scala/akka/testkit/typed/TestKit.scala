@@ -35,6 +35,21 @@ object TestKit {
     }
     reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
   }
+
+  def shutdown(
+    system:               ActorSystem[_],
+    duration:             Duration,
+    verifySystemShutdown: Boolean        = false): Unit = {
+    system.terminate()
+    try Await.ready(system.whenTerminated, duration) catch {
+      case _: TimeoutException ⇒
+        val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, duration,
+          system.printTree)
+        if (verifySystemShutdown) throw new RuntimeException(msg)
+        else println(msg)
+    }
+  }
+
 }
 
 /**
@@ -64,21 +79,7 @@ trait TestKitBase {
   implicit private val timeout = Timeout(timeoutDuration)
 
   def shutdown(): Unit = {
-    shutdown(system, 5.seconds)
-  }
-
-  def shutdown(
-    actorSystem:          ActorSystem[_],
-    duration:             Duration,
-    verifySystemShutdown: Boolean        = false): Unit = {
-    system.terminate()
-    try Await.ready(actorSystem.whenTerminated, duration) catch {
-      case _: TimeoutException ⇒
-        val msg = "Failed to stop [%s] within [%s] \n%s".format(actorSystem.name, duration,
-          actorSystem.printTree)
-        if (verifySystemShutdown) throw new RuntimeException(msg)
-        else println(msg)
-    }
+    TestKit.shutdown(system, 5.seconds)
   }
 
   /**
