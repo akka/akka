@@ -21,14 +21,14 @@ class ImmutablePartialSpec extends TestKit with TypedAkkaSpecWithShutdown {
             probe.ref ! Command2
             Actor.same
         }
-      val context = new BehaviorTestkit("ctx", behavior)
+      val testkit = BehaviorTestkit(behavior)
 
-      context.run(Command1)
-      context.currentBehavior shouldBe behavior
+      testkit.run(Command1)
+      testkit.currentBehavior shouldBe behavior
       probe.expectNoMsg(100.milliseconds)
 
-      context.run(Command2)
-      context.currentBehavior shouldBe behavior
+      testkit.run(Command2)
+      testkit.currentBehavior shouldBe behavior
       probe.expectMsg(Command2)
     }
   }

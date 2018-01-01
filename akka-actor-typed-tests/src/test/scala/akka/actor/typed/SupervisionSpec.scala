@@ -52,7 +52,6 @@ object SupervisionSpec {
       }
     } onSignal {
       case (_, sig) ⇒
-        println("sig: " + sig)
         monitor ! GotSignal(sig)
         Actor.same
     }
@@ -72,24 +71,24 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
 
   import SupervisionSpec._
 
-  def mkCtx(behv: Behavior[Command]): BehaviorTestkit[Command] =
-    BehaviorTestkit(behv, "ctx")
+  def mkTestkit(behv: Behavior[Command]): BehaviorTestkit[Command] =
+    BehaviorTestkit(behv)
 
   "A restarter (stubbed)" must {
     "receive message" in {
       val inbox = TestInbox[Event]("evt")
       val behv = supervise(targetBehavior(inbox.ref)).onFailure[Throwable](SupervisorStrategy.restart)
-      val ctx = mkCtx(behv)
-      ctx.run(Ping)
+      val testkit = BehaviorTestkit(behv)
+      testkit.run(Ping)
       inbox.receiveMsg() should ===(Pong)
     }
 
     "stop when no supervise" in {
       val inbox = TestInbox[Event]("evt")
       val behv = targetBehavior(inbox.ref)
-      val ctx = mkCtx(behv)
+      val testkit = BehaviorTestkit(behv)
       intercept[Exc3] {
-        ctx.run(Throw(new Exc3))
+        testkit.run(Throw(new Exc3))
       }
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
@@ -97,9 +96,9 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
     "stop when unhandled exception" in {
       val inbox = TestInbox[Event]("evt")
       val behv = supervise(targetBehavior(inbox.ref)).onFailure[Exc1](SupervisorStrategy.restart)
-      val ctx = mkCtx(behv)
+      val testkit = BehaviorTestkit(behv)
       intercept[Exc3] {
-        ctx.run(Throw(new Exc3))
+        testkit.run(Throw(new Exc3))
       }
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
@@ -107,27 +106,27 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
     "restart when handled exception" in {
       val inbox = TestInbox[Event]("evt")
       val behv = supervise(targetBehavior(inbox.ref)).onFailure[Exc1](SupervisorStrategy.restart)
-      val ctx = mkCtx(behv)
-      ctx.run(IncrementState)
-      ctx.run(GetState)
+      val testkit = BehaviorTestkit(behv)
+      testkit.run(IncrementState)
+      testkit.run(GetState)
       inbox.receiveMsg() should ===(State(1, Map.empty))
 
-      ctx.run(Throw(new Exc2))
+      testkit.run(Throw(new Exc2))
       inbox.receiveMsg() should ===(GotSignal(PreRestart))
-      ctx.run(GetState)
+      testkit.run(GetState)
       inbox.receiveMsg() should ===(State(0, Map.empty))
     }
 
     "resume when handled exception" in {
       val inbox = TestInbox[Event]("evt")
       val behv = supervise(targetBehavior(inbox.ref)).onFailure[Exc1](SupervisorStrategy.resume)
-      val ctx = mkCtx(behv)
-      ctx.run(IncrementState)
-      ctx.run(GetState)
+      val testkit = BehaviorTestkit(behv)
+      testkit.run(IncrementState)
+      testkit.run(GetState)
       inbox.receiveMsg() should ===(State(1, Map.empty))
 
-      ctx.run(Throw(new Exc2))
-      ctx.run(GetState)
+      testkit.run(Throw(new Exc2))
+      testkit.run(GetState)
       inbox.receiveMsg() should ===(State(1, Map.empty))
     }
 
@@ -139,25 +138,25 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
             targetBehavior(inbox.ref)
           ).onFailure[Exc2](SupervisorStrategy.resume)
         ).onFailure[Exc3](SupervisorStrategy.restart)
-      val ctx = mkCtx(behv)
-      ctx.run(IncrementState)
-      ctx.run(GetState)
+      val testkit = BehaviorTestkit(behv)
+      testkit.run(IncrementState)
+      testkit.run(GetState)
       inbox.receiveMsg() should ===(State(1, Map.empty))
 
       // resume
-      ctx.run(Throw(new Exc2))
-      ctx.run(GetState)
+      testkit.run(Throw(new Exc2))
+      testkit.run(GetState)
       inbox.receiveMsg() should ===(State(1, Map.empty))
 
       // restart
-      ctx.run(Throw(new Exc3))
+      testkit.run(Throw(new Exc3))
       inbox.receiveMsg() should ===(GotSignal(PreRestart))
-      ctx.run(GetState)
+      testkit.run(GetState)
       inbox.receiveMsg() should ===(State(0, Map.empty))
 
       // stop
       intercept[Exc1] {
-        ctx.run(Throw(new Exc1))
+        testkit.run(Throw(new Exc1))
       }
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
@@ -166,9 +165,9 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       val inbox = TestInbox[Event]()
       val behv = Actor.supervise(targetBehavior(inbox.ref))
         .onFailure[Throwable](SupervisorStrategy.restart)
-      val ctx = mkCtx(behv)
+      val testkit = BehaviorTestkit(behv)
       intercept[StackOverflowError] {
-        ctx.run(Throw(new StackOverflowError))
+        testkit.run(Throw(new StackOverflowError))
       }
       inbox.receiveAll() should ===(Nil)
     }
@@ -177,13 +176,13 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       val inbox = TestInbox[Event]("evt")
       val strategy = SupervisorStrategy.restartWithLimit(maxNrOfRetries = 2, withinTimeRange = 1.minute)
       val behv = supervise(targetBehavior(inbox.ref)).onFailure[Exc1](strategy)
-      val ctx = mkCtx(behv)
-      ctx.run(Throw(new Exc1))
+      val testkit = BehaviorTestkit(behv)
+      testkit.run(Throw(new Exc1))
       inbox.receiveMsg() should ===(GotSignal(PreRestart))
-      ctx.run(Throw(new Exc1))
+      testkit.run(Throw(new Exc1))
       inbox.receiveMsg() should ===(GotSignal(PreRestart))
       intercept[Exc1] {
-        ctx.run(Throw(new Exc1))
+        testkit.run(Throw(new Exc1))
       }
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
@@ -193,19 +192,19 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       val withinTimeRange = 2.seconds
       val strategy = SupervisorStrategy.restartWithLimit(maxNrOfRetries = 2, withinTimeRange)
       val behv = supervise(targetBehavior(inbox.ref)).onFailure[Exc1](strategy)
-      val ctx = mkCtx(behv)
-      ctx.run(Throw(new Exc1))
+      val testkit = BehaviorTestkit(behv)
+      testkit.run(Throw(new Exc1))
       inbox.receiveMsg() should ===(GotSignal(PreRestart))
-      ctx.run(Throw(new Exc1))
+      testkit.run(Throw(new Exc1))
       inbox.receiveMsg() should ===(GotSignal(PreRestart))
       Thread.sleep((2.seconds + 100.millis).toMillis)
 
-      ctx.run(Throw(new Exc1))
+      testkit.run(Throw(new Exc1))
       inbox.receiveMsg() should ===(GotSignal(PreRestart))
-      ctx.run(Throw(new Exc1))
+      testkit.run(Throw(new Exc1))
       inbox.receiveMsg() should ===(GotSignal(PreRestart))
       intercept[Exc1] {
-        ctx.run(Throw(new Exc1))
+        testkit.run(Throw(new Exc1))
       }
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
@@ -215,9 +214,9 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       val strategy = SupervisorStrategy.restartWithLimit(maxNrOfRetries = 0, withinTimeRange = 1.minute)
       val behv = supervise(targetBehavior(inbox.ref))
         .onFailure[Exc1](strategy)
-      val ctx = mkCtx(behv)
+      val testkit = BehaviorTestkit(behv)
       intercept[Exc1] {
-        ctx.run(Throw(new Exc1))
+        testkit.run(Throw(new Exc1))
       }
       inbox.receiveMsg() should ===(GotSignal(PostStop))
     }
@@ -228,7 +227,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
         inbox.ref ! Started
         targetBehavior(inbox.ref)
       }).onFailure[Exc1](SupervisorStrategy.restart)
-      mkCtx(behv)
+      mkTestkit(behv)
       // it's supposed to be created immediately (not waiting for first message)
       inbox.receiveMsg() should ===(Started)
     }

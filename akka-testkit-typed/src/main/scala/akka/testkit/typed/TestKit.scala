@@ -79,7 +79,7 @@ trait TestKitBase {
   implicit private val timeout = Timeout(timeoutDuration)
 
   def shutdown(): Unit = {
-    TestKit.shutdown(system, 5.seconds)
+    TestKit.shutdown(system, timeoutDuration)
   }
 
   /**

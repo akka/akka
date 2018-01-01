@@ -62,7 +62,7 @@ Scala
 Java
 :  @@snip [BasicSyncTestingTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/testing/sync/BasicSyncTestingTest.java) { #child }
 
-All of the tests make use of the `BehaviourTestkit` to avoid the need for a real `ActorContext`. Some of the tests
+All of the tests make use of the `BehaviorTestkit` to avoid the need for a real `ActorContext`. Some of the tests
 make use of the `TestInbox` which allows the creation of an `ActorRef` that can be used for synchronous testing, similar to the
 `TestProbe` used for asynchronous testing.
 
@@ -123,7 +123,7 @@ The `BehaviorTestkit` keeps track other effects you can verify, look at the sub-
  * Unwatched
  * Scheduled
  
-See the other public methods and API documentation on `BehaviourTestkit` for other types of verification.
+See the other public methods and API documentation on `BehaviorTestkit` for other types of verification.
    
 ## Asynchronous testing
 

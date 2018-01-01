@@ -13,7 +13,6 @@ import scala.concurrent.duration._
  * Helper trait to include standard traits for typed tests
  */
 trait TypedAkkaSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures with TypeCheckedTripleEquals {
-  // TODO hook this up with config like in akka-testkit/AkkaSpec?
   implicit val akkaPatience = PatienceConfig(3.seconds, Span(100, org.scalatest.time.Millis))
   implicit val timeout = Timeout(3.seconds)
 

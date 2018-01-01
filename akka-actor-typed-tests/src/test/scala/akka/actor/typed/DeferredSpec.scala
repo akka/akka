@@ -135,7 +135,7 @@ class DeferredStubbedSpec extends TypedAkkaSpec {
       inbox.ref ! Started
       target(inbox.ref)
     }
-    BehaviorTestkit(behv, "ctx")
+    BehaviorTestkit(behv)
     // it's supposed to be created immediately (not waiting for first message)
     inbox.receiveMsg() should ===(Started)
   }
@@ -148,7 +148,7 @@ class DeferredStubbedSpec extends TypedAkkaSpec {
       throw exc
     }
     intercept[RuntimeException] {
-      BehaviorTestkit(behv, "ctx")
+      BehaviorTestkit(behv)
     } should ===(exc)
     inbox.receiveMsg() should ===(Started)
   }

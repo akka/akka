@@ -7,8 +7,6 @@ import akka.actor.typed.scaladsl.Actor
 
 import scala.concurrent._
 import akka.testkit.typed.TestKit
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
 object WatchSpec {
   case object Stop
@@ -24,11 +22,9 @@ object WatchSpec {
 }
 
 class WatchSpec extends TestKit("WordSpec")
-  with WordSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures {
+  with TypedAkkaSpecWithShutdown {
 
   import WatchSpec._
-
-  override protected def afterAll(): Unit = shutdown()
 
   "Actor monitoring" must {
     "get notified of actor termination" in {
