@@ -7,12 +7,16 @@ package akka.cluster.sharding.typed
 import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
+import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.typed.TestKitSettings
+import akka.cluster.MemberStatus
+import akka.cluster.typed.{ Cluster, Join }
+import akka.serialization.SerializerWithStringManifest
+import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 
 import scala.concurrent.duration._
 
@@ -120,7 +124,6 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
   val sharding = ClusterSharding(system)
 
   implicit val untypedSystem = system.toUntyped
-  implicit val timeout = Timeout(1.second)
 
   val untypedSystem2 = akka.actor.ActorSystem(system.name, system.settings.config)
   val system2 = untypedSystem2.toTyped

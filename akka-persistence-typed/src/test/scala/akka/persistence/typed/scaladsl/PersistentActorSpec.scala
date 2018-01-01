@@ -4,7 +4,7 @@
 package akka.persistence.typed.scaladsl
 
 import scala.concurrent.duration._
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, StartSupport, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown, TypedSpec}
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.scaladsl.Actor
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.TestKit

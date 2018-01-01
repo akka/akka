@@ -3,16 +3,11 @@
  */
 package akka.cluster.sharding.typed
 
-import akka.actor.typed.{ ActorRef, Props, TypedSpec }
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.concurrent.duration._
-import akka.actor.typed.Behavior
-import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.{ ActorRef, Behavior, Props, TypedAkkaSpecWithShutdown }
 import akka.persistence.typed.scaladsl.PersistentActor
-import akka.persistence.typed.scaladsl.PersistentActor.PersistNothing
+import akka.testkit.typed.TestKit
+import akka.testkit.typed.scaladsl.TestProbe
+import com.typesafe.config.ConfigFactory
 
 object ClusterShardingPersistenceSpec {
   val config = ConfigFactory.parseString(

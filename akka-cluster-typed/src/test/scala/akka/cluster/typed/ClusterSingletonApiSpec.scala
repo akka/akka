@@ -8,9 +8,10 @@ import java.nio.charset.StandardCharsets
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.{ TestKit, TestKitSettings }
 import akka.testkit.typed.scaladsl.TestProbe
-import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedSpec }
+import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedAkkaSpecWithShutdown }
+import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await
@@ -47,7 +48,7 @@ object ClusterSingletonApiSpec {
 
   case object Perish extends PingProtocol
 
-  val pingPong = Actor.immutable[PingProtocol] { (ctx, msg) ⇒
+  val pingPong = Actor.immutable[PingProtocol] { (_, msg) ⇒
 
     msg match {
       case Ping(respondTo) ⇒

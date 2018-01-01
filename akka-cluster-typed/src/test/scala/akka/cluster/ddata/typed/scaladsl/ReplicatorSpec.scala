@@ -4,16 +4,15 @@
 package akka.cluster.ddata.typed.scaladsl
 
 import akka.actor.Scheduler
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.{ ActorRef, Behavior, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.scaladsl._
 import akka.cluster.Cluster
 import akka.cluster.ddata.typed.scaladsl.Replicator._
-import akka.cluster.ddata.{GCounter, GCounterKey, ReplicatedData}
+import akka.cluster.ddata.{ GCounter, GCounterKey, ReplicatedData }
 import akka.testkit.typed.scaladsl._
-import akka.testkit.typed.{TestKit, TestKitSettings}
+import akka.testkit.typed.{ TestKit, TestKitSettings }
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually

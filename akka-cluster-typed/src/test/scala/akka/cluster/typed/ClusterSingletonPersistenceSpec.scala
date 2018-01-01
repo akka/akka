@@ -4,10 +4,10 @@
 
 package akka.cluster.typed
 
-import akka.actor.typed.{ActorRef, Behavior, Props, TypedAkkaSpecWithShutdown}
+import akka.actor.typed.{ ActorRef, Behavior, Props, TypedAkkaSpecWithShutdown }
 import akka.persistence.typed.scaladsl.PersistentActor
 import akka.persistence.typed.scaladsl.PersistentActor.{ CommandHandler, Effect }
-import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 

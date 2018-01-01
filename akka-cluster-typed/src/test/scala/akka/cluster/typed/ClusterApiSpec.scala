@@ -3,13 +3,12 @@
  */
 package akka.cluster.typed
 
+import akka.actor.typed.TypedAkkaSpecWithShutdown
+import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.actor.typed.{TypedAkkaSpec, TypedAkkaSpecWithShutdown, TypedSpec}
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.{ TestKit, TestKitSettings }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
