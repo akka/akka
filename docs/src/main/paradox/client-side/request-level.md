@@ -111,3 +111,14 @@ URIs or a valid `Host` header. The host connection pool will automatically add a
 
 For a super-pool flow this is not the case. All requests to a super-pool must either have an absolute URI or a valid
 `Host` header, because otherwise it'd be impossible to find out which target endpoint to direct the request to.
+
+
+## Collecting headers from a server response
+
+Sometimes we would like to get only headers of specific type which are sent from a server. In order to collect headers in a type safe way Akka HTTP API provides a type for each HTTP header. Here is an example for getting all cookies set by a server (`Set-Cookie` header):
+
+Scala
+:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #collecting-headers-example }
+
+Java
+:   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #collecting-headers-example }

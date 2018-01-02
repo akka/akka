@@ -4,13 +4,8 @@
 
 package akka.http.javadsl.model;
 
-import akka.Done;
 import akka.http.impl.util.JavaAccessors;
 import akka.http.javadsl.model.headers.HttpEncoding;
-import akka.stream.Materializer;
-import akka.stream.javadsl.Sink;
-
-import java.util.concurrent.CompletionStage;
 
 /**
  * Represents an Http response.

@@ -6,9 +6,7 @@ package docs.http.javadsl;
 
 import akka.Done;
 import akka.actor.*;
-import akka.http.javadsl.model.headers.BasicHttpCredentials;
 import akka.http.javadsl.model.headers.HttpCredentials;
-import akka.stream.Materializer;
 import akka.util.ByteString;
 import scala.concurrent.ExecutionContextExecutor;
 import akka.stream.javadsl.*;
@@ -32,6 +30,14 @@ import akka.stream.javadsl.Framing;
 import akka.http.javadsl.model.*;
 import scala.concurrent.duration.FiniteDuration;
 //#manual-entity-consume-example-1
+
+//#collecting-headers-example
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import akka.http.javadsl.model.headers.SetCookie;
+//#collecting-headers-example
 
 @SuppressWarnings("unused")
 public class HttpClientExampleDocTest {
@@ -157,11 +163,10 @@ public class HttpClientExampleDocTest {
   public void testSingleRequestExample() {
     //#single-request-example
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     final CompletionStage<HttpResponse> responseFuture =
       Http.get(system)
-          .singleRequest(HttpRequest.create("http://akka.io"), materializer);
+          .singleRequest(HttpRequest.create("http://akka.io"));
     //#single-request-example
   }
 
@@ -170,7 +175,6 @@ public class HttpClientExampleDocTest {
     //#https-proxy-example-single-request
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     ClientTransport proxy = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved("192.168.2.5", 8080));
     ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system).withTransport(proxy);
@@ -181,8 +185,7 @@ public class HttpClientExampleDocTest {
                   HttpRequest.create("https://github.com"),
                   Http.get(system).defaultClientHttpsContext(),
                   poolSettingsWithHttpsProxy, // <- pass in the custom settings here
-                  system.log(),
-                  materializer);
+                  system.log());
 
     //#https-proxy-example-single-request
   }
@@ -191,7 +194,6 @@ public class HttpClientExampleDocTest {
   public void testSingleRequestWithHttpsProxyExampleWithAuth() {
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     //#auth-https-proxy-example-single-request
     InetSocketAddress proxyAddress =
@@ -208,9 +210,28 @@ public class HttpClientExampleDocTest {
                   HttpRequest.create("https://github.com"),
                   Http.get(system).defaultClientHttpsContext(),
                   poolSettingsWithHttpsProxy, // <- pass in the custom settings here
-                  system.log(),
-                  materializer);
+                  system.log());
 
     //#auth-https-proxy-example-single-request
+  }
+
+  // compile only test
+  public void testCollectingHeadersExample() {
+
+    final ActorSystem system = ActorSystem.create();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
+
+    //#collecting-headers-example
+    final HttpResponse response = responseFromSomewhere();
+
+    List<SetCookie> setCookies = StreamSupport.stream(response.getHeaders().spliterator(), false)
+      .filter(SetCookie.class::isInstance)
+      .map(SetCookie.class::cast)
+      .collect(Collectors.toList());
+
+    System.out.println("Cookies set by a server: " + setCookies);
+
+    response.discardEntityBytes(materializer);
+    //#collecting-headers-example
   }
 }
