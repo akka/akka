@@ -44,7 +44,8 @@ inThisBuild(Def.settings(
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
   Dependencies.Versions,
   Formatting.formatSettings,
-  shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
+  shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
+  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
 ))
 
 lazy val root = Project(
