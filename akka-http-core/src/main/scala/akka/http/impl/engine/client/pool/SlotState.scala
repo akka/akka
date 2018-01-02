@@ -130,7 +130,11 @@ private[pool] object SlotState {
 
     private def failOngoingRequest(ctx: SlotContext, signal: String, cause: Throwable): SlotState = {
       ctx.debug("Ongoing request [{}] is failed because of [{}]: [{}]", ongoingRequest.request.debugString, signal, cause.getMessage)
-      WaitingForResponseDispatch(ongoingRequest, Failure(cause))
+      if (ongoingRequest.canBeRetried) { // push directly because it will be buffered internally
+        ctx.dispatchResponseResult(ongoingRequest, Failure(cause))
+        Unconnected
+      } else
+        WaitingForResponseDispatch(ongoingRequest, Failure(cause))
     }
   }
 

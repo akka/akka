@@ -99,7 +99,7 @@ private[client] object NewHostConnectionPool {
           slots.exists(_.isIdle)
 
         def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit =
-          if (result.isFailure && req.retriesLeft > 0) {
+          if (result.isFailure && req.canBeRetried) {
             log.debug("Request has {} retries left, retrying...", req.retriesLeft)
             retryBuffer.addLast(req.copy(retriesLeft = req.retriesLeft - 1))
           } else
