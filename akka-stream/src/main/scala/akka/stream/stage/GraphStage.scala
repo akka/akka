@@ -177,11 +177,14 @@ object GraphStageLogic {
 
   /**
    * Minimal actor to work with other actors and watch them in a synchronous ways
+   *
+   * @param name leave empty to use plain auto generated names
    */
   final class StageActor(
     materializer:     ActorMaterializer,
     getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
-    initialReceive:   StageActorRef.Receive) {
+    initialReceive:   StageActorRef.Receive,
+    name:             String) {
 
     private val callback = getAsyncCallback(internalReceive)
     private def cell = materializer.supervisor match {
@@ -191,14 +194,13 @@ object GraphStageLogic {
         throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
     }
 
-    private val functionRef: FunctionRef = {
-      cell.addFunctionRef {
+    private val functionRef: FunctionRef =
+      cell.addFunctionRef({
         case (_, m @ (PoisonPill | Kill)) ⇒
           materializer.logger.warning("{} message sent to StageActor({}) will be ignored, since it is not a real Actor." +
             "Use a custom message type to communicate with it instead.", m, functionRef.path)
         case pair ⇒ callback.invoke(pair)
-      }
-    }
+      }, name)
 
     /**
      * The ActorRef by which this StageActor can be contacted from the outside.
@@ -1162,12 +1164,38 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   // FIXME: I don't like the Pair allocation :(
   @ApiMayChange
-  final protected def getStageActor(receive: ((ActorRef, Any)) ⇒ Unit): StageActor = {
+  final protected def getStageActor(receive: ((ActorRef, Any)) ⇒ Unit): StageActor =
+    getStageActor(receive, name = "")
+
+  /**
+   * Initialize a named [[StageActorRef]] which can be used to interact with from the outside world "as-if" an [[Actor]].
+   * The messages are looped through the [[getAsyncCallback]] mechanism of [[GraphStage]] so they are safe to modify
+   * internal state of this stage.
+   *
+   * This method must (the earliest) be called after the [[GraphStageLogic]] constructor has finished running,
+   * for example from the [[preStart]] callback the graph stage logic provides.
+   *
+   * Created [[StageActorRef]] to get messages and watch other actors in synchronous way.
+   *
+   * The [[StageActorRef]]'s lifecycle is bound to the Stage, in other words when the Stage is finished,
+   * the Actor will be terminated as well. The entity backing the [[StageActorRef]] is not a real Actor,
+   * but the [[GraphStageLogic]] itself, therefore it does not react to [[PoisonPill]].
+   *
+   * @param receive callback that will be called upon receiving of a message by this special Actor
+   * @param name to be used in the Actor's name. An empty String will cause the usual auto generated name to be used
+   * @return minimal actor with watch method
+   */
+  @ApiMayChange
+  final protected def getStageActor(receive: ((ActorRef, Any)) ⇒ Unit, name: String): StageActor = {
     _stageActor match {
       case null ⇒
         val actorMaterializer = ActorMaterializerHelper.downcast(interpreter.materializer)
-        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive)
+        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive, name)
         _stageActor
+      case existing if name != "" && existing.ref.path.name != name ⇒
+        throw new IllegalArgumentException(s"Illegal name argument ($name) in getStageActor! " +
+          s"It is not legal to change the name of the allocated stage actor. " +
+          s"The existing Actor is named [${existing.ref.path.name}], and must remain such throughout all getStageActor calls.")
       case existing ⇒
         existing.become(receive)
         existing

@@ -4282,14 +4282,26 @@ public final class MessageFormats {
     // optional string timeout = 2;
     /**
      * <code>optional string timeout = 2;</code>
+     *
+     * <pre>
+     *not used in new records from 2.4.5
+     * </pre>
      */
     boolean hasTimeout();
     /**
      * <code>optional string timeout = 2;</code>
+     *
+     * <pre>
+     *not used in new records from 2.4.5
+     * </pre>
      */
     java.lang.String getTimeout();
     /**
      * <code>optional string timeout = 2;</code>
+     *
+     * <pre>
+     *not used in new records from 2.4.5
+     * </pre>
      */
     akka.protobuf.ByteString
         getTimeoutBytes();
@@ -4458,12 +4470,20 @@ public final class MessageFormats {
     private java.lang.Object timeout_;
     /**
      * <code>optional string timeout = 2;</code>
+     *
+     * <pre>
+     *not used in new records from 2.4.5
+     * </pre>
      */
     public boolean hasTimeout() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
      * <code>optional string timeout = 2;</code>
+     *
+     * <pre>
+     *not used in new records from 2.4.5
+     * </pre>
      */
     public java.lang.String getTimeout() {
       java.lang.Object ref = timeout_;
@@ -4481,6 +4501,10 @@ public final class MessageFormats {
     }
     /**
      * <code>optional string timeout = 2;</code>
+     *
+     * <pre>
+     *not used in new records from 2.4.5
+     * </pre>
      */
     public akka.protobuf.ByteString
         getTimeoutBytes() {
@@ -4863,12 +4887,20 @@ public final class MessageFormats {
       private java.lang.Object timeout_ = "";
       /**
        * <code>optional string timeout = 2;</code>
+       *
+       * <pre>
+       *not used in new records from 2.4.5
+       * </pre>
        */
       public boolean hasTimeout() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
        * <code>optional string timeout = 2;</code>
+       *
+       * <pre>
+       *not used in new records from 2.4.5
+       * </pre>
        */
       public java.lang.String getTimeout() {
         java.lang.Object ref = timeout_;
@@ -4883,6 +4915,10 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string timeout = 2;</code>
+       *
+       * <pre>
+       *not used in new records from 2.4.5
+       * </pre>
        */
       public akka.protobuf.ByteString
           getTimeoutBytes() {
@@ -4899,6 +4935,10 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string timeout = 2;</code>
+       *
+       * <pre>
+       *not used in new records from 2.4.5
+       * </pre>
        */
       public Builder setTimeout(
           java.lang.String value) {
@@ -4912,6 +4952,10 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string timeout = 2;</code>
+       *
+       * <pre>
+       *not used in new records from 2.4.5
+       * </pre>
        */
       public Builder clearTimeout() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -4921,6 +4965,10 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string timeout = 2;</code>
+       *
+       * <pre>
+       *not used in new records from 2.4.5
+       * </pre>
        */
       public Builder setTimeoutBytes(
           akka.protobuf.ByteString value) {

@@ -87,8 +87,7 @@ private[remote] final class SendQueue[T] extends GraphStageWithMaterializedValue
             needWakeup = true
             // additional poll() to grab any elements that might missed the needWakeup
             // and have been enqueued just after it
-            if (firstAttempt)
-              tryPush(firstAttempt = false)
+            if (firstAttempt) tryPush(firstAttempt = false)
           case elem ⇒
             needWakeup = false // there will be another onPull
             push(out, elem)

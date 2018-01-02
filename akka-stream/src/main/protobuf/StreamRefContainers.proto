@@ -1,0 +1,56 @@
+/**
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+
+option java_package = "akka.stream.remote";
+option optimize_for = SPEED;
+
+/*************************************************
+  StreamRefs (SourceRef / SinkRef) related formats
+**************************************************/
+
+// TODO make explicit types for SinkRef/SourceRef as they can carry initial settings (initial demand etc)
+
+message SinkRef {
+    required ActorRef targetRef = 1;
+    optional int64 initialDemand = 2;
+}
+
+message SourceRef {
+    required ActorRef originRef = 1;
+    // FIXME: it's basically SinkRef since we just ommit the optional initial demand...
+    // FIXME: could it be that all those passable refs should be expressed internally as a StreamRef?
+}
+
+message ActorRef {
+    required string path = 1;
+}
+
+message Option {
+    optional Payload value = 1;
+}
+
+message Payload {
+    required bytes enclosedMessage = 1;
+    required int32 serializerId = 2;
+    optional bytes messageManifest = 4;
+}
+
+// stream refs protocol
+
+message CumulativeDemand {
+    required int64 seqNr = 1;
+}
+
+message SequencedOnNext {
+    required int64 seqNr = 1;
+    required Payload payload = 2;
+}
+
+message RemoteSinkFailure {
+    optional bytes cause = 1;
+}
+
+message RemoteSinkCompleted {
+    required int64 seqNr = 1;
+}
