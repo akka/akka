@@ -245,6 +245,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
         // client already received response, no need to report error another time
       }
       "create a new connection when previous one was closed regularly between requests" in new SetupWithServerProbes {
+        pendingIn(targetImpl = LegacyPoolImplementation) // flaky test, no reason to debug old client pool issues for now
         pushRequest(HttpRequest(uri = "/simple"))
 
         val conn1 = expectNextConnection()
@@ -260,6 +261,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
         expectResponseEntityAsString() shouldEqual "response"
       }
       "create a new connection when previous one was closed regularly between requests without sending a `Connection: close` header first" in new SetupWithServerProbes {
+        pendingIn(targetImpl = LegacyPoolImplementation) // flaky test, no reason to debug old client pool issues for now
         pushRequest(HttpRequest(uri = "/simple"))
 
         val conn1 = expectNextConnection()
@@ -281,6 +283,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
         expectResponseEntityAsString() shouldEqual "response"
       }
       "create a new connection when previous one failed between requests" in new SetupWithServerProbes {
+        pendingIn(targetImpl = LegacyPoolImplementation) // flaky test, no reason to debug old client pool issues for now
         pushRequest(HttpRequest(uri = "/simple"))
 
         val conn1 = expectNextConnection()
