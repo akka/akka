@@ -7,13 +7,20 @@ object Flag {
   /**
    * `Flag` that is initialized to `false`.
    */
-  val empty = new Flag(false)
+  val empty: Flag = new Flag(false)
 
-  val Disabled = empty
+  /**
+   * `Flag` that is initialized to `false`.
+   */
+  val Disabled: Flag = empty
 
-  val Enabled = new Flag(true)
+  /**
+   * `Flag` that is initialized to `true`.
+   */
+  val Enabled: Flag = new Flag(true)
 
   def apply(): Flag = Disabled
+
   /**
    * Java API: `Flag` that is initialized to `false`.
    */
