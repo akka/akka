@@ -133,10 +133,10 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
       .assertStatusCode(StatusCodes.InternalServerError())
       .assertEntity("An error occurred: / by zero");
     // opened the circuit-breaker 
-    
+
     testRoute(route).run(HttpRequest.GET("/divide/10/0"))
-          .assertStatusCode(StatusCodes.ServiceUnavailable())
-          .assertEntity("The server is currently unavailable (because it is overloaded or down for maintenance).");
+          .assertEntity("The server is currently unavailable (because it is overloaded or down for maintenance).")
+          .assertStatusCode(StatusCodes.ServiceUnavailable());
 
     Thread.sleep(resetTimeout.toMillis() + 300);
     // circuit breaker resets after this time
