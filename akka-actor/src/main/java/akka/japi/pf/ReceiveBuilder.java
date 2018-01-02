@@ -130,6 +130,24 @@ public class ReceiveBuilder {
     return matchUnchecked(type, predicate, apply);
   }
 
+  /**
+   * Add a new case statement to this builder.
+   *
+   * @param type
+   *          a type to match the argument against
+   * @param externalPredicate
+   *          a external predicate that will be evaluated if the type matches
+   * @param apply
+   *          an action to apply to the argument if the type matches and the
+   *          predicate returns true
+   * @return a builder with the case statement added
+   */
+  public <P> ReceiveBuilder match(final Class<P> type,
+                                  final java.util.function.BooleanSupplier externalPredicate,
+                                  final FI.UnitApply<P> apply) {
+    return matchUnchecked(type, externalPredicate, apply);
+  }
+
     /**
      * Add a new case statement to this builder without compile time type check.
      * Should normally not be used, but when matching on class with generic type
@@ -163,6 +181,38 @@ public class ReceiveBuilder {
 
     return this;
   }
+
+    /**
+     * Add a new case statement to this builder without compile time type check.
+     * Should normally not be used, but when matching on class with generic type
+     * argument it can be useful, e.g. <code>List.class</code> and
+     * <code>(List&lt;String&gt; list) -> {}</code>.
+     *
+     * @param type
+     *          a type to match the argument against
+     * @param externalPredicate
+     *          a external predicate that will be evaluated if the type matches
+     * @param apply
+     *          an action to apply to the argument if the type matches and the
+     *          predicate returns true
+     * @return a builder with the case statement added
+     */
+    @SuppressWarnings("unchecked")
+    public <P> ReceiveBuilder matchUnchecked(final Class<?> type,
+                                             final java.util.function.BooleanSupplier externalPredicate,
+                                             final FI.UnitApply<P> apply) {
+        FI.Predicate fiPredicate = new FI.Predicate() {
+            @Override
+            public boolean defined(Object o) {
+                return type.isInstance(o) &&
+                        externalPredicate.getAsBoolean();
+            }
+        };
+
+        addStatement(new UnitCaseStatement<Object, Object>(fiPredicate, (FI.UnitApply<Object>) apply));
+
+        return this;
+    }
 
   /**
    * Add a new case statement to this builder.
