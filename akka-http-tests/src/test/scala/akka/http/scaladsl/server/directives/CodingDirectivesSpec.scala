@@ -14,16 +14,19 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.coding._
 import akka.testkit._
 import headers._
-import HttpEntity.{ ChunkStreamPart, Chunk }
+import HttpEntity.{ Chunk, ChunkStreamPart }
 import HttpCharsets._
 import HttpEncodings._
 import MediaTypes._
 import StatusCodes._
 import ContentTypes.`application/octet-stream`
+import akka.http.scaladsl.testkit.RouteTestTimeout
 
 import scala.concurrent.duration._
 
 class CodingDirectivesSpec extends RoutingSpec with Inside {
+
+  implicit val routeTestTimeout = RouteTestTimeout(3.seconds.dilated)
 
   val echoRequestContent: Route = { ctx ⇒ ctx.complete(ctx.request.entity.dataBytes.utf8String) }
 
