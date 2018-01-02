@@ -119,7 +119,7 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
           .map(func(result -> complete("The result was " + result)))
           .recover(new PFBuilder<Throwable, Route>()
             .matchAny(ex -> complete(StatusCodes.InternalServerError(),
-              "An error occurred: " + ex.getMessage())
+              "An error occurred: " + ex.toString())
             )
             .build())
           .get()
@@ -131,12 +131,12 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
 
     testRoute(route).run(HttpRequest.GET("/divide/10/0"))
       .assertStatusCode(StatusCodes.InternalServerError())
-      .assertEntity("An error occurred: / by zero");
+      .assertEntity("An error occurred: java.lang.ArithmeticException: / by zero");
     // opened the circuit-breaker 
-    
+
     testRoute(route).run(HttpRequest.GET("/divide/10/0"))
-          .assertStatusCode(StatusCodes.ServiceUnavailable())
-          .assertEntity("The server is currently unavailable (because it is overloaded or down for maintenance).");
+          .assertEntity("The server is currently unavailable (because it is overloaded or down for maintenance).")
+          .assertStatusCode(StatusCodes.ServiceUnavailable());
 
     Thread.sleep(resetTimeout.toMillis() + 300);
     // circuit breaker resets after this time
