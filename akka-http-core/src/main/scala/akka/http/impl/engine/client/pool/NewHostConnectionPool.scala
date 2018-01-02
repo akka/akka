@@ -189,6 +189,11 @@ private[client] object NewHostConnectionPool {
                   case _ ⇒ // no timeout set, nothing to do
                 }
 
+                if (state == Unconnected && connection != null) {
+                  debug(s"State change from [${previousState.name}] to [Unconnected]. Closing the existing connection.")
+                  closeConnection()
+                }
+
                 if (!previousState.isIdle && state.isIdle) {
                   debug("Slot became idle... Trying to pull")
                   pullIfNeeded()

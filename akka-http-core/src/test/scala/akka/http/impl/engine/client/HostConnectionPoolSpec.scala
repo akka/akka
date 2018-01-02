@@ -259,12 +259,33 @@ class HostConnectionPoolSpec extends AkkaSpec(
         conn2.pushResponse(HttpResponse(entity = "response"))
         expectResponseEntityAsString() shouldEqual "response"
       }
+      "create a new connection when previous one was closed regularly between requests without sending a `Connection: close` header first" in new SetupWithServerProbes {
+        pushRequest(HttpRequest(uri = "/simple"))
+
+        val conn1 = expectNextConnection()
+        val req = conn1.expectRequest()
+        conn1.pushResponse(HttpResponse(entity = req.uri.path.toString))
+        expectResponseEntityAsString() shouldEqual "/simple"
+        conn1.completeHandler()
+
+        // Here's an inherent race condition: we might accidentally schedule the next request on the just-completing
+        // connection. So we add a sleep to increase chances, we've been in the Unconnected state before the new request
+        // is dispatched. If connection still happens to be in the Idle state, the request should be transparently
+        // retried.
+        Thread.sleep(100)
+
+        pushRequest(HttpRequest(uri = "/next"))
+        val conn2 = expectNextConnection()
+        conn2.expectRequestToPath("/next")
+        conn2.pushResponse(HttpResponse(entity = "response"))
+        expectResponseEntityAsString() shouldEqual "response"
+      }
       "create a new connection when previous one failed between requests" in new SetupWithServerProbes {
         pushRequest(HttpRequest(uri = "/simple"))
 
         val conn1 = expectNextConnection()
         val req = conn1.expectRequest()
-        conn1.pushResponse(HttpResponse(headers = headers.Connection("close") :: Nil, entity = req.uri.path.toString))
+        conn1.pushResponse(HttpResponse(entity = req.uri.path.toString))
         expectResponseEntityAsString() shouldEqual "/simple"
         conn1.failConnection(new RuntimeException("broken connection"))
 
