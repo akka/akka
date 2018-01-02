@@ -84,6 +84,9 @@ object ValidatePullRequest extends AutoPlugin {
   val validatePullRequest = taskKey[Unit]("Validate pull request")
   val additionalTasks = taskKey[Seq[TaskKey[_]]]("Additional tasks for pull request validation")
 
+  // The set of (top-level) files or directories to watch for build changes.
+  val BuildFilesAndDirectories = Set("project", "build.sbt")
+
   def changedDirectoryIsDependency(changedDirs: Set[String], name: String, graphsToTest: Seq[(Configuration, ModuleGraph)])(log: Logger): Boolean = {
     val dirsOrExperimental = changedDirs.flatMap(dir => Set(dir, s"$dir-experimental"))
     graphsToTest exists { case (ivyScope, deps) =>
@@ -160,8 +163,7 @@ object ValidatePullRequest extends AutoPlugin {
           .filter(l =>
             l.startsWith("akka-") ||
               l.startsWith("docs") ||
-              l.startsWith("project") ||
-              (l == "build.sbt")
+              BuildFilesAndDirectories.exists(l startsWith)
           )
           .map(l ⇒ l.takeWhile(_ != '/'))
           .toSet
@@ -173,7 +175,7 @@ object ValidatePullRequest extends AutoPlugin {
           val dirtyDirectories = statusOutput
             .map(l ⇒ l.trim.dropWhile(_ != ' ').drop(1))
             .map(_.takeWhile(_ != '/'))
-            .filter(dir => dir.startsWith("akka-") || dir.startsWith("docs") || dir == "project")
+            .filter(dir => dir.startsWith("akka-") || dir.startsWith("docs") || BuildFilesAndDirectories.contains(dir))
             .toSet
           log.info("Detected uncomitted changes in directories (including in dependency analysis): " + dirtyDirectories.mkString("[", ",", "]"))
           dirtyDirectories
@@ -215,7 +217,7 @@ object ValidatePullRequest extends AutoPlugin {
 
       if (githubCommandEnforcedBuildAll.isDefined)
         githubCommandEnforcedBuildAll.get
-      else if (changedDirs contains "project")
+      else if (changedDirs exists (BuildFilesAndDirectories contains))
         BuildProjectChangedQuick
       else if (isDependency)
         BuildQuick
