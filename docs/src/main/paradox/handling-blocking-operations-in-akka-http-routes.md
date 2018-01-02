@@ -87,7 +87,6 @@ my-blocking-dispatcher {
   type = Dispatcher
   executor = "thread-pool-executor"
   thread-pool-executor {
-    // or in Akka 2.4.2+
     fixed-pool-size = 16
   }
   throughput = 100
