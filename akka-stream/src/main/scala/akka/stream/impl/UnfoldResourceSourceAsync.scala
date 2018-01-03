@@ -92,7 +92,7 @@ import scala.util.control.NonFatal
           close(resource).onComplete(getAsyncCallback[Try[Done]] {
             case Success(Done) ⇒
               createResource()
-            case Failure(ex) ⇒ errorHandler(ex)
+            case Failure(ex) ⇒ failStage(ex)
           }.invoke)
           state = None
         case None ⇒
