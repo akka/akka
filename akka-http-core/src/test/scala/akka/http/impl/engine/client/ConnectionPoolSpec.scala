@@ -33,7 +33,8 @@ import scala.util.{ Failure, Success, Try }
 
 abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extends AkkaSpec("""
     akka.loggers = []
-    akka.loglevel = OFF
+    akka.loglevel = DEBUG # to track down #1667
+    akka.loggers = ["akka.testkit.TestEventListener"]
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off
     akka.test.single-expect-default = 5000 # timeout for checks, adjust as necessary, set here to 5s
@@ -216,7 +217,9 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       val handlerSetter = Await.result(laterHandler.future, 1.second.dilated)
 
       // now fail the first one
-      errorOnConnection1.failure(new RuntimeException)
+      EventFilter[RuntimeException](occurrences = 1) intercept {
+        errorOnConnection1.failure(new RuntimeException)
+      }
 
       // waiting for error to trigger connection pool failure
       Thread.sleep(2000)
