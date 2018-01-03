@@ -14,6 +14,7 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.model.StatusCodes;
 import akka.japi.pf.PFBuilder;
 import akka.pattern.CircuitBreaker;
+import akka.testkit.javadsl.TestKit;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -138,12 +139,21 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
           .assertEntity("The server is currently unavailable (because it is overloaded or down for maintenance).")
           .assertStatusCode(StatusCodes.ServiceUnavailable());
 
-    Thread.sleep(resetTimeout.toMillis() + 300);
-    // circuit breaker resets after this time
-    
-    testRoute(route).run(HttpRequest.GET("/divide/8/2"))
-      .assertEntity("The result was 4");
-    
+    Thread.sleep(resetTimeout.toMillis());
+
+    // circuit breaker resets after this time, but observing it
+    // is timing sensitive so retry a few times within a timeout
+    new TestKit(system()) {
+      {
+        awaitAssert(
+            FiniteDuration.create(500, TimeUnit.MILLISECONDS),
+            () -> {
+              testRoute(route).run(HttpRequest.GET("/divide/8/2"))
+                  .assertEntity("The result was 4");
+              return null;
+            });
+      }
+    };
     //#onCompleteWithBreaker
   }
 

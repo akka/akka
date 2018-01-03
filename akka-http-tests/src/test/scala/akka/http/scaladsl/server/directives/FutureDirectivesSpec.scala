@@ -14,7 +14,7 @@ import org.scalatest.Inside
 
 import scala.concurrent.duration._
 
-class FutureDirectivesSpec extends RoutingSpec with Inside {
+class FutureDirectivesSpec extends RoutingSpec with Inside with TestKitBase {
 
   class TestException(msg: String) extends Exception(msg)
   object TestException extends Exception("XXX")
@@ -80,18 +80,24 @@ class FutureDirectivesSpec extends RoutingSpec with Inside {
     }
     "fail fast if the circuit breaker is open" in new TestWithCircuitBreaker {
       openBreaker()
-      Get() ~> onCompleteWithBreaker(breaker)(Future.successful(1)) { echoComplete } ~> check {
-        inside(rejection) {
-          case CircuitBreakerOpenRejection(_) ⇒
-        }
-      }
+      // since this is timing sensitive, try a few times to observe the breaker open
+      awaitAssert(
+        Get() ~> onCompleteWithBreaker(breaker)(Future.successful(1)) { echoComplete } ~> check {
+          inside(rejection) {
+            case CircuitBreakerOpenRejection(_) ⇒
+          }
+        }, breakerResetTimeout / 2)
     }
     "stop failing fast when the circuit breaker closes" in new TestWithCircuitBreaker {
       openBreaker()
-      Thread.sleep(breakerResetTimeout.toMillis + 200)
-      Get() ~> onCompleteWithBreaker(breaker)(Future.successful(1)) { echoComplete } ~> check {
-        responseAs[String] shouldEqual "Success(1)"
-      }
+      // observe that it opened
+      awaitAssert(breaker.isOpen should ===(true))
+      // since this is timing sensitive, try a few times to observe the breaker closed
+      awaitAssert({
+        Get() ~> onCompleteWithBreaker(breaker)(Future.successful(1)) { echoComplete } ~> check {
+          responseAs[String] shouldEqual "Success(1)"
+        }
+      }, breakerResetTimeout + 1.second)
     }
     "catch an exception in the success case" in new TestWithCircuitBreaker {
       Get() ~> onCompleteWithBreaker(breaker)(Future.successful("ok")) { throwTestException("EX when ") } ~> check {
