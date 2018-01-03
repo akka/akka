@@ -692,6 +692,20 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         }
       }
     }
+    "fail fast if persistenceId is an empty string" in {
+      import akka.testkit.filterEvents
+      filterEvents(EventFilter[ActorInitializationException]()) {
+        EventFilter.error(message = "persistenceId cannot be empty for PersistentActor") intercept {
+          val ref = system.actorOf(Props(new NamedPersistentActor("  ") {
+            override def receiveRecover: Receive = Actor.emptyBehavior
+
+            override def receiveCommand: Receive = Actor.emptyBehavior
+          }))
+          watch(ref)
+          expectTerminated(ref)
+        }
+      }
+    }
     "recover from persisted events" in {
       val persistentActor = namedPersistentActor[Behavior1PersistentActor]
       persistentActor ! GetState
