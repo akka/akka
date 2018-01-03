@@ -434,10 +434,11 @@ final class HttpResponse(
   override def isRequest = false
   override def isResponse = true
 
-  override def withHeaders(headers: immutable.Seq[HttpHeader]) =
+  override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpResponse =
     if (headers eq this.headers) this else copy(headers = headers)
 
-  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = copy(protocol = protocol.asInstanceOf[HttpProtocol])
+  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = withProtocol(protocol.asInstanceOf[HttpProtocol])
+  def withProtocol(protocol: HttpProtocol): HttpResponse = copy(protocol = protocol)
   override def withStatus(statusCode: Int): HttpResponse = copy(status = statusCode)
   override def withStatus(statusCode: akka.http.javadsl.model.StatusCode): HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
 
