@@ -15,6 +15,10 @@ import java.net.InetAddress
 
 class MiscDirectivesSpec extends RoutingSpec {
 
+  override def testConfigSource = """
+    akka.loggers = ["akka.testkit.TestEventListener"]
+  """
+
   "the extractClientIP directive" should {
     "extract from a X-Forwarded-For header" in {
       Get() ~> addHeaders(`X-Forwarded-For`(remoteAddress("2.3.4.5")), RawHeader("x-real-ip", "1.2.3.4")) ~> {
@@ -95,8 +99,10 @@ class MiscDirectivesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
       }
 
-      Post("/abc", entityOfSize(501)) ~> Route.seal(route) ~> check {
-        status shouldEqual StatusCodes.BadRequest
+      EventFilter[EntityStreamSizeException](occurrences = 1).intercept {
+        Post("/abc", entityOfSize(501)) ~> Route.seal(route) ~> check {
+          status shouldEqual StatusCodes.BadRequest
+        }
       }
     }
 
@@ -112,13 +118,15 @@ class MiscDirectivesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
       }
 
-      Post("/abc", formDataOfSize(128)) ~> Route.seal(route) ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        responseAs[String] shouldEqual "The request content was malformed:\n" +
-          "EntityStreamSizeException: actual entity size (Some(134)) " +
-          "exceeded content length limit (64 bytes)! " +
-          "You can configure this by setting `akka.http.[server|client].parsing.max-content-length` " +
-          "or calling `HttpEntity.withSizeLimit` before materializing the dataBytes stream."
+      EventFilter[EntityStreamSizeException](occurrences = 1).intercept {
+        Post("/abc", formDataOfSize(128)) ~> Route.seal(route) ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          responseAs[String] shouldEqual "The request content was malformed:\n" +
+            "EntityStreamSizeException: actual entity size (Some(134)) " +
+            "exceeded content length limit (64 bytes)! " +
+            "You can configure this by setting `akka.http.[server|client].parsing.max-content-length` " +
+            "or calling `HttpEntity.withSizeLimit` before materializing the dataBytes stream."
+        }
       }
     }
 
@@ -136,8 +144,10 @@ class MiscDirectivesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
       }
 
-      Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
-        status shouldEqual StatusCodes.BadRequest
+      EventFilter[EntityStreamSizeException](occurrences = 1).intercept {
+        Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
+          status shouldEqual StatusCodes.BadRequest
+        }
       }
 
       val route2 =
@@ -153,8 +163,10 @@ class MiscDirectivesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
       }
 
-      Post("/abc", entityOfSize(401)) ~> Route.seal(route2) ~> check {
-        status shouldEqual StatusCodes.BadRequest
+      EventFilter[EntityStreamSizeException](occurrences = 1).intercept {
+        Post("/abc", entityOfSize(401)) ~> Route.seal(route2) ~> check {
+          status shouldEqual StatusCodes.BadRequest
+        }
       }
     }
   }
