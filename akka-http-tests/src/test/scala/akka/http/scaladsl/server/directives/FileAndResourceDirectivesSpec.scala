@@ -30,7 +30,10 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
   val testRoot = new File("akka-http-tests/src/test/resources")
   require(testRoot.exists(), s"testRoot was not found at ${testRoot.getAbsolutePath}")
 
-  override def testConfigSource = "akka.http.routing.range-coalescing-threshold = 1"
+  override def testConfigSource = """
+    akka.http.routing.range-coalescing-threshold = 1
+    akka.loggers = ["akka.testkit.TestEventListener"]
+  """
 
   def writeAllText(text: String, file: File): Unit =
     java.nio.file.Files.write(file.toPath, text.getBytes("UTF-8"))
@@ -149,9 +152,21 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
 
       Get() ~> route("file.html") ~> check { handled shouldEqual true }
 
-      def shouldReject(prefix: String) =
-        Get() ~> route(prefix + "fileA.txt") ~> check { handled shouldEqual false }
-      shouldReject("../") // resolved
+      def shouldReject(prefix: String, warnings: Int = 1) =
+        try {
+          EventFilter.warning(
+            start = "File-system path for base",
+            occurrences = warnings
+          ).intercept {
+            Get() ~> route(prefix + "fileA.txt") ~> check {
+              handled shouldEqual false
+            }
+          }
+        } catch {
+          case err: AssertionError ⇒ throw new AssertionError(s"Failure for prefix $prefix", err)
+        }
+
+      shouldReject("../")
       shouldReject("%5c../")
       shouldReject("%2e%2e%2f")
       shouldReject("%2e%2e/") // resolved
@@ -162,9 +177,11 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       shouldReject("\\")
       shouldReject("%5c")
       shouldReject("..%5c")
-      shouldReject("..%255c")
-      shouldReject("..%c0%af")
-      shouldReject("..%c1%9c")
+
+      // FIXME these don't cause log warnings for some reason
+      shouldReject("..%255c", warnings = 0)
+      shouldReject("..%c0%af", warnings = 0)
+      shouldReject("..%c1%9c", warnings = 0)
     }
     "return the file content with the MediaType matching the file extension" in {
       Get("fileA.txt") ~> _getFromDirectory("someDir") ~> check {
@@ -185,11 +202,13 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "not follow symbolic links to find a file" in {
-      Get("linked-dir/empty.pdf") ~> _getFromDirectory("dirWithLink") ~> check {
-        handled shouldBe false
-        /* TODO: resurrect following links under an option
-        responseAs[String] shouldEqual "123"
-        mediaType shouldEqual `application/pdf`*/
+      EventFilter.warning(pattern = ".* points to a location that is not part of .*", occurrences = 1).intercept {
+        Get("linked-dir/empty.pdf") ~> _getFromDirectory("dirWithLink") ~> check {
+          handled shouldBe false
+          /* TODO: resurrect following links under an option
+          responseAs[String] shouldEqual "123"
+          mediaType shouldEqual `application/pdf`*/
+        }
       }
     }
   }
@@ -469,6 +488,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     "reject requests to file resources" in {
       Get() ~> listDirectoryContents(base + "subDirectory/empty.pdf") ~> check { handled shouldEqual false }
     }
+
     "reject path traversal attempts" in {
       def _listDirectoryContents(directory: String) = listDirectoryContents(new File(testRoot, directory).getCanonicalPath)
       def route(uri: String) =
@@ -480,10 +500,17 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         handled shouldEqual true
       }
 
-      def shouldReject(prefix: String) =
-        Get() ~> route(prefix) ~> check {
-          handled shouldEqual false
+      def shouldReject(prefix: String, warnings: Int = 2) = // FIXME these generate two log entries per request for some reason
+        try {
+          EventFilter.warning(start = "File-system path for base", occurrences = warnings).intercept {
+            Get() ~> route(prefix) ~> check {
+              handled shouldEqual false
+            }
+          }
+        } catch {
+          case err: AssertionError ⇒ throw new AssertionError(s"Failure for prefix $prefix", err)
         }
+
       shouldReject("../") // resolved
       shouldReject("%5c../")
       shouldReject("%2e%2e%2f")
@@ -495,10 +522,13 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       shouldReject("\\")
       shouldReject("%5c")
       shouldReject("..%5c")
-      shouldReject("..%255c")
-      shouldReject("..%c0%af")
-      shouldReject("..%c1%9c")
+
+      // FIXME these do not cause log entries for some reason
+      shouldReject("..%255c", warnings = 0)
+      shouldReject("..%c0%af", warnings = 0)
+      shouldReject("..%c1%9c", warnings = 0)
     }
+
   }
 
   def prep(s: String) = s.stripMarginWithNewline("\n")
