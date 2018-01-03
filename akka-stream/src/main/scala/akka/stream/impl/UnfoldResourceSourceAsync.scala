@@ -61,7 +61,7 @@ import scala.util.control.NonFatal
 
             case None ⇒
               // cannot happen, but for good measure
-              throw new IllegalStateException("Reached end of data but there is no connection")
+              throw new IllegalStateException("Reached end of data but there is no open resource")
           }
       }
       case Failure(t) ⇒ errorHandler(t)
@@ -76,13 +76,13 @@ import scala.util.control.NonFatal
             readData(resource).onComplete(readCallback)
           } catch errorHandler
         case None ⇒
-        // we got a pull but there is no connection, we are either
-        // currently connecting/reconnecting and then the read will be triggered when connection completes,
-        // or shutting down and then the pull does not matter anyway
+        // we got a pull but there is no open resource, we are either
+        // currently creating/restarting then the read will be triggered when creating the
+        // resource completes, or shutting down and then the pull does not matter anyway
       }
 
     override def postStop(): Unit = {
-      if (state.isDefined) close(state.get)
+      state.foreach(r => close(r))
     }
 
     private def restartResource(): Unit = {
