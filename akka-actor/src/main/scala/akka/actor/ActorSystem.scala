@@ -503,28 +503,28 @@ abstract class ActorSystem extends ActorRefFactory {
   def mailboxes: Mailboxes
 
   /**
-   * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
+   * Register a block of code (callback) to run after [[ActorSystem.terminate()]] has been issued and
    * all actors in this actor system have been stopped.
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    * Note that ActorSystem will not terminate until all the registered callbacks are finished.
    *
-   * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
+   * Throws a RejectedExecutionException if the System has already been terminated or if termination has been initiated.
    *
    * Scala API
    */
   def registerOnTermination[T](code: ⇒ T): Unit
 
   /**
-   * Java API: Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
+   * Java API: Register a block of code (callback) to run after [[ActorSystem.terminate()]] has been issued and
    * all actors in this actor system have been stopped.
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    * Note that ActorSystem will not terminate until all the registered callbacks are finished.
    *
-   * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
+   * Throws a RejectedExecutionException if the System has already been terminated or if termination has been initiated.
    */
   def registerOnTermination(code: Runnable): Unit
 
