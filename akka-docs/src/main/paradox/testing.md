@@ -15,6 +15,7 @@ Be sure to add the module `akka-testkit` to your dependencies.
   group="com.typesafe.akka"
   artifact="akka-testkit_$scala.binary_version$"
   version="$akka.version$"
+  scope="test"
 }
 
 ## Asynchronous Testing: `TestKit`
