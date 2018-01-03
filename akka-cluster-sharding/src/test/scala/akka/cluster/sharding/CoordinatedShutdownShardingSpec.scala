@@ -61,7 +61,7 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
     Future.successful(Done)
   }
   CoordinatedShutdown(sys3).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "unbind") { () ⇒
-    probe1.ref ! "CS-unbind-3"
+    probe3.ref ! "CS-unbind-3"
     Future.successful(Done)
   }
 
@@ -70,13 +70,14 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
     shutdown(sys2)
   }
 
+  // Using region 2 as it is not shutdown in either test
   def pingEntities(): Unit = {
-    region3.tell(1, probe3.ref)
-    probe3.expectMsg(10.seconds, 1)
-    region3.tell(2, probe3.ref)
-    probe3.expectMsg(2)
-    region3.tell(3, probe3.ref)
-    probe3.expectMsg(3)
+    region2.tell(1, probe2.ref)
+    probe2.expectMsg(10.seconds, 1)
+    region2.tell(2, probe2.ref)
+    probe2.expectMsg(10.seconds, 2)
+    region2.tell(3, probe2.ref)
+    probe2.expectMsg(10.seconds, 3)
   }
 
   "Sharding and CoordinatedShutdown" must {
@@ -134,18 +135,19 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
     }
 
     "run coordinated shutdown when downing" in {
-      Cluster(sys3).down(Cluster(sys2).selfAddress)
-      probe2.expectMsg("CS-unbind-2")
+      // coordinator is on sys2
+      Cluster(sys2).down(Cluster(sys3).selfAddress)
+      probe3.expectMsg("CS-unbind-3")
 
       within(10.seconds) {
         awaitAssert {
-          Cluster(system).state.members.size should ===(1)
+          Cluster(sys2).state.members.size should ===(1)
         }
       }
       within(10.seconds) {
         awaitAssert {
-          Cluster(sys2).isTerminated should ===(true)
-          sys2.whenTerminated.isCompleted should ===(true)
+          Cluster(sys3).isTerminated should ===(true)
+          sys3.whenTerminated.isCompleted should ===(true)
         }
       }
 

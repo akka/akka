@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.ConfigurationException
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.{ Logging, LoggingAdapter }
@@ -409,7 +410,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * Should not called by the user. The user can issue a LEAVE command which will tell the node
    * to go through graceful handoff process `LEAVE -&gt; EXITING -&gt; REMOVED -&gt; SHUTDOWN`.
    */
-  private[cluster] def shutdown(): Unit = {
+  @InternalApi private[cluster] def shutdown(): Unit = {
     if (_isTerminated.compareAndSet(false, true)) {
       logInfo("Shutting down...")
 
