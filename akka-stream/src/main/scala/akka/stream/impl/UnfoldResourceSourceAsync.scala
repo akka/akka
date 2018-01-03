@@ -82,7 +82,7 @@ import scala.util.control.NonFatal
       }
 
     override def postStop(): Unit = {
-      state.foreach(r => close(r))
+      state.foreach(r ⇒ close(r))
     }
 
     private def restartResource(): Unit = {
