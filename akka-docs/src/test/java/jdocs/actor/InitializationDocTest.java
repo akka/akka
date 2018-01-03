@@ -117,6 +117,21 @@ public class InitializationDocTest extends AbstractJavaTest {
     }
   }
 
+  static class GenericActorWithPredicateAlwaysResponse extends AbstractActor {
+      private boolean alwaysResponse() {
+          return true;
+      }
+
+      @Override
+      public Receive createReceive() {
+          return receiveBuilder()
+                  .matchUnchecked(GenericMessage.class, this::alwaysResponse, (GenericMessage<String> msg) -> {
+                      getSender().tell(msg.value.toUpperCase(), getSelf());
+                  })
+                  .build();
+      }
+    }
+
   @Test
   public void testIt() {
 
@@ -158,4 +173,19 @@ public class InitializationDocTest extends AbstractJavaTest {
       expectMsgEquals("A");
     }};
   }
+
+    @Test
+   public void actorShouldAlwaysRespondForEmptyMessage() {
+      new TestKit(system) {{
+           ActorRef genericTestActor = system.actorOf(Props.create(GenericActorWithPredicateAlwaysResponse.class), "genericActorWithPredicateAlwaysResponse");
+           GenericMessage<String> emptyGenericMessage = new GenericMessage<String>("");
+           GenericMessage<String> nonEmptyGenericMessage = new GenericMessage<String>("a");
+
+           genericTestActor.tell(emptyGenericMessage, getRef());
+           expectMsg("");
+
+           genericTestActor.tell(nonEmptyGenericMessage, getRef());
+           expectMsgEquals("A");
+       }};
+    }
 }
