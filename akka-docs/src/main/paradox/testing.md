@@ -11,30 +11,11 @@ Akka comes with a dedicated module `akka-testkit` for supporting tests.
 
 Be sure to add the module `akka-testkit` to your dependencies.
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-testkit" % "$akka.version$"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-testkit_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-testkit_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-testkit_$scala.binary_version$"
+  version="$akka.version$"
+}
 
 ## Asynchronous Testing: `TestKit`
 
