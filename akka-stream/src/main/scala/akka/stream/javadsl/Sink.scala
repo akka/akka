@@ -278,6 +278,18 @@ object Sink {
     new Sink(scaladsl.Sink.lazyInit[T, M](
       t ⇒ sinkFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
       () ⇒ fallback.create()).mapMaterializedValue(_.toJava))
+
+  /**
+   * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
+   * to consume data from this local stream, as if they were attached in the spot of the local Sink directly.
+   *
+   * Adheres to [[StreamRefAttributes]].
+   *
+   * See more detailed documentation on [[SourceRef]].
+   */
+
+  def sourceRef[T](): javadsl.Sink[T, SourceRef[T]] =
+    scaladsl.Sink.sourceRef[T]().asJava
 }
 
 /**

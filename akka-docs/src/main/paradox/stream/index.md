@@ -16,6 +16,7 @@
 * [stream-integrations](stream-integrations.md)
 * [stream-error](stream-error.md)
 * [stream-io](stream-io.md)
+* [stream-refs](stream-refs.md)
 * [stream-parallelism](stream-parallelism.md)
 * [stream-testkit](stream-testkit.md)
 * [stages-overview](stages-overview.md)

@@ -371,6 +371,90 @@ import scala.util.control.NonFatal
     override def toString: String = "FutureFlattenSource"
   }
 
+  //  final class FutureFlattenSink[T, M](futureSink: Future[Graph[SinkShape[T], M]])
+  //    extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
+  //    ReactiveStreamsCompliance.requireNonNullElement(futureSink)
+  //
+  //    val in: Inlet[T] = Inlet("FutureFlattenSink.in")
+  //    override val shape = SinkShape(in)
+  //
+  //    override def initialAttributes = DefaultAttributes.futureFlattenSink
+  //
+  //    override def createLogicAndMaterializedValue(attr: Attributes): (GraphStageLogic, Future[M]) = {
+  //      val materialized = Promise[M]()
+  //
+  //      val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
+  //        private val sourceOut = new SubSourceOutlet[T]("FutureFlattenSink.out")
+  //
+  //        override def preStart(): Unit =
+  //          futureSink.value match {
+  //            case Some(it) ⇒
+  //              // this optimisation avoids going through any execution context, in similar vein to FastFuture
+  //              onFutureSinkCompleted(it)
+  //            case _ ⇒
+  //              val cb = getAsyncCallback[Try[Graph[SinkShape[T], M]]](onFutureSinkCompleted).invoke _
+  //              futureSink.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext) // could be optimised FastFuture-like
+  //          }
+  //
+  //        // initial handler (until future completes)
+  //        setHandler(in, new InHandler {
+  //          override def onPush(): Unit = grab(it)
+  //
+  ////          def onPull(): Unit = {}
+  ////
+  ////          override def onDownstreamFinish(): Unit = {
+  ////            if (!materialized.isCompleted) {
+  ////               // we used to try to materialize the "inner" source here just to get
+  ////               // the materialized value, but that is not safe and may cause the graph shell
+  ////               // to leak/stay alive after the stage completes
+  ////
+  ////              materialized.tryFailure(new StreamDetachedException("Stream cancelled before Source Future completed"))
+  ////            }
+  ////
+  ////            super.onDownstreamFinish()
+  ////          }
+  //})
+  //
+  //        def onPush(): Unit =
+  //          push(out, sourceOut.grab())
+  //
+  //        def onPull(): Unit =
+  //          sourceOut.pull()
+  //
+  //        override def onUpstreamFinish(): Unit =
+  //          completeStage()
+  //
+  //        override def postStop(): Unit =
+  //          if (!sourceOut.isClosed) sourceOut.cancel()
+  //
+  //        def onFutureSinkCompleted(result: Try[Graph[SinkShape[T], M]]): Unit = {
+  //          result.map { graph ⇒
+  //            val runnable = Sink.fromGraph(graph).toMat(sourceOut.sink)(Keep.left)
+  //            val matVal = interpreter.subFusingMaterializer.materialize(runnable, defaultAttributes = attr)
+  //            materialized.success(matVal)
+  //
+  //            setHandler(out, this)
+  //            sourceOut.setHandler(this)
+  //
+  //            if (isAvailable(out)) {
+  //              sourceOut.pull()
+  //            }
+  //
+  //          }.recover {
+  //            case t ⇒
+  //              sourceOut.cancel()
+  //              materialized.failure(t)
+  //              failStage(t)
+  //          }
+  //        }
+  //      }
+  //
+  //      (logic, materialized.future)
+  //    }
+  //
+  //    override def toString: String = "FutureFlattenSource"
+  //  }
+
   final class FutureSource[T](val future: Future[T]) extends GraphStage[SourceShape[T]] {
     ReactiveStreamsCompliance.requireNonNullElement(future)
     val shape = SourceShape(Outlet[T]("FutureSource.out"))
@@ -466,3 +550,4 @@ import scala.util.control.NonFatal
     }
 
 }
+
