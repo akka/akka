@@ -63,12 +63,15 @@ object AskPattern {
      * val f: Future[Reply] = target ? (Request("hello", _))
      * }}}
      */
-    def ?[U](f: ActorRef[U] ⇒ T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] =
+    def ?[U](f: ActorRef[U] ⇒ T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] = {
+      // We do not currently use the implicit scheduler, but want to require it
+      // because it might be needed when we move to a 'native' typed runtime, see #24219
       ref match {
         case a: adapt.ActorRefAdapter[_]    ⇒ askUntyped(ref, a.untyped, timeout, f)
         case a: adapt.ActorSystemAdapter[_] ⇒ askUntyped(ref, a.untyped.guardian, timeout, f)
         case a                              ⇒ throw new IllegalStateException("Only expect actor references to be ActorRefAdapter or ActorSystemAdapter until native system is implemented: " + a.getClass)
       }
+    }
   }
 
   private val onTimeout: String ⇒ Throwable = msg ⇒ new TimeoutException(msg)

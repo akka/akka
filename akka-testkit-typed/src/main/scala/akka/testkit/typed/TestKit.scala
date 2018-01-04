@@ -6,7 +6,7 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.annotation.ApiMayChange
 import akka.testkit.typed.TestKit._
 import akka.util.Timeout
-import com.typesafe.config.Config
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, TimeoutException }
@@ -64,12 +64,16 @@ class TestKit(name: String, config: Option[Config]) extends TestKitBase {
   def this(name: String) = this(name, None)
   def this(config: Config) = this(TestKit.getCallerName(classOf[TestKit]), Some(config))
   def this(name: String, config: Config) = this(name, Some(config))
+
   import TestKit._
-  implicit val system = ActorSystem(testKitGuardian, name, config = config)
+  implicit val system = ActorSystem(testKitGuardian, name, config = Some(config match {
+    case None                        ⇒ mixedInConfig.withFallback(ConfigFactory.load())
+    case Some(explicitConfiguration) ⇒ explicitConfiguration.withFallback(mixedInConfig)
+  }))
 }
 
 @ApiMayChange
-trait TestKitBase {
+trait TestKitBase extends TestKitMixin {
   def system: ActorSystem[TestKitCommand]
   implicit def testkitSettings = TestKitSettings(system)
   implicit def scheduler = system.scheduler
@@ -115,4 +119,10 @@ trait TestKitBase {
 
   def systemActor[T](behaviour: Behavior[T]): ActorRef[T] =
     Await.result(system.systemActorOf(behaviour, childName.next()), timeoutDuration)
+}
+
+@ApiMayChange
+trait TestKitMixin {
+  // Can be overridden by traits extending TestKitMixin to contribute to the configuration
+  def mixedInConfig: Config = ConfigFactory.empty()
 }
