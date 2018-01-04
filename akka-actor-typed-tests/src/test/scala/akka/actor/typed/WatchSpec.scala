@@ -13,7 +13,7 @@ object WatchSpec {
 
   val terminatorBehavior =
     Actor.immutable[Stop.type] {
-      case (_, `Stop`) ⇒ Actor.stopped
+      case (_, Stop) ⇒ Actor.stopped
     }
 
   sealed trait Message

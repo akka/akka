@@ -96,8 +96,6 @@ trait TestKitBase {
   def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] =
     Await.result(system ? (SpawnActor(name, behavior, _)), timeoutDuration)
 
-  // The only current impl of a typed actor system returns a Future.successful currently
-  // hence the hardcoded timeouts
   def systemActor[T](behaviour: Behavior[T], name: String): ActorRef[T] =
     Await.result(system.systemActorOf(behaviour, name), timeoutDuration)
 

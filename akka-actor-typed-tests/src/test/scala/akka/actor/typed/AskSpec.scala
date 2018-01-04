@@ -46,7 +46,7 @@ class AskSpec extends TestKit("AskSpec") with TypedAkkaSpec with ScalaFutures {
     "must succeed when the actor is alive" in {
       val ref = spawn(behavior)
       val response = ref ? Foo("bar")
-      response.futureValue === "foo"
+      response.futureValue should ===("foo")
     }
 
     /** See issue #19947 (MatchError with adapted ActorRef) */

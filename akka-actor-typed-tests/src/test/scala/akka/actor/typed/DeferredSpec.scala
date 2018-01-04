@@ -26,7 +26,7 @@ object DeferredSpec {
     })
 }
 
-class DeferredSpec extends TestKit("DeferredSpec") with TypedAkkaSpec {
+class DeferredSpec extends TestKit with TypedAkkaSpec {
 
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)

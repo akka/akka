@@ -147,7 +147,7 @@ Java
 Tests extend `TestKit` or include the `TestKitBase`. This provides access to
 * An ActorSystem 
 * Methods for spawning Actors. These are created under the root guardian
-* Methods for creating sysem actors
+* Methods for creating system actors
 
 Scala
 :  @@snip [BasicTestingSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/testing/async/BasicAsyncTestingSpec.scala) { #test-header }
