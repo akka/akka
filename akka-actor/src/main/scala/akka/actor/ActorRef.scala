@@ -16,6 +16,8 @@ import scala.annotation.tailrec
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.annotation.InternalApi
+
 import scala.util.control.NonFatal
 
 object ActorRef {

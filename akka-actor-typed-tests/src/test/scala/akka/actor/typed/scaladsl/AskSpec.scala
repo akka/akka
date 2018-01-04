@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
-package akka.actor.typed
+package akka.actor.typed.scaladsl
 
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.Actor._
 import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.{ ActorRef, Behavior, TypedAkkaSpec }
 import akka.pattern.AskTimeoutException
 import akka.testkit.typed.TestKit
 import org.scalatest.concurrent.ScalaFutures
