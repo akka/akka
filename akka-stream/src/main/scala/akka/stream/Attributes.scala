@@ -11,12 +11,15 @@ import scala.annotation.tailrec
 import scala.reflect.{ ClassTag, classTag }
 import akka.japi.function
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
 import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
 
 import scala.compat.java8.OptionConverters._
 import akka.util.{ ByteString, OptionVal }
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -412,5 +415,24 @@ object ActorAttributes {
    */
   def logLevels(onElement: Logging.LogLevel = Logging.DebugLevel, onFinish: Logging.LogLevel = Logging.DebugLevel, onFailure: Logging.LogLevel = Logging.ErrorLevel) =
     Attributes(LogLevels(onElement, onFinish, onFailure))
+
+}
+
+/**
+ * Attributes for stream refs ([[akka.stream.SourceRef]] and [[akka.stream.SinkRef]]).
+ * Note that more attributes defined in [[Attributes]] and [[ActorAttributes]].
+ */
+object StreamRefAttributes {
+  import Attributes._
+
+  /** Attributes specific to stream refs. */
+  sealed trait StreamRefAttribute extends Attribute
+
+  final case class SubscriptionTimeout(timeout: FiniteDuration) extends StreamRefAttribute
+
+  /**
+   * Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference.
+   */
+  def subscriptionTimeout(timeout: FiniteDuration): Attributes = Attributes(SubscriptionTimeout(timeout))
 
 }

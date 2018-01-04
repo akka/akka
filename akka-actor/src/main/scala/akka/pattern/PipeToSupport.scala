@@ -72,6 +72,7 @@ trait PipeToSupport {
    *
    * {{{
    * import akka.pattern.pipe
+   * // requires implicit ExecutionContext, e.g. by importing `context.dispatcher` inside an Actor
    *
    * Future { doExpensiveCalc() } pipeTo nextActor
    *
@@ -91,6 +92,7 @@ trait PipeToSupport {
    *
    * {{{
    * import akka.pattern.pipe
+   * // requires implicit ExecutionContext, e.g. by importing `context.dispatcher` inside an Actor
    *
    * Future { doExpensiveCalc() } pipeTo nextActor
    *

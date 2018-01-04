@@ -9,11 +9,9 @@ import scala.util.control.NonFatal
 import scala.collection.immutable
 import akka.actor._
 import akka.serialization.SerializationExtension
-import akka.util.{ Helpers, Unsafe }
+import akka.util.{ Unsafe, Helpers }
 import akka.serialization.SerializerWithStringManifest
 import java.util.Optional
-
-import akka.event.Logging
 
 private[akka] object Children {
   val GetNobody = () ⇒ Nobody
@@ -194,8 +192,7 @@ private[akka] trait Children { this: ActorCell ⇒
 
   protected def getAllChildStats: immutable.Iterable[ChildRestartStats] = childrenRefs.stats
 
-  override def getSingleChild(name: String): InternalActorRef = {
-
+  override def getSingleChild(name: String): InternalActorRef =
     if (name.indexOf('#') == -1) {
       // optimization for the non-uid case
       getChildByName(name) match {
@@ -210,7 +207,6 @@ private[akka] trait Children { this: ActorCell ⇒
         case _ ⇒ getFunctionRefOrNobody(childName, uid)
       }
     }
-  }
 
   protected def removeChildAndGetStateChange(child: ActorRef): Option[SuspendReason] = {
     @tailrec def removeChild(ref: ActorRef): ChildrenContainer = {

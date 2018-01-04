@@ -11,10 +11,11 @@ import akka.event.LoggingAdapter
 import akka.util.Helpers.toRootLowerCase
 import akka.stream.ActorMaterializerSettings.defaultMaxFixedBufferSize
 import akka.stream.impl._
-import com.typesafe.config.Config
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.duration._
 import akka.japi.function
+import akka.stream.impl.streamref.StreamRefSettingsImpl
 import akka.stream.stage.GraphStageLogic
 
 import scala.util.control.NoStackTrace
@@ -233,6 +234,8 @@ object ActorMaterializerSettings {
   /**
    * Create [[ActorMaterializerSettings]] from individual settings (Scala).
    */
+  @Deprecated
+  @deprecated("Create the settings using the apply(system) or apply(config) method, and then modify them using the .with methods.", since = "2.5.10")
   def apply(
     initialInputBufferSize:      Int,
     maxInputBufferSize:          Int,
@@ -246,7 +249,7 @@ object ActorMaterializerSettings {
     maxFixedBufferSize:          Int) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize)
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, defaultMaxFixedBufferSize, defaultIoSettings, defaultStreamRefSettings)
 
   /**
    * Create [[ActorMaterializerSettings]] from the settings of an [[akka.actor.ActorSystem]] (Scala).
@@ -270,11 +273,14 @@ object ActorMaterializerSettings {
       autoFusing = config.getBoolean("auto-fusing"),
       maxFixedBufferSize = config.getInt("max-fixed-buffer-size"),
       syncProcessingLimit = config.getInt("sync-processing-limit"),
-      ioSettings = IOSettings(config.getConfig("io")))
+      ioSettings = IOSettings(config.getConfig("io")),
+      streamRefSettings = StreamRefSettings(config.getConfig("stream-ref")))
 
   /**
    * Create [[ActorMaterializerSettings]] from individual settings (Java).
    */
+  @Deprecated
+  @deprecated("Create the settings using the create(system) or create(config) method, and then modify them using the .with methods.", since = "2.5.10")
   def create(
     initialInputBufferSize:      Int,
     maxInputBufferSize:          Int,
@@ -288,7 +294,7 @@ object ActorMaterializerSettings {
     maxFixedBufferSize:          Int) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize)
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, defaultMaxFixedBufferSize, defaultIoSettings, defaultStreamRefSettings)
 
   /**
    * Create [[ActorMaterializerSettings]] from the settings of an [[akka.actor.ActorSystem]] (Java).
@@ -303,6 +309,9 @@ object ActorMaterializerSettings {
     apply(config)
 
   private val defaultMaxFixedBufferSize = 1000
+  private val defaultIoSettings = IOSettings(tcpWriteBufferSize = 16 * 1024)
+  // sadly due to the existence of the create-from-individual-parts methods, we need to replicate the defaults here from reference.conf...
+  private val defaultStreamRefSettings: StreamRefSettings = StreamRefSettings(ConfigFactory.load().getConfig("akka.stream.materializer.stream-ref"))
 }
 
 /**
@@ -327,38 +336,8 @@ final class ActorMaterializerSettings private (
   val autoFusing:                  Boolean,
   val maxFixedBufferSize:          Int,
   val syncProcessingLimit:         Int,
-  val ioSettings:                  IOSettings) {
-
-  // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
-  def this(
-    initialInputBufferSize:      Int,
-    maxInputBufferSize:          Int,
-    dispatcher:                  String,
-    supervisionDecider:          Supervision.Decider,
-    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-    debugLogging:                Boolean,
-    outputBurstLimit:            Int,
-    fuzzingMode:                 Boolean,
-    autoFusing:                  Boolean,
-    maxFixedBufferSize:          Int,
-    syncProcessingLimit:         Int) =
-    this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit,
-      IOSettings(tcpWriteBufferSize = 16 * 1024))
-
-  def this(
-    initialInputBufferSize:      Int,
-    maxInputBufferSize:          Int,
-    dispatcher:                  String,
-    supervisionDecider:          Supervision.Decider,
-    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-    debugLogging:                Boolean,
-    outputBurstLimit:            Int,
-    fuzzingMode:                 Boolean,
-    autoFusing:                  Boolean,
-    maxFixedBufferSize:          Int) =
-    this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, defaultMaxFixedBufferSize)
+  val ioSettings:                  IOSettings,
+  val streamRefSettings:           StreamRefSettings) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
   require(syncProcessingLimit > 0, "syncProcessingLimit must be > 0")
@@ -378,10 +357,11 @@ final class ActorMaterializerSettings private (
     autoFusing:                  Boolean                           = this.autoFusing,
     maxFixedBufferSize:          Int                               = this.maxFixedBufferSize,
     syncProcessingLimit:         Int                               = this.syncProcessingLimit,
-    ioSettings:                  IOSettings                        = this.ioSettings) = {
+    ioSettings:                  IOSettings                        = this.ioSettings,
+    streamRefSettings:           StreamRefSettings                 = this.streamRefSettings) = {
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit, ioSettings)
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit, ioSettings, streamRefSettings)
   }
 
   /**
@@ -499,6 +479,11 @@ final class ActorMaterializerSettings private (
   def withIOSettings(ioSettings: IOSettings): ActorMaterializerSettings =
     if (ioSettings == this.ioSettings) this
     else copy(ioSettings = ioSettings)
+
+  /** Change settings specific to [[SourceRef]] and [[SinkRef]]. */
+  def withStreamRefSettings(streamRefSettings: StreamRefSettings): ActorMaterializerSettings =
+    if (streamRefSettings == this.streamRefSettings) this
+    else copy(streamRefSettings = streamRefSettings)
 
   private def requirePowerOfTwo(n: Integer, name: String): Unit = {
     require(n > 0, s"$name must be > 0")

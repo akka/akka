@@ -1185,7 +1185,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Returns an empty string by default, which means that the name will a unique generated String (e.g. "$$a").
    */
   @ApiMayChange
-  final protected def stageActorName: String = ""
+  protected def stageActorName: String = ""
 
   // Internal hooks to avoid reliance on user calling super in preStart
   /** INTERNAL API */
