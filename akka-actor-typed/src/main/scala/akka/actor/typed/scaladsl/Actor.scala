@@ -218,9 +218,9 @@ object Actor {
     tap((_, msg) ⇒ monitor ! msg, unitFunction, behavior)
 
   /**
-   * Wrap the given behavior such that it is restarted (i.e. reset to its
-   * initial state) whenever it throws an exception of the given class or a
-   * subclass thereof. Exceptions that are not subtypes of `Thr` will not be
+   * Wrap the given behavior with the given [[SupervisorStrategy]] for
+   * the given exception.
+   * Exceptions that are not subtypes of `Thr` will not be
    * caught and thus lead to the termination of the actor.
    *
    * It is possible to specify different supervisor strategies, such as restart,
@@ -247,7 +247,7 @@ object Actor {
   private final val NothingClassTag = ClassTag(classOf[Nothing])
   private final val ThrowableClassTag = ClassTag(classOf[Throwable])
   final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
-    /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws. */
+    /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
     def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
       val tag = implicitly[ClassTag[Thr]]
       val effectiveTag = if (tag == NothingClassTag) ThrowableClassTag else tag

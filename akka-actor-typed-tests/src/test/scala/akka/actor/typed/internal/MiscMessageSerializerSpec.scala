@@ -3,12 +3,11 @@
  */
 package akka.actor.typed.internal
 
-import akka.actor.typed.TypedSpec
-import akka.actor.typed.TypedSpec.{ Create ⇒ TCreate }
+import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Actor
-import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
+import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
 
 object MiscMessageSerializerSpec {
@@ -23,7 +22,7 @@ object MiscMessageSerializerSpec {
     """)
 }
 
-class MiscMessageSerializerSpec extends TypedSpec(MiscMessageSerializerSpec.config) {
+class MiscMessageSerializerSpec extends TestKit(MiscMessageSerializerSpec.config) with TypedAkkaSpecWithShutdown {
 
   val serialization = SerializationExtension(system.toUntyped)
 
@@ -40,8 +39,7 @@ class MiscMessageSerializerSpec extends TypedSpec(MiscMessageSerializerSpec.conf
     }
 
     "must serialize and deserialize typed actor refs" in {
-      val ref = (system ? TCreate(Actor.empty[Unit], "some-actor")).futureValue
-      println(ref.getClass)
+      val ref = spawn(Actor.empty[Unit])
       checkSerialization(ref)
     }
   }

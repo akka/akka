@@ -5,6 +5,7 @@
 @@@ index
 
 * [actors](actors-typed.md)
+* [fault-tolerance-typed.md](fault-tolerance-typed.md)
 * [coexisting](coexisting.md)
 * [cluster](cluster-typed.md)
 * [cluster-sharding](cluster-sharding-typed.md)

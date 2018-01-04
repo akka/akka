@@ -9,16 +9,15 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl._
+import org.scalatest.WordSpecLike
 
-class TimerSpec extends TypedSpec(
-  """
-  #akka.loglevel = DEBUG
-  """) with StartSupport {
+class TimerSpec extends TestKit("TimerSpec")
+  with WordSpecLike {
 
   sealed trait Command
   case class Tick(n: Int) extends Command
@@ -87,7 +86,7 @@ class TimerSpec extends TypedSpec(
         target(probe.ref, timer, 1)
       }
 
-      val ref = start(behv)
+      val ref = spawn(behv)
       probe.expectMsg(Tock(1))
       probe.expectNoMsg(100.millis)
 
@@ -102,7 +101,7 @@ class TimerSpec extends TypedSpec(
         target(probe.ref, timer, 1)
       }
 
-      val ref = start(behv)
+      val ref = spawn(behv)
       probe.within((interval * 4) - 100.millis) {
         probe.expectMsg(Tock(1))
         probe.expectMsg(Tock(1))
@@ -120,7 +119,7 @@ class TimerSpec extends TypedSpec(
         target(probe.ref, timer, 1)
       }
 
-      val ref = start(behv)
+      val ref = spawn(behv)
       probe.expectMsg(Tock(1))
       val latch = new CountDownLatch(1)
       // next Tock(1) enqueued in mailboxed, but should be discarded because of new timer
@@ -140,7 +139,7 @@ class TimerSpec extends TypedSpec(
         target(probe.ref, timer, 1)
       }
 
-      val ref = start(behv)
+      val ref = spawn(behv)
       probe.expectMsg(Tock(1))
       ref ! Cancel
       probe.expectNoMsg(dilatedInterval + 100.millis)
@@ -157,7 +156,7 @@ class TimerSpec extends TypedSpec(
         target(probe.ref, timer, 1)
       }).onFailure[Exception](SupervisorStrategy.restart)
 
-      val ref = start(behv)
+      val ref = spawn(behv)
       probe.expectMsg(Tock(1))
 
       val latch = new CountDownLatch(1)
@@ -180,7 +179,7 @@ class TimerSpec extends TypedSpec(
         target(probe.ref, timer, 1)
       }).onFailure[Exception](SupervisorStrategy.restart)
 
-      val ref = start(behv)
+      val ref = spawn(behv)
       probe.expectMsg(Tock(1))
       // change state so that we see that the restart starts over again
       ref ! Bump
@@ -200,23 +199,23 @@ class TimerSpec extends TypedSpec(
     }
 
     "cancel timers when stopped from exception" in {
-      val probe = TestProbe[Event]("evt")
+      val probe = TestProbe[Event]()
       val behv = Actor.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
-      val ref = start(behv)
+      val ref = spawn(behv)
       ref ! Throw(new Exc)
       probe.expectMsg(GotPostStop(false))
     }
 
     "cancel timers when stopped voluntarily" in {
-      val probe = TestProbe[Event]("evt")
+      val probe = TestProbe[Event]()
       val behv = Actor.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
-      val ref = start(behv)
+      val ref = spawn(behv)
       ref ! End
       probe.expectMsg(GotPostStop(false))
     }

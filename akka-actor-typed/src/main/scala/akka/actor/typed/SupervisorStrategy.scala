@@ -61,7 +61,7 @@ object SupervisorStrategy {
     minBackoff:   FiniteDuration,
     maxBackoff:   FiniteDuration,
     randomFactor: Double): BackoffSupervisorStrategy =
-    new Backoff(minBackoff, maxBackoff, randomFactor, resetBackoffAfter = minBackoff, loggingEnabled = true)
+    Backoff(minBackoff, maxBackoff, randomFactor, resetBackoffAfter = minBackoff, loggingEnabled = true)
 
   /**
    * INTERNAL API

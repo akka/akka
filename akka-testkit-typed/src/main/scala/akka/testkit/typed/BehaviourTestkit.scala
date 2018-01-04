@@ -114,7 +114,7 @@ object BehaviorTestkit {
    * JAVA API
    */
   def create[T](initialBehavior: Behavior[T]): BehaviorTestkit[T] =
-    apply(initialBehavior, "ctx")
+    apply(initialBehavior, "testkit")
 }
 
 /**
@@ -122,7 +122,7 @@ object BehaviorTestkit {
  * watching and offers access to what effects have taken place.
  */
 @ApiMayChange
-class BehaviorTestkit[T](_name: String, _initialBehavior: Behavior[T]) {
+class BehaviorTestkit[T] private (_name: String, _initialBehavior: Behavior[T]) {
 
   import Effect._
 

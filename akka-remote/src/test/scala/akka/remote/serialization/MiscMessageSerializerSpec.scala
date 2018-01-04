@@ -5,7 +5,7 @@
 package akka.remote.serialization
 
 import akka.actor._
-import akka.remote.{ MessageSerializer, RemoteScope, RemoteWatcher }
+import akka.remote.{ RemoteScope, RemoteWatcher }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory

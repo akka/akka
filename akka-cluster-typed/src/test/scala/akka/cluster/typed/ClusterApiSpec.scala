@@ -3,13 +3,12 @@
  */
 package akka.cluster.typed
 
+import akka.actor.typed.TypedAkkaSpecWithShutdown
+import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.actor.typed.TypedSpec
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.{ TestKit, TestKitSettings }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
@@ -33,7 +32,7 @@ object ClusterApiSpec {
     """)
 }
 
-class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures {
+class ClusterApiSpec extends TestKit("ClusterApiSpec", ClusterApiSpec.config) with TypedAkkaSpecWithShutdown with ScalaFutures {
 
   val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
