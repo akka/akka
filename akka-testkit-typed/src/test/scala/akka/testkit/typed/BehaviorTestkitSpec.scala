@@ -82,56 +82,51 @@ class BehaviorTestkitSpec extends WordSpec with Matchers {
 
   private val props = Props.empty
 
-  "BehaviourTestkit's spawn" should {
+  "BehaviorTestkit's spawn" must {
     "create children when no props specified" in {
-      val ctx = BehaviorTestkit[Father.Command](Father.init())
-
-      ctx.run(SpawnChildren(2))
-      val effects = ctx.retrieveAllEffects()
+      val testkit = BehaviorTestkit[Father.Command](Father.init())
+      testkit.run(SpawnChildren(2))
+      val effects = testkit.retrieveAllEffects()
       effects should contain only (Spawned(Child.initial, "child0"), Spawned(Child.initial, "child1", Props.empty))
     }
 
     "create children when props specified and record effects" in {
-      val ctx = BehaviorTestkit[Father.Command](Father.init())
-
-      ctx.run(SpawnChildrenWithProps(2, props))
-      val effects = ctx.retrieveAllEffects()
+      val testkit = BehaviorTestkit[Father.Command](Father.init())
+      testkit.run(SpawnChildrenWithProps(2, props))
+      val effects = testkit.retrieveAllEffects()
       effects should contain only (Spawned(Child.initial, "child0", props), Spawned(Child.initial, "child1", props))
     }
   }
 
-  "BehaviourTestkit's spawnAnonymous" should {
+  "BehaviorTestkit's spawnAnonymous" must {
     "create children when no props specified and record effects" in {
-      val ctx = BehaviorTestkit[Father.Command](Father.init())
-
-      ctx.run(SpawnAnonymous(2))
-      val effects = ctx.retrieveAllEffects()
+      val testkit = BehaviorTestkit[Father.Command](Father.init())
+      testkit.run(SpawnAnonymous(2))
+      val effects = testkit.retrieveAllEffects()
       effects shouldBe Seq(SpawnedAnonymous(Child.initial, Props.empty), SpawnedAnonymous(Child.initial, Props.empty))
     }
 
     "create children when props specified and record effects" in {
-      val ctx = BehaviorTestkit[Father.Command](Father.init())
+      val testkit = BehaviorTestkit[Father.Command](Father.init())
 
-      ctx.run(SpawnAnonymousWithProps(2, props))
-      val effects = ctx.retrieveAllEffects()
+      testkit.run(SpawnAnonymousWithProps(2, props))
+      val effects = testkit.retrieveAllEffects()
       effects shouldBe Seq(SpawnedAnonymous(Child.initial, props), SpawnedAnonymous(Child.initial, props))
     }
   }
 
-  "BehaviourTestkit's spawnAdapter" should {
+  "BehaviorTestkit's spawnAdapter" must {
     "create adapters without name and record effects" in {
-      val ctx = BehaviorTestkit[Father.Command](Father.init())
-
-      ctx.run(SpawnAdapter)
-      val effects = ctx.retrieveAllEffects()
+      val testkit = BehaviorTestkit[Father.Command](Father.init())
+      testkit.run(SpawnAdapter)
+      val effects = testkit.retrieveAllEffects()
       effects shouldBe Seq(SpawnedAdapter)
     }
 
     "create adapters with name and record effects" in {
-      val ctx = BehaviorTestkit[Father.Command](Father.init())
-
-      ctx.run(SpawnAdapterWithName("adapter"))
-      val effects = ctx.retrieveAllEffects()
+      val testkit = BehaviorTestkit[Father.Command](Father.init())
+      testkit.run(SpawnAdapterWithName("adapter"))
+      val effects = testkit.retrieveAllEffects()
       effects shouldBe Seq(SpawnedAdapter)
     }
   }

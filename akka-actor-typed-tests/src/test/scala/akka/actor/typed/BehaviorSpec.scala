@@ -61,9 +61,8 @@ object BehaviorSpec {
     override def next = StateA
   }
 
-  trait Common extends TypedSpec {
+  trait Common extends TypedAkkaSpec {
     type Aux >: Null <: AnyRef
-    def system: ActorSystem[TypedSpec.Command]
     def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux)
     def checkAux(signal: Signal, aux: Aux): Unit = ()
     def checkAux(command: Command, aux: Aux): Unit = ()
@@ -339,11 +338,11 @@ object BehaviorSpec {
 
 import BehaviorSpec._
 
-class FullBehaviorSpec extends TypedSpec with Messages with BecomeWithLifecycle with Stoppable {
+class FullBehaviorSpec extends TypedAkkaSpec with Messages with BecomeWithLifecycle with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = mkFull(monitor) → null
 }
 
-class ImmutableBehaviorSpec extends TypedSpec with Messages with BecomeWithLifecycle with Stoppable {
+class ImmutableBehaviorSpec extends Messages with BecomeWithLifecycle with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
   private def behv(monitor: ActorRef[Event], state: State): Behavior[Command] = {
     SActor.immutable[Command] {
@@ -375,7 +374,7 @@ class ImmutableBehaviorSpec extends TypedSpec with Messages with BecomeWithLifec
   }
 }
 
-class ImmutableWithSignalScalaBehaviorSpec extends TypedSpec with Messages with BecomeWithLifecycle with Stoppable {
+class ImmutableWithSignalScalaBehaviorSpec extends TypedAkkaSpec with Messages with BecomeWithLifecycle with Stoppable {
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
 
@@ -411,7 +410,7 @@ class ImmutableWithSignalScalaBehaviorSpec extends TypedSpec with Messages with 
     }
 }
 
-class ImmutableScalaBehaviorSpec extends TypedSpec with Messages with Become with Stoppable {
+class ImmutableScalaBehaviorSpec extends Messages with Become with Stoppable {
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
 
@@ -442,7 +441,7 @@ class ImmutableScalaBehaviorSpec extends TypedSpec with Messages with Become wit
     }
 }
 
-class MutableScalaBehaviorSpec extends TypedSpec with Messages with Become with Stoppable {
+class MutableScalaBehaviorSpec extends Messages with Become with Stoppable {
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
 
@@ -518,7 +517,7 @@ class RestarterScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec wi
   }
 }
 
-class ImmutableWithSignalJavaBehaviorSpec extends TypedSpec with Messages with BecomeWithLifecycle with Stoppable {
+class ImmutableWithSignalJavaBehaviorSpec extends Messages with BecomeWithLifecycle with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
   def behv(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] =
     JActor.immutable(
@@ -550,7 +549,7 @@ class ImmutableWithSignalJavaBehaviorSpec extends TypedSpec with Messages with B
       }))
 }
 
-class ImmutableJavaBehaviorSpec extends TypedSpec with Messages with Become with Stoppable {
+class ImmutableJavaBehaviorSpec extends Messages with Become with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
   def behv(monitor: ActorRef[Event], state: State): Behavior[Command] =
     JActor.immutable {

@@ -4,7 +4,6 @@
 package jdocs.akka.typed.testing.async;
 
 import akka.actor.typed.ActorRef;
-import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Actor;
 import akka.testkit.typed.javadsl.TestProbe;
@@ -15,7 +14,7 @@ import org.junit.Test;
 //#test-header
 public class BasicAsyncTestingTest extends TestKit {
   public BasicAsyncTestingTest() {
-    super(ActorSystem.create(Actor.empty(), "BasicAsyncTestingTest"));
+    super("BasicAsyncTestingTest");
   }
 //#test-header
 
@@ -52,11 +51,21 @@ public class BasicAsyncTestingTest extends TestKit {
 
   @Test
   public void testVerifyingAResponse() {
-    //#test
+    //#test-spawn
     TestProbe<Pong> probe = new TestProbe<>(system(), testkitSettings());
-    ActorRef<Ping> pinger = actorOf(echoActor, "ping");
+    ActorRef<Ping> pinger = spawn(echoActor, "ping");
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMsg(new Pong("hello"));
-    //#test
+    //#test-spawn
+  }
+
+  @Test
+  public void testVerifyingAResponseAnonymous() {
+    //#test-spawn-anonymous
+    TestProbe<Pong> probe = new TestProbe<>(system(), testkitSettings());
+    ActorRef<Ping> pinger = spawn(echoActor);
+    pinger.tell(new Ping("hello", probe.ref()));
+    probe.expectMsg(new Pong("hello"));
+    //#test-spawn-anonymous
   }
 }

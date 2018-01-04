@@ -22,7 +22,7 @@ object BasicAsyncTestingSpec {
 }
 
 //#test-header
-class BasicAsyncTestingSpec extends TestKit(ActorSystem(Actor.empty, "BasicTestingSpec"))
+class BasicAsyncTestingSpec extends TestKit("BasicTestingSpec")
   with WordSpecLike with BeforeAndAfterAll {
   //#test-header
 
@@ -30,12 +30,21 @@ class BasicAsyncTestingSpec extends TestKit(ActorSystem(Actor.empty, "BasicTesti
 
   "A testkit" must {
     "support verifying a response" in {
-      //#test
+      //#test-spawn
       val probe = TestProbe[Pong]()
-      val pinger = actorOf(echoActor, "ping")
+      val pinger = spawn(echoActor, "ping")
       pinger ! Ping("hello", probe.ref)
       probe.expectMsg(Pong("hello"))
-      //#test
+      //#test-spawn
+    }
+
+    "support verifying a response - anonymous" in {
+      //#test-spawn-anonymous
+      val probe = TestProbe[Pong]()
+      val pinger = spawn(echoActor)
+      pinger ! Ping("hello", probe.ref)
+      probe.expectMsg(Pong("hello"))
+      //#test-spawn-anonymous
     }
   }
 

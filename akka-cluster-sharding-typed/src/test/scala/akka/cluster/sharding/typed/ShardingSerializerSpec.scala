@@ -3,14 +3,13 @@
  */
 package akka.cluster.sharding.typed
 
+import akka.actor.typed.TypedAkkaSpecWithShutdown
+import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.cluster.sharding.typed.internal.ShardingSerializer
 import akka.serialization.SerializationExtension
-import akka.actor.typed.TypedSpec
-import akka.cluster.sharding.typed.internal.ShardingSerializer
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.scaladsl.AskPattern._
+import akka.testkit.typed.TestKit
 
-class ShardingSerializerSpec extends TypedSpec {
+class ShardingSerializerSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   "The typed ShardingSerializer" must {
 
