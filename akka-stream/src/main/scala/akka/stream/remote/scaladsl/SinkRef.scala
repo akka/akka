@@ -65,7 +65,7 @@ final class SinkRefTargetSource[T]() extends GraphStageWithMaterializedValue[Sou
       override def preStart(): Unit = {
         localCumulativeDemand = settings.initialDemand.toLong
 
-        self = getStageActor(initialReceive, name = selfActorName)
+        self = getStageActor(initialReceive)
         log.warning("Allocated receiver: {}", self.ref)
 
         promise.success(new SinkRef(self.ref, settings.initialDemand))
@@ -196,7 +196,7 @@ final class SinkRef[In] private[akka] ( // TODO is it more of a SourceRefSink?
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with StageLogging with InHandler {
 
     private[this] lazy val streamRefsMaster = StreamRefsMaster(ActorMaterializerHelper.downcast(materializer).system)
-    private[this] lazy val selfActorName = streamRefsMaster.nextSinkRefName()
+    private[this] override lazy val stageActorName = streamRefsMaster.nextSinkRefName()
 
     // we assume that there is at least SOME buffer space
     private[this] var remoteCumulativeDemandReceived = initialDemand
@@ -207,7 +207,7 @@ final class SinkRef[In] private[akka] ( // TODO is it more of a SourceRefSink?
     implicit def selfSender: ActorRef = self.ref
 
     override def preStart(): Unit = {
-      self = getStageActor(initialReceive, selfActorName)
+      self = getStageActor(initialReceive)
       self.watch(targetRef)
 
       log.warning("Created SinkRef, pointing to remote Sink receiver: {}, local worker: {}", targetRef, self)
