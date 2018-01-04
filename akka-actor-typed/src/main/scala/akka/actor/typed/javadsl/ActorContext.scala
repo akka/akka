@@ -4,10 +4,14 @@
 package akka.actor.typed.javadsl
 
 import java.util.function.{ Function ⇒ JFunction }
+
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
 import akka.actor.typed._
 import java.util.Optional
+
+import akka.util.Timeout
+
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContextExecutor
 
@@ -166,5 +170,28 @@ trait ActorContext[T] {
    * these ActorRefs or to stop them when no longer needed.
    */
   def spawnAdapter[U](f: JFunction[U, T]): ActorRef[U]
+
+  /**
+   * Perform a single request-response message interaction with another action, and transform the messages back to
+   * the protocol of this actor.
+   *
+   * The interaction has a timeout (to avoid resource a resource leak). If the timeout hits without any response it
+   * will be transformed to a message for this actor through the `failToOwnProtocol` function (this is the only
+   * "normal" way a `Failure` is passed to .
+   *
+   * For other messaging patterns with other actors, see [[spawnAdapter]].
+   *
+   * @param responseClass The class of the type of the response message
+   * @param createMessage A function that creates a message for the other actor, containing the provided `ActorRef` that
+   *                      the other actor can send a message back through.
+   * @param responseToOwnProtocol Transforms the response from the `otherActor` into a message this actor understands.
+   *                              Can touch immutable state to provide a context for the interaction, an id for example, but
+   *                              must not touch the `ActorContext` as it will not be executed inside of this actor.
+   *                              Will be fed a `Failure(AskTimeoutException)` if the response timeout hits.
+   *
+   * @tparam Req The request protocol, what the other actor accepts
+   * @tparam Res The response protocol, what the other actor sends back
+   */
+  def ask[Req, Res](otherActor: ActorRef[Any], responseClass: Class[Any], createMessage: Function[ActorRef[Any], Any], responseToOwnProtocol: Function[Any, T], failureToOwnProtocol: Function[Throwable, T], responseTimeout: Timeout): Unit
 
 }

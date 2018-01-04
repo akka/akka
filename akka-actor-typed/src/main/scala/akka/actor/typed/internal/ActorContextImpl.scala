@@ -5,9 +5,13 @@ package akka.actor.typed
 package internal
 
 import akka.annotation.InternalApi
-import java.util.Optional
-import java.util.ArrayList
+import java.util.{ ArrayList, Optional, function }
+
+import akka.util.Timeout
+
 import scala.concurrent.ExecutionContextExecutor
+import scala.reflect.ClassTag
+import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API
@@ -67,5 +71,28 @@ import scala.concurrent.ExecutionContextExecutor
    * Otherwise "ambiguous reference to overloaded definition" because Function is lambda.
    */
   @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U]
+
+  // Scala impl
+  def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit timeout: Timeout, classTag: ClassTag[Res]): Unit = {
+
+    import akka.actor.typed.scaladsl.AskPattern._
+
+    implicit val scheduler = system.scheduler
+
+    (otherActor ? createMessage)
+      .mapTo[Res]
+      .onComplete(t ⇒ self ! responseToOwnProtocol(t))
+  }
+
+  // Java impl
+  def ask[Req, Res](otherActor: ActorRef[Any], responseClass: Class[Any], createMessage: Function[ActorRef[Any], Any], responseToOwnProtocol: Function[Any, T], failureToOwnProtocol: Function[Throwable, T], responseTimeout: Timeout): Unit = {
+    import akka.actor.typed.scaladsl.AskPattern._
+    otherActor.?(createMessage.apply)(responseTimeout, system.scheduler)
+      .mapTo[Res](ClassTag(responseClass))
+      .onComplete {
+        case Success(res) ⇒ self ! responseToOwnProtocol(res)
+        case Failure(t)   ⇒ self ! failureToOwnProtocol(t)
+      }
+  }
 }
 

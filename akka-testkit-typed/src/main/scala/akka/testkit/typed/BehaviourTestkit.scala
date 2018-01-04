@@ -7,14 +7,16 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 import akka.actor.typed.{ ActorRef, Behavior, PostStop, Props, Signal }
 import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.util.Timeout
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-
 import scala.language.existentials
+import scala.reflect.ClassTag
+import scala.util.Try
 
 /**
  * All tracked effects must extend implement this type. It is deliberately
@@ -31,6 +33,7 @@ object Effect {
   @SerialVersionUID(1L) final case class Spawned(behavior: Behavior[_], childName: String, props: Props = Props.empty) extends SpawnedEffect
   @SerialVersionUID(1L) final case class SpawnedAnonymous(behaviour: Behavior[_], props: Props = Props.empty) extends SpawnedEffect
   @SerialVersionUID(1L) final case object SpawnedAdapter extends SpawnedEffect
+  @SerialVersionUID(1L) final case class Ask[T](other: ActorRef[T]) extends Effect
   @SerialVersionUID(1L) final case class Stopped(childName: String) extends Effect
   @SerialVersionUID(1L) final case class Watched[T](other: ActorRef[T]) extends Effect
   @SerialVersionUID(1L) final case class Unwatched[T](other: ActorRef[T]) extends Effect
@@ -68,6 +71,12 @@ object Effect {
     effectQueue.offer(SpawnedAdapter)
     ref
   }
+
+  override def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit timeout: Timeout, classTag: ClassTag[Res]): Unit = {
+    effectQueue.offer(Ask(otherActor))
+    super.ask(otherActor, createMessage)(responseToOwnProtocol)
+  }
+
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
     effectQueue.offer(Spawned(behavior, name, props))
     super.spawn(behavior, name, props)
