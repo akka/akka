@@ -384,6 +384,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
         context.become(active(receptionist) orElse contactPointMessages)
         connectTimerCancelable.foreach(_.cancel())
         failureDetector.heartbeat()
+        self ! HeartbeatTick // will register us as active client of the selected receptionist
       case ActorIdentity(_, None) ⇒ // ok, use another instead
       case HeartbeatTick ⇒
         failureDetector.heartbeat()
@@ -967,7 +968,6 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
           log.debug("Client [{}] gets contactPoints [{}]", sender().path, contacts.contactPoints.mkString(","))
         sender() ! contacts
       }
-      updateClientInteractions(sender())
 
     case state: CurrentClusterState ⇒
       nodes = nodes.empty union state.members.collect { case m if m.status != MemberStatus.Joining && matchingRole(m) ⇒ m.address }

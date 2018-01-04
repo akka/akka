@@ -24,6 +24,7 @@ object ClusterClientHandoverSpec extends MultiNodeConfig {
       heartbeat-interval = 1d
       acceptable-heartbeat-pause = 1d
       reconnect-timeout = 3s
+      refresh-contacts-interval = 1d
 
     }
     akka.test.filter-leeway = 10s
