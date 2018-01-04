@@ -46,7 +46,7 @@ class DowningProviderSpec extends WordSpec with Matchers {
       }
     """).withFallback(ConfigFactory.load())
 
-  "The downing provider mechanism" should {
+  "The downing provider mechanism" must {
 
     "default to akka.cluster.NoDowning" in {
       val system = ActorSystem("default", baseConf)

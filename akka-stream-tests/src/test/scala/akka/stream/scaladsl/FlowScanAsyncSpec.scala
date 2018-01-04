@@ -103,7 +103,7 @@ class FlowScanAsyncSpec extends StreamSpec {
         .expectNextOrError(0, expected)
     }
 
-    "with the restarting decider" should {
+    "with the restarting decider" must {
       "skip error values with a failed scan" in {
         val elements = 1 :: -1 :: 1 :: Nil
         whenFailedScan(elements, 0, decider = Supervision.restartingDecider)
@@ -119,7 +119,7 @@ class FlowScanAsyncSpec extends StreamSpec {
       }
     }
 
-    "with the resuming decider" should {
+    "with the resuming decider" must {
       "skip values with a failed scan" in {
         val elements = 1 :: -1 :: 1 :: Nil
         whenFailedScan(elements, 0, decider = Supervision.resumingDecider)
@@ -135,7 +135,7 @@ class FlowScanAsyncSpec extends StreamSpec {
       }
     }
 
-    "with the stopping decider" should {
+    "with the stopping decider" must {
       "throw error with a failed scan function" in {
         val expected = Utils.TE("failed scan function")
         val elements = -1 :: Nil

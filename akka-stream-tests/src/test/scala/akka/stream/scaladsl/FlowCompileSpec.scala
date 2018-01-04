@@ -22,7 +22,7 @@ class FlowCompileSpec extends StreamSpec {
   val intFut = Source.fromFuture(Future { 3 })
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system))
 
-  "Flow" should {
+  "Flow" must {
     "not run" in {
       val open: Flow[Int, Int, _] = Flow[Int]
       "open.run()" shouldNot compile
@@ -66,7 +66,7 @@ class FlowCompileSpec extends StreamSpec {
     }
   }
 
-  "Sink" should {
+  "Sink" must {
     val openSink: Sink[Int, _] =
       Flow[Int].map(_.toString).to(Sink.asPublisher[String](false))
     "accept Source" in {
@@ -80,7 +80,7 @@ class FlowCompileSpec extends StreamSpec {
     }
   }
 
-  "Source" should {
+  "Source" must {
     val openSource: Source[String, _] =
       Source(Seq(1, 2, 3)).map(_.toString)
     "accept Sink" in {
@@ -94,7 +94,7 @@ class FlowCompileSpec extends StreamSpec {
     }
   }
 
-  "RunnableGraph" should {
+  "RunnableGraph" must {
     Sink.head[String]
     val closed: RunnableGraph[Publisher[String]] =
       Source(Seq(1, 2, 3)).map(_.toString).toMat(Sink.asPublisher[String](false))(Keep.right)
@@ -110,7 +110,7 @@ class FlowCompileSpec extends StreamSpec {
     }
   }
 
-  "FlowOps" should {
+  "FlowOps" must {
     "be extensible" in {
       val f: FlowOps[Int, NotUsed] { type Closed = Sink[Int, NotUsed] } = Flow[Int]
       val fm = f.map(identity)

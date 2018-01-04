@@ -21,7 +21,7 @@ class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with 
   val remoteSystem = newRemoteSystem()
   val remotePort = port(remoteSystem)
 
-  "Remote lookups" should {
+  "Remote lookups" must {
 
     "support remote look-ups" in {
       remoteSystem.actorOf(TestActors.echoActorProps, "remote-look-ups")

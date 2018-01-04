@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicLong
 import org.scalatest.{ Matchers, WordSpec }
 
 class SimpleDnsCacheSpec extends WordSpec with Matchers {
-  "Cache" should {
+  "Cache" must {
     "not reply with expired but not yet swept out entries" in {
       val localClock = new AtomicLong(0)
       val cache: SimpleDnsCache = new SimpleDnsCache() {

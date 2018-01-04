@@ -82,7 +82,7 @@ class AllowJavaSerializationOffSpec extends AkkaSpec(
   val dontAllowJavaSystem =
     ActorSystem("addedJavaSerializationSystem", ActorSystemSetup(addedJavaSerializationProgramaticallyButDisabledSettings, addedJavaSerializationSettings))
 
-  "Disabling java serialization" should {
+  "Disabling java serialization" must {
 
     "throw if passed system to JavaSerializer has allow-java-serialization = off" in {
       intercept[DisabledJavaSerializer.JavaSerializationException] {

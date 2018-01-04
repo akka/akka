@@ -35,7 +35,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
   val remoteSystem = newRemoteSystem()
   val remotePort = port(remoteSystem)
 
-  "Remote message serialization" should {
+  "Remote message serialization" must {
 
     "drop unserializable messages" in {
       object Unserializable

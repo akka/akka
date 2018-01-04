@@ -58,7 +58,7 @@ class GraphFlowSpec extends StreamSpec {
   }
 
   "GraphDSLs" when {
-    "turned into flows" should {
+    "turned into flows" must {
       "work with a Source and Sink" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
@@ -115,7 +115,7 @@ class GraphFlowSpec extends StreamSpec {
       }
     }
 
-    "turned into sources" should {
+    "turned into sources" must {
       "work with a Sink" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
@@ -193,7 +193,7 @@ class GraphFlowSpec extends StreamSpec {
       }
     }
 
-    "turned into sinks" should {
+    "turned into sinks" must {
       "work with a Source" in {
         val probe = TestSubscriber.manualProbe[Int]()
 
@@ -257,7 +257,7 @@ class GraphFlowSpec extends StreamSpec {
       }
     }
 
-    "used together" should {
+    "used together" must {
       "materialize properly" in {
         val probe = TestSubscriber.manualProbe[Int]()
         val inSource = Source.asSubscriber[Int]

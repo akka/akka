@@ -9,7 +9,7 @@ import akka.stream.impl.ResizableMultiReaderRingBuffer._
 
 class ResizableMultiReaderRingBufferSpec extends WordSpec with Matchers {
 
-  "A ResizableMultiReaderRingBuffer" should {
+  "A ResizableMultiReaderRingBuffer" must {
 
     "initially be empty (1)" in new Test(iSize = 2, mSize = 4, cursorCount = 1) {
       inspect shouldEqual "0 0 (size=0, writeIx=0, readIx=0, cursors=1)"

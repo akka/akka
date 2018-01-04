@@ -13,7 +13,7 @@ case class DummySetup3(name: String) extends Setup
 
 class ActorSystemSetupSpec extends WordSpec with Matchers {
 
-  "The ActorSystemSettings" should {
+  "The ActorSystemSettings" must {
 
     "store and retrieve a setup" in {
       val setup = DummySetup("Al Dente")

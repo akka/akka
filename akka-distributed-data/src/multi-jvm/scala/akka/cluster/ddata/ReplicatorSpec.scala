@@ -194,7 +194,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     runOn(second) {
       val changedProbe = TestProbe()
       replicator ! Subscribe(KeyA, changedProbe.ref)
-      // "A" should be replicated via gossip to the new node
+      // "A" must be replicated via gossip to the new node
       within(5.seconds) {
         awaitAssert {
           replicator ! Get(KeyA, ReadLocal)

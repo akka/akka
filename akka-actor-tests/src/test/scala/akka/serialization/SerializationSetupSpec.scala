@@ -87,7 +87,7 @@ class SerializationSetupSpec extends AkkaSpec(
 
   import SerializationSetupSpec._
 
-  "The serialization settings" should {
+  "The serialization settings" must {
 
     "allow for programmatic configuration of serializers" in {
       val serializer = SerializationExtension(system).findSerializerFor(new ProgrammaticDummy)
@@ -128,7 +128,7 @@ class SerializationSetupSpec extends AkkaSpec(
         addedJavaSerializationProgramaticallyButDisabledSettings,
         addedJavaSerializationSettings))
 
-  "Disabling java serialization" should {
+  "Disabling java serialization" must {
 
     "throw if passed system to JavaSerializer has allow-java-serialization = off" in {
       intercept[DisabledJavaSerializer.JavaSerializationException] {

@@ -61,7 +61,7 @@ class PersistentActorRecoveryTimeoutSpec extends AkkaSpec(PersistentActorRecover
 
   import PersistentActorRecoveryTimeoutSpec.journalId
 
-  "The recovery timeout" should {
+  "The recovery timeout" must {
 
     "fail recovery if timeout is not met when recovering" in {
       val probe = TestProbe()

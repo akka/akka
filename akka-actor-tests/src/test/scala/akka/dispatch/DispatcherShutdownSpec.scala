@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 
 class DispatcherShutdownSpec extends WordSpec with Matchers {
 
-  "akka dispatcher" should {
+  "akka dispatcher" must {
 
     "eventualy shutdown when used after system terminate" in {
 

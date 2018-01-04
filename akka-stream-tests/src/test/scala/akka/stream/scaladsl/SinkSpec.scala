@@ -305,7 +305,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   }
 
-  "The ignore sink" should {
+  "The ignore sink" must {
 
     "fail its materialized value on abrupt materializer termination" in {
       val mat = ActorMaterializer()

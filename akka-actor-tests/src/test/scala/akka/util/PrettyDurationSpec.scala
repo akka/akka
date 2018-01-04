@@ -24,7 +24,7 @@ class PrettyDurationSpec extends WordSpec with Matchers {
       95.hours → "3.958 d" ::
       Nil
 
-  "PrettyDuration" should {
+  "PrettyDuration" must {
 
     cases foreach {
       case (d, expectedValue) ⇒

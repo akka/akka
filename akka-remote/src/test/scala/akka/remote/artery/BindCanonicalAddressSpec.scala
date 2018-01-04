@@ -14,7 +14,7 @@ import java.net.InetAddress
 class BindCanonicalAddressSpec extends WordSpec with Matchers {
   import BindCanonicalAddressSpec._
 
-  "artery" should {
+  "artery" must {
 
     "bind to a random port" in {
       val config = ConfigFactory.parseString(s"""

@@ -56,7 +56,7 @@ object AtLeastOnceDeliveryCrashSpec {
 
 class AtLeastOnceDeliveryCrashSpec extends AkkaSpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliveryCrashSpec", serialization = "off")) with ImplicitSender {
   import AtLeastOnceDeliveryCrashSpec._
-  "At least once delivery" should {
+  "At least once delivery" must {
     "not send when actor crashes" in {
       val testProbe = TestProbe()
       def createCrashActorUnderSupervisor() = system.actorOf(Props(new StoppingStrategySupervisor(testProbe.ref)), "supervisor")

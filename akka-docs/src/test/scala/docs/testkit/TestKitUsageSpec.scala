@@ -47,7 +47,7 @@ class TestKitUsageSpec
     shutdown()
   }
 
-  "An EchoActor" should {
+  "An EchoActor" must {
     "Respond with the same message it receives" in {
       within(500 millis) {
         echoRef ! "test"
@@ -55,7 +55,7 @@ class TestKitUsageSpec
       }
     }
   }
-  "A ForwardingActor" should {
+  "A ForwardingActor" must {
     "Forward a message it receives" in {
       within(500 millis) {
         forwardRef ! "test"
@@ -63,7 +63,7 @@ class TestKitUsageSpec
       }
     }
   }
-  "A FilteringActor" should {
+  "A FilteringActor" must {
     "Filter all messages, except expected messagetypes it receives" in {
       var messages = Seq[String]()
       within(500 millis) {
@@ -85,7 +85,7 @@ class TestKitUsageSpec
       messages.reverse should be(Seq("some", "more", "text"))
     }
   }
-  "A SequencingActor" should {
+  "A SequencingActor" must {
     "receive an interesting message at some point " in {
       within(500 millis) {
         ignoreMsg {

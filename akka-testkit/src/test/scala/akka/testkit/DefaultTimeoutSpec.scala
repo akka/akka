@@ -14,7 +14,7 @@ class DefaultTimeoutSpec
 
   override def afterAll = system.terminate
 
-  "A spec with DefaultTimeout" should {
+  "A spec with DefaultTimeout" must {
     "use timeout from settings" in {
       timeout should ===(testKitSettings.DefaultTimeout)
     }

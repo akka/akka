@@ -65,7 +65,7 @@ class RemoteMessageSpec extends AkkaSpec(RemoteMessageSpec.config) {
 
   val typedSystem = system.toTyped
 
-  "the adapted system" should {
+  "the adapted system" must {
 
     "something something" in {
 

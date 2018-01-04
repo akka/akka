@@ -27,7 +27,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
   private val minBackoff = 1.second.dilated
   private val maxBackoff = 3.seconds.dilated
 
-  "A restart with backoff source" should {
+  "A restart with backoff source" must {
     "run normally" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
@@ -225,7 +225,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
   }
 
-  "A restart with backoff sink" should {
+  "A restart with backoff sink" must {
     "run normally" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val result = Promise[Seq[String]]()
@@ -356,7 +356,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     }
   }
 
-  "A restart with backoff flow" should {
+  "A restart with backoff flow" must {
 
     def setupFlow(minBackoff: FiniteDuration, maxBackoff: FiniteDuration) = {
       val created = new AtomicInteger()

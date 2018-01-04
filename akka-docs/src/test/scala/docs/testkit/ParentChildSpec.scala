@@ -81,7 +81,7 @@ class ParentChildSpec extends WordSpec with Matchers with TestKitBase with Befor
     TestKit.shutdownActorSystem(system)
   }
 
-  "A DependentChild" should {
+  "A DependentChild" must {
     "be tested without its parent" in {
       val probe = TestProbe()
       val child = system.actorOf(Props(new DependentChild(probe.ref)))
@@ -90,7 +90,7 @@ class ParentChildSpec extends WordSpec with Matchers with TestKitBase with Befor
     }
   }
 
-  "A DependentParent" should {
+  "A DependentParent" must {
     "be tested with custom props" in {
       val probe = TestProbe()
       val childProps = Props(new MockedChild())
@@ -101,7 +101,7 @@ class ParentChildSpec extends WordSpec with Matchers with TestKitBase with Befor
     }
   }
 
-  "A GenericDependentParent" should {
+  "A GenericDependentParent" must {
     "be tested with a child probe" in {
       val probe = TestProbe()
       //#child-maker-test
@@ -121,7 +121,7 @@ class ParentChildSpec extends WordSpec with Matchers with TestKitBase with Befor
   }
 
   //#test-TestProbe-parent
-  "A TestProbe serving as parent" should {
+  "A TestProbe serving as parent" must {
     "test its child responses" in {
       val parent = TestProbe()
       val child = parent.childActorOf(Props(new Child))
@@ -132,7 +132,7 @@ class ParentChildSpec extends WordSpec with Matchers with TestKitBase with Befor
   //#test-TestProbe-parent
 
   //#test-fabricated-parent
-  "A fabricated parent" should {
+  "A fabricated parent" must {
     "test its child responses" in {
       val proxy = TestProbe()
       val parent = system.actorOf(Props(new Actor {

@@ -104,7 +104,7 @@ class MetadataCarryingSpec extends ArteryMultiNodeSpec(
   import MetadataCarryingSpec._
   import MetadataCarryingSpy._
 
-  "Metadata" should {
+  "Metadata" must {
 
     "be included in remote messages" in {
       val systemA = localSystem

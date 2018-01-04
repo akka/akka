@@ -79,7 +79,7 @@ class SteppingInMemPersistentActorBoundedStashingSpec(strategyConfig: String)
 
 class ThrowExceptionStrategyPersistentActorBoundedStashingSpec
   extends SteppingInMemPersistentActorBoundedStashingSpec(PersistentActorBoundedStashingSpec.throwConfig) {
-  "Stashing with ThrowOverflowExceptionStrategy in a persistence actor " should {
+  "Stashing with ThrowOverflowExceptionStrategy in a persistence actor " must {
     "throws stash overflow exception" in {
       val persistentActor = namedPersistentActor[StashOverflowStrategyFromConfigPersistentActor]
       awaitAssert(SteppingInmemJournal.getRef("persistence-bounded-stash"), 3.seconds)
@@ -107,7 +107,7 @@ class ThrowExceptionStrategyPersistentActorBoundedStashingSpec
 
 class DiscardStrategyPersistentActorBoundedStashingSpec
   extends SteppingInMemPersistentActorBoundedStashingSpec(PersistentActorBoundedStashingSpec.discardConfig) {
-  "Stashing with DiscardToDeadLetterStrategy in a persistence actor " should {
+  "Stashing with DiscardToDeadLetterStrategy in a persistence actor " must {
     "discard to deadletter" in {
       val persistentActor = namedPersistentActor[StashOverflowStrategyFromConfigPersistentActor]
       awaitAssert(SteppingInmemJournal.getRef("persistence-bounded-stash"), 3.seconds)
@@ -135,7 +135,7 @@ class DiscardStrategyPersistentActorBoundedStashingSpec
 
 class ReplyToStrategyPersistentActorBoundedStashingSpec
   extends SteppingInMemPersistentActorBoundedStashingSpec(PersistentActorBoundedStashingSpec.replyToConfig) {
-  "Stashing with DiscardToDeadLetterStrategy in a persistence actor" should {
+  "Stashing with DiscardToDeadLetterStrategy in a persistence actor" must {
     "reply to request with custom message" in {
       val persistentActor = namedPersistentActor[StashOverflowStrategyFromConfigPersistentActor]
       awaitAssert(SteppingInmemJournal.getRef("persistence-bounded-stash"), 3.seconds)

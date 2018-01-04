@@ -462,7 +462,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
   }
 
-  "attributes on the materializer" should {
+  "attributes on the materializer" must {
 
     "be defaults and not used when more specific attributes are found" in {
 

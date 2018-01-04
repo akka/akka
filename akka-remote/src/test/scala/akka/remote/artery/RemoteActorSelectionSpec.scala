@@ -33,7 +33,7 @@ class RemoteActorSelectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
 
   import RemoteActorSelectionSpec._
 
-  "Remote actor selection" should {
+  "Remote actor selection" must {
 
     // TODO fails with not receiving the localGrandchild value, seems to go to dead letters
     "select actors across node boundaries" ignore {

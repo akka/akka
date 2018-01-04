@@ -20,7 +20,7 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       EventFilter.warning(pattern = "received dead letter.*")))
   }
 
-  "Remoting between systems" should {
+  "Remoting between systems" must {
 
     "be able to connect to system even if it's not there at first" in {
       muteSystem(localSystem)

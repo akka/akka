@@ -19,7 +19,7 @@ class JsonFramingSpec extends AkkaSpec {
 
   implicit val mat = ActorMaterializer()
 
-  "collecting multiple json" should {
+  "collecting multiple json" must {
     "parse json array" in {
       val input =
         """
@@ -148,7 +148,7 @@ class JsonFramingSpec extends AkkaSpec {
   }
 
   "collecting json buffer" when {
-    "nothing is supplied" should {
+    "nothing is supplied" must {
       "return nothing" in {
         val buffer = new JsonObjectParser()
         buffer.poll() should ===(None)
@@ -156,7 +156,7 @@ class JsonFramingSpec extends AkkaSpec {
     }
 
     "valid json is supplied" which {
-      "has one object" should {
+      "has one object" must {
         "successfully parse empty object" in {
           val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""{}"""))
@@ -314,7 +314,7 @@ class JsonFramingSpec extends AkkaSpec {
         }
       }
 
-      "has nested array" should {
+      "has nested array" must {
         "successfully parse" in {
           val buffer = new JsonObjectParser()
           buffer.offer(ByteString(
@@ -339,7 +339,7 @@ class JsonFramingSpec extends AkkaSpec {
         }
       }
 
-      "has complex object graph" should {
+      "has complex object graph" must {
         "successfully parse" in {
           val buffer = new JsonObjectParser()
           buffer.offer(ByteString(
@@ -393,7 +393,7 @@ class JsonFramingSpec extends AkkaSpec {
         }
       }
 
-      "has multiple fields" should {
+      "has multiple fields" must {
         "parse successfully" in {
           val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""{ "name": "john", "age": 101}"""))
@@ -414,7 +414,7 @@ class JsonFramingSpec extends AkkaSpec {
         }
       }
 
-      "has multiple objects" should {
+      "has multiple objects" must {
         "pops the right object as buffer is filled" in {
           val input =
             """
@@ -464,7 +464,7 @@ class JsonFramingSpec extends AkkaSpec {
         buffer.poll().get.utf8String shouldBe """{ "name": "john"}"""
       }
 
-      "invalid json is supplied" should {
+      "invalid json is supplied" must {
         "fail if it's broken from the start" in {
           val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""THIS IS NOT VALID { "name": "john"}"""))

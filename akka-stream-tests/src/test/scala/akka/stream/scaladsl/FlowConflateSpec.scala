@@ -213,7 +213,7 @@ class FlowConflateSpec extends StreamSpec {
       sub.sendNext("three")
       sub.sendComplete()
 
-      // "one" should be lost
+      // "one" must be lost
       Await.ready(latch, 3.seconds)
       sinkProbe.requestNext() should ===("three")
 

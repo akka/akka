@@ -17,7 +17,7 @@ class RemoteConfigSpec extends AkkaSpec(
     akka.remote.netty.tcp.port = 0
   """) {
 
-  "Remoting" should {
+  "Remoting" must {
 
     "contain correct configuration values in reference.conf" in {
       val remoteSettings = RARP(system).provider.remoteSettings
