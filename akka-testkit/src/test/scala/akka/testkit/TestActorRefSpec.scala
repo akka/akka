@@ -113,7 +113,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
   private def assertThread(): Unit = otherthread should (be(null) or equal(thread))
 
-  "A TestActorRef should be an ActorRef, hence it" must {
+  "A TestActorRef should be an ActorRef, hence it" should {
 
     "support nested Actor creation" when {
 
@@ -224,7 +224,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
   }
 
-  "A TestActorRef" must {
+  "A TestActorRef" should {
 
     "allow access to internals" in {
       class TA extends TActor {
@@ -296,7 +296,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
   }
 
-  "A TestActorRef Companion Object" must {
+  "A TestActorRef Companion Object" should {
 
     "allow creation of a TestActorRef with a default supervisor" in {
       val ref = TestActorRef[WorkerActor]

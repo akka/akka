@@ -65,7 +65,7 @@ class MultiDcSunnyWeatherMultiJvmNode5 extends MultiDcSunnyWeatherSpec
 abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeatherMultiJvmSpec)
   with MultiNodeClusterSpec {
 
-  "A normal cluster" must {
+  "A normal cluster" should {
     "be healthy" taggedAs LongRunningTest in {
 
       val observer = TestProbe("alpha-observer")

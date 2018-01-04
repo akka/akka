@@ -15,7 +15,7 @@ class FlowAppendSpec extends StreamSpec with River {
   val settings = ActorMaterializerSettings(system)
   implicit val materializer = ActorMaterializer(settings)
 
-  "Flow" must {
+  "Flow" should {
     "append Flow" in riverOf[String] { subscriber ⇒
       val flow = Flow[Int].via(otherFlow)
       Source(elements).via(flow).to(Sink.fromSubscriber(subscriber)).run()
@@ -27,7 +27,7 @@ class FlowAppendSpec extends StreamSpec with River {
     }
   }
 
-  "Source" must {
+  "Source" should {
     "append Flow" in riverOf[String] { subscriber ⇒
       Source(elements)
         .via(otherFlow)

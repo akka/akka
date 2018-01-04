@@ -30,7 +30,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
     commander.sender()
   }
 
-  "The UDP connection oriented implementation" must {
+  "The UDP connection oriented implementation" should {
 
     "be able to send and receive without binding" in {
       val serverAddress = addresses(0)

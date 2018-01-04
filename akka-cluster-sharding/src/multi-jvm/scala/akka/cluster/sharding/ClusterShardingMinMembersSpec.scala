@@ -121,7 +121,7 @@ abstract class ClusterShardingMinMembersSpec(config: ClusterShardingMinMembersSp
 
   def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
-  s"Cluster with min-nr-of-members using sharding ($mode)" must {
+  s"Cluster with min-nr-of-members using sharding ($mode)" should {
 
     if (!isDdataMode) {
       "setup shared journal" in {

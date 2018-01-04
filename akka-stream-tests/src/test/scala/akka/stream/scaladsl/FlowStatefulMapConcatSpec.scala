@@ -15,7 +15,7 @@ class FlowStatefulMapConcatSpec extends StreamSpec with ScriptedTest {
   implicit val materializer = ActorMaterializer(settings)
   val ex = new Exception("TEST") with NoStackTrace
 
-  "A StatefulMapConcat" must {
+  "A StatefulMapConcat" should {
 
     "work in happy case" in {
       val script = Script(

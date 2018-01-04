@@ -18,7 +18,7 @@ import akka.actor.Address
 
 class ClusterConfigSpec extends AkkaSpec {
 
-  "Clustering" must {
+  "Clustering" should {
 
     "be able to parse generic cluster config elements" in {
       val settings = new ClusterSettings(system.settings.config, system.name)

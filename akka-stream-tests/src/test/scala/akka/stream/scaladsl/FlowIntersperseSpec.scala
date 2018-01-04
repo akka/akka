@@ -15,7 +15,7 @@ class FlowIntersperseSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A Intersperse" must {
+  "A Intersperse" should {
     "inject element between existing elements" in {
       val probe = Source(List(1, 2, 3))
         .map(_.toString)

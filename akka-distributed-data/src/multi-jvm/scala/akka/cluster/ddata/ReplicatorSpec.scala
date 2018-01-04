@@ -78,7 +78,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     enterBarrier(from.name + "-joined")
   }
 
-  "Cluster CRDT" must {
+  "Cluster CRDT" should {
 
     "work in single node cluster" in {
       join(first, first)
@@ -194,7 +194,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     runOn(second) {
       val changedProbe = TestProbe()
       replicator ! Subscribe(KeyA, changedProbe.ref)
-      // "A" must be replicated via gossip to the new node
+      // "A" should be replicated via gossip to the new node
       within(5.seconds) {
         awaitAssert {
           replicator ! Get(KeyA, ReadLocal)

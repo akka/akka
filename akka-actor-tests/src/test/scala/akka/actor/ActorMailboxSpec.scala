@@ -235,7 +235,7 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
     q
   }
 
-  "An Actor" must {
+  "An Actor" should {
 
     "get an unbounded message queue by default" in {
       checkMailboxQueue(Props[QueueReportingActor], "default-default", UnboundedMailboxTypes)

@@ -15,7 +15,7 @@ class PublisherSinkSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A PublisherSink" must {
+  "A PublisherSink" should {
 
     "be unique when created twice" in assertAllStagesStopped {
 

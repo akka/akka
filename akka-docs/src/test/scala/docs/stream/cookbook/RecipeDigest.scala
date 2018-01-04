@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 class RecipeDigest extends RecipeSpec {
 
-  "Recipe for calculating digest" must {
+  "Recipe for calculating digest" should {
 
     "work" in {
 

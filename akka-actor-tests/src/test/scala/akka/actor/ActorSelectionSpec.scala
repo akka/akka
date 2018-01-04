@@ -83,7 +83,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     }
   }
 
-  "An ActorSystem" must {
+  "An ActorSystem" should {
 
     "select actors by their path" in {
       identify(c1.path) should ===(Some(c1))
@@ -178,7 +178,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
   }
 
-  "An ActorContext" must {
+  "An ActorContext" should {
 
     val all = Seq(c1, c2, c21)
 
@@ -266,7 +266,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
   }
 
-  "An ActorSelection" must {
+  "An ActorSelection" should {
 
     "send messages directly" in {
       ActorSelection(c1, "") ! GetSender(testActor)

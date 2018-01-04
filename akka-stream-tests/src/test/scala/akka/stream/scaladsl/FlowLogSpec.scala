@@ -29,13 +29,13 @@ class FlowLogSpec extends StreamSpec("""
     p
   }
 
-  "A Log" must {
+  "A Log" should {
 
     val supervisorPath = ActorMaterializerHelper.downcast(mat).supervisor.path
     val LogSrc = s"akka.stream.Log($supervisorPath)"
     val LogClazz = classOf[Materializer]
 
-    "on Flow" must {
+    "on Flow" should {
 
       "debug each element" in {
         val debugging = Flow[Int].log("my-debug")
@@ -63,7 +63,7 @@ class FlowLogSpec extends StreamSpec("""
 
     }
 
-    "on javadsl.Flow" must {
+    "on javadsl.Flow" should {
       "debug each element" in {
         val log = Logging(system, "com.example.ImportantLogger")
 
@@ -90,7 +90,7 @@ class FlowLogSpec extends StreamSpec("""
       }
     }
 
-    "on Source" must {
+    "on Source" should {
       "debug each element" in {
         Source(1 to 2).log("flow-s2").runWith(Sink.ignore)
 
@@ -157,7 +157,7 @@ class FlowLogSpec extends StreamSpec("""
       }
     }
 
-    "on javadsl.Source" must {
+    "on javadsl.Source" should {
       "debug each element" in {
         val log = Logging(system, "com.example.ImportantLogger")
 

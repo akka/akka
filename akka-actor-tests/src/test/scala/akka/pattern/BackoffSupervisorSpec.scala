@@ -48,7 +48,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
   def onFailureOptions(props: Props = Child.props(testActor)) = Backoff.onFailure(props, "c1", 100.millis, 3.seconds, 0.2)
   def create(options: BackoffOptions) = system.actorOf(BackoffSupervisor.props(options))
 
-  "BackoffSupervisor" must {
+  "BackoffSupervisor" should {
     "start child again when it stops when using `Backoff.onStop`" in {
       val supervisor = create(onStopOptions())
       supervisor ! BackoffSupervisor.GetCurrentChild

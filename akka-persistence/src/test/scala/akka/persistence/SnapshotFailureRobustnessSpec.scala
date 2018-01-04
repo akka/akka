@@ -104,7 +104,7 @@ class SnapshotFailureRobustnessSpec extends PersistenceSpec(PersistenceSpec.conf
 
   import SnapshotFailureRobustnessSpec._
 
-  "A persistentActor with a failing snapshot" must {
+  "A persistentActor with a failing snapshot" should {
     "recover state starting from the most recent complete snapshot" in {
       val sPersistentActor = system.actorOf(Props(classOf[SaveSnapshotTestPersistentActor], name, testActor))
       val persistenceId = name

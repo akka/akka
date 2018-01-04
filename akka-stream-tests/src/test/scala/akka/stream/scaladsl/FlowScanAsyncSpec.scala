@@ -20,7 +20,7 @@ class FlowScanAsyncSpec extends StreamSpec {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext = materializer.executionContext
 
-  "A ScanAsync" must {
+  "A ScanAsync" should {
 
     val sumScanFlow = Flow[Int].scanAsync(0) { (accumulator, next) ⇒
       Future(accumulator + next)
@@ -103,7 +103,7 @@ class FlowScanAsyncSpec extends StreamSpec {
         .expectNextOrError(0, expected)
     }
 
-    "with the restarting decider" must {
+    "with the restarting decider" should {
       "skip error values with a failed scan" in {
         val elements = 1 :: -1 :: 1 :: Nil
         whenFailedScan(elements, 0, decider = Supervision.restartingDecider)
@@ -119,7 +119,7 @@ class FlowScanAsyncSpec extends StreamSpec {
       }
     }
 
-    "with the resuming decider" must {
+    "with the resuming decider" should {
       "skip values with a failed scan" in {
         val elements = 1 :: -1 :: 1 :: Nil
         whenFailedScan(elements, 0, decider = Supervision.resumingDecider)
@@ -135,7 +135,7 @@ class FlowScanAsyncSpec extends StreamSpec {
       }
     }
 
-    "with the stopping decider" must {
+    "with the stopping decider" should {
       "throw error with a failed scan function" in {
         val expected = Utils.TE("failed scan function")
         val elements = -1 :: Nil

@@ -76,7 +76,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     }
   }
 
-  "An outgoing connection" must {
+  "An outgoing connection" should {
     info("Connection reset by peer message expected is " + ConnectionResetByPeerMessage)
     info("Connection refused message prefix expected is " + ConnectionRefusedMessagePrefix)
     // common behavior

@@ -128,7 +128,7 @@ class RemoteDeploymentWhitelistSpec extends AkkaSpec(RemoteDeploymentWhitelistSp
     AssociationRegistry.clear()
   }
 
-  "RemoteDeployment Whitelist" must {
+  "RemoteDeployment Whitelist" should {
 
     "allow deploying Echo actor (included in whitelist)" in {
       val r = system.actorOf(Props[EchoWhitelisted], "blub")

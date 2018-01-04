@@ -31,7 +31,7 @@ abstract class NodeUpSpec
   import NodeUpMultiJvmSpec._
   import ClusterEvent._
 
-  "A cluster node that is joining another cluster" must {
+  "A cluster node that is joining another cluster" should {
     "not be able to join a node that is not a cluster member" in {
 
       runOn(first) {

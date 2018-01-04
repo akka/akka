@@ -294,7 +294,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     reference.toSeq == builder.result
   }
 
-  "ByteString1" must {
+  "ByteString1" should {
     "drop" in {
       ByteString1.empty.drop(-1) should ===(ByteString(""))
       ByteString1.empty.drop(0) should ===(ByteString(""))
@@ -343,7 +343,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteString1.fromString("0123456789").take(10).take(8).drop(3).take(5) should ===(ByteString("34567"))
     }
   }
-  "ByteString1C" must {
+  "ByteString1C" should {
     "drop" in {
       ByteString1C.fromString("").drop(-1) should ===(ByteString(""))
       ByteString1C.fromString("").drop(0) should ===(ByteString(""))
@@ -386,7 +386,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteString1.fromString("abcdefg").drop(2).take(1) should ===(ByteString("c"))
     }
   }
-  "ByteStrings" must {
+  "ByteStrings" should {
     "drop" in {
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).drop(Int.MinValue) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).drop(-1) should ===(ByteString(""))
@@ -605,7 +605,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     }
   }
 
-  "A ByteString" must {
+  "A ByteString" should {
     "have correct size" when {
       "concatenating" in { check((a: ByteString, b: ByteString) ⇒ (a ++ b).size == a.size + b.size) }
       "dropping" in { check((a: ByteString, b: ByteString) ⇒ (a ++ b).drop(b.size).size == a.size) }
@@ -767,7 +767,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     }
   }
 
-  "A ByteStringIterator" must {
+  "A ByteStringIterator" should {
     "behave like a buffered Vector Iterator" when {
       "concatenating" in { check { (a: ByteString, b: ByteString) ⇒ likeVecIts(a, b) { (a, b) ⇒ (a ++ b).toSeq } } }
 
@@ -911,7 +911,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     }
   }
 
-  "A ByteStringBuilder" must {
+  "A ByteStringBuilder" should {
     "function like a VectorBuilder" when {
       "adding various contents using ++= and +=" in {
         check { (array1: Array[Byte], array2: Array[Byte], bs1: ByteString, bs2: ByteString, bs3: ByteString) ⇒

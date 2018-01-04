@@ -67,7 +67,7 @@ abstract class RemoteRestartedQuarantinedSpec
     expectMsgType[(Int, ActorRef)]
   }
 
-  "A restarted quarantined system" must {
+  "A restarted quarantined system" should {
 
     "should not crash the other system (#17213)" taggedAs LongRunningTest in {
 

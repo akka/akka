@@ -32,7 +32,7 @@ class ORSetSpec extends WordSpec with Matchers {
   val user3 = """{"username":"charlie","password":"parker"}"""
   val user4 = """{"username":"charles","password":"mingus"}"""
 
-  "A ORSet" must {
+  "A ORSet" should {
 
     "be able to add user" in {
       val c1 = ORSet()
@@ -227,7 +227,7 @@ class ORSetSpec extends WordSpec with Matchers {
 
   }
 
-  "ORSet deltas" must {
+  "ORSet deltas" should {
 
     def addDeltaOp(s: ORSet[String]): ORSet.AddDeltaOp[String] =
       asAddDeltaOp(s.delta.get)
@@ -484,7 +484,7 @@ class ORSetSpec extends WordSpec with Matchers {
 
   }
 
-  "ORSet unit test" must {
+  "ORSet unit test" should {
     "verify subtractDots" in {
       val dot = VersionVector(TreeMap(nodeA → 3L, nodeB → 2L, nodeD → 14L, nodeG → 22L))
       val vvector = VersionVector(TreeMap(nodeA → 4L, nodeB → 1L, nodeC → 1L, nodeD → 14L, nodeE → 5L, nodeF → 2L))

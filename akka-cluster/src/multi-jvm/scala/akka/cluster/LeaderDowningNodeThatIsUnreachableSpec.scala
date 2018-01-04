@@ -44,7 +44,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
 
   muteMarkingAsUnreachable()
 
-  "The Leader in a 4 node cluster" must {
+  "The Leader in a 4 node cluster" should {
 
     "be able to DOWN a 'last' node that is UNREACHABLE" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third, fourth)

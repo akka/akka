@@ -139,7 +139,7 @@ abstract class MultiDcSplitBrainSpec
 
   }
 
-  "A cluster with multiple data centers" must {
+  "A cluster with multiple data centers" should {
     "be able to form two data centers" in {
       awaitClusterUp(first, second, third)
     }

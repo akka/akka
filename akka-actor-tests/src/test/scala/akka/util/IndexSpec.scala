@@ -29,7 +29,7 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
     index
   }
 
-  "An Index" must {
+  "An Index" should {
 
     "take and return a value" in {
       val index = emptyIndex

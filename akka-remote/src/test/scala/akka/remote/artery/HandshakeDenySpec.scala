@@ -25,7 +25,7 @@ class HandshakeDenySpec extends ArteryMultiNodeSpec(HandshakeDenySpec.commonConf
 
   var systemB = newRemoteSystem(name = Some("systemB"))
 
-  "Artery handshake" must {
+  "Artery handshake" should {
 
     "be denied when originating address is unknown" in {
       val sel = system.actorSelection(RootActorPath(address(systemB).copy(host = Some("127.0.0.1"))) / "user" / "echo")

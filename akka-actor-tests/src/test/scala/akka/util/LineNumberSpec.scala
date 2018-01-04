@@ -14,7 +14,7 @@ class LineNumberSpec extends AkkaSpec {
 
   "LineNumbers" when {
 
-    "writing Scala" must {
+    "writing Scala" should {
       import LineNumberSpecCodeForScala._
 
       "work for small functions" in {
@@ -42,7 +42,7 @@ class LineNumberSpec extends AkkaSpec {
 
     }
 
-    "writing Java" must {
+    "writing Java" should {
       val l = new LineNumberSpecCodeForJava
 
       "work for small functions" in {

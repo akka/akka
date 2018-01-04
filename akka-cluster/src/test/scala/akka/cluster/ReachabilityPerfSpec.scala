@@ -81,7 +81,7 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
     }
   }
 
-  s"Reachability of size $nodesSize" must {
+  s"Reachability of size $nodesSize" should {
 
     s"do a warm up run, $iterations times" in {
       checkThunkFor(reachability1, reachability2, merge(0), iterations)

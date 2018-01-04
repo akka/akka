@@ -24,7 +24,7 @@ class ControllerSpec extends AkkaSpec(ControllerSpec.config) with ImplicitSender
   val A = RoleName("a")
   val B = RoleName("b")
 
-  "A Controller" must {
+  "A Controller" should {
 
     "publish its nodes" in {
       val c = system.actorOf(Props(classOf[Controller], 1, new InetSocketAddress(InetAddress.getLocalHost, 0)))

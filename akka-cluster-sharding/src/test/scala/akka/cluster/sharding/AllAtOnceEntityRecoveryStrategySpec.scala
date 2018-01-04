@@ -9,7 +9,7 @@ import akka.testkit.AkkaSpec
 class AllAtOnceEntityRecoveryStrategySpec extends AkkaSpec {
   val strategy = EntityRecoveryStrategy.allStrategy()
 
-  "AllAtOnceEntityRecoveryStrategy" must {
+  "AllAtOnceEntityRecoveryStrategy" should {
     "recover entities" in {
       val entities = Set[EntityId]("1", "2", "3", "4", "5")
       val startTime = System.nanoTime()

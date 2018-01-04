@@ -17,7 +17,7 @@ class MySpec() extends TestKit(ActorSystem("MySpec")) with ImplicitSender
     TestKit.shutdownActorSystem(system)
   }
 
-  "An Echo actor" must {
+  "An Echo actor" should {
 
     "send back messages unchanged" in {
       val echo = system.actorOf(TestActors.echoActorProps)

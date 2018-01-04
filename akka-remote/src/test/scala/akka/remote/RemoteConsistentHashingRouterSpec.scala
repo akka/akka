@@ -12,7 +12,7 @@ import akka.routing.ConsistentHash
 class RemoteConsistentHashingRouterSpec extends AkkaSpec("""
     akka.actor.provider = remote """) {
 
-  "ConsistentHashingGroup" must {
+  "ConsistentHashingGroup" should {
 
     "use same hash ring indepenent of self address" in {
       // simulating running router on two different nodes (a1, a2) with target routees on 3 other nodes (s1, s2, s3)

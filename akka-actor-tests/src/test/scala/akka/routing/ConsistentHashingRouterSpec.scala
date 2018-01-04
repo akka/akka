@@ -52,7 +52,7 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
 
   val router1 = system.actorOf(FromConfig.props(Props[Echo]), "router1")
 
-  "consistent hashing router" must {
+  "consistent hashing router" should {
     "create routees from configuration" in {
       val currentRoutees = Await.result(router1 ? GetRoutees, timeout.duration).asInstanceOf[Routees]
       currentRoutees.routees.size should ===(3)

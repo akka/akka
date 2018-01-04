@@ -15,7 +15,7 @@ class FlowDropSpec extends StreamSpec with ScriptedTest {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A Drop" must {
+  "A Drop" should {
 
     "drop" in {
       def script(d: Int) = Script(TestConfig.RandomTestRange map { n ⇒ Seq(n) → (if (n <= d) Nil else Seq(n)) }: _*)

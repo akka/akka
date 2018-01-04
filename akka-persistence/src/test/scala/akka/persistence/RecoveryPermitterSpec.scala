@@ -67,7 +67,7 @@ class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(
     p.expectMsg(RecoveryPermitGranted)
   }
 
-  "RecoveryPermitter" must {
+  "RecoveryPermitter" should {
     "grant permits up to the limit" in {
       requestPermit(p1)
       requestPermit(p2)

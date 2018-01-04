@@ -81,7 +81,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
   import FutureSpec._
   implicit val ec: ExecutionContext = system.dispatcher
   "A Promise" when {
-    "never completed" must {
+    "never completed" should {
       behave like emptyFuture(_(Promise().future))
       "return supplied value on timeout" in {
         val failure = Future.failed(new RuntimeException("br0ken"))
@@ -97,22 +97,22 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         }.getMessage should ===("br0ken")
       }
     }
-    "completed with a result" must {
+    "completed with a result" should {
       val result = "test value"
       val future = Future.successful(result)
       behave like futureWithResult(_(future, result))
     }
-    "completed with an exception" must {
+    "completed with an exception" should {
       val message = "Expected Exception"
       val future = Future.failed(new RuntimeException(message))
       behave like futureWithException[RuntimeException](_(future, message))
     }
-    "completed with an InterruptedException" must {
+    "completed with an InterruptedException" should {
       val message = "Boxed InterruptedException"
       val future = Future.failed(new InterruptedException(message))
       behave like futureWithException[RuntimeException](_(future, message))
     }
-    "completed with a NonLocalReturnControl" must {
+    "completed with a NonLocalReturnControl" should {
       val result = "test value"
       val future = Future.failed(new NonLocalReturnControl("test", result))
       behave like futureWithResult(_(future, result))
@@ -149,7 +149,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
   "A Future" when {
 
     "awaiting a result" which {
-      "is not completed" must {
+      "is not completed" should {
         behave like emptyFuture { test ⇒
           val latch = new TestLatch
           val result = "test value"
@@ -162,7 +162,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           FutureSpec.ready(future, timeout.duration)
         }
       }
-      "is completed" must {
+      "is completed" should {
         behave like futureWithResult { test ⇒
           val latch = new TestLatch
           val result = "test value"
@@ -175,7 +175,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           test(future, result)
         }
       }
-      "has actions applied" must {
+      "has actions applied" should {
         "pass checks" in {
           filterException[ArithmeticException] {
             check({ (future: Future[Int], actions: List[FutureAction]) ⇒
@@ -195,7 +195,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     }
 
     "from an Actor" which {
-      "returns a result" must {
+      "returns a result" should {
         behave like futureWithResult { test ⇒
           val actor = system.actorOf(Props[TestActor])
           val future = actor ? "Hello"
@@ -204,7 +204,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           system.stop(actor)
         }
       }
-      "throws an exception" must {
+      "throws an exception" should {
         behave like futureWithException[RuntimeException] { test ⇒
           filterException[RuntimeException] {
             val actor = system.actorOf(Props[TestActor])
@@ -218,7 +218,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     }
 
     "using flatMap with an Actor" which {
-      "will return a result" must {
+      "will return a result" should {
         behave like futureWithResult { test ⇒
           val actor1 = system.actorOf(Props[TestActor])
           val actor2 = system.actorOf(Props(new Actor { def receive = { case s: String ⇒ sender() ! s.toUpperCase } }))
@@ -229,7 +229,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           system.stop(actor2)
         }
       }
-      "will throw an exception" must {
+      "will throw an exception" should {
         behave like futureWithException[ArithmeticException] { test ⇒
           filterException[ArithmeticException] {
             val actor1 = system.actorOf(Props[TestActor])
@@ -242,7 +242,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           }
         }
       }
-      "will throw a NoSuchElementException when matching wrong type" must {
+      "will throw a NoSuchElementException when matching wrong type" should {
         behave like futureWithException[NoSuchElementException] { test ⇒
           filterException[NoSuchElementException] {
             val actor1 = system.actorOf(Props[TestActor])
@@ -257,7 +257,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
     }
 
-    "being tested" must {
+    "being tested" should {
 
       "compose with for-comprehensions" in {
         filterException[ClassCastException] {

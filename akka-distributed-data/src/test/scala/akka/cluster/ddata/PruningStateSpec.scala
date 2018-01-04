@@ -17,7 +17,7 @@ class PruningStateSpec extends WordSpec with Matchers {
   val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3L)
   val node4 = UniqueAddress(node1.address.copy(port = Some(2554)), 4L)
 
-  "Pruning state" must {
+  "Pruning state" should {
 
     "merge state correctly" in {
       val p1 = PruningInitialized(node1, Set.empty)

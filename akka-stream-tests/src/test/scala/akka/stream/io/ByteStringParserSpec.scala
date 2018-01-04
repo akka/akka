@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 class ByteStringParserSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
 
-  "ByteStringParser" must {
+  "ByteStringParser" should {
 
     "respect backpressure" in {
       class Chunker extends ByteStringParser[ByteString] {

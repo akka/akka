@@ -10,7 +10,7 @@ import org.scalatest.WordSpec
 
 class FlagSpec extends WordSpec with Matchers {
 
-  "A Flag" must {
+  "A Flag" should {
 
     "be able to switch on once" in {
       val f1 = Flag()

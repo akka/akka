@@ -35,7 +35,7 @@ abstract class LeaderLeavingSpec
   import LeaderLeavingMultiJvmSpec._
   import ClusterEvent._
 
-  "A LEADER that is LEAVING" must {
+  "A LEADER that is LEAVING" should {
 
     "be moved to LEAVING, then to EXITING, then to REMOVED, then be shut down and then a new LEADER should be elected" taggedAs LongRunningTest in {
 

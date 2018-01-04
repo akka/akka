@@ -15,7 +15,7 @@ class FlowMapSpec extends StreamSpec with ScriptedTest {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A Map" must {
+  "A Map" should {
 
     "map" in {
       def script = Script(TestConfig.RandomTestRange map { _ ⇒ val x = random.nextInt(); Seq(x) → Seq(x.toString) }: _*)

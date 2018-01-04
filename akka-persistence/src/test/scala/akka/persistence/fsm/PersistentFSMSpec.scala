@@ -24,7 +24,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
   //Dummy report actor, for tests that don't need it
   val dummyReportActorRef = TestProbe().ref
 
-  "PersistentFSM" must {
+  "PersistentFSM" should {
     "function as a regular FSM " in {
       val persistenceId = name
       val fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef))

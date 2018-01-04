@@ -39,7 +39,7 @@ abstract class LeaderDowningAllOtherNodesSpec
   import LeaderDowningAllOtherNodesMultiJvmSpec._
   import ClusterEvent._
 
-  "A cluster of 6 nodes with monitored-by-nr-of-members=2" must {
+  "A cluster of 6 nodes with monitored-by-nr-of-members=2" should {
     "setup" taggedAs LongRunningTest in {
       // start some
       awaitClusterUp(roles: _*)

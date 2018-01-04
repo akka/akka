@@ -37,7 +37,7 @@ abstract class JoinSeedNodeSpec
 
   def seedNodes: immutable.IndexedSeq[Address] = Vector(seed1, seed2, seed3)
 
-  "A cluster with seed nodes" must {
+  "A cluster with seed nodes" should {
     "be able to start the seed nodes concurrently" taggedAs LongRunningTest in {
 
       runOn(seed1) {

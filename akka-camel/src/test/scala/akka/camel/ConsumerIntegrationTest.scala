@@ -22,7 +22,7 @@ import akka.testkit._
 import akka.util.Timeout
 
 class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamelSystem {
-  "ConsumerIntegrationTest" must {
+  "ConsumerIntegrationTest" should {
     val defaultTimeoutDuration = 10 seconds
     implicit val defaultTimeout = Timeout(defaultTimeoutDuration)
     implicit def ec: ExecutionContext = system.dispatcher

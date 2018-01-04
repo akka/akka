@@ -32,7 +32,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
 
   def collectCancellable(c: Cancellable): Cancellable
 
-  "A Scheduler" must {
+  "A Scheduler" should {
 
     "schedule more than once" taggedAs TimingTest in {
       case object Tick
@@ -310,7 +310,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
   def tickDuration = system.scheduler.asInstanceOf[LightArrayRevolverScheduler].TickDuration
 
-  "A LightArrayRevolverScheduler" must {
+  "A LightArrayRevolverScheduler" should {
 
     "reject tasks scheduled too far into the future" taggedAs TimingTest in {
       val maxDelay = tickDuration * Int.MaxValue

@@ -50,7 +50,7 @@ abstract class LookupRemoteActorSpec(multiNodeConfig: LookupRemoteActorMultiJvmS
     system.actorOf(Props[SomeActor], "service-hello")
   }
 
-  "Remoting" must {
+  "Remoting" should {
     "lookup remote actor" taggedAs LongRunningTest in {
       runOn(slave) {
         val hello = {

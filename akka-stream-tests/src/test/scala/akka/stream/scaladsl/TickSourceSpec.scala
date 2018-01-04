@@ -13,7 +13,7 @@ class TickSourceSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A Flow based on tick publisher" must {
+  "A Flow based on tick publisher" should {
     "produce ticks" taggedAs TimingTest in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[String]()
       Source.tick(1.second, 1.second, "tick").to(Sink.fromSubscriber(c)).run()

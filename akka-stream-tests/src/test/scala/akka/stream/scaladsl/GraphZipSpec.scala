@@ -23,7 +23,7 @@ class GraphZipSpec extends TwoStreamsSetup {
     override def out: Outlet[(Int, Int)] = zip.out
   }
 
-  "Zip" must {
+  "Zip" should {
 
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[(Int, String)]()

@@ -20,7 +20,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
 
-  "InputStreamSource" must {
+  "InputStreamSource" should {
 
     "not signal when no demand" in {
       val f = StreamConverters.fromInputStream(() ⇒ new InputStream {

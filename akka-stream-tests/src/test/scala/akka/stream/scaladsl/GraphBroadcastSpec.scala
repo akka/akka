@@ -14,7 +14,7 @@ class GraphBroadcastSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A broadcast" must {
+  "A broadcast" should {
     import GraphDSL.Implicits._
 
     "broadcast to other subscriber" in assertAllStagesStopped {

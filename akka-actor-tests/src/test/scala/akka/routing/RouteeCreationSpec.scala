@@ -13,7 +13,7 @@ import akka.actor.ActorIdentity
 
 class RouteeCreationSpec extends AkkaSpec {
 
-  "Creating Routees" must {
+  "Creating Routees" should {
 
     "result in visible routees" in {
       val N = 100

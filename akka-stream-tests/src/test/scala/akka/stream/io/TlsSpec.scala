@@ -94,7 +94,7 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
 
   val sslConfig: Option[AkkaSSLConfig] = None // no special settings to be applied here
 
-  "SslTls" must {
+  "SslTls" should {
 
     val sslContext = initSslContext()
 
@@ -492,7 +492,7 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
 
   }
 
-  "A SslTlsPlacebo" must {
+  "A SslTlsPlacebo" should {
 
     "pass through data" in {
       val f = Source(1 to 3)

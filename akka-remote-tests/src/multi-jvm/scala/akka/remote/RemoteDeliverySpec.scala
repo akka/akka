@@ -59,7 +59,7 @@ abstract class RemoteDeliverySpec(multiNodeConfig: RemoteDeliveryConfig)
     expectMsgType[ActorIdentity].ref.get
   }
 
-  "Remote message delivery" must {
+  "Remote message delivery" should {
 
     "not drop messages under normal circumstances" in {
       system.actorOf(Props[Postman], "postman-" + myself.name)

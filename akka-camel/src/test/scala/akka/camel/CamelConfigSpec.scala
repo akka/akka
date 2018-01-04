@@ -17,7 +17,7 @@ class CamelConfigSpec extends WordSpec with Matchers {
     TestKit.shutdownActorSystem(system)
     result
   }
-  "CamelConfigSpec" must {
+  "CamelConfigSpec" should {
     "have correct activationTimeout config" in {
       settings.ActivationTimeout should ===(config.getMillisDuration("akka.camel.consumer.activation-timeout"))
     }

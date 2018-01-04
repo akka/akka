@@ -108,7 +108,7 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
     enterBarrier(nodes.head.name + "-up")
   }
 
-  "A ClusterSingletonManager in chaotic cluster" must {
+  "A ClusterSingletonManager in chaotic cluster" should {
 
     "startup 6 node cluster" in within(60 seconds) {
       val memberProbe = TestProbe()

@@ -17,7 +17,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class RecipeDecompress extends RecipeSpec {
-  "Recipe for decompressing a Gzip stream" must {
+  "Recipe for decompressing a Gzip stream" should {
     "work" in {
       //#decompress-gzip
       import akka.stream.scaladsl.Compression

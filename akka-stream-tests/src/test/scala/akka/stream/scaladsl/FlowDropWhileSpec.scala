@@ -17,7 +17,7 @@ class FlowDropWhileSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A DropWhile" must {
+  "A DropWhile" should {
 
     "drop while predicate is true" in assertAllStagesStopped {
       Source(1 to 4).dropWhile(_ < 3).runWith(TestSink.probe[Int])

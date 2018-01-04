@@ -45,7 +45,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
 
   case object CustomReason extends CoordinatedShutdown.Reason
 
-  "CoordinatedShutdown" must {
+  "CoordinatedShutdown" should {
 
     "sort phases in topolgical order" in {
       checkTopologicalSort(Map.empty) should ===(Nil)

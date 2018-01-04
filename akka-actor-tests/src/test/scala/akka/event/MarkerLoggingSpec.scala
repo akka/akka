@@ -4,7 +4,7 @@ import akka.event.Logging._
 import akka.testkit._
 
 class MarkerLoggingSpec extends AkkaSpec with ImplicitSender {
-  "A MarkerLoggerAdapter" must {
+  "A MarkerLoggerAdapter" should {
     val markerLogging = new MarkerLoggingAdapter(system.eventStream, getClass.getName, this.getClass, new DefaultLoggingFilter(() ⇒ Logging.InfoLevel))
 
     "add markers to logging" in {

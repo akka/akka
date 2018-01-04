@@ -151,7 +151,7 @@ class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with Impl
 
   system.eventStream.publish(Mute(EventFilter[IllegalStateException]()))
 
-  "An ActorPublisher" must {
+  "An ActorPublisher" should {
 
     "accumulate demand" in {
       val probe = TestProbe()

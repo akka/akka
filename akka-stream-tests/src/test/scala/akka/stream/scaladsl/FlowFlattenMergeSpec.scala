@@ -25,7 +25,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
   val toSeq = Flow[Int].grouped(1000).toMat(Sink.head)(Keep.right)
   val toSet = toSeq.mapMaterializedValue(_.map(_.toSet))
 
-  "A FattenMerge" must {
+  "A FattenMerge" should {
 
     "work in the nominal case" in assertAllStagesStopped {
       Source(List(src10(0), src10(10), src10(20), src10(30)))

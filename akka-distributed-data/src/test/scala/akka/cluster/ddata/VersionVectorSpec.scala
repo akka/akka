@@ -24,7 +24,7 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
     shutdown()
   }
 
-  "A VersionVector" must {
+  "A VersionVector" should {
 
     "have zero versions when created" in {
       val vv = VersionVector()

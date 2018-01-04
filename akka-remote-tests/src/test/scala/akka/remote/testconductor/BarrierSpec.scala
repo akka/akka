@@ -30,7 +30,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
   val B = RoleName("b")
   val C = RoleName("c")
 
-  "A BarrierCoordinator" must {
+  "A BarrierCoordinator" should {
 
     "register clients and remove them" taggedAs TimingTest in {
       val b = getBarrier()
@@ -229,7 +229,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
 
   }
 
-  "A Controller with BarrierCoordinator" must {
+  "A Controller with BarrierCoordinator" should {
 
     "register clients and remove them" taggedAs TimingTest in {
       withController(1) { b ⇒

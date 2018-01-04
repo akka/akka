@@ -82,7 +82,7 @@ class BehaviorTestkitSpec extends WordSpec with Matchers {
 
   private val props = Props.empty
 
-  "BehaviorTestkit's spawn" must {
+  "BehaviorTestkit's spawn" should {
     "create children when no props specified" in {
       val testkit = BehaviorTestkit[Father.Command](Father.init())
       testkit.run(SpawnChildren(2))
@@ -98,7 +98,7 @@ class BehaviorTestkitSpec extends WordSpec with Matchers {
     }
   }
 
-  "BehaviorTestkit's spawnAnonymous" must {
+  "BehaviorTestkit's spawnAnonymous" should {
     "create children when no props specified and record effects" in {
       val testkit = BehaviorTestkit[Father.Command](Father.init())
       testkit.run(SpawnAnonymous(2))
@@ -115,7 +115,7 @@ class BehaviorTestkitSpec extends WordSpec with Matchers {
     }
   }
 
-  "BehaviorTestkit's spawnAdapter" must {
+  "BehaviorTestkit's spawnAdapter" should {
     "create adapters without name and record effects" in {
       val testkit = BehaviorTestkit[Father.Command](Father.init())
       testkit.run(SpawnAdapter)

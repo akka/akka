@@ -119,7 +119,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
     }
   }
 
-  "RouterConfig" must {
+  "RouterConfig" should {
 
     "be picked up from Props" in {
       val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]), "someOther")

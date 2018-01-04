@@ -10,7 +10,7 @@ import org.scalatest.WordSpec
 
 class RestartCounterSpec extends WordSpec with Matchers {
 
-  "RestartCounter" must {
+  "RestartCounter" should {
 
     "count max restarts within duration" in {
       val counter = new RestartCounter(3, 3.seconds)

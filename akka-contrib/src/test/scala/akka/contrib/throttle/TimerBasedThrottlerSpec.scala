@@ -39,7 +39,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
     shutdown()
   }
 
-  "A throttler" must {
+  "A throttler" should {
     def println(a: Any) = ()
     "pass the ScalaDoc class documentation example program" in {
       //#demo-code

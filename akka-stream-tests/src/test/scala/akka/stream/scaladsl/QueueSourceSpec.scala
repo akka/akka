@@ -31,7 +31,7 @@ class QueueSourceSpec extends StreamSpec {
     f.futureValue should ===(QueueOfferResult.Enqueued)
   }
 
-  "A QueueSource" must {
+  "A QueueSource" should {
 
     "emit received messages to the stream" in {
       val s = TestSubscriber.manualProbe[Int]()

@@ -8,7 +8,7 @@ import akka.testkit.AkkaSpec
 
 class CompressionTableSpec extends AkkaSpec {
 
-  "CompressionTable" must {
+  "CompressionTable" should {
     "should invert" in {
       val decomp = CompressionTable(17L, 1, Map("0" → 0, "1" → 1, "2" → 2, "3" → 3)).invert
       decomp.table should ===(Array("0", "1", "2", "3"))

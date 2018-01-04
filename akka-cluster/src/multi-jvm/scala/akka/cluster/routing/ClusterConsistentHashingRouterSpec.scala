@@ -79,7 +79,7 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
     case a                         ⇒ a
   }
 
-  "A cluster router with a consistent hashing pool" must {
+  "A cluster router with a consistent hashing pool" should {
     "start cluster with 2 nodes" in {
       awaitClusterUp(first, second)
       enterBarrier("after-1")

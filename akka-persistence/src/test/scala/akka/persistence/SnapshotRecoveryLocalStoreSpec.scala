@@ -49,7 +49,7 @@ class SnapshotRecoveryLocalStoreSpec extends PersistenceSpec(PersistenceSpec.con
     expectMsgAllOf(0L, 0L)
   }
 
-  "A persistent actor which is persisted at the same time as another actor whose persistenceId is an extension of the first " must {
+  "A persistent actor which is persisted at the same time as another actor whose persistenceId is an extension of the first " should {
     "recover state only from its own correct snapshot file" in {
 
       val recoveringActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], persistenceId, testActor))

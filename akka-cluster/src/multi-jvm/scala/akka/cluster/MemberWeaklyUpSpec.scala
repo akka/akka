@@ -46,7 +46,7 @@ abstract class MemberWeaklyUpSpec
   val side1 = Vector(first, second)
   val side2 = Vector(third, fourth, fifth)
 
-  "A cluster of 3 members" must {
+  "A cluster of 3 members" should {
 
     "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(first, third, fourth)

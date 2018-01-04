@@ -41,7 +41,7 @@ class RemoteInitErrorSpec extends WordSpec with Matchers {
     threads.asScala.collect({ case t: Thread if (!t.isDaemon()) ⇒ t.getId() })
   }
 
-  "Remoting" must {
+  "Remoting" should {
     "shut down properly on RemoteActorRefProvider initialization failure" in {
       val start = currentThreadIds()
       try {

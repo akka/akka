@@ -86,7 +86,7 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
       }
     }
 
-  "Replicator in chaotic cluster" must {
+  "Replicator in chaotic cluster" should {
 
     "replicate data in initial phase" in {
       join(first, first)

@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 class RecipeGlobalRateLimit extends RecipeSpec {
 
-  "Global rate limiting recipe" must {
+  "Global rate limiting recipe" should {
 
     //#global-limiter-actor
     object Limiter {

@@ -13,7 +13,7 @@ class EndpointRegistrySpec extends AkkaSpec {
   val address1 = Address("test", "testsys1", "testhost1", 1234)
   val address2 = Address("test", "testsys2", "testhost2", 1234)
 
-  "EndpointRegistry" must {
+  "EndpointRegistry" should {
 
     "be able to register a writable endpoint and policy" in {
       val reg = new EndpointRegistry

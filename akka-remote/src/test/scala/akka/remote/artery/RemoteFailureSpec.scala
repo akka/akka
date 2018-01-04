@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 
 class RemoteFailureSpec extends ArteryMultiNodeSpec with ImplicitSender {
 
-  "Remoting" must {
+  "Remoting" should {
 
     "not be exhausted by sending to broken connections" in {
       val remoteSystems = Vector.fill(5)(newRemoteSystem())

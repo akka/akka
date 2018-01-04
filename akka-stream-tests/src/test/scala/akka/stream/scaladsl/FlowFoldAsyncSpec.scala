@@ -23,7 +23,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
   implicit def ec = materializer.executionContext
   val timeout = Timeout(3.seconds)
 
-  "A FoldAsync" must {
+  "A FoldAsync" should {
     val input = 1 to 100
     val expected = input.sum
     val inputSource = Source(input)

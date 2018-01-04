@@ -18,7 +18,7 @@ class GraphMatValueSpec extends StreamSpec {
 
   val foldSink = Sink.fold[Int, Int](0)(_ + _)
 
-  "A Graph with materialized value" must {
+  "A Graph with materialized value" should {
 
     val settings = ActorMaterializerSettings(system)
       .withInputBuffer(initialSize = 2, maxSize = 16)

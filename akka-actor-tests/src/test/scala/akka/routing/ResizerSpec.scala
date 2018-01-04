@@ -48,7 +48,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
   def routeeSize(router: ActorRef): Int =
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees.size
 
-  "Resizer fromConfig" must {
+  "Resizer fromConfig" should {
     def parseCfg(cfgString: String): Config = {
       val referenceCfg = ConfigFactory.defaultReference(ActorSystem.findClassLoader())
       ConfigFactory.parseString(cfgString).withFallback(referenceCfg.getConfig("akka.actor.deployment.default"))
@@ -91,7 +91,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
     }
   }
 
-  "DefaultResizer" must {
+  "DefaultResizer" should {
 
     "use settings to evaluate capacity" in {
       val resizer = DefaultResizer(

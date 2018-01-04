@@ -20,7 +20,7 @@ class DistributedPubSubMessageSerializerSpec extends AkkaSpec {
     ref should ===(obj)
   }
 
-  " DistributedPubSubMessages" must {
+  " DistributedPubSubMessages" should {
 
     "be serializable" in {
       val address1 = Address("akka.tcp", "system", "some.host.org", 4711)

@@ -46,7 +46,7 @@ abstract class QuickRestartSpec
 
   override def expectedTestDuration: FiniteDuration = 45.seconds * rounds
 
-  "Quickly restarting node" must {
+  "Quickly restarting node" should {
     "setup stable nodes" taggedAs LongRunningTest in within(15.seconds) {
       cluster.joinSeedNodes(seedNodes)
       awaitMembersUp(roles.size)

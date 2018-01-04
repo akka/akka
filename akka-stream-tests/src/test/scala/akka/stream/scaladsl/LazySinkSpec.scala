@@ -27,7 +27,7 @@ class LazySinkSpec extends StreamSpec {
   val fallback = () ⇒ fail("Must not call fallback function")
   val ex = TE("")
 
-  "A LazySink" must {
+  "A LazySink" should {
     "work in happy case" in assertAllStagesStopped {
       val futureProbe = Source(0 to 10).runWith(Sink.lazyInit[Int, Probe[Int]](_ ⇒ Future.successful(TestSink.probe[Int]), fallback))
       val probe = Await.result(futureProbe, 300.millis)

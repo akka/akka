@@ -202,7 +202,7 @@ class RollingEventLogSimulationSpec extends AkkaSpec {
     }
   }
 
-  "RollingEventLog algorithm" must {
+  "RollingEventLog algorithm" should {
 
     "ensure write consistency in simulation" in {
       // 600 record writes, roughly 3600 instructions in total, racing for 32 memory locations (plus the head pointer)

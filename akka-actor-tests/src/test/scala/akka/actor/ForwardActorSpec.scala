@@ -30,7 +30,7 @@ object ForwardActorSpec {
 class ForwardActorSpec extends AkkaSpec {
   import ForwardActorSpec._
   implicit val ec = system.dispatcher
-  "A Forward Actor" must {
+  "A Forward Actor" should {
 
     "forward actor reference when invoking forward on tell" in {
       val replyTo = system.actorOf(Props(new Actor { def receive = { case ExpectedMessage ⇒ testActor ! ExpectedMessage } }))

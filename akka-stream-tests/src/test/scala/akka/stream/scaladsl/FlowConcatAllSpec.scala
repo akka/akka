@@ -19,7 +19,7 @@ class FlowConcatAllSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "ConcatAll" must {
+  "ConcatAll" should {
 
     val testException = new Exception("test") with NoStackTrace
 

@@ -12,7 +12,7 @@ class SystemMessageListSpec extends AkkaSpec {
 
   val child = system.actorOf(Props.empty, "dummy") // need an ActorRef for the Failed msg
 
-  "The SystemMessageList value class" must {
+  "The SystemMessageList value class" should {
 
     "handle empty lists correctly" in {
       LNil.head should ===(null)
@@ -87,7 +87,7 @@ class SystemMessageListSpec extends AkkaSpec {
 
   }
 
-  "EarliestFirstSystemMessageList" must {
+  "EarliestFirstSystemMessageList" should {
 
     "properly prepend reversed message lists to the front" in {
       val create0 = Failed(child, null, 0)

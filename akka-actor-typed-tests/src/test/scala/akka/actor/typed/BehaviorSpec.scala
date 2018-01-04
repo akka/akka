@@ -197,7 +197,7 @@ object BehaviorSpec {
     }
 
   trait Lifecycle extends Common {
-    "Lifecycle" must {
+    "Lifecycle" should {
       "must react to PreStart" in {
         mkCtx(requirePreStart = true)
       }
@@ -233,7 +233,7 @@ object BehaviorSpec {
   }
 
   trait Messages extends Common {
-    "Messages" must {
+    "Messages" should {
       "react to two messages" in {
         mkCtx().check(Ping).check(Ping)
       }
@@ -249,7 +249,7 @@ object BehaviorSpec {
   }
 
   trait Unhandled extends Common {
-    "Unhandled" must {
+    "Unhandled" should {
       "must return Unhandled" in {
         val Setup(testKit, inbox, aux) = mkCtx()
         Behavior.interpretMessage(testKit.currentBehavior, testKit.ctx, Miss) should be(Behavior.UnhandledBehavior)
@@ -260,7 +260,7 @@ object BehaviorSpec {
   }
 
   trait Stoppable extends Common {
-    "Stopping" must {
+    "Stopping" should {
       "must stop" in {
         val Setup(testkit, _, aux) = mkCtx()
         testkit.run(Stop)
@@ -273,7 +273,7 @@ object BehaviorSpec {
   trait Become extends Common with Unhandled {
     private implicit val inbox = TestInbox[State]("state")
 
-    "Becoming" must {
+    "Becoming" should {
       "must be in state A" in {
         mkCtx().check(GetState()(StateA))
       }
@@ -289,7 +289,7 @@ object BehaviorSpec {
   }
 
   trait BecomeWithLifecycle extends Become with Lifecycle {
-    "Become with lifecycle" must {
+    "Become with lifecycle" should {
       "react to PostStop after swap" in {
         mkCtx().check(Swap).check(PostStop)
       }
@@ -325,7 +325,7 @@ object BehaviorSpec {
    * hold on to the changed behavior. Wrappers must be immutable.
    */
   trait Reuse extends Common {
-    "Reuse" must {
+    "Reuse" should {
       "must be reusable" in {
         val i = init()
         i.mkCtx().check(GetState()(StateA)).check(Swap).check(GetState()(StateB))

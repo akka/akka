@@ -189,7 +189,7 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
     intercept[RuntimeException] { Await.result(result, DilatedTimeout) }
   }
 
-  "A supervisor" must {
+  "A supervisor" should {
 
     "not restart child more times than permitted" in {
       val master = system.actorOf(Props(new Master(testActor)))

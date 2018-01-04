@@ -91,7 +91,7 @@ class RemoteWatcherSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultCon
     expectMsgType[ActorIdentity].ref.get.asInstanceOf[InternalActorRef]
   }
 
-  "A RemoteWatcher" must {
+  "A RemoteWatcher" should {
 
     "have correct interaction when watching" in {
 

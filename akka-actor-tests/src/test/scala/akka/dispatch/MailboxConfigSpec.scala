@@ -24,7 +24,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
   private val exampleMessage = createMessageInvocation("test")
 
-  name must {
+  name should {
 
     "create an unbounded mailbox" in {
       val config = UnboundedMailbox()
@@ -233,7 +233,7 @@ object CustomMailboxSpec {
 }
 
 class CustomMailboxSpec extends AkkaSpec(CustomMailboxSpec.config) {
-  "Dispatcher configuration" must {
+  "Dispatcher configuration" should {
     "support custom mailboxType" in {
       val actor = system.actorOf(Props.empty.withDispatcher("my-dispatcher"))
       awaitCond(actor match {
@@ -297,7 +297,7 @@ class SingleConsumerOnlyMailboxVerificationSpec extends AkkaSpec(SingleConsumerO
     expectTerminated(runner)
   }
 
-  "A SingleConsumerOnlyMailbox" must {
+  "A SingleConsumerOnlyMailbox" should {
     "support pathological ping-ponging for the unbounded case" in within(30.seconds) {
       pathologicalPingPong("test-unbounded-dispatcher")
     }

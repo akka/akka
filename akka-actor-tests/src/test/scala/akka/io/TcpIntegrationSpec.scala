@@ -25,7 +25,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
     expectTerminated(actor)
   }
 
-  "The TCP transport implementation" must {
+  "The TCP transport implementation" should {
 
     "properly bind a test server" in new TestSetup
 

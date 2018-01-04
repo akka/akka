@@ -17,7 +17,7 @@ class CollectionSinkSpec extends StreamSpec {
   implicit val mat = ActorMaterializer(settings)
 
   "Sink.collection" when {
-    "using Seq as Collection" must {
+    "using Seq as Collection" should {
       "return a Seq[T] from a Source" in {
         val input = (1 to 6)
         val future: Future[immutable.Seq[Int]] = Source(input).runWith(Sink.collection)
@@ -40,7 +40,7 @@ class CollectionSinkSpec extends StreamSpec {
         future.failed.futureValue shouldBe an[AbruptTerminationException]
       }
     }
-    "using Vector as Collection" must {
+    "using Vector as Collection" should {
       "return a Vector[T] from a Source" in {
         val input = (1 to 6)
         val future: Future[immutable.Vector[Int]] = Source(input).runWith(Sink.collection)

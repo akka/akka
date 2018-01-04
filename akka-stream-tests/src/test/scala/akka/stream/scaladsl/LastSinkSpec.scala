@@ -17,7 +17,7 @@ class LastSinkSpec extends StreamSpec with ScriptedTest {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A Flow with Sink.last" must {
+  "A Flow with Sink.last" should {
 
     "yield the last value" in assertAllStagesStopped {
       Await.result(Source(1 to 42).map(identity).runWith(Sink.last), 1.second) should be(42)
@@ -37,7 +37,7 @@ class LastSinkSpec extends StreamSpec with ScriptedTest {
     }
 
   }
-  "A Flow with Sink.lastOption" must {
+  "A Flow with Sink.lastOption" should {
 
     "yield the last value" in assertAllStagesStopped {
       Await.result(Source(1 to 42).map(identity).runWith(Sink.lastOption), 1.second) should be(Some(42))

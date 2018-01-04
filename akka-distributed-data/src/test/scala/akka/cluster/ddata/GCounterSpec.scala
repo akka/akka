@@ -15,7 +15,7 @@ class GCounterSpec extends WordSpec with Matchers {
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
   val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3L)
 
-  "A GCounter" must {
+  "A GCounter" should {
 
     "be able to increment each node's record by one" in {
       val c1 = GCounter()

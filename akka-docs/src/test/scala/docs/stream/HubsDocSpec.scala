@@ -15,7 +15,7 @@ import akka.stream.ThrottleMode
 class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
   implicit val materializer = ActorMaterializer()
 
-  "Hubs" must {
+  "Hubs" should {
 
     "demonstrate creating a dynamic merge" in {
       def println(s: String) = testActor ! s

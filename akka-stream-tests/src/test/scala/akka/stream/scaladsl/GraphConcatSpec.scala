@@ -22,7 +22,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
 
   }
 
-  "Concat" must {
+  "Concat" should {
     import GraphDSL.Implicits._
 
     "work in the happy case" in assertAllStagesStopped {

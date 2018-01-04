@@ -39,7 +39,7 @@ class MessageSerializerSpec extends AkkaSpec(
   val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Down, Set("r3"))
   val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("r2", "r3"))
 
-  "ClusterMessages" must {
+  "ClusterMessages" should {
 
     "be serializable" in {
 
@@ -58,7 +58,7 @@ class MessageSerializerSpec extends AkkaSpec(
     }
   }
 
-  "AdaptiveLoadBalancingPool" must {
+  "AdaptiveLoadBalancingPool" should {
     "be serializable" in {
       val simplePool = AdaptiveLoadBalancingPool()
       checkSerialization(simplePool)

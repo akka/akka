@@ -29,7 +29,7 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
 
   def doSomethingElse(): Unit = ()
 
-  "Restart stages" must {
+  "Restart stages" should {
 
     "demonstrate a restart with backoff source" in compileOnlySpec {
 

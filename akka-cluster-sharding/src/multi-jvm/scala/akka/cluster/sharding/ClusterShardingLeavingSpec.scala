@@ -143,7 +143,7 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
 
   def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
-  s"Cluster sharding ($mode) with leaving member" must {
+  s"Cluster sharding ($mode) with leaving member" should {
 
     if (!isDdataMode) {
       "setup shared journal" in {

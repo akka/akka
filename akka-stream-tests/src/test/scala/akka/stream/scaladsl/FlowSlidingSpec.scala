@@ -17,7 +17,7 @@ class FlowSlidingSpec extends StreamSpec with GeneratorDrivenPropertyChecks {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "Sliding" must {
+  "Sliding" should {
     import org.scalacheck.Shrink.shrinkAny
     def check(gen: Gen[(Int, Int, Int)]): Unit =
       forAll(gen, MinSize(1000), MaxSize(1000)) {

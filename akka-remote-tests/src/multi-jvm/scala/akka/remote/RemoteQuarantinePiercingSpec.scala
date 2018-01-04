@@ -64,7 +64,7 @@ abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePie
     }
   }
 
-  "RemoteNodeShutdownAndComesBack" must {
+  "RemoteNodeShutdownAndComesBack" should {
 
     "allow piercing through the quarantine when remote UID is new" taggedAs LongRunningTest in {
       runOn(first) {

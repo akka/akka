@@ -13,7 +13,7 @@ class FlowDetacherSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A Detacher" must {
+  "A Detacher" should {
 
     "pass through all elements" in Utils.assertAllStagesStopped {
       Source(1 to 100)

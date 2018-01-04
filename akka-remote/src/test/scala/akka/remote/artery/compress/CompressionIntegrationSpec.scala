@@ -51,7 +51,7 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
   val systemB = newRemoteSystem(name = Some("systemB"))
   val messagesToExchange = 10
 
-  "Compression table" must {
+  "Compression table" should {
     "be advertised for chatty ActorRef and manifest" in {
       // listen for compression table events
       val aManifestProbe = TestProbe()(system)

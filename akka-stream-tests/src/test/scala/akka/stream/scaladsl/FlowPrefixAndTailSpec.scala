@@ -18,7 +18,7 @@ class FlowPrefixAndTailSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "PrefixAndTail" must {
+  "PrefixAndTail" should {
 
     val testException = new Exception("test") with NoStackTrace
 

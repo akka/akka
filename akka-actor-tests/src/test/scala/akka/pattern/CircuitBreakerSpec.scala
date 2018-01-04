@@ -94,7 +94,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
 
   def timeCaptor = ArgumentCaptor.forClass(classOf[Long])
 
-  "A synchronous circuit breaker that is open" must {
+  "A synchronous circuit breaker that is open" should {
     "throw exceptions when called before reset timeout" in {
       val breaker = CircuitBreakerSpec.longResetTimeoutCb()
 
@@ -156,7 +156,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
     }
   }
 
-  "A synchronous circuit breaker that is half-open" must {
+  "A synchronous circuit breaker that is half-open" should {
     "pass through next call and close on success" in {
       val breaker = CircuitBreakerSpec.shortResetTimeoutCb()
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
@@ -286,7 +286,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
     }
   }
 
-  "A synchronous circuit breaker that is closed" must {
+  "A synchronous circuit breaker that is closed" should {
     "allow calls through" in {
       val breaker = CircuitBreakerSpec.longCallTimeoutCb()
       breaker().withSyncCircuitBreaker(sayHi) should ===("hi")
@@ -434,7 +434,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
     }
   }
 
-  "An asynchronous circuit breaker that is open" must {
+  "An asynchronous circuit breaker that is open" should {
     "throw exceptions when called before reset timeout" in {
       val breaker = CircuitBreakerSpec.longResetTimeoutCb()
       breaker().withCircuitBreaker(Future(throwException))
@@ -503,7 +503,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
     }
   }
 
-  "An asynchronous circuit breaker that is half-open" must {
+  "An asynchronous circuit breaker that is half-open" should {
     "pass through next call and close on success" in {
       val breaker = CircuitBreakerSpec.shortResetTimeoutCb()
       breaker().withCircuitBreaker(Future(throwException))
@@ -624,7 +624,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
     }
   }
 
-  "An asynchronous circuit breaker that is closed" must {
+  "An asynchronous circuit breaker that is closed" should {
     "allow calls through" in {
       val breaker = CircuitBreakerSpec.longCallTimeoutCb()
       Await.result(breaker().withCircuitBreaker(Future(sayHi)), awaitTimeout) should ===("hi")

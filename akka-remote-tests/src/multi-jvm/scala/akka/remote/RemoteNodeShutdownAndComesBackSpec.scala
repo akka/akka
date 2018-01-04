@@ -58,7 +58,7 @@ abstract class RemoteNodeShutdownAndComesBackSpec
     expectMsgType[ActorIdentity].ref.get
   }
 
-  "RemoteNodeShutdownAndComesBack" must {
+  "RemoteNodeShutdownAndComesBack" should {
 
     "properly reset system message buffer state when new system with same Address comes up" taggedAs LongRunningTest in {
       runOn(first) {

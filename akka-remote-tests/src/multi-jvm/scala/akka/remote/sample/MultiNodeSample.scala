@@ -36,7 +36,7 @@ class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig)
 
   def initialParticipants = roles.size
 
-  "A MultiNodeSample" must {
+  "A MultiNodeSample" should {
 
     "wait for all nodes to enter a barrier" in {
       enterBarrier("startup")

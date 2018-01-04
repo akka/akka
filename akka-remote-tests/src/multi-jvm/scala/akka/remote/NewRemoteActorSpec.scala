@@ -64,7 +64,7 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
   // ensure that system.terminate is successful
   override def verifySystemShutdown = true
 
-  "A new remote actor" must {
+  "A new remote actor" should {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       runOn(master) {

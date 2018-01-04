@@ -16,7 +16,7 @@ class GraphBalanceSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A balance" must {
+  "A balance" should {
     import GraphDSL.Implicits._
 
     "balance between subscribers which signal demand" in assertAllStagesStopped {

@@ -129,7 +129,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
     r
   }
 
-  "An ActorRef" must {
+  "An ActorRef" should {
 
     "not allow Actors to be created outside of an actorOf" in {
       import system.actorOf

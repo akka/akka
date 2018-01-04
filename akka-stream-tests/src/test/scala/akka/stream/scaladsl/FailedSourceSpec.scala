@@ -17,7 +17,7 @@ class FailedSourceSpec extends StreamSpec with DefaultTimeout {
 
   implicit val materializer = ActorMaterializer()
 
-  "The Failed Source" must {
+  "The Failed Source" should {
     "emit error immediately" in {
       val ex = new RuntimeException with NoStackTrace
       val p = Source.failed(ex).runWith(Sink.asPublisher(false))

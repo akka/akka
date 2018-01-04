@@ -40,7 +40,7 @@ class DnsSpec extends RemotingMultiNodeSpec(DnsSpec) {
     }
   }
 
-  "Dns" must {
+  "Dns" should {
 
     "resolve to a IPv6 address if it is the preferred network stack" in {
       sys.props.put("java.net.preferIPv6Addresses", true.toString)

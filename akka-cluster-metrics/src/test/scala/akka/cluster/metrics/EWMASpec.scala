@@ -12,7 +12,7 @@ class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollec
 
   val collector = createMetricsCollector
 
-  "DataStream" must {
+  "DataStream" should {
 
     "calcualate same ewma for constant values" in {
       val ds = EWMA(value = 100.0, alpha = 0.18) :+

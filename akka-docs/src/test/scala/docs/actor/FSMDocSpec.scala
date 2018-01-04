@@ -197,7 +197,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
   }
   //#fsm-code-elided
 
-  "simple finite state machine" must {
+  "simple finite state machine" should {
 
     "demonstrate NullFunction" in {
       class A extends FSM[Int, Null] {

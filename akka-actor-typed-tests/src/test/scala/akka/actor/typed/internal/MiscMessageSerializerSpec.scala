@@ -26,7 +26,7 @@ class MiscMessageSerializerSpec extends TestKit(MiscMessageSerializerSpec.config
 
   val serialization = SerializationExtension(system.toUntyped)
 
-  "MiscMessageSerializer" must {
+  "MiscMessageSerializer" should {
     def checkSerialization(obj: AnyRef): Unit = {
       serialization.findSerializerFor(obj) match {
         case serializer: MiscMessageSerializer ⇒

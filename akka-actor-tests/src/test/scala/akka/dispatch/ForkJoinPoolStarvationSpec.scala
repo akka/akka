@@ -45,7 +45,7 @@ class ForkJoinPoolStarvationSpec extends AkkaSpec(ForkJoinPoolStarvationSpec.con
 
   val Iterations = 1000
 
-  "AkkaForkJoinPool" must {
+  "AkkaForkJoinPool" should {
 
     "not starve tasks arriving from external dispatchers under high internal traffic" in {
       // Two busy actors that will occupy the threads of the dispatcher

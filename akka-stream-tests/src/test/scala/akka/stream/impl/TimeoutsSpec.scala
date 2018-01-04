@@ -16,7 +16,7 @@ import scala.concurrent.{ Await, Future }
 class TimeoutsSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
 
-  "InitialTimeout" must {
+  "InitialTimeout" should {
 
     "pass through elements unmodified" in assertAllStagesStopped {
       Await.result(
@@ -51,7 +51,7 @@ class TimeoutsSpec extends StreamSpec {
 
   }
 
-  "CompletionTimeout" must {
+  "CompletionTimeout" should {
 
     "pass through elements unmodified" in assertAllStagesStopped {
       Await.result(
@@ -90,7 +90,7 @@ class TimeoutsSpec extends StreamSpec {
 
   }
 
-  "IdleTimeout" must {
+  "IdleTimeout" should {
 
     "pass through elements unmodified" in assertAllStagesStopped {
       Await.result(
@@ -129,7 +129,7 @@ class TimeoutsSpec extends StreamSpec {
 
   }
 
-  "BackpressureTimeout" must {
+  "BackpressureTimeout" should {
 
     "pass through elements unmodified" in assertAllStagesStopped {
       Await.result(Source(1 to 100).backpressureTimeout(1.second).grouped(200).runWith(Sink.head), 3.seconds) should ===(1 to 100)
@@ -240,7 +240,7 @@ class TimeoutsSpec extends StreamSpec {
 
   }
 
-  "IdleTimeoutBidi" must {
+  "IdleTimeoutBidi" should {
 
     "not signal error in simple loopback case and pass through elements unmodified" in assertAllStagesStopped {
       val timeoutIdentity = BidiFlow.bidirectionalIdleTimeout[Int, Int](2.seconds).join(Flow[Int])

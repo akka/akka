@@ -45,7 +45,7 @@ class GraphDSLCompileSpec extends StreamSpec {
   val out1 = Sink.asPublisher[String](false)
   val out2 = Sink.head[String]
 
-  "A Graph" must {
+  "A Graph" should {
     import GraphDSL.Implicits._
     "build simple merge" in {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒

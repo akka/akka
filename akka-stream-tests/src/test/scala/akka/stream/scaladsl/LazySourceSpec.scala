@@ -21,7 +21,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   implicit val materializer = ActorMaterializer()
 
-  "A lazy source" must {
+  "A lazy source" should {
     "work like a normal source, happy path" in assertAllStagesStopped {
       val result = Source.fromGraph(LazySource(() ⇒ Source(List(1, 2, 3)))).runWith(Sink.seq)
 

@@ -29,7 +29,7 @@ class ClusterRouterSupervisorSpec extends AkkaSpec("""
 
   import ClusterRouterSupervisorSpec._
 
-  "Cluster aware routers" must {
+  "Cluster aware routers" should {
 
     "use provided supervisor strategy" in {
       val router = system.actorOf(

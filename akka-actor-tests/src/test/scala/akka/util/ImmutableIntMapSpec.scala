@@ -9,7 +9,7 @@ import scala.util.Random
 
 class ImmutableIntMapSpec extends WordSpec with Matchers {
 
-  "ImmutableIntMap" must {
+  "ImmutableIntMap" should {
 
     "have no entries when empty" in {
       val empty = ImmutableIntMap.empty

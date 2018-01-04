@@ -37,7 +37,7 @@ object StablePriorityDispatcherSpec {
 
 class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec.config) with DefaultTimeout {
 
-  "A StablePriorityDispatcher" must {
+  "A StablePriorityDispatcher" should {
     "Order its messages according to the specified comparator while preserving FIFO for equal priority messages, " +
       "using an unbounded mailbox" in {
         val dispatcherKey = "unbounded-stable-prio-dispatcher"

@@ -11,7 +11,7 @@ import akka.remote.FailureDetector.Clock
 
 class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
 
-  "An AccrualFailureDetector" must {
+  "An AccrualFailureDetector" should {
 
     def fakeTimeGenerator(timeIntervals: Seq[Long]): Clock = new Clock {
       @volatile var times = timeIntervals.tail.foldLeft(List[Long](timeIntervals.head))((acc, c) ⇒ acc ::: List[Long](acc.last + c))
@@ -193,7 +193,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
 
   }
 
-  "Statistics for heartbeats" must {
+  "Statistics for heartbeats" should {
 
     "calculate correct mean and variance" in {
       val samples = Seq(100, 200, 125, 340, 130)

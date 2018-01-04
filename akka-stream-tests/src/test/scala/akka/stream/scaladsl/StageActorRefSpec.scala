@@ -21,7 +21,7 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
 
   def sumStage(probe: ActorRef) = SumTestStage(probe)
 
-  "A Graph Stage's ActorRef" must {
+  "A Graph Stage's ActorRef" should {
 
     "receive messages" in {
       val (_, res) = Source.maybe[Int].toMat(sumStage(testActor))(Keep.both).run()

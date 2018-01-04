@@ -85,7 +85,7 @@ class ClusterSingletonManagerStartupSpec extends MultiNodeSpec(ClusterSingletonM
       name = "echoProxy")
   }
 
-  "Startup of Cluster Singleton" must {
+  "Startup of Cluster Singleton" should {
 
     "be quick" in {
       join(first, first)

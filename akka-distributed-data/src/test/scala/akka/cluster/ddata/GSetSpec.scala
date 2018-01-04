@@ -15,7 +15,7 @@ class GSetSpec extends WordSpec with Matchers {
   val user3 = """{"username":"charlie","password":"parker"}"""
   val user4 = """{"username":"charles","password":"mingus"}"""
 
-  "A GSet" must {
+  "A GSet" should {
 
     "be able to add user" in {
       val c1 = GSet.empty[String]

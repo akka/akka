@@ -96,7 +96,7 @@ class RemoteRouterSpec extends AkkaSpec(ConfigFactory.parseString("""
     }
   }
 
-  "A Remote Router" must {
+  "A Remote Router" should {
 
     "deploy its children on remote host driven by configuration" in {
       val probe = TestProbe()(masterSystem)

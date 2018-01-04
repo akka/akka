@@ -11,7 +11,7 @@ class RunnableGraphSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A RunnableGraph" must {
+  "A RunnableGraph" should {
 
     "suitably override attribute handling methods" in {
       import Attributes._

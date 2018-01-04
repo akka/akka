@@ -56,7 +56,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
     serializer.fromBinary(buffer, "") should ===(msg)
   }
 
-  "LongSerializer" must {
+  "LongSerializer" should {
     Seq(0L, 1L, -1L, Long.MinValue, Long.MinValue + 1L, Long.MaxValue, Long.MaxValue - 1L).map(_.asInstanceOf[AnyRef]).foreach {
       item ⇒
         s"resolve serializer for value $item" in {
@@ -75,7 +75,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
 
   }
 
-  "IntSerializer" must {
+  "IntSerializer" should {
     Seq(0, 1, -1, Int.MinValue, Int.MinValue + 1, Int.MaxValue, Int.MaxValue - 1).map(_.asInstanceOf[AnyRef]).foreach {
       item ⇒
         s"resolve serializer for value $item" in {
@@ -93,7 +93,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
     }
   }
 
-  "StringSerializer" must {
+  "StringSerializer" should {
     val random = Random.nextString(256)
     Seq(
       "empty string" → "",
@@ -117,7 +117,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
 
   }
 
-  "ByteStringSerializer" must {
+  "ByteStringSerializer" should {
     Seq(
       "empty string" → ByteString.empty,
       "simple content" → ByteString("hello"),

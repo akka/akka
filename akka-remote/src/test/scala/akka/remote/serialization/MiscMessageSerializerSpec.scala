@@ -66,7 +66,7 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
 
   val ref = system.actorOf(Props.empty, "hello")
 
-  "MiscMessageSerializer" must {
+  "MiscMessageSerializer" should {
     Seq(
       "Identify" → Identify("some-message"),
       "Identify with None" → Identify(None),

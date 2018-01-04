@@ -15,7 +15,7 @@ class StreamTestKitSpec extends AkkaSpec {
 
   val ex = new Exception("Boom!")
 
-  "A TestSink Probe" must {
+  "A TestSink Probe" should {
     "#toStrict" in {
       Source(1 to 4).runWith(TestSink.probe)
         .toStrict(300.millis) should ===(List(1, 2, 3, 4))

@@ -8,7 +8,7 @@ import org.scalatest.{ Matchers, WordSpec }
 
 class AtomicWriteSpec extends WordSpec with Matchers {
 
-  "AtomicWrite" must {
+  "AtomicWrite" should {
     "only contain messages for the same persistence id" in {
       AtomicWrite(
         PersistentRepr("", 1, "p1") ::

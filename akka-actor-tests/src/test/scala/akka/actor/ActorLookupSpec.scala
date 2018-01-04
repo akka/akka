@@ -52,7 +52,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       case RelativeActorPath(elems) ⇒ system.actorFor("/").path / elems
     }, system.eventStream)
 
-  "An ActorSystem" must {
+  "An ActorSystem" should {
 
     "find actors by looking up their path" in {
       system.actorFor(c1.path) should ===(c1)
@@ -169,7 +169,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
 
   }
 
-  "An ActorContext" must {
+  "An ActorContext" should {
 
     val all = Seq(c1, c2, c21)
 

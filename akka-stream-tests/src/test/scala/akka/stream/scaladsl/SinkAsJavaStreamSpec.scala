@@ -18,7 +18,7 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
 
-  "Java Stream Sink" must {
+  "Java Stream Sink" should {
 
     "work in happy case" in {
       val javaSource = Source(1 to 100).runWith(StreamConverters.asJavaStream())

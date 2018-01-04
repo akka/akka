@@ -162,7 +162,7 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       Actor.same
   }
 
-  "Typed cluster sharding" must {
+  "Typed cluster sharding" should {
 
     "join cluster" in {
       Cluster(system).manager ! Join(Cluster(system).selfMember.address)

@@ -67,7 +67,7 @@ class PersistenceEventAdapterDocSpec(config: String) extends AkkaSpec(config) {
     """)
   }
 
-  "MyAutomaticJsonEventAdapter" must {
+  "MyAutomaticJsonEventAdapter" should {
     "demonstrate how to implement a JSON adapter" in {
       val p = TestProbe()
 
@@ -99,7 +99,7 @@ class PersistenceEventAdapterDocSpec(config: String) extends AkkaSpec(config) {
     }
   }
 
-  "MyManualJsonEventAdapter" must {
+  "MyManualJsonEventAdapter" should {
     "demonstrate how to implement a JSON adapter" in {
       val p = TestProbe()
 

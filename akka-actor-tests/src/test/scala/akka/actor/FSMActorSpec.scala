@@ -105,7 +105,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" → true)) with I
 
   val timeout = Timeout(2 seconds)
 
-  "An FSM Actor" must {
+  "An FSM Actor" should {
 
     "unlock the lock" in {
 

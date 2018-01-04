@@ -27,7 +27,7 @@ class LoadJournalSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "L
   """))) with ImplicitSender {
   import LoadJournalSpec._
 
-  "A journal with config parameter" must {
+  "A journal with config parameter" should {
     "be created with plugin config" in {
       val journalRef = Persistence(system).journalFor("akka.persistence.journal.inmem")
       journalRef ! GetConfig

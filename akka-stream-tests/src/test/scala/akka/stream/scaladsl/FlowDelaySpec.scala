@@ -20,7 +20,7 @@ class FlowDelaySpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A Delay" must {
+  "A Delay" should {
 
     "deliver elements with some time shift" taggedAs TimingTest in {
       Await.result(

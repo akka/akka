@@ -79,7 +79,7 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
     probe3.expectMsg(3)
   }
 
-  "Sharding and CoordinatedShutdown" must {
+  "Sharding and CoordinatedShutdown" should {
     "init cluster" in {
       // FIXME this test should also work when coordinator is on the leaving sys1 node,
       //       but currently there seems to be a race between the CS and the ClusterSingleton observing OldestChanged

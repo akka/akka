@@ -14,7 +14,7 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
   val addressB: Address = Address("test", "testsytemB", "testhostB", 5432)
   val nonExistingAddress = Address("test", "nosystem", "nohost", 0)
 
-  "TestTransport" must {
+  "TestTransport" should {
 
     "return an Address and promise when listen is called and log calls" in {
       val registry = new AssociationRegistry

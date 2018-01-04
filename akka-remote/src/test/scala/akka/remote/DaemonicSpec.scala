@@ -24,7 +24,7 @@ class DaemonicSpec extends AkkaSpec {
     port
   }
 
-  "Remoting configured with daemonic = on" must {
+  "Remoting configured with daemonic = on" should {
 
     "shut down correctly after getting connection refused" in {
       // get all threads running before actor system i started

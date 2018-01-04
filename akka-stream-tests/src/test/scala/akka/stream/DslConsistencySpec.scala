@@ -59,7 +59,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
       c.getMethods.collect { case m if !ignore(m.getName) ⇒ c.getName + "." + m.getName } should contain(c.getName + "." + name)
   }
 
-  "Java and Scala DSLs" must {
+  "Java and Scala DSLs" should {
 
     ("Source" → List[Class[_]](sSourceClass, jSourceClass)) ::
       ("SubSource" → List[Class[_]](sSubSourceClass, jSubSourceClass)) ::

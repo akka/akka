@@ -114,7 +114,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "an attributes instance" must {
+  "an attributes instance" should {
 
     val attributes = Attributes.name("a") and Attributes.name("b") and Attributes.inputBuffer(1, 2)
 
@@ -128,7 +128,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
   }
 
-  "attributes on a graph stage" must {
+  "attributes on a graph stage" should {
 
     "be appended with addAttributes" in {
       val attributes =
@@ -181,7 +181,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     }
   }
 
-  "attributes on a source" must {
+  "attributes on a source" should {
 
     "make the attributes on fromGraph(single-source-stage) Source behave the same as the stage itself" in {
       val attributes =
@@ -317,7 +317,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     }
   }
 
-  "attributes on a Flow" must {
+  "attributes on a Flow" should {
 
     "make the attributes on fromGraph(flow-stage) Flow behave the same as the stage itself" in {
       val attributes =
@@ -360,7 +360,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
   }
 
-  "attributes on a Sink" must {
+  "attributes on a Sink" should {
     "make the attributes on fromGraph(sink-stage) Sink behave the same as the stage itself" in {
       val attributes =
         Source.empty.toMat(
@@ -379,7 +379,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
   }
 
-  "attributes in the javadsl source" must {
+  "attributes in the javadsl source" should {
 
     "not change dispatcher from one defined on a surrounding graph" in {
       val dispatcherF =
@@ -462,7 +462,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
   }
 
-  "attributes on the materializer" must {
+  "attributes on the materializer" should {
 
     "be defaults and not used when more specific attributes are found" in {
 

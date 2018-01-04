@@ -29,7 +29,7 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
 
   import NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec._
 
-  "A node that is LEAVING a non-singleton cluster" must {
+  "A node that is LEAVING a non-singleton cluster" should {
 
     "eventually set to REMOVED and removed from membership ring and seen table" taggedAs LongRunningTest in {
 

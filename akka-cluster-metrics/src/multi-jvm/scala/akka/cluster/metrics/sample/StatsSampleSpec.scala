@@ -81,7 +81,7 @@ abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
 
   //#abstract-test
 
-  "The stats sample" must {
+  "The stats sample" should {
 
     //#startup-cluster
     "illustrate how to startup cluster" in within(15 seconds) {

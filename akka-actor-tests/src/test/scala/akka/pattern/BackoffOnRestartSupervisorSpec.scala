@@ -72,7 +72,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
     val child = probe.lastSender
   }
 
-  "BackoffOnRestartSupervisor" must {
+  "BackoffOnRestartSupervisor" should {
     "terminate when child terminates" in new Setup {
       filterException[TestActor.TestException] {
         probe.watch(supervisor)

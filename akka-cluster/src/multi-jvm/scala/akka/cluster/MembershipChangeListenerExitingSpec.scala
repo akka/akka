@@ -34,7 +34,7 @@ abstract class MembershipChangeListenerExitingSpec
   import MembershipChangeListenerExitingMultiJvmSpec._
   import ClusterEvent._
 
-  "A registered MembershipChangeListener" must {
+  "A registered MembershipChangeListener" should {
     "be notified when new node is EXITING" taggedAs LongRunningTest in {
 
       awaitClusterUp(first, second, third)

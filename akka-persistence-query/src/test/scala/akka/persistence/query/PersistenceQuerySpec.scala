@@ -24,7 +24,7 @@ class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfte
       |}
     """.stripMargin
 
-  "ReadJournal" must {
+  "ReadJournal" should {
     "be found by full config key" in {
       withActorSystem() { system ⇒
         PersistenceQuery.get(system).readJournalFor[DummyReadJournal](DummyReadJournal.Identifier)

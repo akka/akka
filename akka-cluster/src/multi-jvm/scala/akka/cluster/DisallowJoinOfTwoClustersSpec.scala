@@ -31,7 +31,7 @@ abstract class DisallowJoinOfTwoClustersSpec
 
   import DisallowJoinOfTwoClustersMultiJvmSpec._
 
-  "Three different clusters (A, B and C)" must {
+  "Three different clusters (A, B and C)" should {
 
     "not be able to join" taggedAs LongRunningTest in {
       // make sure that the node-to-join is started before other join

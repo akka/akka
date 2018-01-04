@@ -41,7 +41,7 @@ abstract class DeterministicOldestWhenJoiningSpec
     Vector(address(seed1), address(seed2), address(seed3)).sorted(Member.addressOrdering).reverse
   val roleByAddress = Map(address(seed1) → seed1, address(seed2) → seed2, address(seed3) → seed3)
 
-  "Joining a cluster" must {
+  "Joining a cluster" should {
     "result in deterministic oldest node" taggedAs LongRunningTest in {
       cluster.subscribe(testActor, classOf[MemberUp])
       expectMsgType[CurrentClusterState]

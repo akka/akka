@@ -39,7 +39,7 @@ abstract class SurviveNetworkPartitionSpec extends RemotingMultiNodeSpec(Survive
 
   override def initialParticipants = roles.size
 
-  "Network partition" must {
+  "Network partition" should {
 
     "not quarantine system when it heals within 'give-up-system-message-after'" taggedAs LongRunningTest in {
 

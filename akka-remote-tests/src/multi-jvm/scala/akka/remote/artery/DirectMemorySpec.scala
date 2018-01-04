@@ -54,14 +54,14 @@ abstract class DirectMemorySpec extends MultiNodeSpec(DirectMemorySpec) with STM
 
   override def initialParticipants: Int = roles.size
 
-  "This test" must {
+  "This test" should {
     "override JVM start-up options" in {
       // it's important that *.opts files have been processed
       assert(System.getProperty("DirectMemorySpec.marker") equals "true")
     }
   }
 
-  "Direct memory allocation" must {
+  "Direct memory allocation" should {
     "not cause OutOfMemoryError" in within(10.seconds) {
       // twice the buffer pool size
       val nrOfRegularMessages = 2 * system.settings.config.getInt("akka.remote.artery.buffer-pool-size")

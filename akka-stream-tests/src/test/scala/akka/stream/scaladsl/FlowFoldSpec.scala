@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 class FlowFoldSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
 
-  "A Fold" must {
+  "A Fold" should {
     val input = 1 to 100
     val expected = input.sum
     val inputSource = Source(input)

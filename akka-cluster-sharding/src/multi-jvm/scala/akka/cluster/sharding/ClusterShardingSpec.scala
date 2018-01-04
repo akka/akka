@@ -351,7 +351,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
 
   def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
-  s"Cluster sharding ($mode)" must {
+  s"Cluster sharding ($mode)" should {
 
     // must be done also in ddata mode since Counter is PersistentActor
     "setup shared journal" in {
@@ -714,7 +714,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
 
   }
 
-  "Persistent Cluster Shards" must {
+  "Persistent Cluster Shards" should {
     "recover entities upon restart" in within(50.seconds) {
       runOn(third, fourth, fifth) {
         persistentEntitiesRegion

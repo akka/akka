@@ -27,7 +27,7 @@ import scala.util.control.NonFatal
 
 class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.timeout = 2s") with TcpHelper {
 
-  "Outgoing TCP stream" must {
+  "Outgoing TCP stream" should {
 
     "work in the happy case" in assertAllStagesStopped {
       val testData = ByteString(1, 2, 3, 4, 5)
@@ -448,7 +448,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
 
   }
 
-  "TCP listen stream" must {
+  "TCP listen stream" should {
 
     // Reusing handler
     val echoHandler = Sink.foreach[Tcp.IncomingConnection] { _.flow.join(Flow[ByteString]).run() }

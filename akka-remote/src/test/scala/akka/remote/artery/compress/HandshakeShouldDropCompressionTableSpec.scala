@@ -50,7 +50,7 @@ class HandshakeShouldDropCompressionTableSpec extends ArteryMultiNodeSpec(Handsh
       extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
   }
 
-  "Outgoing compression table" must {
+  "Outgoing compression table" should {
     "be dropped on system restart" in {
       val messagesToExchange = 10
       val systemATransport = RARP(system).provider.transport.asInstanceOf[ArteryTransport]

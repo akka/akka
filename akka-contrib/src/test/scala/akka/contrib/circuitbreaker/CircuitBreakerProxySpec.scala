@@ -63,7 +63,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
 
   }
 
-  "CircuitBreakerActor" must {
+  "CircuitBreakerActor" should {
 
     "act as a transparent proxy in case of successful requests-replies - forward to target" in {
       Given("A circuit breaker proxy pointing to a target actor")
@@ -437,7 +437,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
     }
   }
 
-  "Ask Extension" must {
+  "Ask Extension" should {
     import Implicits.askWithCircuitBreaker
 
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -485,7 +485,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
     }
   }
 
-  "Future Extension" must {
+  "Future Extension" should {
     import Implicits.futureExtensions
     import akka.pattern.ask
 

@@ -727,7 +727,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
 
   override def expectedTestDuration = 2.minutes
 
-  "A Supervisor Hierarchy" must {
+  "A Supervisor Hierarchy" should {
 
     "restart manager and workers in AllForOne" taggedAs LongRunningTest in {
       val countDown = new CountDownLatch(4)

@@ -20,7 +20,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
     override def toString = "TE"
   }
 
-  "Interpreter error handling" must {
+  "Interpreter error handling" should {
 
     "handle external failure" in new OneBoundedSetup[Int](Map((x: Int) ⇒ x + 1)) {
       lastEvents() should be(Set.empty)

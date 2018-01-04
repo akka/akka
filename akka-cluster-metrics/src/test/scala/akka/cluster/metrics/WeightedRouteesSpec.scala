@@ -34,7 +34,7 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
   val routees = Vector(routeeA, routeeB, routeeC)
   val testActorRoutee = ActorRefRoutee(testActor)
 
-  "WeightedRoutees" must {
+  "WeightedRoutees" should {
 
     "allocate weighted routees" in {
       val weights = Map(a1 → 1, b1 → 3, c1 → 10)

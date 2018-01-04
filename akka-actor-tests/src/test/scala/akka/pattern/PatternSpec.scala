@@ -25,7 +25,7 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
   implicit val ec = system.dispatcher
   import PatternSpec._
 
-  "pattern.gracefulStop" must {
+  "pattern.gracefulStop" should {
 
     "provide Future for stopping an actor" in {
       val target = system.actorOf(Props[TargetActor])
@@ -48,7 +48,7 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
     }
   }
 
-  "pattern.after" must {
+  "pattern.after" should {
     "be completed successfully eventually" in {
       // TODO after is unfortunately shadowed by ScalaTest, fix as part of #3759
       val f = akka.pattern.after(1 second, using = system.scheduler)(Future.successful(5))

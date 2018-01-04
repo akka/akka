@@ -20,7 +20,7 @@ class ClusterSingletonMessageSerializerSpec extends AkkaSpec {
     ref should ===(obj)
   }
 
-  "ClusterSingletonMessages" must {
+  "ClusterSingletonMessages" should {
 
     "be serializable" in {
       checkSerialization(HandOverDone)

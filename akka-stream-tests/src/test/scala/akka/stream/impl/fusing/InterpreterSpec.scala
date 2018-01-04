@@ -23,7 +23,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   val takeOne = Take(1)
   val takeTwo = Take(2)
 
-  "Interpreter" must {
+  "Interpreter" should {
 
     "implement map correctly" in new OneBoundedSetup[Int](Map((x: Int) ⇒ x + 1)) {
       lastEvents() should be(Set.empty)

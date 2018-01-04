@@ -37,7 +37,7 @@ class BidiFlowSpec extends StreamSpec {
   val str = "Hello World"
   val bytes = ByteString(str)
 
-  "A BidiFlow" must {
+  "A BidiFlow" should {
 
     "work top/bottom in isolation" in {
       val (top, bottom) = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Long], Sink.head[String])(Keep.both) { implicit b ⇒ (st, sb) ⇒

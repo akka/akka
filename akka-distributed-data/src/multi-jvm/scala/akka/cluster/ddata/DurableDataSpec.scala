@@ -105,7 +105,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     enterBarrier(from.name + "-joined")
   }
 
-  "Durable CRDT" must {
+  "Durable CRDT" should {
 
     "work in single node cluster" in {
       join(first, first)

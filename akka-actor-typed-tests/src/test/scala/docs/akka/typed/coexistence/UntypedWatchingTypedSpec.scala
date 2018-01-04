@@ -70,7 +70,7 @@ class UntypedWatchingTypedSpec extends WordSpec {
 
   import UntypedWatchingTypedSpec._
 
-  "Untyped -> Typed" must {
+  "Untyped -> Typed" should {
     "support creating, watching and messaging" in {
       val system = untyped.ActorSystem("Coexistence")
       //#create-untyped

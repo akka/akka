@@ -84,7 +84,7 @@ class FlowGroupBySpec extends StreamSpec {
     ByteString(a)
   }
 
-  "groupBy" must {
+  "groupBy" should {
     "work in the happy case" in assertAllStagesStopped {
       new SubstreamsSupport(groupCount = 2) {
         val s1 = StreamPuppet(getSubFlow(1).runWith(Sink.asPublisher(false)))

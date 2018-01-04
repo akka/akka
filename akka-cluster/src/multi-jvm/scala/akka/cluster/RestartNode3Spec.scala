@@ -71,7 +71,7 @@ abstract class RestartNode3Spec
 
   override def expectedTestDuration = 2.minutes
 
-  "Cluster nodes" must {
+  "Cluster nodes" should {
     "be able to restart and join again when Down before Up" taggedAs LongRunningTest in within(60.seconds) {
       // secondSystem is a separate ActorSystem, to be able to simulate restart
       // we must transfer its address to first

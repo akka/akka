@@ -13,7 +13,7 @@ class ORMultiMapSpec extends WordSpec with Matchers {
   val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
 
-  "A ORMultiMap" must {
+  "A ORMultiMap" should {
 
     "be able to add entries" in {
       val m = ORMultiMap().addBinding(node1, "a", "A").addBinding(node1, "b", "B")

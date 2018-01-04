@@ -14,7 +14,7 @@ class ImplicitSenderSpec
 
   override def afterAll = system.terminate
 
-  "An ImplicitSender" must {
+  "An ImplicitSender" should {
     "have testActor as its self" in {
       self should ===(testActor)
     }

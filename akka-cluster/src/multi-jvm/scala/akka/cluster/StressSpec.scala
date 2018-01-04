@@ -1109,7 +1109,7 @@ abstract class StressSpec
     awaitClusterResult()
   }
 
-  "A cluster under stress" must {
+  "A cluster under stress" should {
 
     "log settings" taggedAs LongRunningTest in {
       if (infolog) {

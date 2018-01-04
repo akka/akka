@@ -22,7 +22,7 @@ class PromiseRefSpec extends AkkaSpec with ImplicitSender {
   import PromiseRefSpec._
   import akka.pattern._
 
-  "The PromiseRef" must {
+  "The PromiseRef" should {
     "complete promise with received message" in {
       val promiseRef = PromiseRef(5.seconds)
 

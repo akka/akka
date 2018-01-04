@@ -140,7 +140,7 @@ abstract class ClusterShardingCustomShardAllocationSpec(config: ClusterShardingC
 
   def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
-  s"Cluster sharding ($mode) with custom allocation strategy" must {
+  s"Cluster sharding ($mode) with custom allocation strategy" should {
 
     if (!isDdataMode) {
       "setup shared journal" in {

@@ -8,7 +8,7 @@ import org.scalatest.{ Matchers, WordSpec }
 
 class WildcardIndexSpec extends WordSpec with Matchers {
 
-  "wildcard index" must {
+  "wildcard index" should {
     "allow to insert elements using Arrays of strings" in {
       emptyIndex.insert(Array("a", "b"), 1) shouldBe a[WildcardIndex[_]]
       emptyIndex.insert(Array("a"), 1) shouldBe a[WildcardIndex[_]]

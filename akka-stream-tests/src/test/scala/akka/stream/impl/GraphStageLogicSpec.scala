@@ -133,7 +133,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
       }
   }
 
-  "A GraphStageLogic" must {
+  "A GraphStageLogic" should {
 
     "read N and emit N before completing" in assertAllStagesStopped {
       Source(1 to 10).via(ReadNEmitN(2)).runWith(TestSink.probe)

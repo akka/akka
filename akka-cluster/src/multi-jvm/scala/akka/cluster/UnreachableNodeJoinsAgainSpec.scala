@@ -63,7 +63,7 @@ abstract class UnreachableNodeJoinsAgainSpec
     enterBarrier("after_" + endBarrierNumber)
   }
 
-  "A cluster of " + roles.size + " members" must {
+  "A cluster of " + roles.size + " members" should {
 
     "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(roles: _*)

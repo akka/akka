@@ -100,7 +100,7 @@ abstract class ClusterShardingGetStateSpec extends MultiNodeSpec(ClusterSharding
     enterBarrier(from.name + "-joined")
   }
 
-  "Inspecting cluster sharding state" must {
+  "Inspecting cluster sharding state" should {
 
     "join cluster" in {
       join(controller)

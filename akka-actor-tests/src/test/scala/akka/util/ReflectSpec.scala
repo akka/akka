@@ -24,7 +24,7 @@ class ReflectSpec extends WordSpec with Matchers {
 
   import akka.util.ReflectSpec._
 
-  "Reflect#findConstructor" must {
+  "Reflect#findConstructor" should {
 
     "deal with simple 1 matching case" in {
       Reflect.findConstructor(classOf[One], immutable.Seq(new A))

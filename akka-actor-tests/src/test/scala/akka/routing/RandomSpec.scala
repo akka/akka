@@ -13,7 +13,7 @@ import akka.pattern.ask
 
 class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
-  "random pool" must {
+  "random pool" should {
 
     "be able to shut down its instance" in {
       val stopLatch = new TestLatch(7)

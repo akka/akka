@@ -15,7 +15,7 @@ class GraphUnzipSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A unzip" must {
+  "A unzip" should {
     import GraphDSL.Implicits._
 
     "unzip to two subscribers" in assertAllStagesStopped {

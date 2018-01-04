@@ -98,7 +98,7 @@ class RemoteWatcherSpec extends AkkaSpec(
     expectMsgType[ActorIdentity].ref.get.asInstanceOf[InternalActorRef]
   }
 
-  "A RemoteWatcher" must {
+  "A RemoteWatcher" should {
 
     "have correct interaction when watching" in {
 

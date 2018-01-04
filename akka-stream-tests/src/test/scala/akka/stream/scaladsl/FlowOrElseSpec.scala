@@ -17,7 +17,7 @@ class FlowOrElseSpec extends AkkaSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "An OrElse flow" must {
+  "An OrElse flow" should {
 
     "pass elements from the first input" in {
       val source1 = Source(Seq(1, 2, 3))

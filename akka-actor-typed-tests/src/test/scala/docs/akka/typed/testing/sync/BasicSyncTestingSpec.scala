@@ -50,7 +50,7 @@ class BasicSyncTestingSpec extends WordSpec with Matchers {
 
   import BasicSyncTestingSpec._
 
-  "Typed actor synchronous testing" must {
+  "Typed actor synchronous testing" should {
 
     "record spawning" in {
       //#test-child

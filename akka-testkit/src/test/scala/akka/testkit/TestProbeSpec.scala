@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class TestProbeSpec extends AkkaSpec with DefaultTimeout {
 
-  "A TestProbe" must {
+  "A TestProbe" should {
 
     "reply to futures" in {
       val tk = TestProbe()

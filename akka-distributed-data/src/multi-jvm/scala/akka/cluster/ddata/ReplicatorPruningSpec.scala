@@ -57,7 +57,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
     enterBarrier(from.name + "-joined")
   }
 
-  "Pruning of CRDT" must {
+  "Pruning of CRDT" should {
 
     "move data from removed node" in {
       join(first, first)

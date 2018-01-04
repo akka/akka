@@ -31,7 +31,7 @@ class LateConnectSpec extends ArteryMultiNodeSpec(LateConnectSpec.config) with I
     name = Some("systemB"),
     extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
 
-  "Connection" must {
+  "Connection" should {
 
     "be established after initial lazy restart" in {
       system.actorOf(TestActors.echoActorProps, "echoA")

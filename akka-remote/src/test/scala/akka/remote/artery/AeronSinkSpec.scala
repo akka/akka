@@ -52,7 +52,7 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
     super.afterTermination()
   }
 
-  "AeronSink" must {
+  "AeronSink" should {
 
     "give up sending after given duration" in {
       val port = SocketUtil.temporaryLocalPort(udp = true)

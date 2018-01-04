@@ -43,7 +43,7 @@ class GraphOpsIntegrationSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "GraphDSLs" must {
+  "GraphDSLs" should {
 
     "support broadcast - merge layouts" in {
       val resultFuture = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b ⇒ (sink) ⇒

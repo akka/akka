@@ -16,7 +16,7 @@ class FlowBatchSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "Batch" must {
+  "Batch" should {
 
     "pass-through elements unchanged when there is no rate difference" in {
       val publisher = TestPublisher.probe[Int]()

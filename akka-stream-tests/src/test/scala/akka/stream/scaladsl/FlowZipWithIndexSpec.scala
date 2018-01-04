@@ -14,7 +14,7 @@ class FlowZipWithIndexSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A ZipWithIndex for Flow " must {
+  "A ZipWithIndex for Flow " should {
 
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[(Int, Long)]()

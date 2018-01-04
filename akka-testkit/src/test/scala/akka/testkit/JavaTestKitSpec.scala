@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 
 class JavaTestKitSpec extends AkkaSpec with DefaultTimeout {
 
-  "JavaTestKit" must {
+  "JavaTestKit" should {
 
     "be able to receiveN messages" in {
       new JavaTestKit(system) {

@@ -34,7 +34,7 @@ abstract class ClusterAccrualFailureDetectorSpec
 
   muteMarkingAsUnreachable()
 
-  "A heartbeat driven Failure Detector" must {
+  "A heartbeat driven Failure Detector" should {
 
     "receive heartbeats so that all member nodes in the cluster are marked 'available'" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third)

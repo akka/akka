@@ -38,7 +38,7 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
   // Sleep longer then single sample.
   def awaitSample(time: Long = 3 * sampleInterval.toMillis) = Thread.sleep(time)
 
-  "Metrics Extension" must {
+  "Metrics Extension" should {
 
     "collect metrics after start command" in {
       extension.supervisor ! CollectionStartMessage

@@ -53,7 +53,7 @@ class FailingTestExtension(val system: ExtendedActorSystem) extends Extension {
 
 class ExtensionSpec extends WordSpec with Matchers {
 
-  "The ActorSystem extensions support" must {
+  "The ActorSystem extensions support" should {
 
     "support extensions" in {
       val config = ConfigFactory.parseString("""akka.extensions = ["akka.actor.TestExtension"]""")

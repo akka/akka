@@ -11,7 +11,7 @@ import akka.stream.testkit.StreamSpec
 class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   import GraphStages._
 
-  "GraphInterpreter" must {
+  "GraphInterpreter" should {
 
     // Reusable components
     val identity = GraphStages.identity[Int]

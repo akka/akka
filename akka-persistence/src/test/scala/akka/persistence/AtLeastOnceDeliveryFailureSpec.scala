@@ -169,7 +169,7 @@ class AtLeastOnceDeliveryFailureSpec extends AkkaSpec(AtLeastOnceDeliveryFailure
 
   muteDeadLetters(classOf[AnyRef])(system)
 
-  "AtLeastOnceDelivery" must {
+  "AtLeastOnceDelivery" should {
     "tolerate and recover from random failures" in {
       system.actorOf(Props(classOf[ChaosApp], testActor), "chaosApp") ! Start
       expectDone() // by sender

@@ -51,7 +51,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
     override def runNextClassManifestAdvertisement(): Unit = ???
   }
 
-  "EnvelopeBuffer" must {
+  "EnvelopeBuffer" should {
     val headerOut = HeaderBuilder.in(TestCompressor)
     val headerIn = HeaderBuilder.out()
 

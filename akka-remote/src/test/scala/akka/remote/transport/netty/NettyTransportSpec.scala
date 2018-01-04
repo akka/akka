@@ -36,7 +36,7 @@ object NettyTransportSpec {
 class NettyTransportSpec extends WordSpec with Matchers with BindBehaviour {
   import akka.remote.transport.netty.NettyTransportSpec._
 
-  "NettyTransport" must {
+  "NettyTransport" should {
     behave like theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress("tcp")
     behave like theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress("udp")
 

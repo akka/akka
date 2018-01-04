@@ -29,7 +29,7 @@ class HeartbeatNodeRingPerfSpec extends WordSpec with Matchers {
     r.myReceivers.isEmpty should ===(false)
   }
 
-  s"HeartbeatNodeRing of size $nodesSize" must {
+  s"HeartbeatNodeRing of size $nodesSize" should {
 
     s"do a warm up run, $iterations times" in {
       checkThunkForRing(heartbeatNodeRing, myReceivers, iterations)

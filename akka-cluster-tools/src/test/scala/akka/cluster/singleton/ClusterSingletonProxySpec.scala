@@ -21,7 +21,7 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
     joiners :+ seed
   }
 
-  "The cluster singleton proxy" must {
+  "The cluster singleton proxy" should {
     "correctly identify the singleton" in {
       testSystems.foreach(_.testProxy("Hello"))
       testSystems.foreach(_.testProxy("World"))

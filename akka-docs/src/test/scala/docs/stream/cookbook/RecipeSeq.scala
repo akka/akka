@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 
 class RecipeSeq extends RecipeSpec {
 
-  "Draining to a strict sequence" must {
+  "Draining to a strict sequence" should {
 
     "not be done unsafely" in {
       val mySource = Source(1 to 3).map(_.toString)

@@ -18,7 +18,7 @@ class FlowBufferSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "Buffer" must {
+  "Buffer" should {
 
     "pass elements through normally in backpressured mode" in {
       val future: Future[Seq[Int]] = Source(1 to 1000).buffer(100, overflowStrategy = OverflowStrategy.backpressure).grouped(1001).

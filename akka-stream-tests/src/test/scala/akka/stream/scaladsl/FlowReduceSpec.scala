@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 class FlowReduceSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
 
-  "A Reduce" must {
+  "A Reduce" should {
     val input = 1 to 100
     val expected = input.sum
     val inputSource = Source(input).filter(_ ⇒ true).map(identity)

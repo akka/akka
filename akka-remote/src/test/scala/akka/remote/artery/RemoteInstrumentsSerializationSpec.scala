@@ -29,7 +29,7 @@ class RemoteInstrumentsSerializationSpec extends AkkaSpec("akka.loglevel = DEBUG
       }
   }
 
-  "RemoteInstruments" must {
+  "RemoteInstruments" should {
     "not write anything in the buffer if not deserializing" in {
       val buffer = ByteBuffer.allocate(1024)
       serialize(remoteInstruments(), buffer)

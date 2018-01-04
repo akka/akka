@@ -17,7 +17,7 @@ class HubSpec extends StreamSpec {
 
   implicit val mat = ActorMaterializer()
 
-  "MergeHub" must {
+  "MergeHub" should {
 
     "work in the happy case" in assertAllStagesStopped {
       val (sink, result) = MergeHub.source[Int](16).take(20).toMat(Sink.seq)(Keep.both).run()
@@ -181,7 +181,7 @@ class HubSpec extends StreamSpec {
 
   }
 
-  "BroadcastHub" must {
+  "BroadcastHub" should {
 
     "work in the happy case" in assertAllStagesStopped {
       val source = Source(1 to 10).runWith(BroadcastHub.sink(8))
@@ -395,7 +395,7 @@ class HubSpec extends StreamSpec {
 
   }
 
-  "PartitionHub" must {
+  "PartitionHub" should {
 
     "work in the happy case with one stream" in assertAllStagesStopped {
       val source = Source(1 to 10).runWith(PartitionHub.sink((size, elem) ⇒ 0, startAfterNrOfConsumers = 0, bufferSize = 8))

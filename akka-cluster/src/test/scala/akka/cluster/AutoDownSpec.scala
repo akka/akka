@@ -52,7 +52,7 @@ class AutoDownSpec extends AkkaSpec("akka.actor.provider=remote") {
   def autoDownActor(autoDownUnreachableAfter: FiniteDuration): ActorRef =
     system.actorOf(Props(classOf[AutoDownTestActor], memberA, autoDownUnreachableAfter, testActor))
 
-  "AutoDown" must {
+  "AutoDown" should {
 
     "down unreachable when leader" in {
       val a = autoDownActor(Duration.Zero)

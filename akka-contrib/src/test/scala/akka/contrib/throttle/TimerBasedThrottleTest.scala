@@ -12,7 +12,7 @@ import akka.testkit.{ TestActorRef, TestKit }
 import org.scalatest.WordSpecLike
 
 class TimerBasedThrottleTest extends TestKit(ActorSystem("TimerBasedThrottler")) with WordSpecLike {
-  "A throttler" must {
+  "A throttler" should {
     "normalize all rates to the highest precision (nanoseconds)" in {
       val throttler = TestActorRef(new TimerBasedThrottler(1 msgsPer (1, SECONDS)))
       val throttler2 = TestActorRef(new TimerBasedThrottler(5 msgsPer (1, SECONDS)))

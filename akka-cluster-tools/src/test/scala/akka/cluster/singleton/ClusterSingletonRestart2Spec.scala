@@ -69,7 +69,7 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
     }
   }
 
-  "Restarting cluster node during hand over" must {
+  "Restarting cluster node during hand over" should {
     "start singletons in restarted node" in {
       join(sys1, sys1)
       join(sys2, sys1)

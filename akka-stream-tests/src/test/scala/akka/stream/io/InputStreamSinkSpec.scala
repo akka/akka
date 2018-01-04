@@ -48,7 +48,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
   }
   def testSink(probe: TestProbe) = TestSinkStage(new InputStreamSinkStage(timeout), probe)
 
-  "InputStreamSink" must {
+  "InputStreamSink" should {
     "read bytes from InputStream" in assertAllStagesStopped {
       val inputStream = Source.single(byteString).runWith(StreamConverters.asInputStream())
       readN(inputStream, byteString.size) should ===((byteString.size, byteString))

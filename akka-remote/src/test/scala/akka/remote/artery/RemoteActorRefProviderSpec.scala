@@ -19,7 +19,7 @@ class RemoteActorRefProviderSpec extends ArteryMultiNodeSpec {
   val addressB = address(systemB)
   systemB.actorOf(TestActors.echoActorProps, "echo")
 
-  "RemoteActorRefProvider" must {
+  "RemoteActorRefProvider" should {
 
     "resolve local actor selection" in {
       val sel = system.actorSelection(s"akka://${system.name}@${addressA.host.get}:${addressA.port.get}/user/echo")

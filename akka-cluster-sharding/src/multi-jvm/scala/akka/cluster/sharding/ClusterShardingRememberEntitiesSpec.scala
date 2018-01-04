@@ -141,7 +141,7 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
 
   def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
-  s"Cluster sharding with remember entities ($mode)" must {
+  s"Cluster sharding with remember entities ($mode)" should {
 
     if (!isDdataMode) {
       "setup shared journal" in {

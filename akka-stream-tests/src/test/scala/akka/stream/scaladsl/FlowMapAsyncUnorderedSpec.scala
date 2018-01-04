@@ -28,7 +28,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A Flow with mapAsyncUnordered" must {
+  "A Flow with mapAsyncUnordered" should {
 
     "produce future elements in the order they are ready" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Int]()

@@ -19,7 +19,7 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   def routeeSize(router: ActorRef): Int =
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees.size
 
-  "round robin pool" must {
+  "round robin pool" should {
 
     "be able to shut down its instance" in {
       val helloLatch = new TestLatch(5)
@@ -115,7 +115,7 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     }
   }
 
-  "round robin group" must {
+  "round robin group" should {
 
     "deliver messages in a round robin fashion" in {
       val connectionCount = 10
@@ -148,7 +148,7 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     }
   }
 
-  "round robin logic used in actor" must {
+  "round robin logic used in actor" should {
     "deliver messages in a round robin fashion" in {
       val connectionCount = 10
       val iterationCount = 10

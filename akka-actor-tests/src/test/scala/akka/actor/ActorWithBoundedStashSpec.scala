@@ -124,7 +124,7 @@ class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testC
     for (n ← 1 to 20) expectMsg(DeadLetter("hello" + n, testActor, stasher))
   }
 
-  "An Actor with Stash" must {
+  "An Actor with Stash" should {
 
     "end up in DeadLetters in case of a capacity violation when configured via dispatcher" in {
       val stasher = system.actorOf(Props[StashingActor].withDispatcher(dispatcherId1))

@@ -18,7 +18,7 @@ class ReachabilitySpec extends WordSpec with Matchers {
   val nodeD = UniqueAddress(Address("akka.tcp", "sys", "d", 2552), 4L)
   val nodeE = UniqueAddress(Address("akka.tcp", "sys", "e", 2552), 5L)
 
-  "Reachability table" must {
+  "Reachability table" should {
 
     "be reachable when empty" in {
       val r = Reachability.empty

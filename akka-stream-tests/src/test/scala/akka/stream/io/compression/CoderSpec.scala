@@ -35,7 +35,7 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
 
   def extraTests(): Unit = {}
 
-  s"The $codecName codec" must {
+  s"The $codecName codec" should {
     "produce valid data on immediate finish" in {
       streamDecode(newCompressor().finish()) should readAs(emptyText)
     }

@@ -22,7 +22,7 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
     Thread.interrupted() //remove interrupted status.
   }
 
-  "A supervised actor with lifecycle PERMANENT" must {
+  "A supervised actor with lifecycle PERMANENT" should {
     "be able to reply on failure during preRestart" in {
       filterEvents(EventFilter[Exception]("test", occurrences = 1)) {
         val supervisor = system.actorOf(Props(new Supervisor(

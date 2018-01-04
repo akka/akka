@@ -23,7 +23,7 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
 
   }
 
-  "preferred merge" must {
+  "preferred merge" should {
     commonTests()
 
     "prefer selected input more than others" in {

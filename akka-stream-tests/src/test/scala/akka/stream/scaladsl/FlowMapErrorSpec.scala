@@ -19,7 +19,7 @@ class FlowMapErrorSpec extends StreamSpec {
   val ex = new RuntimeException("ex") with NoStackTrace
   val boom = new Exception("BOOM!") with NoStackTrace
 
-  "A MapError" must {
+  "A MapError" should {
     "mapError when there is a handler" in assertAllStagesStopped {
       Source(1 to 4).map { a ⇒ if (a == 3) throw ex else a }
         .mapError { case t: Throwable ⇒ boom }

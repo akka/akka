@@ -130,7 +130,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     }
   }
 
-  "Dispatchers" must {
+  "Dispatchers" should {
 
     "use defined properties" in {
       val dispatcher = lookup("myapp.mydispatcher")

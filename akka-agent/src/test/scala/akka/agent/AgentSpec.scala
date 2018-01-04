@@ -20,7 +20,7 @@ class AgentSpec extends AkkaSpec {
 
   implicit val timeout = Timeout(5.seconds.dilated)
   import system.dispatcher
-  "Agent" must {
+  "Agent" should {
     "update with send dispatches in order sent" in {
       val countDown = new CountDownFunction[String]
 

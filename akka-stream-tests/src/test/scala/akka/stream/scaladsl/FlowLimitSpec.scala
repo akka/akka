@@ -14,7 +14,7 @@ class FlowLimitSpec extends StreamSpec {
 
   implicit val mat = ActorMaterializer(settings)
 
-  "Limit" must {
+  "Limit" should {
     "produce empty sequence when source is empty and n = 0" in {
       val input = Range(0, 0, 1)
       val n = input.length

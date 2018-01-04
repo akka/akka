@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 
 class RecipeParseLines extends RecipeSpec {
 
-  "Recipe for parsing line from bytes" must {
+  "Recipe for parsing line from bytes" should {
 
     "work" in {
       val rawData = Source(List(

@@ -45,7 +45,7 @@ object InstanceCountingExtension extends ExtensionId[DummyExtension1] {
 
 class ExtensionsSpec extends TypedAkkaSpec {
 
-  "The extensions subsystem" must {
+  "The extensions subsystem" should {
     "return the same instance for the same id" in
       withEmptyActorSystem("ExtensionsSpec01") { system ⇒
         val instance1 = system.registerExtension(DummyExtension1)

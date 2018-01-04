@@ -72,7 +72,7 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
     blobA.toSeq should be(blobB.toSeq)
   }
 
-  "ReplicatedDataSerializer" must {
+  "ReplicatedDataSerializer" should {
 
     "serialize GSet" in {
       checkSerialization(GSet())

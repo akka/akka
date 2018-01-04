@@ -36,7 +36,7 @@ class PingPongActorSystemActivatorTest extends WordSpec with Matchers with PojoS
   val testBundles: immutable.Seq[BundleDescriptor] = buildTestBundles(List(
     bundle(TEST_BUNDLE_NAME).withActivator(classOf[PingPongActorSystemActivator])))
 
-  "PingPongActorSystemActivator" must {
+  "PingPongActorSystemActivator" should {
 
     "start and register the ActorSystem when bundle starts" in {
       filterErrors() {
@@ -69,7 +69,7 @@ class RuntimeNameActorSystemActivatorTest extends WordSpec with Matchers with Po
   val testBundles: immutable.Seq[BundleDescriptor] =
     buildTestBundles(List(bundle(TEST_BUNDLE_NAME).withActivator(classOf[RuntimeNameActorSystemActivator])))
 
-  "RuntimeNameActorSystemActivator" must {
+  "RuntimeNameActorSystemActivator" should {
 
     "register an ActorSystem and add the bundle id to the system name" in {
       filterErrors() {

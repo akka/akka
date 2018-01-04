@@ -18,7 +18,7 @@ class FlowExpandSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "Expand" must {
+  "Expand" should {
 
     "pass-through elements unchanged when there is no rate difference" in {
       // Shadow the fuzzed materializer (see the ordering guarantee needed by the for loop below).

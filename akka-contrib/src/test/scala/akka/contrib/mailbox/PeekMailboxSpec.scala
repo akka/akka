@@ -41,7 +41,7 @@ class PeekMailboxSpec extends AkkaSpec("""
 
   import PeekMailboxSpec._
 
-  "A PeekMailbox" must {
+  "A PeekMailbox" should {
 
     "retry messages" in {
       val a = system.actorOf(Props(classOf[PeekActor], 1).withDispatcher("peek-dispatcher"))

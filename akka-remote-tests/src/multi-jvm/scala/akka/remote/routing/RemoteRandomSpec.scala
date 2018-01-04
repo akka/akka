@@ -63,7 +63,7 @@ class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig) extends RemotingMult
 
   def initialParticipants = roles.size
 
-  "A remote random pool" must {
+  "A remote random pool" should {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
 
       runOn(first, second, third) {

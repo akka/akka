@@ -29,7 +29,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
     crossDcGossipProbability = 0.2
   )
 
-  "The gossip target selection" must {
+  "The gossip target selection" should {
 
     "select remote nodes in a multi dc setting for a single node cluster regardless of probability" in {
       val realSelector = new GossipTargetSelector(400, 0.0)

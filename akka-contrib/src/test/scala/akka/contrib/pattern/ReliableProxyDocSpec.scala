@@ -62,7 +62,7 @@ class ReliableProxyDocSpec extends AkkaSpec {
 
   import ReliableProxyDocSpec._
 
-  "A ReliableProxy" must {
+  "A ReliableProxy" should {
 
     "show usage" in {
       val probe = TestProbe()

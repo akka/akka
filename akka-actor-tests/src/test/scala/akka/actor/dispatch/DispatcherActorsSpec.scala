@@ -26,7 +26,7 @@ class DispatcherActorsSpec extends AkkaSpec {
     }
   }
 
-  "A dispatcher and two actors" must {
+  "A dispatcher and two actors" should {
     "not block fast actors by slow actors" in {
       val sFinished = new CountDownLatch(50)
       val fFinished = new CountDownLatch(10)

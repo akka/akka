@@ -107,7 +107,7 @@ class ClusterReceptionistSpec extends TestKit("ClusterReceptionistSpec", Cluster
 
   import Receptionist._
 
-  "The cluster receptionist" must {
+  "The cluster receptionist" should {
 
     "must eventually replicate registrations to the other side" in {
       new TestSetup {

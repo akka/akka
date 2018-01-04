@@ -67,7 +67,7 @@ class MultiDcHeartbeatTakingOverSpecMultiJvmNode5 extends MultiDcHeartbeatTaking
 abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeartbeatTakingOverSpecMultiJvmSpec)
   with MultiNodeClusterSpec {
 
-  "A 2-dc cluster" must {
+  "A 2-dc cluster" should {
 
     val observer: TestProbe = TestProbe("alpha-observer")
 

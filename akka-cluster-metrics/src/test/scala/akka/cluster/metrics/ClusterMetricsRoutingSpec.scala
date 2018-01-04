@@ -59,7 +59,7 @@ class MetricsSelectorSpec extends WordSpec with Matchers {
 
   val nodeMetrics = Set(nodeMetricsA, nodeMetricsB, nodeMetricsC, nodeMetricsD)
 
-  "CapacityMetricsSelector" must {
+  "CapacityMetricsSelector" should {
 
     "calculate weights from capacity" in {
       val capacity = Map(a1 → 0.6, b1 → 0.3, c1 → 0.1)
@@ -75,7 +75,7 @@ class MetricsSelectorSpec extends WordSpec with Matchers {
 
   }
 
-  "HeapMetricsSelector" must {
+  "HeapMetricsSelector" should {
     "calculate capacity of heap metrics" in {
       val capacity = HeapMetricsSelector.capacity(nodeMetrics)
       capacity(a1) should ===(0.75 +- 0.0001)
@@ -85,7 +85,7 @@ class MetricsSelectorSpec extends WordSpec with Matchers {
     }
   }
 
-  "CpuMetricsSelector" must {
+  "CpuMetricsSelector" should {
     "calculate capacity of cpuCombined metrics" in {
       val capacity = CpuMetricsSelector.capacity(nodeMetrics)
       capacity(a1) should ===(1.0 - 0.2 - 0.1 * (1.0 + factor) +- 0.0001)
@@ -95,7 +95,7 @@ class MetricsSelectorSpec extends WordSpec with Matchers {
     }
   }
 
-  "SystemLoadAverageMetricsSelector" must {
+  "SystemLoadAverageMetricsSelector" should {
     "calculate capacity of systemLoadAverage metrics" in {
       val capacity = SystemLoadAverageMetricsSelector.capacity(nodeMetrics)
       capacity(a1) should ===(0.9375 +- 0.0001)
@@ -105,7 +105,7 @@ class MetricsSelectorSpec extends WordSpec with Matchers {
     }
   }
 
-  "MixMetricsSelector" must {
+  "MixMetricsSelector" should {
     "aggregate capacity of all metrics" in {
       val capacity = MixMetricsSelector.capacity(nodeMetrics)
       capacity(a1) should ===((0.75 + 0.67 + 0.9375) / 3 +- 0.0001)

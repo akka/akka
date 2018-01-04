@@ -86,7 +86,7 @@ object UidClashTest {
 class UidClashTest extends AkkaSpec {
   import UidClashTest._
 
-  "The Terminated message for an old child stopped in preRestart" must {
+  "The Terminated message for an old child stopped in preRestart" should {
     "not arrive after restart" in {
       val watcher = TestProbe()
       val topActor = system.actorOf(Props(classOf[RestartingActor], watcher.ref), "top")

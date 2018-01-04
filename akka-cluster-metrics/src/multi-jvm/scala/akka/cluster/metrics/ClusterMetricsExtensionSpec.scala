@@ -99,7 +99,7 @@ abstract class ClusterMetricsEnabledSpec extends MultiNodeSpec(ClusterMetricsEna
 
   val metricsView = new ClusterMetricsView(cluster.system)
 
-  "Cluster metrics" must {
+  "Cluster metrics" should {
     "periodically collect metrics on each node, publish to the event stream, " +
       "and gossip metrics around the node ring" in within(60 seconds) {
         awaitClusterUp(roles: _*)
@@ -140,7 +140,7 @@ abstract class ClusterMetricsDisabledSpec extends MultiNodeSpec(ClusterMetricsDi
 
   val metricsView = new ClusterMetricsView(cluster.system)
 
-  "Cluster metrics" must {
+  "Cluster metrics" should {
     "not collect metrics, not publish metrics events, and not gossip metrics" in {
       awaitClusterUp(roles: _*)
       // TODO ensure same contract

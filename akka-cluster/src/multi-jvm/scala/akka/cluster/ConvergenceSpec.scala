@@ -46,7 +46,7 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
 
   muteMarkingAsUnreachable()
 
-  "A cluster of 3 members" must {
+  "A cluster of 3 members" should {
 
     "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third)

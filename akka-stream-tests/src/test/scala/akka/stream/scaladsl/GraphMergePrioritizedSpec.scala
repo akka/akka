@@ -20,7 +20,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
     override def out: Outlet[Outputs] = mergePrioritized.out
   }
 
-  "merge prioritized" must {
+  "merge prioritized" should {
     commonTests()
 
     "stream data from all sources" in {

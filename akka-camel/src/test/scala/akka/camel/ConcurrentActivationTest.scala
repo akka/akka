@@ -22,7 +22,7 @@ import akka.actor.ActorLogging
  */
 class ConcurrentActivationTest extends WordSpec with Matchers with NonSharedCamelSystem {
 
-  "Activation" must {
+  "Activation" should {
     "support concurrent registrations and de-registrations" in {
       implicit val ec = system.dispatcher
       val number = 10

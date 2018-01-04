@@ -87,7 +87,7 @@ abstract class RestartNodeSpec
     super.afterAll()
   }
 
-  "Cluster nodes" must {
+  "Cluster nodes" should {
     "be able to restart and join again" taggedAs LongRunningTest in within(60.seconds) {
       // secondSystem is a separate ActorSystem, to be able to simulate restart
       // we must transfer its address to first

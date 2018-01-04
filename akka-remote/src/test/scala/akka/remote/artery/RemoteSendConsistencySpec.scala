@@ -28,7 +28,7 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config) extends ArteryM
   val addressB = address(systemB)
   val rootB = RootActorPath(addressB)
 
-  "Artery" must {
+  "Artery" should {
 
     "be able to identify a remote actor and ping it" in {
       val actorOnSystemB = systemB.actorOf(Props(new Actor {

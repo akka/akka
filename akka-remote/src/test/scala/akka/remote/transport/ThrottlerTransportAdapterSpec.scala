@@ -86,7 +86,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
     Await.result(transport.managementCommand(ForceDisassociate(rootBAddress)), 3.seconds)
   }
 
-  "ThrottlerTransportAdapter" must {
+  "ThrottlerTransportAdapter" should {
     "maintain average message rate" taggedAs TimingTest in {
       throttle(Direction.Send, TokenBucket(200, 500, 0, 0)) should ===(true)
       val tester = system.actorOf(Props(classOf[ThrottlingTester], here, self)) ! "start"

@@ -11,7 +11,7 @@ class FlowDropWithinSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A DropWithin" must {
+  "A DropWithin" should {
 
     "deliver elements after the duration, but not before" in {
       val input = Iterator.from(1)

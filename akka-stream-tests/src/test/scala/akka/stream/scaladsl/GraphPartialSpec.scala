@@ -13,7 +13,7 @@ class GraphPartialSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "GraphDSL.partial" must {
+  "GraphDSL.partial" should {
     import GraphDSL.Implicits._
 
     "be able to build and reuse simple partial graphs" in {

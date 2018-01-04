@@ -33,7 +33,7 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
 
   import LargeMessagesStreamSpec._
 
-  "The large message support" must {
+  "The large message support" should {
 
     "not affect regular communication" in {
       val systemA = localSystem

@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   import akka.stream.Supervision._
 
-  "Interpreter" must {
+  "Interpreter" should {
 
     "call preStart in order on stages" in new OneBoundedSetup[String](
       PreStartAndPostStopIdentity(onStart = () ⇒ testActor ! "start-a"),

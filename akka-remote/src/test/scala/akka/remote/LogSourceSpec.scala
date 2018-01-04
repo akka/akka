@@ -40,7 +40,7 @@ class LogSourceSpec extends AkkaSpec(
     }
   }).withDeploy(Deploy.local), "logSniffer"), classOf[Logging.Info])
 
-  "Log events" must {
+  "Log events" should {
 
     "should include host and port for local LogSource" in {
       reporter ! "hello"

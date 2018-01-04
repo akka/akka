@@ -67,7 +67,7 @@ class ClusterClientStopSpec extends MultiNodeSpec(ClusterClientStopSpec) with ST
     node(r) / "system" / "receptionist"
   }
 
-  "A Cluster Client" must {
+  "A Cluster Client" should {
 
     "startup cluster" in within(30.seconds) {
       join(first, first)

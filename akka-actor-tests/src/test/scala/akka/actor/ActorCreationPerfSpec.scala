@@ -214,7 +214,7 @@ class ActorCreationPerfSpec extends AkkaSpec(ActorCreationPerfSpec.config) with 
     }
   }
 
-  "Actor creation with actorOf" must {
+  "Actor creation with actorOf" should {
 
     registerTests("Props[EmptyActor] with new Props", () ⇒ Props[EmptyActor])
 

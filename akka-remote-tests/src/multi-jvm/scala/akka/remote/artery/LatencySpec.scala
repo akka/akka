@@ -329,7 +329,7 @@ abstract class LatencySpec
     enterBarrier("after-" + testName)
   }
 
-  "Latency of Artery" must {
+  "Latency of Artery" should {
     val reporter = BenchmarkFileReporter("LatencySpec", system)
 
     "start echo" in {

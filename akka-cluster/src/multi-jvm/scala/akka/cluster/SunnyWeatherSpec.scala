@@ -49,7 +49,7 @@ abstract class SunnyWeatherSpec extends MultiNodeSpec(SunnyWeatherMultiJvmSpec)
 
   import ClusterEvent._
 
-  "A normal cluster" must {
+  "A normal cluster" should {
     "be healthy" taggedAs LongRunningTest in {
 
       // start some

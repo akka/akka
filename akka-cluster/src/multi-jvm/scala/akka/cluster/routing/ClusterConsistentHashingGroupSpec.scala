@@ -61,7 +61,7 @@ abstract class ClusterConsistentHashingGroupSpec extends MultiNodeSpec(ClusterCo
   def currentRoutees(router: ActorRef) =
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees
 
-  "A cluster router with a consistent hashing group" must {
+  "A cluster router with a consistent hashing group" should {
     "start cluster with 3 nodes" taggedAs LongRunningTest in {
       system.actorOf(Props[Destination], "dest")
       awaitClusterUp(first, second, third)

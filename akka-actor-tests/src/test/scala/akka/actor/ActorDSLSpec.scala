@@ -31,7 +31,7 @@ class ActorDSLSpec extends AkkaSpec {
     }
   }))
 
-  "An Inbox" must {
+  "An Inbox" should {
 
     "function as implicit sender" in {
       //#inbox
@@ -114,7 +114,7 @@ class ActorDSLSpec extends AkkaSpec {
 
   }
 
-  "A lightweight creator" must {
+  "A lightweight creator" should {
 
     "support creating regular actors" in {
       //#simple-actor

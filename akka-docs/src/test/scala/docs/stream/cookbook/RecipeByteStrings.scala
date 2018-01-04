@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 
 class RecipeByteStrings extends RecipeSpec {
 
-  "Recipes for bytestring streams" must {
+  "Recipes for bytestring streams" should {
 
     "have a working chunker" in {
       val rawBytes = Source(List(ByteString(1, 2), ByteString(3), ByteString(4, 5, 6), ByteString(7, 8, 9)))

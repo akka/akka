@@ -18,7 +18,7 @@ object TypedMultiMapSpec {
 class TypedMultiMapSpec extends WordSpec with Matchers with ConversionCheckedTripleEquals {
   import TypedMultiMapSpec._
 
-  "A TypedMultiMap" must {
+  "A TypedMultiMap" should {
 
     "retain and remove values for the same key" in {
       val m1 = TypedMultiMap.empty[AbstractKey, KV]

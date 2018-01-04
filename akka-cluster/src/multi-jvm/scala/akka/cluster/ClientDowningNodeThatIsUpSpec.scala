@@ -38,7 +38,7 @@ abstract class ClientDowningNodeThatIsUpSpec(multiNodeConfig: ClientDowningNodeT
 
   import multiNodeConfig._
 
-  "Client of a 4 node cluster" must {
+  "Client of a 4 node cluster" should {
 
     "be able to DOWN a node that is UP (healthy and available)" taggedAs LongRunningTest in {
       val thirdAddress = address(third)

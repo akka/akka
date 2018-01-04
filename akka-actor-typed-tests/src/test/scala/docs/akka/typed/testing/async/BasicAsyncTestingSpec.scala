@@ -28,7 +28,7 @@ class BasicAsyncTestingSpec extends TestKit("BasicTestingSpec")
 
   import BasicAsyncTestingSpec._
 
-  "A testkit" must {
+  "A testkit" should {
     "support verifying a response" in {
       //#test-spawn
       val probe = TestProbe[Pong]()

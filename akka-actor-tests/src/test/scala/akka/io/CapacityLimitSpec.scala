@@ -15,7 +15,7 @@ class CapacityLimitSpec extends AkkaSpec("""
     """)
   with TcpIntegrationSpecSupport {
 
-  "The TCP transport implementation" must {
+  "The TCP transport implementation" should {
 
     "reply with CommandFailed to a Bind or Connect command if max-channels capacity has been reached" in new TestSetup {
       establishNewClientConnection()

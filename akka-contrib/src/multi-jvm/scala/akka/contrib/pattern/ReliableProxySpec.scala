@@ -81,7 +81,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
     if (timeFactor > 1.0) (1.0 / timeFactor).seconds else 1.second
   }
 
-  "A ReliableProxy" must {
+  "A ReliableProxy" should {
 
     "initialize properly" in {
       runOn(remote) {

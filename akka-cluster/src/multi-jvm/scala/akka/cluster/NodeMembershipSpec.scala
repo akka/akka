@@ -25,7 +25,7 @@ abstract class NodeMembershipSpec
 
   import NodeMembershipMultiJvmSpec._
 
-  "A set of connected cluster systems" must {
+  "A set of connected cluster systems" should {
 
     "(when two nodes) start gossiping to each other so that both nodes gets the same gossip info" taggedAs LongRunningTest in {
 

@@ -123,7 +123,7 @@ abstract class RemoteNodeDeathWatchSpec(multiNodeConfig: RemoteNodeDeathWatchCon
     }
   }
 
-  "RemoteNodeDeathWatch (" + scenario + ")" must {
+  "RemoteNodeDeathWatch (" + scenario + ")" should {
 
     "receive Terminated when remote actor is stopped" in {
       runOn(first) {

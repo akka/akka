@@ -23,7 +23,7 @@ class RecipeAdhocSource extends RecipeSpec {
     )
   //#adhoc-source
 
-  "Recipe for adhoc source" must {
+  "Recipe for adhoc source" should {
     "not start the source if there is no demand" taggedAs TimingTest in {
       val isStarted = new AtomicBoolean()
       adhocSource(Source.empty.mapMaterializedValue(_ ⇒ isStarted.set(true)), 200.milliseconds, 3)

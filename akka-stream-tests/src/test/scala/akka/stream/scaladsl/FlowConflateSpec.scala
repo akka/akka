@@ -21,7 +21,7 @@ class FlowConflateSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "Conflate" must {
+  "Conflate" should {
 
     "pass-through elements unchanged when there is no rate difference" in {
       val publisher = TestPublisher.probe[Int]()
@@ -213,7 +213,7 @@ class FlowConflateSpec extends StreamSpec {
       sub.sendNext("three")
       sub.sendComplete()
 
-      // "one" must be lost
+      // "one" should be lost
       Await.ready(latch, 3.seconds)
       sinkProbe.requestNext() should ===("three")
 

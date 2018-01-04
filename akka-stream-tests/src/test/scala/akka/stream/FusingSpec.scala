@@ -18,7 +18,7 @@ class FusingSpec extends StreamSpec {
       .alsoTo(Flow[Int].fold(0)(_ + _).to(Sink.head.named("otherSink")).addAttributes(if (async) Attributes.asyncBoundary else Attributes.none))
       .via(Flow[Int].fold(1)(_ + _).named("mainSink"))
 
-  "SubFusingActorMaterializer" must {
+  "SubFusingActorMaterializer" should {
 
     "work with asynchronous boundaries in the subflows" in {
       val async = Flow[Int].map(_ * 2).async

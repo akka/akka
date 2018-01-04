@@ -67,7 +67,7 @@ abstract class Ticket15109Spec extends RemotingMultiNodeSpec(Ticket15109Spec) {
     }
   }
 
-  "Quarantining" must {
+  "Quarantining" should {
 
     "not be introduced during normal errors (regression #15109)" taggedAs LongRunningTest in {
       var subject: ActorRef = system.deadLetters

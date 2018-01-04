@@ -455,7 +455,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
 
   protected def stop(ref: ActorRef[Command]) = ref ! Stop
 
-  "An ActorContext" must {
+  "An ActorContext" should {
     "canonicalize behaviors" in {
       sync(setup("ctx00") { (ctx, startWith) ⇒
         val self = ctx.self

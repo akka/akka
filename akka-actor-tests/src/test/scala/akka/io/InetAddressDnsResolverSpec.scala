@@ -15,7 +15,7 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
     akka.actor.serialize-creators = on
     """) { thisSpecs ⇒
 
-  "The DNS resolver default ttl's" must {
+  "The DNS resolver default ttl's" should {
     "use the default value for positive caching if it is not overridden" in {
       withNewSecurityProperty("networkaddress.cache.ttl", "") {
         withNewSystemProperty("sun.net.inetaddr.ttl", "") {

@@ -54,7 +54,7 @@ object InitializationDocSpec {
 class InitializationDocSpec extends AkkaSpec with ImplicitSender {
   import InitializationDocSpec._
 
-  "Message based initialization example" must {
+  "Message based initialization example" should {
 
     "work correctly" in {
       val example = system.actorOf(Props[MessageInitExample], "messageInitExample")

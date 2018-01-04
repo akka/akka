@@ -151,7 +151,7 @@ class PerformanceSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", 
     println(f"\nthroughput = ${m.stopMeasure()}%.2f persistent events per second")
   }
 
-  "Warmup persistent actor" must {
+  "Warmup persistent actor" should {
     "exercise" in {
       stressCommandsourcedPersistentActor(None)
     }
@@ -160,13 +160,13 @@ class PerformanceSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", 
     }
   }
 
-  "A command sourced persistent actor" must {
+  "A command sourced persistent actor" should {
     "have some reasonable throughput" in {
       stressCommandsourcedPersistentActor(None)
     }
   }
 
-  "An event sourced persistent actor" must {
+  "An event sourced persistent actor" should {
     "have some reasonable throughput" in {
       stressEventSourcedPersistentActor(None)
     }
@@ -178,7 +178,7 @@ class PerformanceSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", 
     }
   }
 
-  "A mixed command and event sourced persistent actor" must {
+  "A mixed command and event sourced persistent actor" should {
     "have some reasonable throughput" in {
       stressMixedPersistentActor(None)
     }

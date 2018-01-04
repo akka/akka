@@ -80,7 +80,7 @@ class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestar
     }
   }
 
-  "A Cluster with DistributedPubSub" must {
+  "A Cluster with DistributedPubSub" should {
 
     "startup 3 node cluster" in within(15 seconds) {
       join(first, first)

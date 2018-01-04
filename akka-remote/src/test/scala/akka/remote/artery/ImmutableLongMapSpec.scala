@@ -11,7 +11,7 @@ import scala.util.Random
 
 class ImmutableLongMapSpec extends WordSpec with Matchers {
 
-  "ImmutableLongMap" must {
+  "ImmutableLongMap" should {
 
     "have no entries when empty" in {
       val empty = ImmutableLongMap.empty[String]

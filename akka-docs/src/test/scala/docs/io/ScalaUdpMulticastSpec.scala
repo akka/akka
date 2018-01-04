@@ -17,7 +17,7 @@ import akka.testkit.SocketUtil
 
 class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")) with WordSpecLike with BeforeAndAfterAll {
 
-  "listener" must {
+  "listener" should {
     "send message back to sink" in {
       val ipv6ifaces =
         NetworkInterface.getNetworkInterfaces.toSeq.filter(iface ⇒

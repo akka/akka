@@ -42,7 +42,7 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
 
   muteMarkingAsUnreachable()
 
-  "A cluster of 2 nodes" must {
+  "A cluster of 2 nodes" should {
 
     "become singleton cluster when started with seed-nodes" taggedAs LongRunningTest in {
       runOn(first) {

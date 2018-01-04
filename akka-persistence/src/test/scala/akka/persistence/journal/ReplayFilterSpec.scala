@@ -25,7 +25,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
   val m4 = ReplayedMessage(PersistentRepr("d", 16, "p1", "", writerUuid = writerA))
   val successMsg = RecoverySuccess(15)
 
-  "ReplayFilter in RepairByDiscardOld mode" must {
+  "ReplayFilter in RepairByDiscardOld mode" should {
     "pass on all replayed messages and then stop" in {
       val filter = system.actorOf(ReplayFilter.props(
         testActor, mode = RepairByDiscardOld, windowSize = 2, maxOldWriters = 10, debugEnabled = false))
@@ -140,7 +140,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
     }
   }
 
-  "ReplayFilter in Fail mode" must {
+  "ReplayFilter in Fail mode" should {
     "fail when message with same seqNo from old overlapping writer" in {
       val filter = system.actorOf(ReplayFilter.props(
         testActor, mode = Fail, windowSize = 100, maxOldWriters = 10, debugEnabled = false))
@@ -173,7 +173,7 @@ class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
     }
   }
 
-  "ReplayFilter in Warn mode" must {
+  "ReplayFilter in Warn mode" should {
     "warn about message with same seqNo from old overlapping writer" in {
       val filter = system.actorOf(ReplayFilter.props(
         testActor, mode = Warn, windowSize = 100, maxOldWriters = 10, debugEnabled = false))

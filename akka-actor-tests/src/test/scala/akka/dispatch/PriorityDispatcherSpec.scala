@@ -32,7 +32,7 @@ object PriorityDispatcherSpec {
 
 class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) with DefaultTimeout {
 
-  "A PriorityDispatcher" must {
+  "A PriorityDispatcher" should {
     "Order it's messages according to the specified comparator using an unbounded mailbox" in {
       val dispatcherKey = "unbounded-prio-dispatcher"
       testOrdering(dispatcherKey)

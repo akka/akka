@@ -46,7 +46,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
     system.actorOf(TestActor.props(persistenceId))
   }
 
-  "Leveldb query EventsByPersistenceId" must {
+  "Leveldb query EventsByPersistenceId" should {
 
     "implement standard EventsByTagQuery" in {
       queries.isInstanceOf[EventsByTagQuery] should ===(true)
@@ -152,7 +152,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
 
   }
 
-  "Leveldb live query EventsByPersistenceId" must {
+  "Leveldb live query EventsByPersistenceId" should {
     "find new events" in {
       val ref = setup("c")
       val src = queries.eventsByPersistenceId("c", 0L, Long.MaxValue)

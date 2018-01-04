@@ -99,7 +99,7 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
       name = "echoProxy"))
   }
 
-  "Leaving ClusterSingletonManager" must {
+  "Leaving ClusterSingletonManager" should {
 
     "hand-over to new instance" in {
       join(first, first)

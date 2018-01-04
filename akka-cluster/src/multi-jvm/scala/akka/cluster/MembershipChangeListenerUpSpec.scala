@@ -31,7 +31,7 @@ abstract class MembershipChangeListenerUpSpec
   import MembershipChangeListenerUpMultiJvmSpec._
   import ClusterEvent._
 
-  "A set of connected cluster systems" must {
+  "A set of connected cluster systems" should {
 
     "(when two nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
 

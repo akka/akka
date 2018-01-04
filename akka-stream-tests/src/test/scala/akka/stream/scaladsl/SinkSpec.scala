@@ -22,7 +22,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   implicit val materializer = ActorMaterializer()
 
-  "A Sink" must {
+  "A Sink" should {
     "be composable without importing modules" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
       val sink = Sink.fromGraph(GraphDSL.create() { implicit b ⇒
@@ -179,7 +179,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
   }
 
-  "Java collector Sink" must {
+  "Java collector Sink" should {
 
     class TestCollector(
       _supplier:    () ⇒ Supplier[Array[Int]],
@@ -305,7 +305,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   }
 
-  "The ignore sink" must {
+  "The ignore sink" should {
 
     "fail its materialized value on abrupt materializer termination" in {
       val mat = ActorMaterializer()

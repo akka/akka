@@ -62,7 +62,7 @@ abstract class HandshakeRestartReceiverSpec
     }
   }
 
-  "Artery Handshake" must {
+  "Artery Handshake" should {
 
     "detect restarted receiver and initiate new handshake" in {
       runOn(second) {

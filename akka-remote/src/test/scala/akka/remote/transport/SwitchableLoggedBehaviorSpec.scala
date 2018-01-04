@@ -16,7 +16,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
 
   private def defaultBehavior = new SwitchableLoggedBehavior[Unit, Int]((_) ⇒ Future.successful(3), (_) ⇒ ())
 
-  "A SwitchableLoggedBehavior" must {
+  "A SwitchableLoggedBehavior" should {
 
     "execute default behavior" in {
       val behavior = defaultBehavior

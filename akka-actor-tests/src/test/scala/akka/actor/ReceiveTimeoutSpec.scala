@@ -19,7 +19,7 @@ object ReceiveTimeoutSpec {
 class ReceiveTimeoutSpec extends AkkaSpec {
   import ReceiveTimeoutSpec._
 
-  "An actor with receive timeout" must {
+  "An actor with receive timeout" should {
 
     "get timeout" taggedAs TimingTest in {
       val timeoutLatch = TestLatch()

@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 
 class TestFSMRefSpec extends AkkaSpec {
 
-  "A TestFSMRef" must {
+  "A TestFSMRef" should {
 
     "allow access to state data" in {
       val fsm = TestFSMRef(new Actor with FSM[Int, String] {
@@ -56,7 +56,7 @@ class TestFSMRefSpec extends AkkaSpec {
     }
   }
 
-  "A TestFSMRef Companion Object" must {
+  "A TestFSMRef Companion Object" should {
 
     val guardian = system.asInstanceOf[ActorSystemImpl].guardian
 

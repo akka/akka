@@ -122,7 +122,7 @@ class ReplicatorSpec extends TestKit(ReplicatorSpec.config) with TypedAkkaSpecWi
   val settings = ReplicatorSettings(system)
   implicit val cluster = Cluster(system.toUntyped)
 
-  "Replicator" must {
+  "Replicator" should {
 
     "have API for Update and Get" in {
       val replicator = spawn(Replicator.behavior(settings))

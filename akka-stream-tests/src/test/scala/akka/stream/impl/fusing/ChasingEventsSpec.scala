@@ -79,7 +79,7 @@ class ChasingEventsSpec extends AkkaSpec {
     }
   }
 
-  "Event chasing" must {
+  "Event chasing" should {
 
     "propagate cancel if enqueued immediately after pull" in {
       val upstream = TestPublisher.probe[Int]()

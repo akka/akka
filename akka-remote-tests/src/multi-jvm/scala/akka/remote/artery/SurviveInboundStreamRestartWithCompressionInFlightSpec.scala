@@ -75,7 +75,7 @@ abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec extends Re
 
   override def initialParticipants = roles.size
 
-  "Decompression table" must {
+  "Decompression table" should {
 
     import scala.concurrent.duration._
     implicit val timeout = Timeout(10.seconds)

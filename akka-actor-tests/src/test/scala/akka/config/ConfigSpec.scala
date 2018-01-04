@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) with Assertions {
 
-  "The default configuration file (i.e. reference.conf)" must {
+  "The default configuration file (i.e. reference.conf)" should {
     "contain all configuration properties for akka-actor that are used in code with their correct defaults" in {
 
       val settings = system.settings

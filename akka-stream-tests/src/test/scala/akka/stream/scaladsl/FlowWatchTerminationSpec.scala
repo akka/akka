@@ -19,7 +19,7 @@ class FlowWatchTerminationSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A WatchTermination" must {
+  "A WatchTermination" should {
 
     "complete future when stream is completed" in assertAllStagesStopped {
       val (future, p) = Source(1 to 4).watchTermination()(Keep.right).toMat(TestSink.probe[Int])(Keep.both).run()

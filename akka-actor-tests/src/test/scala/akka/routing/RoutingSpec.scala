@@ -52,7 +52,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
   muteDeadLetters(classOf[akka.dispatch.sysmsg.DeathWatchNotification])()
 
-  "routers in general" must {
+  "routers in general" should {
 
     "evict terminated routees" in {
       val router = system.actorOf(RoundRobinPool(2).props(routeeProps = Props[Echo]))
@@ -203,7 +203,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
   }
 
-  "no router" must {
+  "no router" should {
 
     "send message to connection" in {
       class Actor1 extends Actor {
@@ -221,7 +221,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
   }
 
-  "router FromConfig" must {
+  "router FromConfig" should {
     "throw suitable exception when not configured" in {
       val e = intercept[ConfigurationException] {
         system.actorOf(FromConfig.props(routeeProps = Props[TestActor]), "routerNotDefined")

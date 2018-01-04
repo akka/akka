@@ -20,7 +20,7 @@ class FlowTimedSpec extends StreamSpec with ScriptedTest {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "Timed Source" must {
+  "Timed Source" should {
 
     import akka.stream.extra.Implicits.TimedFlowDsl
 
@@ -70,7 +70,7 @@ class FlowTimedSpec extends StreamSpec with ScriptedTest {
     "have a Java API" in pending
   }
 
-  "Timed Flow" must {
+  "Timed Flow" should {
     import akka.stream.extra.Implicits.TimedFlowDsl
 
     "measure time it between elements matching a predicate" in assertAllStagesStopped {

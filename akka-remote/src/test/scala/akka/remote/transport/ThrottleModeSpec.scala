@@ -8,7 +8,7 @@ class ThrottleModeSpec extends AkkaSpec {
 
   val halfSecond: Long = TimeUnit.MILLISECONDS.toNanos(500)
 
-  "ThrottleMode" must {
+  "ThrottleMode" should {
 
     "allow consumption of infinite amount of tokens when untrhottled" in {
       val bucket = Unthrottled

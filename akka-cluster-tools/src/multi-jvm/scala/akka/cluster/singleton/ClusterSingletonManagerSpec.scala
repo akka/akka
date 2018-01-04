@@ -325,7 +325,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     }
   }
 
-  "A ClusterSingletonManager" must {
+  "A ClusterSingletonManager" should {
 
     "startup 6 node cluster" in within(60 seconds) {
 

@@ -8,7 +8,7 @@ import org.scalatest.{ Matchers, WordSpecLike }
 
 class HeavyHittersSpec extends WordSpecLike with Matchers {
 
-  "TopHeavyHitters" must {
+  "TopHeavyHitters" should {
     "should work" in {
       val hitters = new TopHeavyHitters[String](4)
       hitters.update("A", 10) shouldBe true

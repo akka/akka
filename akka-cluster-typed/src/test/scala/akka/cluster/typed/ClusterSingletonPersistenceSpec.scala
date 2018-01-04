@@ -60,7 +60,7 @@ class ClusterSingletonPersistenceSpec extends TestKit(ClusterSingletonPersistenc
   implicit val untypedSystem = system.toUntyped
   private val untypedCluster = akka.cluster.Cluster(untypedSystem)
 
-  "A typed cluster singleton with persistent actor" must {
+  "A typed cluster singleton with persistent actor" should {
 
     untypedCluster.join(untypedCluster.selfAddress)
 

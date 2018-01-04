@@ -46,7 +46,7 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       .run()
   }
 
-  "OutboundHandshake stage" must {
+  "OutboundHandshake stage" should {
     "send HandshakeReq when first pulled" in {
       val inboundContext = new TestInboundContext(localAddress = addressA)
       val outboundContext = inboundContext.association(addressB.address)

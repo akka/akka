@@ -302,7 +302,7 @@ abstract class AeronStreamLatencySpec
     enterBarrier("after-" + testName)
   }
 
-  "Latency of Aeron Streams" must {
+  "Latency of Aeron Streams" should {
 
     "start echo" in {
       runOn(second) {

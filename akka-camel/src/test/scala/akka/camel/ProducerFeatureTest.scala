@@ -41,7 +41,7 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
 
   override protected def afterEach { mockEndpoint.reset() }
 
-  "A Producer on a sync Camel route" must {
+  "A Producer on a sync Camel route" should {
 
     "01 produce a message and receive normal response" in {
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-2", true)), name = "01-direct-producer-2")
@@ -102,7 +102,7 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
     }
   }
 
-  "A Producer on an async Camel route" must {
+  "A Producer on an async Camel route" should {
 
     "10 produce message to direct:producer-test-3 and receive normal response" in {
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-3")), name = "10-direct-producer-test-3")

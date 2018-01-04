@@ -70,7 +70,7 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
       }
     }
 
-  "ORSet delta" must {
+  "ORSet delta" should {
 
     "replicate data in initial phase" in {
       join(first, first)
@@ -139,7 +139,7 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
         assertValue(KeyA, Set("a", "b", "c", "d"))
       }
       runOn(third) {
-        // the delta for "c" must not be applied because it has not received previous delta for "b"
+        // the delta for "c" should not be applied because it has not received previous delta for "b"
         // and full gossip is turned off so far
         assertValue(KeyA, Set("a"))
       }
