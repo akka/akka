@@ -192,6 +192,12 @@ trait ActorContext[T] {
    * @tparam Req The request protocol, what the other actor accepts
    * @tparam Res The response protocol, what the other actor sends back
    */
-  def ask[Req, Res](otherActor: ActorRef[Any], responseClass: Class[Any], createMessage: Function[ActorRef[Any], Any], responseToOwnProtocol: Function[Any, T], failureToOwnProtocol: Function[Throwable, T], responseTimeout: Timeout): Unit
+  def ask[Req, Res](
+    otherActor:            ActorRef[Req],
+    responseClass:         Class[Res],
+    createMessage:         JFunction[ActorRef[Req], Req],
+    responseToOwnProtocol: JFunction[Res, T],
+    failureToOwnProtocol:  JFunction[Throwable, T],
+    responseTimeout:       Timeout): Unit
 
 }

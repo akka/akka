@@ -3,15 +3,15 @@
  */
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.{ ActorRef, StartSupport, TypedSpec }
-import akka.testkit.typed.TestKitSettings
+import akka.actor.typed.{ ActorRef, TypedAkkaSpec, TypedAkkaSpecWithShutdown }
+import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
 
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-class AdaptedAskSpec extends TypedSpec with StartSupport {
+class AdaptedAskSpec extends TestKit() with TypedAkkaSpecWithShutdown {
 
   sealed trait Protocol
 
@@ -24,13 +24,11 @@ class AdaptedAskSpec extends TypedSpec with StartSupport {
   case class GotPong(id: Long) extends ActorProtocol
   case class PongTimedOut(id: Long) extends ActorProtocol
 
-  implicit val settings = TestKitSettings(system)
-
   "Asking another actor" should {
 
     "work just fine" in {
 
-      val otherActor = start(Actor.immutable[OtherActorProtocol] { (ctx, msg) ⇒
+      val otherActor = spawn(Actor.immutable[OtherActorProtocol] { (ctx, msg) ⇒
         msg match {
           case OtherActorPing(respondTo) ⇒
             respondTo ! OtherActorPong
@@ -41,7 +39,7 @@ class AdaptedAskSpec extends TypedSpec with StartSupport {
       val probe = TestProbe[AnyRef]()
 
       implicit val timeout = Timeout(1.second)
-      val actor = start(Actor.immutable[ActorProtocol] { (ctx, msg) ⇒
+      val actor = spawn(Actor.immutable[ActorProtocol] { (ctx, msg) ⇒
 
         msg match {
           case TriggerPing(id) ⇒
@@ -68,12 +66,12 @@ class AdaptedAskSpec extends TypedSpec with StartSupport {
 
     "fail with a timeout" in {
 
-      val otherActor = start(Actor.ignore[OtherActorProtocol])
+      val otherActor = spawn(Actor.ignore[OtherActorProtocol])
 
       val probe = TestProbe[AnyRef]()
 
       implicit val timeout = Timeout(20.millis)
-      val actor = start(Actor.immutable[ActorProtocol] { (ctx, msg) ⇒
+      val actor = spawn(Actor.immutable[ActorProtocol] { (ctx, msg) ⇒
 
         msg match {
           case TriggerPing(id) ⇒

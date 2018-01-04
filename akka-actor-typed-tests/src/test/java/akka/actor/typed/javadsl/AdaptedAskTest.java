@@ -89,8 +89,9 @@ public class AdaptedAskTest extends JUnitSuite {
       if (msg instanceof TriggerPing) {
         final int id = ((TriggerPing) msg).id;
         ctx.ask(
-            otherActor, Pong.class,
-            Ping::new,
+            otherActor,
+            Pong.class,
+            ref -> new Ping(ref),
             (Pong pong) -> new GotPong(id),
             (Throwable error) -> new GotFailure(id),
             timeout

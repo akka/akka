@@ -5,7 +5,8 @@ package akka.actor.typed
 package internal
 
 import akka.annotation.InternalApi
-import java.util.{ ArrayList, Optional, function }
+import java.util.{ ArrayList, Optional }
+import java.util.function.{ Function ⇒ JFunction }
 
 import akka.util.Timeout
 
@@ -73,7 +74,7 @@ import scala.util.{ Failure, Success, Try }
   @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U]
 
   // Scala impl
-  def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit timeout: Timeout, classTag: ClassTag[Res]): Unit = {
+  override def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit timeout: Timeout, classTag: ClassTag[Res]): Unit = {
 
     import akka.actor.typed.scaladsl.AskPattern._
 
@@ -85,7 +86,14 @@ import scala.util.{ Failure, Success, Try }
   }
 
   // Java impl
-  def ask[Req, Res](otherActor: ActorRef[Any], responseClass: Class[Any], createMessage: Function[ActorRef[Any], Any], responseToOwnProtocol: Function[Any, T], failureToOwnProtocol: Function[Throwable, T], responseTimeout: Timeout): Unit = {
+  override def ask[Req, Res](
+    otherActor:            ActorRef[Req],
+    responseClass:         Class[Res],
+    createMessage:         JFunction[ActorRef[Req], Req],
+    responseToOwnProtocol: JFunction[Res, T],
+    failureToOwnProtocol:  JFunction[Throwable, T],
+    responseTimeout:       Timeout
+  ): Unit = {
     import akka.actor.typed.scaladsl.AskPattern._
     otherActor.?(createMessage.apply)(responseTimeout, system.scheduler)
       .mapTo[Res](ClassTag(responseClass))
