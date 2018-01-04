@@ -10,7 +10,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
-import akka.testkit.{ SocketUtil, TestKit }
+import akka.testkit.{ EventFilter, SocketUtil, TestKit }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
@@ -49,19 +49,21 @@ class WithoutSizeLimitSpec extends WordSpec with Matchers with RequestBuilding w
 
       val (hostName, port) = SocketUtil.temporaryServerHostnameAndPort()
 
-      val future = for {
-        _ ← Http().bindAndHandle(route, hostName, port)
+      EventFilter[EntityStreamSizeException](occurrences = 1).intercept {
+        val future = for {
+          _ ← Http().bindAndHandle(route, hostName, port)
 
-        requestToNoDirective = Post(s"http://$hostName:$port/noDirective", entityOfSize(801))
-        responseWithoutDirective ← Http().singleRequest(requestToNoDirective)
-        _ = responseWithoutDirective.status shouldEqual StatusCodes.BadRequest
+          requestToNoDirective = Post(s"http://$hostName:$port/noDirective", entityOfSize(801))
+          responseWithoutDirective ← Http().singleRequest(requestToNoDirective)
+          _ = responseWithoutDirective.status shouldEqual StatusCodes.BadRequest
 
-        requestToDirective = Post(s"http://$hostName:$port/withoutSizeLimit", entityOfSize(801))
-        responseWithDirective ← Http().singleRequest(requestToDirective)
-      } yield responseWithDirective
+          requestToDirective = Post(s"http://$hostName:$port/withoutSizeLimit", entityOfSize(801))
+          responseWithDirective ← Http().singleRequest(requestToDirective)
+        } yield responseWithDirective
 
-      val response = Await.result(future, 5 seconds)
-      response.status shouldEqual StatusCodes.OK
+        val response = Await.result(future, 5 seconds)
+        response.status shouldEqual StatusCodes.OK
+      }
     }
   }
 

@@ -26,6 +26,10 @@ import scala.concurrent.duration._
 
 class CodingDirectivesSpec extends RoutingSpec with Inside {
 
+  override def testConfigSource = """
+    akka.loggers = ["akka.testkit.TestEventListener"]
+  """
+
   implicit val routeTestTimeout = RouteTestTimeout(3.seconds.dilated)
 
   val echoRequestContent: Route = { ctx ⇒ ctx.complete(ctx.request.entity.dataBytes.utf8String) }
@@ -111,19 +115,33 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       } ~> check { responseAs[String] shouldEqual "Hello" }
     }
     "reject the request content if it has encoding 'gzip' but is corrupt" in {
-      Post("/", fromHexDump("000102")) ~> `Content-Encoding`(gzip) ~> {
-        decodeRequestWith(Gzip) { echoRequestContent }
-      } ~> check {
-        status shouldEqual BadRequest
-        responseAs[String] shouldEqual "The request's encoding is corrupt"
+      // FIXME this causes both an error and a warning for the same request
+      EventFilter[IllegalRequestException](occurrences = 1).intercept {
+        EventFilter.warning(start = "Illegal request", occurrences = 1).intercept {
+          Post("/", fromHexDump("000102")) ~> `Content-Encoding`(gzip) ~> {
+            decodeRequestWith(Gzip) {
+              echoRequestContent
+            }
+          } ~> check {
+            status shouldEqual BadRequest
+            responseAs[String] shouldEqual "The request's encoding is corrupt"
+          }
+        }
       }
     }
     "reject truncated gzip request content" in {
-      Post("/", helloGzipped.dropRight(2)) ~> `Content-Encoding`(gzip) ~> {
-        decodeRequestWith(Gzip) { echoRequestContent }
-      } ~> check {
-        status shouldEqual BadRequest
-        responseAs[String] shouldEqual "The request's encoding is corrupt"
+      // FIXME this causes both an error and a warning for the same request
+      EventFilter[IllegalRequestException](occurrences = 1).intercept {
+        EventFilter.warning(start = "Illegal request", occurrences = 1).intercept {
+          Post("/", helloGzipped.dropRight(2)) ~> `Content-Encoding`(gzip) ~> {
+            decodeRequestWith(Gzip) {
+              echoRequestContent
+            }
+          } ~> check {
+            status shouldEqual BadRequest
+            responseAs[String] shouldEqual "The request's encoding is corrupt"
+          }
+        }
       }
     }
     "reject requests with content encoded with 'deflate'" in {
@@ -449,11 +467,18 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       Post("/", "yes") ~> decodeRequest { echoRequestContent } ~> check { responseAs[String] shouldEqual "yes" }
     }
     "reject the request if it has a `Content-Encoding: deflate` header but the request is encoded with Gzip" in {
-      Post("/", helloGzipped) ~> `Content-Encoding`(deflate) ~>
-        decodeRequest { echoRequestContent } ~> check {
-          status shouldEqual BadRequest
-          responseAs[String] shouldEqual "The request's encoding is corrupt"
+      // FIXME this causes both an error and a warning for the same request
+      EventFilter[IllegalRequestException](occurrences = 1).intercept {
+        EventFilter.warning(start = "Illegal request", occurrences = 1).intercept {
+          Post("/", helloGzipped) ~> `Content-Encoding`(deflate) ~>
+            decodeRequest {
+              echoRequestContent
+            } ~> check {
+              status shouldEqual BadRequest
+              responseAs[String] shouldEqual "The request's encoding is corrupt"
+            }
         }
+      }
     }
   }
 
