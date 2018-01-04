@@ -25,6 +25,8 @@ import scala.compat.java8.OptionConverters._
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
 
+import akka.stream.scaladsl.Sink
+
 import scala.compat.java8.FutureConverters._
 
 /** Java API */
@@ -442,6 +444,17 @@ object Source {
       () ⇒ create.create().toScala,
       (s: S) ⇒ read.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext),
       (s: S) ⇒ close.apply(s).toScala))
+
+  /**
+   * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
+   * to consume data from this local stream, as if they were attached in the spot of the local Sink directly.
+   *
+   * Adheres to [[StreamRefAttributes]].
+   *
+   * See more detailed documentation on [[SinkRef]].
+   */
+  def sinkRef[T](): javadsl.Source[T, SinkRef[T]] =
+    scaladsl.Source.sinkRef[T]().asJava
 }
 
 /**

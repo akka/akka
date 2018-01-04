@@ -4,7 +4,8 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.CompletionStage
-
+import akka.util.ConstantFun
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.DefaultAttributes
@@ -23,6 +24,12 @@ import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
+
+import akka.stream.impl.streamref.SourceRefStageImpl
+import akka.stream.stage.{ GraphStage, GraphStageWithMaterializedValue }
+import akka.util.OptionVal
+
+import scala.compat.java8.FutureConverters._
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -601,4 +608,15 @@ object Source {
    */
   def unfoldResourceAsync[T, S](create: () ⇒ Future[S], read: (S) ⇒ Future[Option[T]], close: (S) ⇒ Future[Done]): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
+
+  /**
+   * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
+   * to consume data from this local stream, as if they were attached in the spot of the local Sink directly.
+   *
+   * Adheres to [[StreamRefAttributes]].
+   *
+   * See more detailed documentation on [[SinkRef]].
+   */
+  def sinkRef[T](): Source[T, SinkRef[T]] =
+    Source.fromGraph(new SourceRefStageImpl[T](OptionVal.None))
 }
