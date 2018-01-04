@@ -49,7 +49,7 @@ final class SourceRefOriginSink[T]() extends GraphStageWithMaterializedValue[Sin
       // end of demand management ---
 
       override def preStart(): Unit = {
-        self = getStageActor(initialReceive, selfActorName)
+        self = getStageActor(initialReceive)
         log.warning("Allocated receiver: {}", self.ref)
 
         promise.success(new SourceRef(self.ref))
@@ -146,7 +146,7 @@ final class SourceRef[T](private[akka] val originRef: ActorRef) extends GraphSta
       private[this] lazy val settings = streamRefsMaster.settings
 
       private[this] var self: GraphStageLogic.StageActor = _
-      private[this] lazy val selfActorName = streamRefsMaster.nextSinkRefTargetSourceName()
+      private[this] override lazy val stageActorName = streamRefsMaster.nextSinkRefTargetSourceName()
       private[this] implicit def selfSender: ActorRef = self.ref
 
       // demand management ---
@@ -169,7 +169,7 @@ final class SourceRef[T](private[akka] val originRef: ActorRef) extends GraphSta
       override def preStart(): Unit = {
         localCumulativeDemand = settings.initialDemand.toLong
 
-        self = getStageActor(initialReceive, name = selfActorName)
+        self = getStageActor(initialReceive)
         log.warning("Allocated receiver: {}", self.ref)
 
         promise.success(new SinkRef(self.ref, settings.initialDemand))
@@ -191,7 +191,7 @@ final class SourceRef[T](private[akka] val originRef: ActorRef) extends GraphSta
             localCumulativeDemand += addDemand
             val demand = StreamRefs.CumulativeDemand(localCumulativeDemand)
 
-            log.warning("[{}] Demanding until [{}] (+{})", selfActorName, localCumulativeDemand, addDemand)
+            log.warning("[{}] Demanding until [{}] (+{})", stageActorName, localCumulativeDemand, addDemand)
             remotePartner ! demand
             scheduleDemandRedelivery()
           }
@@ -201,7 +201,7 @@ final class SourceRef[T](private[akka] val originRef: ActorRef) extends GraphSta
       def scheduleDemandRedelivery() = scheduleOnce(DemandRedeliveryTimerKey, settings.demandRedeliveryInterval)
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
         case DemandRedeliveryTimerKey ⇒
-          log.debug("[{}] Scheduled re-delivery of demand until [{}]", selfActorName, localCumulativeDemand)
+          log.debug("[{}] Scheduled re-delivery of demand until [{}]", stageActorName, localCumulativeDemand)
           remotePartner ! StreamRefs.CumulativeDemand(localCumulativeDemand)
           scheduleDemandRedelivery()
       }

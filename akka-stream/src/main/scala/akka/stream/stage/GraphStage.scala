@@ -1165,42 +1165,27 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   // FIXME: I don't like the Pair allocation :(
   @ApiMayChange
   final protected def getStageActor(receive: ((ActorRef, Any)) ⇒ Unit): StageActor =
-    getStageActor(receive, name = "")
-
-  /**
-   * Initialize a named [[StageActorRef]] which can be used to interact with from the outside world "as-if" an [[Actor]].
-   * The messages are looped through the [[getAsyncCallback]] mechanism of [[GraphStage]] so they are safe to modify
-   * internal state of this stage.
-   *
-   * This method must (the earliest) be called after the [[GraphStageLogic]] constructor has finished running,
-   * for example from the [[preStart]] callback the graph stage logic provides.
-   *
-   * Created [[StageActorRef]] to get messages and watch other actors in synchronous way.
-   *
-   * The [[StageActorRef]]'s lifecycle is bound to the Stage, in other words when the Stage is finished,
-   * the Actor will be terminated as well. The entity backing the [[StageActorRef]] is not a real Actor,
-   * but the [[GraphStageLogic]] itself, therefore it does not react to [[PoisonPill]].
-   *
-   * @param receive callback that will be called upon receiving of a message by this special Actor
-   * @param name to be used in the Actor's name. An empty String will cause the usual auto generated name to be used
-   * @return minimal actor with watch method
-   */
-  @ApiMayChange
-  final protected def getStageActor(receive: ((ActorRef, Any)) ⇒ Unit, name: String): StageActor = {
     _stageActor match {
       case null ⇒
         val actorMaterializer = ActorMaterializerHelper.downcast(interpreter.materializer)
-        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive, name)
+        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName)
         _stageActor
-      case existing if name != "" && existing.ref.path.name != name ⇒
-        throw new IllegalArgumentException(s"Illegal name argument ($name) in getStageActor! " +
-          s"It is not legal to change the name of the allocated stage actor. " +
-          s"The existing Actor is named [${existing.ref.path.name}], and must remain such throughout all getStageActor calls.")
       case existing ⇒
         existing.become(receive)
         existing
     }
-  }
+
+  /**
+   * Override and return a name to be given to the StageActor of this stage.
+   *
+   * This method will be only invoked and used once, during the first [[getStageActor]]
+   * invocation whichc reates the actor, since subsequent `getStageActors` calls function
+   * like `become`, rather than creating new actors.
+   *
+   * Returns an empty string by default, which means that the name will a unique generated String (e.g. "$$a").
+   */
+  @ApiMayChange
+  final protected def stageActorName: String = ""
 
   // Internal hooks to avoid reliance on user calling super in preStart
   /** INTERNAL API */
