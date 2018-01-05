@@ -4,9 +4,8 @@
 package akka.persistence.typed.scaladsl
 
 import scala.collection.{ immutable ⇒ im }
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.actor.typed.Behavior.UntypedBehavior
-import akka.actor.typed.Signal
 import akka.persistence.typed.internal.PersistentActorImpl
 import akka.actor.typed.scaladsl.ActorContext
 
@@ -19,7 +18,7 @@ object PersistentActor {
     persistenceId:  String,
     initialState:   State,
     commandHandler: CommandHandler[Command, Event, State],
-    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
+    eventHandler:   EventHandler[State, Event]): PersistentBehavior[Command, Event, State] =
     persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, eventHandler)
 
   /**
@@ -33,7 +32,7 @@ object PersistentActor {
     persistenceIdFromActorName: String ⇒ String,
     initialState:               State,
     commandHandler:             CommandHandler[Command, Event, State],
-    eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
+    eventHandler:               EventHandler[State, Event]): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
       recoveryCompleted = (_, _) ⇒ ())
 
@@ -144,12 +143,11 @@ object PersistentActor {
   @InternalApi
   private[akka] case object Unhandled extends Effect[Nothing, Nothing]
 
-  type CommandToEffect[Command, Event, State] = (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
-  type SignalHandler[Command, Event, State] = PartialFunction[(ActorContext[Command], State, Signal), Effect[Event, State]]
+  type EventHandler[State, Event] = (State, Event) ⇒ State
+  type CommandHandler[Command, Event, State] = (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
 
   /**
-   * The `CommandHandler` defines how to act on commands and partial function for other signals,
-   * e.g. `Termination` messages if `watch` is used.
+   * The `CommandHandler` defines how to act on commands.
    *
    * Note that you can have different command handlers based on current state by using
    * [[CommandHandler#byState]].
@@ -157,27 +155,18 @@ object PersistentActor {
   object CommandHandler {
 
     /**
-     * Create a command handler that will be applied for commands.
-     *
-     * @see [[Effect]] for possible effects of a command.
-     */
-    // Note: using full parameter type instead of type aliase here to make API more straight forward to figure out in an IDE
-    def apply[Command, Event, State](commandHandler: (ActorContext[Command], State, Command) ⇒ Effect[Event, State]): CommandHandler[Command, Event, State] =
-      new CommandHandler(commandHandler, Map.empty)
-
-    /**
      * Convenience for simple commands that don't need the state and context.
      *
      * @see [[Effect]] for possible effects of a command.
      */
-    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): CommandHandler[Command, Event, State] =
-      apply((_, _, cmd) ⇒ commandHandler(cmd))
+    def byCommand[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): CommandHandler[Command, Event, State] =
+      (_, _, cmd) ⇒ commandHandler(cmd)
 
     /**
      * Select different command handlers based on current state.
      */
     def byState[Command, Event, State](choice: State ⇒ CommandHandler[Command, Event, State]): CommandHandler[Command, Event, State] =
-      new ByStateCommandHandler(choice, signalHandler = PartialFunction.empty)
+      new ByStateCommandHandler(choice)
 
   }
 
@@ -185,53 +174,20 @@ object PersistentActor {
    * INTERNAL API
    */
   @InternalApi private[akka] final class ByStateCommandHandler[Command, Event, State](
-    choice:        State ⇒ CommandHandler[Command, Event, State],
-    signalHandler: SignalHandler[Command, Event, State])
-    extends CommandHandler[Command, Event, State](
-      commandHandler = (ctx, state, cmd) ⇒ choice(state).commandHandler(ctx, state, cmd),
-      signalHandler) {
+    choice: State ⇒ CommandHandler[Command, Event, State])
+    extends CommandHandler[Command, Event, State] {
 
-    // SignalHandler may be registered in the wrapper or in the wrapped
-    private[akka] override def sigHandler(state: State): SignalHandler[Command, Event, State] =
-      choice(state).sigHandler(state).orElse(signalHandler)
-
-    // override to preserve the ByStateCommandHandler
-    private[akka] override def withSignalHandler(
-      handler: SignalHandler[Command, Event, State]): CommandHandler[Command, Event, State] =
-      new ByStateCommandHandler(choice, handler)
+    override def apply(ctx: ActorContext[Command], state: State, cmd: Command): Effect[Event, State] =
+      choice(state)(ctx, state, cmd)
 
   }
-
-  /**
-   * `CommandHandler` defines command handlers and partial function for other signals,
-   * e.g. `Termination` messages if `watch` is used.
-   * `CommandHandler` is an immutable class.
-   */
-  @DoNotInherit class CommandHandler[Command, Event, State] private[akka] (
-    val commandHandler: CommandToEffect[Command, Event, State],
-    val signalHandler:  SignalHandler[Command, Event, State]) {
-
-    @InternalApi private[akka] def sigHandler(state: State): SignalHandler[Command, Event, State] =
-      signalHandler
-
-    // Note: using full parameter type instead of type alias here to make API more straight forward to figure out in an IDE
-    def onSignal(handler: PartialFunction[(ActorContext[Command], State, Signal), Effect[Event, State]]): CommandHandler[Command, Event, State] =
-      withSignalHandler(signalHandler.orElse(handler))
-
-    /** INTERNAL API */
-    @InternalApi private[akka] def withSignalHandler(
-      handler: SignalHandler[Command, Event, State]): CommandHandler[Command, Event, State] =
-      new CommandHandler(commandHandler, handler)
-
-  }
-
 }
 
 class PersistentBehavior[Command, Event, State](
   @InternalApi private[akka] val persistenceIdFromActorName: String ⇒ String,
   val initialState:                                          State,
   val commandHandler:                                        PersistentActor.CommandHandler[Command, Event, State],
-  val eventHandler:                                          (State, Event) ⇒ State,
+  val eventHandler:                                          PersistentActor.EventHandler[State, Event],
   val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit) extends UntypedBehavior[Command] {
   import PersistentActor._
 
@@ -259,7 +215,7 @@ class PersistentBehavior[Command, Event, State](
     persistenceIdFromActorName: String ⇒ String                       = persistenceIdFromActorName,
     initialState:               State                                 = initialState,
     commandHandler:             CommandHandler[Command, Event, State] = commandHandler,
-    eventHandler:               (State, Event) ⇒ State                = eventHandler,
+    eventHandler:               EventHandler[State, Event]            = eventHandler,
     recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted)
 }
