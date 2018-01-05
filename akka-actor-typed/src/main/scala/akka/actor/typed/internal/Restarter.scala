@@ -83,29 +83,20 @@ import akka.actor.typed.scaladsl.Behaviors
     wrap(Restarter.initialUndefer(ctx, initialBehavior), afterException = true)
   }
 
-  @tailrec
-  protected final def canonical(b: Behavior[T], ctx: ActorContext[T], afterException: Boolean): Behavior[T] =
-    if (Behavior.isUnhandled(b)) Behavior.unhandled
-    else if ((b eq Behavior.SameBehavior) || (b eq behavior)) Behavior.same
-    else if (!Behavior.isAlive(b)) b
-    else {
-      b match {
-        case d: DeferredBehavior[T] ⇒ canonical(Behavior.undefer(d, ctx), ctx, afterException)
-        case b                      ⇒ wrap(b, afterException)
-      }
-    }
+  protected final def supervise(b: Behavior[T], ctx: ActorContext[T], afterException: Boolean): Behavior[T] =
+    Behavior.wrapNonSpecial[T, T](b, ctx)(wrap(_, afterException))
 
   override def receiveSignal(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
     try {
       val b = Behavior.interpretSignal(behavior, ctx, signal)
-      canonical(b, ctx, afterException = false)
+      supervise(b, ctx, afterException = false)
     } catch handleException(ctx, behavior)
   }
 
   override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
     try {
       val b = Behavior.interpretMessage(behavior, ctx, msg)
-      canonical(b, ctx, afterException = false)
+      supervise(b, ctx, afterException = false)
     } catch handleException(ctx, behavior)
   }
 

@@ -39,26 +39,17 @@ import scala.annotation.tailrec
   }
 
   private final case class Widened[T, U](behavior: Behavior[T], matcher: PartialFunction[U, T]) extends ExtensibleBehavior[U] {
-    @tailrec
-    private def canonical(b: Behavior[T], ctx: AC[T]): Behavior[U] = {
-      if (isUnhandled(b)) unhandled
-      else if ((b eq SameBehavior) || (b eq this)) same
-      else if (!Behavior.isAlive(b)) Behavior.stopped
-      else {
-        b match {
-          case d: DeferredBehavior[T] ⇒ canonical(Behavior.undefer(d, ctx), ctx)
-          case _                      ⇒ Widened(b, matcher)
-        }
-      }
-    }
+
+    private def widen(b: Behavior[T], ctx: AC[T]): Behavior[U] =
+      Behavior.wrapNonSpecial(b, ctx)(b ⇒ Widened[T, U](b, matcher))
 
     override def receiveSignal(ctx: AC[U], signal: Signal): Behavior[U] =
-      canonical(Behavior.interpretSignal(behavior, ctx.as[T], signal), ctx.as[T])
+      widen(Behavior.interpretSignal(behavior, ctx.as[T], signal), ctx.as[T])
 
     override def receiveMessage(ctx: AC[U], msg: U): Behavior[U] =
       matcher.applyOrElse(msg, nullFun) match {
         case null        ⇒ unhandled
-        case transformed ⇒ canonical(Behavior.interpretMessage(behavior, ctx.as[T], transformed), ctx.as[T])
+        case transformed ⇒ widen(Behavior.interpretMessage(behavior, ctx.as[T], transformed), ctx.as[T])
       }
 
     override def toString: String = s"${behavior.toString}.widen(${LineNumbers(matcher)})"
@@ -109,12 +100,12 @@ import scala.annotation.tailrec
    * different than the incoming message).
    */
   def intercept[T, U <: Any: ClassTag](
-                                        beforeMessage:  (TAC[U], U) => T,
-                                        beforeSignal:   (TAC[T], Signal) => Boolean,
-                                        afterMessage:   (TAC[T], T, Behavior[T]) => Behavior[T],
-                                        afterSignal:    (TAC[T], Signal, Behavior[T]) => Behavior[T],
-                                        behavior:       Behavior[T],
-                                        toStringPrefix: String                                              = "Intercept"): Behavior[T] = {
+    beforeMessage:  (TAC[U], U) ⇒ T,
+    beforeSignal:   (TAC[T], Signal) ⇒ Boolean,
+    afterMessage:   (TAC[T], T, Behavior[T]) ⇒ Behavior[T],
+    afterSignal:    (TAC[T], Signal, Behavior[T]) ⇒ Behavior[T],
+    behavior:       Behavior[T],
+    toStringPrefix: String                                      = "Intercept"): Behavior[T] = {
     behavior match {
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
@@ -128,24 +119,15 @@ import scala.annotation.tailrec
   }
 
   private final case class Intercept[T, U <: Any: ClassTag](
-                                                             beforeOnMessage: (TAC[U], U) => T,
-                                                             beforeOnSignal:  (TAC[T], Signal) => Boolean,
-                                                             afterMessage:    (TAC[T], T, Behavior[T]) => Behavior[T],
-                                                             afterSignal:     (TAC[T], Signal, Behavior[T]) => Behavior[T],
-                                                             behavior:        Behavior[T],
-                                                             toStringPrefix:  String                                              = "Intercept") extends ExtensibleBehavior[T] {
+    beforeOnMessage: (TAC[U], U) ⇒ T,
+    beforeOnSignal:  (TAC[T], Signal) ⇒ Boolean,
+    afterMessage:    (TAC[T], T, Behavior[T]) ⇒ Behavior[T],
+    afterSignal:     (TAC[T], Signal, Behavior[T]) ⇒ Behavior[T],
+    behavior:        Behavior[T],
+    toStringPrefix:  String                                      = "Intercept") extends ExtensibleBehavior[T] {
 
-    @tailrec
-    private def canonical(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
-      if (isUnhandled(b)) unhandled
-      else if ((b eq SameBehavior) || (b eq this)) same
-      else if (!Behavior.isAlive(b)) b
-      else {
-        b match {
-          case d: DeferredBehavior[T] ⇒ canonical(Behavior.undefer(d, ctx), ctx)
-          case _                      ⇒ Intercept(beforeOnMessage, beforeOnSignal, afterMessage, afterSignal, b)
-        }
-      }
+    private def intercept(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
+      Behavior.wrapNonSpecial(b, ctx)(Intercept(beforeOnMessage, beforeOnSignal, afterMessage, afterSignal, _))
     }
 
     override def receiveSignal(ctx: AC[T], signal: Signal): Behavior[T] = {
@@ -154,7 +136,7 @@ import scala.annotation.tailrec
           Behavior.interpretSignal(behavior, ctx, signal)
         else
           same
-      canonical(afterSignal(ctx.asScala, signal, next), ctx)
+      intercept(afterSignal(ctx.asScala, signal, next), ctx)
     }
 
     override def receiveMessage(ctx: AC[T], msg: T): Behavior[T] = {
@@ -166,10 +148,10 @@ import scala.annotation.tailrec
               same
             else
               Behavior.interpretMessage(behavior, ctx, msg2)
-          canonical(afterMessage(ctx.asScala, msg2, next), ctx)
+          intercept(afterMessage(ctx.asScala, msg2, next), ctx)
         case _ ⇒
           val next: Behavior[T] = Behavior.interpretMessage(behavior, ctx, msg)
-          canonical(afterMessage(ctx.asScala, msg, next), ctx)
+          intercept(afterMessage(ctx.asScala, msg, next), ctx)
       }
     }
 
