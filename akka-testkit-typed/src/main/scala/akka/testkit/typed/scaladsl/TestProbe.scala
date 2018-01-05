@@ -201,8 +201,9 @@ class TestProbe[M](name: String)(implicit val system: ActorSystem[_], val settin
 
   /**
    * Assert that no message is received for the specified time.
+   * Supplied value is not dilated.
    */
-  def expectNoMsg(max: FiniteDuration) { expectNoMsg_internal(max.dilated) }
+  def expectNoMessage(max: FiniteDuration) { expectNoMsg_internal(max) }
 
   private def expectNoMsg_internal(max: FiniteDuration) {
     val o = receiveOne(max)
