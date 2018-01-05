@@ -33,9 +33,15 @@ class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: Thre
   override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
     schedule(delay, None, runnable)
 
-  def timePasses(amount: FiniteDuration)(implicit system: ActorSystem) = {
-    // TODO double-check if we really want/need dilation here
-    val newTime = currentTime.get + amount.dilated.toMillis
+  /**
+   * Advance the clock by the specified duration.
+   *
+   * We will not add a dilation factor to this amount, since the scheduler API also does not apply dilation.
+   * If you want the amount of time passed to be dilated, apply the dilation before passing the delay to
+   * this method.
+   */
+  def timePasses(amount: FiniteDuration) = {
+    val newTime = currentTime.get + amount.toMillis
     executeTasks(newTime)
     currentTime.set(newTime)
   }

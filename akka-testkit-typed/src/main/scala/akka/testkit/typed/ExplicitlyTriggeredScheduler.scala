@@ -8,9 +8,5 @@ import com.typesafe.config.Config
 import scala.concurrent.duration.FiniteDuration
 
 class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: ThreadFactory) extends akka.testkit.ExplicitlyTriggeredScheduler(config, log, tf) {
-  def timePasses(amount: FiniteDuration) = {
-    val newTime = currentTime.get + amount.toMillis
-    executeTasks(newTime)
-    currentTime.set(newTime)
-  }
+  // We can add convenience methods for Typed here as necessary.
 }
