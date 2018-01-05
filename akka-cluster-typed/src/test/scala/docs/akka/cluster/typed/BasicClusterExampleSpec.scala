@@ -1,7 +1,7 @@
 package docs.akka.cluster.typed
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 //#cluster-imports
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
@@ -10,8 +10,8 @@ import akka.cluster.MemberStatus
 import akka.cluster.typed._
 //#cluster-imports
 import akka.testkit.typed.scaladsl.TestProbe
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Millis, Seconds, Span}
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
+import org.scalatest.time.{ Millis, Seconds, Span }
 
 import scala.concurrent.duration._
 
