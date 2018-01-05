@@ -99,7 +99,7 @@ class ClusterApiSpec extends TestKit("ClusterApiSpec", ClusterApiSpec.config) wi
 
         // subscribing to SelfUp when already removed yields nothing
         clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfUp])
-        node2Probe.expectNoMessage(100.millis)
+        node2Probe.expectNoMessage()
 
       } finally {
         Await.result(system2.terminate(), 3.seconds)

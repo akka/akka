@@ -87,7 +87,7 @@ class TimerSpec extends TestKit("TimerSpec")
 
       val ref = spawn(behv)
       probe.expectMsg(Tock(1))
-      probe.expectNoMessage(100.millis)
+      probe.expectNoMessage()
 
       ref ! End
       probe.expectMsg(GotPostStop(false))
@@ -123,7 +123,7 @@ class TimerSpec extends TestKit("TimerSpec")
       val latch = new CountDownLatch(1)
       // next Tock(1) enqueued in mailboxed, but should be discarded because of new timer
       ref ! SlowThenBump(latch)
-      probe.expectNoMessage(interval + 100.millis)
+      probe.expectNoMessage(interval + 100.millis.dilated)
       latch.countDown()
       probe.expectMsg(Tock(2))
 
@@ -141,7 +141,7 @@ class TimerSpec extends TestKit("TimerSpec")
       val ref = spawn(behv)
       probe.expectMsg(Tock(1))
       ref ! Cancel
-      probe.expectNoMessage(interval + 100.millis)
+      probe.expectNoMessage(interval + 100.millis.dilated)
 
       ref ! End
       probe.expectMsg(GotPostStop(false))
@@ -161,7 +161,7 @@ class TimerSpec extends TestKit("TimerSpec")
       val latch = new CountDownLatch(1)
       // next Tock(1) is enqueued in mailbox, but should be discarded by new incarnation
       ref ! SlowThenThrow(latch, new Exc)
-      probe.expectNoMessage(interval + 100.millis)
+      probe.expectNoMessage(interval + 100.millis.dilated)
       latch.countDown()
       probe.expectMsg(GotPreRestart(false))
       probe.expectNoMessage(interval / 2)
@@ -188,7 +188,7 @@ class TimerSpec extends TestKit("TimerSpec")
       val latch = new CountDownLatch(1)
       // next Tock(2) is enqueued in mailbox, but should be discarded by new incarnation
       ref ! SlowThenThrow(latch, new Exc)
-      probe.expectNoMessage(interval + 100.millis)
+      probe.expectNoMessage(interval + 100.millis.dilated)
       latch.countDown()
       probe.expectMsg(GotPreRestart(false))
       probe.expectMsg(Tock(1))

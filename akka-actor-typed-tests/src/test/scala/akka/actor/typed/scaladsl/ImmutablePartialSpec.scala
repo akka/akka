@@ -25,7 +25,7 @@ class ImmutablePartialSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
       testkit.run(Command1)
       testkit.currentBehavior shouldBe behavior
-      probe.expectNoMessage(100.milliseconds)
+      probe.expectNoMessage()
 
       testkit.run(Command2)
       testkit.currentBehavior shouldBe behavior
