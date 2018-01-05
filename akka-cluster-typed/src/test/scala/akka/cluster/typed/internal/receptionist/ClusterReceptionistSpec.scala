@@ -6,14 +6,14 @@ package akka.cluster.typed.internal.receptionist
 import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.{ ActorRef, ActorRefResolver, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ActorRef, ActorRefResolver, TypedAkkaSpecWithShutdown}
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.Cluster
 import akka.serialization.SerializerWithStringManifest
-import akka.testkit.typed.{ TestKit, TestKitSettings }
+import akka.testkit.typed.{TestKit, TestKitSettings}
 import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 
@@ -45,14 +45,12 @@ object ClusterReceptionistSpec {
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
     """)
 
-  trait PingProtocol
   case object Pong
+  trait PingProtocol
   case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol
-
   case object Perish extends PingProtocol
 
-  val pingPong = Actor.immutable[PingProtocol] { (_, msg) ⇒
-
+  val pingPongBehavior = Actor.immutable[PingProtocol] { (_, msg) ⇒
     msg match {
       case Ping(respondTo) ⇒
         respondTo ! Pong
@@ -67,14 +65,14 @@ object ClusterReceptionistSpec {
     def identifier: Int = 47
     def manifest(o: AnyRef): String = o match {
       case _: Ping ⇒ "a"
-      case Pong    ⇒ "b"
-      case Perish  ⇒ "c"
+      case Pong ⇒ "b"
+      case Perish ⇒ "c"
     }
 
     def toBinary(o: AnyRef): Array[Byte] = o match {
       case p: Ping ⇒ ActorRefResolver(system.toTyped).toSerializationFormat(p.respondTo).getBytes(StandardCharsets.UTF_8)
-      case Pong    ⇒ Array.emptyByteArray
-      case Perish  ⇒ Array.emptyByteArray
+      case Pong ⇒ Array.emptyByteArray
+      case Perish ⇒ Array.emptyByteArray
     }
 
     def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
@@ -110,29 +108,24 @@ class ClusterReceptionistSpec extends TestKit("ClusterReceptionistSpec", Cluster
   "The cluster receptionist" must {
 
     "must eventually replicate registrations to the other side" in {
-      new TestSetup {
-        val regProbe = TestProbe[Any]()(system, testSettings)
-        val regProbe2 = TestProbe[Any]()(adaptedSystem2, testSettings)
+      val regProbe = TestProbe[Any]()(system)
+      val regProbe2 = TestProbe[Any]()(adaptedSystem2)
 
-        adaptedSystem2.receptionist ! Subscribe(PingKey, regProbe2.ref)
-        regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+      adaptedSystem2.receptionist ! Subscribe(PingKey, regProbe2.ref)
+      regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
 
-        val service = spawn(pingPong)
-        system.receptionist ! Register(PingKey, service, regProbe.ref)
-        regProbe.expectMsg(Registered(PingKey, service))
+      val service = spawn(pingPongBehavior)
+      system.receptionist ! Register(PingKey, service, regProbe.ref)
+      regProbe.expectMsg(Registered(PingKey, service))
 
-        val Listing(PingKey, remoteServiceRefs) = regProbe2.expectMsgType[Listing[PingProtocol]]
-        val theRef = remoteServiceRefs.head
-        theRef ! Ping(regProbe2.ref)
-        regProbe2.expectMsg(Pong)
+      val Listing(PingKey, remoteServiceRefs) = regProbe2.expectMsgType[Listing[PingProtocol]]
+      val theRef = remoteServiceRefs.head
+      theRef ! Ping(regProbe2.ref)
+      regProbe2.expectMsg(Pong)
 
-        service ! Perish
-        regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
-      }
+      service ! Perish
+      regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
     }
-  }
-
-  trait TestSetup {
   }
 
   override def afterAll(): Unit = {

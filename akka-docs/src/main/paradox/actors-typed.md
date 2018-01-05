@@ -20,7 +20,7 @@ To use Akka Typed add the following dependency:
 @@dependency [sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-actor-typed_2.12
-  version=$version$
+  version=$akka.version$
 }
 
 ## Introduction
