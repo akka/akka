@@ -4,21 +4,25 @@ import java.util.concurrent.ThreadFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
-import scala.annotation.tailrec
-import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-
 import com.typesafe.config.Config
 
-import akka.actor.{ ActorSystem, Cancellable, Scheduler }
+import scala.annotation.tailrec
+import scala.collection.JavaConverters._
+import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+import akka.actor.{ Cancellable, Scheduler }
 import akka.event.LoggingAdapter
 
 /**
- * For testing: scheduler that does not look at the clock, but must be progressed manually by calling `timePasses`.
+ * For testing: scheduler that does not look at the clock, but must be
+ * progressed manually by calling `timePasses`.
  *
- * This is not entirely realistic: jobs will be executed on the test thread instead of using the `ExecutionContext`, but does
- * allow for faster and less timing-sensitive specs..
+ * This allows for faster and less timing-sensitive specs, as jobs will be
+ * executed on the test thread instead of using the original
+ * {ExecutionContext}. This means recreating specific scenario's becomes
+ * easier, but these tests might fail to catch race conditions that only
+ * happen when tasks are scheduled in parallel in 'real time'.
  */
 class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: ThreadFactory) extends Scheduler {
 
@@ -67,7 +71,7 @@ class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: Thre
       }
   }
 
-  private def schedule(initialDelay: FiniteDuration, interval: Option[FiniteDuration], runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
+  private def schedule(initialDelay: FiniteDuration, interval: Option[FiniteDuration], runnable: Runnable): Cancellable = {
     val item = Item(currentTime.get + initialDelay.toMillis, interval, runnable)
     scheduled.put(item, ())
 
