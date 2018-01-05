@@ -6,14 +6,14 @@ package akka.cluster.typed.internal.receptionist
 import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.{ActorRef, ActorRefResolver, TypedAkkaSpecWithShutdown}
+import akka.actor.typed.{ ActorRef, ActorRefResolver, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.Cluster
 import akka.serialization.SerializerWithStringManifest
-import akka.testkit.typed.{TestKit, TestKitSettings}
+import akka.testkit.typed.{ TestKit, TestKitSettings }
 import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 
@@ -65,14 +65,14 @@ object ClusterReceptionistSpec {
     def identifier: Int = 47
     def manifest(o: AnyRef): String = o match {
       case _: Ping ⇒ "a"
-      case Pong ⇒ "b"
-      case Perish ⇒ "c"
+      case Pong    ⇒ "b"
+      case Perish  ⇒ "c"
     }
 
     def toBinary(o: AnyRef): Array[Byte] = o match {
       case p: Ping ⇒ ActorRefResolver(system.toTyped).toSerializationFormat(p.respondTo).getBytes(StandardCharsets.UTF_8)
-      case Pong ⇒ Array.emptyByteArray
-      case Perish ⇒ Array.emptyByteArray
+      case Pong    ⇒ Array.emptyByteArray
+      case Perish  ⇒ Array.emptyByteArray
     }
 
     def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
