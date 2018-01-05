@@ -102,10 +102,10 @@ class ClusterSingletonApiSpec extends TestKit("ClusterSingletonApiSpec", Cluster
   "A typed cluster singleton" must {
 
     "be accessible from two nodes in a cluster" in {
-      val node1UpProbe = TestProbe[SelfUp]()(system, implicitly[TestKitSettings])
+      val node1UpProbe = TestProbe[SelfUp]()(system)
       clusterNode1.subscriptions ! Subscribe(node1UpProbe.ref, classOf[SelfUp])
 
-      val node2UpProbe = TestProbe[SelfUp]()(adaptedSystem2, implicitly[TestKitSettings])
+      val node2UpProbe = TestProbe[SelfUp]()(adaptedSystem2)
       clusterNode1.subscriptions ! Subscribe(node2UpProbe.ref, classOf[SelfUp])
 
       clusterNode1.manager ! Join(clusterNode1.selfMember.address)
@@ -125,8 +125,8 @@ class ClusterSingletonApiSpec extends TestKit("ClusterSingletonApiSpec", Cluster
       cs1.spawn(pingPong, "ping-pong", Props.empty, settings, Perish) should ===(node1ref)
       cs2.spawn(pingPong, "ping-pong", Props.empty, settings, Perish) should ===(node2ref)
 
-      val node1PongProbe = TestProbe[Pong.type]()(system, implicitly[TestKitSettings])
-      val node2PongProbe = TestProbe[Pong.type]()(adaptedSystem2, implicitly[TestKitSettings])
+      val node1PongProbe = TestProbe[Pong.type]()(system)
+      val node2PongProbe = TestProbe[Pong.type]()(adaptedSystem2)
 
       node1PongProbe.awaitAssert({
         node1ref ! Ping(node1PongProbe.ref)

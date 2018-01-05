@@ -57,7 +57,7 @@ case object PostStop extends PostStop {
 /**
  * Lifecycle signal that is fired when an Actor that was watched has terminated.
  * Watching is performed by invoking the
- * [[akka.actor.typed.ActorContext]] `watch` method. The DeathWatch service is
+ * [[akka.actor.typed.scaladsl.ActorContext.watch]] . The DeathWatch service is
  * idempotent, meaning that registering twice has the same effect as registering
  * once. Registration does not need to happen before the Actor terminates, a
  * notification is guaranteed to arrive after both registration and termination

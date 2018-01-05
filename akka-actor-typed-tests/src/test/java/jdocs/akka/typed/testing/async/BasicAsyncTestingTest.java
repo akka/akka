@@ -13,9 +13,6 @@ import org.junit.Test;
 
 //#test-header
 public class BasicAsyncTestingTest extends TestKit {
-  public BasicAsyncTestingTest() {
-    super("BasicAsyncTestingTest");
-  }
 //#test-header
 
   //#under-test
@@ -52,7 +49,7 @@ public class BasicAsyncTestingTest extends TestKit {
   @Test
   public void testVerifyingAResponse() {
     //#test-spawn
-    TestProbe<Pong> probe = new TestProbe<>(system(), testkitSettings());
+    TestProbe<Pong> probe = new TestProbe<>(system());
     ActorRef<Ping> pinger = spawn(echoActor, "ping");
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMsg(new Pong("hello"));
@@ -62,7 +59,7 @@ public class BasicAsyncTestingTest extends TestKit {
   @Test
   public void testVerifyingAResponseAnonymous() {
     //#test-spawn-anonymous
-    TestProbe<Pong> probe = new TestProbe<>(system(), testkitSettings());
+    TestProbe<Pong> probe = new TestProbe<>(system());
     ActorRef<Ping> pinger = spawn(echoActor);
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMsg(new Pong("hello"));
