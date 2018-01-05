@@ -392,6 +392,7 @@ private[akka] object SystemGuardian {
   case object RegisterTerminationHook
   case object TerminationHook
   case object TerminationHookDone
+  case object Terminate
 }
 
 private[akka] object LocalActorRefProvider {
@@ -403,8 +404,8 @@ private[akka] object LocalActorRefProvider {
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
     def receive = {
-      case Terminated(_)    ⇒ context.stop(self)
-      case StopChild(child) ⇒ context.stop(child)
+      case Terminated(_) | SystemGuardian.Terminate ⇒ context.stop(self)
+      case StopChild(child)                         ⇒ context.stop(child)
     }
 
     // guardian MUST NOT lose its children during restart
@@ -421,7 +422,7 @@ private[akka] object LocalActorRefProvider {
     var terminationHooks = Set.empty[ActorRef]
 
     def receive = {
-      case Terminated(`guardian`) ⇒
+      case Terminated(`guardian`) | Terminate ⇒
         // time for the systemGuardian to stop, but first notify all the
         // termination hooks, they will reply with TerminationHookDone
         // and when all are done the systemGuardian is stopped
@@ -662,6 +663,10 @@ private[akka] class LocalActorRefProvider private[akka] (
     // but don't do that until the system is completely started or else things will explode
     systemGuardian.sendSystemMessage(Watch(guardian, systemGuardian))
     rootGuardian.sendSystemMessage(Watch(systemGuardian, rootGuardian))
+    // could be that user guardian already terminated before we watched it
+    // FIXME there's still potentially a race here if it isn't terminated and processing the Watch is delayed
+    if (guardian.isTerminated) systemGuardian ! SystemGuardian.Terminate
+    else if (systemGuardian.isTerminated) rootGuardian ! SystemGuardian.Terminate
   }
 
   @deprecated("use actorSelection instead of actorFor", "2.2")
