@@ -5,7 +5,6 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Actor;
 import akka.actor.typed.receptionist.Receptionist;
-import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 
@@ -68,7 +67,6 @@ public class ReceptionistExampleTest {
     //#pinger-guardian
   }
 
-  @Test
   public void workPlease() throws Exception {
     ActorSystem<Receptionist.Listing<PingPongExample.Ping>> system =
       ActorSystem.create(PingPongExample.guardian(), "ReceptionistExample");
