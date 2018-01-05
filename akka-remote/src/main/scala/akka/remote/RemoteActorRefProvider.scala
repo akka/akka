@@ -215,7 +215,6 @@ private[akka] class RemoteActorRefProvider(
     remoteDeploymentWatcher = createRemoteDeploymentWatcher(system)
   }
 
-
   private[akka] def initDone(): Unit = {
     local.initDone()
   }
