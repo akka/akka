@@ -303,9 +303,12 @@ object ClusterSingletonManager {
       }
 
       def sendFirstChange(): Unit = {
-        val event = changes.head
-        changes = changes.tail
-        context.parent ! event
+        // don't send cluster change events if this node is shutting its self down, just wait for SelfExiting
+        if (!cluster.isTerminated) {
+          val event = changes.head
+          changes = changes.tail
+          context.parent ! event
+        }
       }
 
       def receive = {
@@ -331,7 +334,7 @@ object ClusterSingletonManager {
           context.unbecome()
         case MemberUp(m) ⇒
           add(m)
-          deliverChanges
+          deliverChanges()
         case MemberRemoved(m, _) ⇒
           remove(m)
           deliverChanges()
@@ -357,9 +360,7 @@ object ClusterSingletonManager {
           case _              ⇒ super.unhandled(msg)
         }
       }
-
     }
-
   }
 }
 
@@ -763,7 +764,7 @@ class ClusterSingletonManager(
     case (Event(Terminated(ref), HandingOverData(singleton, handOverTo))) if ref == singleton ⇒
       handOverDone(handOverTo)
 
-    case Event(HandOverToMe, d @ HandingOverData(singleton, handOverTo)) if handOverTo == Some(sender()) ⇒
+    case Event(HandOverToMe, HandingOverData(singleton, handOverTo)) if handOverTo == Some(sender()) ⇒
       // retry
       sender() ! HandOverInProgress
       stay
