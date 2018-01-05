@@ -5,14 +5,14 @@ package akka.actor.typed.scaladsl.adapter
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.actor.typed.ActorRef
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
 import akka.actor.{ InvalidMessageException, Props }
-import akka.actor.typed.Behavior
-import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Actor
-import akka.{ actor ⇒ untyped }
+import akka.{ NotUsed, actor ⇒ untyped }
 import akka.testkit._
 import akka.actor.typed.Behavior.UntypedBehavior
+
+import scala.concurrent.Await
 
 object AdapterSpec {
   val untyped1: untyped.Props = untyped.Props(new Untyped1)
@@ -156,6 +156,31 @@ class AdapterSpec extends AkkaSpec {
       val typed2 = system.toTyped
 
       typed1 should be theSameInstanceAs typed2
+    }
+
+    "not crash if guardian is stopped" in {
+      for { _ ← 0 to 10 } {
+        var system: akka.actor.typed.ActorSystem[NotUsed] = null
+        try {
+          system = ActorSystem.create(Behavior.stopped[NotUsed], "AdapterSpec-stopping-guardian")
+
+        } finally {
+          if (system != null) Await.result(system.terminate(), remainingOrDefault)
+        }
+      }
+    }
+
+    "not crash if guardian is stopped very quickly" in {
+      for { _ ← 0 to 10 } {
+        var system: akka.actor.typed.ActorSystem[NotUsed] = null
+        try {
+          system = ActorSystem.create(Actor.deferred[NotUsed](ctx ⇒ Behavior.stopped[NotUsed]), "AdapterSpec-stopping-guardian-2")
+
+        } finally {
+          if (system != null) Await.result(system.terminate(), remainingOrDefault)
+        }
+      }
+
     }
   }
 
