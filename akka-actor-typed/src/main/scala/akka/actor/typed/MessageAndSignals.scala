@@ -40,7 +40,7 @@ trait Signal
  * first signal.
  */
 sealed abstract class PreRestart extends Signal
-final case object PreRestart extends PreRestart {
+case object PreRestart extends PreRestart {
   def instance: PreRestart = this
 }
 
@@ -50,7 +50,7 @@ final case object PreRestart extends PreRestart {
  * registered watchers after this signal has been processed.
  */
 sealed abstract class PostStop extends Signal
-final case object PostStop extends PostStop {
+case object PostStop extends PostStop {
   def instance: PostStop = this
 }
 
