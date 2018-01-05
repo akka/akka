@@ -53,4 +53,4 @@ guardian actor spawns a pinger to ping it.
 ## Cluster Receptionist
 
 The `Receptionist` also works in a cluster, the state for the receptionist is propagated via @ref:[distributed data](distributed-data.md).
-The only difference is the serialisation concerns, see @ref:[clustering](cluster-typed.md).
+The only difference is the serialisation concerns, see @ref:[clustering](cluster-typed.md#serialization).

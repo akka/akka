@@ -23,10 +23,16 @@ Cluster API. All of the examples below assume the following imports:
 Scala
 :  @@snip [BasicClusterExampleSpec.scala]($akka$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-imports }
 
+Java
+:  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-imports }
+
 And the minimum configuration required is to set a host/port for remoting and the `cluster` 
 
 Scala
-:  @@snip [BasicClusterExampleSpec.scala]($akka$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #config }
+:  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-imports }
+
+Java
+:  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-imports }
 
 ## Cluster API extension 
 
@@ -39,6 +45,8 @@ The references are on the `Cluster` extension:
 Scala
 :  @@snip [BasicClusterExampleSpec.scala]($akka$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-create }
 
+Java
+:  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-create }
 
 The Cluster extensions gives you access to:
 
@@ -54,10 +62,16 @@ If not using configuration to specify seeds joining the cluster can be done prog
 Scala
 :  @@snip [BasicClusterExampleSpec.scala]($akka$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-join }
 
+Java
+:  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-join }
+
 Leaving and downing are similar e.g.
 
 Scala
 :  @@snip [BasicClusterExampleSpec.scala]($akka$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-leave }
+
+Java
+:  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-leave }
 
 ### Cluster subscriptions
 
@@ -70,10 +84,16 @@ This example subscribes with a `TestProbe` but in a real application it would be
 Scala
 :  @@snip [BasicClusterExampleSpec.scala]($akka$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-subscribe }
 
+Java
+:  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-subscribe }
+
 Then asking a node to leave:
 
 Scala
 :  @@snip [BasicClusterExampleSpec.scala]($akka$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-leave-example }
+
+Java
+:  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-leave-example }
 
 ## Serialization
 

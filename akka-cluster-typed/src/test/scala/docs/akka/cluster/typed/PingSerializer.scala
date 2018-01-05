@@ -8,7 +8,6 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializerWithStringManifest
 import docs.akka.cluster.typed.PingPongExample._
 
-
 //#serializer
 class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
   private val actorRefResolver = ActorRefResolver(system.toTyped)

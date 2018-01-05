@@ -5,10 +5,10 @@ import java.util.concurrent.ThreadLocalRandom
 import akka.actor.Address
 import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.receptionist.Receptionist.{Find, Listing, ServiceKey}
+import akka.actor.typed.receptionist.Receptionist.{ Find, Listing, ServiceKey }
 import akka.actor.typed.scaladsl._
 import akka.cluster.ClusterEvent._
-import akka.cluster.typed.{Cluster, Join, Subscribe}
+import akka.cluster.typed.{ Cluster, Join, Subscribe }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpec
 import org.scalatest.concurrent.ScalaFutures
@@ -26,7 +26,7 @@ object RandomRouter {
           msg match {
             case Listing(_, services: Set[ActorRef[T]]) ⇒
               routingBehavior(services.toVector)
-            case other: T@unchecked ⇒
+            case other: T @unchecked ⇒
               if (routees.isEmpty)
                 Actor.unhandled
               else {
@@ -59,20 +59,20 @@ object RandomRouter {
           msg match {
             case Listing(_, services: Set[ActorRef[T]]) ⇒
               routingBehavior(services.toVector, unreachable)
-            case WrappedReachabilityEvent(event) => event match {
-              case UnreachableMember(m) =>
+            case WrappedReachabilityEvent(event) ⇒ event match {
+              case UnreachableMember(m) ⇒
                 routingBehavior(routees, unreachable + m.address)
-              case ReachableMember(m) =>
+              case ReachableMember(m) ⇒
                 routingBehavior(routees, unreachable - m.address)
             }
 
-            case other: T@unchecked ⇒
+            case other: T @unchecked ⇒
               if (routees.isEmpty)
                 Actor.unhandled
               else {
                 val reachableRoutes =
                   if (unreachable.isEmpty) routees
-                  else routees.filterNot { r => unreachable(r.path.address) }
+                  else routees.filterNot { r ⇒ unreachable(r.path.address) }
 
                 val i = ThreadLocalRandom.current.nextInt(reachableRoutes.size)
                 reachableRoutes(i) ! other
@@ -106,9 +106,9 @@ object PingPongExample {
   //#ping-service
 
   //#pinger
-  def pinger(pingService: ActorRef[Ping]) = Actor.deferred[Pong.type] { ctx =>
+  def pinger(pingService: ActorRef[Ping]) = Actor.deferred[Pong.type] { ctx ⇒
     pingService ! Ping(ctx.self)
-    Actor.immutable { (_, msg) =>
+    Actor.immutable { (_, msg) ⇒
       println("I was ponged!!" + msg)
       Actor.same
     }
@@ -116,16 +116,16 @@ object PingPongExample {
   //#pinger
 
   //#pinger-guardian
-  val guardian: Behavior[Listing[Ping]] = Actor.deferred { ctx =>
+  val guardian: Behavior[Listing[Ping]] = Actor.deferred { ctx ⇒
     ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
     val ps = ctx.spawnAnonymous(pingService)
     ctx.watch(ps)
     Actor.immutablePartial[Listing[Ping]] {
-      case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty =>
-        listings.foreach(ps => ctx.spawnAnonymous(pinger(ps)))
+      case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty ⇒
+        listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
         Actor.same
     } onSignal {
-      case (_, Terminated(`ps`)) =>
+      case (_, Terminated(`ps`)) ⇒
         println("Ping service has shut down")
         Actor.stopped
     }
@@ -133,15 +133,15 @@ object PingPongExample {
   //#pinger-guardian
 
   //#pinger-guardian-pinger-service
-  val guardianJustPingService: Behavior[Listing[Ping]] = Actor.deferred { ctx =>
+  val guardianJustPingService: Behavior[Listing[Ping]] = Actor.deferred { ctx ⇒
     val ps = ctx.spawnAnonymous(pingService)
     ctx.watch(ps)
     Actor.immutablePartial[Listing[Ping]] {
-      case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty =>
-        listings.foreach(ps => ctx.spawnAnonymous(pinger(ps)))
+      case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty ⇒
+        listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
         Actor.same
     } onSignal {
-      case (_, Terminated(`ps`)) =>
+      case (_, Terminated(`ps`)) ⇒
         println("Ping service has shut down")
         Actor.stopped
     }
@@ -149,11 +149,11 @@ object PingPongExample {
   //#pinger-guardian-pinger-service
 
   //#pinger-guardian-just-pinger
-  val guardianJustPinger: Behavior[Listing[Ping]] = Actor.deferred { ctx =>
+  val guardianJustPinger: Behavior[Listing[Ping]] = Actor.deferred { ctx ⇒
     ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
     Actor.immutablePartial[Listing[Ping]] {
-      case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty =>
-        listings.foreach(ps => ctx.spawnAnonymous(pinger(ps)))
+      case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty ⇒
+        listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
         Actor.same
     }
   }
