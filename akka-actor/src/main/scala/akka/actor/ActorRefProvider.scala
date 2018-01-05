@@ -5,17 +5,20 @@
 package akka.actor
 
 import akka.dispatch.sysmsg._
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.routing._
 import akka.event._
-import akka.util.{ Helpers }
+import akka.util.Helpers
 import akka.japi.Util.immutableSeq
 import akka.util.Collections.EmptyImmutableSeq
+
 import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
 import akka.ConfigurationException
+import akka.annotation.InternalApi
 import akka.dispatch.Mailboxes
 
 /**
@@ -68,7 +71,12 @@ trait ActorRefProvider {
    * and then—when the ActorSystem is constructed—the second phase during
    * which actors may be created (e.g. the guardians).
    */
-  private[akka] def init(system: ActorSystemImpl): Unit
+  @InternalApi private[akka] def init(system: ActorSystemImpl): Unit
+
+  /**
+   * INTERNAL API: Step two completed
+   */
+  @InternalApi private[akka] def initDone(): Unit
 
   /**
    * The Deployer associated with this ActorRefProvider
@@ -646,10 +654,14 @@ private[akka] class LocalActorRefProvider private[akka] (
   private[akka] def init(_system: ActorSystemImpl) {
     system = _system
     rootGuardian.start()
+    eventStream.startDefaultLoggers(_system)
+  }
+
+  private[akka] def initDone(): Unit = {
     // chain death watchers so that killing guardian stops the application
+    // but don't do that until the system is completely started or else things will explode
     systemGuardian.sendSystemMessage(Watch(guardian, systemGuardian))
     rootGuardian.sendSystemMessage(Watch(systemGuardian, rootGuardian))
-    eventStream.startDefaultLoggers(_system)
   }
 
   @deprecated("use actorSelection instead of actorFor", "2.2")

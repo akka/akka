@@ -18,6 +18,7 @@ import akka.annotation.ApiMayChange
 import java.util.Optional
 
 import akka.actor.BootstrapSetup
+import akka.actor.typed.internal.BehaviorImpl
 import akka.actor.typed.receptionist.Receptionist
 import akka.event.typed.EventStream
 

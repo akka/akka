@@ -8,7 +8,7 @@ import scala.util.control.NoStackTrace
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
 import akka.actor.{ InvalidMessageException, Props }
 import akka.actor.typed.scaladsl.Actor
-import akka.{ NotUsed, actor ⇒ untyped }
+import akka.{ Done, NotUsed, actor ⇒ untyped }
 import akka.testkit._
 import akka.actor.typed.Behavior.UntypedBehavior
 
@@ -172,9 +172,15 @@ class AdapterSpec extends AkkaSpec {
 
     "not crash if guardian is stopped very quickly" in {
       for { _ ← 0 to 10 } {
-        var system: akka.actor.typed.ActorSystem[NotUsed] = null
+        var system: akka.actor.typed.ActorSystem[Done] = null
         try {
-          system = ActorSystem.create(Actor.deferred[NotUsed](ctx ⇒ Behavior.stopped[NotUsed]), "AdapterSpec-stopping-guardian-2")
+          system = ActorSystem.create(Actor.immutable[Done] { (ctx, msg) ⇒
+            ctx.self ! Done
+            msg match {
+              case Done ⇒ Actor.stopped
+            }
+
+          }, "AdapterSpec-stopping-guardian-2")
 
         } finally {
           if (system != null) Await.result(system.terminate(), remainingOrDefault)

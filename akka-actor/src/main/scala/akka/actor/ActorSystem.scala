@@ -800,6 +800,7 @@ private[akka] class ActorSystemImpl(
     eventStream.startUnsubscriber()
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
+    provider.initDone()
     this
   } catch {
     case NonFatal(e) ⇒
