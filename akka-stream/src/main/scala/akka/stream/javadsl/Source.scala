@@ -28,6 +28,7 @@ import java.util.concurrent.CompletableFuture
 import akka.annotation.InternalApi
 
 import scala.compat.java8.FutureConverters._
+import scala.reflect.ClassTag
 
 /** Java API */
 object Source {
@@ -1283,6 +1284,24 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def collect[T](pf: PartialFunction[Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.collect(pf))
+
+  /**
+   * Transform this stream by testing the type of each of the elements
+   * on which the element is an instance of the provided type as they pass through this processing step.
+   * Non-matching elements are filtered out.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the element is an instance of the provided type
+   *
+   * '''Backpressures when''' the element is an instance of the provided type and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def collectType[T](clazz: Class[T]): javadsl.Source[T, Mat] =
+    new Source(delegate.collectType[T](ClassTag[T](clazz)))
 
   /**
    * Chunk up this stream into groups of the given size, with the last group
