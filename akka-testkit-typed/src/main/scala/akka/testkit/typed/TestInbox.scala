@@ -14,9 +14,8 @@ import scala.collection.immutable
 
 /**
  * Utility for use as an [[ActorRef]] when synchronously testing [[akka.actor.typed.Behavior]]
- * to be used along with [[BehaviorTestkit]].
- *
- * See [[akka.testkit.typed.scaladsl.TestProbe]] for asynchronous testing.
+ * to be used along with [[BehaviorTestkit]]. If you plan to use a real [[akka.actor.typed.ActorSystem]]
+ * then use [[akka.testkit.typed.scaladsl.TestProbe]] for asynchronous testing.
  */
 @ApiMayChange
 class TestInbox[T](name: String) {
