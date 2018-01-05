@@ -773,6 +773,23 @@ value is passed downstream. Can often replace `filter` followed by `map` to achi
 
 ---------------------------------------------------------------
 
+### collectType 
+
+Transform this stream by testing the type of each of the elements on which the element is an instance of 
+the provided type as they pass through this processing step. Non-matching elements are filtered out.
+
+Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+
+'''Emits when''' the element is an instance of the provided type
+
+'''Backpressures when''' the element is an instance of the provided type and downstream backpressures
+
+'''Completes when''' upstream completes
+
+'''Cancels when''' downstream cancels
+
+---------------------------------------------------------------
+
 ### grouped
 
 Accumulate incoming events until the specified number of elements have been accumulated and then pass the collection of

@@ -3,6 +3,8 @@
  */
 package akka.stream.scaladsl
 
+import java.util.concurrent.ThreadLocalRandom
+
 import akka.NotUsed
 import akka.actor._
 import akka.stream.Supervision._
@@ -16,6 +18,7 @@ import akka.testkit.{ EventFilter, TestDuration }
 import com.typesafe.config.ConfigFactory
 import org.reactivestreams.{ Publisher, Subscriber }
 import org.scalatest.concurrent.ScalaFutures
+
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -25,7 +28,11 @@ import akka.stream.impl.fusing.GraphInterpreterShell
 object FlowSpec {
   class Fruit
   class Apple extends Fruit
-  val apples = () ⇒ Iterator.continually(new Apple)
+  class Orange extends Fruit
+  val fruits = () ⇒ new Iterator[Fruit] {
+    override def hasNext: Boolean = true
+    override def next(): Fruit = if (ThreadLocalRandom.current().nextBoolean()) new Apple else new Orange
+  }
 
 }
 
@@ -252,11 +259,11 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     }
 
     "be covariant" in {
-      val f1: Source[Fruit, _] = Source.fromIterator[Fruit](apples)
-      val p1: Publisher[Fruit] = Source.fromIterator[Fruit](apples).runWith(Sink.asPublisher(false))
-      val f2: SubFlow[Fruit, _, Source[Fruit, NotUsed]#Repr, _] = Source.fromIterator[Fruit](apples).splitWhen(_ ⇒ true)
-      val f3: SubFlow[Fruit, _, Source[Fruit, NotUsed]#Repr, _] = Source.fromIterator[Fruit](apples).groupBy(2, _ ⇒ true)
-      val f4: Source[(immutable.Seq[Fruit], Source[Fruit, _]), _] = Source.fromIterator[Fruit](apples).prefixAndTail(1)
+      val f1: Source[Fruit, _] = Source.fromIterator[Fruit](fruits)
+      val p1: Publisher[Fruit] = Source.fromIterator[Fruit](fruits).runWith(Sink.asPublisher(false))
+      val f2: SubFlow[Fruit, _, Source[Fruit, NotUsed]#Repr, _] = Source.fromIterator[Fruit](fruits).splitWhen(_ ⇒ true)
+      val f3: SubFlow[Fruit, _, Source[Fruit, NotUsed]#Repr, _] = Source.fromIterator[Fruit](fruits).groupBy(2, _ ⇒ true)
+      val f4: Source[(immutable.Seq[Fruit], Source[Fruit, _]), _] = Source.fromIterator[Fruit](fruits).prefixAndTail(1)
       val d1: SubFlow[Fruit, _, Flow[String, Fruit, NotUsed]#Repr, _] = Flow[String].map(_ ⇒ new Apple).splitWhen(_ ⇒ true)
       val d2: SubFlow[Fruit, _, Flow[String, Fruit, NotUsed]#Repr, _] = Flow[String].map(_ ⇒ new Apple).groupBy(2, _ ⇒ true)
       val d3: Flow[String, (immutable.Seq[Apple], Source[Fruit, _]), _] = Flow[String].map(_ ⇒ new Apple).prefixAndTail(1)
