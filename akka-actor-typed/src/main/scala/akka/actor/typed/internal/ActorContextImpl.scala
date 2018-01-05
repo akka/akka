@@ -89,7 +89,7 @@ import scala.util.{ Failure, Success, Try }
   override def ask[Req, Res](
     otherActor:            ActorRef[Req],
     responseClass:         Class[Res],
-    createMessage:         JFunction[ActorRef[Req], Req],
+    createMessage:         JFunction[ActorRef[Res], Req],
     responseToOwnProtocol: JFunction[Res, T],
     failureToOwnProtocol:  JFunction[Throwable, T],
     responseTimeout:       Timeout
