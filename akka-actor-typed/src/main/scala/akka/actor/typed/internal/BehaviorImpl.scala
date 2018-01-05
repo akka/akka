@@ -22,7 +22,7 @@ import scala.annotation.tailrec
   private def nullFun[T] = _nullFun.asInstanceOf[Any ⇒ T]
 
   implicit class ContextAs[T](val ctx: AC[T]) extends AnyVal {
-    def as[U] = ctx.asInstanceOf[AC[U]]
+    def as[U]: AC[U] = ctx.asInstanceOf[AC[U]]
   }
 
   def widened[T, U](behavior: Behavior[T], matcher: PartialFunction[U, T]): Behavior[U] = {
@@ -109,12 +109,12 @@ import scala.annotation.tailrec
    * different than the incoming message).
    */
   def intercept[T, U <: Any: ClassTag](
-    beforeMessage:  Function2[TAC[U], U, T],
-    beforeSignal:   Function2[TAC[T], Signal, Boolean],
-    afterMessage:   Function3[TAC[T], T, Behavior[T], Behavior[T]],
-    afterSignal:    Function3[TAC[T], Signal, Behavior[T], Behavior[T]],
-    behavior:       Behavior[T],
-    toStringPrefix: String                                              = "Intercept"): Behavior[T] = {
+                                        beforeMessage:  (TAC[U], U) => T,
+                                        beforeSignal:   (TAC[T], Signal) => Boolean,
+                                        afterMessage:   (TAC[T], T, Behavior[T]) => Behavior[T],
+                                        afterSignal:    (TAC[T], Signal, Behavior[T]) => Behavior[T],
+                                        behavior:       Behavior[T],
+                                        toStringPrefix: String                                              = "Intercept"): Behavior[T] = {
     behavior match {
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
@@ -128,12 +128,12 @@ import scala.annotation.tailrec
   }
 
   private final case class Intercept[T, U <: Any: ClassTag](
-    beforeOnMessage: Function2[TAC[U], U, T],
-    beforeOnSignal:  Function2[TAC[T], Signal, Boolean],
-    afterMessage:    Function3[TAC[T], T, Behavior[T], Behavior[T]],
-    afterSignal:     Function3[TAC[T], Signal, Behavior[T], Behavior[T]],
-    behavior:        Behavior[T],
-    toStringPrefix:  String                                              = "Intercept") extends ExtensibleBehavior[T] {
+                                                             beforeOnMessage: (TAC[U], U) => T,
+                                                             beforeOnSignal:  (TAC[T], Signal) => Boolean,
+                                                             afterMessage:    (TAC[T], T, Behavior[T]) => Behavior[T],
+                                                             afterSignal:     (TAC[T], Signal, Behavior[T]) => Behavior[T],
+                                                             behavior:        Behavior[T],
+                                                             toStringPrefix:  String                                              = "Intercept") extends ExtensibleBehavior[T] {
 
     @tailrec
     private def canonical(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
