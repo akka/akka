@@ -8,10 +8,10 @@ import com.typesafe.config.Config
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-
-import akka.actor.{ Cancellable, Scheduler }
+import akka.actor.Cancellable
+import akka.actor.Scheduler
 import akka.event.LoggingAdapter
 
 /**
@@ -38,41 +38,52 @@ class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: Thre
     schedule(delay, None, runnable)
 
   /**
-   * Advance the clock by the specified duration.
+   * Advance the clock by the specified duration, executing all outstanding jobs on the calling thread before returning.
    *
    * We will not add a dilation factor to this amount, since the scheduler API also does not apply dilation.
    * If you want the amount of time passed to be dilated, apply the dilation before passing the delay to
    * this method.
    */
   def timePasses(amount: FiniteDuration) = {
+    // Give dispatchers time to clear :(
+    Thread.sleep(10)
+
     val newTime = currentTime.get + amount.toMillis
+    log.debug(s"Time proceeds from ${currentTime.get} to $newTime, currently scheduled for this period:")
+    scheduledTasks(newTime).foreach(item ⇒
+      log.debug(s"- $item")
+    )
     executeTasks(newTime)
     currentTime.set(newTime)
   }
 
-  @tailrec
-  private[testkit] final def executeTasks(runTo: Long): Unit = {
+  private def scheduledTasks(runTo: Long): Seq[Item] =
     scheduled
-      .keySet
+      .keySet()
       .asScala
       .filter(_.time <= runTo)
       .toList
       .sortBy(_.time)
-      .headOption match {
-        case Some(task) ⇒
-          currentTime.set(task.time)
-          task.runnable.run()
-          scheduled.remove(task)
-          task.interval.foreach(i ⇒ scheduled.put(task.copy(time = task.time + i.toMillis), ()))
 
-          // running the runnable might have scheduled new events
-          executeTasks(runTo)
-        case _ ⇒ // Done
-      }
+  @tailrec
+  private[testkit] final def executeTasks(runTo: Long): Unit = {
+    scheduledTasks(runTo).headOption match {
+      case Some(task) ⇒
+        currentTime.set(task.time)
+        task.runnable.run()
+        scheduled.remove(task)
+        task.interval.foreach(i ⇒ scheduled.put(task.copy(time = task.time + i.toMillis), ()))
+
+        // running the runnable might have scheduled new events
+        executeTasks(runTo)
+      case _ ⇒ // Done
+    }
   }
 
   private def schedule(initialDelay: FiniteDuration, interval: Option[FiniteDuration], runnable: Runnable): Cancellable = {
-    val item = Item(currentTime.get + initialDelay.toMillis, interval, runnable)
+    val firstTime = currentTime.get + initialDelay.toMillis
+    val item = Item(firstTime, interval, runnable)
+    log.debug(s"Scheduled item for $firstTime: $item")
     scheduled.put(item, ())
 
     if (initialDelay == Duration.Zero)

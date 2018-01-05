@@ -191,6 +191,8 @@ Making such tests more reliable by using generous timeouts make the tests take a
 
 For such situations, we provide a scheduler where you can manually, explicitly advance the clock.
 
-// TODO java example
 Scala
 :   @@snip [ManualTimerSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/akka/actor/typed/ManualTimerSpec.scala) { #manual-scheduling-simple }
+
+Java
+:   @@snip [ManualTimerTest.scala]($akka$/akka-actor-typed-tests/src/test/java/akka/actor/typed/ManualTimerTest.java) { #manual-scheduling-simple }
