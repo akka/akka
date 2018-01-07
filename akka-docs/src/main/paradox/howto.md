@@ -124,6 +124,8 @@ The pattern is described [Discovering Message Flows in Actor System with the Spi
 
 See @ref:[Actor Timers](actors.md#actors-timers)
 
+@@@ div { .group-java }
+
 ## Single-Use Actor Trees with High-Level Error Reporting
 
 *Contributed by: Rick Latrine*
