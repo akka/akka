@@ -5,7 +5,6 @@
 package akka.http.scaladsl.server.directives
 
 import java.io.File
-import java.nio.file.Files
 
 import akka.NotUsed
 import akka.http.scaladsl.model._
@@ -45,9 +44,9 @@ class FileUploadDirectivesSpec extends RoutingSpec {
               complete(info.toString)
           }
         } ~> check {
-          file.isDefined === true
-          responseAs[String] === FileInfo("fieldName", "age.xml", ContentTypes.`text/xml(UTF-8)`).toString
-          read(file.get) === xml
+          file.isDefined shouldEqual true
+          responseAs[String] shouldEqual FileInfo("fieldName", "age.xml", ContentTypes.`text/xml(UTF-8)`).toString
+          read(file.get) shouldEqual xml
         }
       } finally {
         file.foreach(_.delete())
@@ -73,9 +72,9 @@ class FileUploadDirectivesSpec extends RoutingSpec {
             storeUploadedFile("fieldName", tempDest) { (info, tmpFile) ⇒
               complete(info.toString)
             } ~> check {
-              file.isDefined === true
-              responseAs[String] === FileInfo("fieldName", "age.xml", ContentTypes.`text/xml(UTF-8)`).toString
-              read(file.get) === data
+              file.isDefined shouldEqual true
+              responseAs[String] shouldEqual FileInfo("fieldName", "age.xml", ContentTypes.`text/xml(UTF-8)`).toString
+              read(file.get) shouldEqual data
             }
         } finally {
           file.foreach(_.delete())
@@ -122,8 +121,8 @@ class FileUploadDirectivesSpec extends RoutingSpec {
             }
           } ~> check {
             val response = responseAs[String]
-            response === files.map(read).mkString
-            response === txt + xml
+            response shouldEqual files.map(read).mkString
+            response shouldEqual txt + xml
           }
         } finally {
           files.foreach(_.delete())
@@ -134,11 +133,11 @@ class FileUploadDirectivesSpec extends RoutingSpec {
       "strict",
       Multipart.FormData(
         Multipart.FormData.BodyPart.Strict(
-          "field1",
+          "fieldName",
           HttpEntity(ContentTypes.`text/plain(UTF-8)`, txt),
           Map("filename" → "age.txt")),
         Multipart.FormData.BodyPart.Strict(
-          "field1",
+          "fieldName",
           HttpEntity(ContentTypes.`text/xml(UTF-8)`, xml),
           Map("filename" → "age.xml"))))
 
@@ -146,11 +145,11 @@ class FileUploadDirectivesSpec extends RoutingSpec {
       "streamed",
       Multipart.FormData(
         Multipart.FormData.BodyPart(
-          "field1",
+          "fieldName",
           HttpEntity.IndefiniteLength(ContentTypes.`text/plain(UTF-8)`, inChunks(txt)),
           Map("filename" → "age.txt")),
         Multipart.FormData.BodyPart(
-          "field1",
+          "fieldName",
           HttpEntity.IndefiniteLength(ContentTypes.`text/xml(UTF-8)`, inChunks(xml)),
           Map("filename" → "age.xml"))))
   }
@@ -234,7 +233,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
           Map("filename" → "data1.txt")))
 
       Post("/", multipartForm) ~> route ~> check {
-        rejection === MissingFormFieldRejection("missing")
+        rejection shouldEqual MissingFormFieldRejection("missing")
       }
 
     }
@@ -336,7 +335,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
           Map("filename" → "data1.txt")))
 
       Post("/", multipartForm) ~> route ~> check {
-        rejection === MissingFormFieldRejection("missing")
+        rejection shouldEqual MissingFormFieldRejection("missing")
       }
 
     }
@@ -344,13 +343,11 @@ class FileUploadDirectivesSpec extends RoutingSpec {
   }
 
   private def read(file: File): String = {
-    val in = Files.newInputStream(file.toPath)
+    val source = scala.io.Source.fromFile(file, "UTF-8")
     try {
-      val buffer = new Array[Byte](1024)
-      in.read(buffer)
-      new String(buffer, "UTF-8")
+      source.mkString
     } finally {
-      in.close()
+      source.close()
     }
   }
 

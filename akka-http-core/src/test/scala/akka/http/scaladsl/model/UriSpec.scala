@@ -762,8 +762,8 @@ class UriSpec extends WordSpec with Matchers {
     }
 
     "properly render as HTTP request target origin forms" in {
-      Uri("http://example.com/foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString === "/foo/bar?query=1"
-      Uri("http://example.com//foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString === "//foo/bar?query=1"
+      Uri("http://example.com/foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString shouldEqual "/foo/bar?query=1"
+      Uri("http://example.com//foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString shouldEqual "//foo/bar?query=1"
     }
 
     "survive parsing a URI with thousands of path segments" in {

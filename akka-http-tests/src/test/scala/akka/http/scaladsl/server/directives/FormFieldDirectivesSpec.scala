@@ -144,22 +144,22 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     "extract an empty Iterable when the parameter is absent" in {
       Post("/", FormData("age" → "42")) ~> {
         formField('hobby.*) { echoComplete }
-      } ~> check { responseAs[String] === "List()" }
+      } ~> check { responseAs[String] shouldEqual "Vector()" }
     }
     "extract all occurrences into an Iterable when parameter is present" in {
       Post("/", FormData("age" → "42", "hobby" → "cooking", "hobby" → "reading")) ~> {
         formField('hobby.*) { echoComplete }
-      } ~> check { responseAs[String] === "List(cooking, reading)" }
+      } ~> check { responseAs[String] shouldEqual "Vector(cooking, reading)" }
     }
     "extract as Iterable[Int]" in {
       Post("/", FormData("age" → "42", "number" → "3", "number" → "5")) ~> {
         formField('number.as[Int].*) { echoComplete }
-      } ~> check { responseAs[String] === "List(3, 5)" }
+      } ~> check { responseAs[String] shouldEqual "Vector(3, 5)" }
     }
     "extract as Iterable[Int] with an explicit deserializer" in {
       Post("/", FormData("age" → "42", "number" → "3", "number" → "A")) ~> {
         formField('number.as(HexInt).*) { echoComplete }
-      } ~> check { responseAs[String] === "List(3, 10)" }
+      } ~> check { responseAs[String] shouldEqual "Vector(3, 10)" }
     }
   }
 

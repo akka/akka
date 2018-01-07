@@ -128,15 +128,15 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
 
     // tests:
     Get("/?color=blue") ~> route ~> check {
-      responseAs[String] === "The color is 'blue' and there are no cities."
+      responseAs[String] shouldEqual "The color is 'blue' and there are no cities."
     }
 
     Get("/?color=blue&city=Chicago") ~> Route.seal(route) ~> check {
-      responseAs[String] === "The color is 'blue' and the city is Chicago."
+      responseAs[String] shouldEqual "The color is 'blue' and the city is Chicago."
     }
 
     Get("/?color=blue&city=Chicago&city=Boston") ~> Route.seal(route) ~> check {
-      responseAs[String] === "The color is 'blue' and the cities are Chicago, Boston."
+      responseAs[String] shouldEqual "The color is 'blue' and the cities are Boston, Chicago."
     }
     //#repeated
   }
@@ -153,15 +153,15 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
 
     // tests:
     Get("/?color=blue") ~> route ~> check {
-      responseAs[String] === "The color is 'blue' and there are no distances."
+      responseAs[String] shouldEqual "The color is 'blue' and there are no distances."
     }
 
     Get("/?color=blue&distance=5") ~> Route.seal(route) ~> check {
-      responseAs[String] === "The color is 'blue' and the distance is 5."
+      responseAs[String] shouldEqual "The color is 'blue' and the distance is 5."
     }
 
     Get("/?color=blue&distance=5&distance=14") ~> Route.seal(route) ~> check {
-      responseAs[String] === "The color is 'blue' and the distances are 5, 14."
+      responseAs[String] shouldEqual "The color is 'blue' and the distances are 14, 5."
     }
     //#mapped-repeated
   }
