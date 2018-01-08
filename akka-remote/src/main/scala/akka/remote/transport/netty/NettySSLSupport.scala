@@ -67,33 +67,40 @@ private[akka] class SSLSettings(config: Config, setup: ActorSystemSetup) {
         keyStore
       }
 
-      def create[T](trustManagerFactory: T)(initializer: (T) ⇒ Unit) = {
-        initializer(trustManagerFactory)
-        trustManagerFactory
-      }
-
       def createTrustManagers = {
         val trustManagerFactory = trustManagerFactorySetup match {
           case None ⇒
-            create(TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm))(_.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword)))
-          case Some(TrustManagerFactorySetup(provider, None)) ⇒
-            create(TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm, provider))(_.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword)))
-          case Some(TrustManagerFactorySetup(provider, Some(trustManagerFactoryParameters))) ⇒
-            create(TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm, provider))(_.init(trustManagerFactoryParameters))
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+          case Some(TrustManagerFactorySetup(provider, _)) ⇒
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm, provider)
         }
+
+        trustManagerFactorySetup match {
+          case Some(TrustManagerFactorySetup(_, Some(trustManagerFactoryParameters))) ⇒
+            trustManagerFactory.init(trustManagerFactoryParameters)
+          case _ ⇒
+            trustManagerFactory.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword))
+        }
+
         trustManagerFactory.getTrustManagers
       }
 
       def createKeyManagers = {
-        val factory = keyManagerFactorySetup match {
+        val keyManagerFactory = keyManagerFactorySetup match {
           case None ⇒
-            create(KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm))(_.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray))
-          case Some(KeyManagerFactorySetup(provider, None)) ⇒
-            create(KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm, provider))(_.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray))
-          case Some(KeyManagerFactorySetup(provider, Some(keyManagerFactoryParameters))) ⇒
-            create(KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm, provider))(_.init(keyManagerFactoryParameters))
+            KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
+          case Some(KeyManagerFactorySetup(provider, _)) ⇒
+            KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm, provider)
         }
-        factory.getKeyManagers
+
+        keyManagerFactorySetup match {
+          case Some(KeyManagerFactorySetup(_, Some(keyManagerFactoryParameters))) ⇒
+            keyManagerFactory.init(keyManagerFactoryParameters)
+          case _ ⇒
+            keyManagerFactory.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray)
+        }
+
+        keyManagerFactory.getKeyManagers
       }
 
       val keyManagers = createKeyManagers
