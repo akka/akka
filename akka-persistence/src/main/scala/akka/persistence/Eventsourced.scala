@@ -162,7 +162,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
     log.warning(
       "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
-      event.getClass.getName, seqNr, persistenceId, cause.getMessage)
+      event.getClass.getName, seqNr, persistenceId,
+      s"[${cause.getMessage}]\n${Logging.stackTraceFor(cause)}")
   }
 
   private def stashInternally(currMsg: Any): Unit =
