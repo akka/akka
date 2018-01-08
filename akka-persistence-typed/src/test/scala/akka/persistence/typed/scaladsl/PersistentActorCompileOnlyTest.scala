@@ -29,13 +29,13 @@ object PersistentActorCompileOnlyTest {
 
     //#command-handler
     val commandHandler: CommandHandler[SimpleCommand, SimpleEvent, ExampleState] =
-      CommandHandler.byCommand {
+      CommandHandler.command {
         case Cmd(data) ⇒ Effect.persist(Evt(data))
       }
     //#command-handler
 
     //#event-handler
-    val eventHandler: EventHandler[ExampleState, SimpleEvent] = {
+    val eventHandler: (ExampleState, SimpleEvent) ⇒ (ExampleState) = {
       case (state, Evt(data)) ⇒ state.copy(data :: state.events)
     }
     //#event-handler
@@ -67,7 +67,7 @@ object PersistentActorCompileOnlyTest {
 
       initialState = ExampleState(Nil),
 
-      commandHandler = CommandHandler.byCommand {
+      commandHandler = CommandHandler.command {
         case Cmd(data, sender) ⇒
           Effect.persist(Evt(data))
             .andThen {
@@ -153,13 +153,13 @@ object PersistentActorCompileOnlyTest {
       persistenceId = "myPersistenceId",
       initialState = Happy,
       commandHandler = CommandHandler.byState {
-        case Happy ⇒ CommandHandler.byCommand {
+        case Happy ⇒ CommandHandler.command {
           case Greet(whom) ⇒
             println(s"Super happy to meet you $whom!")
             Effect.none
           case MoodSwing ⇒ Effect.persist(MoodChanged(Sad))
         }
-        case Sad ⇒ CommandHandler.byCommand {
+        case Sad ⇒ CommandHandler.command {
           case Greet(whom) ⇒
             println(s"hi $whom")
             Effect.none
@@ -193,7 +193,7 @@ object PersistentActorCompileOnlyTest {
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "asdf",
       initialState = State(Nil),
-      commandHandler = CommandHandler.byCommand {
+      commandHandler = CommandHandler.command {
         case RegisterTask(task) ⇒ Effect.persist(TaskRegistered(task))
         case TaskDone(task)     ⇒ Effect.persist(TaskRemoved(task))
       },
@@ -381,7 +381,7 @@ object PersistentActorCompileOnlyTest {
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "myPersistenceId",
       initialState = new State,
-      commandHandler = CommandHandler.byCommand {
+      commandHandler = CommandHandler.command {
         case Enough ⇒
           Effect.persist(Done)
             .andThen(println("yay"))

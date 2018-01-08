@@ -18,7 +18,7 @@ object PersistentActor {
     persistenceId:  String,
     initialState:   State,
     commandHandler: CommandHandler[Command, Event, State],
-    eventHandler:   EventHandler[State, Event]): PersistentBehavior[Command, Event, State] =
+    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, eventHandler)
 
   /**
@@ -32,7 +32,7 @@ object PersistentActor {
     persistenceIdFromActorName: String ⇒ String,
     initialState:               State,
     commandHandler:             CommandHandler[Command, Event, State],
-    eventHandler:               EventHandler[State, Event]): PersistentBehavior[Command, Event, State] =
+    eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
       recoveryCompleted = (_, _) ⇒ ())
 
@@ -143,7 +143,6 @@ object PersistentActor {
   @InternalApi
   private[akka] case object Unhandled extends Effect[Nothing, Nothing]
 
-  type EventHandler[State, Event] = (State, Event) ⇒ State
   type CommandHandler[Command, Event, State] = (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
 
   /**
@@ -159,7 +158,7 @@ object PersistentActor {
      *
      * @see [[Effect]] for possible effects of a command.
      */
-    def byCommand[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): CommandHandler[Command, Event, State] =
+    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): CommandHandler[Command, Event, State] =
       (_, _, cmd) ⇒ commandHandler(cmd)
 
     /**
@@ -187,7 +186,7 @@ class PersistentBehavior[Command, Event, State](
   @InternalApi private[akka] val persistenceIdFromActorName: String ⇒ String,
   val initialState:                                          State,
   val commandHandler:                                        PersistentActor.CommandHandler[Command, Event, State],
-  val eventHandler:                                          PersistentActor.EventHandler[State, Event],
+  val eventHandler:                                          (State, Event) ⇒ State,
   val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit) extends UntypedBehavior[Command] {
   import PersistentActor._
 
@@ -215,7 +214,7 @@ class PersistentBehavior[Command, Event, State](
     persistenceIdFromActorName: String ⇒ String                       = persistenceIdFromActorName,
     initialState:               State                                 = initialState,
     commandHandler:             CommandHandler[Command, Event, State] = commandHandler,
-    eventHandler:               EventHandler[State, Event]            = eventHandler,
+    eventHandler:               (State, Event) ⇒ State                = eventHandler,
     recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted)
 }
