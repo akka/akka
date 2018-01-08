@@ -102,6 +102,32 @@ message DeployData {
  ******************************************/
 
 /**
+ * Defines a remote address, for classic remoting.
+ *
+ * Note that while the same message definition exists in cluster, as well as an updated one exists for Artery.
+ * This encoding will ONLY be used when an `akka.actor.Address` is attempted to be serialized *directly*.
+ */
+message ClassicAddress {
+  // ... since `Address` is already taken in this package by Artery's Address (which changes order slightly)
+  required string system = 1;
+  required string hostname = 2;
+  required uint32 port = 3;
+  optional string protocol = 4;
+}
+
+/**
+ * Defines a 'raw' remote address with uid.
+ * This encoding will ONLY be used when an `akka.remote.UniqueAddress` is attempted to be serialized *directly*.
+ */
+message ClassicUniqueAddress {
+  // ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
+  required ClassicAddress address = 1;
+  required uint32 uid = 2;
+  // 64 bit uids but with backward wire compatibility
+  optional uint32 uid2 = 3;
+}
+
+/**
  * Message format of Akka Protocol.
  * Message contains either a payload or an instruction.
  */
@@ -139,6 +165,7 @@ enum CommandType {
 /**
  * Defines a remote address.
  */
+// FIXME can this
 message AddressData {
   required string system = 1;
   required string hostname = 2;

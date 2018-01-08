@@ -11,8 +11,9 @@ import java.util.concurrent.TimeUnit
 import akka.Done
 import akka.actor._
 import akka.dispatch.Dispatchers
+import akka.remote.WireFormats.ClassicAddress
 import akka.remote.routing.RemoteRouterConfig
-import akka.remote.{ ContainerFormats, RemoteScope, RemoteWatcher, WireFormats }
+import akka.remote._
 import akka.routing._
 import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
 import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
@@ -48,6 +49,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case hbrsp: RemoteWatcher.HeartbeatRsp    ⇒ serializeHeartbeatRsp(hbrsp)
     case rs: RemoteScope                      ⇒ serializeRemoteScope(rs)
     case LocalScope                           ⇒ ParameterlessSerializedMessage
+    case a: Address                           ⇒ serializeClassicAddress(a)
+    case u: UniqueAddress                     ⇒ serializeClassicUniqueAddress(u)
     case c: Config                            ⇒ serializeConfig(c)
     case dr: DefaultResizer                   ⇒ serializeDefaultResizer(dr)
     case fc: FromConfig                       ⇒ serializeFromConfig(fc)
@@ -134,6 +137,26 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private def serializeConfig(c: Config): Array[Byte] = {
     c.root.render(ConfigRenderOptions.concise()).getBytes(StandardCharsets.UTF_8)
   }
+
+  private def protoForClassicAddress(address: Address): ClassicAddress.Builder =
+    address match {
+      case Address(protocol, actorSystem, Some(host), Some(port)) ⇒
+        WireFormats.ClassicAddress.newBuilder()
+          .setSystem(actorSystem)
+          .setHostname(host)
+          .setPort(port)
+          .setProtocol(protocol)
+      case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
+    }
+  private def serializeClassicAddress(address: Address): Array[Byte] =
+    protoForClassicAddress(address).build().toByteArray
+
+  private def serializeClassicUniqueAddress(uniqueAddress: UniqueAddress): Array[Byte] =
+    WireFormats.ClassicUniqueAddress.newBuilder()
+      .setUid(uniqueAddress.uid.toInt)
+      .setUid2((uniqueAddress.uid >> 32).toInt)
+      .setAddress(protoForClassicAddress(uniqueAddress.address))
+      .build().toByteArray
 
   private def serializeDefaultResizer(dr: DefaultResizer): Array[Byte] = {
     val builder = WireFormats.DefaultResizer.newBuilder()
@@ -256,6 +279,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val KillManifest = "K"
   private val RemoteWatcherHBManifest = "RWHB"
   private val DoneManifest = "DONE"
+  private val AddressManifest = "AD"
+  private val UniqueAddressManifest = "UD"
   private val RemoteWatcherHBRespManifest = "RWHR"
   private val ActorInitializationExceptionManifest = "AIEX"
   private val LocalScopeManifest = "LS"
@@ -285,6 +310,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     KillManifest → ((_) ⇒ Kill),
     RemoteWatcherHBManifest → ((_) ⇒ RemoteWatcher.Heartbeat),
     DoneManifest → ((_) ⇒ Done),
+    AddressManifest → deserializeAddress,
+    UniqueAddressManifest → deserializeUniqueAddress,
     RemoteWatcherHBRespManifest → deserializeHeartbeatRsp,
     ActorInitializationExceptionManifest → deserializeActorInitializationException,
     LocalScopeManifest → ((_) ⇒ LocalScope),
@@ -316,6 +343,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       case Kill                               ⇒ KillManifest
       case RemoteWatcher.Heartbeat            ⇒ RemoteWatcherHBManifest
       case Done                               ⇒ DoneManifest
+      case _: Address                         ⇒ AddressManifest
+      case _: UniqueAddress                   ⇒ UniqueAddressManifest
       case _: RemoteWatcher.HeartbeatRsp      ⇒ RemoteWatcherHBRespManifest
       case LocalScope                         ⇒ LocalScopeManifest
       case _: RemoteScope                     ⇒ RemoteScopeManifest
@@ -386,6 +415,33 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   private def deserializeStatusFailure(bytes: Array[Byte]): Status.Failure =
     Status.Failure(payloadSupport.deserializePayload(ContainerFormats.Payload.parseFrom(bytes)).asInstanceOf[Throwable])
+
+  private def deserializeAddress(bytes: Array[Byte]): Address =
+    addressFromProto(WireFormats.ClassicAddress.parseFrom(bytes))
+
+  private def addressFromProto(a: WireFormats.ClassicAddress) = {
+    Address(
+      a.getProtocol,
+      a.getSystem,
+      // technicaly the presence of hostname and port are guaranteed, see our serializeClassicAddress
+      if (a.hasHostname) Some(a.getHostname) else None,
+      if (a.hasPort) Some(a.getPort) else None
+    )
+  }
+
+  private def deserializeUniqueAddress(bytes: Array[Byte]): UniqueAddress = {
+    val u = WireFormats.ClassicUniqueAddress.parseFrom(bytes)
+    UniqueAddress(
+      addressFromProto(u.getAddress),
+      if (u.hasUid2) {
+        // new remote node join the two parts of the long uid back
+        (u.getUid2.toLong << 32) | (u.getUid & 0xFFFFFFFFL)
+      } else {
+        // old remote node
+        u.getUid.toLong
+      }
+    )
+  }
 
   private def deserializeHeartbeatRsp(bytes: Array[Byte]): RemoteWatcher.HeartbeatRsp = {
     RemoteWatcher.HeartbeatRsp(ContainerFormats.WatcherHeartbeatResponse.parseFrom(bytes).getUid.toInt)
