@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 import akka.Done
 import akka.actor._
 import akka.dispatch.Dispatchers
-import akka.remote.WireFormats.ClassicAddress
+import akka.remote.WireFormats.AddressData
 import akka.remote.routing.RemoteRouterConfig
 import akka.remote._
 import akka.routing._
@@ -49,7 +49,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case hbrsp: RemoteWatcher.HeartbeatRsp    ⇒ serializeHeartbeatRsp(hbrsp)
     case rs: RemoteScope                      ⇒ serializeRemoteScope(rs)
     case LocalScope                           ⇒ ParameterlessSerializedMessage
-    case a: Address                           ⇒ serializeClassicAddress(a)
+    case a: Address                           ⇒ serializeAddressData(a)
     case u: UniqueAddress                     ⇒ serializeClassicUniqueAddress(u)
     case c: Config                            ⇒ serializeConfig(c)
     case dr: DefaultResizer                   ⇒ serializeDefaultResizer(dr)
@@ -138,24 +138,24 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     c.root.render(ConfigRenderOptions.concise()).getBytes(StandardCharsets.UTF_8)
   }
 
-  private def protoForClassicAddress(address: Address): ClassicAddress.Builder =
+  private def protoForAddressData(address: Address): AddressData.Builder =
     address match {
       case Address(protocol, actorSystem, Some(host), Some(port)) ⇒
-        WireFormats.ClassicAddress.newBuilder()
+        WireFormats.AddressData.newBuilder()
           .setSystem(actorSystem)
           .setHostname(host)
           .setPort(port)
           .setProtocol(protocol)
       case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
     }
-  private def serializeClassicAddress(address: Address): Array[Byte] =
-    protoForClassicAddress(address).build().toByteArray
+  private def serializeAddressData(address: Address): Array[Byte] =
+    protoForAddressData(address).build().toByteArray
 
   private def serializeClassicUniqueAddress(uniqueAddress: UniqueAddress): Array[Byte] =
     WireFormats.ClassicUniqueAddress.newBuilder()
       .setUid(uniqueAddress.uid.toInt)
       .setUid2((uniqueAddress.uid >> 32).toInt)
-      .setAddress(protoForClassicAddress(uniqueAddress.address))
+      .setAddress(protoForAddressData(uniqueAddress.address))
       .build().toByteArray
 
   private def serializeDefaultResizer(dr: DefaultResizer): Array[Byte] = {
@@ -417,13 +417,13 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     Status.Failure(payloadSupport.deserializePayload(ContainerFormats.Payload.parseFrom(bytes)).asInstanceOf[Throwable])
 
   private def deserializeAddress(bytes: Array[Byte]): Address =
-    addressFromProto(WireFormats.ClassicAddress.parseFrom(bytes))
+    addressFromProto(WireFormats.AddressData.parseFrom(bytes))
 
-  private def addressFromProto(a: WireFormats.ClassicAddress) = {
+  private def addressFromProto(a: WireFormats.AddressData) = {
     Address(
       a.getProtocol,
       a.getSystem,
-      // technicaly the presence of hostname and port are guaranteed, see our serializeClassicAddress
+      // technicaly the presence of hostname and port are guaranteed, see our serializeAddressData
       if (a.hasHostname) Some(a.getHostname) else None,
       if (a.hasPort) Some(a.getPort) else None
     )
