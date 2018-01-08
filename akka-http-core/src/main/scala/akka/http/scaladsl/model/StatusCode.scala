@@ -144,6 +144,7 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val ExpectationFailed            = reg(c(417)("Expectation Failed", "The server cannot meet the requirements of the Expect request-header field."))
   val ImATeapot                    = reg(c(418)("I'm a teapot", "The resulting entity body MAY be short and stout."))
   val EnhanceYourCalm              = reg(c(420)("Enhance Your Calm", "You are being rate-limited.")) // Twitter only
+  val MisdirectedRequest           = reg(c(421)("Misdirected Request", "The request was directed at a server that is not able to produce a response.")) // HTTP/2 only. https://tools.ietf.org/html/rfc7540#section-9.1.2
   val UnprocessableEntity          = reg(c(422)("Unprocessable Entity", "The request was well-formed but was unable to be followed due to semantic errors."))
   val Locked                       = reg(c(423)("Locked", "The resource that is being accessed is locked."))
   val FailedDependency             = reg(c(424)("Failed Dependency", "The request failed due to failure of a previous request."))

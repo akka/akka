@@ -60,6 +60,7 @@ public final class StatusCodes {
     public static final StatusCode EXPECTATION_FAILED = akka.http.scaladsl.model.StatusCodes.ExpectationFailed();
     public static final StatusCode IM_A_TEAPOT = akka.http.scaladsl.model.StatusCodes.ImATeapot();
     public static final StatusCode ENHANCE_YOUR_CALM = akka.http.scaladsl.model.StatusCodes.EnhanceYourCalm();
+    public static final StatusCode MISDIRECTED_REQUEST = akka.http.scaladsl.model.StatusCodes.MisdirectedRequest();
     public static final StatusCode UNPROCESSABLE_ENTITY = akka.http.scaladsl.model.StatusCodes.UnprocessableEntity();
     public static final StatusCode LOCKED = akka.http.scaladsl.model.StatusCodes.Locked();
     public static final StatusCode FAILED_DEPENDENCY = akka.http.scaladsl.model.StatusCodes.FailedDependency();
