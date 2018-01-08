@@ -155,6 +155,9 @@ recovery you need to take special care to perform the same state transitions wit
 Note that when using `become` from @scala[`receiveRecover`]@java[`createReceiveRecover`] it will still only use the @scala[`receiveRecover`]@java[`createReceiveRecover`]
 behavior when replaying the events. When replay is completed it will use the new behavior.
 
+Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493) by Randy Shoup. It is a short and recommended read if you're starting 
+developing Events based applications. 
+
 @@@
 
 <a id="persistence-id"></a>
