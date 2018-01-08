@@ -17,7 +17,15 @@ class CryptoServiceProviderSpec extends WordSpec with Matchers with BeforeAndAft
   private val keyStore = getClass.getClassLoader.getResource("keystore").getPath
 
   before {
-    Constants.properties.foreach(System.clearProperty)
+    clearProperties()
+  }
+
+  after {
+    clearProperties()
+  }
+
+  private def clearProperties() = {
+    Constants.Properties.foreach(System.clearProperty)
   }
 
   private val fileConfigString = {
@@ -38,7 +46,7 @@ class CryptoServiceProviderSpec extends WordSpec with Matchers with BeforeAndAft
       "succeed" in {
         createSSLSettingsAndCreateContext(None)
 
-        forAll(Constants.properties) {
+        forAll(Constants.Properties) {
           System.getProperty(_) shouldBe null
         }
       }
@@ -48,40 +56,40 @@ class CryptoServiceProviderSpec extends WordSpec with Matchers with BeforeAndAft
       "use given Provider without ManagerFactoryParameters" in {
         createSSLSettingsAndCreateContext(Some(KeyManagerFactorySetup(TestProvider, None)))
 
-        System.getProperty(Constants.keyManagerFactoryInitWithKeystore) shouldBe Constants.accessed
-        System.getProperty(Constants.keyManagerFactoryInitWithSpec) shouldBe null
+        System.getProperty(Constants.KeyManagerFactoryInitWithKeystore) shouldBe Constants.Accessed
+        System.getProperty(Constants.KeyManagerFactoryInitWithSpec) shouldBe null
 
-        System.getProperty(Constants.trustManagerFactoryInitWithKeystore) shouldBe null
-        System.getProperty(Constants.trustManagerFactoryInitWithSpec) shouldBe null
+        System.getProperty(Constants.TrustManagerFactoryInitWithKeystore) shouldBe null
+        System.getProperty(Constants.TrustManagerFactoryInitWithSpec) shouldBe null
       }
       "use given Provider with ManagerFactoryParameters" in {
         createSSLSettingsAndCreateContext(Some(KeyManagerFactorySetup(TestProvider, Some(dummyManagerFactoryParameters))))
 
-        System.getProperty(Constants.keyManagerFactoryInitWithKeystore) shouldBe null
-        System.getProperty(Constants.keyManagerFactoryInitWithSpec) shouldBe Constants.accessed
+        System.getProperty(Constants.KeyManagerFactoryInitWithKeystore) shouldBe null
+        System.getProperty(Constants.KeyManagerFactoryInitWithSpec) shouldBe Constants.Accessed
 
-        System.getProperty(Constants.trustManagerFactoryInitWithKeystore) shouldBe null
-        System.getProperty(Constants.trustManagerFactoryInitWithSpec) shouldBe null
+        System.getProperty(Constants.TrustManagerFactoryInitWithKeystore) shouldBe null
+        System.getProperty(Constants.TrustManagerFactoryInitWithSpec) shouldBe null
       }
     }
     "TrustManagerFactorySetup included" should {
       "use given Provider without ManagerFactoryParameters" in {
         createSSLSettingsAndCreateContext(Some(TrustManagerFactorySetup(TestProvider, None)))
 
-        System.getProperty(Constants.keyManagerFactoryInitWithKeystore) shouldBe null
-        System.getProperty(Constants.keyManagerFactoryInitWithSpec) shouldBe null
+        System.getProperty(Constants.KeyManagerFactoryInitWithKeystore) shouldBe null
+        System.getProperty(Constants.KeyManagerFactoryInitWithSpec) shouldBe null
 
-        System.getProperty(Constants.trustManagerFactoryInitWithKeystore) shouldBe Constants.accessed
-        System.getProperty(Constants.trustManagerFactoryInitWithSpec) shouldBe null
+        System.getProperty(Constants.TrustManagerFactoryInitWithKeystore) shouldBe Constants.Accessed
+        System.getProperty(Constants.TrustManagerFactoryInitWithSpec) shouldBe null
       }
       "use given Provider with ManagerFactoryParameters" in {
         createSSLSettingsAndCreateContext(Some(TrustManagerFactorySetup(TestProvider, Some(dummyManagerFactoryParameters))))
 
-        System.getProperty(Constants.keyManagerFactoryInitWithKeystore) shouldBe null
-        System.getProperty(Constants.keyManagerFactoryInitWithSpec) shouldBe null
+        System.getProperty(Constants.KeyManagerFactoryInitWithKeystore) shouldBe null
+        System.getProperty(Constants.KeyManagerFactoryInitWithSpec) shouldBe null
 
-        System.getProperty(Constants.trustManagerFactoryInitWithKeystore) shouldBe null
-        System.getProperty(Constants.trustManagerFactoryInitWithSpec) shouldBe Constants.accessed
+        System.getProperty(Constants.TrustManagerFactoryInitWithKeystore) shouldBe null
+        System.getProperty(Constants.TrustManagerFactoryInitWithSpec) shouldBe Constants.Accessed
       }
     }
   }
@@ -89,7 +97,7 @@ class CryptoServiceProviderSpec extends WordSpec with Matchers with BeforeAndAft
   private def createSSLSettingsAndCreateContext(setup: Option[CryptoServiceProviderSetup]) = {
     val sslSettings = new SSLSettings(
       knownFilesConfig,
-      setup.map(ActorSystemSetup.empty.and).getOrElse(ActorSystemSetup.empty)
+      ActorSystemSetup(setup.toArray: _*)
     )
     sslSettings.getOrCreateContext(NoMarkerLogging)
 
@@ -112,38 +120,38 @@ object TestProvider extends Provider("test-provider", 1.0d, "test provider") { o
 }
 
 object Constants {
-  private val namespace = "test.spy."
-  val keyManagerFactoryInitWithSpec = namespace + "key-manager-factory-init-spec"
-  val keyManagerFactoryInitWithKeystore = namespace + "key-manager-factory-init-keystore"
-  val trustManagerFactoryInitWithSpec = namespace + "trust-manager-factory-init-spec"
-  val trustManagerFactoryInitWithKeystore = namespace + "trust-manager-factory-init-keystore"
+  private val Namespace = "test.spy."
+  val KeyManagerFactoryInitWithSpec = Namespace + "key-manager-factory-init-spec"
+  val KeyManagerFactoryInitWithKeystore = Namespace + "key-manager-factory-init-keystore"
+  val TrustManagerFactoryInitWithSpec = Namespace + "trust-manager-factory-init-spec"
+  val TrustManagerFactoryInitWithKeystore = Namespace + "trust-manager-factory-init-keystore"
 
-  val properties = Seq(
-    keyManagerFactoryInitWithSpec,
-    keyManagerFactoryInitWithKeystore,
-    trustManagerFactoryInitWithSpec,
-    trustManagerFactoryInitWithKeystore
+  val Properties = Seq(
+    KeyManagerFactoryInitWithSpec,
+    KeyManagerFactoryInitWithKeystore,
+    TrustManagerFactoryInitWithSpec,
+    TrustManagerFactoryInitWithKeystore
   )
 
-  val accessed = "accessed"
+  val Accessed = "accessed"
 }
 
 class SpyKeyManagerFactorySpi extends KeyManagerFactorySpi {
   override def engineGetKeyManagers(): Array[KeyManager] = Array.empty
 
   override def engineInit(ks: KeyStore, password: Array[Char]): Unit =
-    System.setProperty(Constants.keyManagerFactoryInitWithKeystore, Constants.accessed)
+    System.setProperty(Constants.KeyManagerFactoryInitWithKeystore, Constants.Accessed)
 
   override def engineInit(spec: ManagerFactoryParameters): Unit =
-    System.setProperty(Constants.keyManagerFactoryInitWithSpec, Constants.accessed)
+    System.setProperty(Constants.KeyManagerFactoryInitWithSpec, Constants.Accessed)
 }
 
 class SpyTrustManagerFactorySpi extends TrustManagerFactorySpi {
   override def engineGetTrustManagers(): Array[TrustManager] = Array.empty
 
   override def engineInit(ks: KeyStore): Unit =
-    System.setProperty(Constants.trustManagerFactoryInitWithKeystore, Constants.accessed)
+    System.setProperty(Constants.TrustManagerFactoryInitWithKeystore, Constants.Accessed)
 
   override def engineInit(spec: ManagerFactoryParameters): Unit =
-    System.setProperty(Constants.trustManagerFactoryInitWithSpec, Constants.accessed)
+    System.setProperty(Constants.TrustManagerFactoryInitWithSpec, Constants.Accessed)
 }
