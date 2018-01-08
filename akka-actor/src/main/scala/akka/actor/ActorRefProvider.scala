@@ -74,7 +74,7 @@ trait ActorRefProvider {
   @InternalApi private[akka] def init(system: ActorSystemImpl): Unit
 
   /**
-   * INTERNAL API: Step two completed
+   * INTERNAL API: Step two of the initialization completed (see [[init]])
    */
   @InternalApi private[akka] def initDone(): Unit
 
