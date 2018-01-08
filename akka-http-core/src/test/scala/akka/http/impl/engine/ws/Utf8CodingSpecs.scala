@@ -19,7 +19,7 @@ class Utf8CodingSpecs extends FreeSpec with Matchers with PropertyChecks with Wi
   "Utf8 decoding/encoding" - {
     "work for all codepoints" in {
       def isSurrogate(cp: Int): Boolean =
-        cp >= Utf8Encoder.SurrogateFirst && cp <= 0xdfff
+        cp >= Utf8Encoder.SurrogateHighMask && cp <= 0xdfff
 
       val cps =
         Gen.choose(0, 0x10ffff)
@@ -36,7 +36,7 @@ class Utf8CodingSpecs extends FreeSpec with Matchers with PropertyChecks with Wi
 
       forAll(cps) { (cp: Int) ⇒
         val utf16 = codePointAsString(cp)
-        decodeUtf8(encodeUtf8(utf16)) === utf16
+        decodeUtf8(encodeUtf8(utf16)) shouldEqual utf16
       }
     }
   }
