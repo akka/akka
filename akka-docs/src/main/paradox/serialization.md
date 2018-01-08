@@ -47,7 +47,7 @@ to disable a default serializer, see @ref:[Disabling the Java Serializer](remoti
 
 A few types in Akka are, for backwards-compatibility reasons, still serialized by using Java serializer by default.
 You can switch them add the following binding to avoid that, which will make them serialized using protocol buffers instead.
-Refer to @ref[Rolling Updates](rolling-updates) to understand how it is possible to turn and start using these new
+Refer to @ref[Rolling Upgrades](#rolling-upgrades) to understand how it is possible to turn and start using these new
 serializers in your clustered applications.
 
 
