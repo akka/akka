@@ -13,6 +13,7 @@ import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKit, TestKitSettings
 
 import scala.util.control.NoStackTrace
 import akka.testkit.typed.scaladsl._
+import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec, fixture }
 
 object SupervisionSpec {
@@ -236,7 +237,10 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
   }
 }
 
-class SupervisionSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseString(
+  """
+    akka.loggers = [akka.testkit.TestEventListener]
+  """)) with TypedAkkaSpecWithShutdown {
 
   import SupervisionSpec._
   private val nameCounter = Iterator.from(0)
@@ -452,6 +456,29 @@ class SupervisionSpec extends TestKit with TypedAkkaSpecWithShutdown {
       spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
       probe.expectMessage(Started)
+    }
+
+    "supervise deferred factory" in {
+      val probe = TestProbe[Event]("evt")
+      @volatile var fail = true
+      @volatile var startCount = 0
+      val behv = supervise(deferred[Command] { _ ⇒
+        startCount += 1
+        if (fail) {
+          fail = false
+          throw new RuntimeException("construction failed")
+        }
+        targetBehavior(probe.ref)
+      }).onFailure[Exception](SupervisorStrategy.restart)
+
+      // FIXME support for event filters directly in the testkit
+      import scaladsl.adapter._
+      implicit val untyped = system.toUntyped
+      // EventFilter[ActorInitializationException](occurrences = 1).intercept {
+      spawn(behv)
+      // }
+      // restarted after first start failed
+      probe.expectMsg(Started)
     }
 
     "stop when exception from MutableBehavior constructor" in {
