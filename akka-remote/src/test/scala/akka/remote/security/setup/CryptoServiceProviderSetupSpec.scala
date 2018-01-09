@@ -1,13 +1,12 @@
 package akka.remote.security.setup
 
-import java.security.KeyStore
+import java.security.{ AccessController, KeyStore, PrivilegedAction, Provider }
+import java.util.Collections.{ emptyList, emptyMap }
 import javax.net.ssl._
 
 import akka.remote.security.setup.DummyKeyManagerFactorySpi.MemberDummyKeyManagerFactorySpi
 import akka.remote.security.setup.DummyTrustManagerFactorySpi.MemberDummyTrustManagerFactorySpi
 import org.scalatest.{ Matchers, WordSpec }
-
-import scala.reflect.ClassTag
 
 class CryptoServiceProviderSetupSpec extends WordSpec with Matchers {
   "KeyManagerFactorySetup" when {
@@ -68,6 +67,33 @@ class CryptoServiceProviderSetupSpec extends WordSpec with Matchers {
         exception.getMessage should include("member")
       }
     }
+    "creating a factorySetup for a provider that delegates to the given KeyManagerFactory" should {
+      "provide a Provider and ManagerFactoryParameters that can be used to instantiate a delegating KeyManagerFactory" in {
+        val delegateKeyManagerFactory = {
+          val provider = new Provider("kmf-dummy-provider", 1.0d, "KMF dummy provider") { outer ⇒
+            AccessController.doPrivileged(new PrivilegedAction[Unit] {
+              override def run(): Unit = {
+                putService(new Provider.Service(
+                  outer, "KeyManagerFactory", KeyManagerFactory.getDefaultAlgorithm, classOf[DummyKeyManagerFactorySpi].getCanonicalName, emptyList(), emptyMap()
+                ))
+              }
+            })
+          }
+          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm, provider)
+        }
+
+        val setup = KeyManagerFactorySetup.delegatingTo(delegateKeyManagerFactory)
+
+        setup match {
+          case KeyManagerFactorySetup(provider, Some(parameters)) ⇒
+            val newKeyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm, provider)
+            newKeyManagerFactory.init(parameters)
+            newKeyManagerFactory.getKeyManagers should (not be empty and be(delegateKeyManagerFactory.getKeyManagers))
+          case _ ⇒
+            fail("Expected a KeyManagerFactorySetup with a Provider and a ManagerFactoryParameters")
+        }
+      }
+    }
   }
 
   "TrustManagerFactorySetup" when {
@@ -126,6 +152,34 @@ class CryptoServiceProviderSetupSpec extends WordSpec with Matchers {
         }
 
         exception.getMessage should include("member")
+      }
+    }
+    "creating a factorySetup for a provider that delegates to the given KeyManagerFactory" should {
+      "provide a Provider and ManagerFactoryParameters that can be used to instantiate a delegating TrustManagerFactory" in {
+        val delegateTrustManagerFactory = {
+          val provider = new Provider("kmf-dummy-provider", 1.0d, "KMF dummy provider") {
+            outer ⇒
+            AccessController.doPrivileged(new PrivilegedAction[Unit] {
+              override def run(): Unit = {
+                putService(new Provider.Service(
+                  outer, "TrustManagerFactory", TrustManagerFactory.getDefaultAlgorithm, classOf[DummyTrustManagerFactorySpi].getCanonicalName, emptyList(), emptyMap()
+                ))
+              }
+            })
+          }
+          TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm, provider)
+        }
+
+        val setup = TrustManagerFactorySetup.delegatingTo(delegateTrustManagerFactory)
+
+        setup match {
+          case TrustManagerFactorySetup(provider, Some(parameters)) ⇒
+            val newTrustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm, provider)
+            newTrustManagerFactory.init(parameters)
+            newTrustManagerFactory.getTrustManagers should (not be empty and be(delegateTrustManagerFactory.getTrustManagers))
+          case _ ⇒
+            fail("Expected a TrustManagerFactorySetup with a Provider and a ManagerFactoryParameters")
+        }
       }
     }
   }
