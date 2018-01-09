@@ -250,4 +250,4 @@ In the context of the IoT system, this guide introduced the following concepts, 
 To continue your journey with Akka, we recommend:
 
 * Start building your own applications with Akka, make sure you [get involved in our amazing community](http://akka.io/get-involved) for help if you get stuck.
-* If you’d like some additional background, read the rest of the reference documentation and check out some of the @ref:[books and video’s](../additional/books.md) on Akka.
+* If you’d like some additional background, read the rest of the reference documentation and check out some of the @ref:[books and videos](../additional/books.md) on Akka.
