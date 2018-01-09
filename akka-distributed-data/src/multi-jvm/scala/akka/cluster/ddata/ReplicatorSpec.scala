@@ -527,22 +527,22 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     runOn(second) {
       replicator ! Subscribe(KeyH, changedProbe.ref)
-      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ + ("a" → Flag(enabled = false)))
-      changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(Map("a" → Flag(enabled = false)))
+      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ + ("a" → Flag.Disabled))
+      changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(Map("a" → Flag.Disabled))
     }
 
     enterBarrier("update-h1")
 
     runOn(first) {
-      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ + ("a" → Flag(enabled = true)))
+      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ + ("a" → Flag.Enabled))
     }
 
     runOn(second) {
-      changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(Map("a" → Flag(enabled = true)))
+      changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(Map("a" → Flag.Enabled))
 
-      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ + ("b" → Flag(enabled = true)))
+      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ + ("b" → Flag.Enabled))
       changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(
-        Map("a" → Flag(enabled = true), "b" → Flag(enabled = true)))
+        Map("a" → Flag.Enabled, "b" → Flag.Enabled))
     }
 
     enterBarrierAfterTestStep()
