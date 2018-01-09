@@ -484,7 +484,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     flagFromProto(rd.Flag.parseFrom(bytes))
 
   def flagFromProto(flag: rd.Flag): Flag =
-    Flag(flag.getEnabled)
+    if (flag.getEnabled) Flag.Enabled else Flag.Disabled
 
   def lwwRegisterToProto(lwwRegister: LWWRegister[_]): rd.LWWRegister =
     rd.LWWRegister.newBuilder().
