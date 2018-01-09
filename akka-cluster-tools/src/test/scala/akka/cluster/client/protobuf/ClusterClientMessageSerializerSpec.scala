@@ -28,6 +28,7 @@ class ClusterClientMessageSerializerSpec extends AkkaSpec {
       checkSerialization(GetContacts)
       checkSerialization(Heartbeat)
       checkSerialization(HeartbeatRsp)
+      checkSerialization(ReceptionistShutdown)
     }
   }
 }

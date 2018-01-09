@@ -153,7 +153,7 @@ Scala
 Java
 :  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #clientEventsListener }
 
-Similarly we can have an actor that behaves in a similar fashion for learning what cluster clients contact a `ClusterClientReceptionist`:
+Similarly we can have an actor that behaves in a similar fashion for learning what cluster clients are connected to a `ClusterClientReceptionist`:
 
 Scala
 :  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #receptionistEventsListener }
