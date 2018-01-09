@@ -682,7 +682,7 @@ trait TestKitBase {
 
     if (elem ne null) {
       // we pop the message, such that subsequent expectNoMessage calls can
-      // assert on the nedxt period without a message
+      // assert on the next period without a message
       queue.pop()
 
       val diff = (max.toNanos - left.toNanos).nanos
