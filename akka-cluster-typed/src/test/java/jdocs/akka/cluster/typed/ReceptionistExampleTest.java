@@ -5,6 +5,7 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Actor;
 import akka.actor.typed.receptionist.Receptionist;
+import akka.actor.typed.receptionist.ServiceKey;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 
@@ -14,8 +15,8 @@ public class ReceptionistExampleTest {
 
   public static class PingPongExample {
     //#ping-service
-    static Receptionist.ServiceKey<Ping> PingServiceKey =
-      Receptionist.ServiceKey.create(Ping.class, "pingService");
+    static ServiceKey<Ping> PingServiceKey =
+      ServiceKey.create(Ping.class, "pingService");
 
     public static class Pong {}
     public static class Ping {
@@ -28,7 +29,7 @@ public class ReceptionistExampleTest {
     static Behavior<Ping> pingService() {
       return Actor.deferred((ctx) -> {
         ctx.getSystem().receptionist()
-          .tell(Receptionist.Register.create(PingServiceKey, ctx.getSelf(), ctx.getSystem().deadLetters()));
+          .tell(new Receptionist.Register<>(PingServiceKey, ctx.getSelf(), ctx.getSystem().deadLetters()));
         return Actor.immutable(Ping.class)
           .onMessage(Ping.class, (c, msg) -> {
             msg.replyTo.tell(new Pong());
@@ -55,7 +56,7 @@ public class ReceptionistExampleTest {
     static Behavior<Receptionist.Listing<Ping>> guardian() {
       return Actor.deferred((ctx) -> {
         ctx.getSystem().receptionist()
-          .tell(Receptionist.Subscribe.create(PingServiceKey, ctx.getSelf()));
+          .tell(new Receptionist.Subscribe<>(PingServiceKey, ctx.getSelf()));
         ActorRef<Ping> ps = ctx.spawnAnonymous(pingService());
         ctx.watch(ps);
         return Actor.immutable((c, msg) -> {

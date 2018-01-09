@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.{ ActorRef, ActorRefResolver, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.Cluster
@@ -82,7 +82,7 @@ object ClusterReceptionistSpec {
     }
   }
 
-  val PingKey = Receptionist.ServiceKey[PingProtocol]("pingy")
+  val PingKey = ServiceKey[PingProtocol]("pingy")
 }
 
 class ClusterReceptionistSpec extends TestKit("ClusterReceptionistSpec", ClusterReceptionistSpec.config)
