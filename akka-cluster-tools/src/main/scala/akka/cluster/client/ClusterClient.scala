@@ -384,6 +384,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
         context.become(active(receptionist) orElse contactPointMessages)
         connectTimerCancelable.foreach(_.cancel())
         failureDetector.heartbeat()
+        self ! HeartbeatTick // will register us as active client of the selected receptionist
       case ActorIdentity(_, None) ⇒ // ok, use another instead
       case HeartbeatTick ⇒
         failureDetector.heartbeat()
@@ -397,6 +398,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       case ReconnectTimeout ⇒
         log.warning("Receptionist reconnect not successful within {} stopping cluster client", settings.reconnectTimeout)
         context.stop(self)
+      case ReceptionistShutdown ⇒ // ok, haven't chosen a receptionist yet
     }
   }
 
@@ -409,11 +411,8 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       receptionist forward DistributedPubSubMediator.Publish(topic, msg)
     case HeartbeatTick ⇒
       if (!failureDetector.isAvailable) {
-        log.info("Lost contact with [{}], restablishing connection", receptionist)
-        sendGetContacts()
-        scheduleRefreshContactsTick(establishingGetContactsInterval)
-        context.become(establishing orElse contactPointMessages)
-        failureDetector.heartbeat()
+        log.info("Lost contact with [{}], reestablishing connection", receptionist)
+        reestablish()
       } else
         receptionist ! Heartbeat
     case HeartbeatRsp ⇒
@@ -428,6 +427,11 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       }
       publishContactPoints()
     case _: ActorIdentity ⇒ // ok, from previous establish, already handled
+    case ReceptionistShutdown ⇒
+      if (receptionist == sender()) {
+        log.info("Receptionist [{}] is shutting down, reestablishing connection", receptionist)
+        reestablish()
+      }
   }
 
   def contactPointMessages: Actor.Receive = {
@@ -484,6 +488,13 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       subscribers.foreach(_ ! contactPointRemoved)
     }
     contactPathsPublished = contactPaths
+  }
+
+  def reestablish(): Unit = {
+    sendGetContacts()
+    scheduleRefreshContactsTick(establishingGetContactsInterval)
+    context.become(establishing orElse contactPointMessages)
+    failureDetector.heartbeat()
   }
 }
 
@@ -801,6 +812,8 @@ object ClusterReceptionist {
     @SerialVersionUID(1L)
     case object HeartbeatRsp extends ClusterClientMessage with DeadLetterSuppression
     @SerialVersionUID(1L)
+    case object ReceptionistShutdown extends ClusterClientMessage with DeadLetterSuppression
+    @SerialVersionUID(1L)
     case object Ping extends DeadLetterSuppression
     case object CheckDeadlines
 
@@ -907,6 +920,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
     super.postStop()
     cluster unsubscribe self
     checkDeadlinesTask.cancel()
+    clientInteractions.keySet.foreach(_ ! ReceptionistShutdown)
   }
 
   def matchingRole(m: Member): Boolean = role.forall(m.hasRole)
@@ -953,7 +967,6 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
         if (log.isDebugEnabled)
           log.debug("Client [{}] gets contactPoints [{}]", sender().path, contacts.contactPoints.mkString(","))
         sender() ! contacts
-        updateClientInteractions(sender())
       }
 
     case state: CurrentClusterState ⇒
