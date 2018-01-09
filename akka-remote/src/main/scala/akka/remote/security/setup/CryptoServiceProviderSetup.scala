@@ -10,12 +10,8 @@ import akka.remote.security.provider._
 
 import scala.reflect.ClassTag
 
-abstract class CryptoServiceProviderSetup extends Setup {
-  def provider: Provider
-}
-
-private[setup] object CryptoServiceProviderSetup {
-  def validate[T](tag: ClassTag[T]): Unit = {
+private[setup] object Validate {
+  def apply[T](tag: ClassTag[T]): Unit = {
     val clazz = tag.runtimeClass
     require(Modifier.isPublic(clazz.getModifiers), s"$tag must be a public class")
     require(!clazz.isLocalClass, s"$tag must not be a local class")
@@ -30,7 +26,7 @@ private[setup] object CryptoServiceProviderSetup {
  * @param keyManagerFactoryParameters If supplied will be used to initialise the KeyManagerFactory instead of any key store specified in Config.
  */
 case class KeyManagerFactorySetup(provider: Provider, keyManagerFactoryParameters: Option[ManagerFactoryParameters])
-  extends CryptoServiceProviderSetup
+  extends Setup
 
 /**
  * Factory for [[akka.remote.security.setup.KeyManagerFactorySetup]] instances.
@@ -74,7 +70,7 @@ object KeyManagerFactorySetup {
   }
 
   private def providing[T <: KeyManagerFactorySpi](managerFactoryParameters: Option[ManagerFactoryParameters])(implicit tag: ClassTag[T]): KeyManagerFactorySetup = {
-    CryptoServiceProviderSetup.validate(tag)
+    Validate(tag)
 
     val provider = new Provider(s"$tag-provider", 1.0d, s"KeyManagerFactory providing $tag") { outer ⇒
       AccessController.doPrivileged(new PrivilegedAction[Unit] {
@@ -126,7 +122,7 @@ object KeyManagerFactorySetup {
  * @param trustManagerFactoryParameters If supplied will be used to initialise the TrustManagerFactory instead of any trust store specified in Config.
  */
 case class TrustManagerFactorySetup(provider: Provider, trustManagerFactoryParameters: Option[ManagerFactoryParameters])
-  extends CryptoServiceProviderSetup
+  extends Setup
 
 /**
  * Factory for [[akka.remote.security.setup.TrustManagerFactorySetup]] instances.
@@ -170,7 +166,7 @@ object TrustManagerFactorySetup {
   }
 
   private def providing[T <: TrustManagerFactorySpi](managerFactoryParameters: Option[ManagerFactoryParameters])(implicit tag: ClassTag[T]): TrustManagerFactorySetup = {
-    CryptoServiceProviderSetup.validate(tag)
+    Validate(tag)
 
     val provider = new Provider(s"$tag-provider", 1.0d, s"TrustManagerFactory providing $tag") { outer ⇒
       AccessController.doPrivileged(new PrivilegedAction[Unit] {

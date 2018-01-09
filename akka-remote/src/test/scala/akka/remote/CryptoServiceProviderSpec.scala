@@ -4,9 +4,9 @@ import java.security.{ AccessController, KeyStore, PrivilegedAction, Provider }
 import java.util.Collections
 import javax.net.ssl._
 
-import akka.actor.setup.ActorSystemSetup
+import akka.actor.setup.{ ActorSystemSetup, Setup }
 import akka.event.NoMarkerLogging
-import akka.remote.security.setup.{ CryptoServiceProviderSetup, KeyManagerFactorySetup, TrustManagerFactorySetup }
+import akka.remote.security.setup.{ KeyManagerFactorySetup, TrustManagerFactorySetup }
 import akka.remote.transport.netty.SSLSettings
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ BeforeAndAfter, Inspectors, Matchers, WordSpec }
@@ -94,7 +94,7 @@ class CryptoServiceProviderSpec extends WordSpec with Matchers with BeforeAndAft
     }
   }
 
-  private def createSSLSettingsAndCreateContext(setup: Option[CryptoServiceProviderSetup]) = {
+  private def createSSLSettingsAndCreateContext(setup: Option[Setup]) = {
     val sslSettings = new SSLSettings(
       knownFilesConfig,
       ActorSystemSetup(setup.toArray: _*)
