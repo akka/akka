@@ -4,8 +4,8 @@ import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor.Address
 import akka.actor.typed._
-import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.receptionist.Receptionist.{ Find, Listing, ServiceKey }
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
+import akka.actor.typed.receptionist.Receptionist.Listing
 import akka.actor.typed.scaladsl._
 import akka.cluster.ClusterEvent._
 import akka.cluster.typed.{ Cluster, Join, Subscribe }
@@ -87,7 +87,7 @@ object RandomRouter {
 
 object PingPongExample {
   //#ping-service
-  val PingServiceKey = Receptionist.ServiceKey[Ping]("pingService")
+  val PingServiceKey = ServiceKey[Ping]("pingService")
 
   final case class Ping(replyTo: ActorRef[Pong.type])
   final case object Pong
