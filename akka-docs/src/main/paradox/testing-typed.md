@@ -15,7 +15,7 @@ To use the testkit add the following dependency:
 @@dependency [sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-testkit-typed_2.12
-  version=$version$
+  version=$akka.version$
   scope=test
 }
    

@@ -34,6 +34,14 @@ final case class Subscribe[A <: ClusterDomainEvent](
   subscriber: ActorRef[A],
   eventClass: Class[A]) extends ClusterStateSubscription
 
+object Subscribe {
+  /**
+   * Java API
+   */
+  def create[A <: ClusterDomainEvent](subscriber: ActorRef[A], eventClass: Class[A]): Subscribe[A] =
+    Subscribe(subscriber, eventClass)
+}
+
 /**
  * Subscribe to this node being up, after sending this event the subscription is automatically
  * cancelled. If the node is already up the event is also sent to the subscriber. If the node was up
@@ -73,6 +81,13 @@ sealed trait ClusterCommand
  */
 final case class Join(address: Address) extends ClusterCommand
 
+object Join {
+  /**
+   * Java API
+   */
+  def create(address: Address): Join = Join(address)
+}
+
 /**
  * Scala API: Join the specified seed nodes without defining them in config.
  * Especially useful from tests when Addresses are unknown before startup time.
@@ -111,6 +126,13 @@ final case class JoinSeedNodes(seedNodes: immutable.Seq[Address]) extends Cluste
  */
 final case class Leave(address: Address) extends ClusterCommand
 
+object Leave {
+  /**
+   * Java API
+   */
+  def create(address: Address): Leave = Leave(address)
+}
+
 /**
  * Send command to DOWN the node specified by 'address'.
  *
@@ -128,6 +150,9 @@ object Cluster extends ExtensionId[Cluster] {
 
   def createExtension(system: ActorSystem[_]): Cluster = new AdapterClusterImpl(system)
 
+  /**
+   * Java API
+   */
   def get(system: ActorSystem[_]): Cluster = apply(system)
 }
 

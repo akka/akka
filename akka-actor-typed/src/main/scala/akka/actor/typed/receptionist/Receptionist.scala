@@ -109,7 +109,7 @@ object Receptionist extends ExtensionId[Receptionist] {
 
   /**
    * Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]. Multiple
-   * registrations can be made for the same key. Unregistration is implied by
+   * registrations can be made for the same key. De-registration is implied by
    * the end of the referenced Actor’s lifecycle.
    *
    * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor.
@@ -119,6 +119,12 @@ object Receptionist extends ExtensionId[Receptionist] {
     /** Auxiliary constructor to be used with the ask pattern */
     def apply[T](key: ServiceKey[T], service: ActorRef[T]): ActorRef[Registered[T]] ⇒ Register[T] =
       replyTo ⇒ Register(key, service, replyTo)
+
+    /**
+     * Java API
+     */
+    def create[T](key: ServiceKey[T], serviceInstance: ActorRef[T], replyTo: ActorRef[Registered[T]]) =
+      Register(key, serviceInstance, replyTo)
   }
 
   /**
@@ -134,6 +140,14 @@ object Receptionist extends ExtensionId[Receptionist] {
    * with the termination of the subscriber.
    */
   final case class Subscribe[T](key: ServiceKey[T], subscriber: ActorRef[Listing[T]]) extends Command
+
+  object Subscribe {
+    /**
+     * Java API
+     */
+    def create[T](key: ServiceKey[T], subscriber: ActorRef[Listing[T]]) =
+      Subscribe(key, subscriber)
+  }
 
   /**
    * Query the Receptionist for a list of all Actors implementing the given
