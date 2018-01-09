@@ -679,10 +679,18 @@ trait TestKitBase {
         elem = queue.peekFirst()
       }
     }
-    val diff = (max.toNanos - left.toNanos).nanos
-    val m = s"received unexpected message $elem after ${diff.toMillis} millis"
-    assert(elem eq null, m)
-    lastWasNoMsg = true
+
+    if (elem ne null) {
+      // we pop the message, such that subsequent expectNoMessage calls can
+      // assert on the nedxt period without a message
+      queue.pop()
+
+      val diff = (max.toNanos - left.toNanos).nanos
+      val m = s"assertion failed: received unexpected message $elem after ${diff.toMillis} millis"
+      throw new java.lang.AssertionError(m)
+    } else {
+      lastWasNoMsg = true
+    }
   }
 
   /**
