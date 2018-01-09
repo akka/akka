@@ -31,10 +31,10 @@ private[akka] class SSLSettings(config: Config, setup: ActorSystemSetup) {
   import config.{ getBoolean, getString, getStringList }
 
   val SSLKeyStore = getString("key-store")
-  val SSLTrustStore = getString("trust-store")
   val SSLKeyStorePassword = getString("key-store-password")
   val SSLKeyPassword = getString("key-password")
 
+  val SSLTrustStore = getString("trust-store")
   val SSLTrustStorePassword = getString("trust-store-password")
 
   val SSLEnabledAlgorithms = immutableSeq(getStringList("enabled-algorithms")).to[Set]
