@@ -117,9 +117,9 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
 
     // tests:
     Get("/nope") ~> route ~> check {
-      status should === (StatusCodes.NotFound)
-      contentType should === (ContentTypes.`application/json`)
-      responseAs[String] should ===("""{"rejection": "The requested resource could not be found."}""")
+      status shouldEqual StatusCodes.NotFound
+      contentType shouldEqual ContentTypes.`application/json`
+      responseAs[String] shouldEqual """{"rejection": "The requested resource could not be found."}"""
     }
     //#example-json
   }
@@ -153,20 +153,26 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
 
     // tests:
     Get("/hello") ~> anotherRoute ~> check {
-      status should === (StatusCodes.BadRequest)
-      contentType should === (ContentTypes.`application/json`)
-      responseAs[String] should ===("""{"rejection": "Whoops, bad request!"}""")
+      status shouldEqual StatusCodes.BadRequest
+      contentType shouldEqual ContentTypes.`application/json`
+      responseAs[String] shouldEqual """{"rejection": "Whoops, bad request!"}"""
     }
     //#example-json
   }
 
   "test custom handler example" in {
     import akka.http.scaladsl.server._
+    import akka.http.scaladsl.model.StatusCodes.BadRequest
+
+    implicit def myRejectionHandler = RejectionHandler.newBuilder().handle {
+      case MissingCookieRejection(_) => complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
+    }.result()
+
     val route = Route.seal(reject(MissingCookieRejection("abc")))
 
     // tests:
     Get() ~> route ~> check {
-      responseAs[String] === "No cookies, no service!!!"
+      responseAs[String] shouldEqual "No cookies, no service!!!"
     }
   }
 }

@@ -42,13 +42,13 @@ class RangeDirectivesExamplesSpec extends RoutingSpec {
       response should have length 2
 
       val part1 = response(0)
-      part1.contentRange === ContentRange(0, 2, 8)
+      part1.contentRange shouldEqual ContentRange(0, 2, 8)
       part1.entity should matchPattern {
         case HttpEntity.Strict(_, bytes) if bytes.utf8String == "ABC" =>
       }
 
       val part2 = response(1)
-      part2.contentRange === ContentRange(6, 7, 8)
+      part2.contentRange shouldEqual ContentRange(6, 7, 8)
       part2.entity should matchPattern {
         case HttpEntity.Strict(_, bytes) if bytes.utf8String == "GH" =>
       }
