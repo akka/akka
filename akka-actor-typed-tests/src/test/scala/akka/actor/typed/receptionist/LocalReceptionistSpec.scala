@@ -16,11 +16,11 @@ import scala.concurrent.Future
 class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with Eventually {
 
   trait ServiceA
-  val ServiceKeyA = Receptionist.ServiceKey[ServiceA]("service-a")
+  val ServiceKeyA = ServiceKey[ServiceA]("service-a")
   val behaviorA = Actor.empty[ServiceA]
 
   trait ServiceB
-  val ServiceKeyB = Receptionist.ServiceKey[ServiceB]("service-b")
+  val ServiceKeyB = ServiceKey[ServiceB]("service-b")
   val behaviorB = Actor.empty[ServiceB]
 
   case object Stop extends ServiceA with ServiceB
