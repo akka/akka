@@ -4,7 +4,7 @@ import java.security._
 import java.util.Collections.{ emptyList, emptyMap }
 import javax.net.ssl.{ ManagerFactoryParameters, TrustManager, TrustManagerFactory, TrustManagerFactorySpi }
 
-class DelegatingTrustManagerFactory extends TrustManagerFactorySpi {
+private[akka] class DelegatingTrustManagerFactory extends TrustManagerFactorySpi {
   private var delegate: Option[TrustManagerFactory] = None
   private val parameterName = classOf[DelegatingTrustManagerFactoryParameters].getCanonicalName
 
@@ -25,17 +25,9 @@ class DelegatingTrustManagerFactory extends TrustManagerFactorySpi {
   }
 }
 
-case class DelegatingTrustManagerFactoryParameters(delegate: TrustManagerFactory) extends ManagerFactoryParameters
+private[akka] case class DelegatingTrustManagerFactoryParameters(delegate: TrustManagerFactory) extends ManagerFactoryParameters
 
-object DelegatingTrustManagerFactoryParameters {
-  /**
-   * Java API
-   */
-  def create(delegate: TrustManagerFactory): DelegatingTrustManagerFactoryParameters =
-    DelegatingTrustManagerFactoryParameters(delegate)
-}
-
-object DelegatingTrustManagerFactoryProvider
+private[akka] object DelegatingTrustManagerFactoryProvider
   extends Provider("DelegatingTrustManagerFactoryProvider", 1.0d, "Delegating TrustManagerFactory") { outer ⇒
   AccessController.doPrivileged(new PrivilegedAction[Unit] {
     override def run(): Unit = {
