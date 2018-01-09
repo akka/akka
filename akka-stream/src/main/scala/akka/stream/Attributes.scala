@@ -61,7 +61,6 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 
   /**
    * Java API: Get the most specific attribute value for a given Attribute type or subclass thereof.
-   * If no such attribute exists, return a `default` value.
    *
    * The most specific value is the value that was added closest to the graph or stage itself or if
    * the same attribute was added multiple times to the same graph, the last to be added.
