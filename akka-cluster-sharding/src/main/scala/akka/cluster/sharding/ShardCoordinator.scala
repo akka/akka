@@ -478,34 +478,23 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
       }
 
     case GetShardHome(shard) ⇒
-      if (rebalanceInProgress.contains(shard)) {
-        log.debug("GetShardHome [{}] request ignored, because rebalance is in progress for this shard.", shard)
-      } else if (!hasAllRegionsRegistered()) {
-        log.debug("GetShardHome [{}] request ignored, because not all regions have registered yet.", shard)
-      } else {
-        state.shards.get(shard) match {
-          case Some(ref) ⇒
-            if (regionTerminationInProgress(ref))
-              log.debug("GetShardHome [{}] request ignored, due to region [{}] termination in progress.", shard, ref)
-            else
-              sender() ! ShardHome(shard, ref)
-          case None ⇒
-            val activeRegions = state.regions -- gracefulShutdownInProgress
-            if (activeRegions.nonEmpty) {
-              val getShardHomeSender = sender()
-              val regionFuture = allocationStrategy.allocateShard(getShardHomeSender, shard, activeRegions)
-              regionFuture.value match {
-                case Some(Success(region)) ⇒
-                  continueGetShardHome(shard, region, getShardHomeSender)
-                case _ ⇒
-                  // continue when future is completed
-                  regionFuture.map { region ⇒
-                    AllocateShardResult(shard, Some(region), getShardHomeSender)
-                  }.recover {
-                    case _ ⇒ AllocateShardResult(shard, None, getShardHomeSender)
-                  }.pipeTo(self)
-              }
-            }
+      if (!handleGetShardHome(shard)) {
+        // location not know, yet
+        val activeRegions = state.regions -- gracefulShutdownInProgress
+        if (activeRegions.nonEmpty) {
+          val getShardHomeSender = sender()
+          val regionFuture = allocationStrategy.allocateShard(getShardHomeSender, shard, activeRegions)
+          regionFuture.value match {
+            case Some(Success(region)) ⇒
+              continueGetShardHome(shard, region, getShardHomeSender)
+            case _ ⇒
+              // continue when future is completed
+              regionFuture.map { region ⇒
+                AllocateShardResult(shard, Some(region), getShardHomeSender)
+              }.recover {
+                case _ ⇒ AllocateShardResult(shard, None, getShardHomeSender)
+              }.pipeTo(self)
+          }
         }
       }
 
@@ -609,6 +598,31 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
       sender() ! reply
 
   }: Receive).orElse[Any, Unit](receiveTerminated)
+
+  /**
+   * @return `true` if the message could be handled without state update, i.e.
+   *         the shard location was known or the request was ignored
+   */
+  def handleGetShardHome(shard: String): Boolean = {
+    if (rebalanceInProgress.contains(shard)) {
+      log.debug("GetShardHome [{}] request ignored, because rebalance is in progress for this shard.", shard)
+      true
+    } else if (!hasAllRegionsRegistered()) {
+      log.debug("GetShardHome [{}] request ignored, because not all regions have registered yet.", shard)
+      true
+    } else {
+      state.shards.get(shard) match {
+        case Some(ref) ⇒
+          if (regionTerminationInProgress(ref))
+            log.debug("GetShardHome [{}] request ignored, due to region [{}] termination in progress.", shard, ref)
+          else
+            sender() ! ShardHome(shard, ref)
+          true
+        case None ⇒
+          false // location not known, yet, caller will handle allocation
+      }
+    }
+  }
 
   def receiveTerminated: Receive = {
     case t @ Terminated(ref) ⇒
@@ -1009,6 +1023,10 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
         "The ShardCoordinator was unable to update a distributed state {} with error {} and event {}.Coordinator will be restarted",
         key, error, evt)
       throw cause
+
+    case GetShardHome(shard) ⇒
+      if (!handleGetShardHome(shard))
+        stash() // must wait for update that is in progress
 
     case _ ⇒ stash()
   }
