@@ -29,15 +29,18 @@ object AkkaVersion {
    */
   @InternalApi
   private[akka] def require(libraryName: String, requiredVersion: String, currentVersion: String): Unit = {
-    val VersionPattern = """(\d+)\.(\d+)\.(\d+)(?:-(?:M|RC)\d+)?""".r
+    val VersionPattern = """(\d+)\.(\d+)\.(\d+)(-(?:M|RC)\d+)?""".r
     currentVersion match {
-      case VersionPattern(currentMajorStr, currentMinorStr, currentPatchStr) ⇒
+      case VersionPattern(currentMajorStr, currentMinorStr, currentPatchStr, mOrRc) ⇒
         requiredVersion match {
-          case requiredVersion @ VersionPattern(requiredMajorStr, requiredMinorStr, requiredPatchStr) ⇒
-
+          case requiredVersion @ VersionPattern(requiredMajorStr, requiredMinorStr, requiredPatchStr, _) ⇒
+            // a M or RC is basically inbetween versions, so offset
+            val currentPatch =
+              if (mOrRc ne null) currentPatchStr.toInt - 1
+              else currentPatchStr.toInt
             if (requiredMajorStr.toInt != currentMajorStr.toInt ||
               requiredMinorStr.toInt > currentMinorStr.toInt ||
-              (requiredMinorStr == currentMinorStr && requiredPatchStr.toInt > currentPatchStr.toInt))
+              (requiredMinorStr == currentMinorStr && requiredPatchStr.toInt > currentPatch))
               throw new UnsupportedAkkaVersion(s"Current version of Akka is [$currentVersion], but $libraryName requires version [$requiredVersion]")
           case _ ⇒ throw new IllegalArgumentException(s"Required version string is invalid: [$requiredVersion]")
         }

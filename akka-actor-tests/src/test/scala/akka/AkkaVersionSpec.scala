@@ -16,15 +16,23 @@ class AkkaVersionSpec extends WordSpec with Matchers {
     }
 
     "succeed if version is RC and ok" in {
-      AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.6-RC1")
       AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.7-RC10")
-      AkkaVersion.require("AkkaVersionSpec", "2.4.19", "2.4.19-RC6")
+    }
+
+    "fail if version is RC and not ok" in {
+      intercept[UnsupportedAkkaVersion] {
+        AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.6-RC1")
+      }
     }
 
     "succeed if version is milestone and ok" in {
-      AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.6-M1")
       AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.7-M10")
-      AkkaVersion.require("AkkaVersionSpec", "2.4.19", "2.4.19-M6")
+    }
+
+    "fail if version is milestone and not ok" in {
+      intercept[UnsupportedAkkaVersion] {
+        AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.6-M1")
+      }
     }
 
     "fail if major version is different" in {
