@@ -12,25 +12,25 @@ class CryptoServiceProviderSetupSpec extends WordSpec with Matchers {
   "KeyManagerFactorySetup" when {
     "creating a factorySetup for a provider for the given spi class" should {
       "create provider with correct name" in {
-        val setup: KeyManagerFactorySetup = KeyManagerFactorySetup.providing[DummyKeyManagerFactorySpi]()
+        val setup: KeyManagerFactorySetup = KeyManagerFactorySetup.providing[DummyKeyManagerFactorySpi]
 
         setup.provider.getName should include(classOf[DummyKeyManagerFactorySpi].getSimpleName)
       }
 
       "create provider using the given spi class" in {
-        val setup: KeyManagerFactorySetup = KeyManagerFactorySetup.providing[DummyKeyManagerFactorySpi]()
+        val setup: KeyManagerFactorySetup = KeyManagerFactorySetup.providing[DummyKeyManagerFactorySpi]
 
         KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm, setup.provider).getKeyManagers shouldBe CryptoServiceProviderSetupJavaAPITest.dummyKeyManagers
       }
 
       "have None parameters if None given" in {
-        val setup: KeyManagerFactorySetup = KeyManagerFactorySetup.providing[DummyKeyManagerFactorySpi]()
+        val setup: KeyManagerFactorySetup = KeyManagerFactorySetup.providing[DummyKeyManagerFactorySpi]
 
         setup.keyManagerFactoryParameters shouldBe None
       }
 
       "have Some parameters if Some given" in {
-        val setup: KeyManagerFactorySetup = KeyManagerFactorySetup.providing[DummyKeyManagerFactorySpi](Some(CryptoServiceProviderSetupJavaAPITest.dummyManagerFactoryParameters))
+        val setup: KeyManagerFactorySetup = KeyManagerFactorySetup.providing[DummyKeyManagerFactorySpi](CryptoServiceProviderSetupJavaAPITest.dummyManagerFactoryParameters)
 
         setup.keyManagerFactoryParameters shouldBe Some(CryptoServiceProviderSetupJavaAPITest.dummyManagerFactoryParameters)
       }
@@ -45,7 +45,7 @@ class CryptoServiceProviderSetupSpec extends WordSpec with Matchers {
         }
 
         val exception = intercept[IllegalArgumentException] {
-          KeyManagerFactorySetup.providing[LocalDummyKeyManagerFactorySpi]()
+          KeyManagerFactorySetup.providing[LocalDummyKeyManagerFactorySpi]
         }
 
         exception.getMessage should include("local")
@@ -53,7 +53,7 @@ class CryptoServiceProviderSetupSpec extends WordSpec with Matchers {
 
       "throw meaningful exception if attempting to use a non public spi class" in {
         val exception = intercept[IllegalArgumentException] {
-          KeyManagerFactorySetup.providing[NonPublicDummyKeyManagerFactorySpi]()
+          KeyManagerFactorySetup.providing[NonPublicDummyKeyManagerFactorySpi]
         }
 
         exception.getMessage should include("public")
@@ -61,7 +61,7 @@ class CryptoServiceProviderSetupSpec extends WordSpec with Matchers {
 
       "throw meaningful exception if attempting to use a member spi class" in {
         val exception = intercept[IllegalArgumentException] {
-          KeyManagerFactorySetup.providing[MemberDummyKeyManagerFactorySpi]()
+          KeyManagerFactorySetup.providing[MemberDummyKeyManagerFactorySpi]
         }
 
         exception.getMessage should include("member")
@@ -99,25 +99,25 @@ class CryptoServiceProviderSetupSpec extends WordSpec with Matchers {
   "TrustManagerFactorySetup" when {
     "creating a factorySetup for a provider for the given spi class" should {
       "create provider with correct name" in {
-        val setup: TrustManagerFactorySetup = TrustManagerFactorySetup.providing[DummyTrustManagerFactorySpi]()
+        val setup: TrustManagerFactorySetup = TrustManagerFactorySetup.providing[DummyTrustManagerFactorySpi]
 
         setup.provider.getName should include(classOf[DummyTrustManagerFactorySpi].getSimpleName)
       }
 
       "create provider using the given spi class" in {
-        val setup: TrustManagerFactorySetup = TrustManagerFactorySetup.providing[DummyTrustManagerFactorySpi]()
+        val setup: TrustManagerFactorySetup = TrustManagerFactorySetup.providing[DummyTrustManagerFactorySpi]
 
         TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm, setup.provider).getTrustManagers shouldBe CryptoServiceProviderSetupJavaAPITest.dummyTrustManagers
       }
 
       "have None parameters if None given" in {
-        val setup: TrustManagerFactorySetup = TrustManagerFactorySetup.providing[DummyTrustManagerFactorySpi]()
+        val setup: TrustManagerFactorySetup = TrustManagerFactorySetup.providing[DummyTrustManagerFactorySpi]
 
         setup.trustManagerFactoryParameters shouldBe None
       }
 
       "have Some parameters if Some given" in {
-        val setup: TrustManagerFactorySetup = TrustManagerFactorySetup.providing[DummyTrustManagerFactorySpi](Some(CryptoServiceProviderSetupJavaAPITest.dummyManagerFactoryParameters))
+        val setup: TrustManagerFactorySetup = TrustManagerFactorySetup.providing[DummyTrustManagerFactorySpi](CryptoServiceProviderSetupJavaAPITest.dummyManagerFactoryParameters)
 
         setup.trustManagerFactoryParameters shouldBe Some(CryptoServiceProviderSetupJavaAPITest.dummyManagerFactoryParameters)
       }
@@ -132,7 +132,7 @@ class CryptoServiceProviderSetupSpec extends WordSpec with Matchers {
         }
 
         val exception = intercept[IllegalArgumentException] {
-          TrustManagerFactorySetup.providing[LocalDummyTrustManagerFactorySpi]()
+          TrustManagerFactorySetup.providing[LocalDummyTrustManagerFactorySpi]
         }
 
         exception.getMessage should include("local")
@@ -140,7 +140,7 @@ class CryptoServiceProviderSetupSpec extends WordSpec with Matchers {
 
       "throw meaningful exception if attempting to use a non public spi class" in {
         val exception = intercept[IllegalArgumentException] {
-          TrustManagerFactorySetup.providing[NonPublicDummyTrustManagerFactorySpi]()
+          TrustManagerFactorySetup.providing[NonPublicDummyTrustManagerFactorySpi]
         }
 
         exception.getMessage should include("public")
@@ -148,7 +148,7 @@ class CryptoServiceProviderSetupSpec extends WordSpec with Matchers {
 
       "throw meaningful exception if attempting to use a member spi class" in {
         val exception = intercept[IllegalArgumentException] {
-          TrustManagerFactorySetup.providing[MemberDummyTrustManagerFactorySpi]()
+          TrustManagerFactorySetup.providing[MemberDummyTrustManagerFactorySpi]
         }
 
         exception.getMessage should include("member")

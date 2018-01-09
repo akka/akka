@@ -38,7 +38,15 @@ object KeyManagerFactorySetup {
   def create(keyManagerFactoryProvider: Provider, keyManagerFactoryParameters: ManagerFactoryParameters): KeyManagerFactorySetup =
     KeyManagerFactorySetup(keyManagerFactoryProvider, Some(keyManagerFactoryParameters))
 
-  def providing[T <: KeyManagerFactorySpi](managerFactoryParameters: Option[ManagerFactoryParameters] = None)(implicit tag: ClassTag[T]): KeyManagerFactorySetup = {
+  def providing[T <: KeyManagerFactorySpi](implicit tag: ClassTag[T]): KeyManagerFactorySetup = {
+    providing[T](None)(tag)
+  }
+
+  def providing[T <: KeyManagerFactorySpi](managerFactoryParameters: ManagerFactoryParameters)(implicit tag: ClassTag[T]): KeyManagerFactorySetup = {
+    providing[T](Some(managerFactoryParameters))(tag)
+  }
+
+  private def providing[T <: KeyManagerFactorySpi](managerFactoryParameters: Option[ManagerFactoryParameters])(implicit tag: ClassTag[T]): KeyManagerFactorySetup = {
     CryptoServiceProviderSetup.validate(tag)
 
     val provider = new Provider(s"$tag-provider", 1.0d, s"KeyManagerFactory providing $tag") { outer ⇒
@@ -57,7 +65,7 @@ object KeyManagerFactorySetup {
    * Java API
    */
   def createProviding[T <: KeyManagerFactorySpi](clazz: Class[T]): KeyManagerFactorySetup = {
-    providing[T]()(ClassTag(clazz))
+    providing[T](None)(ClassTag(clazz))
   }
 
   /**
@@ -86,7 +94,15 @@ object TrustManagerFactorySetup {
   def create(trustManagerFactoryProvider: Provider, trustManagerFactoryParameters: ManagerFactoryParameters): TrustManagerFactorySetup =
     TrustManagerFactorySetup(trustManagerFactoryProvider, Some(trustManagerFactoryParameters))
 
-  def providing[T <: TrustManagerFactorySpi](managerFactoryParameters: Option[ManagerFactoryParameters] = None)(implicit tag: ClassTag[T]): TrustManagerFactorySetup = {
+  def providing[T <: TrustManagerFactorySpi](implicit tag: ClassTag[T]): TrustManagerFactorySetup = {
+    providing[T](None)(tag)
+  }
+
+  def providing[T <: TrustManagerFactorySpi](managerFactoryParameters: ManagerFactoryParameters)(implicit tag: ClassTag[T]): TrustManagerFactorySetup = {
+    providing[T](Some(managerFactoryParameters))(tag)
+  }
+
+  private def providing[T <: TrustManagerFactorySpi](managerFactoryParameters: Option[ManagerFactoryParameters])(implicit tag: ClassTag[T]): TrustManagerFactorySetup = {
     CryptoServiceProviderSetup.validate(tag)
 
     val provider = new Provider(s"$tag-provider", 1.0d, s"TrustManagerFactory providing $tag") { outer ⇒
@@ -105,7 +121,7 @@ object TrustManagerFactorySetup {
    * Java api
    */
   def createProviding[T <: TrustManagerFactorySpi](clazz: Class[T]): TrustManagerFactorySetup = {
-    providing[T]()(ClassTag(clazz))
+    providing[T](None)(ClassTag(clazz))
   }
 
   /**
