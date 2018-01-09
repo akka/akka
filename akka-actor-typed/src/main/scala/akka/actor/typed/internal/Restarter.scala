@@ -6,19 +6,17 @@ package internal
 
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.annotation.tailrec
-import scala.concurrent.duration.Deadline
-import scala.concurrent.duration.FiniteDuration
+import akka.actor.DeadLetterSuppression
+import akka.actor.typed.SupervisorStrategy._
+import akka.actor.typed.scaladsl.Behaviors
+import akka.annotation.InternalApi
+import akka.event.Logging
+import akka.util.OptionVal
+
+import scala.concurrent.duration.{Deadline, FiniteDuration}
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-import akka.actor.DeadLetterSuppression
-import akka.annotation.InternalApi
-import akka.event.Logging
-import akka.actor.typed.Behavior.DeferredBehavior
-import akka.actor.typed.SupervisorStrategy._
-import akka.util.OptionVal
-import akka.actor.typed.scaladsl.Behaviors
 
 /**
  * INTERNAL API
@@ -260,11 +258,17 @@ import akka.actor.typed.scaladsl.Behaviors
 
   override def loggingEnabled: Boolean = strategy.loggingEnabled
 
-  // FIXME this is missing
-  def init(ctx: ActorContext[Any]): Supervisor[Any, Thr] = {
-    val startedBehavior = Behavior.validateAsInitial(Behavior.undefer(initialBehavior, ctx))
-    new BackoffRestarter(initialBehavior, startedBehavior, strategy, restartCount, blackhole)
-  }
+  def init(ctx: ActorContext[Any]): Supervisor[Any, Thr] =
+    try {
+      val startedBehavior = Behavior.validateAsInitial(Behavior.undefer(initialBehavior, ctx))
+      new BackoffRestarter(initialBehavior, startedBehavior, strategy, restartCount, blackhole)
+    } catch {
+      case NonFatal(ex: Thr) ⇒
+        log(ctx, ex)
+        val restartDelay = calculateDelay(restartCount, strategy.minBackoff, strategy.maxBackoff, strategy.randomFactor)
+        ctx.asScala.schedule(restartDelay, ctx.asScala.self, ScheduledRestart)
+        new BackoffRestarter[T, Thr](initialBehavior, initialBehavior, strategy, restartCount + 1, blackhole = true)
+    }
 
   override def receiveSignal(ctx: ActorContext[Any], signal: Signal): Behavior[Any] = {
     if (blackhole) {
@@ -280,9 +284,8 @@ import akka.actor.typed.scaladsl.Behaviors
     msg match {
       case ScheduledRestart ⇒
         // actual restart after scheduled backoff delay
-        val restartedBehavior = Behavior.validateAsInitial(Behavior.undefer(initialBehavior, ctx))
         ctx.asScala.schedule(strategy.resetBackoffAfter, ctx.asScala.self, ResetRestartCount(restartCount))
-        new BackoffRestarter[T, Thr](initialBehavior, restartedBehavior, strategy, restartCount, blackhole = false)
+        new BackoffRestarter[T, Thr](initialBehavior, initialBehavior, strategy, restartCount, blackhole = false).init(ctx)
       case ResetRestartCount(current) ⇒
         if (current == restartCount)
           new BackoffRestarter[T, Thr](initialBehavior, behavior, strategy, restartCount = 0, blackhole)
