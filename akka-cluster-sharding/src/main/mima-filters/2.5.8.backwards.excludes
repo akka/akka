@@ -1,0 +1,3 @@
+# #24191
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ShardCoordinator.rebalanceInProgress")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardCoordinator.rebalanceInProgress_=")

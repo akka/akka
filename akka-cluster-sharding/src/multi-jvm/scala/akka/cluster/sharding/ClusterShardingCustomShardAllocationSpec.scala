@@ -80,7 +80,7 @@ abstract class ClusterShardingCustomShardAllocationSpecConfig(val mode: String) 
   val second = role("second")
 
   commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
@@ -94,6 +94,8 @@ abstract class ClusterShardingCustomShardAllocationSpecConfig(val mode: String) 
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/ClusterShardingCustomShardAllocationSpec/snapshots"
     akka.cluster.sharding.state-store-mode = "$mode"
+    akka.cluster.sharding.rebalance-interval = 1 s
+    #akka.cluster.sharding.retry-interval = 5 s
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
@@ -161,7 +163,7 @@ abstract class ClusterShardingCustomShardAllocationSpec(config: ClusterShardingC
       }
     }
 
-    "use specified region" in within(10.seconds) {
+    "use specified region" in within(30.seconds) {
       join(first, first)
 
       runOn(first) {
