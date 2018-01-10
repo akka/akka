@@ -28,10 +28,10 @@ import scala.util.control.NonFatal
 object TestProbe {
   private val testActorId = new AtomicInteger(0)
 
-  def apply[M]()(implicit system: ActorSystem[_], settings: TestKitSettings): TestProbe[M] =
+  def apply[M]()(implicit system: ActorSystem[_]): TestProbe[M] =
     apply(name = "testProbe")
 
-  def apply[M](name: String)(implicit system: ActorSystem[_], settings: TestKitSettings): TestProbe[M] =
+  def apply[M](name: String)(implicit system: ActorSystem[_]): TestProbe[M] =
     new TestProbe(name)
 
   private def testActor[M](queue: BlockingDeque[M]): Behavior[M] = Actor.immutable { (ctx, msg) ⇒
@@ -40,9 +40,10 @@ object TestProbe {
   }
 }
 
-class TestProbe[M](name: String)(implicit val system: ActorSystem[_], val settings: TestKitSettings) {
+class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
 
   import TestProbe._
+  private implicit val settings = TestKitSettings(system)
   private val queue = new LinkedBlockingDeque[M]
 
   private var end: Duration = Duration.Undefined

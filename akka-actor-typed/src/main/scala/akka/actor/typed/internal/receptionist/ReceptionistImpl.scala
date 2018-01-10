@@ -8,6 +8,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.Terminated
 import akka.actor.typed.receptionist.Receptionist._
+import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.Actor.immutable
 import akka.actor.typed.scaladsl.Actor.same

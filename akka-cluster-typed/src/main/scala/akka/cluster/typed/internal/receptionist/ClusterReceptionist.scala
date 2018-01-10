@@ -18,7 +18,7 @@ import akka.actor.typed.internal.receptionist.ReceptionistImpl._
 import akka.actor.typed.receptionist.Receptionist.AbstractServiceKey
 import akka.actor.typed.receptionist.Receptionist.AllCommands
 import akka.actor.typed.receptionist.Receptionist.Command
-import akka.actor.typed.receptionist.Receptionist.ServiceKey
+import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.ActorContext
 
 import scala.language.existentials

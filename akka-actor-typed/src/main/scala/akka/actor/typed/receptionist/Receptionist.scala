@@ -44,6 +44,33 @@ class Receptionist(system: ActorSystem[_]) extends Extension {
   }
 }
 
+object ServiceKey {
+  /**
+   * Scala API: Creates a service key. The given ID should uniquely define a service with a given protocol.
+   */
+  def apply[T](id: String)(implicit tTag: ClassTag[T]): ServiceKey[T] =
+    ReceptionistImpl.DefaultServiceKey(id, implicitly[ClassTag[T]].runtimeClass.getName)
+
+  /**
+   * Java API: Creates a service key. The given ID should uniquely define a service with a given protocol.
+   */
+  def create[T](clazz: Class[T], id: String): ServiceKey[T] =
+    ReceptionistImpl.DefaultServiceKey(id, clazz.getName)
+
+}
+
+/**
+ * A service key is an object that implements this trait for a given protocol
+ * T, meaning that it signifies that the type T is the entry point into the
+ * protocol spoken by that service (think of it as the set of first messages
+ * that a client could send).
+ */
+abstract class ServiceKey[T] extends Receptionist.AbstractServiceKey {
+  final type Protocol = T
+  def id: String
+  def asServiceKey: ServiceKey[T] = this
+}
+
 /**
  * A Receptionist is an entry point into an Actor hierarchy where select Actors
  * publish their identity together with the protocols that they implement. Other
@@ -69,33 +96,6 @@ object Receptionist extends ExtensionId[Receptionist] {
     def asServiceKey: ServiceKey[Protocol]
   }
 
-  /**
-   * A service key is an object that implements this trait for a given protocol
-   * T, meaning that it signifies that the type T is the entry point into the
-   * protocol spoken by that service (think of it as the set of first messages
-   * that a client could send).
-   */
-  abstract class ServiceKey[T] extends AbstractServiceKey {
-    final type Protocol = T
-    def id: String
-    def asServiceKey: ServiceKey[T] = this
-  }
-
-  object ServiceKey {
-    /**
-     * Scala API: Creates a service key. The given ID should uniquely define a service with a given protocol.
-     */
-    def apply[T](id: String)(implicit tTag: ClassTag[T]): ServiceKey[T] =
-      ReceptionistImpl.DefaultServiceKey(id, implicitly[ClassTag[T]].runtimeClass.getName)
-
-    /**
-     * Java API: Creates a service key. The given ID should uniquely define a service with a given protocol.
-     */
-    def create[T](clazz: Class[T], id: String): ServiceKey[T] =
-      ReceptionistImpl.DefaultServiceKey(id, clazz.getName)
-
-  }
-
   /** Internal superclass for external and internal commands */
   @InternalApi
   sealed private[akka] abstract class AllCommands
@@ -109,7 +109,7 @@ object Receptionist extends ExtensionId[Receptionist] {
 
   /**
    * Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]. Multiple
-   * registrations can be made for the same key. Unregistration is implied by
+   * registrations can be made for the same key. De-registration is implied by
    * the end of the referenced Actor’s lifecycle.
    *
    * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor.
