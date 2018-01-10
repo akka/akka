@@ -9,17 +9,24 @@ import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
 
+/**
+ * Note: the token of challenge is stored in the params Map as a parameter whose name is empty String("") for binary
+ * compatibility, but it will be parsed and rendered correctly.
+ */
 final case class HttpChallenge(scheme: String, realm: String,
                                params: Map[String, String] = Map.empty) extends jm.headers.HttpChallenge with ValueRenderable {
 
   def render[R <: Rendering](r: R): r.type = {
     r ~~ scheme
 
+    val paramsNoToken = params.filterKeys(_ != "")
+
+    if (params.contains("")) r ~~ " " ~~ params("")
     if (realm != null) r ~~ " realm=" ~~#! realm
-    if (params.nonEmpty) {
+    if (paramsNoToken.nonEmpty) {
       if (realm == null) r ~~ ' ' else r ~~ ','
-      r ~~ params.head._1 ~~ '=' ~~# params.head._2
-      params.tail.foreach { case (k, v) ⇒ r ~~ ',' ~~ k ~~ '=' ~~# v }
+      r ~~ paramsNoToken.head._1 ~~ '=' ~~# paramsNoToken.head._2
+      paramsNoToken.tail.foreach { case (k, v) ⇒ r ~~ ',' ~~ k ~~ '=' ~~# v }
     }
 
     r
@@ -37,6 +44,7 @@ object HttpChallenge extends scala.runtime.AbstractFunction3[String, String, Map
 
   def apply(scheme: String, realm: Option[String], params: Map[String, String]): HttpChallenge =
     HttpChallenge(scheme, realm.orNull, params)
+
 }
 
 object HttpChallenges {

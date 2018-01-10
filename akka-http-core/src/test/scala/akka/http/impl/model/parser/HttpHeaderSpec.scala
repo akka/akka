@@ -137,6 +137,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Authorization: bAsIc QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
         Authorization(BasicHttpCredentials("Aladdin", "open sesame")).renderedTo(
           "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==")
+      "Authorization: Fancy QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
+        Authorization(GenericHttpCredentials("Fancy", "QWxhZGRpbjpvcGVuIHNlc2FtZQ=="))
       """Authorization: Fancy yes="n:o", nonce=42""" =!=
         Authorization(GenericHttpCredentials("Fancy", Map("yes" → "n:o", "nonce" → "42"))).renderedTo(
           """Fancy yes="n:o",nonce=42""")
@@ -152,6 +154,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         Authorization(OAuth2BearerToken("mF_9.B5f-4.1JqM/"))
       "Authorization: NoParamScheme" =!=
         Authorization(GenericHttpCredentials("NoParamScheme", Map.empty[String, String]))
+      "Authorization: NoTokenScheme" =!=
+        Authorization(GenericHttpCredentials("NoTokenScheme", ""))
       "Authorization: QVFJQzV3TTJMWTRTZmN3Zk=" =!=
         ErrorInfo(
           "Illegal HTTP header 'Authorization': Invalid input '=', expected auth-param, OWS, token68, 'EOI' or tchar (line 1, column 23)",
@@ -397,11 +401,15 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     "Proxy-Authenticate" in {
       "Proxy-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
         `Proxy-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" → "val>ue")), HttpChallenge("Fancy", Some("yeah")))
+      """Proxy-Authenticate: NTLM TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==""" =!=
+        `Proxy-Authenticate`(HttpChallenge("NTLM", None, Map("" → "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==")))
     }
 
     "Proxy-Authorization" in {
       """Proxy-Authorization: Fancy yes=no,nonce="4\\2"""" =!=
         `Proxy-Authorization`(GenericHttpCredentials("Fancy", Map("yes" → "no", "nonce" → """4\2""")))
+      "Proxy-Authorization: Fancy QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
+        `Proxy-Authorization`(GenericHttpCredentials("Fancy", "QWxhZGRpbjpvcGVuIHNlc2FtZQ=="))
     }
 
     "Referer" in {
@@ -596,6 +604,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `WWW-Authenticate`(HttpChallenge("Basic", None, Map("attr" → "value")))
       """WWW-Authenticate: Fancy realm="Secure Area",nonce=42""" =!=
         `WWW-Authenticate`(HttpChallenge("Fancy", Some("Secure Area"), Map("nonce" → "42")))
+      """WWW-Authenticate: NTLM TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==""" =!=
+        `WWW-Authenticate`(HttpChallenge("NTLM", None, Map("" → "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==")))
     }
 
     "X-Forwarded-For" in {

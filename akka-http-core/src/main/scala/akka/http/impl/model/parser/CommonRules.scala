@@ -172,17 +172,23 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   def `token68` = rule { capture(oneOrMore(`token68-start`) ~ zeroOrMore('=')) ~ OWS }
 
   def challenge = rule {
-    `challenge-or-credentials` ~> { (scheme, params) ⇒
-      val (realms, otherParams) = params.partition(_._1 equalsIgnoreCase "realm")
-      HttpChallenge(scheme, realms.headOption.map(_._2), otherParams.toMap)
+    `challenge-or-credentials` ~> { (scheme, tokenAndParams) ⇒
+      tokenAndParams match {
+        case ("", Nil)    ⇒ HttpChallenge(scheme, None)
+        case (token, Nil) ⇒ HttpChallenge(scheme, None, Map("" → token))
+        case (_, params) ⇒ {
+          val (realms, otherParams) = params.partition(_._1 equalsIgnoreCase "realm")
+          HttpChallenge(scheme, realms.headOption.map(_._2), otherParams.toMap)
+        }
+      }
     }
   }
 
-  def `challenge-or-credentials`: Rule2[String, Seq[(String, String)]] = rule {
+  def `challenge-or-credentials`: Rule2[String, (String, Seq[(String, String)])] = rule {
     `auth-scheme` ~ (
-      oneOrMore(`auth-param` ~> (_ → _)).separatedBy(listSep)
-      | `token68` ~> (x ⇒ ("" → x) :: Nil)
-      | push(Nil))
+      oneOrMore(`auth-param` ~> (_ → _)).separatedBy(listSep) ~> (x ⇒ ("", x))
+      | `token68` ~> (x ⇒ (x, Nil))
+      | push(("", Nil)))
   }
 
   // ******************************************************************************************
@@ -220,7 +226,10 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   }
 
   def `generic-credentials` = rule {
-    `challenge-or-credentials` ~> ((scheme, params) ⇒ GenericHttpCredentials(scheme, params.toMap))
+    `challenge-or-credentials` ~> ((scheme, tokenAndParams) ⇒ {
+      val (token, params) = tokenAndParams
+      GenericHttpCredentials(scheme, token, params.toMap)
+    })
   }
 
   /**
