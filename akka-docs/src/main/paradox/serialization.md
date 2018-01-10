@@ -2,7 +2,7 @@
 
 The messages that Akka actors send to each other are JVM objects (e.g. instances of Scala case classes). Message passing between actors that live on the same JVM is straightforward. It is simply done via reference passing. However, messages that have to escape the JVM to reach an actor running on a different host have to undergo some form of serialization (i.e. the objects have to be converted to and from byte arrays).
 
-Akka itself uses Protocol Buffers to serialize internal messages (i.e. cluster gossip messages). However, the serialization mechanism in Akka allows you to write custom serializers and to define which serializer to use for what. 
+Akka itself uses Protocol Buffers to serialize internal messages (i.e. cluster gossip messages). However, the serialization mechanism in Akka allows you to write custom serializers and to define which serializer to use for what.
 
 ## Usage
 
@@ -45,14 +45,22 @@ to disable a default serializer, see @ref:[Disabling the Java Serializer](remoti
 
 ### Enable additional bindings
 
-`akka.Done` is by default serialized by the Java serializer, add the following binding to avoid that.
-It's not enabled by default for compatibility reasons. 
+A few types in Akka are, for backwards-compatibility reasons, still serialized by using Java serializer by default.
+You can switch them to using protocol buffers instead by adding the following bindings or set `akka.actor.allow-java-serialization=off`, which will make them serialized using protocol buffers instead.
+Refer to @ref[Rolling Upgrades](#rolling-upgrades) to understand how it is possible to turn and start using these new
+serializers in your clustered applications.
+
+You can enable them one by one adding by adding their bindings to the misc serializer, like this:
 
 ```
 akka.actor.serialization-bindings {
-  "akka.Done" = akka-misc
+    "akka.Done"                 = akka-misc
+    "akka.actor.Address"        = akka-misc
+    "akka.remote.UniqueAddress" = akka-misc
 }
 ```
+
+Alternatively, you can disable all Java serialization which then automatically will add the `java-serialization-disabled-additional-serialization-bindings` bindings to the active bindings.
 
 ### Verification
 
@@ -83,7 +91,7 @@ Java
 
 
 Scala
-:  @@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #programmatic } 
+:  @@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #programmatic }
 
 Java
 :  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #programmatic }
@@ -149,11 +157,11 @@ that should be serialized using it.
 
 It's recommended to throw `java.io.NotSerializableException` in `fromBinary`
 if the manifest is unknown. This makes it possible to introduce new message types and
-send them to nodes that don't know about them. This is typically needed when performing 
+send them to nodes that don't know about them. This is typically needed when performing
 rolling upgrades, i.e. running a cluster with mixed versions for while.
-`NotSerializableException` is treated as a transient problem in the TCP based remoting 
+`NotSerializableException` is treated as a transient problem in the TCP based remoting
 layer. The problem will be logged and message is dropped. Other exceptions will tear down
-the TCP connection because it can be an indication of corrupt bytes from the underlying 
+the TCP connection because it can be an indication of corrupt bytes from the underlying
 transport.
 
 ### Serializing ActorRefs
@@ -254,13 +262,13 @@ incompatibility as Java serialization does.
 
 A serialized remote message (or persistent event) consists of serializer-id, the manifest, and the binary payload.
 When deserializing it is only looking at the serializer-id to pick which `Serializer` to use for `fromBinary`.
-The message class (the bindings) is not used for deserialization. The manifest is only used within the 
+The message class (the bindings) is not used for deserialization. The manifest is only used within the
 `Serializer` to decide how to deserialize the payload, so one `Serializer` can handle many classes.
 
 That means that it is possible to change serialization for a message by performing two rolling upgrade steps to
 switch to the new serializer.
 
-1. Add the `Serializer` class and define it in `akka.actor.serializers` config section, but not in 
+1. Add the `Serializer` class and define it in `akka.actor.serializers` config section, but not in
   `akka.actor.serialization-bindings`. Perform a rolling upgrade for this change. This means that the
   serializer class exists on all nodes and is registered, but it is still not used for serializing any
   messages. That is important because during the rolling upgrade the old nodes still don't know about
@@ -273,7 +281,7 @@ switch to the new serializer.
    messages and new nodes will be able to deserialize the old format.
 
 As an optional third step the old serializer can be completely removed if it was not used for persistent events.
-It must still be possible to deserialize the events that were stored with the old serializer.     
+It must still be possible to deserialize the events that were stored with the old serializer.
 
 ## External Akka Serializers
 
