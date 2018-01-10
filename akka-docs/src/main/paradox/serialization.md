@@ -46,12 +46,18 @@ to disable a default serializer, see @ref:[Disabling the Java Serializer](remoti
 ### Enable additional bindings
 
 A few types in Akka are, for backwards-compatibility reasons, still serialized by using Java serializer by default.
-You can switch them add the following binding to avoid that, which will make them serialized using protocol buffers instead.
+You can switch them to using protocol buffers instead by adding the following bindings or set `akka.actor.allow-java-serialization=off`, which will make them serialized using protocol buffers instead.
 Refer to @ref[Rolling Upgrades](#rolling-upgrades) to understand how it is possible to turn and start using these new
 serializers in your clustered applications.
 
+Alternatively, you can enable them one by one adding by adding their bindings to the misc serializer, like this:
+
 ```
-akka.actor.serialization-bindings = ${akka.actor.serialization-bindings} ${akka.actor.java-serialization-disabled-additional-serialization-bindings}
+akka.actor.serialization-bindings {
+    "akka.Done"                 = akka-misc
+    "akka.actor.Address"        = akka-misc
+    "akka.remote.UniqueAddress" = akka-misc
+}
 ```
 
 Alternatively, you can disable all Java serialization which then automatically will add the `java-serialization-disabled-additional-serialization-bindings` bindings to the active bindings.

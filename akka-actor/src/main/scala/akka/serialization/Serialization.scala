@@ -50,7 +50,7 @@ object Serialization {
 
           // in addition to the additional settings, we also enable even more bindings if java serialization is disabled:
           val additionalWhenJavaOffKey = "akka.actor.java-serialization-disabled-additional-serialization-bindings"
-          if (!config.getBoolean("akka.actor.allow-java-serialization") && config.hasPath(additionalWhenJavaOffKey)) {
+          if (!config.getBoolean("akka.actor.allow-java-serialization")) {
             bs.withFallback(config.getConfig(additionalWhenJavaOffKey))
           } else bs
         } else {
