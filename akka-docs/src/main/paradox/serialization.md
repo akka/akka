@@ -50,7 +50,7 @@ You can switch them to using protocol buffers instead by adding the following bi
 Refer to @ref[Rolling Upgrades](#rolling-upgrades) to understand how it is possible to turn and start using these new
 serializers in your clustered applications.
 
-Alternatively, you can enable them one by one adding by adding their bindings to the misc serializer, like this:
+You can enable them one by one adding by adding their bindings to the misc serializer, like this:
 
 ```
 akka.actor.serialization-bindings {
