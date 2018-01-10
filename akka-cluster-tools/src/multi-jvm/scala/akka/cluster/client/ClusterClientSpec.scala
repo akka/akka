@@ -308,12 +308,12 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
           log.info("Testing that the receptionist has just one client")
           val l = system.actorOf(Props(classOf[TestReceptionistListener], r), "reporter-receptionist-listener")
 
-          val c = Await.result(system.actorSelection(node(client) / "user" / "client").resolveOne(), timeout.duration)
-          val expectedClients = Set(c)
+          val expectedClient = Await.result(system.actorSelection(node(client) / "user" / "client").resolveOne(), timeout.duration)
           awaitAssert({
             val probe = TestProbe()
             l.tell(TestReceptionistListener.GetLatestClusterClients, probe.ref)
-            probe.expectMsgType[LatestClusterClients].clusterClients should ===(expectedClients)
+            // "ask-client" might still be around, filter
+            probe.expectMsgType[LatestClusterClients].clusterClients should contain(expectedClient)
           }, max = 10.seconds)
         }
       }
