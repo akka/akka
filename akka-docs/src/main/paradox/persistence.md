@@ -94,7 +94,7 @@ Replicated snapshot stores are available as [Community plugins](http://akka.io/c
 <a id="event-sourcing"></a>
 ## Event sourcing
 
-The basic idea behind [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html) is quite simple. A persistent actor receives a (non-persistent) command
+The basic idea behind [Event Sourcing](https://msdn.microsoft.com/en-us/library/jj591559.aspx) is quite simple. A persistent actor receives a (non-persistent) command
 which is first validated if it can be applied to the current state. Here validation can mean anything, from simple
 inspection of a command message's fields up to a conversation with several external services, for example.
 If validation succeeds, events are generated from the command, representing the effect of the command. These events
@@ -102,6 +102,9 @@ are then persisted and, after successful persistence, used to change the actor's
 needs to be recovered, only the persisted events are replayed of which we know that they can be successfully applied.
 In other words, events cannot fail when being replayed to a persistent actor, in contrast to commands. Event sourced
 actors may of course also process commands that do not change application state such as query commands for example.
+
+Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493) by Randy Shoup. It is a short and recommended read if you're starting 
+developing Events based applications. 
 
 Akka persistence supports event sourcing with the @scala[`PersistentActor` trait]@java[`AbstractPersistentActor` abstract class]. An actor that extends this @scala[trait]@java[class] uses the
 `persist` method to persist and handle events. The behavior of @scala[a `PersistentActor`]@java[an `AbstractPersistentActor`]
