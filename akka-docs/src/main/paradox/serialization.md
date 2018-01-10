@@ -50,14 +50,11 @@ You can switch them add the following binding to avoid that, which will make the
 Refer to @ref[Rolling Upgrades](#rolling-upgrades) to understand how it is possible to turn and start using these new
 serializers in your clustered applications.
 
+```
+akka.actor.serialization-bindings = ${akka.actor.serialization-bindings} ${akka.actor.java-serialization-disabled-additional-serialization-bindings}
+```
 
-```
-akka.actor.serialization-bindings {
-  "akka.Done"                 = akka-misc
-  "akka.actor.Address"        = akka-misc
-  "akka.remote.UniqueAddress" = akka-misc
-}
-```
+Alternatively, you can disable all Java serialization which then automatically will add the `java-serialization-disabled-additional-serialization-bindings` bindings to the active bindings.
 
 ### Verification
 

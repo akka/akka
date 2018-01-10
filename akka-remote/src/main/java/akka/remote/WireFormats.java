@@ -8885,803 +8885,6 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:AddressData)
   }
 
-  public interface ClassicUniqueAddressOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
-
-    // required .AddressData address = 1;
-    /**
-     * <code>required .AddressData address = 1;</code>
-     *
-     * <pre>
-     * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-     * </pre>
-     */
-    boolean hasAddress();
-    /**
-     * <code>required .AddressData address = 1;</code>
-     *
-     * <pre>
-     * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-     * </pre>
-     */
-    akka.remote.WireFormats.AddressData getAddress();
-    /**
-     * <code>required .AddressData address = 1;</code>
-     *
-     * <pre>
-     * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-     * </pre>
-     */
-    akka.remote.WireFormats.AddressDataOrBuilder getAddressOrBuilder();
-
-    // required uint32 uid = 2;
-    /**
-     * <code>required uint32 uid = 2;</code>
-     */
-    boolean hasUid();
-    /**
-     * <code>required uint32 uid = 2;</code>
-     */
-    int getUid();
-
-    // optional uint32 uid2 = 3;
-    /**
-     * <code>optional uint32 uid2 = 3;</code>
-     *
-     * <pre>
-     * 64 bit uids but with backward wire compatibility
-     * </pre>
-     */
-    boolean hasUid2();
-    /**
-     * <code>optional uint32 uid2 = 3;</code>
-     *
-     * <pre>
-     * 64 bit uids but with backward wire compatibility
-     * </pre>
-     */
-    int getUid2();
-  }
-  /**
-   * Protobuf type {@code ClassicUniqueAddress}
-   *
-   * <pre>
-   **
-   * Defines a 'raw' remote address with uid.
-   * This encoding will ONLY be used when an `akka.remote.UniqueAddress` is attempted to be serialized *directly*.
-   * </pre>
-   */
-  public static final class ClassicUniqueAddress extends
-      akka.protobuf.GeneratedMessage
-      implements ClassicUniqueAddressOrBuilder {
-    // Use ClassicUniqueAddress.newBuilder() to construct.
-    private ClassicUniqueAddress(akka.protobuf.GeneratedMessage.Builder<?> builder) {
-      super(builder);
-      this.unknownFields = builder.getUnknownFields();
-    }
-    private ClassicUniqueAddress(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final ClassicUniqueAddress defaultInstance;
-    public static ClassicUniqueAddress getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public ClassicUniqueAddress getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
-    @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
-      return this.unknownFields;
-    }
-    private ClassicUniqueAddress(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
-      int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-            case 10: {
-              akka.remote.WireFormats.AddressData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                subBuilder = address_.toBuilder();
-              }
-              address_ = input.readMessage(akka.remote.WireFormats.AddressData.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(address_);
-                address_ = subBuilder.buildPartial();
-              }
-              bitField0_ |= 0x00000001;
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              uid_ = input.readUInt32();
-              break;
-            }
-            case 24: {
-              bitField0_ |= 0x00000004;
-              uid2_ = input.readUInt32();
-              break;
-            }
-          }
-        }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.remote.WireFormats.internal_static_ClassicUniqueAddress_descriptor;
-    }
-
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return akka.remote.WireFormats.internal_static_ClassicUniqueAddress_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.ClassicUniqueAddress.class, akka.remote.WireFormats.ClassicUniqueAddress.Builder.class);
-    }
-
-    public static akka.protobuf.Parser<ClassicUniqueAddress> PARSER =
-        new akka.protobuf.AbstractParser<ClassicUniqueAddress>() {
-      public ClassicUniqueAddress parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new ClassicUniqueAddress(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<ClassicUniqueAddress> getParserForType() {
-      return PARSER;
-    }
-
-    private int bitField0_;
-    // required .AddressData address = 1;
-    public static final int ADDRESS_FIELD_NUMBER = 1;
-    private akka.remote.WireFormats.AddressData address_;
-    /**
-     * <code>required .AddressData address = 1;</code>
-     *
-     * <pre>
-     * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-     * </pre>
-     */
-    public boolean hasAddress() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    /**
-     * <code>required .AddressData address = 1;</code>
-     *
-     * <pre>
-     * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-     * </pre>
-     */
-    public akka.remote.WireFormats.AddressData getAddress() {
-      return address_;
-    }
-    /**
-     * <code>required .AddressData address = 1;</code>
-     *
-     * <pre>
-     * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-     * </pre>
-     */
-    public akka.remote.WireFormats.AddressDataOrBuilder getAddressOrBuilder() {
-      return address_;
-    }
-
-    // required uint32 uid = 2;
-    public static final int UID_FIELD_NUMBER = 2;
-    private int uid_;
-    /**
-     * <code>required uint32 uid = 2;</code>
-     */
-    public boolean hasUid() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    /**
-     * <code>required uint32 uid = 2;</code>
-     */
-    public int getUid() {
-      return uid_;
-    }
-
-    // optional uint32 uid2 = 3;
-    public static final int UID2_FIELD_NUMBER = 3;
-    private int uid2_;
-    /**
-     * <code>optional uint32 uid2 = 3;</code>
-     *
-     * <pre>
-     * 64 bit uids but with backward wire compatibility
-     * </pre>
-     */
-    public boolean hasUid2() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
-    }
-    /**
-     * <code>optional uint32 uid2 = 3;</code>
-     *
-     * <pre>
-     * 64 bit uids but with backward wire compatibility
-     * </pre>
-     */
-    public int getUid2() {
-      return uid2_;
-    }
-
-    private void initFields() {
-      address_ = akka.remote.WireFormats.AddressData.getDefaultInstance();
-      uid_ = 0;
-      uid2_ = 0;
-    }
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
-
-      if (!hasAddress()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasUid()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!getAddress().isInitialized()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, address_);
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeUInt32(2, uid_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeUInt32(3, uid2_);
-      }
-      getUnknownFields().writeTo(output);
-    }
-
-    private int memoizedSerializedSize = -1;
-    public int getSerializedSize() {
-      int size = memoizedSerializedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, address_);
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeUInt32Size(2, uid_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeUInt32Size(3, uid2_);
-      }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
-      return size;
-    }
-
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
-    public static akka.remote.WireFormats.ClassicUniqueAddress parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static akka.remote.WireFormats.ClassicUniqueAddress parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static akka.remote.WireFormats.ClassicUniqueAddress parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static akka.remote.WireFormats.ClassicUniqueAddress parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static akka.remote.WireFormats.ClassicUniqueAddress parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static akka.remote.WireFormats.ClassicUniqueAddress parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-    public static akka.remote.WireFormats.ClassicUniqueAddress parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
-    }
-    public static akka.remote.WireFormats.ClassicUniqueAddress parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
-    }
-    public static akka.remote.WireFormats.ClassicUniqueAddress parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static akka.remote.WireFormats.ClassicUniqueAddress parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.WireFormats.ClassicUniqueAddress prototype) {
-      return newBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() { return newBuilder(this); }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * Protobuf type {@code ClassicUniqueAddress}
-     *
-     * <pre>
-     **
-     * Defines a 'raw' remote address with uid.
-     * This encoding will ONLY be used when an `akka.remote.UniqueAddress` is attempted to be serialized *directly*.
-     * </pre>
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.ClassicUniqueAddressOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.remote.WireFormats.internal_static_ClassicUniqueAddress_descriptor;
-      }
-
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return akka.remote.WireFormats.internal_static_ClassicUniqueAddress_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.ClassicUniqueAddress.class, akka.remote.WireFormats.ClassicUniqueAddress.Builder.class);
-      }
-
-      // Construct using akka.remote.WireFormats.ClassicUniqueAddress.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-          getAddressFieldBuilder();
-        }
-      }
-      private static Builder create() {
-        return new Builder();
-      }
-
-      public Builder clear() {
-        super.clear();
-        if (addressBuilder_ == null) {
-          address_ = akka.remote.WireFormats.AddressData.getDefaultInstance();
-        } else {
-          addressBuilder_.clear();
-        }
-        bitField0_ = (bitField0_ & ~0x00000001);
-        uid_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000002);
-        uid2_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000004);
-        return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.remote.WireFormats.internal_static_ClassicUniqueAddress_descriptor;
-      }
-
-      public akka.remote.WireFormats.ClassicUniqueAddress getDefaultInstanceForType() {
-        return akka.remote.WireFormats.ClassicUniqueAddress.getDefaultInstance();
-      }
-
-      public akka.remote.WireFormats.ClassicUniqueAddress build() {
-        akka.remote.WireFormats.ClassicUniqueAddress result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      public akka.remote.WireFormats.ClassicUniqueAddress buildPartial() {
-        akka.remote.WireFormats.ClassicUniqueAddress result = new akka.remote.WireFormats.ClassicUniqueAddress(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        if (addressBuilder_ == null) {
-          result.address_ = address_;
-        } else {
-          result.address_ = addressBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-          to_bitField0_ |= 0x00000002;
-        }
-        result.uid_ = uid_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-          to_bitField0_ |= 0x00000004;
-        }
-        result.uid2_ = uid2_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
-
-      public Builder mergeFrom(akka.protobuf.Message other) {
-        if (other instanceof akka.remote.WireFormats.ClassicUniqueAddress) {
-          return mergeFrom((akka.remote.WireFormats.ClassicUniqueAddress)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(akka.remote.WireFormats.ClassicUniqueAddress other) {
-        if (other == akka.remote.WireFormats.ClassicUniqueAddress.getDefaultInstance()) return this;
-        if (other.hasAddress()) {
-          mergeAddress(other.getAddress());
-        }
-        if (other.hasUid()) {
-          setUid(other.getUid());
-        }
-        if (other.hasUid2()) {
-          setUid2(other.getUid2());
-        }
-        this.mergeUnknownFields(other.getUnknownFields());
-        return this;
-      }
-
-      public final boolean isInitialized() {
-        if (!hasAddress()) {
-          
-          return false;
-        }
-        if (!hasUid()) {
-          
-          return false;
-        }
-        if (!getAddress().isInitialized()) {
-          
-          return false;
-        }
-        return true;
-      }
-
-      public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        akka.remote.WireFormats.ClassicUniqueAddress parsedMessage = null;
-        try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (akka.remote.WireFormats.ClassicUniqueAddress) e.getUnfinishedMessage();
-          throw e;
-        } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-      private int bitField0_;
-
-      // required .AddressData address = 1;
-      private akka.remote.WireFormats.AddressData address_ = akka.remote.WireFormats.AddressData.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder> addressBuilder_;
-      /**
-       * <code>required .AddressData address = 1;</code>
-       *
-       * <pre>
-       * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-       * </pre>
-       */
-      public boolean hasAddress() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      /**
-       * <code>required .AddressData address = 1;</code>
-       *
-       * <pre>
-       * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-       * </pre>
-       */
-      public akka.remote.WireFormats.AddressData getAddress() {
-        if (addressBuilder_ == null) {
-          return address_;
-        } else {
-          return addressBuilder_.getMessage();
-        }
-      }
-      /**
-       * <code>required .AddressData address = 1;</code>
-       *
-       * <pre>
-       * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-       * </pre>
-       */
-      public Builder setAddress(akka.remote.WireFormats.AddressData value) {
-        if (addressBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          address_ = value;
-          onChanged();
-        } else {
-          addressBuilder_.setMessage(value);
-        }
-        bitField0_ |= 0x00000001;
-        return this;
-      }
-      /**
-       * <code>required .AddressData address = 1;</code>
-       *
-       * <pre>
-       * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-       * </pre>
-       */
-      public Builder setAddress(
-          akka.remote.WireFormats.AddressData.Builder builderForValue) {
-        if (addressBuilder_ == null) {
-          address_ = builderForValue.build();
-          onChanged();
-        } else {
-          addressBuilder_.setMessage(builderForValue.build());
-        }
-        bitField0_ |= 0x00000001;
-        return this;
-      }
-      /**
-       * <code>required .AddressData address = 1;</code>
-       *
-       * <pre>
-       * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-       * </pre>
-       */
-      public Builder mergeAddress(akka.remote.WireFormats.AddressData value) {
-        if (addressBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
-              address_ != akka.remote.WireFormats.AddressData.getDefaultInstance()) {
-            address_ =
-              akka.remote.WireFormats.AddressData.newBuilder(address_).mergeFrom(value).buildPartial();
-          } else {
-            address_ = value;
-          }
-          onChanged();
-        } else {
-          addressBuilder_.mergeFrom(value);
-        }
-        bitField0_ |= 0x00000001;
-        return this;
-      }
-      /**
-       * <code>required .AddressData address = 1;</code>
-       *
-       * <pre>
-       * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-       * </pre>
-       */
-      public Builder clearAddress() {
-        if (addressBuilder_ == null) {
-          address_ = akka.remote.WireFormats.AddressData.getDefaultInstance();
-          onChanged();
-        } else {
-          addressBuilder_.clear();
-        }
-        bitField0_ = (bitField0_ & ~0x00000001);
-        return this;
-      }
-      /**
-       * <code>required .AddressData address = 1;</code>
-       *
-       * <pre>
-       * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-       * </pre>
-       */
-      public akka.remote.WireFormats.AddressData.Builder getAddressBuilder() {
-        bitField0_ |= 0x00000001;
-        onChanged();
-        return getAddressFieldBuilder().getBuilder();
-      }
-      /**
-       * <code>required .AddressData address = 1;</code>
-       *
-       * <pre>
-       * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-       * </pre>
-       */
-      public akka.remote.WireFormats.AddressDataOrBuilder getAddressOrBuilder() {
-        if (addressBuilder_ != null) {
-          return addressBuilder_.getMessageOrBuilder();
-        } else {
-          return address_;
-        }
-      }
-      /**
-       * <code>required .AddressData address = 1;</code>
-       *
-       * <pre>
-       * ... since `UniqueAddressAddress` is already taken in this package by Artery's Address (which compacts uid into one field order slightly)
-       * </pre>
-       */
-      private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder> 
-          getAddressFieldBuilder() {
-        if (addressBuilder_ == null) {
-          addressBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder>(
-                  address_,
-                  getParentForChildren(),
-                  isClean());
-          address_ = null;
-        }
-        return addressBuilder_;
-      }
-
-      // required uint32 uid = 2;
-      private int uid_ ;
-      /**
-       * <code>required uint32 uid = 2;</code>
-       */
-      public boolean hasUid() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      /**
-       * <code>required uint32 uid = 2;</code>
-       */
-      public int getUid() {
-        return uid_;
-      }
-      /**
-       * <code>required uint32 uid = 2;</code>
-       */
-      public Builder setUid(int value) {
-        bitField0_ |= 0x00000002;
-        uid_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required uint32 uid = 2;</code>
-       */
-      public Builder clearUid() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        uid_ = 0;
-        onChanged();
-        return this;
-      }
-
-      // optional uint32 uid2 = 3;
-      private int uid2_ ;
-      /**
-       * <code>optional uint32 uid2 = 3;</code>
-       *
-       * <pre>
-       * 64 bit uids but with backward wire compatibility
-       * </pre>
-       */
-      public boolean hasUid2() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      /**
-       * <code>optional uint32 uid2 = 3;</code>
-       *
-       * <pre>
-       * 64 bit uids but with backward wire compatibility
-       * </pre>
-       */
-      public int getUid2() {
-        return uid2_;
-      }
-      /**
-       * <code>optional uint32 uid2 = 3;</code>
-       *
-       * <pre>
-       * 64 bit uids but with backward wire compatibility
-       * </pre>
-       */
-      public Builder setUid2(int value) {
-        bitField0_ |= 0x00000004;
-        uid2_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional uint32 uid2 = 3;</code>
-       *
-       * <pre>
-       * 64 bit uids but with backward wire compatibility
-       * </pre>
-       */
-      public Builder clearUid2() {
-        bitField0_ = (bitField0_ & ~0x00000004);
-        uid2_ = 0;
-        onChanged();
-        return this;
-      }
-
-      // @@protoc_insertion_point(builder_scope:ClassicUniqueAddress)
-    }
-
-    static {
-      defaultInstance = new ClassicUniqueAddress(true);
-      defaultInstance.initFields();
-    }
-
-    // @@protoc_insertion_point(class_scope:ClassicUniqueAddress)
-  }
-
   public interface AkkaProtocolMessageOrBuilder
       extends akka.protobuf.MessageOrBuilder {
 
@@ -17796,11 +16999,6 @@ public final class WireFormats {
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_AddressData_fieldAccessorTable;
   private static akka.protobuf.Descriptors.Descriptor
-    internal_static_ClassicUniqueAddress_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_ClassicUniqueAddress_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
     internal_static_AkkaProtocolMessage_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
@@ -17890,41 +17088,39 @@ public final class WireFormats {
       "\030routerConfigSerializerId\030\n \001(\005\022\034\n\024route" +
       "rConfigManifest\030\013 \001(\t\"O\n\013AddressData\022\016\n\006" +
       "system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003" +
-      " \002(\r\022\020\n\010protocol\030\004 \001(\t\"P\n\024ClassicUniqueA" +
-      "ddress\022\035\n\007address\030\001 \002(\0132\014.AddressData\022\013\n" +
-      "\003uid\030\002 \002(\r\022\014\n\004uid2\030\003 \001(\r\"P\n\023AkkaProtocol" +
-      "Message\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030",
-      "\002 \001(\0132\023.AkkaControlMessage\"b\n\022AkkaContro" +
-      "lMessage\022!\n\013commandType\030\001 \002(\0162\014.CommandT" +
-      "ype\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandsha" +
-      "keInfo\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 " +
-      "\002(\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie" +
-      "\030\003 \001(\t\"8\n\016FiniteDuration\022\r\n\005value\030\001 \002(\003\022" +
-      "\027\n\004unit\030\002 \002(\0162\t.TimeUnit\")\n\013RemoteScope\022" +
-      "\032\n\004node\030\001 \002(\0132\014.AddressData\"\261\001\n\016DefaultR" +
-      "esizer\022\022\n\nlowerBound\030\001 \002(\r\022\022\n\nupperBound" +
-      "\030\002 \002(\r\022\031\n\021pressureThreshold\030\003 \002(\r\022\022\n\nram",
-      "pupRate\030\004 \002(\001\022\030\n\020backoffThreshold\030\005 \002(\001\022" +
-      "\023\n\013backoffRate\030\006 \002(\001\022\031\n\021messagesPerResiz" +
-      "e\030\007 \002(\r\"A\n\nFromConfig\022\031\n\007resizer\030\001 \001(\0132\010" +
-      ".Payload\022\030\n\020routerDispatcher\030\002 \001(\t\"{\n\022Ge" +
-      "nericRoutingPool\022\025\n\rnrOfInstances\030\001 \002(\r\022" +
-      "\030\n\020routerDispatcher\030\002 \001(\t\022\031\n\021usePoolDisp" +
-      "atcher\030\003 \002(\010\022\031\n\007resizer\030\004 \001(\0132\010.Payload\"" +
-      "Z\n\021ScatterGatherPool\022$\n\007generic\030\001 \002(\0132\023." +
-      "GenericRoutingPool\022\037\n\006within\030\002 \002(\0132\017.Fin" +
-      "iteDuration\"|\n\020TailChoppingPool\022$\n\007gener",
-      "ic\030\001 \002(\0132\023.GenericRoutingPool\022\037\n\006within\030" +
-      "\002 \002(\0132\017.FiniteDuration\022!\n\010interval\030\003 \002(\013" +
-      "2\017.FiniteDuration\"J\n\022RemoteRouterConfig\022" +
-      "\027\n\005local\030\001 \002(\0132\010.Payload\022\033\n\005nodes\030\002 \003(\0132" +
-      "\014.AddressData*{\n\013CommandType\022\r\n\tASSOCIAT" +
-      "E\020\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032" +
-      "DISASSOCIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOC" +
-      "IATE_QUARANTINED\020\005*n\n\010TimeUnit\022\017\n\013NANOSE" +
-      "CONDS\020\001\022\020\n\014MICROSECONDS\020\002\022\020\n\014MILLISECOND" +
-      "S\020\003\022\013\n\007SECONDS\020\004\022\013\n\007MINUTES\020\005\022\t\n\005HOURS\020\006",
-      "\022\010\n\004DAYS\020\007B\017\n\013akka.remoteH\001"
+      " \002(\r\022\020\n\010protocol\030\004 \001(\t\"P\n\023AkkaProtocolMe" +
+      "ssage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030\002 " +
+      "\001(\0132\023.AkkaControlMessage\"b\n\022AkkaControlM" +
+      "essage\022!\n\013commandType\030\001 \002(\0162\014.CommandTyp",
+      "e\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandshake" +
+      "Info\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 \002(" +
+      "\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030\003" +
+      " \001(\t\"8\n\016FiniteDuration\022\r\n\005value\030\001 \002(\003\022\027\n" +
+      "\004unit\030\002 \002(\0162\t.TimeUnit\")\n\013RemoteScope\022\032\n" +
+      "\004node\030\001 \002(\0132\014.AddressData\"\261\001\n\016DefaultRes" +
+      "izer\022\022\n\nlowerBound\030\001 \002(\r\022\022\n\nupperBound\030\002" +
+      " \002(\r\022\031\n\021pressureThreshold\030\003 \002(\r\022\022\n\nrampu" +
+      "pRate\030\004 \002(\001\022\030\n\020backoffThreshold\030\005 \002(\001\022\023\n" +
+      "\013backoffRate\030\006 \002(\001\022\031\n\021messagesPerResize\030",
+      "\007 \002(\r\"A\n\nFromConfig\022\031\n\007resizer\030\001 \001(\0132\010.P" +
+      "ayload\022\030\n\020routerDispatcher\030\002 \001(\t\"{\n\022Gene" +
+      "ricRoutingPool\022\025\n\rnrOfInstances\030\001 \002(\r\022\030\n" +
+      "\020routerDispatcher\030\002 \001(\t\022\031\n\021usePoolDispat" +
+      "cher\030\003 \002(\010\022\031\n\007resizer\030\004 \001(\0132\010.Payload\"Z\n" +
+      "\021ScatterGatherPool\022$\n\007generic\030\001 \002(\0132\023.Ge" +
+      "nericRoutingPool\022\037\n\006within\030\002 \002(\0132\017.Finit" +
+      "eDuration\"|\n\020TailChoppingPool\022$\n\007generic" +
+      "\030\001 \002(\0132\023.GenericRoutingPool\022\037\n\006within\030\002 " +
+      "\002(\0132\017.FiniteDuration\022!\n\010interval\030\003 \002(\0132\017",
+      ".FiniteDuration\"J\n\022RemoteRouterConfig\022\027\n" +
+      "\005local\030\001 \002(\0132\010.Payload\022\033\n\005nodes\030\002 \003(\0132\014." +
+      "AddressData*{\n\013CommandType\022\r\n\tASSOCIATE\020" +
+      "\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DI" +
+      "SASSOCIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIA" +
+      "TE_QUARANTINED\020\005*n\n\010TimeUnit\022\017\n\013NANOSECO" +
+      "NDS\020\001\022\020\n\014MICROSECONDS\020\002\022\020\n\014MILLISECONDS\020" +
+      "\003\022\013\n\007SECONDS\020\004\022\013\n\007MINUTES\020\005\022\t\n\005HOURS\020\006\022\010" +
+      "\n\004DAYS\020\007B\017\n\013akka.remoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -17985,74 +17181,68 @@ public final class WireFormats {
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_AddressData_descriptor,
               new java.lang.String[] { "System", "Hostname", "Port", "Protocol", });
-          internal_static_ClassicUniqueAddress_descriptor =
-            getDescriptor().getMessageTypes().get(9);
-          internal_static_ClassicUniqueAddress_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_ClassicUniqueAddress_descriptor,
-              new java.lang.String[] { "Address", "Uid", "Uid2", });
           internal_static_AkkaProtocolMessage_descriptor =
-            getDescriptor().getMessageTypes().get(10);
+            getDescriptor().getMessageTypes().get(9);
           internal_static_AkkaProtocolMessage_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_AkkaProtocolMessage_descriptor,
               new java.lang.String[] { "Payload", "Instruction", });
           internal_static_AkkaControlMessage_descriptor =
-            getDescriptor().getMessageTypes().get(11);
+            getDescriptor().getMessageTypes().get(10);
           internal_static_AkkaControlMessage_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_AkkaControlMessage_descriptor,
               new java.lang.String[] { "CommandType", "HandshakeInfo", });
           internal_static_AkkaHandshakeInfo_descriptor =
-            getDescriptor().getMessageTypes().get(12);
+            getDescriptor().getMessageTypes().get(11);
           internal_static_AkkaHandshakeInfo_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_AkkaHandshakeInfo_descriptor,
               new java.lang.String[] { "Origin", "Uid", "Cookie", });
           internal_static_FiniteDuration_descriptor =
-            getDescriptor().getMessageTypes().get(13);
+            getDescriptor().getMessageTypes().get(12);
           internal_static_FiniteDuration_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_FiniteDuration_descriptor,
               new java.lang.String[] { "Value", "Unit", });
           internal_static_RemoteScope_descriptor =
-            getDescriptor().getMessageTypes().get(14);
+            getDescriptor().getMessageTypes().get(13);
           internal_static_RemoteScope_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteScope_descriptor,
               new java.lang.String[] { "Node", });
           internal_static_DefaultResizer_descriptor =
-            getDescriptor().getMessageTypes().get(15);
+            getDescriptor().getMessageTypes().get(14);
           internal_static_DefaultResizer_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_DefaultResizer_descriptor,
               new java.lang.String[] { "LowerBound", "UpperBound", "PressureThreshold", "RampupRate", "BackoffThreshold", "BackoffRate", "MessagesPerResize", });
           internal_static_FromConfig_descriptor =
-            getDescriptor().getMessageTypes().get(16);
+            getDescriptor().getMessageTypes().get(15);
           internal_static_FromConfig_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_FromConfig_descriptor,
               new java.lang.String[] { "Resizer", "RouterDispatcher", });
           internal_static_GenericRoutingPool_descriptor =
-            getDescriptor().getMessageTypes().get(17);
+            getDescriptor().getMessageTypes().get(16);
           internal_static_GenericRoutingPool_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_GenericRoutingPool_descriptor,
               new java.lang.String[] { "NrOfInstances", "RouterDispatcher", "UsePoolDispatcher", "Resizer", });
           internal_static_ScatterGatherPool_descriptor =
-            getDescriptor().getMessageTypes().get(18);
+            getDescriptor().getMessageTypes().get(17);
           internal_static_ScatterGatherPool_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ScatterGatherPool_descriptor,
               new java.lang.String[] { "Generic", "Within", });
           internal_static_TailChoppingPool_descriptor =
-            getDescriptor().getMessageTypes().get(19);
+            getDescriptor().getMessageTypes().get(18);
           internal_static_TailChoppingPool_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_TailChoppingPool_descriptor,
               new java.lang.String[] { "Generic", "Within", "Interval", });
           internal_static_RemoteRouterConfig_descriptor =
-            getDescriptor().getMessageTypes().get(20);
+            getDescriptor().getMessageTypes().get(19);
           internal_static_RemoteRouterConfig_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteRouterConfig_descriptor,

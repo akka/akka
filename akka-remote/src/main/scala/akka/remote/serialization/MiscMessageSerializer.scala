@@ -148,14 +148,23 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
           .setProtocol(protocol)
       case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
     }
+  private def protoForAddress(address: Address): ArteryControlFormats.Address.Builder =
+    address match {
+      case Address(protocol, actorSystem, Some(host), Some(port)) ⇒
+        ArteryControlFormats.Address.newBuilder()
+          .setSystem(actorSystem)
+          .setHostname(host)
+          .setPort(port)
+          .setProtocol(protocol)
+      case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
+    }
   private def serializeAddressData(address: Address): Array[Byte] =
     protoForAddressData(address).build().toByteArray
 
   private def serializeClassicUniqueAddress(uniqueAddress: UniqueAddress): Array[Byte] =
-    WireFormats.ClassicUniqueAddress.newBuilder()
-      .setUid(uniqueAddress.uid.toInt)
-      .setUid2((uniqueAddress.uid >> 32).toInt)
-      .setAddress(protoForAddressData(uniqueAddress.address))
+    ArteryControlFormats.UniqueAddress.newBuilder()
+      .setUid(uniqueAddress.uid)
+      .setAddress(protoForAddress(uniqueAddress.address))
       .build().toByteArray
 
   private def serializeDefaultResizer(dr: DefaultResizer): Array[Byte] = {
@@ -310,7 +319,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     KillManifest → ((_) ⇒ Kill),
     RemoteWatcherHBManifest → ((_) ⇒ RemoteWatcher.Heartbeat),
     DoneManifest → ((_) ⇒ Done),
-    AddressManifest → deserializeAddress,
+    AddressManifest → deserializeAddressData,
     UniqueAddressManifest → deserializeUniqueAddress,
     RemoteWatcherHBRespManifest → deserializeHeartbeatRsp,
     ActorInitializationExceptionManifest → deserializeActorInitializationException,
@@ -416,10 +425,19 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private def deserializeStatusFailure(bytes: Array[Byte]): Status.Failure =
     Status.Failure(payloadSupport.deserializePayload(ContainerFormats.Payload.parseFrom(bytes)).asInstanceOf[Throwable])
 
-  private def deserializeAddress(bytes: Array[Byte]): Address =
-    addressFromProto(WireFormats.AddressData.parseFrom(bytes))
+  private def deserializeAddressData(bytes: Array[Byte]): Address =
+    addressFromDataProto(WireFormats.AddressData.parseFrom(bytes))
 
-  private def addressFromProto(a: WireFormats.AddressData) = {
+  private def addressFromDataProto(a: WireFormats.AddressData): Address = {
+    Address(
+      a.getProtocol,
+      a.getSystem,
+      // technicaly the presence of hostname and port are guaranteed, see our serializeAddressData
+      if (a.hasHostname) Some(a.getHostname) else None,
+      if (a.hasPort) Some(a.getPort) else None
+    )
+  }
+  private def addressFromProto(a: ArteryControlFormats.Address): Address = {
     Address(
       a.getProtocol,
       a.getSystem,
@@ -430,16 +448,10 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   }
 
   private def deserializeUniqueAddress(bytes: Array[Byte]): UniqueAddress = {
-    val u = WireFormats.ClassicUniqueAddress.parseFrom(bytes)
+    val u = ArteryControlFormats.UniqueAddress.parseFrom(bytes)
     UniqueAddress(
       addressFromProto(u.getAddress),
-      if (u.hasUid2) {
-        // new remote node join the two parts of the long uid back
-        (u.getUid2.toLong << 32) | (u.getUid & 0xFFFFFFFFL)
-      } else {
-        // old remote node
-        u.getUid.toLong
-      }
+      u.getUid
     )
   }
 

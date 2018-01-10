@@ -23,12 +23,8 @@ import akka.routing._
 object MiscMessageSerializerSpec {
   val serializationTestOverrides =
     """
-    akka.actor.serialization-bindings {
-      "akka.remote.serialization.MiscMessageSerializerSpec$TestException" = akka-misc
-      # not enabled by default
-      "akka.Done"                = akka-misc
-      "akka.actor.Address"       = akka-misc
-      "akka.remote.UniqueAddress" = akka-misc
+    akka.actor {
+      serialization-bindings = ${akka.actor.serialization-bindings} { "akka.remote.serialization.MiscMessageSerializerSpec$TestException" = akka-misc } ${akka.actor.java-serialization-disabled-additional-serialization-bindings}
     }
     """
 
