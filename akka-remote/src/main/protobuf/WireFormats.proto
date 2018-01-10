@@ -137,16 +137,6 @@ enum CommandType {
 }
 
 /**
- * Defines a remote address.
- */
-message AddressData {
-  required string system = 1;
-  required string hostname = 2;
-  required uint32 port = 3;
-  optional string protocol = 4;
-}
-
-/**
  * java.util.concurrent.TimeUnit enum
  */
 enum TimeUnit {
@@ -201,6 +191,16 @@ message TailChoppingPool {
   required GenericRoutingPool generic = 1;
   required FiniteDuration within = 2;
   required FiniteDuration interval = 3;
+}
+
+/**
+ * Defines a remote address.
+ */
+message AddressData {
+  required string system = 1;
+  required string hostname = 2;
+  required uint32 port = 3;
+  optional string protocol = 4;
 }
 
 message RemoteRouterConfig {
