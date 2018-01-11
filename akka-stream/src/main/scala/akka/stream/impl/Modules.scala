@@ -6,6 +6,7 @@ package akka.stream.impl
 import akka.NotUsed
 import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.dispatch.Dispatchers
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 import org.reactivestreams._
