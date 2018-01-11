@@ -83,8 +83,8 @@ import akka.actor.typed.scaladsl.Behaviors
     wrap(Restarter.initialUndefer(ctx, initialBehavior), afterException = true)
   }
 
-  protected final def supervise(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] =
-    Behavior.wrapNonSpecial[T, T](b, ctx)(wrap(_, afterException = false))
+  protected final def supervise(nextBehavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] =
+    Behavior.wrapNonSpecial[T, T](behavior, nextBehavior, ctx)(wrap(_, afterException = false))
 
   override def receiveSignal(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
     try {
