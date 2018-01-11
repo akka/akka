@@ -20,7 +20,7 @@ object AkkaBuild {
 
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization := "com.typesafe.akka",
-    version := "2.5-SNAPSHOT")
+    version := "2.5.9")
 
   lazy val rootSettings = Release.settings ++
     UnidocRoot.akkaSettings ++
