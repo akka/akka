@@ -206,6 +206,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](delegate: scaladsl.BidiFlow[I1, O
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
+  @deprecated("Use addAttributes instead of withAttributes, will be made internal", "2.5.8")
   override def withAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(delegate.withAttributes(attr))
 

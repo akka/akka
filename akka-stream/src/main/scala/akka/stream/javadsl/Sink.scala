@@ -326,6 +326,7 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
    * of multiple graphs, new attributes on the composite will be less specific than attributes
    * set directly on the individual graphs of the composite.
    */
+  @deprecated("Use addAttributes instead of withAttributes, will be made internal", "2.5.8")
   override def withAttributes(attr: Attributes): javadsl.Sink[In, Mat] =
     new Sink(delegate.withAttributes(attr))
 

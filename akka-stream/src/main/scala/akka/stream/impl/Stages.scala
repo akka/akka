@@ -23,13 +23,12 @@ import akka.stream._
     val map = name("map")
     val log = name("log")
     val filter = name("filter")
-    val filterNot = name("filterNot")
+
     val collect = name("collect")
     val recover = name("recover")
     val mapAsync = name("mapAsync")
     val mapAsyncUnordered = name("mapAsyncUnordered")
     val grouped = name("grouped")
-    val groupedWithin = name("groupedWithin")
     val groupedWeightedWithin = name("groupedWeightedWithin")
     val limit = name("limit")
     val limitWeighted = name("limitWeighted")
@@ -45,9 +44,7 @@ import akka.stream._
     val reduce = name("reduce")
     val intersperse = name("intersperse")
     val buffer = name("buffer")
-    val conflate = name("conflate")
     val batch = name("batch")
-    val batchWeighted = name("batchWeighted")
     val expand = name("expand")
     val statefulMapConcat = name("statefulMapConcat")
     val detacher = name("detacher")
@@ -82,7 +79,6 @@ import akka.stream._
     val unzip = name("unzip")
     val concat = name("concat")
     val orElse = name("orElse")
-    val repeat = name("repeat")
     val unfold = name("unfold")
     val unfoldAsync = name("unfoldAsync")
     val delay = name("delay")
@@ -90,8 +86,7 @@ import akka.stream._
     val terminationWatcher = name("terminationWatcher")
 
     val publisherSource = name("publisherSource")
-    val iterableSource = name("iterableSource")
-    val cycledSource = name("cycledSource")
+
     val futureSource = name("futureSource")
     val futureFlattenSource = name("futureFlattenSource")
     val tickSource = name("tickSource")
@@ -110,16 +105,10 @@ import akka.stream._
     val fileSource = name("fileSource") and IODispatcher
     val unfoldResourceSource = name("unfoldResourceSource") and IODispatcher
     val unfoldResourceSourceAsync = name("unfoldResourceSourceAsync") and IODispatcher
-    val asJavaStream = name("asJavaStream") and IODispatcher
-    val javaCollectorParallelUnordered = name("javaCollectorParallelUnordered")
-    val javaCollector = name("javaCollector")
+    val asJavaStream = Attributes(IODispatcher)
 
     val subscriberSink = name("subscriberSink")
     val cancelledSink = name("cancelledSink")
-    val headSink = name("headSink") and inputBufferOne
-    val headOptionSink = name("headOptionSink") and inputBufferOne
-    val lastSink = name("lastSink")
-    val lastOptionSink = name("lastOptionSink")
     val seqSink = name("seqSink")
     val publisherSink = name("publisherSink")
     val fanoutPublisherSink = name("fanoutPublisherSink")

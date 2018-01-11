@@ -2205,6 +2205,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * Note that this operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
+  @deprecated("Use addAttributes instead of withAttributes, will be made internal", "2.5.8")
   override def withAttributes(attr: Attributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr))
 
@@ -2388,11 +2389,12 @@ abstract class RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
    */
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): RunnableGraph[Mat2]
 
+  @deprecated("Use addAttributes instead of withAttributes, will be made internal", "2.5.8")
   override def withAttributes(attr: Attributes): RunnableGraph[Mat]
 
   override def addAttributes(attr: Attributes): RunnableGraph[Mat] =
     withAttributes(traversalBuilder.attributes and attr)
 
   override def named(name: String): RunnableGraph[Mat] =
-    withAttributes(Attributes.name(name))
+    super.named(name).asInstanceOf[RunnableGraph[Mat]]
 }

@@ -5,6 +5,7 @@ package akka.stream
 
 import akka.stream.impl.{ GraphStageTag, IslandTag, TraversalBuilder }
 
+import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 
 /**
@@ -28,9 +29,30 @@ trait Graph[+S <: Shape, +M] {
    */
   private[stream] def traversalBuilder: TraversalBuilder
 
+  @deprecated("Use addAttributes instead of withAttributes, will be made internal", "2.5.8")
   def withAttributes(attr: Attributes): Graph[S, M]
 
-  def named(name: String): Graph[S, M] = addAttributes(Attributes.name(name))
+  /**
+   * Add a name for this graph, if this node or composed node already has a name it will be replaced.
+   */
+  def named(name: String): Graph[S, M] = {
+    traversalBuilder.attributes.get[Attributes.Name] match {
+      case Some(previous) if previous.n != name ⇒
+        @tailrec
+        def replaceFirstName(attrs: List[Attributes.Attribute], acc: List[Attributes.Attribute]): List[Attributes.Attribute] =
+          attrs match {
+            case (head: Attributes.Name) :: tail ⇒ acc.reverse ::: Attributes.Name(name) :: tail
+            case head :: tail                    ⇒ replaceFirstName(tail, head :: acc)
+            case Nil                             ⇒ throw new IllegalStateException("Never found Name attribute, something is seriously wrong.")
+          }
+
+        // to make names form a path through the graph, we need to avoid having multiple names
+        // added on the same "level" of the graph
+        withAttributes(Attributes(replaceFirstName(traversalBuilder.attributes.attributeList, Nil)))
+      case Some(_) ⇒ this // same name added twice
+      case _       ⇒ addAttributes(Attributes.name(name))
+    }
+  }
 
   /**
    * Put an asynchronous boundary around this `Graph`

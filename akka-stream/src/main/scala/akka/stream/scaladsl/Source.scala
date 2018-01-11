@@ -143,6 +143,7 @@ final class Source[+Out, +Mat](
    * of multiple graphs, new attributes on the composite will be less specific than attributes
    * set directly on the individual graphs of the composite.
    */
+  @deprecated("Use addAttributes instead of withAttributes, will be made internal", "2.5.8")
   override def withAttributes(attr: Attributes): Repr[Out] =
     new Source(traversalBuilder.setAttributes(attr), shape)
 
@@ -152,12 +153,14 @@ final class Source[+Out, +Mat](
    * of multiple graphs, the added attributes will be on the composite and therefore less specific than attributes
    * set directly on the individual graphs of the composite.
    */
-  override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(traversalBuilder.attributes and attr)
+  override def addAttributes(attr: Attributes): Repr[Out] =
+    super.addAttributes(attr).asInstanceOf[Repr[Out]]
 
   /**
    * Add a ``name`` attribute to this Source.
    */
-  override def named(name: String): Repr[Out] = addAttributes(Attributes.name(name))
+  override def named(name: String): Repr[Out] =
+    super.named(name).asInstanceOf[Repr[Out]]
 
   /**
    * Put an asynchronous boundary around this `Source`
@@ -246,7 +249,7 @@ object Source {
    */
   def cycle[T](f: () ⇒ Iterator[T]): Source[T, NotUsed] = {
     val iterator = Iterator.continually { val i = f(); if (i.isEmpty) throw new IllegalArgumentException("empty iterator") else i }.flatten
-    fromIterator(() ⇒ iterator).withAttributes(DefaultAttributes.cycledSource)
+    fromIterator(() ⇒ iterator).named("cycledSource")
   }
 
   /**
@@ -282,7 +285,7 @@ object Source {
    * beginning) regardless of when they subscribed.
    */
   def apply[T](iterable: immutable.Iterable[T]): Source[T, NotUsed] =
-    single(iterable).mapConcat(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.iterableSource)
+    single(iterable).mapConcat(ConstantFun.scalaIdentityFunction).named("iterableSource")
 
   /**
    * Starts a new `Source` from the given `Future`. The stream will consist of
@@ -339,7 +342,7 @@ object Source {
    */
   def repeat[T](element: T): Source[T, NotUsed] = {
     val next = Some((element, element))
-    unfold(element)(_ ⇒ next).withAttributes(DefaultAttributes.repeat)
+    unfold(element)(_ ⇒ next).named("repeat")
   }
 
   /**
@@ -547,7 +550,7 @@ object Source {
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueueWithComplete[T]] =
-    Source.fromGraph(new QueueSource(bufferSize, overflowStrategy).withAttributes(DefaultAttributes.queueSource))
+    Source.fromGraph(new QueueSource(bufferSize, overflowStrategy))
 
   /**
    * Start a new `Source` from some resource which can be opened, read and closed.
