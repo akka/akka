@@ -7,10 +7,10 @@ package akka.persistence
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ActorCell, DeadLetter, StashOverflowException}
+import akka.actor.{ ActorCell, DeadLetter, StashOverflowException }
 import akka.annotation.InternalApi
 import akka.dispatch.Envelope
-import akka.event.{Logging, LoggingAdapter}
+import akka.event.{ Logging, LoggingAdapter }
 import akka.util.Helpers.ConfigOps
 
 import scala.collection.immutable
@@ -46,7 +46,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   with PersistenceIdentity with PersistenceRecovery {
   import Eventsourced._
   import JournalProtocol._
-  import SnapshotProtocol.{LoadSnapshotFailed, LoadSnapshotResult}
+  import SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
 
   {
     val interfaces = getClass.getInterfaces
