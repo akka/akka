@@ -55,8 +55,10 @@ import scala.util.control.NonFatal
   protected def loggingEnabled: Boolean
 
   /**
-   * Invoked when the actor is created (or re-created on restart) so that the Supervisor type can deal
-   * with initialization failures.
+   * Invoked when the actor is created (or re-created on restart) this is where a restarter implementation
+   * can provide logic for dealing with exceptions thrown when running any actor initialization logic (undeferring).
+   *
+   * FIXME: there is something with nested supervisors and init/undefer that I'm missing here, figure out what
    *
    * @return The initial behavior of the actor after undeferring if needed
    */
@@ -111,14 +113,8 @@ import scala.util.control.NonFatal
   override val behavior: Behavior[T], override val loggingEnabled: Boolean) extends Supervisor[T, Thr] {
 
   def init(ctx: ActorContext[T]) =
-    try {
-      wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), afterException = false)
-    } catch {
-      case NonFatal(ex: Thr) ⇒
-        // exception starting the actor, log and try again
-        log(ctx, ex)
-        wrap(behavior, afterException = true).init(ctx)
-    }
+    // no handling of errors for Resume as that could lead to infinite restart-loop
+    wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), afterException = false)
 
   override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Supervisor[T, Thr]] = {
     case NonFatal(ex: Thr) ⇒
@@ -155,14 +151,8 @@ import scala.util.control.NonFatal
   override val loggingEnabled: Boolean) extends Supervisor[T, Thr] {
 
   override def init(ctx: ActorContext[T]) =
-    try {
-      wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), afterException = false)
-    } catch {
-      case NonFatal(ex: Thr) ⇒
-        // exception starting the actor, log and try again
-        log(ctx, ex)
-        wrap(behavior, afterException = true).init(ctx)
-    }
+    // no handling of errors for Restart as that could lead to infinite restart-loop
+    wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), afterException = false)
 
   override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Supervisor[T, Thr]] = {
     case NonFatal(ex: Thr) ⇒

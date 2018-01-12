@@ -501,40 +501,28 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       probe.expectMessage(Started)
     }
 
-    trait SupervisedDeferredThatThrowsTest {
-      def strategy: SupervisorStrategy
-      val probe = TestProbe[AnyRef]("evt")
-      val failCount = new AtomicInteger(1)
-      val startCount = new AtomicInteger(0)
-      def behv = supervise(deferred[Command] { _ ⇒
-        startCount.incrementAndGet()
-        if (failCount.getAndDecrement() > 0) {
-          println("failing")
-          throw new Exception("construction failed")
-        }
-        probe.ref ! Started
-        Behaviors.empty
-      }).onFailure[Exception](strategy)
-
-      // FIXME support for event filters directly for typed actor system in the typed testkit
-      import scaladsl.adapter._
-      implicit val untyped = system.toUntyped
-    "restart when deferred factory throws" in new FailingDeferredTestSetup(
+    "fail instead of restart when deferred factory throws" in new FailingDeferredTestSetup(
       failCount = 1, strategy = SupervisorStrategy.restart) {
 
-      EventFilter[ConstructionFailedException](occurrences = 1).intercept {
+      EventFilter[ActorInitializationException](occurrences = 1).intercept {
         spawn(behv)
-        probe.expectMsg(StartFailed)
-        probe.expectMsg(Started)
       }
     }
 
-    "fail instead of restart when deferred factory throws unhandled" in new FailingUnhandledTestSetup(
+    "fail to restart when deferred factory throws unhandled" in new FailingUnhandledTestSetup(
       strategy = SupervisorStrategy.restart) {
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
         spawn(behv)
-        probe.expectMsg(StartFailed)
+      }
+    }
+
+    "fail to resume when deferred factory throws" in new FailingDeferredTestSetup(
+      failCount = 1,
+      strategy = SupervisorStrategy.resume
+    ) {
+      EventFilter[ActorInitializationException](occurrences = 1).intercept {
+        spawn(behv)
       }
     }
 
@@ -601,27 +589,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       }
     }
 
-    "resume when deferred factory throws" in new FailingDeferredTestSetup(
-      failCount = 1,
-      strategy = SupervisorStrategy.resume
-    ) {
-      EventFilter[ConstructionFailedException](occurrences = 1).intercept {
-        spawn(behv)
-        probe.expectMsg(StartFailed)
-        probe.expectMsg(Started)
-      }
-    }
-
-    "fail instead of resume when deferred factory throws unhandled" in new FailingUnhandledTestSetup(
-      strategy = SupervisorStrategy.resume) {
-
-      EventFilter[ActorInitializationException](occurrences = 1).intercept {
-        spawn(behv)
-        probe.expectMsg(StartFailed)
-      }
-    }
-
-    "restart when exception from MutableBehavior constructor" in new FailingConstructorTestSetup(failCount = 1) {
+    "fail when exception from MutableBehavior constructor" in new FailingConstructorTestSetup(failCount = 1) {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(mutable[Command](_ ⇒ new FailingConstructor(probe.ref)))
         .onFailure[Exception](SupervisorStrategy.restart)
@@ -630,12 +598,9 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       ref ! Ping
       probe.expectNoMessage()
 
-      EventFilter[RuntimeException](occurrences = 1).intercept {
+      EventFilter[ActorInitializationException](occurrences = 1).intercept {
         val ref = spawn(behv)
         probe.expectMsg(Started) // first one before failure
-        probe.expectMsg(Started) // second succesful start
-        ref ! Ping
-        probe.expectMsg(Pong)
       }
 
     }
