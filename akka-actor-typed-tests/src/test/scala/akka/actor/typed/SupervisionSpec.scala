@@ -602,7 +602,20 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
         val ref = spawn(behv)
         probe.expectMsg(Started) // first one before failure
       }
+    }
 
+    "work with nested supervisions and defers" in {
+      val strategy = SupervisorStrategy.restartWithLimit(3, 1.second)
+      val probe = TestProbe[AnyRef]("p")
+      val beh = supervise[String](deferred(ctx ⇒
+        supervise[String](deferred { ctx ⇒
+          probe.ref ! Started
+          scaladsl.Actor.empty[String]
+        }).onFailure[RuntimeException](strategy)
+      )).onFailure[Exception](strategy)
+
+      spawn(beh)
+      probe.expectMsg(Started)
     }
 
   }
