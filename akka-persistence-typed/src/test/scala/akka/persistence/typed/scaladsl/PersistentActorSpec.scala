@@ -28,6 +28,7 @@ object PersistentActorSpec {
   final case object DoNothingAndThenLog extends Command
   final case object EmptyEventsListAndThenLog extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
+  final case object DelayFinished extends Command
   private case object Timeout extends Command
 
   sealed trait Event
@@ -48,7 +49,7 @@ object PersistentActorSpec {
     PersistentActor.immutable[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
-      commandHandler = CommandHandler[Command, Event, State]((ctx, state, cmd) ⇒ cmd match {
+      commandHandler = (ctx, state, cmd) ⇒ cmd match {
         case Increment ⇒
           Effect.persist(Incremented(1))
         case GetValue(replyTo) ⇒
@@ -62,8 +63,10 @@ object PersistentActorSpec {
               case Tick ⇒ Actor.stopped
             })
           })
-          ctx.watch(delay)
+          ctx.watchWith(delay, DelayFinished)
           Effect.none
+        case DelayFinished ⇒
+          Effect.persist(Incremented(10))
         case IncrementAfterReceiveTimeout ⇒
           ctx.setReceiveTimeout(10.millis, Timeout)
           Effect.none
@@ -94,11 +97,7 @@ object PersistentActorSpec {
             .andThen {
               loggingActor ! firstLogging
             }
-      })
-        .onSignal {
-          case (_, _, Terminated(_)) ⇒
-            Effect.persist(Incremented(10))
-        },
+      },
       eventHandler = (state, evt) ⇒ evt match {
         case Incremented(delta) ⇒
           State(state.value + delta, state.history :+ state.value)

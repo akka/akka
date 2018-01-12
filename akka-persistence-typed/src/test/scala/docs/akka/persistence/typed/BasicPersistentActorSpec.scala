@@ -17,7 +17,7 @@ object BasicPersistentActorSpec {
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "abc",
       initialState = State(),
-      commandHandler = PersistentActor.CommandHandler { (ctx, state, cmd) ⇒ ??? },
+      commandHandler = (ctx, state, cmd) ⇒ ???,
       eventHandler = (state, evt) ⇒ ???)
   //#structure
 
@@ -26,7 +26,7 @@ object BasicPersistentActorSpec {
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "abc",
       initialState = State(),
-      commandHandler = PersistentActor.CommandHandler { (ctx, state, cmd) ⇒ ??? },
+      commandHandler = (ctx, state, cmd) ⇒ ???,
       eventHandler = (state, evt) ⇒ ???)
       .onRecoveryCompleted { (ctx, state) ⇒
         ???
