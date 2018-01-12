@@ -198,7 +198,6 @@ trait ActorContext[T] {
    */
   def ask[Req, Res](
     otherActor:            ActorRef[Req],
-    responseClass:         Class[Res],
     createMessage:         JFunction[ActorRef[Res], Req],
     responseToOwnProtocol: JFunction[Res, T],
     failureToOwnProtocol:  JFunction[Throwable, T],

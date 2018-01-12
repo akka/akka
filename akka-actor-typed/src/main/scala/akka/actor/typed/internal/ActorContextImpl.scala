@@ -4,15 +4,17 @@
 package akka.actor.typed
 package internal
 
+import java.util.concurrent.TimeoutException
+
 import akka.annotation.InternalApi
 import java.util.{ ArrayList, Optional }
 import java.util.function.{ Function ⇒ JFunction }
 
 import akka.util.Timeout
-
 import scala.concurrent.ExecutionContextExecutor
-import scala.reflect.ClassTag
 import scala.util.{ Failure, Success, Try }
+
+import akka.Done
 
 /**
  * INTERNAL API
@@ -74,33 +76,48 @@ import scala.util.{ Failure, Success, Try }
   @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U]
 
   // Scala impl
-  override def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit timeout: Timeout, classTag: ClassTag[Res]): Unit = {
+  override def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit timeout: Timeout): Unit = {
 
-    import akka.actor.typed.scaladsl.AskPattern._
+    // note that the adapters are running _in_ this actor so there is no concurrency
 
-    implicit val scheduler = system.scheduler
+    var replyTo: ActorRef[Res] = null
+    var reqMsgClassName: String = null
 
-    (otherActor ? createMessage)
-      .mapTo[Res]
-      .onComplete(t ⇒ self ! responseToOwnProtocol(t))
+    val timeoutDone: ActorRef[Done] = spawnAdapter { _ ⇒
+      stop(replyTo)
+      val exc = new TimeoutException(s"Ask timed out on [$otherActor] after [${timeout.duration.toMillis} ms]. " +
+        s"Sender[$self] sent message of type [$reqMsgClassName].")
+      responseToOwnProtocol(Failure(exc))
+    }
+
+    import akka.actor.typed.scaladsl.adapter._
+    val timeoutTask = system.scheduler.scheduleOnce(timeout.duration, timeoutDone.toUntyped, Done)(executionContext)
+
+    replyTo = spawnAdapter[Res] { rsp: Res ⇒
+      timeoutTask.cancel()
+      stop(timeoutDone)
+      responseToOwnProtocol(Success(rsp))
+    }
+
+    val req = createMessage(replyTo)
+    reqMsgClassName = req.getClass.getName // TODO performance overhead? only used for the TimeoutExc
+    otherActor ! req
   }
 
   // Java impl
   override def ask[Req, Res](
     otherActor:            ActorRef[Req],
-    responseClass:         Class[Res],
     createMessage:         JFunction[ActorRef[Res], Req],
     responseToOwnProtocol: JFunction[Res, T],
     failureToOwnProtocol:  JFunction[Throwable, T],
     responseTimeout:       Timeout
   ): Unit = {
-    import akka.actor.typed.scaladsl.AskPattern._
-    otherActor.?(createMessage.apply)(responseTimeout, system.scheduler)
-      .mapTo[Res](ClassTag(responseClass))
-      .onComplete {
-        case Success(res) ⇒ self ! responseToOwnProtocol(res)
-        case Failure(t)   ⇒ self ! failureToOwnProtocol(t)
-      }
+
+    val f: Try[Res] ⇒ T = (rsp ⇒ rsp match {
+      case Success(r) ⇒ responseToOwnProtocol.apply(r)
+      case Failure(e) ⇒ failureToOwnProtocol.apply(e)
+    })
+    ask[Req, Res](otherActor, (replyTo: ActorRef[Res]) ⇒ createMessage.apply(replyTo))(f)(responseTimeout)
   }
 }
 

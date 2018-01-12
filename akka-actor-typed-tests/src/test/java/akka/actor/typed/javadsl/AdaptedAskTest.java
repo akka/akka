@@ -90,7 +90,6 @@ public class AdaptedAskTest extends JUnitSuite {
         final int id = ((TriggerPing) msg).id;
         ctx.ask(
             otherActor,
-            Pong.class,
             ref -> new Ping(ref),
             (Pong pong) -> new GotPong(id),
             (Throwable error) -> new GotFailure(id),
@@ -107,16 +106,15 @@ public class AdaptedAskTest extends JUnitSuite {
   }
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("ActorSelectionTest",
+  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("AdaptedAskTest",
       AkkaSpec.testConf());
 
   private final akka.actor.ActorSystem system = actorSystemResource.getSystem();
-  private final TestKitSettings settings = new TestKitSettings(system.settings().config());
 
   @Test
   public void askingAnotherActor() {
     ActorRef<OtherActorProtocol> other = Adapter.spawnAnonymous(system, otherActorBehavior);
-    TestProbe<Object> probe = new TestProbe<>(Adapter.toTyped(system), settings);
+    TestProbe<Object> probe = new TestProbe<Object>(Adapter.toTyped(system));
     Timeout timeout = Timeout.apply(10, TimeUnit.SECONDS);
     ActorRef<Protocol> actor = Adapter.spawnAnonymous(system, createBehaviour(other, probe.ref(), timeout));
 
@@ -128,7 +126,7 @@ public class AdaptedAskTest extends JUnitSuite {
   @Test
   public void timingOut() {
     ActorRef<OtherActorProtocol> other = Adapter.spawnAnonymous(system, Actor.ignore());
-    TestProbe<Object> probe = new TestProbe<>(Adapter.toTyped(system), settings);
+    TestProbe<Object> probe = new TestProbe<Object>(Adapter.toTyped(system));
     Timeout timeout = Timeout.apply(10, TimeUnit.MILLISECONDS);
     ActorRef<Protocol> actor = Adapter.spawnAnonymous(system, createBehaviour(other, probe.ref(), timeout));
 

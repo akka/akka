@@ -184,6 +184,6 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
   def ask[Req, Res](
     otherActor:    ActorRef[Req],
     createMessage: ActorRef[Res] ⇒ Req
-  )(responseToOwnProtocol: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
+  )(responseToOwnProtocol: Try[Res] ⇒ T)(implicit responseTimeout: Timeout): Unit
 
 }

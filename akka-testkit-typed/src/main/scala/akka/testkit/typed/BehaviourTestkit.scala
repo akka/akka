@@ -72,7 +72,7 @@ object Effect {
     ref
   }
 
-  override def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit timeout: Timeout, classTag: ClassTag[Res]): Unit = {
+  override def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit timeout: Timeout): Unit = {
     effectQueue.offer(Ask(otherActor))
     super.ask(otherActor, createMessage)(responseToOwnProtocol)
   }
