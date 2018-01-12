@@ -5,10 +5,13 @@ package akka.actor.typed.scaladsl
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
-
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.actor.typed._
+import akka.util.Timeout
+
+import scala.reflect.ClassTag
+import scala.util.Try
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -144,6 +147,8 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * appended, with an inserted hyphen between these two parts. Therefore
    * the given `name` argument does not need to be unique within the scope
    * of the parent actor.
+   *
+   * For a single use request-response adapter see [[ask]].
    */
   def spawnAdapter[U](f: U ⇒ T, name: String): ActorRef[U]
 
@@ -151,7 +156,34 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * Create an anonymous child actor that will wrap messages such that other Actor’s
    * protocols can be ingested by this Actor. You are strongly advised to cache
    * these ActorRefs or to stop them when no longer needed.
+   *
+   * For a single use request-response adapter see [[ask]].
    */
   def spawnAdapter[U](f: U ⇒ T): ActorRef[U]
+
+  /**
+   * Perform a single request-response message interaction with another actor, and transform the messages back to
+   * the protocol of this actor.
+   *
+   * The interaction has a timeout (to avoid resource a resource leak). If the timeout hits without any response it
+   * will be transformed to a message for this actor through the `failToOwnProtocol` function (this is the only
+   * "normal" way a `Failure` is passed to the function).
+   *
+   * For other messaging patterns with other actors, see [[spawnAdapter]].
+   *
+   * @param createMessage A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
+   *                      the other actor can send a message back through.
+   * @param responseToOwnProtocol Transforms the response from the `otherActor` into a message this actor understands.
+   *                              Can touch immutable state to provide a context for the interaction, an id for example, but
+   *                              must not touch the `ActorContext` as it will not be executed inside of this actor.
+   *                              Will be fed a `Failure(AskTimeoutException)` if the response timeout hits.
+   *
+   * @tparam Req The request protocol, what the other actor accepts
+   * @tparam Res The response protocol, what the other actor sends back
+   */
+  def ask[Req, Res](
+    otherActor:    ActorRef[Req],
+    createMessage: ActorRef[Res] ⇒ Req
+  )(responseToOwnProtocol: Try[Res] ⇒ T)(implicit responseTimeout: Timeout): Unit
 
 }

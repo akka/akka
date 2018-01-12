@@ -4,10 +4,17 @@
 package akka.actor.typed
 package internal
 
+import java.util.concurrent.TimeoutException
+
 import akka.annotation.InternalApi
-import java.util.Optional
-import java.util.ArrayList
+import java.util.{ ArrayList, Optional }
+import java.util.function.{ Function ⇒ JFunction }
+
+import akka.util.Timeout
 import scala.concurrent.ExecutionContextExecutor
+import scala.util.{ Failure, Success, Try }
+
+import akka.Done
 
 /**
  * INTERNAL API
@@ -67,5 +74,50 @@ import scala.concurrent.ExecutionContextExecutor
    * Otherwise "ambiguous reference to overloaded definition" because Function is lambda.
    */
   @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U]
+
+  // Scala impl
+  override def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit timeout: Timeout): Unit = {
+
+    // note that the adapters are running _in_ this actor so there is no concurrency
+
+    var replyTo: ActorRef[Res] = null
+    var reqMsgClassName: String = null
+
+    val timeoutDone: ActorRef[Done] = spawnAdapter { _ ⇒
+      stop(replyTo)
+      val exc = new TimeoutException(s"Ask timed out on [$otherActor] after [${timeout.duration.toMillis} ms]. " +
+        s"Sender[$self] sent message of type [$reqMsgClassName].")
+      responseToOwnProtocol(Failure(exc))
+    }
+
+    import akka.actor.typed.scaladsl.adapter._
+    val timeoutTask = system.scheduler.scheduleOnce(timeout.duration, timeoutDone.toUntyped, Done)(executionContext)
+
+    replyTo = spawnAdapter[Res] { rsp: Res ⇒
+      timeoutTask.cancel()
+      stop(timeoutDone)
+      responseToOwnProtocol(Success(rsp))
+    }
+
+    val req = createMessage(replyTo)
+    reqMsgClassName = req.getClass.getName // TODO performance overhead? only used for the TimeoutExc
+    otherActor ! req
+  }
+
+  // Java impl
+  override def ask[Req, Res](
+    otherActor:            ActorRef[Req],
+    createMessage:         JFunction[ActorRef[Res], Req],
+    responseToOwnProtocol: JFunction[Res, T],
+    failureToOwnProtocol:  JFunction[Throwable, T],
+    responseTimeout:       Timeout
+  ): Unit = {
+
+    val f: Try[Res] ⇒ T = (rsp ⇒ rsp match {
+      case Success(r) ⇒ responseToOwnProtocol.apply(r)
+      case Failure(e) ⇒ failureToOwnProtocol.apply(e)
+    })
+    ask[Req, Res](otherActor, (replyTo: ActorRef[Res]) ⇒ createMessage.apply(replyTo))(f)(responseTimeout)
+  }
 }
 
