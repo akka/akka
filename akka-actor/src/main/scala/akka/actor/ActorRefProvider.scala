@@ -5,17 +5,20 @@
 package akka.actor
 
 import akka.dispatch.sysmsg._
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.routing._
 import akka.event._
-import akka.util.{ Helpers }
+import akka.util.Helpers
 import akka.japi.Util.immutableSeq
 import akka.util.Collections.EmptyImmutableSeq
+
 import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
 import akka.ConfigurationException
+import akka.annotation.InternalApi
 import akka.dispatch.Mailboxes
 
 /**
@@ -68,7 +71,12 @@ trait ActorRefProvider {
    * and then—when the ActorSystem is constructed—the second phase during
    * which actors may be created (e.g. the guardians).
    */
-  private[akka] def init(system: ActorSystemImpl): Unit
+  @InternalApi private[akka] def init(system: ActorSystemImpl): Unit
+
+  /**
+   * INTERNAL API: Step two of the initialization completed (see [[init]])
+   */
+  @InternalApi private[akka] def initDone(): Unit
 
   /**
    * The Deployer associated with this ActorRefProvider
@@ -384,6 +392,7 @@ private[akka] object SystemGuardian {
   case object RegisterTerminationHook
   case object TerminationHook
   case object TerminationHookDone
+  case object Terminate
 }
 
 private[akka] object LocalActorRefProvider {
@@ -395,8 +404,8 @@ private[akka] object LocalActorRefProvider {
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
     def receive = {
-      case Terminated(_)    ⇒ context.stop(self)
-      case StopChild(child) ⇒ context.stop(child)
+      case Terminated(_) | SystemGuardian.Terminate ⇒ context.stop(self)
+      case StopChild(child)                         ⇒ context.stop(child)
     }
 
     // guardian MUST NOT lose its children during restart
@@ -413,7 +422,7 @@ private[akka] object LocalActorRefProvider {
     var terminationHooks = Set.empty[ActorRef]
 
     def receive = {
-      case Terminated(`guardian`) ⇒
+      case Terminated(`guardian`) | Terminate ⇒
         // time for the systemGuardian to stop, but first notify all the
         // termination hooks, they will reply with TerminationHookDone
         // and when all are done the systemGuardian is stopped
@@ -646,10 +655,18 @@ private[akka] class LocalActorRefProvider private[akka] (
   private[akka] def init(_system: ActorSystemImpl) {
     system = _system
     rootGuardian.start()
+    eventStream.startDefaultLoggers(_system)
+  }
+
+  private[akka] def initDone(): Unit = {
     // chain death watchers so that killing guardian stops the application
+    // but don't do that until the system is completely started or else things will explode
     systemGuardian.sendSystemMessage(Watch(guardian, systemGuardian))
     rootGuardian.sendSystemMessage(Watch(systemGuardian, rootGuardian))
-    eventStream.startDefaultLoggers(_system)
+    // could be that user guardian already terminated before we watched it
+    // FIXME there's still potentially a race here if it isn't terminated and processing the Watch is delayed
+    if (guardian.isTerminated) systemGuardian ! SystemGuardian.Terminate
+    else if (systemGuardian.isTerminated) rootGuardian ! SystemGuardian.Terminate
   }
 
   @deprecated("use actorSelection instead of actorFor", "2.2")

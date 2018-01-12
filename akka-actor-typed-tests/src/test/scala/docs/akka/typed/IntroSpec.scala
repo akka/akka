@@ -4,6 +4,7 @@
 package docs.akka.typed
 
 //#imports
+import akka.NotUsed
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.AskPattern._
@@ -125,24 +126,20 @@ class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
       //#chatroom-gabbler
 
       //#chatroom-main
-      val main: Behavior[String] =
+      val main: Behavior[NotUsed] =
         Actor.deferred { ctx ⇒
           val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
           val gabblerRef = ctx.spawn(gabbler, "gabbler")
           ctx.watch(gabblerRef)
+          chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-          Actor.immutablePartial[String] {
-            case (_, "go") ⇒
-              chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
-              Actor.same
-          } onSignal {
+          Actor.onSignal[NotUsed] {
             case (_, Terminated(ref)) ⇒
               Actor.stopped
           }
         }
 
       val system = ActorSystem(main, "ChatRoomDemo")
-      system ! "go"
       Await.result(system.whenTerminated, 3.seconds)
       //#chatroom-main
     }

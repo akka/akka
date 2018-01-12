@@ -1,0 +1,2 @@
+# 24172 typed guardian shutdown race
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorRefProvider.initDone")

@@ -215,6 +215,10 @@ private[akka] class RemoteActorRefProvider(
     remoteDeploymentWatcher = createRemoteDeploymentWatcher(system)
   }
 
+  private[akka] def initDone(): Unit = {
+    local.initDone()
+  }
+
   protected def createRemoteWatcher(system: ActorSystemImpl): ActorRef = {
     import remoteSettings._
     val failureDetector = createRemoteWatcherFailureDetector(system)

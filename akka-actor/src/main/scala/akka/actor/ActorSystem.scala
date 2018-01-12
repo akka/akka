@@ -800,9 +800,12 @@ private[akka] class ActorSystemImpl(
     eventStream.startUnsubscriber()
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
+    provider.initDone()
     this
   } catch {
     case NonFatal(e) ⇒
+      // we need to tell the guardians that init was completed to terminate correctly
+      provider.initDone()
       try terminate() catch { case NonFatal(_) ⇒ Try(stopScheduler()) }
       throw e
   }
