@@ -40,13 +40,13 @@ object ClusterSingletonPersistenceSpec {
     PersistentActor.immutable[Command, String, String](
       persistenceId = "TheSingleton",
       initialState = "",
-      commandHandler = CommandHandler((_, state, cmd) ⇒ cmd match {
+      commandHandler = (_, state, cmd) ⇒ cmd match {
         case Add(s) ⇒ Effect.persist(s)
         case Get(replyTo) ⇒
           replyTo ! state
           Effect.none
         case StopPlz ⇒ Effect.stop
-      }),
+      },
       eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt)
 
 }

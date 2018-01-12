@@ -80,15 +80,12 @@ import akka.actor.typed.internal.adapter.ActorRefAdapter
     case msg ⇒
       try {
         val effects = msg match {
-          case a.Terminated(ref) ⇒
-            val sig = Terminated(ActorRefAdapter(ref))(null)
-            commandHandler.sigHandler(state).applyOrElse((ctx, state, sig), unhandledSignal)
           case a.ReceiveTimeout ⇒
-            commandHandler.commandHandler(ctx, state, ctxAdapter.receiveTimeoutMsg)
-          // TODO note that PostStop and PreRestart signals are not handled, we wouldn't be able to persist there
+            commandHandler(ctx, state, ctxAdapter.receiveTimeoutMsg)
+          // TODO note that PostStop, PreRestart and Terminated signals are not handled, we wouldn't be able to persist there
           case cmd: C @unchecked ⇒
             // FIXME we could make it more safe by using ClassTag for C
-            commandHandler.commandHandler(ctx, state, cmd)
+            commandHandler(ctx, state, cmd)
         }
 
         applyEffects(msg, effects)
