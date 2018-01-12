@@ -5,7 +5,7 @@ libraryDependencies += "org.kohsuke" % "github-api" % "1.68"
 
 // these comment markers are for including code into the docs
 //#sbt-multi-jvm
-addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.1-SNAPSHOT")
 //#sbt-multi-jvm
 
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.1")

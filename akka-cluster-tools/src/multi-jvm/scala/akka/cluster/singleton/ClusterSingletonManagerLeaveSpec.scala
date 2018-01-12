@@ -71,6 +71,8 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
 
   override def initialParticipants = roles.size
 
+  system.actorOf(Props[ClusterEventLoggingActor](), "cluster-event-logging")
+
   lazy val cluster = Cluster(system)
 
   def join(from: RoleName, to: RoleName): Unit = {
