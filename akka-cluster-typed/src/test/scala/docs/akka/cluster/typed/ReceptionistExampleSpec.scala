@@ -197,16 +197,11 @@ class ReceptionistExampleSpec extends WordSpec with ScalaFutures {
 
   "A remote basic example" must {
     "show register" in {
-      // FIXME cannot use guardian as it touches receptionist #24279
-      import scaladsl.adapter._
-      val system1 = akka.actor.ActorSystem("PingPongExample", clusterConfig)
-      val system2 = akka.actor.ActorSystem("PingPongExample", clusterConfig)
+      val system1 = ActorSystem(guardianJustPingService, "PingPongExample", clusterConfig)
+      val system2 = ActorSystem(guardianJustPinger, "PingPongExample", clusterConfig)
 
-      system1.spawnAnonymous(guardianJustPingService)
-      system2.spawnAnonymous(guardianJustPinger)
-
-      val cluster1 = Cluster(system1.toTyped)
-      val cluster2 = Cluster(system2.toTyped)
+      val cluster1 = Cluster(system1)
+      val cluster2 = Cluster(system2)
 
       cluster1.manager ! Join(cluster1.selfMember.address)
       cluster1.manager ! Join(cluster2.selfMember.address)
