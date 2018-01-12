@@ -227,12 +227,42 @@ object ActorSystem {
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
     val setup = ActorSystemSetup(BootstrapSetup(classLoader, config, executionContext))
     val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext,
-      Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps)), setup)
+      Some(PropsAdapter(() ⇒ delayedGuardianStart(guardianBehavior), guardianProps)), setup)
     untyped.start()
 
     val adapter: ActorSystemAdapter.AdapterExtension = ActorSystemAdapter.AdapterExtension(untyped)
+    untyped.guardian ! Started
     adapter.adapter
   }
+
+  private[akka] case object Started
+  private def delayedGuardianStart[T](guardianBehavior: Behavior[T], buffer: List[Any] = Nil): Behavior[Any] =
+    scaladsl.Actor.immutable[Any] { (sctx, msg) ⇒
+      // delay actual initialization until the actor system is started as the actor may touch
+      // other parts of the actor system which would not be ready unless delayed
+      val ctx = sctx.asInstanceOf[ActorContext[T]]
+      msg match {
+        case Started ⇒
+          val endState = buffer.reverseIterator.foldLeft(Behavior.undefer(guardianBehavior, ctx)) { (behavior, buffered) ⇒
+            if (!Behavior.isAlive(behavior)) behavior
+            else {
+              // delayed application of signals and messages in the order they arrived
+              buffer match {
+                case s: Signal ⇒
+                  Behavior.interpretSignal(behavior, ctx.asInstanceOf[ActorContext[T]], s)
+                case other ⇒
+                  Behavior.interpretMessage(behavior, ctx, other.asInstanceOf[T])
+              }
+            }
+          }
+          endState.asInstanceOf[Behavior[Any]]
+        case t ⇒
+          delayedGuardianStart(guardianBehavior, t :: buffer)
+      }
+    }.onSignal {
+      case (_, signal) ⇒
+        delayedGuardianStart(guardianBehavior, signal :: buffer)
+    }
 
   /**
    * Wrap an untyped [[akka.actor.ActorSystem]] such that it can be used from

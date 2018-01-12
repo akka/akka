@@ -24,6 +24,7 @@ import scala.util.control.{ ControlThrowable, NonFatal }
 import java.util.Optional
 
 import akka.actor.setup.{ ActorSystemSetup, Setup }
+import akka.annotation.InternalApi
 
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters._
@@ -643,6 +644,10 @@ abstract class ExtendedActorSystem extends ActorSystem {
 
 }
 
+/**
+ * Internal API
+ */
+@InternalApi
 private[akka] class ActorSystemImpl(
   val name:                String,
   applicationConfig:       Config,
