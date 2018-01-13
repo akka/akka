@@ -17,12 +17,11 @@ object PersistentActor {
    * Create a `Behavior` for a persistent actor.
    */
   def immutable[Command, Event, State](
-    persistenceId:   String,
-    initialState:    State,
-    commandHandler:  CommandHandler[Command, Event, State],
-    eventHandler:    (State, Event) ⇒ State,
-    taggingFunction: Event ⇒ Seq[String]                   = (_: Event) ⇒ Seq.empty): PersistentBehavior[Command, Event, State] =
-    persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, eventHandler, taggingFunction)
+    persistenceId:  String,
+    initialState:   State,
+    commandHandler: CommandHandler[Command, Event, State],
+    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
+    persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, eventHandler)
 
   /**
    * Create a `Behavior` for a persistent actor in Cluster Sharding, when the persistenceId is not known
@@ -35,11 +34,10 @@ object PersistentActor {
     persistenceIdFromActorName: String ⇒ String,
     initialState:               State,
     commandHandler:             CommandHandler[Command, Event, State],
-    eventHandler:               (State, Event) ⇒ State,
-    taggingFunction:            Event ⇒ Seq[String]                   = (_: Event) ⇒ Seq.empty): PersistentBehavior[Command, Event, State] =
+    eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
       recoveryCompleted = (_, _) ⇒ (),
-      taggingFunction)
+      tagging = _ ⇒ Set.empty)
 
   /**
    * Factories for effects - how a persistent actor reacts on a command
@@ -237,7 +235,7 @@ class PersistentBehavior[Command, Event, State](
   val commandHandler:                                        PersistentActor.CommandHandler[Command, Event, State],
   val eventHandler:                                          (State, Event) ⇒ State,
   val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit,
-  val taggingFunction:                                       Event ⇒ Seq[String]) extends UntypedBehavior[Command] {
+  val tagging:                                               Event ⇒ Set[String]) extends UntypedBehavior[Command] {
   import PersistentActor._
 
   /** INTERNAL API */
@@ -260,12 +258,18 @@ class PersistentBehavior[Command, Event, State](
    */
   def snapshotOn(predicate: (State, Event) ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
 
+  /**
+   * The `tagging` function should give event tags, which will be used in persistence query
+   */
+  def withTagging(tagging: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State] =
+    copy(tagging = tagging)
+
   private def copy(
     persistenceIdFromActorName: String ⇒ String                       = persistenceIdFromActorName,
     initialState:               State                                 = initialState,
     commandHandler:             CommandHandler[Command, Event, State] = commandHandler,
     eventHandler:               (State, Event) ⇒ State                = eventHandler,
     recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted,
-    taggingFunction:            Event ⇒ Seq[String]                   = taggingFunction): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, taggingFunction)
+    tagging:                    Event ⇒ Set[String]                   = tagging): PersistentBehavior[Command, Event, State] =
+    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, tagging)
 }

@@ -111,8 +111,8 @@ import akka.persistence.journal.Tagged
       // the invalid event, in case such validation is implemented in the event handler.
       // also, ensure that there is an event handler for each single event
       state = applyEvent(state, event)
-      val tags = behavior.taggingFunction(event)
-      val eventToPersist = if (tags.size > 0) Tagged(event, tags.toSet) else event
+      val tags = behavior.tagging(event)
+      val eventToPersist = if (tags.isEmpty) event else Tagged(event, tags)
       persist(eventToPersist) { _ ⇒
         sideEffects.foreach(applySideEffect)
       }
@@ -124,8 +124,8 @@ import akka.persistence.journal.Tagged
         var count = events.size
         state = events.foldLeft(state)(applyEvent)
         val eventsToPersist = events.map { event ⇒
-          val tags = behavior.taggingFunction(event)
-          if (tags.size > 0) Tagged(event, tags.toSet) else event
+          val tags = behavior.tagging(event)
+          if (tags.isEmpty) event else Tagged(event, tags)
         }
         persistAll(eventsToPersist) { _ ⇒
           count -= 1
