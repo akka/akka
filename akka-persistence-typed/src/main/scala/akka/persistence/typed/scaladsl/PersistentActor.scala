@@ -36,7 +36,7 @@ object PersistentActor {
     eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
       recoveryCompleted = (_, _) ⇒ (),
-      tagging = _ ⇒ Set.empty)
+      tagger = _ ⇒ Set.empty)
 
   /**
    * Factories for effects - how a persistent actor reacts on a command
@@ -190,7 +190,7 @@ class PersistentBehavior[Command, Event, State](
   val commandHandler:                                        PersistentActor.CommandHandler[Command, Event, State],
   val eventHandler:                                          (State, Event) ⇒ State,
   val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit,
-  val tagging:                                               Event ⇒ Set[String]) extends UntypedBehavior[Command] {
+  val tagger:                                                Event ⇒ Set[String]) extends UntypedBehavior[Command] {
   import PersistentActor._
 
   /** INTERNAL API */
@@ -214,10 +214,10 @@ class PersistentBehavior[Command, Event, State](
   def snapshotOn(predicate: (State, Event) ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
 
   /**
-   * The `tagging` function should give event tags, which will be used in persistence query
+   * The `tagger` function should give event tags, which will be used in persistence query
    */
-  def withTagging(tagging: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State] =
-    copy(tagging = tagging)
+  def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State] =
+    copy(tagger = tagger)
 
   private def copy(
     persistenceIdFromActorName: String ⇒ String                       = persistenceIdFromActorName,
@@ -225,6 +225,6 @@ class PersistentBehavior[Command, Event, State](
     commandHandler:             CommandHandler[Command, Event, State] = commandHandler,
     eventHandler:               (State, Event) ⇒ State                = eventHandler,
     recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted,
-    tagging:                    Event ⇒ Set[String]                   = tagging): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, tagging)
+    tagger:                     Event ⇒ Set[String]                   = tagger): PersistentBehavior[Command, Event, State] =
+    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, tagger)
 }
