@@ -15,3 +15,9 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSou
 
 # #24254 add collectType
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.collectType")
+
+# #24325 ask stage
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.ask")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.watch")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.FlowOps.ask")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.FlowOps.watch")

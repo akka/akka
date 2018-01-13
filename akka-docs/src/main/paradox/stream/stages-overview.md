@@ -1135,7 +1135,40 @@ Adheres to the `ActorAttributes.SupervisionStrategy` attribute.
 
 **completes** when upstream completes and all elements have been emitted from the internal flow
 
-**cancels** when downstream cancels
+**completes** when upstream completes and all futures have been completed and all elements have been emitted
+
+---------------------------------------------------------------
+
+### watch
+
+Watch a specific `ActorRef` and signal a failure downstream once the actor terminates.
+The signaled failure will be an @java[@javadoc:[WatchedActorTerminatedException](akka.stream.WatchedActorTerminatedException)]
+@scala[@scaladoc[WatchedActorTerminatedException](akka.stream.WatchedActorTerminatedException)].
+
+**emits** when upstream emits
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes
+
+---------------------------------------------------------------
+
+### ask
+
+Specialized stage implementing the @scala[@extref[ask](github:akka-actor/src/main/scala/akka/pattern/AskSupport.scala)]@java[@extref[ask](github:akka-actor/src/main/scala/akka/pattern/Patterns.scala)] pattern for inter-op with untyped actors.
+
+The stream will be failed using an an @java[@javadoc:[WatchedActorTerminatedException](akka.stream.WatchedActorTerminatedException)]
+@scala[@scaladoc[WatchedActorTerminatedException](akka.stream.WatchedActorTerminatedException)] if the target actor terminates,
+or with an @java[@javadoc:[WatchedActorTerminatedException](akka.pattern.AskTimeoutException)] @scala[@scaladoc[WatchedActorTerminatedException](akka.pattern.AskTimeoutException)] if any of the asks times out.
+
+**emits** when the futures (in submission order) created by the ask pattern internally are completed 
+
+**backpressures** when the number of futures reaches the configured parallelism and the downstream backpressures
+
+**fails** when the passed in actor terminates, or a timeout is exceeded in any of the asks performed
+
+**completes** when upstream completes and all futures have been completed and all elements have been emitted
+
 
 ---------------------------------------------------------------
 
@@ -1214,6 +1247,28 @@ If a @scala[`Future`] @java[`CompletionStage`] fails, the stream also fails (unl
 **backpressures** when the number of @scala[`Future` s] @java[`CompletionStage` s] reaches the configured parallelism and the downstream backpressures
 
 **completes** upstream completes and all @scala[`Future` s] @java[`CompletionStage` s] has been completed  and all elements has been emitted
+
+---------------------------------------------------------------
+
+### ask
+
+Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+If any of the asks times out it will fail the stream with a [[akka.pattern.AskTimeoutException]].
+
+The `mapTo` class parameter is used to cast the incoming responses to the expected response type.
+
+Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
+An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+
+Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+
+**emits** when the ask @scala[`Future`] @java[`CompletionStage`] returned by the provided function finishes for the next element in sequence
+
+
+**backpressures** when the number of ask @scala[`Future` s] @java[`CompletionStage` s] reaches the configured parallelism and the downstream backpressures
+
+**completes** when upstream completes and all ask @scala[`Future` s] @java[`CompletionStage` s] has been completed and all elements has been emitted
+
 
 ---------------------------------------------------------------
 
