@@ -5,10 +5,12 @@ package akka.stream.impl.fusing
 
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
+import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
+import akka.pattern.AskSupport
 import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -27,7 +29,9 @@ import akka.stream.ActorAttributes.SupervisionStrategy
 
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.util.OptionVal
+import akka.util.{ OptionVal, Timeout }
+
+import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
@@ -1320,6 +1324,33 @@ private[stream] object Collect {
 
         if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
       }
+
+      setHandlers(in, out, this)
+    }
+}
+
+@InternalApi private[akka] final case class Watch[T](targetRef: ActorRef) extends SimpleLinearGraphStage[T] {
+
+  override def initialAttributes = DefaultAttributes.watch
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+
+      private lazy val self = getStageActor {
+        case (_, Terminated(`targetRef`)) ⇒
+          failStage(new WatchedActorTerminatedException("Watch", targetRef))
+      }
+
+      override def preStart(): Unit = {
+        // initialize self, and watch the target
+        self.watch(targetRef)
+      }
+
+      override def onPull(): Unit =
+        pull(in)
+
+      override def onPush(): Unit =
+        push(out, grab(in))
 
       setHandlers(in, out, this)
     }

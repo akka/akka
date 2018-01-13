@@ -9,7 +9,7 @@ import akka.Done
 import akka.stream.impl._
 import akka.stream.impl.fusing._
 import akka.stream.stage._
-import akka.util.ConstantFun
+import akka.util.{ ConstantFun, Timeout }
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -19,8 +19,10 @@ import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
+import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
 
+import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 
 /**
@@ -844,6 +846,75 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#mapAsync]]
    */
   def mapAsyncUnordered[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T] = via(MapAsyncUnordered(parallelism, f))
+
+  /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+   * If any of the asks times out it will fail the stream with a [[akka.pattern.AskTimeoutException]].
+   *
+   * Do not forget to include the expected response type in the method call, like so:
+   *
+   * '''
+   * flow.ask[ExpectedReply](ref)
+   * '''
+   *
+   * otherwise `Nothing` will be assumed, which is most likely not what you want.
+   *
+   * Parallelism limits the number of how many asks can be "in flight" at the same time.
+   * Please note that the elements emitted by this stage are in-order with regards to the asks being issued
+   * (i.e. same behaviour as mapAsync).
+   *
+   * The mapTo class parameter is used to cast the incoming responses to the expected response type.
+   *
+   * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
+   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+   *
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the futures (in submission order) created by the ask pattern internally are completed
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   *
+   * '''Fails when''' the passed in actor terminates, or a timeout is exceeded in any of the asks performed
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
+  def ask[S](parallelism: Int)(ref: ActorRef)(implicit timeout: Timeout, tag: ClassTag[S]): Repr[S] = {
+    val askFlow = Flow[Out]
+      .watch(ref)
+      .mapAsync(parallelism) { el ⇒
+        akka.pattern.ask(ref).?(el)(timeout).mapTo[S](tag)
+      }
+      .recover[S] {
+        // the purpose of this recovery is to change the name of the stage in that exception
+        // we do so in order to help users find which stage caused the failure -- "the ask stage"
+        case ex: WatchedActorTerminatedException ⇒
+          throw new WatchedActorTerminatedException("ask()", ex.ref)
+      }
+      .named("ask")
+
+    via(askFlow)
+  }
+
+  /**
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * '''Emits when''' upstream emits
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Fails when''' the watched actor terminates
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def watch(ref: ActorRef): Repr[Out] =
+    via(Watch(ref))
 
   /**
    * Only pass on those elements that satisfy the given predicate.

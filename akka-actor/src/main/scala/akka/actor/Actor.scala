@@ -7,10 +7,10 @@ package akka.actor
 import akka.AkkaException
 import akka.event.LoggingAdapter
 
+import java.util.Optional
 import scala.annotation.tailrec
 import scala.beans.BeanProperty
 import scala.util.control.NoStackTrace
-import java.util.Optional
 
 import akka.annotation.InternalApi
 
