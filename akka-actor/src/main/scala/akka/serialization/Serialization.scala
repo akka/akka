@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
@@ -41,14 +41,22 @@ object Serialization {
     val Serializers: Map[String, String] = configToMap(config.getConfig("akka.actor.serializers"))
     val SerializationBindings: Map[String, String] = {
       val defaultBindings = config.getConfig("akka.actor.serialization-bindings")
-      val bindings =
+      val bindings = {
         if (config.getBoolean("akka.actor.enable-additional-serialization-bindings") ||
           !config.getBoolean("akka.actor.allow-java-serialization") ||
           config.hasPath("akka.remote.artery.enabled") && config.getBoolean("akka.remote.artery.enabled")) {
-          defaultBindings.withFallback(config.getConfig("akka.actor.additional-serialization-bindings"))
+
+          val bs = defaultBindings.withFallback(config.getConfig("akka.actor.additional-serialization-bindings"))
+
+          // in addition to the additional settings, we also enable even more bindings if java serialization is disabled:
+          val additionalWhenJavaOffKey = "akka.actor.java-serialization-disabled-additional-serialization-bindings"
+          if (!config.getBoolean("akka.actor.allow-java-serialization")) {
+            bs.withFallback(config.getConfig(additionalWhenJavaOffKey))
+          } else bs
         } else {
           defaultBindings
         }
+      }
       configToMap(bindings)
     }
 

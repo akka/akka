@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package docs.akka.persistence.typed
 
@@ -17,7 +17,7 @@ object BasicPersistentActorSpec {
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "abc",
       initialState = State(),
-      commandHandler = PersistentActor.CommandHandler { (ctx, state, cmd) ⇒ ??? },
+      commandHandler = (ctx, state, cmd) ⇒ ???,
       eventHandler = (state, evt) ⇒ ???)
   //#structure
 
@@ -26,7 +26,7 @@ object BasicPersistentActorSpec {
     PersistentActor.immutable[Command, Event, State](
       persistenceId = "abc",
       initialState = State(),
-      commandHandler = PersistentActor.CommandHandler { (ctx, state, cmd) ⇒ ??? },
+      commandHandler = (ctx, state, cmd) ⇒ ???,
       eventHandler = (state, evt) ⇒ ???)
       .onRecoveryCompleted { (ctx, state) ⇒
         ???

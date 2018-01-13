@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -157,6 +157,33 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         probe.expectMsgType[CurrentClusterState]
         Cluster(sys2).join(Cluster(sys2).selfAddress)
         probe.expectMsgType[MemberUp]
+
+        CoordinatedShutdown(sys2).run(CoordinatedShutdown.UnknownReason)
+        probe.expectMsgType[MemberLeft]
+        // MemberExited might not be published before MemberRemoved
+        val removed = probe.fishForMessage() {
+          case _: MemberExited  ⇒ false
+          case _: MemberRemoved ⇒ true
+        }.asInstanceOf[MemberRemoved]
+        removed.previousStatus should ===(MemberStatus.Exiting)
+      } finally {
+        shutdown(sys2)
+      }
+    }
+
+    "leave via CoordinatedShutdown.run when member status is Joining" in {
+      val sys2 = ActorSystem("ClusterSpec2", ConfigFactory.parseString("""
+        akka.actor.provider = "cluster"
+        akka.remote.netty.tcp.port = 0
+        akka.remote.artery.canonical.port = 0
+        akka.cluster.min-nr-of-members = 2
+        """))
+      try {
+        val probe = TestProbe()(sys2)
+        Cluster(sys2).subscribe(probe.ref, classOf[MemberEvent])
+        probe.expectMsgType[CurrentClusterState]
+        Cluster(sys2).join(Cluster(sys2).selfAddress)
+        probe.expectMsgType[MemberJoined]
 
         CoordinatedShutdown(sys2).run(CoordinatedShutdown.UnknownReason)
         probe.expectMsgType[MemberLeft]

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
  */
 package akka.actor.typed
 
@@ -40,7 +40,7 @@ trait Signal
  * first signal.
  */
 sealed abstract class PreRestart extends Signal
-final case object PreRestart extends PreRestart {
+case object PreRestart extends PreRestart {
   def instance: PreRestart = this
 }
 
@@ -50,14 +50,14 @@ final case object PreRestart extends PreRestart {
  * registered watchers after this signal has been processed.
  */
 sealed abstract class PostStop extends Signal
-final case object PostStop extends PostStop {
+case object PostStop extends PostStop {
   def instance: PostStop = this
 }
 
 /**
  * Lifecycle signal that is fired when an Actor that was watched has terminated.
  * Watching is performed by invoking the
- * [[akka.actor.typed.ActorContext]] `watch` method. The DeathWatch service is
+ * [[akka.actor.typed.scaladsl.ActorContext.watch]] . The DeathWatch service is
  * idempotent, meaning that registering twice has the same effect as registering
  * once. Registration does not need to happen before the Actor terminates, a
  * notification is guaranteed to arrive after both registration and termination

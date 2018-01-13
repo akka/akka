@@ -5,103 +5,31 @@ import akka.{ actor ⇒ untyped }
 import akka.actor.typed._
 import akka.util.Helpers
 import akka.{ actor ⇒ a }
-import akka.util.Unsafe.{ instance ⇒ unsafe }
 
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import akka.annotation.InternalApi
-import akka.actor.typed.internal.{ ActorContextImpl, ActorRefImpl, ActorSystemStub }
-
-import scala.annotation.tailrec
-import scala.util.control.NonFatal
+import akka.actor.typed.internal.{ ActorContextImpl, ActorRefImpl, ActorSystemStub, SystemMessage }
 
 /**
  * A local synchronous ActorRef that invokes the given function for every message send.
- * This reference can be watched and will do the right thing when it receives a [[akka.actor.typed.internal.DeathWatchNotification]].
  * This reference cannot watch other references.
  */
 private[akka] final class FunctionRef[-T](
   _path:      a.ActorPath,
   send:       (T, FunctionRef[T]) ⇒ Unit,
   _terminate: FunctionRef[T] ⇒ Unit)
-  extends WatchableRef[T](_path) {
+  extends ActorRef[T] with ActorRefImpl[T] {
 
   override def tell(msg: T): Unit = {
     if (msg == null) throw InvalidMessageException("[null] is not an allowed message")
-    if (isAlive)
-      try send(msg, this) catch {
-        case NonFatal(_) ⇒ // nothing we can do here
-      }
-    else () // we don’t have deadLetters available
+    send(msg, this)
   }
 
-  import internal._
-
-  override def sendSystem(signal: SystemMessage): Unit = signal match {
-    case internal.Create()                     ⇒ // nothing to do
-    case internal.DeathWatchNotification(_, _) ⇒ // we’re not watching, and we’re not a parent either
-    case internal.Terminate()                  ⇒ doTerminate()
-    case internal.Watch(watchee, watcher)      ⇒ if (watchee == this && watcher != this) addWatcher(watcher.sorryForNothing)
-    case internal.Unwatch(watchee, watcher)    ⇒ if (watchee == this && watcher != this) remWatcher(watcher.sorryForNothing)
-    case NoMessage                             ⇒ // nothing to do
-  }
-
+  override def path = _path
+  override def sendSystem(signal: SystemMessage): Unit = {}
   override def isLocal = true
-
-  override def terminate(): Unit = _terminate(this)
-}
-
-/**
- * The mechanics for synthetic ActorRefs that have a lifecycle and support being watched.
- */
-private[typed] abstract class WatchableRef[-T](override val path: a.ActorPath) extends ActorRef[T] with ActorRefImpl[T] {
-  import WatchableRef._
-
-  /**
-   * Callback that is invoked when this ref has terminated. Even if doTerminate() is
-   * called multiple times, this callback is invoked only once.
-   */
-  protected def terminate(): Unit
-
-  type S = Set[ActorRefImpl[Nothing]]
-  @volatile private[this] var _watchedBy: S = Set.empty
-
-  protected def isAlive: Boolean = _watchedBy != null
-
-  protected def doTerminate(): Unit = {
-    val watchedBy = unsafe.getAndSetObject(this, watchedByOffset, null).asInstanceOf[S]
-    if (watchedBy != null) {
-      try terminate() catch { case NonFatal(ex) ⇒ }
-      if (watchedBy.nonEmpty) watchedBy foreach sendTerminated
-    }
-  }
-
-  private def sendTerminated(watcher: ActorRefImpl[Nothing]): Unit =
-    watcher.sendSystem(internal.DeathWatchNotification(this, null))
-
-  @tailrec final protected def addWatcher(watcher: ActorRefImpl[Nothing]): Unit =
-    _watchedBy match {
-      case null ⇒ sendTerminated(watcher)
-      case watchedBy ⇒
-        if (!watchedBy.contains(watcher))
-          if (!unsafe.compareAndSwapObject(this, watchedByOffset, watchedBy, watchedBy + watcher))
-            addWatcher(watcher) // try again
-    }
-
-  @tailrec final protected def remWatcher(watcher: ActorRefImpl[Nothing]): Unit = {
-    _watchedBy match {
-      case null ⇒ // do nothing...
-      case watchedBy ⇒
-        if (watchedBy.contains(watcher))
-          if (!unsafe.compareAndSwapObject(this, watchedByOffset, watchedBy, watchedBy - watcher))
-            remWatcher(watcher) // try again
-    }
-  }
-}
-
-private[typed] object WatchableRef {
-  val watchedByOffset = unsafe.objectFieldOffset(classOf[WatchableRef[_]].getDeclaredField("_watchedBy"))
 }
 
 /**

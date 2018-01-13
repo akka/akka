@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package docs.akka.typed
 
@@ -7,6 +7,8 @@ package docs.akka.typed
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.AskPattern._
+import akka.testkit.typed.TestKit
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -73,7 +75,7 @@ object IntroSpec {
 
 }
 
-class IntroSpec extends TypedSpec {
+class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   import IntroSpec._
 

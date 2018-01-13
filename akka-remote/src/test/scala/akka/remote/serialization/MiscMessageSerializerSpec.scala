@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
 
 import akka.actor._
-import akka.remote.{ MessageSerializer, RemoteScope, RemoteWatcher }
+import akka.remote.{ RemoteScope, RemoteWatcher, UniqueAddress }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
@@ -16,16 +16,15 @@ import java.util.Optional
 import java.io.NotSerializableException
 
 import akka.Done
+import akka.remote.ArteryControlFormats.UniqueAddress
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
 
 object MiscMessageSerializerSpec {
   val serializationTestOverrides =
     """
-    akka.actor.serialization-bindings {
-      "akka.remote.serialization.MiscMessageSerializerSpec$TestException" = akka-misc
-      # not enabled by default
-      "akka.Done" = akka-misc
+    akka.actor {
+      serialization-bindings = { "akka.remote.serialization.MiscMessageSerializerSpec$TestException" = akka-misc } ${akka.actor.java-serialization-disabled-additional-serialization-bindings}
     }
     """
 
@@ -89,6 +88,8 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "RemoteWatcher.Heartbeat" → RemoteWatcher.Heartbeat,
       "RemoteWatcher.HertbeatRsp" → RemoteWatcher.HeartbeatRsp(65537),
       "Done" → Done,
+      "Address" → Address("akka", "system", "host", 1337),
+      "UniqueAddress" → akka.remote.UniqueAddress(Address("akka", "system", "host", 1337), 82751),
       "LocalScope" → LocalScope,
       "RemoteScope" → RemoteScope(Address("akka", "system", "localhost", 2525)),
       "Config" → system.settings.config,

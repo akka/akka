@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.actor.typed.internal.receptionist
 
@@ -8,6 +8,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.Terminated
 import akka.actor.typed.receptionist.Receptionist._
+import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.Actor.immutable
 import akka.actor.typed.scaladsl.Actor.same

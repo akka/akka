@@ -15,14 +15,12 @@ This module is currently marked as @ref:[may change](common/may-change.md) in th
 * `Inbox` has been renamed to `TestInbox` to allign with `TestProbe`
 * Separated into modules e.g. `akka-actor-typed` `akka-persistence-typed` along with matching package names
 
-### Dependency
-
-To use typed actors add the following dependency:
+To use Akka Typed add the following dependency:
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-actor-typed_2.11
-  version=$version$
+  artifact=akka-actor-typed_2.12
+  version=$akka.version$
 }
 
 ## Introduction

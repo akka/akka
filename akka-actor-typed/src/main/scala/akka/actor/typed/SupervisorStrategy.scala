@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.actor.typed
 
@@ -61,7 +61,7 @@ object SupervisorStrategy {
     minBackoff:   FiniteDuration,
     maxBackoff:   FiniteDuration,
     randomFactor: Double): BackoffSupervisorStrategy =
-    new Backoff(minBackoff, maxBackoff, randomFactor, resetBackoffAfter = minBackoff, loggingEnabled = true)
+    Backoff(minBackoff, maxBackoff, randomFactor, resetBackoffAfter = minBackoff, loggingEnabled = true)
 
   /**
    * INTERNAL API

@@ -1,19 +1,19 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster.typed.internal.receptionist
 
 import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
-import akka.cluster.Cluster
-import akka.serialization.SerializerWithStringManifest
-import akka.actor.typed.{ ActorRef, ActorRefResolver, StartSupport, TypedSpec }
+import akka.actor.typed.{ ActorRef, ActorRefResolver, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Actor
 import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.typed.TestKitSettings
+import akka.cluster.Cluster
+import akka.serialization.SerializerWithStringManifest
+import akka.testkit.typed.{ TestKit, TestKitSettings }
 import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 
@@ -45,14 +45,12 @@ object ClusterReceptionistSpec {
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
     """)
 
-  trait PingProtocol
   case object Pong
+  trait PingProtocol
   case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol
-
   case object Perish extends PingProtocol
 
-  val pingPong = Actor.immutable[PingProtocol] { (ctx, msg) ⇒
-
+  val pingPongBehavior = Actor.immutable[PingProtocol] { (_, msg) ⇒
     msg match {
       case Ping(respondTo) ⇒
         respondTo ! Pong
@@ -61,7 +59,6 @@ object ClusterReceptionistSpec {
       case Perish ⇒
         Actor.stopped
     }
-
   }
 
   class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
@@ -85,10 +82,11 @@ object ClusterReceptionistSpec {
     }
   }
 
-  val PingKey = Receptionist.ServiceKey[PingProtocol]("pingy")
+  val PingKey = ServiceKey[PingProtocol]("pingy")
 }
 
-class ClusterReceptionistSpec extends TypedSpec(ClusterReceptionistSpec.config) with StartSupport {
+class ClusterReceptionistSpec extends TestKit("ClusterReceptionistSpec", ClusterReceptionistSpec.config)
+  with TypedAkkaSpecWithShutdown {
 
   import ClusterReceptionistSpec._
 
@@ -110,29 +108,24 @@ class ClusterReceptionistSpec extends TypedSpec(ClusterReceptionistSpec.config) 
   "The cluster receptionist" must {
 
     "must eventually replicate registrations to the other side" in {
-      new TestSetup {
-        val regProbe = TestProbe[Any]()(system, testSettings)
-        val regProbe2 = TestProbe[Any]()(adaptedSystem2, testSettings)
+      val regProbe = TestProbe[Any]()(system)
+      val regProbe2 = TestProbe[Any]()(adaptedSystem2)
 
-        adaptedSystem2.receptionist ! Subscribe(PingKey, regProbe2.ref)
-        regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+      adaptedSystem2.receptionist ! Subscribe(PingKey, regProbe2.ref)
+      regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
 
-        val service = start(pingPong)
-        system.receptionist ! Register(PingKey, service, regProbe.ref)
-        regProbe.expectMsg(Registered(PingKey, service))
+      val service = spawn(pingPongBehavior)
+      system.receptionist ! Register(PingKey, service, regProbe.ref)
+      regProbe.expectMsg(Registered(PingKey, service))
 
-        val Listing(PingKey, remoteServiceRefs) = regProbe2.expectMsgType[Listing[PingProtocol]]
-        val theRef = remoteServiceRefs.head
-        theRef ! Ping(regProbe2.ref)
-        regProbe2.expectMsg(Pong)
+      val Listing(PingKey, remoteServiceRefs) = regProbe2.expectMsgType[Listing[PingProtocol]]
+      val theRef = remoteServiceRefs.head
+      theRef ! Ping(regProbe2.ref)
+      regProbe2.expectMsg(Pong)
 
-        service ! Perish
-        regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
-      }
+      service ! Perish
+      regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
     }
-  }
-
-  trait TestSetup {
   }
 
   override def afterAll(): Unit = {

@@ -7,11 +7,16 @@ perform tests.
 
 Akka comes with a dedicated module `akka-testkit` for supporting tests.
 
-@@@ note
+## Dependencies 
 
 Be sure to add the module `akka-testkit` to your dependencies.
 
-@@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-testkit_$scala.binary_version$"
+  version="$akka.version$"
+  scope="test"
+}
 
 ## Asynchronous Testing: `TestKit`
 

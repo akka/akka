@@ -443,7 +443,7 @@ Java
 ### Maps
 
 `ORMap` (observed-remove map) is a map with keys of `Any` type and the values are `ReplicatedData`
-types themselves. It supports add, remove and delete any number of times for a map entry.
+types themselves. It supports add, update and remove any number of times for a map entry.
 
 If an entry is concurrently added and removed, the add will win. You cannot remove an entry that
 you have not seen. This is the same semantics as for the `ORSet`.

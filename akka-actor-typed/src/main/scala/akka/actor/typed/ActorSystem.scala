@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.actor.typed
 
@@ -170,6 +170,14 @@ object ActorSystem {
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
     createInternal(name, guardianBehavior, guardianProps, Some(appConfig), classLoader, executionContext)
   }
+  /**
+   * Scala API: Create an ActorSystem
+   */
+  def apply[T](
+    guardianBehavior: Behavior[T],
+    name:             String,
+    config:           Config
+  ): ActorSystem[T] = apply(guardianBehavior, name, config = Some(config))
 
   /**
    * Java API: Create an ActorSystem
@@ -190,6 +198,12 @@ object ActorSystem {
    */
   def create[T](guardianBehavior: Behavior[T], name: String): ActorSystem[T] =
     apply(guardianBehavior, name)
+
+  /**
+   * Java API: Create an ActorSystem
+   */
+  def create[T](guardianBehavior: Behavior[T], name: String, config: Config): ActorSystem[T] =
+    apply(guardianBehavior, name, config = Some(config))
 
   /**
    * Create an ActorSystem based on the untyped [[akka.actor.ActorSystem]]

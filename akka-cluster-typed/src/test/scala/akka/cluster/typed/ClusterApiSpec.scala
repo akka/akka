@@ -1,15 +1,14 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster.typed
 
+import akka.actor.typed.TypedAkkaSpecWithShutdown
+import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.actor.typed.TypedSpec
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.{ TestKit, TestKitSettings }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
@@ -33,7 +32,7 @@ object ClusterApiSpec {
     """)
 }
 
-class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures {
+class ClusterApiSpec extends TestKit("ClusterApiSpec", ClusterApiSpec.config) with TypedAkkaSpecWithShutdown with ScalaFutures {
 
   val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
@@ -49,8 +48,8 @@ class ClusterApiSpec extends TypedSpec(ClusterApiSpec.config) with ScalaFutures 
       try {
         val clusterNode2 = Cluster(adaptedSystem2)
 
-        val node1Probe = TestProbe[AnyRef]()(system, testSettings)
-        val node2Probe = TestProbe[AnyRef]()(adaptedSystem2, testSettings)
+        val node1Probe = TestProbe[AnyRef]()(system)
+        val node2Probe = TestProbe[AnyRef]()(adaptedSystem2)
 
         // initial cached selfMember
         clusterNode1.selfMember.status should ===(MemberStatus.Removed)

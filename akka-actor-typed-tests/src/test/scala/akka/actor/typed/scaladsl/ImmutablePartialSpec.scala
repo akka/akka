@@ -1,16 +1,15 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.actor.typed
 package scaladsl
 
-import akka.testkit.typed.{ BehaviorTestkit, TestKitSettings }
+import akka.testkit.typed.{ BehaviorTestkit, TestKit, TestKitSettings }
 import akka.testkit.typed.scaladsl.TestProbe
+
 import scala.concurrent.duration.DurationInt
 
-class ImmutablePartialSpec extends TypedSpec with StartSupport {
-
-  private implicit val testSettings = TestKitSettings(system)
+class ImmutablePartialSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   "An immutable partial" must {
 
@@ -22,14 +21,14 @@ class ImmutablePartialSpec extends TypedSpec with StartSupport {
             probe.ref ! Command2
             Actor.same
         }
-      val context = new BehaviorTestkit("ctx", behavior)
+      val testkit = BehaviorTestkit(behavior)
 
-      context.run(Command1)
-      context.currentBehavior shouldBe behavior
+      testkit.run(Command1)
+      testkit.currentBehavior shouldBe behavior
       probe.expectNoMsg(100.milliseconds)
 
-      context.run(Command2)
-      context.currentBehavior shouldBe behavior
+      testkit.run(Command2)
+      testkit.currentBehavior shouldBe behavior
       probe.expectMsg(Command2)
     }
   }

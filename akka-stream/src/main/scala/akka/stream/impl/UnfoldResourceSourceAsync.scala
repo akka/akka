@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl
 
@@ -27,7 +27,7 @@ import scala.util.control.NonFatal
   override def initialAttributes: Attributes = DefaultAttributes.unfoldResourceSourceAsync
 
   def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
     var resource = Promise[S]()
     var open = false
     implicit val context = ExecutionContexts.sameThreadExecutionContext

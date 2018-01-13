@@ -1,12 +1,13 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.persistence.typed.scaladsl
 
 import scala.concurrent.duration._
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, StartSupport, SupervisorStrategy, Terminated, TypedSpec }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.scaladsl.Actor
 import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
@@ -27,6 +28,7 @@ object PersistentActorSpec {
   final case object DoNothingAndThenLog extends Command
   final case object EmptyEventsListAndThenLog extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
+  final case object DelayFinished extends Command
   private case object Timeout extends Command
 
   sealed trait Event
@@ -39,7 +41,7 @@ object PersistentActorSpec {
   val firstLogging = "first logging"
   val secondLogging = "second logging"
 
-  def counter(persistenceId: String)(implicit actorSystem: ActorSystem[TypedSpec.Command], testSettings: TestKitSettings): Behavior[Command] =
+  def counter(persistenceId: String)(implicit actorSystem: ActorSystem[_], testSettings: TestKitSettings): Behavior[Command] =
     counter(persistenceId, TestProbe[String].ref)
 
   def counter(persistenceId: String, loggingActor: ActorRef[String]): Behavior[Command] = {
@@ -47,7 +49,7 @@ object PersistentActorSpec {
     PersistentActor.immutable[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
-      commandHandler = CommandHandler[Command, Event, State]((ctx, state, cmd) ⇒ cmd match {
+      commandHandler = (ctx, state, cmd) ⇒ cmd match {
         case Increment ⇒
           Effect.persist(Incremented(1))
         case GetValue(replyTo) ⇒
@@ -61,8 +63,10 @@ object PersistentActorSpec {
               case Tick ⇒ Actor.stopped
             })
           })
-          ctx.watch(delay)
+          ctx.watchWith(delay, DelayFinished)
           Effect.none
+        case DelayFinished ⇒
+          Effect.persist(Incremented(10))
         case IncrementAfterReceiveTimeout ⇒
           ctx.setReceiveTimeout(10.millis, Timeout)
           Effect.none
@@ -93,11 +97,7 @@ object PersistentActorSpec {
             .andThen {
               loggingActor ! firstLogging
             }
-      })
-        .onSignal {
-          case (_, _, Terminated(_)) ⇒
-            Effect.persist(Incremented(10))
-        },
+      },
       eventHandler = (state, evt) ⇒ evt match {
         case Incremented(delta) ⇒
           State(state.value + delta, state.history :+ state.value)
@@ -106,8 +106,7 @@ object PersistentActorSpec {
 
 }
 
-class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eventually with StartSupport {
-
+class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Eventually with TypedAkkaSpecWithShutdown {
   import PersistentActorSpec._
 
   implicit val testSettings = TestKitSettings(system)
@@ -115,7 +114,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
   "A typed persistent actor" must {
 
     "persist an event" in {
-      val c = start(counter("c1"))
+      val c = spawn(counter("c1"))
 
       val probe = TestProbe[State]
       c ! Increment
@@ -124,7 +123,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
     }
 
     "replay stored events" in {
-      val c = start(counter("c2"))
+      val c = spawn(counter("c2"))
 
       val probe = TestProbe[State]
       c ! Increment
@@ -133,7 +132,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
       c ! GetValue(probe.ref)
       probe.expectMsg(State(3, Vector(0, 1, 2)))
 
-      val c2 = start(counter("c2"))
+      val c2 = spawn(counter("c2"))
       c2 ! GetValue(probe.ref)
       probe.expectMsg(State(3, Vector(0, 1, 2)))
       c2 ! Increment
@@ -142,7 +141,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
     }
 
     "handle Terminated signal" in {
-      val c = start(counter("c3"))
+      val c = spawn(counter("c3"))
 
       val probe = TestProbe[State]
       c ! Increment
@@ -154,7 +153,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
     }
 
     "handle receive timeout" in {
-      val c = start(counter("c4"))
+      val c = spawn(counter("c4"))
 
       val probe = TestProbe[State]
       c ! Increment
@@ -173,7 +172,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
      */
     "chainable side effects with events" in {
       val loggingProbe = TestProbe[String]
-      val c = start(counter("c5", loggingProbe.ref))
+      val c = spawn(counter("c5", loggingProbe.ref))
 
       val probe = TestProbe[State]
 
@@ -188,7 +187,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
     /** Proves that side-effects are called when emitting an empty list of events */
     "chainable side effects without events" in {
       val loggingProbe = TestProbe[String]
-      val c = start(counter("c6", loggingProbe.ref))
+      val c = spawn(counter("c6", loggingProbe.ref))
 
       val probe = TestProbe[State]
       c ! EmptyEventsListAndThenLog
@@ -200,7 +199,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
     /** Proves that side-effects are called when explicitly calling Effect.none */
     "chainable side effects when doing nothing (Effect.none)" in {
       val loggingProbe = TestProbe[String]
-      val c = start(counter("c7", loggingProbe.ref))
+      val c = spawn(counter("c7", loggingProbe.ref))
 
       val probe = TestProbe[State]
       c ! DoNothingAndThenLog
@@ -217,7 +216,7 @@ class PersistentActorSpec extends TypedSpec(PersistentActorSpec.config) with Eve
       val probe = TestProbe[State]
       val behavior = Actor.supervise[Command](counter("c13"))
         .onFailure(SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.1))
-      val c = start(behavior)
+      val c = spawn(behavior)
       c ! Increment
       c ! GetValue(probe.ref)
       probe.expectMsg(State(1, Vector(0)))

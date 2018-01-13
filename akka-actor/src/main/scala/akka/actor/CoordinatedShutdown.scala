@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.actor
 
@@ -407,7 +407,7 @@ final class CoordinatedShutdown private[akka] (
         remainingPhases match {
           case Nil ⇒ Future.successful(Done)
           case phase :: remaining ⇒
-            val phaseResult = (tasks.get(phase) match {
+            val phaseResult = tasks.get(phase) match {
               case null ⇒
                 if (debugEnabled) log.debug("Performing phase [{}] with [0] tasks", phase)
                 Future.successful(Done)
@@ -459,7 +459,7 @@ final class CoordinatedShutdown private[akka] (
                     result
                 }
                 Future.firstCompletedOf(List(result, timeoutFut))
-            })
+            }
             if (remaining.isEmpty)
               phaseResult // avoid flatMap when system terminated in last phase
             else

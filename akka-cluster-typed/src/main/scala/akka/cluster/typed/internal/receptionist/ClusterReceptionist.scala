@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster.typed.internal.receptionist
 
@@ -18,7 +18,7 @@ import akka.actor.typed.internal.receptionist.ReceptionistImpl._
 import akka.actor.typed.receptionist.Receptionist.AbstractServiceKey
 import akka.actor.typed.receptionist.Receptionist.AllCommands
 import akka.actor.typed.receptionist.Receptionist.Command
-import akka.actor.typed.receptionist.Receptionist.ServiceKey
+import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.ActorContext
 
 import scala.language.existentials

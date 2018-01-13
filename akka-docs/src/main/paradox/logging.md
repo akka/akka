@@ -324,7 +324,7 @@ Scala
 
 Java
 :   @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #imports #imports-listener }
-     @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #my-event-listener }
+    @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #my-event-listener }
 
 ## Logging to stdout during startup and shutdown
 

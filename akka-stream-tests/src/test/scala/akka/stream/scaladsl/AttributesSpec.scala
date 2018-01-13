@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -124,6 +124,12 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "give access to the most specific attribute value" in {
       attributes.get[Name] should ===(Some(Attributes.Name("b")))
+    }
+
+    "return a mandatory value without allocating a some" in {
+      val attributes = Attributes.inputBuffer(2, 2)
+
+      attributes.mandatoryAttribute[InputBuffer] should ===(InputBuffer(2, 2))
     }
 
   }
@@ -485,5 +491,4 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     }
 
   }
-
 }

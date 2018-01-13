@@ -2,7 +2,7 @@ package akka.stream.impl
 
 import akka.actor.{ Actor, ActorRef, Deploy, Props }
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.stream.ActorMaterializerSettings
+import akka.stream.{ ActorMaterializerSettings, Attributes }
 import org.reactivestreams.Subscriber
 
 /**
@@ -97,19 +97,21 @@ import org.reactivestreams.Subscriber
  * INTERNAL API
  */
 @InternalApi private[akka] object FanoutProcessorImpl {
-  def props(actorMaterializerSettings: ActorMaterializerSettings): Props =
-    Props(new FanoutProcessorImpl(actorMaterializerSettings)).withDeploy(Deploy.local)
+  def props(attributes: Attributes, actorMaterializerSettings: ActorMaterializerSettings): Props =
+    Props(new FanoutProcessorImpl(attributes, actorMaterializerSettings)).withDeploy(Deploy.local)
 }
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class FanoutProcessorImpl(_settings: ActorMaterializerSettings)
-  extends ActorProcessorImpl(_settings) {
+@InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes, _settings: ActorMaterializerSettings)
+  extends ActorProcessorImpl(attributes, _settings) {
 
-  override val primaryOutputs: FanoutOutputs =
-    new FanoutOutputs(settings.maxInputBufferSize, settings.initialInputBufferSize, self, this) {
+  override val primaryOutputs: FanoutOutputs = {
+    val inputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer]
+    new FanoutOutputs(inputBuffer.max, inputBuffer.initial, self, this) {
       override def afterShutdown(): Unit = afterFlush()
     }
+  }
 
   val running: TransferPhase = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
     primaryOutputs.enqueueOutputElement(primaryInputs.dequeueInputElement())

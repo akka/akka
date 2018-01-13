@@ -1,17 +1,16 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.testkit.typed.javadsl
 
 import akka.actor.typed.ActorSystem
-import akka.testkit.typed.TestKitSettings
 
 /**
  * Java API:
  */
-class TestProbe[M](name: String, system: ActorSystem[_], settings: TestKitSettings) extends akka.testkit.typed.scaladsl.TestProbe[M](name)(system, settings) {
+class TestProbe[M](name: String, system: ActorSystem[_]) extends akka.testkit.typed.scaladsl.TestProbe[M](name)(system) {
 
-  def this(system: ActorSystem[_], settings: TestKitSettings) = this("testProbe", system, settings)
+  def this(system: ActorSystem[_]) = this("testProbe", system)
 
   /**
    * Same as `expectMsgType[T](remainingOrDefault)`, but correctly treating the timeFactor.

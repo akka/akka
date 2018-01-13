@@ -1,19 +1,15 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
  */
 
 package akka.cluster.typed
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.Props
-import akka.actor.typed.TypedSpec
+import akka.actor.typed.{ ActorRef, Behavior, Props, TypedAkkaSpecWithShutdown }
 import akka.persistence.typed.scaladsl.PersistentActor
 import akka.persistence.typed.scaladsl.PersistentActor.{ CommandHandler, Effect }
-import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
 
 object ClusterSingletonPersistenceSpec {
   val config = ConfigFactory.parseString(
@@ -44,23 +40,22 @@ object ClusterSingletonPersistenceSpec {
     PersistentActor.immutable[Command, String, String](
       persistenceId = "TheSingleton",
       initialState = "",
-      commandHandler = CommandHandler((ctx, state, cmd) ⇒ cmd match {
+      commandHandler = (_, state, cmd) ⇒ cmd match {
         case Add(s) ⇒ Effect.persist(s)
         case Get(replyTo) ⇒
           replyTo ! state
           Effect.none
         case StopPlz ⇒ Effect.stop
-      }),
+      },
       eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt)
 
 }
 
-class ClusterSingletonPersistenceSpec extends TypedSpec(ClusterSingletonPersistenceSpec.config) with ScalaFutures {
+class ClusterSingletonPersistenceSpec extends TestKit(ClusterSingletonPersistenceSpec.config) with TypedAkkaSpecWithShutdown {
   import ClusterSingletonPersistenceSpec._
   import akka.actor.typed.scaladsl.adapter._
 
   implicit val s = system
-  implicit val testkitSettings = TestKitSettings(system)
 
   implicit val untypedSystem = system.toUntyped
   private val untypedCluster = akka.cluster.Cluster(untypedSystem)

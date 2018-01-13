@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.actor.typed
 
@@ -43,7 +43,7 @@ object InstanceCountingExtension extends ExtensionId[DummyExtension1] {
   }
 }
 
-class ExtensionsSpec extends TypedSpecSetup {
+class ExtensionsSpec extends TypedAkkaSpec {
 
   "The extensions subsystem" must {
     "return the same instance for the same id" in
