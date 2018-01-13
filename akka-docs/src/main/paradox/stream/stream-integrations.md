@@ -8,18 +8,20 @@ For piping the elements of a stream as messages to an ordinary actor you can use
 Messages can be sent to a stream with `Source.queue` or via the `ActorRef` that is
 materialized by `Source.actorRef`.
 
-### mapAsync + ask
+### ask
 
-A nice way to delegate some processing of elements in a stream to an actor is to 
-use `ask` in `mapAsync`. The back-pressure of the stream is maintained by
-the @scala[`Future`]@java[`CompletionStage`] of the `ask` and the mailbox of the actor will not be filled with
-more messages than the given `parallelism` of the `mapAsync` stage.
+### ask
+
+A nice way to delegate some processing of elements in a stream to an actor is to use `ask`. 
+The back-pressure of the stream is maintained by the @scala[`Future`]@java[`CompletionStage`] of 
+the `ask` and the mailbox of the actor will not be filled with more messages than the given 
+`parallelism` of the `ask` stage (similarly to how the `mapAsync` stage works).
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #mapAsync-ask }
+:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #ask }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #mapAsync-ask }
+:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #ask }
 
 Note that the messages received in the actor will be in the same order as
 the stream elements, i.e. the `parallelism` does not change the ordering
@@ -29,8 +31,9 @@ is already a message in the mailbox when the actor has completed previous
 message. 
 
 The actor must reply to the @scala[`sender()`]@java[`getSender()`] for each message from the stream. That
-reply will complete the  @scala[`Future`]@java[`CompletionStage`] of the `ask` and it will be the element that
-is emitted downstreams from `mapAsync`.
+reply will complete the  @scala[`Future`]@java[`CompletionStage`] of the `ask` and it will be the element that is emitted downstreams.
+
+In case the target actor is stopped, the stage will fail with an `AskStageTargetActorTerminatedException`
 
 Scala
 :   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #ask-actor }
@@ -38,20 +41,21 @@ Scala
 Java
 :   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #ask-actor }
 
-The stream can be completed with failure by sending `akka.actor.Status.Failure`
-as reply from the actor.
+The stream can be completed with failure by sending `akka.actor.Status.Failure` as reply from the actor.
 
 If the `ask` fails due to timeout the stream will be completed with
 `TimeoutException` failure. If that is not desired outcome you can use `recover` 
-on the `ask` @scala[`Future`]@java[`CompletionStage`].
+on the `ask` @scala[`Future`]@java[`CompletionStage`], or use the other "restart" stages to restart it.
 
 If you don't care about the reply values and only use them as back-pressure signals you 
-can use `Sink.ignore` after the `mapAsync` stage and then actor is effectively a sink
+can use `Sink.ignore` after the `ask` stage and then actor is effectively a sink
 of the stream.
 
-The same pattern can be used with @ref:[Actor routers](../routing.md). Then you
-can use `mapAsyncUnordered` for better efficiency if you don't care about the 
-order of the emitted downstream elements (the replies).
+Note that while you may implement the same concept using `mapAsync`, that style would not be aware of the actor terminating.
+ 
+If you are intending to ask multiple actors by using @ref:[Actor routers](../routing.md), then 
+you should use `mapAsyncUnordered` and perform the ask manually in there, as the ordering of the replies is not important,
+since multiple actors are being asked concurrently to begin with, and no single actor is the one to be watched by the stage.
 
 ### Sink.actorRefWithAck
 

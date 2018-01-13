@@ -140,19 +140,18 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   implicit val materializer = ActorMaterializer()
   val ref: ActorRef = system.actorOf(Props[Translator])
 
-  "mapAsync + ask" in {
-    //#mapAsync-ask
-    import akka.pattern.ask
+  "ask" in {
+    //#ask
     implicit val askTimeout = Timeout(5.seconds)
     val words: Source[String, NotUsed] =
       Source(List("hello", "hi"))
 
     words
-      .mapAsync(parallelism = 5)(elem ⇒ (ref ? elem).mapTo[String])
+      .ask[String](parallelism = 5)(ref)
       // continue processing of the replies from the actor
       .map(_.toLowerCase)
       .runWith(Sink.ignore)
-    //#mapAsync-ask
+    //#ask
   }
 
   "calling external service with mapAsync" in {

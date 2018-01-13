@@ -3,7 +3,7 @@
  */
 package akka.stream.javadsl
 
-import akka.util.ConstantFun
+import akka.util.{ ConstantFun, Timeout }
 import akka.{ Done, NotUsed }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, function }
@@ -16,6 +16,7 @@ import akka.japi.Util
 import java.util.Comparator
 import java.util.concurrent.CompletionStage
 
+import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts
 import akka.stream.impl.fusing.LazyFlow
 
@@ -528,10 +529,10 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Emits when''' the CompletionStage returned by the provided function finishes for the next element in sequence
    *
-   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream
+   * '''Backpressures when''' the number of CompletionStages reaches the configured parallelism and the downstream
    * backpressures or the first future is not completed
    *
-   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   * '''Completes when''' upstream completes and all CompletionStages have been completed and all elements have been emitted
    *
    * '''Cancels when''' downstream cancels
    *
@@ -563,9 +564,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Emits when''' any of the CompletionStages returned by the provided function complete
    *
-   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   * '''Backpressures when''' the number of CompletionStages reaches the configured parallelism and the downstream backpressures
    *
-   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   * '''Completes when''' upstream completes and all CompletionStages have been completed and all elements have been emitted
    *
    * '''Cancels when''' downstream cancels
    *
@@ -573,6 +574,52 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapAsyncUnordered(parallelism)(x ⇒ f(x).toScala))
+
+  /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+   * If any of the asks times out it will fail the stream with a [[akka.pattern.AskTimeoutException]].
+   *
+   * The `mapTo` class parameter is used to cast the incoming responses to the expected response type.
+   *
+   * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
+   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+   *
+   * Parallelism limits the number of how many asks can be "in flight" at the same time.
+   * Please note that the elements emitted by this stage are in-order with regards to the asks being issued
+   * (i.e. same behaviour as mapAsync).
+   *
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' any of the CompletionStages returned by the provided function complete
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   *
+   * '''Fails when''' the passed in actor terminates, or a timeout is exceeded in any of the asks performed
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def ask[S](parallelism: Int, ref: ActorRef, mapTo: Class[S], timeout: Timeout): javadsl.Flow[In, S, Mat] =
+    new Flow(delegate.ask[S](parallelism)(ref)(timeout, ClassTag(mapTo)))
+
+  /**
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * '''Emits when''' upstream emits
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Fails when''' the watched actor terminates
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def watch(ref: ActorRef): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.watch(ref))
 
   /**
    * Only pass on those elements that satisfy the given predicate.

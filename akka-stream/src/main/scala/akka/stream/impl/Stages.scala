@@ -28,6 +28,7 @@ import akka.stream._
     val recover = name("recover")
     val mapAsync = name("mapAsync")
     val mapAsyncUnordered = name("mapAsyncUnordered")
+    val ask = name("ask")
     val grouped = name("grouped")
     val groupedWithin = name("groupedWithin")
     val groupedWeightedWithin = name("groupedWeightedWithin")
@@ -89,6 +90,7 @@ import akka.stream._
     val delay = name("delay")
 
     val terminationWatcher = name("terminationWatcher")
+    val watch = name("watch")
 
     val publisherSource = name("publisherSource")
     val iterableSource = name("iterableSource")

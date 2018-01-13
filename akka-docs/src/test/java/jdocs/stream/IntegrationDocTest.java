@@ -257,7 +257,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
     public DatabaseService(ActorRef probe) {
       this.probe = probe;
     }
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
@@ -272,11 +272,11 @@ public class IntegrationDocTest extends AbstractJavaTest {
   //#sometimes-slow-service
   static class SometimesSlowService {
     private final Executor ec;
-    
+
     public SometimesSlowService(Executor ec) {
       this.ec = ec;
     }
-    
+
     private final AtomicInteger runningCount = new AtomicInteger();
 
     public CompletionStage<String> convert(String s) {
@@ -292,7 +292,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
     }
   }
   //#sometimes-slow-service
-  
+
   //#ask-actor
   static class Translator extends AbstractActor {
     @Override
@@ -308,22 +308,21 @@ public class IntegrationDocTest extends AbstractJavaTest {
     }
   }
   //#ask-actor
-  
+
   @SuppressWarnings("unchecked")
   @Test
-  public void mapAsyncPlusAsk() throws Exception {
-    //#mapAsync-ask
+  public void askStage() throws Exception {
+    //#ask
     Source<String, NotUsed> words =
       Source.from(Arrays.asList("hello", "hi"));
     Timeout askTimeout = Timeout.apply(5, TimeUnit.SECONDS);
-    
+
     words
-      .mapAsync(5, elem -> ask(ref, elem, askTimeout))
-      .map(elem -> (String) elem)
+      .ask(5, ref, String.class, askTimeout)
       // continue processing of the replies from the actor
       .map(elem -> elem.toLowerCase())
       .runWith(Sink.ignore(), mat);
-    //#mapAsync-ask
+    //#ask
   }
 
 
