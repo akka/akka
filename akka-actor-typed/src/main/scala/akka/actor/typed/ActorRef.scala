@@ -82,6 +82,13 @@ private[akka] object SerializedActorRef {
   def apply[T](actorRef: ActorRef[T]): SerializedActorRef[T] = {
     new SerializedActorRef(actorRef)
   }
+
+  def toAddress[T](actorRef: ActorRef[T]) = {
+    import akka.serialization.JavaSerializer.currentSystem
+    import akka.actor.typed.scaladsl.adapter._
+    val resolver = ActorRefResolver(currentSystem.value.toTyped)
+    resolver.toSerializationFormat(actorRef)
+  }
 }
 
 /**
@@ -94,7 +101,7 @@ private[akka] final case class SerializedActorRef[T] private (address: String) {
   import akka.actor.typed.scaladsl.adapter._
 
   def this(actorRef: ActorRef[T]) =
-    this(ActorRefResolver(currentSystem.value.toTyped).toSerializationFormat(actorRef))
+    this(SerializedActorRef.toAddress(actorRef))
 
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = currentSystem.value match {
