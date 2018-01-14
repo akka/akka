@@ -268,7 +268,7 @@ out like this:
 
 Note that, because `getOrPut` doesn't take any parameters, it can be a `val` here.
 
-As an alternative to nesting you can also use the *&* operator:
+As an alternative to nesting you can also use the `&` operator:
 
 @@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-6 }
 
