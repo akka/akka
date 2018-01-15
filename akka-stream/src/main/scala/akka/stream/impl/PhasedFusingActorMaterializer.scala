@@ -497,11 +497,22 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
       }
     }
 
-    islandTracking.getCurrentPhase.onIslandReady()
-    islandTracking.allNestedIslandsReady()
+    def shutdownWhileMaterializingFailure =
+      new IllegalStateException("Materializer shutdown while materializing stream")
+    try {
+      islandTracking.getCurrentPhase.onIslandReady()
+      islandTracking.allNestedIslandsReady()
 
-    if (Debug) println("--- Finished materialization")
-    matValueStack.peekLast().asInstanceOf[Mat]
+      if (Debug) println("--- Finished materialization")
+      matValueStack.peekLast().asInstanceOf[Mat]
+
+    } catch {
+      case ex: IllegalStateException if isShutdown && ex.getMessage == "cannot create children while terminating or terminated" ⇒
+        throw shutdownWhileMaterializingFailure
+    } finally {
+      if (isShutdown) throw shutdownWhileMaterializingFailure
+    }
+
   }
 
   private def wireInlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any): Unit = {
