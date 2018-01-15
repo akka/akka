@@ -38,7 +38,7 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
         probe.ref ! Started
         target(probe.ref)
       }
-      probe.expectNoMsg(100.millis) // not yet
+      probe.expectNoMessage() // not yet
       spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
       probe.expectMsg(Started)
@@ -98,7 +98,7 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
       }.widen[Command] {
         case m ⇒ m
       }
-      probe.expectNoMsg(100.millis) // not yet
+      probe.expectNoMessage() // not yet
       val ref = spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
       probe.expectMsg(Started)
@@ -114,7 +114,7 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
         probe.ref ! Started
         target(probe.ref)
       })
-      probe.expectNoMsg(100.millis) // not yet
+      probe.expectNoMessage() // not yet
       val ref = spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
       probe.expectMsg(Started)
