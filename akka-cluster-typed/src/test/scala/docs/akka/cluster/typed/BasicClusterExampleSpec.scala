@@ -192,7 +192,7 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
         cluster1.manager ! Down(cluster3.selfMember.address)
         testProbe.expectMsgType[MemberRemoved](10.seconds).member.address shouldEqual cluster3.selfMember.address
 
-        testProbe.expectNoMsg(1000.millis)
+        testProbe.expectNoMessage()
       } finally {
         system1.terminate().futureValue
         system2.terminate().futureValue
