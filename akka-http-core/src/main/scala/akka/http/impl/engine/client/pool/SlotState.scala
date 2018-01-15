@@ -48,31 +48,31 @@ private[pool] sealed abstract class SlotState extends Product {
   def isIdle: Boolean
   def isConnected: Boolean
 
-  def onPreConnect(ctx: SlotContext): SlotState = illegalState(ctx, "preConnect")
-  def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = illegalState(ctx, "connected attempt succeeded")
-  def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "connection attempt failed")
+  def onPreConnect(ctx: SlotContext): SlotState = illegalState(ctx, "onPreConnect")
+  def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = illegalState(ctx, "onConnectionAttemptSucceeded")
+  def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "onConnectionAttemptFailed")
 
-  def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState = illegalState(ctx, "new request")
+  def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState = illegalState(ctx, "onNewRequest")
 
   /** Will be called either immediately if the request entity is strict or otherwise later */
-  def onRequestEntityCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "request entity completed")
-  def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "request entity failed")
+  def onRequestEntityCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "onRequestEntityCompleted")
+  def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "onRequestEntityFailed")
 
-  def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState = illegalState(ctx, "receive response")
+  def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState = illegalState(ctx, "onResponseReceived")
 
   /** Called when the response out port is ready to receive a further response (successful or failed) */
-  def onResponseDispatchable(ctx: SlotContext): SlotState = illegalState(ctx, "responseDispatched")
+  def onResponseDispatchable(ctx: SlotContext): SlotState = illegalState(ctx, "onResponseDispatchable")
 
-  def onResponseEntitySubscribed(ctx: SlotContext): SlotState = illegalState(ctx, "responseEntitySubscribed")
+  def onResponseEntitySubscribed(ctx: SlotContext): SlotState = illegalState(ctx, "onResponseEntitySubscribed")
 
   /** Will be called either immediately if the response entity is strict or otherwise later */
-  def onResponseEntityCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "response entity completed")
-  def onResponseEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "response entity failed")
+  def onResponseEntityCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "onResponseEntityCompleted")
+  def onResponseEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "onResponseEntityFailed")
 
-  def onConnectionCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "connection completed")
-  def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "connection failed")
+  def onConnectionCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "onConnectionCompleted")
+  def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "onConnectionFailed")
 
-  def onTimeout(ctx: SlotContext): SlotState = illegalState(ctx, "timeout")
+  def onTimeout(ctx: SlotContext): SlotState = illegalState(ctx, "onTimeout")
 
   def onShutdown(ctx: SlotContext): Unit = ()
 
@@ -224,6 +224,7 @@ private[pool] object SlotState {
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = this
     override def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = this
     override def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = this
+    override def onRequestEntityCompleted(ctx: SlotContext): SlotState = this
   }
 
   private[pool] /* to avoid warnings */ trait BusyWithResultAlreadyDispatched extends ConnectedState with BusyState {
