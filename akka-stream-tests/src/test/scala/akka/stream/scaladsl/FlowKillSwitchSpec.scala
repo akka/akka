@@ -15,7 +15,7 @@ class FlowKillSwitchSpec extends StreamSpec {
 
   implicit val mat = ActorMaterializer()
 
-  "A UniqueKillSwitch" must {
+  "A UniqueKillSwitch" should {
 
     "stop a stream if requested" in {
       val ((upstream, switch), downstream) =
@@ -82,7 +82,7 @@ class FlowKillSwitchSpec extends StreamSpec {
 
   }
 
-  "A SharedKillSwitches" must {
+  "A SharedKillSwitches" should {
 
     "stop a stream if requested" in assertAllStagesStopped {
       val switch = KillSwitches.shared("switch")

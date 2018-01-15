@@ -15,7 +15,7 @@ class ProtobufSerializerSpec extends AkkaSpec {
 
   val ser = SerializationExtension(system)
 
-  "Serialization" must {
+  "Serialization" should {
 
     "resolve protobuf serializer" in {
       ser.serializerFor(classOf[SerializedMessage]).getClass should ===(classOf[ProtobufSerializer])

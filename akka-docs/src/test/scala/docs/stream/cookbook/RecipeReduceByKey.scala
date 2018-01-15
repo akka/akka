@@ -9,7 +9,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic }
 
 class RecipeReduceByKey extends RecipeSpec {
 
-  "Reduce by key recipe" must {
+  "Reduce by key recipe" should {
 
     val MaximumDistinctWords = 1000
 

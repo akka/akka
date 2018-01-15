@@ -73,7 +73,7 @@ class FramingSpec extends StreamSpec {
 
   override def expectedTestDuration = 2.minutes
 
-  "Delimiter bytes based framing" must {
+  "Delimiter bytes based framing" should {
 
     val delimiterBytes = List("\n", "\r\n", "FOO").map(ByteString(_))
     val baseTestSequences = List("", "foo", "hello world").map(ByteString(_))
@@ -143,7 +143,7 @@ class FramingSpec extends StreamSpec {
 
   }
 
-  "Length field based framing" must {
+  "Length field based framing" should {
 
     val referenceChunk = ByteString(scala.util.Random.nextString(0x100001))
 

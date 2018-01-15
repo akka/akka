@@ -26,7 +26,7 @@ class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyC
 
   implicit def noShrink[T] = Shrink[T](_ ⇒ Stream.empty) // do not shrink failures, it only destroys evidence
 
-  "MergeSorted" must {
+  "MergeSorted" should {
 
     "work in the nominal case" in {
       val gen = Gen.listOf(Gen.oneOf(false, true))

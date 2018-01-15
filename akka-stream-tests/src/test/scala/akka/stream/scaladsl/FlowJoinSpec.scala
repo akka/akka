@@ -22,7 +22,7 @@ class FlowJoinSpec extends StreamSpec(ConfigFactory.parseString("akka.loglevel=I
   implicit val defaultPatience =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(200, Millis))
 
-  "A Flow using join" must {
+  "A Flow using join" should {
     "allow for cycles" in assertAllStagesStopped {
       val end = 47
       val (even, odd) = (0 to end).partition(_ % 2 == 0)

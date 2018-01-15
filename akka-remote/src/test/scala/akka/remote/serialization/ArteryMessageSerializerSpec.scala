@@ -16,7 +16,7 @@ import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 
 class ArteryMessageSerializerSpec extends AkkaSpec {
-  "ArteryMessageSerializer" must {
+  "ArteryMessageSerializer" should {
     val actorA = system.actorOf(Props.empty)
     val actorB = system.actorOf(Props.empty)
 

@@ -66,7 +66,7 @@ class ClusterShardingPersistenceSpec extends TestKit("ClusterShardingPersistence
   implicit val untypedSystem = system.toUntyped
   private val untypedCluster = akka.cluster.Cluster(untypedSystem)
 
-  "Typed cluster sharding with persistent actor" must {
+  "Typed cluster sharding with persistent actor" should {
 
     untypedCluster.join(untypedCluster.selfAddress)
 

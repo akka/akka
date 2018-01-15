@@ -39,7 +39,7 @@ class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with 
     val receptionist = spawn(receptionistBehavior)
   }
 
-  "A local receptionist" must {
+  "A local receptionist" should {
 
     "register a service" in {
       val testkit = BehaviorTestkit(receptionistBehavior)

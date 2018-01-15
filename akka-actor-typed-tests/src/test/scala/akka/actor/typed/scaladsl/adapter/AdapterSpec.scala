@@ -150,7 +150,7 @@ object AdapterSpec {
 class AdapterSpec extends AkkaSpec {
   import AdapterSpec._
 
-  "ActorSystem adaption" must {
+  "ActorSystem adaption" should {
     "only happen once for a given actor system" in {
       val typed1 = system.toTyped
       val typed2 = system.toTyped
@@ -159,7 +159,7 @@ class AdapterSpec extends AkkaSpec {
     }
   }
 
-  "Adapted actors" must {
+  "Adapted actors" should {
 
     "send message from typed to untyped" in {
       val probe = TestProbe()

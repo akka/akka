@@ -122,7 +122,7 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
   import multiNodeConfig._
   import RemoteReDeploymentMultiJvmSpec._
 
-  "A remote deployment target system" must {
+  "A remote deployment target system" should {
 
     "terminate the child when its parent system is replaced by a new one" in {
       // Any message sent to `echo` will be passed on to `testActor`

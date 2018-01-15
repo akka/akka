@@ -15,7 +15,7 @@ class FlushOnShutdownSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultC
 
   val remoteSystem = newRemoteSystem()
 
-  "Artery" must {
+  "Artery" should {
 
     "flush messages enqueued before shutdown" in {
 

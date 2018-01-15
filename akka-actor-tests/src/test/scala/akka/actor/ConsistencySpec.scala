@@ -54,7 +54,7 @@ class ConsistencySpec extends AkkaSpec(ConsistencySpec.config) {
 
   override def expectedTestDuration: FiniteDuration = 5.minutes
 
-  "The Akka actor model implementation" must {
+  "The Akka actor model implementation" should {
     "provide memory consistency" in {
       val noOfActors = threads + 1
       val props = Props[ConsistencyCheckingActor].withDispatcher("consistency-dispatcher")

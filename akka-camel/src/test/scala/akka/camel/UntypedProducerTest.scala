@@ -29,7 +29,7 @@ class UntypedProducerTest extends WordSpec with Matchers with BeforeAndAfterAll 
     mockEndpoint.reset
   }
 
-  "An UntypedProducer producing a message to a sync Camel route" must {
+  "An UntypedProducer producing a message to a sync Camel route" should {
 
     "produce a message and receive a normal response" in {
       val producer = system.actorOf(Props[SampleUntypedReplyingProducer], name = "sample-untyped-replying-producer")
@@ -62,7 +62,7 @@ class UntypedProducerTest extends WordSpec with Matchers with BeforeAndAfterAll 
     }
   }
 
-  "An UntypedProducer producing a message to a sync Camel route and then forwarding the response" must {
+  "An UntypedProducer producing a message to a sync Camel route and then forwarding the response" should {
 
     "produce a message and send a normal response to direct:forward-test-1" in {
       val producer = system.actorOf(Props[SampleUntypedForwardingProducer], name = "sample-untyped-forwarding-producer")

@@ -46,7 +46,7 @@ class SnapshotDirectoryFailureSpec extends AkkaSpec(PersistenceSpec.config("leve
     if (!file.delete()) throw new IOException(s"Failed to delete test file [${file.getCanonicalFile}]")
   }
 
-  "A local snapshot store configured with an failing directory name " must {
+  "A local snapshot store configured with an failing directory name " should {
     "throw an exception at startup" in {
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
         val p = system.actorOf(Props(classOf[TestPersistentActor], "SnapshotDirectoryFailureSpec-1", testActor))

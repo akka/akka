@@ -48,7 +48,7 @@ class LruBoundedCacheSpec extends AkkaSpec {
     override protected def hash(k: String): Int = 0
   }
 
-  "LruBoundedCache" must {
+  "LruBoundedCache" should {
 
     "work in the happy case" in {
       val cache = new TestCache(4, 4)

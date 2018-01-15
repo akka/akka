@@ -14,7 +14,7 @@ import akka.actor.Status
 class ActorRefSourceSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
 
-  "A ActorRefSource" must {
+  "A ActorRefSource" should {
 
     "emit received messages to the stream" in {
       val s = TestSubscriber.manualProbe[Int]()

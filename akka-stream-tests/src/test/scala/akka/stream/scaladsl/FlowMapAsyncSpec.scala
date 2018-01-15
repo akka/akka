@@ -25,7 +25,7 @@ class FlowMapAsyncSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A Flow with mapAsync" must {
+  "A Flow with mapAsync" should {
 
     "produce future elements" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Int]()

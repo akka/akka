@@ -180,7 +180,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     node(r) / "system" / "receptionist"
   }
 
-  "A ClusterClient" must {
+  "A ClusterClient" should {
 
     "startup cluster" in within(30 seconds) {
       join(first, first)

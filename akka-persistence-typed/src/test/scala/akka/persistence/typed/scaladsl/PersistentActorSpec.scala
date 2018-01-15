@@ -111,7 +111,7 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
 
   implicit val testSettings = TestKitSettings(system)
 
-  "A typed persistent actor" must {
+  "A typed persistent actor" should {
 
     "persist an event" in {
       val c = spawn(counter("c1"))

@@ -25,7 +25,7 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     ref should ===(obj)
   }
 
-  "ClusterShardingMessageSerializer" must {
+  "ClusterShardingMessageSerializer" should {
 
     "be able to serialize ShardCoordinator snapshot State" in {
       val state = State(

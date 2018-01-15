@@ -66,7 +66,7 @@ class AsyncCallbackSpec extends AkkaSpec {
     }
   }
 
-  "The support for async callbacks" must {
+  "The support for async callbacks" should {
 
     "invoke without feedback, happy path" in {
       val probe = TestProbe()

@@ -56,7 +56,7 @@ class LocalConcurrencySpec(_system: ActorSystem) extends TestKit(_system)
 
   val replicator = DistributedData(system).replicator
 
-  "Updates from same node" must {
+  "Updates from same node" should {
 
     "be possible to do from two actors" in {
       val updater1 = system.actorOf(Props[Updater], "updater1")

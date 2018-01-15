@@ -82,7 +82,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
   def currentRoutees(router: ActorRef) =
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees
 
-  "A cluster" must {
+  "A cluster" should {
     "start cluster" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third)
       runOn(first) { info("first, roles: " + cluster.selfRoles) }

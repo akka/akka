@@ -42,7 +42,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
   val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Down, Set("r3"))
   val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("r3"), "foo")
 
-  "ClusterMessages" must {
+  "ClusterMessages" should {
 
     "be serializable" in {
       val address = Address("akka.tcp", "system", "some.host.org", 4711)
@@ -126,7 +126,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       join.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
     }
   }
-  "Cluster router pool" must {
+  "Cluster router pool" should {
     "be serializable with no role" in {
       checkSerialization(ClusterRouterPool(
         RoundRobinPool(

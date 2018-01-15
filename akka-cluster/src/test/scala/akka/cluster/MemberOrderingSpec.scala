@@ -17,7 +17,7 @@ class MemberOrderingSpec extends WordSpec with Matchers {
 
   def m(address: Address, status: MemberStatus): Member = TestMember(address, status)
 
-  "An Ordering[Member]" must {
+  "An Ordering[Member]" should {
 
     "order members by host:port" in {
       val members = SortedSet.empty[Member] +
@@ -101,7 +101,7 @@ class MemberOrderingSpec extends WordSpec with Matchers {
 
   }
 
-  "An Ordering[Address]" must {
+  "An Ordering[Address]" should {
 
     "order addresses by port" in {
       val addresses = SortedSet.empty[Address] +
@@ -149,7 +149,7 @@ class MemberOrderingSpec extends WordSpec with Matchers {
     }
   }
 
-  "Leader status ordering" must {
+  "Leader status ordering" should {
 
     "order members with status Joining, Exiting and Down last" in {
       val address = Address("akka.tcp", "sys1", "host1", 5000)

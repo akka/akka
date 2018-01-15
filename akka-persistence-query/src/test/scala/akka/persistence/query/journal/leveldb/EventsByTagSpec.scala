@@ -54,7 +54,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
 
   val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
-  "Leveldb query EventsByTag" must {
+  "Leveldb query EventsByTag" should {
     "implement standard EventsByTagQuery" in {
       queries.isInstanceOf[EventsByTagQuery] should ===(true)
     }
@@ -121,7 +121,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
     }
   }
 
-  "Leveldb live query EventsByTag" must {
+  "Leveldb live query EventsByTag" should {
     "find new events" in {
       val d = system.actorOf(TestActor.props("d"))
 

@@ -26,7 +26,7 @@ class FlowSupervisionSpec extends StreamSpec {
   def run(f: Flow[Int, Int, NotUsed]): immutable.Seq[Int] =
     Await.result(Source((1 to 5).toSeq ++ (1 to 5)).via(f).limit(1000).runWith(Sink.seq), 3.seconds)
 
-  "Stream supervision" must {
+  "Stream supervision" should {
 
     "stop and complete stream with failure by default" in {
       intercept[RuntimeException] {

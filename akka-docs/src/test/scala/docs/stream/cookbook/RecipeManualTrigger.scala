@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 
 class RecipeManualTrigger extends RecipeSpec {
 
-  "Recipe for triggering a stream manually" must {
+  "Recipe for triggering a stream manually" should {
 
     "work" in {
 

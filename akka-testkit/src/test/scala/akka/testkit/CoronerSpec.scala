@@ -21,7 +21,7 @@ class CoronerSpec extends WordSpec with Matchers {
     (result, new String(bytes.toByteArray(), "UTF-8"))
   }
 
-  "A Coroner" must {
+  "A Coroner" should {
 
     "generate a report if enough time passes" in {
       val (_, report) = captureOutput(out ⇒ {

@@ -677,7 +677,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
     expectMsg(List("a-1", "a-2"))
   }
 
-  "A persistent actor" must {
+  "A persistent actor" should {
     "fail fast if persistenceId is null" in {
       import akka.testkit.filterEvents
       filterEvents(EventFilter[ActorInitializationException]()) {

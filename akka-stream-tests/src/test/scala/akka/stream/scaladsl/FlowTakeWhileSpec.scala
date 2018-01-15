@@ -18,7 +18,7 @@ class FlowTakeWhileSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A TakeWhile" must {
+  "A TakeWhile" should {
 
     "take while predicate is true" in assertAllStagesStopped {
       Source(1 to 4).takeWhile(_ < 3).runWith(TestSink.probe[Int])

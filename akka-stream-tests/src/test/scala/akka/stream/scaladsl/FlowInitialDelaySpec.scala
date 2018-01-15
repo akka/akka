@@ -13,7 +13,7 @@ class FlowInitialDelaySpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "Flow initialDelay" must {
+  "Flow initialDelay" should {
 
     "work with zero delay" in Utils.assertAllStagesStopped {
       Await.result(

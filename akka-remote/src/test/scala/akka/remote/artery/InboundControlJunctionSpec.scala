@@ -38,7 +38,7 @@ class InboundControlJunctionSpec
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)
 
-  "Control messages" must {
+  "Control messages" should {
 
     "be emitted via side channel" in {
       val observerProbe = TestProbe()

@@ -11,7 +11,7 @@ import akka.testkit.{ TestLatch, ImplicitSender, DefaultTimeout, AkkaSpec }
 class SmallestMailboxSpec extends AkkaSpec("akka.actor.serialize-messages = off")
   with DefaultTimeout with ImplicitSender {
 
-  "smallest mailbox pool" must {
+  "smallest mailbox pool" should {
 
     "deliver messages to idle actor" in {
       val usedActors = new ConcurrentHashMap[Int, String]()

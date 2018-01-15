@@ -26,7 +26,7 @@ class DisabledJavaSerializerWarningSpec extends AkkaSpec(
 
   import DisabledJavaSerializerWarningSpec._
 
-  "DisabledJavaSerializer warning" must {
+  "DisabledJavaSerializer warning" should {
 
     "be logged for suspicious messages" in {
       EventFilter.warning(start = "Outgoing message attempted to use Java Serialization", occurrences = 1).intercept {

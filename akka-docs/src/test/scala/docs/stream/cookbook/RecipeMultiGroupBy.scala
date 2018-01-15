@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 
 class RecipeMultiGroupBy extends RecipeSpec {
 
-  "Recipe for multi-groupBy" must {
+  "Recipe for multi-groupBy" should {
 
     "work" in {
 

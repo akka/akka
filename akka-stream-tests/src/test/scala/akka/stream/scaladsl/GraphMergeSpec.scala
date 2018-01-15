@@ -25,7 +25,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
   }
 
-  "merge" must {
+  "merge" should {
 
     "work in the happy case" in assertAllStagesStopped {
       // Different input sizes (4 and 6)

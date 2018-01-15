@@ -23,7 +23,7 @@ class ActivationTrackerTest extends TestKit(ActorSystem("ActivationTrackerTest")
   }
 
   val at = system.actorOf(Props[ActivationTracker], name = "activationTrackker")
-  "ActivationTracker" must {
+  "ActivationTracker" should {
     def publish(msg: Any) = at ! msg
     implicit def timeout = remainingOrDefault
     "forwards activation message to all awaiting parties" taggedAs TimingTest in {

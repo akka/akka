@@ -30,7 +30,7 @@ class PinnedActorSpec extends AkkaSpec(PinnedActorSpec.config) with BeforeAndAft
 
   private val unit = TimeUnit.MILLISECONDS
 
-  "A PinnedActor" must {
+  "A PinnedActor" should {
 
     "support tell" in {
       var oneWay = new CountDownLatch(1)

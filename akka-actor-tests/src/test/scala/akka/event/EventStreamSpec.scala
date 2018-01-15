@@ -72,7 +72,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
   val impl = system.asInstanceOf[ActorSystemImpl]
 
-  "An EventStream" must {
+  "An EventStream" should {
 
     "manage subscriptions" in {
       //#event-bus-start-unsubscriber-scala

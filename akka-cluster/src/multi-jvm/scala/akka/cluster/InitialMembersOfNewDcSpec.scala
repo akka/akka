@@ -58,7 +58,7 @@ abstract class InitialMembersOfNewDcSpec extends MultiNodeSpec(InitialMembersOfN
   def initialParticipants = roles.size
   val cluster = Cluster(system)
 
-  "Joining a new DC" must {
+  "Joining a new DC" should {
     "join node one" in {
       runOn(one) {
         cluster.join(node(one).address)

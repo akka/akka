@@ -62,7 +62,7 @@ class VectorClockPerfSpec extends WordSpec with Matchers {
     vc1 == vc2 should ===(false)
   }
 
-  s"VectorClock comparisons of size $clockSize" must {
+  s"VectorClock comparisons of size $clockSize" should {
 
     s"do a warm up run $iterations times" in {
       checkThunkFor(vcBaseLast, vcBaseLast, compareTo(Same), iterations)

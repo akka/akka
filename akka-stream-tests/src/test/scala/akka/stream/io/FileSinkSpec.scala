@@ -42,7 +42,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val TestByteStrings = TestLines.map(ByteString(_))
 
-  "FileSink" must {
+  "FileSink" should {
     "write lines to a file" in assertAllStagesStopped {
       targetFile { f ⇒
         val completion = Source(TestByteStrings)

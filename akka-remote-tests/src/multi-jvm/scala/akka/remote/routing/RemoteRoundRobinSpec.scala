@@ -80,7 +80,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
 
   def initialParticipants = roles.size
 
-  "A remote round robin pool" must {
+  "A remote round robin pool" should {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       runOn(first, second, third) {
@@ -123,7 +123,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
     }
   }
 
-  "A remote round robin pool with resizer" must {
+  "A remote round robin pool with resizer" should {
     "be locally instantiated on a remote node after several resize rounds" in within(5 seconds) {
 
       runOn(first, second, third) {
@@ -166,7 +166,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
     }
   }
 
-  "A remote round robin group" must {
+  "A remote round robin group" should {
     "send messages with actor selection to remote paths" in {
 
       runOn(first, second, third) {

@@ -29,7 +29,7 @@ abstract class NodeDowningAndBeingRemovedSpec
 
   import NodeDowningAndBeingRemovedMultiJvmSpec._
 
-  "A node that is downed" must {
+  "A node that is downed" should {
 
     "eventually be removed from membership" taggedAs LongRunningTest in {
 

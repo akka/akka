@@ -17,7 +17,7 @@ class FlowFromFutureSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A Flow based on a Future" must {
+  "A Flow based on a Future" should {
     "produce one element from already successful Future" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Int]()
       val p = Source.fromFuture(Future.successful(1)).runWith(Sink.asPublisher(true)).subscribe(c)

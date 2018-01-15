@@ -120,7 +120,7 @@ abstract class ClusterShardingGracefulShutdownSpec(config: ClusterShardingGracef
 
   def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
-  s"Cluster sharding ($mode)" must {
+  s"Cluster sharding ($mode)" should {
 
     if (!isDdataMode) {
       "setup shared journal" in {

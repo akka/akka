@@ -110,7 +110,7 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
 
   override def beforeEach() = state.finished.reset
 
-  "An Actor with Stash" must {
+  "An Actor with Stash" should {
 
     "stash messages" in {
       val stasher = system.actorOf(Props(new StashingActor))
@@ -183,7 +183,7 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
     }
   }
 
-  "An ActWithStash" must {
+  "An ActWithStash" should {
 
     "allow using whenRestarted" in {
       import ActorDSL._

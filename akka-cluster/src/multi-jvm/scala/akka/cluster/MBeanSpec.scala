@@ -42,7 +42,7 @@ abstract class MBeanSpec
   val mbeanName = new ObjectName("akka:type=Cluster")
   lazy val mbeanServer = ManagementFactory.getPlatformMBeanServer
 
-  "Cluster MBean" must {
+  "Cluster MBean" should {
     "expose attributes" taggedAs LongRunningTest in {
       val info = mbeanServer.getMBeanInfo(mbeanName)
       info.getAttributes.map(_.getName).toSet should ===(Set(

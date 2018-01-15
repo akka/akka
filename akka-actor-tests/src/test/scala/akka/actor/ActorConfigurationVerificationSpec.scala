@@ -40,7 +40,7 @@ class ActorConfigurationVerificationSpec extends AkkaSpec(ActorConfigurationVeri
     system.eventStream.publish(Mute(EventFilter[ConfigurationException]("")))
   }
 
-  "An Actor configured with a BalancingDispatcher" must {
+  "An Actor configured with a BalancingDispatcher" should {
     "fail verification with a ConfigurationException if also configured with a RoundRobinPool" in {
       intercept[ConfigurationException] {
         system.actorOf(RoundRobinPool(2).withDispatcher("balancing-dispatcher").props(Props[TestActor]))
@@ -71,7 +71,7 @@ class ActorConfigurationVerificationSpec extends AkkaSpec(ActorConfigurationVeri
       system.actorOf(Props[TestActor].withDispatcher("balancing-dispatcher"))
     }
   }
-  "An Actor configured with a non-balancing dispatcher" must {
+  "An Actor configured with a non-balancing dispatcher" should {
     "not fail verification with a ConfigurationException if also configured with a Router" in {
       system.actorOf(RoundRobinPool(2).props(Props[TestActor].withDispatcher("pinned-dispatcher")))
     }

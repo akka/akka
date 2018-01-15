@@ -17,7 +17,7 @@ class ActorTimeoutSpec extends AkkaSpec {
 
   system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*unhandled message from.*hallo")))
 
-  "An Actor-based Future" must {
+  "An Actor-based Future" should {
 
     "use implicitly supplied timeout" in {
       implicit val timeout = Timeout(testTimeout)

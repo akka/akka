@@ -21,7 +21,7 @@ class FlowConflateSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "Conflate" must {
+  "Conflate" should {
 
     "pass-through elements unchanged when there is no rate difference" in {
       val publisher = TestPublisher.probe[Int]()

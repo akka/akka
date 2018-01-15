@@ -7,7 +7,7 @@ class PropsSpec extends TypedAkkaSpec {
 
   val dispatcherFirst = DispatcherDefault(DispatcherFromConfig("pool"))
 
-  "A Props" must {
+  "A Props" should {
 
     "get first dispatcher" in {
       dispatcherFirst.firstOrElse[DispatcherSelector](null) should ===(dispatcherFirst)

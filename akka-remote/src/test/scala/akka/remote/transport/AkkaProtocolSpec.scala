@@ -118,7 +118,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       case _ ⇒ false
     }
 
-  "ProtocolStateActor" must {
+  "ProtocolStateActor" should {
 
     "register itself as reader on injecteted handles" in {
       val (failureDetector, _, _, handle) = collaborators

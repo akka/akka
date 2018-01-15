@@ -63,7 +63,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
     enterBarrier(from.name + "-joined")
   }
 
-  "Pruning of durable CRDT" must {
+  "Pruning of durable CRDT" should {
 
     "move data from removed node" in {
       join(first, first)

@@ -52,7 +52,7 @@ class PersistentActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec.c
 
   system.eventStream.publish(TestEvent.Mute(EventFilter[akka.pattern.AskTimeoutException]()))
 
-  "A persistent actor" must {
+  "A persistent actor" should {
     "have default warn logging be triggered, when deletion failed" in {
       val persistentActor = system.actorOf(Props(classOf[DoesNotHandleDeleteFailureActor], name, testActor))
       system.eventStream.subscribe(testActor, classOf[Logging.Warning])

@@ -10,7 +10,7 @@ import akka.testkit.AkkaSpec
 class OutboundCompressionSpec extends AkkaSpec {
   import CompressionTestUtils._
 
-  "Outbound ActorRef compression" must {
+  "Outbound ActorRef compression" should {
     val alice = minimalRef("alice")
     val bob = minimalRef("bob")
 

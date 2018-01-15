@@ -59,7 +59,7 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
 
   import config._
 
-  "A cluster with multiple data centers" must {
+  "A cluster with multiple data centers" should {
     "be able to form" in {
 
       runOn(first) {

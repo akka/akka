@@ -13,7 +13,7 @@ class ReverseArrowSpec extends StreamSpec {
   val source = Source(List(1, 2, 3))
   val sink = Flow[Int].limit(10).toMat(Sink.seq)(Keep.right)
 
-  "Reverse Arrows in the Graph DSL" must {
+  "Reverse Arrows in the Graph DSL" should {
 
     "work from Inlets" in {
       Await.result(RunnableGraph.fromGraph(GraphDSL.create(sink) { implicit b ⇒ s ⇒

@@ -215,19 +215,19 @@ abstract class PersistentActorStashingSpec(config: Config) extends PersistenceSp
     }
   }
 
-  "Stashing in a persistent actor" must {
+  "Stashing in a persistent actor" should {
     behave like stash[UserStashPersistentActor]()
     behave like stashWithSeveralMessages[UserStashManyPersistentActor]()
     behave like stashUnderFailures[UserStashFailurePersistentActor]()
   }
 
-  "Stashing(unstashAll called in handler) in a persistent actor" must {
+  "Stashing(unstashAll called in handler) in a persistent actor" should {
     behave like stash[UserStashWithinHandlerPersistentActor]()
     behave like stashWithSeveralMessages[UserStashWithinHandlerManyPersistentActor]()
     behave like stashUnderFailures[UserStashWithinHandlerFailureCallbackPersistentActor]()
   }
 
-  "Stashing(stash called in handler) in a persistent actor" must {
+  "Stashing(stash called in handler) in a persistent actor" should {
     "fail when calling stash in persist handler" in {
 
       val actor = system.actorOf(Props(classOf[StashWithinHandlerSupervisor], testActor, name))
@@ -280,11 +280,11 @@ class SteppingInMemPersistentActorStashingSpec extends PersistenceSpec(
     }
   }
 
-  "Stashing in a persistent actor mixed with persistAsync" must {
+  "Stashing in a persistent actor mixed with persistAsync" should {
     behave like stash[AsyncStashingPersistentActor]()
   }
 
-  "Stashing(unstashAll called in handler) in a persistent actor mixed with persistAsync" must {
+  "Stashing(unstashAll called in handler) in a persistent actor mixed with persistAsync" should {
     behave like stash[AsyncStashingWithinHandlerPersistentActor]()
   }
 

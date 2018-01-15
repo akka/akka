@@ -18,7 +18,7 @@ class FlowZipWithSpec extends BaseTwoStreamsSetup {
     subscriber
   }
 
-  "A ZipWith for Flow " must {
+  "A ZipWith for Flow " should {
 
     "work in the happy case" in {
       val probe = TestSubscriber.manualProbe[Outputs]()

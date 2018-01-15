@@ -39,7 +39,7 @@ class UdpIntegrationSpec extends AkkaSpec("""
     commander.sender()
   }
 
-  "The UDP Fire-and-Forget implementation" must {
+  "The UDP Fire-and-Forget implementation" should {
 
     "be able to send without binding" in {
       val serverAddress = bindUdp(testActor)

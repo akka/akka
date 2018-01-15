@@ -152,7 +152,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
 
   def metricsAwait(factor: Int = 10): Unit = Thread.sleep(metricsSettings.CollectorSampleInterval.toMillis * factor)
 
-  "A cluster with a AdaptiveLoadBalancingRouter" must {
+  "A cluster with a AdaptiveLoadBalancingRouter" should {
     "start cluster nodes" taggedAs LongRunningTest in {
       awaitClusterUp(roles: _*)
       enterBarrier("after-1")

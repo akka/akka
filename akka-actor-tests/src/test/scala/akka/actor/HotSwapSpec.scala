@@ -15,7 +15,7 @@ object HotSwapSpec {
 class HotSwapSpec extends AkkaSpec with ImplicitSender {
   import HotSwapSpec.Becomer
 
-  "An Actor" must {
+  "An Actor" should {
     "be able to become in its constructor" in {
       val a = system.actorOf(Props(new Becomer {
         context.become { case always ⇒ sender() ! always }

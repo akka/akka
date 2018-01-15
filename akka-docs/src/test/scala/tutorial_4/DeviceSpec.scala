@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 
 class DeviceSpec extends AkkaSpec {
 
-  "Device actor" must {
+  "Device actor" should {
 
     //#device-registration-tests
     "reply to registration requests" in {

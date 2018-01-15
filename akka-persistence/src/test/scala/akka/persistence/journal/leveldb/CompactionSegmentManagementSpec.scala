@@ -8,7 +8,7 @@ import org.scalatest.WordSpec
 
 class CompactionSegmentManagementSpec extends WordSpec {
 
-  "A CompactionSegmentManagement compatible object" must {
+  "A CompactionSegmentManagement compatible object" should {
     "ignore persistence ids without declared compaction intervals" in {
       val intervals = Map(
         "persistence_id-1" → 1L,

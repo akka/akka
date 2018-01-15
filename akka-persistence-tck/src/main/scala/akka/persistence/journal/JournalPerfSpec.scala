@@ -120,7 +120,7 @@ abstract class JournalPerfSpec(config: Config) extends JournalSpec(config) {
 
   private val commands = Vector(1 to eventsCount: _*)
 
-  "A PersistentActor's performance" must {
+  "A PersistentActor's performance" should {
     s"measure: persistAsync()-ing $eventsCount events" in {
       val p1 = benchActor(eventsCount)
 

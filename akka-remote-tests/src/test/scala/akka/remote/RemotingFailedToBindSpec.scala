@@ -8,7 +8,7 @@ import org.scalatest.{ Matchers, WordSpec }
 
 class RemotingFailedToBindSpec extends WordSpec with Matchers {
 
-  "an ActorSystem" must {
+  "an ActorSystem" should {
     "not start if port is taken" in {
       val port = SocketUtil.temporaryLocalPort(true)
       val config = ConfigFactory.parseString(

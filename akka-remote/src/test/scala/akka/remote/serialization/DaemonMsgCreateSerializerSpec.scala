@@ -59,7 +59,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
   val ser = SerializationExtension(system)
   val supervisor = system.actorOf(Props[MyActor], "supervisor")
 
-  "Serialization" must {
+  "Serialization" should {
 
     "resolve DaemonMsgCreateSerializer" in {
       ser.serializerFor(classOf[DaemonMsgCreate]).getClass should ===(classOf[DaemonMsgCreateSerializer])

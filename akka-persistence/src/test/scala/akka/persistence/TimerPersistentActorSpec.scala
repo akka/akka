@@ -89,7 +89,7 @@ class TimerPersistentActorSpec extends PersistenceSpec(ConfigFactory.parseString
 
   system.eventStream.publish(Mute(EventFilter[ActorInitializationException]()))
 
-  "PersistentActor with Timer" must {
+  "PersistentActor with Timer" should {
     "not discard timer msg due to stashing" in {
       val pa = system.actorOf(testProps("p1"))
       pa ! "msg1"

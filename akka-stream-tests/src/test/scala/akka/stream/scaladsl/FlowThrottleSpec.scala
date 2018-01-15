@@ -19,7 +19,7 @@ class FlowThrottleSpec extends StreamSpec {
   def genByteString(length: Int) =
     ByteString(new Random().shuffle(0 to 255).take(length).map(_.toByte).toArray)
 
-  "Throttle for single cost elements" must {
+  "Throttle for single cost elements" should {
     "work for the happy case" in Utils.assertAllStagesStopped {
       Source(1 to 5).throttle(1, 100.millis, 0, Shaping)
         .runWith(TestSink.probe[Int])
@@ -174,7 +174,7 @@ class FlowThrottleSpec extends StreamSpec {
     }
   }
 
-  "Throttle for various cost elements" must {
+  "Throttle for various cost elements" should {
     "work for happy case" in Utils.assertAllStagesStopped {
       Source(1 to 5).throttle(1, 100.millis, 0, (_) ⇒ 1, Shaping)
         .runWith(TestSink.probe[Int])

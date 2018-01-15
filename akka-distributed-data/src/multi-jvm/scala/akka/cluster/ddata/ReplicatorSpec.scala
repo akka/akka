@@ -78,7 +78,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     enterBarrier(from.name + "-joined")
   }
 
-  "Cluster CRDT" must {
+  "Cluster CRDT" should {
 
     "work in single node cluster" in {
       join(first, first)

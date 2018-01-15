@@ -42,7 +42,7 @@ class TestConductorSpec extends RemotingMultiNodeSpec(TestConductorMultiJvmSpec)
     expectMsgType[ActorIdentity].ref.get
   }
 
-  "A TestConductor" must {
+  "A TestConductor" should {
 
     "enter a barrier" taggedAs LongRunningTest in {
       runOn(master) {

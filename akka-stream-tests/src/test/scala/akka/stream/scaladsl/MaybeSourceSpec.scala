@@ -17,7 +17,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
 
   implicit val materializer = ActorMaterializer()
 
-  "The Maybe Source" must {
+  "The Maybe Source" should {
 
     "complete materialized future with None when stream cancels" in Utils.assertAllStagesStopped {
       val neverSource = Source.maybe[Int]

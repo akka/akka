@@ -233,7 +233,7 @@ object CustomMailboxSpec {
 }
 
 class CustomMailboxSpec extends AkkaSpec(CustomMailboxSpec.config) {
-  "Dispatcher configuration" must {
+  "Dispatcher configuration" should {
     "support custom mailboxType" in {
       val actor = system.actorOf(Props.empty.withDispatcher("my-dispatcher"))
       awaitCond(actor match {

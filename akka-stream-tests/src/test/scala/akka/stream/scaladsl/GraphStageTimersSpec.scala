@@ -82,7 +82,7 @@ class GraphStageTimersSpec extends StreamSpec {
     }
   }
 
-  "GraphStage timer support" must {
+  "GraphStage timer support" should {
 
     def setupIsolatedStage: SideChannel = {
       val channel = new SideChannel

@@ -9,7 +9,7 @@ class Ticket1978ConfigSpec extends AkkaSpec("""
     }
     """) with ImplicitSender with DefaultTimeout {
 
-  "SSL Remoting" must {
+  "SSL Remoting" should {
     "be able to parse these extra Netty config elements" in {
       val settings = new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"))
 

@@ -7,7 +7,7 @@ import akka.testkit.{ EventFilter, TestProbe }
 
 class RecipeLoggingElements extends RecipeSpec {
 
-  "Simple logging recipe" must {
+  "Simple logging recipe" should {
 
     "work with println" in {
       val printProbe = TestProbe()

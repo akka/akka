@@ -28,7 +28,7 @@ class SystemMessageSerializationSpec extends AkkaSpec(PrimitivesSerializationSpe
   val testRef = TestProbe().ref.asInstanceOf[InternalActorRef]
   val testRef2 = TestProbe().ref.asInstanceOf[InternalActorRef]
 
-  "ByteStringSerializer" must {
+  "ByteStringSerializer" should {
     Seq(
       "Create(None)" → Create(None),
       "Recreate(ex)" → Recreate(new TestException("test2")),

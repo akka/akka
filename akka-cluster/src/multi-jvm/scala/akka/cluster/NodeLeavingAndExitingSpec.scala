@@ -31,7 +31,7 @@ abstract class NodeLeavingAndExitingSpec
   import NodeLeavingAndExitingMultiJvmSpec._
   import ClusterEvent._
 
-  "A node that is LEAVING a non-singleton cluster" must {
+  "A node that is LEAVING a non-singleton cluster" should {
 
     "be moved to EXITING by the leader" taggedAs LongRunningTest in {
 

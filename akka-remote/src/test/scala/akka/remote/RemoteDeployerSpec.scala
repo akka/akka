@@ -31,7 +31,7 @@ object RemoteDeployerSpec {
 
 class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
 
-  "A RemoteDeployer" must {
+  "A RemoteDeployer" should {
 
     "be able to parse 'akka.actor.deployment._' with specified remote nodes" in {
       val service = "/service2"

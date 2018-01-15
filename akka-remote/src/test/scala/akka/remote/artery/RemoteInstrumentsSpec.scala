@@ -22,7 +22,7 @@ class RemoteInstrumentsSpec extends WordSpec with Matchers with Checkers {
     } yield KeyLen(key, len)
   }
 
-  "RemoteInstruments" must {
+  "RemoteInstruments" should {
 
     "combine and decompose single key and length" in {
       val key: Byte = 17

@@ -45,7 +45,7 @@ class TypedActorRemoteDeploySpec extends AkkaSpec(conf) {
     expectTerminated(actor)
   }
 
-  "Typed actors" must {
+  "Typed actors" should {
 
     "be possible to deploy remotely and communicate with" taggedAs IgnoreForScala212 in {
       verify({ _.getName }, remoteName)

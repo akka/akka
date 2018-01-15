@@ -222,7 +222,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
   def mustStop(typedActor: AnyRef) = TypedActor(system).stop(typedActor) should ===(true)
 
-  "TypedActors" must {
+  "TypedActors" should {
 
     "be able to instantiate" in {
       val t = newFooBar
@@ -525,7 +525,7 @@ class TypedActorRouterSpec extends AkkaSpec(TypedActorSpec.config)
 
   def mustStop(typedActor: AnyRef) = TypedActor(system).stop(typedActor) should ===(true)
 
-  "TypedActor Router" must {
+  "TypedActor Router" should {
 
     "work" in {
       val t1 = newFooBar

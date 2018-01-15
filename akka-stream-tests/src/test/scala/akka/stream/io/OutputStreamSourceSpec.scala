@@ -54,7 +54,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     awaitAssert(threadsBlocked should ===(Seq()), 5.seconds, interval = 500.millis)
   }
 
-  "OutputStreamSource" must {
+  "OutputStreamSource" should {
     "read bytes from OutputStream" in assertAllStagesStopped {
       val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
       val s = probe.expectSubscription()

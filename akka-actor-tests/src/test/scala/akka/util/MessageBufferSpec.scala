@@ -12,7 +12,7 @@ class MessageBufferSpec extends WordSpec with Matchers {
 
   import MessageBufferSpec._
 
-  "A MessageBuffer" must {
+  "A MessageBuffer" should {
 
     "answer empty correctly" in {
       val buffer = MessageBuffer.empty
@@ -60,7 +60,7 @@ class MessageBufferSpec extends WordSpec with Matchers {
     }
   }
 
-  "A MessageBufferMap" must {
+  "A MessageBufferMap" should {
 
     "support contains, add, append and remove" in {
       val map = new MessageBufferMap[String]

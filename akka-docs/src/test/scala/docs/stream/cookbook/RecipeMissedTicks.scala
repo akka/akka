@@ -9,7 +9,7 @@ import scala.concurrent.Await
 
 class RecipeMissedTicks extends RecipeSpec {
 
-  "Recipe for collecting missed ticks" must {
+  "Recipe for collecting missed ticks" should {
 
     "work" in {
       type Tick = Unit

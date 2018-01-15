@@ -51,7 +51,7 @@ class ManyRecoveriesSpec extends PersistenceSpec(ConfigFactory.parseString(
   """)) with ImplicitSender {
   import ManyRecoveriesSpec._
 
-  "Many persistent actors" must {
+  "Many persistent actors" should {
     "be able to recovery without overloading" in {
       (1 to 100).foreach { n ⇒
         system.actorOf(testProps(s"a$n", latch = None)) ! Cmd("A")

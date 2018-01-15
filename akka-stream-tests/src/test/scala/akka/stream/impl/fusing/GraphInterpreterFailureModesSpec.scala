@@ -7,7 +7,7 @@ import akka.testkit.EventFilter
 
 class GraphInterpreterFailureModesSpec extends StreamSpec with GraphInterpreterSpecKit {
 
-  "GraphInterpreter" must {
+  "GraphInterpreter" should {
 
     "handle failure on onPull" in new FailingStageSetup {
       lastEvents() should be(Set(PreStart(insideOutStage)))

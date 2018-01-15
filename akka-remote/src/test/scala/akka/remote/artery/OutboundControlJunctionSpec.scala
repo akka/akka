@@ -28,7 +28,7 @@ class OutboundControlJunctionSpec extends AkkaSpec with ImplicitSender {
 
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)
 
-  "Control messages" must {
+  "Control messages" should {
 
     "be injected via side channel" in {
       val inboundContext = new TestInboundContext(localAddress = addressA)

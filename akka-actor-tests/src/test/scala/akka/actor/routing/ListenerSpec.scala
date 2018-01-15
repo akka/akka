@@ -8,7 +8,7 @@ import scala.concurrent.Await
 
 class ListenerSpec extends AkkaSpec {
 
-  "Listener" must {
+  "Listener" should {
 
     "listen" in {
       val fooLatch = TestLatch(2)

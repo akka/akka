@@ -106,7 +106,7 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeSpec(ClusterSharding
 
   lazy val region = ClusterSharding(system).shardRegion(shardTypeName)
 
-  "Inspecting cluster sharding state" must {
+  "Inspecting cluster sharding state" should {
 
     "join cluster" in {
       join(controller)

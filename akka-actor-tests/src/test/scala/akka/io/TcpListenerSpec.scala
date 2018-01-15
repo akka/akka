@@ -20,7 +20,7 @@ class TcpListenerSpec extends AkkaSpec("""
     akka.actor.serialize-creators = on
     """) {
 
-  "A TcpListener" must {
+  "A TcpListener" should {
 
     "register its ServerSocketChannel with its selector" in new TestSetup(pullMode = false)
 

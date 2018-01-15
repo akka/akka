@@ -16,7 +16,7 @@ import akka.pattern.ask
 
 class AkkaSpecSpec extends WordSpec with Matchers {
 
-  "An AkkaSpec" must {
+  "An AkkaSpec" should {
 
     "warn about unhandled messages" in {
       implicit val system = ActorSystem("AkkaSpec0", AkkaSpec.testConf)

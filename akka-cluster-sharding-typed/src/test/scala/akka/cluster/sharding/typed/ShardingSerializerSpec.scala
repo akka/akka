@@ -11,7 +11,7 @@ import akka.testkit.typed.TestKit
 
 class ShardingSerializerSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
-  "The typed ShardingSerializer" must {
+  "The typed ShardingSerializer" should {
 
     val serialization = SerializationExtension(ActorSystemAdapter.toUntyped(system))
 

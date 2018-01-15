@@ -17,7 +17,7 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
     subscriber
   }
 
-  "A Merge for Flow " must {
+  "A Merge for Flow " should {
 
     "work in the happy case" in assertAllStagesStopped {
       // Different input sizes (4 and 6)

@@ -37,7 +37,7 @@ class DistributedPubSubMediatorSendingToDeadLettersSpec
   val msg = "hello"
   val testActorPath = testActor.path.toStringWithoutAddress
 
-  "A DistributedPubSubMediator with sending to dead letters enabled" must {
+  "A DistributedPubSubMediator with sending to dead letters enabled" should {
     "send a message to dead letters" when {
       "it is published to a topic with no subscribers" in {
         mediator ! Publish("nowhere", msg)
@@ -85,7 +85,7 @@ class DistributedPubSubMediatorNotSendingToDeadLettersSpec
   val msg = "hello"
   val testActorPath = testActor.path.toStringWithoutAddress
 
-  "A DistributedPubSubMediator with sending to dead letters disabled" must {
+  "A DistributedPubSubMediator with sending to dead letters disabled" should {
     "not send message to dead letters" when {
       "it is published to a topic with no subscribers" in {
         mediator ! Publish("nowhere", msg)

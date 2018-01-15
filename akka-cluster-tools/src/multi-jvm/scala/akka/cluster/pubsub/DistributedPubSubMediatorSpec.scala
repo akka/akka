@@ -160,7 +160,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
     }
   }
 
-  "A DistributedPubSubMediator" must {
+  "A DistributedPubSubMediator" should {
 
     "startup 2 node cluster" in within(15 seconds) {
       join(first, first)

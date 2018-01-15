@@ -14,7 +14,7 @@ import akka.testkit.CallingThreadDispatcher
 
 class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
 
-  "An ExecutionContext" must {
+  "An ExecutionContext" should {
 
     "be instantiable" in {
       val es = Executors.newCachedThreadPool()
@@ -184,7 +184,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
     }
   }
 
-  "A SerializedSuspendableExecutionContext" must {
+  "A SerializedSuspendableExecutionContext" should {
     "be suspendable and resumable" in {
       val sec = SerializedSuspendableExecutionContext(1)(ExecutionContext.global)
       val counter = new AtomicInteger(0)

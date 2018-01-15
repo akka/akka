@@ -99,7 +99,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
     expectMsgType[ActorIdentity].ref.get
   }
 
-  "AkkaProtocolTransport" must {
+  "AkkaProtocolTransport" should {
     "guarantee at-most-once delivery and message ordering despite packet loss" taggedAs TimingTest in {
       system.eventStream.publish(TestEvent.Mute(DeadLettersFilter[Any]))
       systemB.eventStream.publish(TestEvent.Mute(DeadLettersFilter[Any]))

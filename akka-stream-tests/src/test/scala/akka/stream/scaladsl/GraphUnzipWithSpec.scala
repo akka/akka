@@ -71,7 +71,7 @@ class GraphUnzipWithSpec extends StreamSpec {
     subscribers._2.expectSubscriptionAndError(TestException)
   }
 
-  "UnzipWith" must {
+  "UnzipWith" should {
 
     "work with immediately completed publisher" in assertAllStagesStopped {
       val subscribers = setup(TestPublisher.empty[Int])

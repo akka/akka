@@ -74,7 +74,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
   def mkTestkit(behv: Behavior[Command]): BehaviorTestkit[Command] =
     BehaviorTestkit(behv)
 
-  "A restarter (stubbed)" must {
+  "A restarter (stubbed)" should {
     "receive message" in {
       val inbox = TestInbox[Event]("evt")
       val behv = supervise(targetBehavior(inbox.ref)).onFailure[Throwable](SupervisorStrategy.restart)
@@ -242,7 +242,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
 
   implicit val testSettings = TestKitSettings(system)
 
-  "A supervised actor" must {
+  "A supervised actor" should {
     "receive message" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.supervise(targetBehavior(probe.ref))

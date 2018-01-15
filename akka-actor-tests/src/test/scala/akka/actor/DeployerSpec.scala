@@ -76,7 +76,7 @@ object DeployerSpec {
 }
 
 class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
-  "A Deployer" must {
+  "A Deployer" should {
 
     "be able to parse 'akka.actor.deployment._' with all default values" in {
       val service = "/service1"

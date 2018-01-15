@@ -20,7 +20,7 @@ class DataEnvelopeSpec extends WordSpec with Matchers {
   val obsoleteTimeInFuture = System.currentTimeMillis() + 3600 * 1000
   val oldObsoleteTime = System.currentTimeMillis() - 3600 * 1000
 
-  "DataEnvelope" must {
+  "DataEnvelope" should {
 
     "handle pruning transitions" in {
       val g1 = GCounter.empty.increment(node1, 1)

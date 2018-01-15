@@ -62,7 +62,7 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
     deserialized.asInstanceOf[T]
   }
 
-  "ReplicatorMessageSerializer" must {
+  "ReplicatorMessageSerializer" should {
 
     "serialize Replicator messages" in {
       val ref1 = system.actorOf(Props.empty, "ref1")
@@ -123,7 +123,7 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
 
   }
 
-  "Cache" must {
+  "Cache" should {
     import ReplicatorMessageSerializer._
     "be power of 2" in {
       intercept[IllegalArgumentException] {

@@ -8,7 +8,7 @@ import akka.testkit.AkkaSpec
 
 class MigrationsScala extends AkkaSpec {
 
-  "Examples in migration guide" must {
+  "Examples in migration guide" should {
     "compile" in {
       lazy val dontExecuteMe = {
         //#expand-continually

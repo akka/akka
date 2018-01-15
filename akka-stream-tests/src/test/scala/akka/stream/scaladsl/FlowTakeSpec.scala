@@ -22,7 +22,7 @@ class FlowTakeSpec extends StreamSpec with ScriptedTest {
 
   muteDeadLetters(classOf[OnNext], OnComplete.getClass, classOf[RequestMore])()
 
-  "A Take" must {
+  "A Take" should {
 
     "take" in {
       def script(d: Int) = Script(TestConfig.RandomTestRange map { n ⇒ Seq(n) → (if (n > d) Nil else Seq(n)) }: _*)

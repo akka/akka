@@ -42,7 +42,7 @@ object ScatterGatherFirstCompletedSpec {
 class ScatterGatherFirstCompletedSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   import ScatterGatherFirstCompletedSpec._
 
-  "Scatter-gather group" must {
+  "Scatter-gather group" should {
 
     "deliver a broadcast message using the !" in {
       val doneLatch = new TestLatch(2)
@@ -88,7 +88,7 @@ class ScatterGatherFirstCompletedSpec extends AkkaSpec with DefaultTimeout with 
 
   }
 
-  "Scatter-gather pool" must {
+  "Scatter-gather pool" should {
 
     "without routees should reply immediately" in {
       val probe = TestProbe()

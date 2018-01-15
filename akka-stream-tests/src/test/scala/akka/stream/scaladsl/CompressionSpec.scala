@@ -21,7 +21,7 @@ class CompressionSpec extends StreamSpec {
 
   val data = "hello world"
 
-  "Gzip decompression" must {
+  "Gzip decompression" should {
     "be able to decompress a gzipped stream" in {
       val source = Source.single(gzip(data))
         .via(Compression.gunzip())
@@ -32,7 +32,7 @@ class CompressionSpec extends StreamSpec {
     }
   }
 
-  "Deflate decompression" must {
+  "Deflate decompression" should {
     "be able to decompress a deflated stream" in {
       val source = Source.single(deflate(data))
         .via(Compression.inflate())

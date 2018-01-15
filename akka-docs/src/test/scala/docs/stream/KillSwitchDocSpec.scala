@@ -12,7 +12,7 @@ class KillSwitchDocSpec extends AkkaSpec with CompileOnlySpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "Unique kill switch" must {
+  "Unique kill switch" should {
 
     "control graph completion with shutdown" in compileOnlySpec {
 
@@ -55,7 +55,7 @@ class KillSwitchDocSpec extends AkkaSpec with CompileOnlySpec {
     }
   }
 
-  "Shared kill switch" must {
+  "Shared kill switch" should {
 
     "control graph completion with shutdown" in compileOnlySpec {
       // format: OFF

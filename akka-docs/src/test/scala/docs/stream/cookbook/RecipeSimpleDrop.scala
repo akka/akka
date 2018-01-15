@@ -9,7 +9,7 @@ import scala.concurrent.Await
 
 class RecipeSimpleDrop extends RecipeSpec {
 
-  "Recipe for simply dropping elements for a faster stream" must {
+  "Recipe for simply dropping elements for a faster stream" should {
 
     "work" in {
 

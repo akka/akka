@@ -16,7 +16,7 @@ class SeqSinkSpec extends StreamSpec {
 
   implicit val mat = ActorMaterializer(settings)
 
-  "Sink.toSeq" must {
+  "Sink.toSeq" should {
     "return a Seq[T] from a Source" in {
       val input = (1 to 6)
       val future: Future[immutable.Seq[Int]] = Source(input).runWith(Sink.seq)

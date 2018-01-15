@@ -206,7 +206,7 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
     enterBarrier(from.name + "-joined")
   }
 
-  "delta-CRDT" must {
+  "delta-CRDT" should {
     "join cluster" in {
       join(first, first)
       join(second, first)

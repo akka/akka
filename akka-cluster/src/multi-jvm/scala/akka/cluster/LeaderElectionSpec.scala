@@ -45,7 +45,7 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
   // sorted in the order used by the cluster
   lazy val sortedRoles = List(first, second, third, fourth).sorted
 
-  "A cluster of four nodes" must {
+  "A cluster of four nodes" should {
 
     "be able to 'elect' a single leader" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third, fourth)

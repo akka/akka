@@ -178,7 +178,7 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
     enterBarrier("after-" + testName)
   }
 
-  "Max throughput of fan-in" must {
+  "Max throughput of fan-in" should {
     val reporter = BenchmarkFileReporter("FanInThroughputSpec", system)
     for (s ← scenarios) {
       s"be great for ${s.testName}, burstSize = ${s.burstSize}, payloadSize = ${s.payloadSize}" in test(s, reporter)

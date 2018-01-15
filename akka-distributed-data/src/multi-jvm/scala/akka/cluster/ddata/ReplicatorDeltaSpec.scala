@@ -164,7 +164,7 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
     enterBarrier(from.name + "-joined")
   }
 
-  "delta-CRDT" must {
+  "delta-CRDT" should {
     "join cluster" in {
       join(first, first)
       join(second, first)

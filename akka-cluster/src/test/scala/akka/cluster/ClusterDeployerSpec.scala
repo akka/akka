@@ -45,7 +45,7 @@ object ClusterDeployerSpec {
 
 class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
 
-  "A RemoteDeployer" must {
+  "A RemoteDeployer" should {
 
     "be able to parse 'akka.actor.deployment._' with specified cluster pool" in {
       val service = "/user/service1"

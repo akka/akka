@@ -45,7 +45,7 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
 
   val producer = system.actorOf(Props[JavaLoggerSpec.LogProducer], name = "log")
 
-  "JavaLogger" must {
+  "JavaLogger" should {
 
     "log error with stackTrace" in {
       producer ! new JavaLoggerSpec.SimulatedExc

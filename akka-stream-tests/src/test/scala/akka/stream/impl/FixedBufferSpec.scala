@@ -10,7 +10,7 @@ class FixedBufferSpec extends StreamSpec {
 
   for (size ← List(1, 3, 4)) {
 
-    s"FixedSizeBuffer of size $size" must {
+    s"FixedSizeBuffer of size $size" should {
 
       "start as empty" in {
         val buf = FixedSizeBuffer(size)
@@ -112,7 +112,7 @@ class FixedBufferSpec extends StreamSpec {
     }
   }
 
-  "Buffer factory" must {
+  "Buffer factory" should {
     val default = ActorMaterializerSettings(system)
 
     "default to one billion for maxFixedBufferSize" in {

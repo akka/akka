@@ -7,7 +7,7 @@ import akka.testkit.AkkaSpec
 
 class SerializationChecksPlainRemotingSpec extends AkkaSpec {
 
-  "Settings serialize-messages" must {
+  "Settings serialize-messages" should {
 
     "be on for tests" in {
       system.settings.SerializeAllMessages should ===(true)

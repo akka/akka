@@ -7,7 +7,7 @@ class TestActorsSpec extends AkkaSpec with ImplicitSender {
 
   import TestActors.{ echoActorProps, forwardActorProps }
 
-  "A EchoActor" must {
+  "A EchoActor" should {
     "send back messages unchanged" in {
       val message = "hello world"
       val echo = system.actorOf(echoActorProps)
@@ -18,7 +18,7 @@ class TestActorsSpec extends AkkaSpec with ImplicitSender {
     }
   }
 
-  "A ForwardActor" must {
+  "A ForwardActor" should {
     "forward messages to target actor" in {
       val message = "forward me"
       val forward = system.actorOf(forwardActorProps(testActor))

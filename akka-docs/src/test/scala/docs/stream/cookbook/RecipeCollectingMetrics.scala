@@ -8,7 +8,7 @@ import scala.concurrent.Await
 class RecipeCollectingMetrics extends RecipeSpec {
   implicit val m2 = ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))
 
-  "Recipe for periodically collecting metrics" must {
+  "Recipe for periodically collecting metrics" should {
 
     "work" in {
       //      type Tick = Unit

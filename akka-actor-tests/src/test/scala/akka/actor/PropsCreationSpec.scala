@@ -29,7 +29,7 @@ class PropsCreationSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
 
   import akka.actor.PropsCreationSpec._
 
-  "Props" must {
+  "Props" should {
     "work with creator" in {
       val p = Props(new OneParamActor(null))
       system.actorOf(p)
@@ -48,7 +48,7 @@ class PropsCreationSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
     }
   }
 
-  "Props Java API" must {
+  "Props Java API" should {
     "work with create(creator)" in {
       val p = Props.create(OneParamActorCreator)
       system.actorOf(p)

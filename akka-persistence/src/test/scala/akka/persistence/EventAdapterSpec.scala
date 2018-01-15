@@ -156,7 +156,7 @@ abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adap
   def fromJournal(in: Any, journalId: String = journalName) =
     Persistence(system).adaptersFor("akka.persistence.journal." + journalId).get(in.getClass).fromJournal(in, "")
 
-  "EventAdapter" must {
+  "EventAdapter" should {
 
     "wrap with tags" in {
       val event = UserDataChanged("name", 42)
@@ -181,7 +181,7 @@ abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adap
 }
 
 trait ReplayPassThrough { this: EventAdapterSpec ⇒
-  "EventAdapter" must {
+  "EventAdapter" should {
 
     "store events after applying adapter" in {
       val replayPassThroughJournalId = "replay-pass-through-adapter-journal"
@@ -208,7 +208,7 @@ trait ReplayPassThrough { this: EventAdapterSpec ⇒
 }
 
 trait NoAdapters { this: EventAdapterSpec ⇒
-  "EventAdapter" must {
+  "EventAdapter" should {
     "work when plugin defines no adapter" in {
       val p2 = persister("p2", journalId = "no-adapter")
       val m1 = UserDataChanged("name", 64)

@@ -43,7 +43,7 @@ class StartupWithOneThreadSpec(startTime: Long) extends AkkaSpec(StartupWithOneT
 
   def this() = this(System.nanoTime())
 
-  "A Cluster" must {
+  "A Cluster" should {
 
     "startup with one dispatcher thread" in {
       // This test failed before fixing #17253 when adding a sleep before the

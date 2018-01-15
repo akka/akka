@@ -14,7 +14,7 @@ import scala.util.{ Failure, Try }
 
 class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
-  "ActorMaterializer" must {
+  "ActorMaterializer" should {
 
     "report shutdown status properly" in {
       val m = ActorMaterializer.create(system)

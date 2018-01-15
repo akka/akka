@@ -21,7 +21,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
     case Transition(_, bs: FSMTimingSpec.State, _) if bs eq Initial ⇒ true // SI-5900 workaround
   }
 
-  "A Finite State Machine" must {
+  "A Finite State Machine" should {
 
     "receive StateTimeout" taggedAs TimingTest in {
       within(2 seconds) {

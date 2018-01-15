@@ -70,7 +70,7 @@ abstract class RestartNode2SpecSpec
     super.afterAll()
   }
 
-  "Cluster seed nodes" must {
+  "Cluster seed nodes" should {
     "be able to restart first seed node and join other seed nodes" taggedAs LongRunningTest in within(60.seconds) {
       // seed1System is a separate ActorSystem, to be able to simulate restart
       // we must transfer its address to seed2

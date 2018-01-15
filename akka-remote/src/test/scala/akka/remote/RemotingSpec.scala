@@ -203,7 +203,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     AssociationRegistry.clear()
   }
 
-  "Remoting" must {
+  "Remoting" should {
 
     "support remote look-ups" in {
       here ! "ping"

@@ -67,7 +67,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
   import FSMTransitionSpec._
   import FSM.`→`
 
-  "A FSM transition notifier" must {
+  "A FSM transition notifier" should {
 
     "not trigger onTransition for stay" in {
       val fsm = system.actorOf(Props(new SendAnyTransitionFSM(testActor)))
@@ -106,7 +106,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
     }
   }
 
-  "A FSM" must {
+  "A FSM" should {
 
     "make previous and next state data available in onTransition" in {
       val fsm = system.actorOf(Props(new OtherFSM(testActor)))

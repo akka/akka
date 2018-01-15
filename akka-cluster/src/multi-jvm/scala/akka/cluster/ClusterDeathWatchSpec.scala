@@ -58,7 +58,7 @@ abstract class ClusterDeathWatchSpec
     expectMsgType[ActorIdentity].ref.get
   }
 
-  "An actor watching a remote actor in the cluster" must {
+  "An actor watching a remote actor in the cluster" should {
 
     "receive Terminated when watched node becomes Down/Removed" in within(20 seconds) {
       awaitClusterUp(first, second, third, fourth)

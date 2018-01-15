@@ -99,7 +99,7 @@ class ClusterSingletonApiSpec extends TestKit("ClusterSingletonApiSpec", Cluster
   val adaptedSystem2 = system2.toTyped
   val clusterNode2 = Cluster(adaptedSystem2)
 
-  "A typed cluster singleton" must {
+  "A typed cluster singleton" should {
 
     "be accessible from two nodes in a cluster" in {
       val node1UpProbe = TestProbe[SelfUp]()(system)

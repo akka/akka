@@ -9,7 +9,7 @@ import akka.stream.testkit.Utils._
 
 class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit {
 
-  "Port states" must {
+  "Port states" should {
 
     // FIXME test failure scenarios
 

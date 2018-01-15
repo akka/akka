@@ -11,7 +11,7 @@ import scala.concurrent.duration.DurationInt
 
 class ImmutablePartialSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
-  "An immutable partial" must {
+  "An immutable partial" should {
 
     "correctly install the message handler" in {
       val probe = TestProbe[Command]("probe")

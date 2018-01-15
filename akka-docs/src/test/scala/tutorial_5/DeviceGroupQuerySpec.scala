@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 
 class DeviceGroupQuerySpec extends AkkaSpec {
 
-  "DeviceGroupQuery" must {
+  "DeviceGroupQuery" should {
 
     //#query-test-normal
     "return temperature value for working devices" in {

@@ -50,7 +50,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   def leaderActions(): Unit =
     cluster.clusterCore ! LeaderActionsTick
 
-  "A Cluster" must {
+  "A Cluster" should {
 
     "use the address of the remote transport" in {
       cluster.selfAddress should ===(selfAddress)

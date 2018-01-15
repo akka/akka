@@ -74,7 +74,7 @@ abstract class RemoteNodeRestartDeathWatchSpec(multiNodeConfig: RemoteNodeRestar
     expectMsgType[ActorIdentity].ref.get
   }
 
-  "RemoteNodeRestartDeathWatch" must {
+  "RemoteNodeRestartDeathWatch" should {
 
     "receive Terminated when remote actor system is restarted" taggedAs LongRunningTest in {
       runOn(first) {

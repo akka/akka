@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 
 class RecipeWorkerPool extends RecipeSpec {
 
-  "Recipe for a pool of workers" must {
+  "Recipe for a pool of workers" should {
 
     "work" in {
       val myJobs = Source(List("1", "2", "3", "4", "5"))

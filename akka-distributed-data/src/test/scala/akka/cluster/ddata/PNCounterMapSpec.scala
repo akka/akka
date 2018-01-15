@@ -15,7 +15,7 @@ class PNCounterMapSpec extends WordSpec with Matchers {
   val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
 
-  "A PNCounterMap" must {
+  "A PNCounterMap" should {
 
     "be able to increment and decrement entries" in {
       val m = PNCounterMap().increment(node1, "a", 2).increment(node1, "b", 3).decrement(node2, "a", 1)

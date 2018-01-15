@@ -13,7 +13,7 @@ class PipeToSpec extends AkkaSpec {
 
   import system.dispatcher
 
-  "PipeTo" must {
+  "PipeTo" should {
 
     "work" in {
       val p = TestProbe()
@@ -50,7 +50,7 @@ class PipeToSpec extends AkkaSpec {
 
   }
 
-  "PipeToSelection" must {
+  "PipeToSelection" should {
 
     "work" in {
       val p = TestProbe()

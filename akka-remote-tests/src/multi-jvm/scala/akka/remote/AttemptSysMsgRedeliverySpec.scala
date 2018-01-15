@@ -59,7 +59,7 @@ abstract class AttemptSysMsgRedeliverySpec(multiNodeConfig: AttemptSysMsgRedeliv
 
   def initialParticipants = roles.size
 
-  "AttemptSysMsgRedelivery" must {
+  "AttemptSysMsgRedelivery" should {
     "redeliver system message after inactivity" taggedAs LongRunningTest in {
       system.actorOf(Props[Echo], "echo")
       enterBarrier("echo-started")

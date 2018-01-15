@@ -26,7 +26,7 @@ class WatchSpec extends TestKit("WordSpec")
 
   import WatchSpec._
 
-  "Actor monitoring" must {
+  "Actor monitoring" should {
     "get notified of actor termination" in {
       case class StartWatching(watchee: ActorRef[Stop.type])
       val terminator = systemActor(terminatorBehavior)

@@ -99,7 +99,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
     memberSubscriber.expectMsg(LeaderChanged(Some(aUp.address)))
   }
 
-  "ClusterDomainEventPublisher" must {
+  "ClusterDomainEventPublisher" should {
 
     "publish MemberJoined" in {
       publisher ! PublishChanges(state1)

@@ -16,7 +16,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with I
 
   val collector = createMetricsCollector
 
-  "Metric must" must {
+  "Metric must" should {
 
     "merge 2 metrics that are tracking the same metric" in {
       for (i ← 1 to 20) {
@@ -43,7 +43,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with I
     }
   }
 
-  "MetricsCollector" must {
+  "MetricsCollector" should {
 
     "not raise errors when attempting reflective code in apply" in {
       Try(createMetricsCollector).get should not be null

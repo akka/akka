@@ -46,7 +46,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       .run()
   }
 
-  "InboundHandshake stage" must {
+  "InboundHandshake stage" should {
 
     "send HandshakeRsp as reply to HandshakeReq" in {
       val replyProbe = TestProbe()

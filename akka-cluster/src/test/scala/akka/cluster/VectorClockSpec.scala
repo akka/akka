@@ -10,7 +10,7 @@ import scala.collection.immutable.TreeMap
 class VectorClockSpec extends AkkaSpec {
   import VectorClock._
 
-  "A VectorClock" must {
+  "A VectorClock" should {
 
     "have zero versions when created" in {
       val clock = VectorClock()

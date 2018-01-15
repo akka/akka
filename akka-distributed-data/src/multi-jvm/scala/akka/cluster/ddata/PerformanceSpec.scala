@@ -127,7 +127,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
     }
   }
 
-  "Performance" must {
+  "Performance" should {
 
     "setup cluster" taggedAs PerformanceTest in {
       roles.foreach { join(_, n1) }

@@ -27,7 +27,7 @@ object AddressTerminatedTopicBenchSpec {
 class AddressTerminatedTopicBenchSpec extends AkkaSpec("akka.loglevel=INFO") {
   import AddressTerminatedTopicBenchSpec._
 
-  "Subscribe and unsubscribe of AddressTerminated" must {
+  "Subscribe and unsubscribe of AddressTerminated" should {
 
     "be quick" in {
       val sys = ActorSystem(system.name + "2", system.settings.config)

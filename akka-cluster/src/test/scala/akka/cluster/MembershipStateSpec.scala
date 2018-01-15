@@ -24,7 +24,7 @@ class MembershipStateSpec extends WordSpec with Matchers {
   // for the case that we don't replace it ever
   val bOldest = TestMember(Address("akka.tcp", "sys", "b0", 2552), Up, 0, "dc-b")
 
-  "Membership state" must {
+  "Membership state" should {
     "sort by upNumber for oldest top members" in {
       val gossip = Gossip(SortedSet(a1, a2, a3, a4, b1, b2, b3, bOldest))
       val membershipState = MembershipState(

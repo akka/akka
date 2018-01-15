@@ -20,7 +20,7 @@ class FlowOnCompleteSpec extends StreamSpec with ScriptedTest {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A Flow with onComplete" must {
+  "A Flow with onComplete" should {
 
     "invoke callback on normal completion" in assertAllStagesStopped {
       val onCompleteProbe = TestProbe()

@@ -37,7 +37,7 @@ abstract class JoinInProgressSpec
 
   import JoinInProgressMultiJvmSpec._
 
-  "A cluster node" must {
+  "A cluster node" should {
     "send heartbeats immediately when joining to avoid false failure detection due to delayed gossip" taggedAs LongRunningTest in {
 
       runOn(first) {

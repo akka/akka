@@ -17,7 +17,7 @@ import com.google.common.jimfs.{ Configuration, Jimfs }
 class FlightRecorderSpec extends AkkaSpec {
   import FlightRecorderReader._
 
-  "Flight Recorder" must {
+  "Flight Recorder" should {
 
     "properly initialize AFR file when created" in withFlightRecorder { (recorder, reader, channel) ⇒
       channel.force(false)

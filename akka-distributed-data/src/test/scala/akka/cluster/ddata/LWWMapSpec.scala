@@ -16,7 +16,7 @@ class LWWMapSpec extends WordSpec with Matchers {
   val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
 
-  "A LWWMap" must {
+  "A LWWMap" should {
 
     "be able to set entries" in {
       val m = LWWMap.empty[String, Int].put(node1, "a", 1, defaultClock[Int]).put(node2, "b", 2, defaultClock[Int])

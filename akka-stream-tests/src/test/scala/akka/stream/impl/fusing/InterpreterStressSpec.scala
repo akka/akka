@@ -23,7 +23,7 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
   val takeOne = Take(1)
   val takeHalfOfRepetition = Take(repetition / 2)
 
-  "Interpreter" must {
+  "Interpreter" should {
 
     "work with a massive chain of maps" taggedAs LongRunningTest in new OneBoundedSetup[Int](Vector.fill(chainLength)(map): _*) {
       lastEvents() should be(Set.empty)

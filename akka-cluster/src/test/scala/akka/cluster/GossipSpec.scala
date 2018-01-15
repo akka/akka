@@ -39,7 +39,7 @@ class GossipSpec extends WordSpec with Matchers {
   private def state(g: Gossip, selfMember: Member = a1): MembershipState =
     MembershipState(g, selfMember.uniqueAddress, selfMember.dataCenter, crossDcConnections = 5)
 
-  "A Gossip" must {
+  "A Gossip" should {
 
     "have correct test setup" in {
       List(a1, a2, b1, b2, c1, c2, c3, d1, e1, e2, e3).foreach(m ⇒

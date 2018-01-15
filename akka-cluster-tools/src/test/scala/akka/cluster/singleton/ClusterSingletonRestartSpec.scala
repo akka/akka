@@ -51,7 +51,7 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
     }
   }
 
-  "Restarting cluster node with same hostname and port" must {
+  "Restarting cluster node with same hostname and port" should {
     "hand-over to next oldest" in {
       join(sys1, sys1)
       join(sys2, sys1)

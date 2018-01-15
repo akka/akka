@@ -106,7 +106,7 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
     expectMsgType[ActorIdentity].ref.get
   }
 
-  "TransportFail" must {
+  "TransportFail" should {
 
     "reconnect" taggedAs LongRunningTest in {
       runOn(first) {

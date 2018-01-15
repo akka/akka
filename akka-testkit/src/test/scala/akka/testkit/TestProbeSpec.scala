@@ -14,7 +14,7 @@ import org.scalatest.concurrent.Eventually
 
 class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
 
-  "A TestProbe" must {
+  "A TestProbe" should {
 
     "reply to futures" in {
       val tk = TestProbe()

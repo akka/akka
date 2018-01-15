@@ -83,7 +83,7 @@ class RemoteDeploymentSpec extends ArteryMultiNodeSpec(
   val masterSystem = newRemoteSystem(name = Some("Master" + system.name), extraConfig = Some(conf))
   val masterPort = address(masterSystem).port.get
 
-  "Remoting" must {
+  "Remoting" should {
 
     "create and supervise children on remote node" in {
       val senderProbe = TestProbe()(masterSystem)

@@ -69,7 +69,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     f
   }
 
-  "FileSource" must {
+  "FileSource" should {
     "read contents from a file" in assertAllStagesStopped {
       val chunkSize = 512
 

@@ -9,7 +9,7 @@ import org.scalatest.{ Matchers, WordSpec }
 
 class ActorPathSpec extends WordSpec with Matchers {
 
-  "An ActorPath" must {
+  "An ActorPath" should {
 
     "support parsing its String rep" in {
       val path = RootActorPath(Address("akka.tcp", "mysys")) / "user"

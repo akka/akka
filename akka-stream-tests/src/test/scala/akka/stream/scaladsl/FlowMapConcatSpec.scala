@@ -15,7 +15,7 @@ class FlowMapConcatSpec extends StreamSpec with ScriptedTest {
     .withInputBuffer(initialSize = 2, maxSize = 16)
   implicit val materializer = ActorMaterializer(settings)
 
-  "A MapConcat" must {
+  "A MapConcat" should {
 
     "map and concat" in {
       val script = Script(

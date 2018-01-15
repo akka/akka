@@ -54,7 +54,7 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
   implicit val mat = ActorMaterializer(matSettings)(system)
 
-  "SendQueue" must {
+  "SendQueue" should {
 
     "deliver all messages" in {
       val queue = new ManyToOneConcurrentArrayQueue[String](128)

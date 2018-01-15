@@ -27,7 +27,7 @@ object HandshakeFailureSpec {
 class HandshakeFailureSpec extends ArteryMultiNodeSpec(HandshakeFailureSpec.commonConfig) with ImplicitSender {
   import HandshakeFailureSpec._
 
-  "Artery handshake" must {
+  "Artery handshake" should {
 
     "allow for timeout and later connect" in {
       def sel = system.actorSelection(s"akka://systemB@localhost:$portB/user/echo")

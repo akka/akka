@@ -46,7 +46,7 @@ class InmemEventAdaptersSpec extends AkkaSpec {
   val extendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
   val inmemConfig = config.getConfig("akka.persistence.journal.inmem")
 
-  "EventAdapters" must {
+  "EventAdapters" should {
     "parse configuration and resolve adapter definitions" in {
       val adapters = EventAdapters(extendedActorSystem, inmemConfig)
       adapters.get(classOf[EventMarkerInterface]).getClass should ===(classOf[MarkerInterfaceAdapter])

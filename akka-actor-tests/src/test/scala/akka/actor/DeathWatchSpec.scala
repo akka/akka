@@ -77,7 +77,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
 
   def startWatching(target: ActorRef) = Await.result((supervisor ? props(target, testActor)).mapTo[ActorRef], 3 seconds)
 
-  "The Death Watch" must {
+  "The Death Watch" should {
     def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(5 seconds, actorRef + ": Stopped or Already terminated when linking") {
       case WrappedTerminated(Terminated(`actorRef`)) â‡’ true
     }

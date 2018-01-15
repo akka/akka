@@ -15,7 +15,7 @@ import scala.concurrent.ExecutionException
 
 class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
   implicit val ec = system.dispatcher
-  "The Future2Actor bridge" must {
+  "The Future2Actor bridge" should {
 
     "support convenient sending to multiple destinations" in {
       Future(42) pipeTo testActor pipeTo testActor

@@ -102,7 +102,7 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVe
     }
   }
 
-  "A journal" must {
+  "A journal" should {
     "replay all messages" in {
       journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       1 to 5 foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }

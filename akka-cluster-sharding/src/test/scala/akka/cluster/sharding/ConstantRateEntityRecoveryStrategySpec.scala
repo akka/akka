@@ -14,7 +14,7 @@ class ConstantRateEntityRecoveryStrategySpec extends AkkaSpec {
   import system.dispatcher
   /*
   val strategy = EntityRecoveryStrategy.constantStrategy(system, 1.second, 2)
-  "ConstantRateEntityRecoveryStrategy" must {
+  "ConstantRateEntityRecoveryStrategy" should {
     "recover entities" taggedAs TimingTest in {
       val entities = Set[EntityId]("1", "2", "3", "4", "5")
       val startTime = System.nanoTime()

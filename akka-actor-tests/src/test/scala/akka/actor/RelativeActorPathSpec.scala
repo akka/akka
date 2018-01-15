@@ -12,7 +12,7 @@ class RelativeActorPathSpec extends WordSpec with Matchers {
 
   def elements(path: String): immutable.Seq[String] = RelativeActorPath.unapply(path).getOrElse(Nil)
 
-  "RelativeActorPath" must {
+  "RelativeActorPath" should {
     "match single name" in {
       elements("foo") should ===(List("foo"))
     }

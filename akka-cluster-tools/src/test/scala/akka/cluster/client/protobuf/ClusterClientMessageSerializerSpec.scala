@@ -17,7 +17,7 @@ class ClusterClientMessageSerializerSpec extends AkkaSpec {
     ref should ===(obj)
   }
 
-  "ClusterClientMessages" must {
+  "ClusterClientMessages" should {
 
     "be serializable" in {
       val contactPoints = Vector(

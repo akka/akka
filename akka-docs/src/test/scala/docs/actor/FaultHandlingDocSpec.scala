@@ -116,7 +116,7 @@ class FaultHandlingDocSpec(_system: ActorSystem) extends TestKit(_system)
     TestKit.shutdownActorSystem(system)
   }
 
-  "A supervisor" must {
+  "A supervisor" should {
     "apply the chosen strategy for its child" in {
       //#testkit
 

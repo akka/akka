@@ -9,7 +9,7 @@ import scala.concurrent.Await
 
 class RecipeDroppyBroadcast extends RecipeSpec {
 
-  "Recipe for a droppy broadcast" must {
+  "Recipe for a droppy broadcast" should {
     "work" in {
       val pub = TestPublisher.probe[Int]()
       val myElements = Source.fromPublisher(pub)

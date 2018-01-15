@@ -123,7 +123,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
   import ActorSystemSpec.FastActor
 
-  "An ActorSystem" must {
+  "An ActorSystem" should {
 
     "use scala.concurrent.Future's InternalCallbackEC" in {
       system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext.getClass.getName should ===("scala.concurrent.Future$InternalCallbackExecutor$")

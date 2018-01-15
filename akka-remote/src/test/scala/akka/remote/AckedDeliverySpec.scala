@@ -20,7 +20,7 @@ class AckedDeliverySpec extends AkkaSpec {
 
   def msg(seq: Long) = Sequenced(SeqNo(seq), "msg" + seq)
 
-  "SeqNo" must {
+  "SeqNo" should {
 
     "implement simple ordering" in {
       val sm1 = SeqNo(-1)
@@ -71,7 +71,7 @@ class AckedDeliverySpec extends AkkaSpec {
 
   }
 
-  "SendBuffer" must {
+  "SendBuffer" should {
 
     "aggregate unacked messages in order" in {
       val b0 = new AckedSendBuffer[Sequenced](10)
@@ -182,7 +182,7 @@ class AckedDeliverySpec extends AkkaSpec {
 
   }
 
-  "ReceiveBuffer" must {
+  "ReceiveBuffer" should {
 
     "enqueue message in buffer if needed, return the list of deliverable messages and acks" in {
       val b0 = new AckedReceiveBuffer[Sequenced]
@@ -259,7 +259,7 @@ class AckedDeliverySpec extends AkkaSpec {
     }
   }
 
-  "SendBuffer and ReceiveBuffer" must {
+  "SendBuffer and ReceiveBuffer" should {
 
     def happened(p: Double) = ThreadLocalRandom.current().nextDouble() < p
 

@@ -92,7 +92,7 @@ class BalancingSpec extends AkkaSpec(
 
   }
 
-  "balancing pool" must {
+  "balancing pool" should {
 
     "deliver messages in a balancing fashion when defined programatically" in {
       val latch = TestLatch(poolSize)

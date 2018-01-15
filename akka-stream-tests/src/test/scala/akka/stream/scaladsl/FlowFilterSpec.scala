@@ -22,7 +22,7 @@ class FlowFilterSpec extends StreamSpec with ScriptedTest {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A Filter" must {
+  "A Filter" should {
 
     "filter" in {
       def script = Script(TestConfig.RandomTestRange map { _ ⇒ val x = random.nextInt(); Seq(x) → (if ((x & 1) == 0) Seq(x) else Seq()) }: _*)
@@ -60,7 +60,7 @@ class FlowFilterSpec extends StreamSpec with ScriptedTest {
 
   }
 
-  "A FilterNot" must {
+  "A FilterNot" should {
     "filter based on inverted predicate" in {
       def script = Script(TestConfig.RandomTestRange map
         { _ ⇒

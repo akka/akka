@@ -20,7 +20,7 @@ class SinkForeachParallelSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A ForeachParallel" must {
+  "A ForeachParallel" should {
     "produce elements in the order they are ready" in assertAllStagesStopped {
       import system.dispatcher
 

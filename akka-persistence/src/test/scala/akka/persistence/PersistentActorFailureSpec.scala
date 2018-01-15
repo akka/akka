@@ -161,7 +161,7 @@ class PersistentActorFailureSpec extends PersistenceSpec(PersistenceSpec.config(
     expectMsg(List("a", "b", "bad", "c"))
   }
 
-  "A persistent actor" must {
+  "A persistent actor" should {
     "stop if recovery from persisted events fail" in {
       val persistentActor = namedPersistentActor[Behavior1PersistentActor]
       persistentActor ! Cmd("corrupt")

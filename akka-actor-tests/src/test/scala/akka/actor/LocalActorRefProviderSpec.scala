@@ -31,7 +31,7 @@ object LocalActorRefProviderSpec {
 }
 
 class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.config) {
-  "An LocalActorRefProvider" must {
+  "An LocalActorRefProvider" should {
 
     "find actor refs using actorFor" in {
       val a = system.actorOf(Props(new Actor { def receive = { case _ ⇒ } }))
@@ -58,7 +58,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
   }
 
   // #16757: messages sent to /user should be UnhandledMessages instead of DeadLetters
-  "The root guardian in a LocalActorRefProvider" must {
+  "The root guardian in a LocalActorRefProvider" should {
     "not handle messages other than those it will act upon" in {
 
       val message = "Hello, Mr. Root Guardian"
@@ -71,7 +71,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
     }
   }
 
-  "The user guardian in a LocalActorRefProvider" must {
+  "The user guardian in a LocalActorRefProvider" should {
     "not handle messages other than those it will act upon" in {
 
       val message = "Hello, Mr. User Guardian"
@@ -84,7 +84,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
     }
   }
 
-  "The system guardian in a LocalActorRefProvider" must {
+  "The system guardian in a LocalActorRefProvider" should {
     "not handle messages other than those it will act upon" in {
 
       val message = "Hello, Mr. System Guardian"
@@ -97,7 +97,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
     }
   }
 
-  "A LocalActorRef's ActorCell" must {
+  "A LocalActorRef's ActorCell" should {
     "not retain its original Props when terminated" in {
       val GetChild = "GetChild"
       val a = watch(system.actorOf(Props(new Actor {
@@ -120,7 +120,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
     }
   }
 
-  "An ActorRefFactory" must {
+  "An ActorRefFactory" should {
     implicit val ec = system.dispatcher
     "only create one instance of an actor with a specific address in a concurrent environment" in {
       val impl = system.asInstanceOf[ActorSystemImpl]

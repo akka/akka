@@ -92,7 +92,7 @@ abstract class AeronStreamConsistencySpec
     super.afterAll()
   }
 
-  "Message consistency of Aeron Streams" must {
+  "Message consistency of Aeron Streams" should {
 
     "start echo" in {
       runOn(second) {

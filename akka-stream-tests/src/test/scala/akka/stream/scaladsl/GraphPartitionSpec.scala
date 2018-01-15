@@ -17,7 +17,7 @@ class GraphPartitionSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A partition" must {
+  "A partition" should {
     import GraphDSL.Implicits._
 
     "partition to three subscribers" in assertAllStagesStopped {

@@ -151,7 +151,7 @@ class BidiFlowDocSpec extends AkkaSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A BidiFlow" must {
+  "A BidiFlow" should {
 
     "compose" in {
       //#compose

@@ -84,7 +84,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     TestCase("FileIO", scaladsl.FileIO.getClass, javadsl.FileIO.getClass),
     TestCase("StreamConverters", scaladsl.StreamConverters.getClass, javadsl.StreamConverters.getClass))
 
-  "Java DSL" must provide {
+  "Java DSL" should provide {
     testCases foreach {
       case TestCase(name, Some(sClass), jClass, jFactoryOption) ⇒
         name which {

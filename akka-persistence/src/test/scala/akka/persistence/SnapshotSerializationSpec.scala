@@ -79,7 +79,7 @@ class SnapshotSerializationSpec extends PersistenceSpec(PersistenceSpec.config("
   import SnapshotSerializationSpec._
   import SnapshotSerializationSpec.XXXXXXXXXXXXXXXXXXXX._
 
-  "A PersistentActor with custom Serializer" must {
+  "A PersistentActor with custom Serializer" should {
     "be able to handle serialization header of more than 255 bytes" in {
       val sPersistentActor = system.actorOf(Props(classOf[TestPersistentActor], name, testActor))
       val persistenceId = name

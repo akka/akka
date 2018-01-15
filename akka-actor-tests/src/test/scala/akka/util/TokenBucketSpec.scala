@@ -13,7 +13,7 @@ class TokenBucketSpec extends AkkaSpec {
     var currentTime: Long = 0L
   }
 
-  "A Token Bucket" must {
+  "A Token Bucket" should {
 
     "start full" in {
       val bucket = new TestBucket(10, 1)

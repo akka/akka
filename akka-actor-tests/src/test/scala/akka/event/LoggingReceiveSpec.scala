@@ -54,7 +54,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
     TestKit.shutdownActorSystem(appLifecycle)
   }
 
-  "A LoggingReceive" must {
+  "A LoggingReceive" should {
 
     "decorate a Receive" in {
       new TestKit(appLogging) {
@@ -153,7 +153,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
 
   }
 
-  "An Actor" must {
+  "An Actor" should {
 
     "log AutoReceiveMessages if requested" in {
       new TestKit(appAuto) {

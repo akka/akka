@@ -110,7 +110,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     nodes.toSeq.map(_ → TestMock()).toMap
   }
 
-  "WriteAggregator" must {
+  "WriteAggregator" should {
     "send to at least N/2+1 replicas when WriteMajority" in {
       val probe = TestProbe()
       val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorProps(
@@ -189,7 +189,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     }
   }
 
-  "WriteAggregator with delta" must {
+  "WriteAggregator with delta" should {
     implicit val cluster = Cluster(system)
     val fullState1 = ORSet.empty[String] + "a" + "b"
     val fullState2 = fullState1.resetDelta + "c"
@@ -265,7 +265,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     }
   }
 
-  "Durable WriteAggregator" must {
+  "Durable WriteAggregator" should {
     "not reply before local confirmation" in {
       val probe = TestProbe()
       val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorProps(

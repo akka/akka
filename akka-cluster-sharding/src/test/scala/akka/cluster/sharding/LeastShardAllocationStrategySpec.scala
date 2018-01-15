@@ -15,7 +15,7 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
 
   val allocationStrategy = new LeastShardAllocationStrategy(rebalanceThreshold = 3, maxSimultaneousRebalance = 2)
 
-  "LeastShardAllocationStrategy" must {
+  "LeastShardAllocationStrategy" should {
     "allocate to region with least number of shards" in {
       val allocations = Map(regionA → Vector("shard1"), regionB → Vector("shard2"), regionC → Vector.empty)
       allocationStrategy.allocateShard(regionA, "shard3", allocations).futureValue should ===(regionC)

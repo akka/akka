@@ -96,7 +96,7 @@ class UntrustedSpec extends ArteryMultiNodeSpec(UntrustedSpec.config) with Impli
   // need to enable debug log-level without actually printing those messages
   system.eventStream.publish(TestEvent.Mute(EventFilter.debug()))
 
-  "UntrustedMode" must {
+  "UntrustedMode" should {
 
     "allow actor selection to configured white list" in {
       val sel = client.actorSelection(RootActorPath(address) / receptionist.path.elements)

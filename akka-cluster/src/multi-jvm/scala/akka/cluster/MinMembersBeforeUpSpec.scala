@@ -71,7 +71,7 @@ abstract class MinMembersBeforeUpSpec extends MinMembersBeforeUpBase(MinMembersB
   override def second: RoleName = MinMembersBeforeUpMultiJvmSpec.second
   override def third: RoleName = MinMembersBeforeUpMultiJvmSpec.third
 
-  "Cluster leader" must {
+  "Cluster leader" should {
     "wait with moving members to UP until minimum number of members have joined" taggedAs LongRunningTest in {
       testWaitMovingMembersToUp()
     }
@@ -84,7 +84,7 @@ abstract class MinMembersBeforeUpWithWeaklyUpSpec extends MinMembersBeforeUpBase
   override def second: RoleName = MinMembersBeforeUpWithWeaklyUpMultiJvmSpec.second
   override def third: RoleName = MinMembersBeforeUpWithWeaklyUpMultiJvmSpec.third
 
-  "Cluster leader" must {
+  "Cluster leader" should {
     "wait with moving members to UP until minimum number of members have joined with weakly up enabled" taggedAs LongRunningTest in {
       testWaitMovingMembersToUp()
     }
@@ -97,7 +97,7 @@ abstract class MinMembersOfRoleBeforeUpSpec extends MinMembersBeforeUpBase(MinMe
   override def second: RoleName = MinMembersOfRoleBeforeUpMultiJvmSpec.second
   override def third: RoleName = MinMembersOfRoleBeforeUpMultiJvmSpec.third
 
-  "Cluster leader" must {
+  "Cluster leader" should {
     "wait with moving members to UP until minimum number of members with specific role have joined" taggedAs LongRunningTest in {
       testWaitMovingMembersToUp()
     }

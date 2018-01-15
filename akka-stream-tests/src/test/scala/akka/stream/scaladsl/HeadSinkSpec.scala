@@ -17,7 +17,7 @@ class HeadSinkSpec extends StreamSpec with ScriptedTest {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A Flow with Sink.head" must {
+  "A Flow with Sink.head" should {
 
     "yield the first value" in assertAllStagesStopped {
       val p = TestPublisher.manualProbe[Int]()
@@ -57,7 +57,7 @@ class HeadSinkSpec extends StreamSpec with ScriptedTest {
     }
 
   }
-  "A Flow with Sink.headOption" must {
+  "A Flow with Sink.headOption" should {
 
     "yield the first value" in assertAllStagesStopped {
       val p = TestPublisher.manualProbe[Int]()

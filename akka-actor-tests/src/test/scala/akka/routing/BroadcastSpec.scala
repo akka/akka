@@ -17,7 +17,7 @@ object BroadcastSpec {
 
 class BroadcastSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
-  "broadcast group" must {
+  "broadcast group" should {
 
     "broadcast message using !" in {
       val doneLatch = new TestLatch(2)

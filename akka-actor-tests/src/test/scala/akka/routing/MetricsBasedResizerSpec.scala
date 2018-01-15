@@ -75,7 +75,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
     system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*Resize")))
   }
 
-  "MetricsBasedResizer isTimeForResize" must {
+  "MetricsBasedResizer isTimeForResize" should {
 
     "be true with empty history" in {
       val resizer = DefaultOptimalSizeExploringResizer()
@@ -99,7 +99,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
   }
 
-  "MetricsBasedResizer reportMessageCount" must {
+  "MetricsBasedResizer reportMessageCount" should {
 
     "record last messageCounter correctly" in {
       val resizer = DefaultOptimalSizeExploringResizer()
@@ -292,7 +292,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
   }
 
-  "MetricsBasedResizer resize" must {
+  "MetricsBasedResizer resize" should {
     "downsize to close to the highest retention when a streak of underutilization started downsizeAfterUnderutilizedFor" in {
       val resizer = DefaultOptimalSizeExploringResizer(
         downsizeAfterUnderutilizedFor = 72.hours,
@@ -330,7 +330,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
     }
   }
 
-  "MetricsBasedResizer optimize" must {
+  "MetricsBasedResizer optimize" should {
     "optimize towards the fastest pool size" in {
       val resizer = DefaultOptimalSizeExploringResizer(explorationProbability = 0)
       resizer.performanceLog = Map(7 → 5.millis, 10 → 3.millis, 11 → 2.millis, 12 → 4.millis)
@@ -353,7 +353,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
     }
   }
 
-  "MetricsBasedResizer" must {
+  "MetricsBasedResizer" should {
 
     def poolSize(router: ActorRef): Int =
       Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees.size

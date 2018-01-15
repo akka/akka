@@ -39,7 +39,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
 
     "synchronous" when {
 
-      "consumer actor doesnt exist" must {
+      "consumer actor doesnt exist" should {
         "set failure message on exchange" in {
           producer = given(actor = null)
           producer.processExchangeAdapter(exchange)
@@ -48,7 +48,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
         }
       }
 
-      "in-only" must {
+      "in-only" should {
         def producer = given(outCapable = false)
 
         "pass the message to the consumer" taggedAs TimingTest in {
@@ -63,7 +63,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
 
       "manualAck" when {
 
-        "response is Ack" must {
+        "response is Ack" should {
           "process the exchange" in {
             producer = given(outCapable = false, autoAck = false)
             import system.dispatcher
@@ -78,7 +78,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
             Await.ready(future, timeout.duration)
           }
         }
-        "the consumer does not respond wit Ack" must {
+        "the consumer does not respond wit Ack" should {
           "not block forever" in {
             producer = given(outCapable = false, autoAck = false)
             import system.dispatcher
@@ -99,7 +99,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
       }
 
       "out capable" when {
-        "response is sent back by actor" must {
+        "response is sent back by actor" should {
 
           "get a response" in {
             producer = given(actor = echoActor, outCapable = true)
@@ -110,7 +110,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
           }
         }
 
-        "response is not sent by actor" must {
+        "response is not sent by actor" should {
           val latch = TestLatch(1)
           val callback = new AsyncCallback {
             def done(doneSync: Boolean) {
@@ -157,14 +157,14 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
 
       "out-capable" when {
 
-        "consumer actor doesnt exist" must {
+        "consumer actor doesnt exist" should {
           "set failure message on exchange" in {
             producer = given(actor = null, outCapable = true)
             verifyFailureIsSet()
           }
         }
 
-        "response is ok" must {
+        "response is ok" should {
           "get a response and async callback as soon as it gets the response (but not before)" in {
             producer = given(outCapable = true)
 
@@ -187,7 +187,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
           }
         }
 
-        "response is Failure" must {
+        "response is Failure" should {
           "set an exception on exchange" in {
             val exception = new RuntimeException("some failure")
             val failure = Failure(exception)
@@ -206,7 +206,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
           }
         }
 
-        "no response is sent within timeout" must {
+        "no response is sent within timeout" should {
           "set TimeoutException on exchange" in {
             producer = given(outCapable = true, replyTimeout = 10 millis)
             producer.processExchangeAdapter(exchange, asyncCallback)
@@ -225,14 +225,14 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
 
       "in-only" when {
 
-        "consumer actor doesnt exist" must {
+        "consumer actor doesnt exist" should {
           "set failure message on exchange" in {
             producer = given(actor = null, outCapable = false)
             verifyFailureIsSet()
           }
         }
 
-        "autoAck" must {
+        "autoAck" should {
 
           "get sync callback as soon as it sends a message" in {
 
@@ -251,7 +251,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
 
         "manualAck" when {
 
-          "response is Ack" must {
+          "response is Ack" should {
             "get async callback" in {
               producer = given(outCapable = false, autoAck = false)
 
@@ -270,7 +270,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
             }
           }
 
-          "expecting Ack or Failure message and some other message is sent as a response" must {
+          "expecting Ack or Failure message and some other message is sent as a response" should {
             "fail" in {
               producer = given(outCapable = false, autoAck = false)
 
@@ -291,7 +291,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
             }
           }
 
-          "no Ack is sent within timeout" must {
+          "no Ack is sent within timeout" should {
             "set failure on exchange" in {
               producer = given(outCapable = false, replyTimeout = 10 millis, autoAck = false)
 
@@ -302,7 +302,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
             }
           }
 
-          "response is Failure" must {
+          "response is Failure" should {
             "set an exception on exchange" in {
               producer = given(outCapable = false, autoAck = false)
 

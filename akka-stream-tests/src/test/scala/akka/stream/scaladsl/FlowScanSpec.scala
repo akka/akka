@@ -21,7 +21,7 @@ class FlowScanSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A Scan" must {
+  "A Scan" should {
 
     def scan(s: Source[Int, NotUsed], duration: Duration = 5.seconds): immutable.Seq[Int] =
       Await.result(s.scan(0)(_ + _).runFold(immutable.Seq.empty[Int])(_ :+ _), duration)

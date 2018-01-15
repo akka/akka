@@ -23,7 +23,7 @@ class ActorRefSinkSpec extends StreamSpec {
   import ActorRefSinkSpec._
   implicit val materializer = ActorMaterializer()
 
-  "A ActorRefSink" must {
+  "A ActorRefSink" should {
 
     "send the elements to the ActorRef" in assertAllStagesStopped {
       Source(List(1, 2, 3)).runWith(Sink.actorRef(testActor, onCompleteMessage = "done"))

@@ -23,7 +23,7 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 class ActorGraphInterpreterSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
 
-  "ActorGraphInterpreter" must {
+  "ActorGraphInterpreter" should {
 
     "be able to interpret a simple identity graph stage" in assertAllStagesStopped {
       val identity = GraphStages.identity[Int]

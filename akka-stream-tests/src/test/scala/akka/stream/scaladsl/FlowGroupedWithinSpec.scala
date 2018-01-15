@@ -21,7 +21,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
 
   implicit val materializer = ActorMaterializer()
 
-  "A GroupedWithin" must {
+  "A GroupedWithin" should {
 
     "group elements within the duration" taggedAs TimingTest in assertAllStagesStopped {
       val input = Iterator.from(1)
@@ -173,7 +173,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
 
   }
 
-  "A GroupedWeightedWithin" must {
+  "A GroupedWeightedWithin" should {
     "handle elements larger than the limit" taggedAs TimingTest in {
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
       Source(List(1, 2, 3, 101, 4, 5, 6))

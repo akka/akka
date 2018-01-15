@@ -17,7 +17,7 @@ object ExplicitAskSpec {
 class ExplicitAskSpec extends AkkaSpec {
   import ExplicitAskSpec._
 
-  "The “ask” pattern with explicit sender" must {
+  "The “ask” pattern with explicit sender" should {
     "allow to access an explicit reference to actor to respond to" in {
       implicit val timeout = Timeout(5.seconds)
 

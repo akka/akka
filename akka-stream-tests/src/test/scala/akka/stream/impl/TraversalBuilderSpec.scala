@@ -16,7 +16,7 @@ import scala.concurrent.Await
 
 class TraversalBuilderSpec extends AkkaSpec {
 
-  "CompositeTraversalBuilder" must {
+  "CompositeTraversalBuilder" should {
     val source = new CompositeTestSource
     val sink = new CompositeTestSink
     val flow1 = new CompositeTestFlow("1")

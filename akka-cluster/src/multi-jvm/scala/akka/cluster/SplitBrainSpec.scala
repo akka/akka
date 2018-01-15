@@ -59,7 +59,7 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
   val side1 = Vector(first, second)
   val side2 = Vector(third, fourth, fifth)
 
-  "A cluster of 5 members" must {
+  "A cluster of 5 members" should {
 
     "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third, fourth, fifth)

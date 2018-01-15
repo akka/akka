@@ -41,7 +41,7 @@ class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender 
     results.count(_ == what) should equal(results.size)
   }
 
-  "Tail-chopping group" must {
+  "Tail-chopping group" should {
 
     "deliver a broadcast message using the !" in {
       val doneLatch = new TestLatch(2)

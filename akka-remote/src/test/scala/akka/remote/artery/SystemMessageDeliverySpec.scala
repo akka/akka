@@ -100,7 +100,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
     else List(elem)
   }
 
-  "System messages" must {
+  "System messages" should {
 
     "be delivered with real actors" in {
       systemB.actorOf(TestActors.echoActorProps, "echo")

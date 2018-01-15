@@ -14,7 +14,7 @@ class FlowGroupedSpec extends StreamSpec with ScriptedTest {
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  "A Grouped" must {
+  "A Grouped" should {
 
     def randomSeq(n: Int) = immutable.Seq.fill(n)(random.nextInt())
     def randomTest(n: Int) = { val s = randomSeq(n); s → immutable.Seq(s) }

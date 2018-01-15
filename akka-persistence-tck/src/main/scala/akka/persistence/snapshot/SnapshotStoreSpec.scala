@@ -59,7 +59,7 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
    */
   def snapshotByteSizeLimit = 10000
 
-  "A snapshot store" must {
+  "A snapshot store" should {
     "not load a snapshot given an invalid persistenceId" in {
       snapshotStore.tell(LoadSnapshot("invalid", SnapshotSelectionCriteria.Latest, Long.MaxValue), senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))

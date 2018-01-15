@@ -15,7 +15,7 @@ class FlowForeachSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
-  "A Foreach" must {
+  "A Foreach" should {
 
     "call the procedure for each element" in assertAllStagesStopped {
       Source(1 to 3).runForeach(testActor ! _) foreach {

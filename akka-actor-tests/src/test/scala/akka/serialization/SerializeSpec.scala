@@ -145,7 +145,7 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
   val address = Address("120", "Monroe Street", "Santa Clara", "95050")
   val person = Person("debasish ghosh", 25, Address("120", "Monroe Street", "Santa Clara", "95050"))
 
-  "Serialization" must {
+  "Serialization" should {
 
     "have correct bindings" in {
       ser.bindings.collectFirst { case (c, s) if c == address.getClass ⇒ s.getClass } should ===(Some(classOf[JavaSerializer]))
@@ -322,7 +322,7 @@ class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyRefer
   def serializerMustBe(toSerialize: Class[_], expectedSerializer: Class[_]) =
     ser.serializerFor(toSerialize).getClass should ===(expectedSerializer)
 
-  "Serialization settings from reference.conf" must {
+  "Serialization settings from reference.conf" should {
 
     "declare Serializable classes to be use JavaSerializer" in {
       serializerMustBe(classOf[Serializable], classOf[JavaSerializer])
@@ -356,7 +356,7 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
 
   val ser = SerializationExtension(system)
 
-  "Cross-version serialization compatibility" must {
+  "Cross-version serialization compatibility" should {
     def verify(obj: SystemMessage, asExpected: String): Unit = {
       val bytes = decodeHex(asExpected.toCharArray)
       val stream = new ObjectInputStream(new ByteArrayInputStream(bytes))
@@ -451,7 +451,7 @@ class OverriddenSystemMessageSerializationSpec extends AkkaSpec(SerializationTes
 
   val ser = SerializationExtension(system)
 
-  "Overridden SystemMessage serialization" must {
+  "Overridden SystemMessage serialization" should {
 
     "resolve to a single serializer" in {
       EventFilter.warning(start = "Multiple serializers found", occurrences = 0) intercept {
@@ -470,7 +470,7 @@ class DefaultSerializationWarningSpec extends AkkaSpec(
   val ser = SerializationExtension(system)
   val messagePrefix = "Using the default Java serializer for class"
 
-  "Using the default Java serializer" must {
+  "Using the default Java serializer" should {
 
     "log a warning when serializing classes outside of java.lang package" in {
       EventFilter.warning(start = messagePrefix, occurrences = 1) intercept {
@@ -496,7 +496,7 @@ class NoVerificationWarningSpec extends AkkaSpec(
   val ser = SerializationExtension(system)
   val messagePrefix = "Using the default Java serializer for class"
 
-  "When warn-on-no-serialization-verification = on, using the default Java serializer" must {
+  "When warn-on-no-serialization-verification = on, using the default Java serializer" should {
 
     "log a warning on classes without extending NoSerializationVerificationNeeded" in {
       EventFilter.warning(start = messagePrefix, occurrences = 1) intercept {
@@ -520,7 +520,7 @@ class NoVerificationWarningOffSpec extends AkkaSpec(
   val ser = SerializationExtension(system)
   val messagePrefix = "Using the default Java serializer for class"
 
-  "When warn-on-no-serialization-verification = off, using the default Java serializer" must {
+  "When warn-on-no-serialization-verification = off, using the default Java serializer" should {
 
     "log a warning on classes without extending NoSerializationVerificationNeeded" in {
       EventFilter.warning(start = messagePrefix, occurrences = 1) intercept {

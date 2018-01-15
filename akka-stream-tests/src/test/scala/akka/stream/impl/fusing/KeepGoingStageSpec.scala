@@ -82,7 +82,7 @@ class KeepGoingStageSpec extends StreamSpec {
     }
   }
 
-  "A stage with keep-going" must {
+  "A stage with keep-going" should {
 
     "still be alive after all ports have been closed until explicitly closed" in assertAllStagesStopped {
       val (maybePromise, pingerFuture) = Source.maybe[Int].toMat(new PingableSink(keepAlive = true))(Keep.both).run()

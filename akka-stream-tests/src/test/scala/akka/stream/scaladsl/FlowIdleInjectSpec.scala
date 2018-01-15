@@ -12,7 +12,7 @@ class FlowIdleInjectSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "keepAlive" must {
+  "keepAlive" should {
 
     "not emit additional elements if upstream is fast enough" in Utils.assertAllStagesStopped {
       Await.result(

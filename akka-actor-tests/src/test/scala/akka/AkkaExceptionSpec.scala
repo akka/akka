@@ -11,7 +11,7 @@ import org.scalatest.WordSpec;
  */
 class AkkaExceptionSpec extends WordSpec with Matchers {
 
-  "AkkaException" must {
+  "AkkaException" should {
     "have a AkkaException(String msg) constructor to be serialization friendly" in {
       //if the call to this method completes, we know what there is at least a single constructor which has
       //the expected argument type.

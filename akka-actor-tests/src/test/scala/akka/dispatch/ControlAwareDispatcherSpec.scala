@@ -19,7 +19,7 @@ object ControlAwareDispatcherSpec {
 class ControlAwareDispatcherSpec extends AkkaSpec(ControlAwareDispatcherSpec.config) with DefaultTimeout {
   import ControlAwareDispatcherSpec.ImportantMessage
 
-  "A ControlAwareDispatcher" must {
+  "A ControlAwareDispatcher" should {
     "deliver control messages first using an unbounded mailbox" in {
       val dispatcherKey = "unbounded-control-dispatcher"
       testControl(dispatcherKey)

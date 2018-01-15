@@ -85,7 +85,7 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
     enterBarrier(from.name + "-joined")
   }
 
-  "Insert from 5 nodes" must {
+  "Insert from 5 nodes" should {
 
     "setup cluster" in {
       runOn(nodes: _*) {

@@ -224,7 +224,7 @@ abstract class AeronStreamMaxThroughputSpec
     enterBarrier("after-" + testName)
   }
 
-  "Max throughput of Aeron Streams" must {
+  "Max throughput of Aeron Streams" should {
 
     for (s ← scenarios) {
       s"be great for ${s.testName}, payloadSize = ${s.payloadSize}" in test(s)

@@ -47,7 +47,7 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
   class ChildActor extends ParentActor {
   }
 
-  "A BalancingDispatcher" must {
+  "A BalancingDispatcher" should {
     "have fast actor stealing work from slow actor" in {
       val finishedCounter = new CountDownLatch(110)
 

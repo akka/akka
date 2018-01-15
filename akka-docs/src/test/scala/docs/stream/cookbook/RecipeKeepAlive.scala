@@ -7,7 +7,7 @@ import akka.util.ByteString
 
 class RecipeKeepAlive extends RecipeSpec {
 
-  "Recipe for injecting keepalive messages" must {
+  "Recipe for injecting keepalive messages" should {
 
     "work" in {
       val keepaliveMessage = ByteString(11)

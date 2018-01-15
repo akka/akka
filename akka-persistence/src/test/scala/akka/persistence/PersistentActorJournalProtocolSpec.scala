@@ -141,7 +141,7 @@ class PersistentActorJournalProtocolSpec extends AkkaSpec(config) with ImplicitS
     subject
   }
 
-  "A PersistentActor’s journal protocol" must {
+  "A PersistentActor’s journal protocol" should {
 
     "not send WriteMessages while a write is still outstanding" when {
 

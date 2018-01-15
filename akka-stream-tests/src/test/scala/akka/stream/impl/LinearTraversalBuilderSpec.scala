@@ -13,7 +13,7 @@ import akka.testkit.AkkaSpec
 
 class LinearTraversalBuilderSpec extends AkkaSpec {
 
-  "LinearTraversalBuilder" must {
+  "LinearTraversalBuilder" should {
     val source = new LinearTestSource
     val sink = new LinearTestSink
     val flow1 = new LinearTestFlow("1")

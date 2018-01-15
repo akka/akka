@@ -32,7 +32,7 @@ class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defau
   val addressB = address(systemB)
   val rootB = RootActorPath(addressB)
 
-  "Serialization error" must {
+  "Serialization error" should {
 
     "be logged when serialize fails" in {
       val remoteRef = {

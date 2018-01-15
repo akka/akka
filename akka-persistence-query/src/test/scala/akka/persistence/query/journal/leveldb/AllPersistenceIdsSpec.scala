@@ -29,7 +29,7 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
 
   val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
-  "Leveldb query AllPersistenceIds" must {
+  "Leveldb query AllPersistenceIds" should {
 
     "implement standard AllPersistenceIdsQuery" in {
       queries.isInstanceOf[PersistenceIdsQuery] should ===(true)

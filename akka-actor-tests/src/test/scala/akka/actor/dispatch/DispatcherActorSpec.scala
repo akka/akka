@@ -54,7 +54,7 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
 
   private val unit = TimeUnit.MILLISECONDS
 
-  "A Dispatcher and an Actor" must {
+  "A Dispatcher and an Actor" should {
 
     "support tell" in {
       val actor = system.actorOf(Props[OneWayTestActor].withDispatcher("test-dispatcher"))

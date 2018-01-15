@@ -57,7 +57,7 @@ abstract class RemoteNodeRestartGateSpec
     expectMsgType[ActorIdentity].ref.get
   }
 
-  "RemoteNodeRestartGate" must {
+  "RemoteNodeRestartGate" should {
 
     "allow restarted node to pass through gate" taggedAs LongRunningTest in {
 

@@ -14,7 +14,7 @@ class FlowBatchWeightedSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "BatchWeighted" must {
+  "BatchWeighted" should {
     "Not aggregate heavy elements" in {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()

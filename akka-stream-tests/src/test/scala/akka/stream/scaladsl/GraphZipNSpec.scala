@@ -24,7 +24,7 @@ class GraphZipNSpec extends TwoStreamsSetup {
     override def out: Outlet[immutable.Seq[Int]] = zipN.out
   }
 
-  "ZipN" must {
+  "ZipN" should {
 
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[immutable.Seq[Int]]()

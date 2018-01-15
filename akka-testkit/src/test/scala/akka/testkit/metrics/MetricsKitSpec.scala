@@ -23,7 +23,7 @@ class MetricsKitSpec extends WordSpec with Matchers with BeforeAndAfter with Bef
     shutdownMetrics()
   }
 
-  "MetricsKit" must {
+  "MetricsKit" should {
 
     "allow measuring file descriptor usage" in {
       measureFileDescriptors(KitKey / "file-desc")

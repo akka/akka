@@ -82,7 +82,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
 
   val sourceThreadRegex = "sourceThread=\\[Slf4jLoggerSpec-akka.actor.default-dispatcher-[1-9][0-9]*\\]"
 
-  "Slf4jLogger" must {
+  "Slf4jLogger" should {
 
     "log error with stackTrace" in {
       producer ! new RuntimeException("Simulated error")

@@ -22,7 +22,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
     subscriber
   }
 
-  "A Concat for Flow " must {
+  "A Concat for Flow " should {
 
     "be able to concat Flow with a Source" in {
       val f1: Flow[Int, String, _] = Flow[Int].map(_.toString + "-s")

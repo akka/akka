@@ -69,7 +69,7 @@ import akka.persistence.serialization.SerializerSpecConfigs._
 class SnapshotSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
   val serialization = SerializationExtension(system)
 
-  "A snapshot serializer" must {
+  "A snapshot serializer" should {
     "handle custom snapshot Serialization" in {
       val wrapped = Snapshot(MySnapshot("a"))
       val serializer = serialization.findSerializerFor(wrapped)
@@ -164,7 +164,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
   val serialization = SerializationExtension(system)
 
   "A message serializer" when {
-    "not given a manifest" must {
+    "not given a manifest" should {
       "handle custom Persistent message serialization" in {
         val persistent = PersistentRepr(MyPayload("a"), 13, "p1", "", writerUuid = UUID.randomUUID().toString)
         val serializer = serialization.findSerializerFor(persistent)
@@ -176,7 +176,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       }
     }
 
-    "given a PersistentRepr manifest" must {
+    "given a PersistentRepr manifest" should {
       "handle custom Persistent message serialization" in {
         val persistent = PersistentRepr(MyPayload("b"), 13, "p1", "", writerUuid = UUID.randomUUID().toString)
         val serializer = serialization.findSerializerFor(persistent)
@@ -188,7 +188,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       }
     }
 
-    "given payload serializer with string manifest" must {
+    "given payload serializer with string manifest" should {
       "handle serialization" in {
         val persistent = PersistentRepr(MyPayload2("a", 17), 13, "p1", "", writerUuid = UUID.randomUUID().toString)
         val serializer = serialization.findSerializerFor(persistent)
@@ -239,7 +239,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       }
     }
 
-    "given PersistentRepr serialized with Akka 2.3.11 Scala 2.10" must {
+    "given PersistentRepr serialized with Akka 2.3.11 Scala 2.10" should {
       "be able to deserialize with latest version" in {
         // It was created with:
         // val old = PersistentRepr(MyPayload("a"), 13, "p1", true, 3, List("c1", "c2"), confirmable = true, DeliveredByChannel("p2", "c2", 14), testActor, testActor)
@@ -264,7 +264,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       }
     }
 
-    "given AtLeastOnceDeliverySnapshot" must {
+    "given AtLeastOnceDeliverySnapshot" should {
       "handle empty unconfirmed" in {
         val unconfirmed = Vector.empty
         val snap = AtLeastOnceDeliverySnapshot(13, unconfirmed)
@@ -334,7 +334,7 @@ class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customS
     Await.ready(remoteSystem.terminate(), Duration.Inf)
   }
 
-  "A message serializer" must {
+  "A message serializer" should {
     "custom-serialize PersistentRepr messages during remoting" in {
       // this also verifies serialization of PersistentRepr.sender,
       // because the RemoteActor will reply to the PersistentRepr.sender

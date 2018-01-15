@@ -70,7 +70,7 @@ object Slf4jLoggingFilterSpec {
 class Slf4jLoggingFilterSpec extends AkkaSpec(Slf4jLoggingFilterSpec.config) with BeforeAndAfterEach {
   import Slf4jLoggingFilterSpec._
 
-  "Slf4jLoggingFilter" must {
+  "Slf4jLoggingFilter" should {
 
     "use configured LoggingFilter at debug log level in logback conf" in {
       val log1 = Logging(system, classOf[DebugLevelProducer])

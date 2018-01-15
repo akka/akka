@@ -166,7 +166,7 @@ class LoggerSpec extends WordSpec with Matchers {
     out
   }
 
-  "A normally configured actor system" must {
+  "A normally configured actor system" should {
 
     "log messages to standard output" in {
       val out = createSystemAndLogToBuffer("defaultLogger", defaultConfig, true)
@@ -193,7 +193,7 @@ class LoggerSpec extends WordSpec with Matchers {
 
   }
 
-  "An actor system configured with the logging turned off" must {
+  "An actor system configured with the logging turned off" should {
 
     "not log messages to standard output" in {
       val out = createSystemAndLogToBuffer("noLogging", noLoggingConfig, false)
@@ -201,7 +201,7 @@ class LoggerSpec extends WordSpec with Matchers {
     }
   }
 
-  "An actor system configured with multiple loggers" must {
+  "An actor system configured with multiple loggers" should {
 
     "use several loggers" in {
       Console.withOut(new java.io.ByteArrayOutputStream()) {
@@ -224,7 +224,7 @@ class LoggerSpec extends WordSpec with Matchers {
     }
   }
 
-  "Ticket 3671" must {
+  "Ticket 3671" should {
 
     "log message with given MDC values" in {
       implicit val system = ActorSystem("ticket-3671", ticket3671Config)
@@ -265,7 +265,7 @@ class LoggerSpec extends WordSpec with Matchers {
 
   }
 
-  "Ticket 3080" must {
+  "Ticket 3080" should {
     "format currentTimeMillis to a valid UTC String" in {
       val timestamp = System.currentTimeMillis
       val c = new GregorianCalendar(TimeZone.getTimeZone("UTC"))
@@ -278,7 +278,7 @@ class LoggerSpec extends WordSpec with Matchers {
     }
   }
 
-  "StdOutLogger" must {
+  "StdOutLogger" should {
     "format timestamp to with system default TimeZone" in {
       val log = new StdOutLogger {}
       val event = Info("test", classOf[String], "test")
@@ -306,7 +306,7 @@ class LoggerSpec extends WordSpec with Matchers {
 
   }
 
-  "Ticket 3165 - serialize-messages and dual-entry serialization of LogEvent" must {
+  "Ticket 3165 - serialize-messages and dual-entry serialization of LogEvent" should {
     "not cause StackOverflowError" in {
       implicit val s = ActorSystem("foo", ticket3165Config)
       try {

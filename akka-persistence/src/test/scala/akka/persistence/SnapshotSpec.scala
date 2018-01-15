@@ -99,7 +99,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
     expectMsgAllOf(1L, 2L, 4L)
   }
 
-  "A persistentActor" must {
+  "A persistentActor" should {
     "recover state starting from the most recent snapshot" in {
       val persistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, Recovery(), testActor))
       val persistenceId = name

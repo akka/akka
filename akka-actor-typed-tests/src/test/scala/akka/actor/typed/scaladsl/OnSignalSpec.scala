@@ -10,7 +10,7 @@ import akka.testkit.typed.scaladsl.TestProbe
 
 final class OnSignalSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
-  "An Actor.OnSignal behavior" must {
+  "An Actor.OnSignal behavior" should {
     "must correctly install the signal handler" in {
       val probe = TestProbe[Done]("probe")
       val behavior =

@@ -69,7 +69,7 @@ class FlowSplitAfterSpec extends StreamSpec {
 
   }
 
-  "splitAfter" must {
+  "splitAfter" should {
 
     "work in the happy case" in assertAllStagesStopped {
       new SubstreamsSupport(3, elementCount = 5) {

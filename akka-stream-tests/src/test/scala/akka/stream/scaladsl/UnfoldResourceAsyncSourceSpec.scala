@@ -63,7 +63,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   implicit val materializer = ActorMaterializer(settings)
   import system.dispatcher
 
-  "Unfold Resource Async Source" must {
+  "Unfold Resource Async Source" should {
     "unfold data from a resource" in assertAllStagesStopped {
       val createPromise = Promise[Done]()
       val closePromise = Promise[Done]()

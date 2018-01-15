@@ -95,12 +95,12 @@ class DistributedPubSubMediatorWithRandomRouterSpec
 
   val mediator = DistributedPubSub(system).mediator
 
-  "DistributedPubSubMediator when sending wrapped message" must {
+  "DistributedPubSubMediator when sending wrapped message" should {
     val msg = WrappedMessage("hello")
     behave like nonUnwrappingPubSub(mediator, testActor, msg)
   }
 
-  "DistributedPubSubMediator when sending unwrapped message" must {
+  "DistributedPubSubMediator when sending unwrapped message" should {
     val msg = UnwrappedMessage("hello")
     behave like nonUnwrappingPubSub(mediator, testActor, msg)
   }
@@ -110,7 +110,7 @@ class DistributedPubSubMediatorWithHashRouterSpec
   extends AkkaSpec(DistributedPubSubMediatorRouterSpec.config("consistent-hashing"))
   with DistributedPubSubMediatorRouterSpec with DefaultTimeout with ImplicitSender {
 
-  "DistributedPubSubMediator with Consistent Hash router" must {
+  "DistributedPubSubMediator with Consistent Hash router" should {
     "not be allowed" when {
       "constructed by extension" in {
         intercept[IllegalArgumentException] {

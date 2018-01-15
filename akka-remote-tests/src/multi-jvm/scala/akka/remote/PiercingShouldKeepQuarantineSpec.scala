@@ -44,7 +44,7 @@ abstract class PiercingShouldKeepQuarantineSpec(multiNodeConfig: PiercingShouldK
 
   override def initialParticipants = roles.size
 
-  "While probing through the quarantine remoting" must {
+  "While probing through the quarantine remoting" should {
 
     "not lose existing quarantine marker" taggedAs LongRunningTest in {
       runOn(first) {

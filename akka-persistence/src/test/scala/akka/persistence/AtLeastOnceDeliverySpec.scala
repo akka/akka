@@ -174,7 +174,7 @@ object AtLeastOnceDeliverySpec {
 abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
   import akka.persistence.AtLeastOnceDeliverySpec._
 
-  "AtLeastOnceDelivery" must {
+  "AtLeastOnceDelivery" should {
     List(true, false).foreach { deliverUsingActorSelection ⇒
 
       s"deliver messages in order when nothing is lost (using actorSelection: $deliverUsingActorSelection)" taggedAs (TimingTest) in {

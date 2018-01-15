@@ -25,7 +25,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
   implicit val materializer = ActorMaterializer()
   implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
-  "Single Source" must {
+  "Single Source" should {
     "produce element" in {
       val p = Source.single(1).runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[Int]()
@@ -52,7 +52,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
   }
 
-  "Empty Source" must {
+  "Empty Source" should {
     "complete immediately" in {
       val p = Source.empty.runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[Int]()
@@ -66,7 +66,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
   }
 
-  "Composite Source" must {
+  "Composite Source" should {
     "merge from many inputs" in {
       val probes = immutable.Seq.fill(5)(TestPublisher.manualProbe[Int]())
       val source = Source.asSubscriber[Int]
@@ -184,7 +184,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
   }
 
-  "Repeat Source" must {
+  "Repeat Source" should {
     "repeat as long as it takes" in {
       val f = Source.repeat(42).grouped(1000).runWith(Sink.head)
       f.futureValue.size should ===(1000)
@@ -192,7 +192,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
   }
 
-  "Unfold Source" must {
+  "Unfold Source" should {
     val expected = List(9227465, 5702887, 3524578, 2178309, 1346269, 832040, 514229, 317811, 196418, 121393, 75025, 46368, 28657, 17711, 10946, 6765, 4181, 2584, 1597, 987, 610, 377, 233, 144, 89, 55, 34, 21, 13, 8, 5, 3, 2, 1, 1, 0)
 
     "generate a finite fibonacci sequence" in {
@@ -231,7 +231,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
   }
 
-  "Iterator Source" must {
+  "Iterator Source" should {
     "properly iterate" in {
       Source.fromIterator(() ⇒ Iterator.iterate(false)(!_))
         .grouped(10)
@@ -240,7 +240,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
   }
 
-  "ZipN Source" must {
+  "ZipN Source" should {
     "properly zipN" in {
       val sources = immutable.Seq(
         Source(List(1, 2, 3)),
@@ -256,7 +256,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
   }
 
-  "ZipWithN Source" must {
+  "ZipWithN Source" should {
     "properly zipWithN" in {
       val sources = immutable.Seq(
         Source(List(1, 2, 3)),
@@ -269,7 +269,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
   }
 
-  "Cycle Source" must {
+  "Cycle Source" should {
 
     "continuously generate the same sequence" in {
       val expected = Seq(1, 2, 3, 1, 2, 3, 1, 2, 3)
@@ -282,14 +282,14 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
   }
 
-  "A Source" must {
+  "A Source" should {
     "suitably override attribute handling methods" in {
       import Attributes._
       val s: Source[Int, NotUsed] = Source.single(42).async.addAttributes(none).named("")
     }
   }
 
-  "Java Stream source" must {
+  "Java Stream source" should {
     import scala.compat.java8.FunctionConverters._
     import java.util.stream.{ Stream, IntStream }
 

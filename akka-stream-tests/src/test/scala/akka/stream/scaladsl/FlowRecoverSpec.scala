@@ -18,7 +18,7 @@ class FlowRecoverSpec extends StreamSpec {
 
   val ex = new RuntimeException("ex") with NoStackTrace
 
-  "A Recover" must {
+  "A Recover" should {
     "recover when there is a handler" in assertAllStagesStopped {
       Source(1 to 4).map { a ⇒ if (a == 3) throw ex else a }
         .recover { case t: Throwable ⇒ 0 }

@@ -39,7 +39,7 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     f
   }
 
-  "Unfold Resource Source" must {
+  "Unfold Resource Source" should {
     "read contents from a file" in assertAllStagesStopped {
       val p = Source.unfoldResource[String, BufferedReader](
         () ⇒ new BufferedReader(new FileReader(manyLinesFile)),

@@ -11,7 +11,7 @@ import akka.testkit.AkkaSpec
 
 class DurationSpec extends AkkaSpec {
 
-  "Duration" must {
+  "Duration" should {
 
     "form a one-dimensional vector field" in {
       val zero = 0 seconds

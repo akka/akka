@@ -75,7 +75,7 @@ abstract class MultiDcSingletonManagerSpec extends MultiNodeSpec(MultiDcSingleto
 
   val worker = "worker"
 
-  "A SingletonManager in a multi data center cluster" must {
+  "A SingletonManager in a multi data center cluster" should {
     "start a singleton instance for each data center" in {
 
       runOn(first, second, third) {

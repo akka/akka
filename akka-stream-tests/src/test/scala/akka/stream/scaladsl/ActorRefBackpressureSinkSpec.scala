@@ -53,7 +53,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
   def createActor[T](c: Class[T]) =
     system.actorOf(Props(c, testActor).withDispatcher("akka.test.stream-dispatcher"))
 
-  "An ActorRefBackpressureSink" must {
+  "An ActorRefBackpressureSink" should {
 
     "send the elements to the ActorRef" in assertAllStagesStopped {
       val fw = createActor(classOf[Fw])

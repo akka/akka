@@ -15,7 +15,7 @@ class SubscriberSinkSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A Flow with SubscriberSink" must {
+  "A Flow with SubscriberSink" should {
 
     "publish elements to the subscriber" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Int]()

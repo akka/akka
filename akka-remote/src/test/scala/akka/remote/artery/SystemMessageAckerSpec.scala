@@ -43,7 +43,7 @@ class SystemMessageAckerSpec extends AkkaSpec with ImplicitSender {
       .run()
   }
 
-  "SystemMessageAcker stage" must {
+  "SystemMessageAcker stage" should {
 
     "send Ack for expected message" in {
       val replyProbe = TestProbe()

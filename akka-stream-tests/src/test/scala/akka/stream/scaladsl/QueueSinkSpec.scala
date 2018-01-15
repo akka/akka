@@ -22,7 +22,7 @@ class QueueSinkSpec extends StreamSpec {
 
   val noMsgTimeout = 300.millis
 
-  "An QueueSinkSpec" must {
+  "An QueueSinkSpec" should {
 
     "send the elements as result of future" in assertAllStagesStopped {
       val expected = List(Some(1), Some(2), Some(3), None)

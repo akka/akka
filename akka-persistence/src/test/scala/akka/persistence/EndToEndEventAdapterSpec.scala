@@ -158,7 +158,7 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
     try block(system) finally Await.ready(system.terminate(), 3.seconds)
   }
 
-  "EventAdapters in end-to-end scenarios" must {
+  "EventAdapters in end-to-end scenarios" should {
 
     "use the same adapter when reading as was used when writing to the journal" in
       withActorSystem("SimpleSystem", adaptersConfig) { implicit system ⇒

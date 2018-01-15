@@ -103,7 +103,7 @@ abstract class NodeChurnSpec
 
   def isArteryEnabled: Boolean = RARP(system).provider.remoteSettings.Artery.Enabled
 
-  "Cluster with short lived members" must {
+  "Cluster with short lived members" should {
 
     "setup stable nodes" taggedAs LongRunningTest in within(15.seconds) {
       val logListener = system.actorOf(Props(classOf[LogListener], testActor), "logListener")

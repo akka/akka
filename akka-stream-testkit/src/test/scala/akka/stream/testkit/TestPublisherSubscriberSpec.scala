@@ -18,7 +18,7 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "TestPublisher and TestSubscriber" must {
+  "TestPublisher and TestSubscriber" should {
 
     "have all events accessible from manual probes" in assertAllStagesStopped {
       val upstream = TestPublisher.manualProbe[Int]()

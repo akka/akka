@@ -19,7 +19,7 @@ class FutureFlattenSourceSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
   implicit def ec = system.dispatcher
 
-  "Future source" must {
+  "Future source" should {
 
     val underlying: Source[Int, String] =
       Source(List(1, 2, 3)).mapMaterializedValue(_ ⇒ "foo")

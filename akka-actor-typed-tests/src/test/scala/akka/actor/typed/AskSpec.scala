@@ -35,7 +35,7 @@ class AskSpec extends TestKit("AskSpec") with TypedAkkaSpec with ScalaFutures {
       Actor.stopped
   }
 
-  "Ask pattern" must {
+  "Ask pattern" should {
     "must fail the future if the actor is already terminated" in {
       val ref = spawn(behavior)
       (ref ? Stop).futureValue

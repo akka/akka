@@ -15,7 +15,7 @@ class FlowPublisherSinkSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A FlowPublisherSink" must {
+  "A FlowPublisherSink" should {
 
     "work with SubscriberSource" in {
       val (sub, pub) = JavaFlowSupport.Source.asSubscriber[Int].toMat(JavaFlowSupport.Sink.asPublisher(false))(Keep.both).run()

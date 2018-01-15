@@ -77,7 +77,7 @@ object HoldOps {
 class RecipeHold extends RecipeSpec {
   import HoldOps._
 
-  "Recipe for creating a holding element" must {
+  "Recipe for creating a holding element" should {
 
     "work for version 1" in {
 

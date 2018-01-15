@@ -19,7 +19,7 @@ class HeartbeatNodeRingSpec extends WordSpec with Matchers {
 
   val nodes = Set(aa, bb, cc, dd, ee, ff)
 
-  "A HashedNodeRing" must {
+  "A HashedNodeRing" should {
 
     "pick specified number of nodes as receivers" in {
       val ring = HeartbeatNodeRing(cc, nodes, Set.empty, 3)

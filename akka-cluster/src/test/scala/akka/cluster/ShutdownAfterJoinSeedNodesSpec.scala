@@ -38,7 +38,7 @@ class ShutdownAfterJoinSeedNodesSpec extends AkkaSpec(ShutdownAfterJoinSeedNodes
     shutdown(oridinary1)
   }
 
-  "Joining seed nodes" must {
+  "Joining seed nodes" should {
     "be aborted after shutdown-after-unsuccessful-join-seed-nodes" taggedAs LongRunningTest in {
 
       val seedNodes: immutable.IndexedSeq[Address] = Vector(seed1, seed2).map(s ⇒ Cluster(s).selfAddress)

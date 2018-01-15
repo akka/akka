@@ -16,7 +16,7 @@ class FlowMonitorSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "A FlowMonitor" must {
+  "A FlowMonitor" should {
     "return Finished when stream is completed" in {
       val ((source, monitor), sink) =
         TestSource.probe[Any].monitor()(Keep.both).toMat(TestSink.probe[Any])(Keep.both).run()

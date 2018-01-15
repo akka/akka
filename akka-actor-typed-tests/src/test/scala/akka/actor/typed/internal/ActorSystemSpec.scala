@@ -35,7 +35,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
   }
 
-  "An ActorSystem" must {
+  "An ActorSystem" should {
     "start the guardian actor and terminate when it terminates" in {
       val t = withSystem(
         "a",

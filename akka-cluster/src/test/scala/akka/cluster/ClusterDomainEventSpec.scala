@@ -45,7 +45,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
   private def state(g: Gossip, self: UniqueAddress): MembershipState =
     MembershipState(g, self, ClusterSettings.DefaultDataCenter, crossDcConnections = 5)
 
-  "Domain events" must {
+  "Domain events" should {
 
     "be empty for the same gossip" in {
       val g1 = Gossip(members = SortedSet(aUp))

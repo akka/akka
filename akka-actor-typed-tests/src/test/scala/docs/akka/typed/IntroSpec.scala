@@ -79,7 +79,7 @@ class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   import IntroSpec._
 
-  "Hello world" must {
+  "Hello world" should {
     "must say hello" in {
       // TODO Implicits.global is not something we would like to encourage in docs
       //#hello-world

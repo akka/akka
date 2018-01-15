@@ -20,7 +20,7 @@ class FlowScanAsyncSpec extends StreamSpec {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext = materializer.executionContext
 
-  "A ScanAsync" must {
+  "A ScanAsync" should {
 
     val sumScanFlow = Flow[Int].scanAsync(0) { (accumulator, next) ⇒
       Future(accumulator + next)

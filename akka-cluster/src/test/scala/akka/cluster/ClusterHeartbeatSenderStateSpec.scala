@@ -57,7 +57,7 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
     state.failureDetector.asInstanceOf[DefaultFailureDetectorRegistry[Address]].failureDetector(node.address).
       get.asInstanceOf[FailureDetectorStub]
 
-  "A ClusterHeartbeatSenderState" must {
+  "A ClusterHeartbeatSenderState" should {
 
     "return empty active set when no nodes" in {
       emptyState.activeReceivers.isEmpty should ===(true)

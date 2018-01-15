@@ -10,7 +10,7 @@ import akka.remote.FailureDetector.Clock
 
 class DeadlineFailureDetectorSpec extends AkkaSpec {
 
-  "A DeadlineFailureDetector" must {
+  "A DeadlineFailureDetector" should {
 
     def fakeTimeGenerator(timeIntervals: Seq[Long]): Clock = new Clock {
       @volatile var times = timeIntervals.tail.foldLeft(List[Long](timeIntervals.head))((acc, c) ⇒ acc ::: List[Long](acc.last + c))

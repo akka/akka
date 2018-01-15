@@ -37,7 +37,7 @@ abstract class ClientDowningNodeThatIsUnreachableSpec(multiNodeConfig: ClientDow
 
   import multiNodeConfig._
 
-  "Client of a 4 node cluster" must {
+  "Client of a 4 node cluster" should {
 
     "be able to DOWN a node that is UNREACHABLE (killed)" taggedAs LongRunningTest in {
       val thirdAddress = address(third)

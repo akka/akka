@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
 
 class ClusterMetricsSettingsSpec extends AkkaSpec {
 
-  "ClusterMetricsSettings" must {
+  "ClusterMetricsSettings" should {
 
     "be able to parse generic metrics config elements" in {
       val settings = new ClusterMetricsSettings(system.settings.config)

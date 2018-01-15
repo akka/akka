@@ -103,7 +103,7 @@ object ReceivePipelineSpec {
 class ReceivePipelineSpec extends AkkaSpec with ImplicitSender {
   import ReceivePipelineSpec._
 
-  "A ReceivePipeline" must {
+  "A ReceivePipeline" should {
 
     "just invoke Actor's behavior when it's empty" in {
       val replier = system.actorOf(Props[ReplierActor])
@@ -198,7 +198,7 @@ class PersistentReceivePipelineSpec(config: Config) extends AkkaSpec(config) wit
       """.stripMargin))
   }
 
-  "A PersistentActor with ReceivePipeline" must {
+  "A PersistentActor with ReceivePipeline" should {
     "support any number of interceptors" in {
       val replier = system.actorOf(Props(
         new PersistentReplierActor with ListBuilderInterceptor with AdderInterceptor with ToStringInterceptor))

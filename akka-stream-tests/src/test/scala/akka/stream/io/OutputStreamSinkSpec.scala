@@ -20,7 +20,7 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
 
-  "OutputStreamSink" must {
+  "OutputStreamSink" should {
     "write bytes to void OutputStream" in assertAllStagesStopped {
       val p = TestProbe()
       val datas = List(ByteString("a"), ByteString("c"), ByteString("c"))

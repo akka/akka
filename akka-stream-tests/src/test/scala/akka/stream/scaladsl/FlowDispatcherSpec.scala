@@ -25,7 +25,7 @@ class FlowDispatcherSpec extends StreamSpec(s"my-dispatcher = $${akka.test.strea
     }
   }
 
-  "Flow with dispatcher setting" must {
+  "Flow with dispatcher setting" should {
     "use the default dispatcher" in testDispatcher()
 
     "use custom dispatcher" in testDispatcher(defaultSettings.withDispatcher("my-dispatcher"), "my-dispatcher")

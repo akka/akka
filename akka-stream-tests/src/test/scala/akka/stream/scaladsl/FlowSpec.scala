@@ -50,7 +50,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     flow.runWith(Source.asSubscriber[In], Sink.asPublisher[Out](false))
   }
 
-  "A Flow" must {
+  "A Flow" should {
 
     for ((name, op) ← List("identity" → identity, "identity2" → identity2); n ← List(1, 2, 4)) {
       s"request initial elements from upstream ($name, $n)" in {
@@ -276,7 +276,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     }
   }
 
-  "A Flow with multiple subscribers (FanOutBox)" must {
+  "A Flow with multiple subscribers (FanOutBox)" should {
     "adapt speed to the currently slowest subscriber" in {
       new ChainSetup(identity, settings.withInputBuffer(initialSize = 1, maxSize = 1),
         toFanoutPublisher(1)) {

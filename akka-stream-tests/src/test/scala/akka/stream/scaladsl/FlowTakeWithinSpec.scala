@@ -12,7 +12,7 @@ class FlowTakeWithinSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A TakeWithin" must {
+  "A TakeWithin" should {
 
     "deliver elements within the duration, but not afterwards" in {
       val input = Iterator.from(1)

@@ -39,7 +39,7 @@ class AttemptSysMsgRedeliverySpec extends MultiNodeSpec(AttemptSysMsgRedeliveryM
   with MultiNodeClusterSpec with ImplicitSender with DefaultTimeout {
   import AttemptSysMsgRedeliveryMultiJvmSpec._
 
-  "AttemptSysMsgRedelivery" must {
+  "AttemptSysMsgRedelivery" should {
     "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third)
 

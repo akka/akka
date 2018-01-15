@@ -45,7 +45,7 @@ class OptionalSnapshotStoreSpec extends PersistenceSpec(ConfigFactory.parseStrin
 
   system.eventStream.publish(TestEvent.Mute(EventFilter[akka.pattern.AskTimeoutException]()))
 
-  "Persistence extension" must {
+  "Persistence extension" should {
     "initialize properly even in absence of configured snapshot store" in {
       system.actorOf(Props(classOf[AnyPersistentActor], name))
       system.eventStream.subscribe(testActor, classOf[Logging.Warning])

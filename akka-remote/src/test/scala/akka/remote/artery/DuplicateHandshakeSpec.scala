@@ -55,7 +55,7 @@ class DuplicateHandshakeSpec extends AkkaSpec with ImplicitSender {
       .run()
   }
 
-  "DuplicateHandshake stage" must {
+  "DuplicateHandshake stage" should {
 
     "duplicate initial HandshakeReq" in {
       val inboundContext = new TestInboundContext(addressB, controlProbe = None)

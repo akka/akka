@@ -70,7 +70,7 @@ class MutableIntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   import MutableIntroSpec._
 
-  "A chat room" must {
+  "A chat room" should {
     "chat" in {
       //#chatroom-gabbler
       import ChatRoom._

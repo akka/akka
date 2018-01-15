@@ -119,7 +119,7 @@ abstract class SurviveNetworkInstabilitySpec
     enterBarrier("ping-ok")
   }
 
-  "A network partition tolerant cluster" must {
+  "A network partition tolerant cluster" should {
 
     "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third, fourth, fifth)

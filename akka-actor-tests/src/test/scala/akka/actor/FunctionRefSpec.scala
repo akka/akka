@@ -72,17 +72,17 @@ class FunctionRefSpec extends AkkaSpec with ImplicitSender {
 
   "A FunctionRef" when {
 
-    "created by a toplevel actor" must {
+    "created by a toplevel actor" should {
       val s = system.actorOf(Props[Super], "super")
       commonTests(s)
     }
 
-    "created by a non-toplevel actor" must {
+    "created by a non-toplevel actor" should {
       val s = system.actorOf(Props[SupSuper], "supsuper")
       commonTests(s)
     }
 
-    "not registered" must {
+    "not registered" should {
       "not be found" in {
         val provider = system.asInstanceOf[ExtendedActorSystem].provider
         val ref = new FunctionRef(testActor.path / "blabla", provider, system.eventStream, (x, y) ⇒ ())

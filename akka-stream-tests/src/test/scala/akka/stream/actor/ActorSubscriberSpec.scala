@@ -109,7 +109,7 @@ class ActorSubscriberSpec extends StreamSpec with ImplicitSender {
 
   implicit val materializer = ActorMaterializer()
 
-  "An ActorSubscriber" must {
+  "An ActorSubscriber" should {
 
     "receive requested elements" in {
       val ref = Source(List(1, 2, 3)).runWith(Sink.actorSubscriber(manualSubscriberProps(testActor)))
@@ -199,7 +199,7 @@ class ActorSubscriberSpec extends StreamSpec with ImplicitSender {
 
   }
 
-  "Provided RequestStragies" must {
+  "Provided RequestStragies" should {
     "implement OneByOne correctly" in {
       val strat = OneByOneRequestStrategy
       strat.requestDemand(0) should be(1)

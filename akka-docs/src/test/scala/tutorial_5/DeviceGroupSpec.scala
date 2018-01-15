@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 
 class DeviceGroupSpec extends AkkaSpec {
 
-  "DeviceGroup actor" must {
+  "DeviceGroup actor" should {
 
     "be able to register a device actor" in {
       val probe = TestProbe()

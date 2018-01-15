@@ -145,7 +145,7 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
 
   def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
-  s"Cluster sharding ($mode) with flaky journal/network" must {
+  s"Cluster sharding ($mode) with flaky journal/network" should {
 
     if (!isDdataMode) {
       "setup shared journal" in {

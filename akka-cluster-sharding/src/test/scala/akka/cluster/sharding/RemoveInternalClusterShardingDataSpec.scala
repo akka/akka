@@ -119,7 +119,7 @@ class RemoveInternalClusterShardingDataSpec extends AkkaSpec(RemoveInternalClust
     expectMsgType[Boolean]
   }
 
-  "RemoveOnePersistenceId" must {
+  "RemoveOnePersistenceId" should {
     "setup sharding" in {
       Cluster(system).join(Cluster(system).selfAddress)
       val settings = ClusterShardingSettings(system)
@@ -173,7 +173,7 @@ class RemoveInternalClusterShardingDataSpec extends AkkaSpec(RemoveInternalClust
     }
   }
 
-  "RemoveInternalClusterShardingData" must {
+  "RemoveInternalClusterShardingData" should {
     val typeNames = List("type10", "type20", "type30")
 
     "setup sharding" in {

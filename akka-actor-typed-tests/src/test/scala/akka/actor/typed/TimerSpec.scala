@@ -77,7 +77,7 @@ class TimerSpec extends TestKit("TimerSpec")
     }
   }
 
-  "A timer" must {
+  "A timer" should {
     "schedule non-repeated ticks" in {
       val probe = TestProbe[Event]("evt")
       val behv = Actor.withTimers[Command] { timer ⇒

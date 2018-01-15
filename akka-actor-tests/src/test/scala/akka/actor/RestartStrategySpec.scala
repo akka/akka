@@ -25,7 +25,7 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
   object Ping
   object Crash
 
-  "A RestartStrategy" must {
+  "A RestartStrategy" should {
 
     "ensure that slave stays dead after max restarts within time range" in {
       val boss = system.actorOf(Props(new Supervisor(

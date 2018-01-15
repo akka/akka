@@ -26,7 +26,7 @@ class MultiNodeSpecSpec extends RemotingMultiNodeSpec(MultiNodeSpecMultiJvmSpec)
 
   def initialParticipants = 4
 
-  "A MultiNodeSpec" must {
+  "A MultiNodeSpec" should {
 
     "wait for all nodes to remove themselves before we shut the conductor down" taggedAs LongRunningTest in {
       enterBarrier("startup")

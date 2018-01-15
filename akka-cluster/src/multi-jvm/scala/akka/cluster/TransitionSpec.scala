@@ -109,7 +109,7 @@ abstract class TransitionSpec
     }
   }
 
-  "A Cluster" must {
+  "A Cluster" should {
 
     "start nodes as singleton clusters" taggedAs LongRunningTest in {
 

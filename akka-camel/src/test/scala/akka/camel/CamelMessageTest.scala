@@ -15,7 +15,7 @@ import org.scalatest.WordSpecLike
 //TODO merge it with MessageScalaTest
 class CamelMessageTest extends Matchers with WordSpecLike with SharedCamelSystem {
 
-  "CamelMessage copyContent" must {
+  "CamelMessage copyContent" should {
     "create a new CamelMessage with additional headers, attachments and new body" in {
       val attachment = new DataHandler(new URL("https://foo.bar"))
       val message = new DefaultMessage

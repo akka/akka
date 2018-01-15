@@ -14,7 +14,7 @@ class SubscriberSourceSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  "A SubscriberSource" must {
+  "A SubscriberSource" should {
 
     "be able to use Subscriber in materialized value transformation" in {
       val f =

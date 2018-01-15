@@ -38,7 +38,7 @@ class ClusterApiSpec extends TestKit("ClusterApiSpec", ClusterApiSpec.config) wi
   val clusterNode1 = Cluster(system)
   val untypedSystem1 = system.toUntyped
 
-  "A typed Cluster" must {
+  "A typed Cluster" should {
 
     "join a cluster and observe events from both sides" in {
 

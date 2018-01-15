@@ -32,7 +32,7 @@ object ActorLifeCycleSpec {
 class ActorLifeCycleSpec extends AkkaSpec("akka.actor.serialize-messages=off") with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
   import ActorLifeCycleSpec._
 
-  "An Actor" must {
+  "An Actor" should {
 
     "invoke preRestart, preStart, postRestart when using OneForOneStrategy" in {
       filterException[ActorKilledException] {

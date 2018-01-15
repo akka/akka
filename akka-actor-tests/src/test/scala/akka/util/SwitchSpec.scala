@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 
 class SwitchSpec extends WordSpec with Matchers {
 
-  "Switch" must {
+  "Switch" should {
 
     "on and off" in {
       val s = new Switch(false)

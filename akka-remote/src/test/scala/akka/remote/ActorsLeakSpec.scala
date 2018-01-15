@@ -64,7 +64,7 @@ object ActorsLeakSpec {
 class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender {
   import ActorsLeakSpec._
 
-  "Remoting" must {
+  "Remoting" should {
 
     "not leak actors" in {
       val ref = system.actorOf(Props[EchoActor], "echo")

@@ -79,7 +79,7 @@ abstract class RemoteDeploymentDeathWatchSpec(multiNodeConfig: RemoteDeploymentD
 
   override def initialParticipants = roles.size
 
-  "An actor system that deploys actors on another node" must {
+  "An actor system that deploys actors on another node" should {
 
     "be able to shutdown when remote node crash" taggedAs LongRunningTest in within(20 seconds) {
       runOn(second) {

@@ -18,7 +18,7 @@ import scala.util.Random
 
 class JournalNoCompactionSpec extends JournalCompactionSpecBase(SpecComponentBuilder("leveldb-JournalNoCompactionSpec")) {
 
-  "A LevelDB-based persistent actor" must {
+  "A LevelDB-based persistent actor" should {
     "NOT compact the journal if compaction is not activated by configuration" in {
       val watcher = TestProbe("watcher")
       val logger = createLogger(watcher.ref)
@@ -52,7 +52,7 @@ class JournalNoCompactionSpec extends JournalCompactionSpecBase(SpecComponentBui
 
 class JournalCompactionSpec extends JournalCompactionSpecBase(SpecComponentBuilder("leveldb-JournalCompactionSpec", 500)) {
 
-  "A LevelDB-based persistent actor" must {
+  "A LevelDB-based persistent actor" should {
     "compact the journal upon message deletions of configured persistence ids" in {
       val watcher = TestProbe("watcher")
       val logger = createLogger(watcher.ref)
@@ -86,7 +86,7 @@ class JournalCompactionSpec extends JournalCompactionSpecBase(SpecComponentBuild
 
 class JournalCompactionThresholdSpec extends JournalCompactionSpecBase(SpecComponentBuilder("leveldb-JournalCompactionThresholdSpec", 500)) {
 
-  "A LevelDB-based persistent actor" must {
+  "A LevelDB-based persistent actor" should {
     "compact the journal only after the threshold implied by the configured compaction interval has been exceeded" in {
       val watcher = TestProbe("watcher")
       val logger = createLogger(watcher.ref)

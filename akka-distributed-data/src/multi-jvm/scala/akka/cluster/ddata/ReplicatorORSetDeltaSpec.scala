@@ -70,7 +70,7 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
       }
     }
 
-  "ORSet delta" must {
+  "ORSet delta" should {
 
     "replicate data in initial phase" in {
       join(first, first)

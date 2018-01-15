@@ -61,7 +61,7 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
       </tr>
     </table>
 
-  "Completion" must {
+  "Completion" should {
     (effectsTable \ "tr").foreach { testCase ⇒
       val rules = testCase \\ "td"
       val outerRule = rules.head.toString()

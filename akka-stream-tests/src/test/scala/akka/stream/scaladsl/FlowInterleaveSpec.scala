@@ -17,7 +17,7 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
     subscriber
   }
 
-  "An Interleave for Flow " must {
+  "An Interleave for Flow " should {
 
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()

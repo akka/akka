@@ -15,7 +15,7 @@ import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
 
 class MetricNumericConverterSpec extends WordSpec with Matchers with MetricNumericConverter {
 
-  "MetricNumericConverter" must {
+  "MetricNumericConverter" should {
 
     "convert" in {
       convertNumber(0).isLeft should ===(true)
@@ -56,7 +56,7 @@ class NodeMetricsSpec extends WordSpec with Matchers {
   val node1 = Address("akka.tcp", "sys", "a", 2554)
   val node2 = Address("akka.tcp", "sys", "a", 2555)
 
-  "NodeMetrics must" must {
+  "NodeMetrics must" should {
 
     "return correct result for 2 'same' nodes" in {
       (NodeMetrics(node1, 0) sameAs NodeMetrics(node1, 0)) should ===(true)
@@ -141,7 +141,7 @@ class MetricsGossipSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Impl
     collector.sample.metrics.filter(previousSample.contains) ++ previousSample
   }
 
-  "A MetricsGossip" must {
+  "A MetricsGossip" should {
     "add new NodeMetrics" in {
       val m1 = NodeMetrics(Address("akka.tcp", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
       val m2 = NodeMetrics(Address("akka.tcp", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
@@ -248,7 +248,7 @@ class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Metri
     }
   }
 
-  "NodeMetrics.MetricValues" must {
+  "NodeMetrics.MetricValues" should {
     "extract expected metrics for load balancing" in {
       val stream1 = node2.metric(HeapMemoryCommitted).get.value.longValue
       val stream2 = node1.metric(HeapMemoryUsed).get.value.longValue

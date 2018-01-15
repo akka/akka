@@ -18,7 +18,7 @@ class FlowCollectSpec extends StreamSpec with ScriptedTest {
   val settings = ActorMaterializerSettings(system)
   implicit val materializer = ActorMaterializer(settings)
 
-  "A Collect" must {
+  "A Collect" should {
 
     "collect" in {
       def script = Script(TestConfig.RandomTestRange map { _ ⇒

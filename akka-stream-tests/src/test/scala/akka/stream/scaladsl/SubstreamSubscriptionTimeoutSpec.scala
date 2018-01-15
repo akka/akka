@@ -36,7 +36,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends StreamSpec(conf) {
   implicit val dispatcher = system.dispatcher
   implicit val materializer = ActorMaterializer(settings)
 
-  "groupBy and splitwhen" must {
+  "groupBy and splitwhen" should {
 
     "timeout and cancel substream publishers when no-one subscribes to them after some time (time them out)" in assertAllStagesStopped {
       val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, _])]()
