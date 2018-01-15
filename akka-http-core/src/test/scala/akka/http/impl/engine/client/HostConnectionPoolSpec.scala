@@ -425,7 +425,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
           }
 
           def expectNoRequest(): Unit =
-            serverRequests.expectNoMsg()
+            serverRequests.expectNoMessage(remainingOrDefault)
 
           def pushResponse(response: HttpResponse = HttpResponse()) =
             serverResponses.sendNext(response)
@@ -483,7 +483,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
           serverConnections.expectMsgType[ServerConnection]
 
         def expectNoNewConnection(): Unit =
-          serverConnections.expectNoMsg()
+          serverConnections.expectNoMessage(remainingOrDefault)
 
         protected override lazy val server =
           Flow.fromSinkAndSourceMat(

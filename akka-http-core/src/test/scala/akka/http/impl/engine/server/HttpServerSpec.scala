@@ -59,14 +59,14 @@ class HttpServerSpec extends AkkaSpec(
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
-          dataProbe.expectNoMsg(50.millis.dilated)
+          dataProbe.expectNoMessage(50.millis)
 
           send("abcdef")
           dataProbe.expectNext(ByteString("abcdef"))
 
           send("ghijk")
           dataProbe.expectNext(ByteString("ghijk"))
-          dataProbe.expectNoMsg(50.millis.dilated)
+          dataProbe.expectNoMessage(50.millis)
       }
 
       shutdownBlueprint()
@@ -110,7 +110,7 @@ class HttpServerSpec extends AkkaSpec(
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(Chunk(ByteString("abcdef")))
-          dataProbe.expectNoMsg(50.millis.dilated)
+          dataProbe.expectNoMessage(50.millis)
 
           send("3ghi\r\n") // missing "\r\n" after the number of bytes
           val error = dataProbe.expectError()
@@ -169,7 +169,7 @@ class HttpServerSpec extends AkkaSpec(
 
           send("ghijk")
           dataProbe.expectNext(ByteString("ghijk"))
-          dataProbe.expectNoMsg(50.millis.dilated)
+          dataProbe.expectNoMessage(50.millis)
       }
 
       shutdownBlueprint()
@@ -194,7 +194,7 @@ class HttpServerSpec extends AkkaSpec(
 
           send("3\r\nghi\r\n")
           dataProbe.expectNext(Chunk(ByteString("ghi")))
-          dataProbe.expectNoMsg(50.millis.dilated)
+          dataProbe.expectNoMessage(50.millis)
       }
       shutdownBlueprint()
     })
@@ -283,7 +283,7 @@ class HttpServerSpec extends AkkaSpec(
 
           send("3\r\nghi\r\n")
           dataProbe.expectNext(ByteString("ghi"))
-          dataProbe.expectNoMsg(50.millis.dilated)
+          dataProbe.expectNoMessage(50.millis)
 
           send("0\r\n\r\n")
           dataProbe.expectNext(LastChunk)
@@ -341,7 +341,7 @@ class HttpServerSpec extends AkkaSpec(
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(Chunk(ByteString("abcdef")))
-          dataProbe.expectNoMsg(50.millis.dilated)
+          dataProbe.expectNoMessage(50.millis)
 
           send("0\r\n\r\n")
           dataProbe.expectNext(LastChunk)
@@ -412,7 +412,7 @@ class HttpServerSpec extends AkkaSpec(
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(ByteString("abcdef"))
-          dataProbe.expectNoMsg(50.millis.dilated)
+          dataProbe.expectNoMessage(50.millis)
           closeNetworkInput()
           dataProbe.expectError().getMessage shouldEqual "Entity stream truncation"
       }
@@ -434,7 +434,7 @@ class HttpServerSpec extends AkkaSpec(
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(Chunk(ByteString("abcdef")))
-          dataProbe.expectNoMsg(50.millis.dilated)
+          dataProbe.expectNoMessage(50.millis)
           closeNetworkInput()
           dataProbe.expectError().getMessage shouldEqual "Entity stream truncation"
       }
@@ -598,7 +598,7 @@ class HttpServerSpec extends AkkaSpec(
               |Date: XXXX
               |
               |""")
-          dataProbe.expectNoMsg(50.millis.dilated)
+          dataProbe.expectNoMessage(50.millis)
           send("0123456789ABCDEF")
           dataProbe.expectNext(ByteString("0123456789ABCDEF"))
           dataSub.request(1)
@@ -638,7 +638,7 @@ class HttpServerSpec extends AkkaSpec(
               |Date: XXXX
               |
               |""")
-          dataProbe.expectNoMsg(50.millis.dilated)
+          dataProbe.expectNoMessage(50.millis)
           send("""10
                  |0123456789ABCDEF
                  |0

@@ -93,7 +93,7 @@ class PrepareRequestsSpec extends AkkaSpec {
       inSub.expectRequest(1)
 
       // bug would fail stream here with exception
-      upstreamProbe.expectNoMsg(100.millis.dilated)
+      upstreamProbe.expectNoMessage(100.millis)
 
       inSub.sendNext(ParserOutput.EntityChunk(HttpEntity.ChunkStreamPart(ByteString("abc"))))
       entityProbe.expectNext()

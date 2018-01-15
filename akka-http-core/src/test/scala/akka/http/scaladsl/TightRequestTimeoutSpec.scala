@@ -44,7 +44,7 @@ class TightRequestTimeoutSpec extends WordSpec with Matchers with BeforeAndAfter
       val response = Http().singleRequest(HttpRequest(uri = s"http://$hostname:$port/")).futureValue
       response.status should ===(StatusCodes.ServiceUnavailable) // the timeout response
 
-      p.expectNoMsg(1.second.dilated) // here the double push might happen
+      p.expectNoMessage(1.second) // here the double push might happen
 
       binding.flatMap(_.unbind()).futureValue
     }
