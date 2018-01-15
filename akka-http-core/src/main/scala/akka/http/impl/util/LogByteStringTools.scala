@@ -3,6 +3,7 @@ package akka.http.impl.util
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.event.Logging
+import akka.stream.Attributes
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.util.ByteString
@@ -17,6 +18,8 @@ import scala.reflect.ClassTag
 @InternalApi
 private[akka] object LogByteStringTools {
   val MaxBytesPrinted = 16 * 5
+
+  private val LogFailuresOnDebugAttributes = Attributes.logLevels(onFailure = Logging.DebugLevel)
 
   def logByteStringBidi(name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
     BidiFlow.fromFlows(
@@ -33,10 +36,10 @@ private[akka] object LogByteStringTools {
   }
 
   def logByteString(name: String, maxBytes: Int = MaxBytesPrinted): Flow[ByteString, ByteString, NotUsed] =
-    Flow[ByteString].log(name, printByteString(_, maxBytes))
+    Flow[ByteString].log(name, printByteString(_, maxBytes)).addAttributes(LogFailuresOnDebugAttributes)
 
   def logToString[A](name: String, maxBytes: Int = MaxBytesPrinted): Flow[A, A, NotUsed] =
-    Flow[A].log(name, _.toString().take(maxBytes))
+    Flow[A].log(name, _.toString().take(maxBytes)).addAttributes(LogFailuresOnDebugAttributes)
 
   def logTLSBidi(name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
     BidiFlow.fromFlows(
@@ -47,13 +50,13 @@ private[akka] object LogByteStringTools {
     Flow[SslTlsOutbound].log(name, {
       case SendBytes(bytes)       ⇒ "SendBytes " + printByteString(bytes, maxBytes)
       case n: NegotiateNewSession ⇒ n.toString
-    })
+    }).addAttributes(LogFailuresOnDebugAttributes)
 
   def logTlsInbound(name: String, maxBytes: Int = MaxBytesPrinted): Flow[SslTlsInbound, SslTlsInbound, NotUsed] =
     Flow[SslTlsInbound].log(name, {
       case s: SessionTruncated          ⇒ s
       case SessionBytes(session, bytes) ⇒ "SessionBytes " + printByteString(bytes, maxBytes)
-    })
+    }).addAttributes(LogFailuresOnDebugAttributes)
 
   def printByteString(bytes: ByteString, maxBytes: Int = MaxBytesPrinted): String = {
     val indent = " "
