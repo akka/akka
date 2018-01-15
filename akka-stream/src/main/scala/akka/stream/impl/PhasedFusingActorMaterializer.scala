@@ -506,9 +506,6 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
       if (Debug) println("--- Finished materialization")
       matValueStack.peekLast().asInstanceOf[Mat]
 
-    } catch {
-      case ex: IllegalStateException if isShutdown && ex.getMessage == "cannot create children while terminating or terminated" ⇒
-        throw shutdownWhileMaterializingFailure
     } finally {
       if (isShutdown) throw shutdownWhileMaterializingFailure
     }
