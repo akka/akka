@@ -38,7 +38,6 @@ class TimerSpec extends TestKit("TimerSpec")
   implicit val testSettings = TestKitSettings(system)
 
   val interval = 1.second
-  val dilatedInterval = interval.dilated
 
   def target(monitor: ActorRef[Event], timer: TimerScheduler[Command], bumpCount: Int): Behavior[Command] = {
     def bump(): Behavior[Command] = {
@@ -88,7 +87,7 @@ class TimerSpec extends TestKit("TimerSpec")
 
       val ref = spawn(behv)
       probe.expectMsg(Tock(1))
-      probe.expectNoMsg(100.millis)
+      probe.expectNoMessage()
 
       ref ! End
       probe.expectMsg(GotPostStop(false))
@@ -124,7 +123,7 @@ class TimerSpec extends TestKit("TimerSpec")
       val latch = new CountDownLatch(1)
       // next Tock(1) enqueued in mailboxed, but should be discarded because of new timer
       ref ! SlowThenBump(latch)
-      probe.expectNoMsg(interval + 100.millis)
+      probe.expectNoMessage(interval + 100.millis.dilated)
       latch.countDown()
       probe.expectMsg(Tock(2))
 
@@ -142,7 +141,7 @@ class TimerSpec extends TestKit("TimerSpec")
       val ref = spawn(behv)
       probe.expectMsg(Tock(1))
       ref ! Cancel
-      probe.expectNoMsg(dilatedInterval + 100.millis)
+      probe.expectNoMessage(interval + 100.millis.dilated)
 
       ref ! End
       probe.expectMsg(GotPostStop(false))
@@ -162,10 +161,10 @@ class TimerSpec extends TestKit("TimerSpec")
       val latch = new CountDownLatch(1)
       // next Tock(1) is enqueued in mailbox, but should be discarded by new incarnation
       ref ! SlowThenThrow(latch, new Exc)
-      probe.expectNoMsg(interval + 100.millis)
+      probe.expectNoMessage(interval + 100.millis.dilated)
       latch.countDown()
       probe.expectMsg(GotPreRestart(false))
-      probe.expectNoMsg(interval / 2)
+      probe.expectNoMessage(interval / 2)
       probe.expectMsg(Tock(2))
 
       ref ! End
@@ -189,7 +188,7 @@ class TimerSpec extends TestKit("TimerSpec")
       val latch = new CountDownLatch(1)
       // next Tock(2) is enqueued in mailbox, but should be discarded by new incarnation
       ref ! SlowThenThrow(latch, new Exc)
-      probe.expectNoMsg(interval + 100.millis)
+      probe.expectNoMessage(interval + 100.millis.dilated)
       latch.countDown()
       probe.expectMsg(GotPreRestart(false))
       probe.expectMsg(Tock(1))

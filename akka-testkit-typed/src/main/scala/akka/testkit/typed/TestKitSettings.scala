@@ -30,5 +30,6 @@ class TestKitSettings(val config: Config) {
   val TestTimeFactor = config.getDouble("akka.actor.typed.test.timefactor").
     requiring(tf ⇒ !tf.isInfinite && tf > 0, "akka.actor.typed.test.timefactor must be positive finite double")
   val SingleExpectDefaultTimeout: FiniteDuration = config.getMillisDuration("akka.actor.typed.test.single-expect-default")
+  val ExpectNoMessageDefaultTimeout: FiniteDuration = config.getMillisDuration("akka.actor.typed.test.expect-no-message-default")
   val DefaultTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.typed.test.default-timeout"))
 }

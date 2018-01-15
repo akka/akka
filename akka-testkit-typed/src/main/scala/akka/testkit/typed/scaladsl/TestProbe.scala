@@ -202,8 +202,15 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
 
   /**
    * Assert that no message is received for the specified time.
+   * Supplied value is not dilated.
    */
-  def expectNoMsg(max: FiniteDuration) { expectNoMsg_internal(max.dilated) }
+  def expectNoMessage(max: FiniteDuration) { expectNoMsg_internal(max) }
+
+  /**
+   * Assert that no message is received. Waits for the default period configured as `akka.actor.typed.test.expect-no-message-default`
+   * That value is dilated.
+   */
+  def expectNoMessage() { expectNoMsg_internal(settings.ExpectNoMessageDefaultTimeout.dilated) }
 
   private def expectNoMsg_internal(max: FiniteDuration) {
     val o = receiveOne(max)
