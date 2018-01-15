@@ -420,6 +420,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     defaultAttributes: Attributes,
     defaultPhase:      Phase[Any],
     phases:            Map[IslandTag, Phase[Any]]): Mat = {
+    if (isShutdown) throw new IllegalStateException("Trying to materialize stream after materializer has been shutdown")
     val islandTracking = new IslandTracking(phases, settings, defaultAttributes, defaultPhase, this, islandNamePrefix = createFlowName() + "-")
 
     var current: Traversal = graph.traversalBuilder.traversal
