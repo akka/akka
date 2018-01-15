@@ -32,14 +32,14 @@ import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
 abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extends AkkaSpec("""
-    akka.loggers = []
-    akka.loglevel = DEBUG # to track down #1667
-    akka.loggers = ["akka.testkit.TestEventListener"]
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off
     akka.test.single-expect-default = 5000 # timeout for checks, adjust as necessary, set here to 5s
     akka.scheduler.tick-duration = 1ms     # to make race conditions in Pool idle-timeout more likely
-                                          """) {
+    akka.http.client.log-unencrypted-network-bytes = 200
+                                          """) with WithLogCapturing {
   implicit val materializer = ActorMaterializer()
 
   // FIXME: Extract into proper util class to be reusable
