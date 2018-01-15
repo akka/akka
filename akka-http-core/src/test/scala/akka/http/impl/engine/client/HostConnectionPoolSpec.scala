@@ -41,7 +41,8 @@ import scala.util.Failure
  */
 class HostConnectionPoolSpec extends AkkaSpec(
   """
-     akka.loglevel = INFO
+     akka.loglevel = DEBUG
+     akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
      akka.actor {
        serialize-creators = off
        serialize-messages = off
@@ -49,7 +50,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
      }
      akka.http.client.log-unencrypted-network-bytes = 200
   """
-) with Eventually {
+) with Eventually with WithLogCapturing {
   implicit val materializer = ActorMaterializer()
   val singleElementBufferMaterializer = materializer // ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))
   val defaultSettings =
@@ -570,7 +571,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
     def failsHandlerInputWhenHandlerOutputFails: Boolean = false
 
     override def get(connectionKillSwitch: SharedKillSwitch): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Future[Http.OutgoingConnection]] =
-      Http().serverLayer() atop
+      Http().serverLayerImpl() atop
         TLSPlacebo() atop
         BidiFlow.fromFlows(connectionKillSwitch.flow[ByteString], connectionKillSwitch.flow[ByteString]) atop
         TLSPlacebo().reversed atop
