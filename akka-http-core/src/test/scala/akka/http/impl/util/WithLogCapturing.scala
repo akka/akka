@@ -7,15 +7,18 @@ package akka.http.impl.util
 import java.io.{ OutputStream, PrintStream }
 import java.util.concurrent.atomic.AtomicLong
 
+import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.event.Logging._
 import akka.testkit.{ AkkaSpec, EventFilter, TestEventListener }
-import org.scalatest.{ Outcome, SuiteMixin }
+import org.scalatest.{ Outcome, SuiteMixin, TestSuite }
 
 /**
  * Mixin this trait to a test to make log lines appear only when the test failed.
  */
-trait WithLogCapturing extends SuiteMixin { this: AkkaSpec ⇒
+trait WithLogCapturing extends SuiteMixin { this: TestSuite ⇒
+  implicit def system: ActorSystem
+
   abstract override def withFixture(test: NoArgTest): Outcome = {
     // When filtering just collects events into this var (yeah, it's a hack to do that in a filter).
     // We assume that the filter will always ever be used from a single actor, so a regular var should be fine.
