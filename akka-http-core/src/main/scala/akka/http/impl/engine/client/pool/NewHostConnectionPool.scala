@@ -155,6 +155,7 @@ private[client] object NewHostConnectionPool {
             updateState(_.onResponseReceived(this, response))
           def onResponseDispatchable(): Unit =
             updateState(_.onResponseDispatchable(this))
+
           def onResponseEntitySubscribed(): Unit =
             updateState(_.onResponseEntitySubscribed(this))
           def onResponseEntityCompleted(): Unit =
@@ -229,6 +230,7 @@ private[client] object NewHostConnectionPool {
                     cancelCurrentTimeout()
                     closeConnection()
                     state.onShutdown(this)
+                    logic.slotsWaitingForDispatch.remove(this)
                     OptionVal.None
                   } catch {
                     case NonFatal(ex) ⇒
