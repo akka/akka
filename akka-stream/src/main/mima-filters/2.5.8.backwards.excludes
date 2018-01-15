@@ -65,9 +65,5 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.GraphStageI
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell.this")
 
 # Add maxRestarts to RestartSource, Sink and Flow https://github.com/akka/akka/pull/24137
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartSource.onFailuresWithBackoff")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartSource.withBackoff")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartSink.withBackoff")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartWithBackoffSink.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartWithBackoffFlow.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartFlow.withBackoff")
