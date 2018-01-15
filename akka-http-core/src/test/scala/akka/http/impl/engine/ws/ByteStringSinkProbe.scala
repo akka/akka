@@ -9,6 +9,7 @@ import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.TestSubscriber
+import akka.testkit.TestKit
 import akka.util.ByteString
 
 import scala.annotation.tailrec
@@ -57,7 +58,7 @@ private[http] object ByteStringSinkProbe {
       }
       def expectNoBytes(timeout: FiniteDuration): Unit = {
         ensureRequested()
-        probe.expectNoMsg(timeout)
+        probe.expectNoMessage(timeout)
       }
 
       var inBuffer = ByteString.empty

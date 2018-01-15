@@ -136,7 +136,7 @@ class Http2ServerSpec extends AkkaSpec("""
 
         sendHEADERS(1, endStream = true, endHeaders = false, fragment1)
         requestIn.ensureSubscription()
-        requestIn.expectNoMsg()
+        requestIn.expectNoMessage(remainingOrDefault)
         sendCONTINUATION(1, endHeaders = true, fragment2)
 
         val request = expectRequestRaw()
@@ -643,7 +643,7 @@ class Http2ServerSpec extends AkkaSpec("""
         val AckFlag = new ByteFlag(0x1)
         sendFrame(FrameType.PING, AckFlag, 0, ByteString("data1234"))
 
-        expectNoMsg(100 millis)
+        expectNoMessage(100.millis)
       }
       "respond to invalid (not 0x0 streamId) PING with GOAWAY (spec 6_7)" in new TestSetup with RequestResponseProbes {
         val invalidIdForPing = 1

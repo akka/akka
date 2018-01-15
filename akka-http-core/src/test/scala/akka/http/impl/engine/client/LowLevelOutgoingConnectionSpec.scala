@@ -724,7 +724,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis.dilated)
+        netOut.expectNoMessage(50.millis)
 
         sendWireData(
           """HTTP/1.1 100 Continue
@@ -761,7 +761,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis.dilated)
+        netOut.expectNoMessage(50.millis)
 
         sendWireData(
           """HTTP/1.1 100 Continue
@@ -798,7 +798,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis.dilated)
+        netOut.expectNoMessage(50.millis)
 
         sendWireData(
           """HTTP/1.1 200 OK
@@ -829,7 +829,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis.dilated)
+        netOut.expectNoMessage(50.millis)
 
         sendWireData(
           """HTTP/1.1 400 Bad Request

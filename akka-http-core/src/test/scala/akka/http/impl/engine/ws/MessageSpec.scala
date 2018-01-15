@@ -201,7 +201,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
           parts.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(4)
-          sub.expectNoMsg(100.millis.dilated)
+          sub.expectNoMessage(100.millis)
 
           val header1 = frameHeader(Opcode.Continuation, data1.size, fin = true)
           pushInput(header1 ++ data1)
@@ -452,7 +452,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         expectComplete(messageIn)
 
-        netIn.expectNoMsg(100.millis.dilated) // especially the cancellation not yet
+        netIn.expectNoMessage(100.millis) // especially the cancellation not yet
         expectNoNetworkData()
         messageOut.sendComplete()
 
@@ -481,7 +481,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         expectComplete(messageIn)
 
-        netIn.expectNoMsg(100.millis.dilated) // especially the cancellation not yet
+        netIn.expectNoMessage(100.millis) // especially the cancellation not yet
         expectNoNetworkData()
         messageOut.sendComplete()
 

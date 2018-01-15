@@ -33,7 +33,7 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
 
       http.host-connection-pool.pool-implementation = $poolImplementation
     }""").withFallback(ConfigFactory.load())
-  implicit val system = ActorSystem("DontLeakActorsOnFailingConnectionSpecs", config)
+  implicit val system = ActorSystem("DontLeakActorsOnFailingConnectionSpecs-" + poolImplementation, config)
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
 
@@ -42,11 +42,12 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
   "Http.superPool" should {
 
     "not leak connection Actors when hitting non-existing endpoint" in {
+      val address = SocketUtil.temporaryServerAddress()
       assertAllStagesStopped {
         val reqsCount = 100
         val clientFlow = Http().superPool[Int]()
-        val host = "127.0.0.46" // unlikely to be used host / port
-        val port = 34763
+        val host = address.getHostString
+        val port = address.getPort
         val source = Source(1 to reqsCount)
           .map(i ⇒ HttpRequest(uri = Uri(s"http://$host:$port/test/$i")) → i)
 
@@ -61,7 +62,6 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
         countDown.await(10, TimeUnit.SECONDS) should be(true)
         Await.result(running, 10.seconds)
 
-        Thread.sleep(5000)
       }
     }
   }
@@ -69,11 +69,11 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
   private def handleResponse(httpResp: Try[HttpResponse], id: Int): Unit = {
     httpResp match {
       case Success(httpRes) ⇒
-        println(s"$id: OK: (${httpRes.status.intValue}")
+        system.log.info(s"$id: OK: (${httpRes.status.intValue}")
         httpRes.entity.dataBytes.runWith(Sink.ignore)
 
       case Failure(ex) ⇒
-        println(s"$id: FAIL: $ex")
+        system.log.error(ex, s"$id: FAIL")
     }
   }
 
