@@ -13,7 +13,7 @@ import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.client.PoolFlow.{ RequestContext, ResponseContext }
 import akka.http.impl.engine.client.pool.SlotState.{ Unconnected, WaitingForEndOfResponseEntity, WaitingForResponseDispatch, WaitingForResponseEntitySubscription }
-import akka.http.impl.util.{ StageLoggingWithOverride, StreamUtils }
+import akka.http.impl.util.{ RichHttpRequest, StageLoggingWithOverride, StreamUtils }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse, headers }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
@@ -100,7 +100,7 @@ private[client] object NewHostConnectionPool {
 
         def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit =
           if (result.isFailure && req.canBeRetried) {
-            log.debug("Request has {} retries left, retrying...", req.retriesLeft)
+            log.debug("Request [{}] has {} retries left, retrying...", req.request.debugString, req.retriesLeft)
             retryBuffer.addLast(req.copy(retriesLeft = req.retriesLeft - 1))
           } else
             push(responsesOut, ResponseContext(req, result))
