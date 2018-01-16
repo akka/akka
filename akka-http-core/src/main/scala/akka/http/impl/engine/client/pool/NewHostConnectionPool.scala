@@ -17,12 +17,11 @@ import akka.http.impl.util.{ RichHttpRequest, StageLoggingWithOverride, StreamUt
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse, headers }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
+import akka.stream._
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.stream._
 import akka.util.OptionVal
 
-import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
@@ -110,7 +109,7 @@ private[client] object NewHostConnectionPool {
             slots.find(_.isIdle)
               .getOrElse(throw new IllegalStateException("Tried to dispatch request when no slot is idle"))
 
-          slot.debug("Dispatching request") // FIXME: add abbreviation
+          slot.debug("Dispatching request [{}]", req.request.debugString)
           slot.onNewRequest(req)
         }
 
