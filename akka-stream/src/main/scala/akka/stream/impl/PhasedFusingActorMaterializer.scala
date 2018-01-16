@@ -420,6 +420,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     defaultAttributes: Attributes,
     defaultPhase:      Phase[Any],
     phases:            Map[IslandTag, Phase[Any]]): Mat = {
+    if (isShutdown) throw new IllegalStateException("Trying to materialize stream after materializer has been shutdown")
     val islandTracking = new IslandTracking(phases, settings, defaultAttributes, defaultPhase, this, islandNamePrefix = createFlowName() + "-")
 
     var current: Traversal = graph.traversalBuilder.traversal
@@ -496,11 +497,19 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
       }
     }
 
-    islandTracking.getCurrentPhase.onIslandReady()
-    islandTracking.allNestedIslandsReady()
+    def shutdownWhileMaterializingFailure =
+      new IllegalStateException("Materializer shutdown while materializing stream")
+    try {
+      islandTracking.getCurrentPhase.onIslandReady()
+      islandTracking.allNestedIslandsReady()
 
-    if (Debug) println("--- Finished materialization")
-    matValueStack.peekLast().asInstanceOf[Mat]
+      if (Debug) println("--- Finished materialization")
+      matValueStack.peekLast().asInstanceOf[Mat]
+
+    } finally {
+      if (isShutdown) throw shutdownWhileMaterializingFailure
+    }
+
   }
 
   private def wireInlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any): Unit = {
