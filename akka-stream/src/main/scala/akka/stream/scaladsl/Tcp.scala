@@ -227,6 +227,9 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * For more advanced use cases you can manually combine [[Tcp.outgoingConnection()]] and [[TLS]]
    *
+   * @param negotiateNewSession Details about what to require when negotiating the connection with the server
+   * @param sslContext Context containing details such as the trust and keystore
+   *
    * @see [[Tcp.outgoingConnection()]]
    */
   def outgoingTlsConnection(
@@ -242,6 +245,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * out go through TLS.
    *
    * @see [[Tcp.outgoingConnection()]]
+   * @param negotiateNewSession Details about what to require when negotiating the connection with the server
+   * @param sslContext Context containing details such as the trust and keystore
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
@@ -264,7 +269,9 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
    * where all incoming and outgoing bytes are passed through TLS.
    *
-   * @see [[Tcp.bind()]]
+   * @param negotiateNewSession Details about what to require when negotiating the connection with the server
+   * @param sslContext Context containing details such as the trust and keystore
+   * @see [[Tcp.bind]]
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
@@ -291,6 +298,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
    * handling the incoming connections through TLS and then run using the provided Flow.
    *
+   * @param negotiateNewSession Details about what to require when negotiating the connection with the server
+   * @param sslContext Context containing details such as the trust and keystore
    * @see [[Tcp.bindAndHandle()]]
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.

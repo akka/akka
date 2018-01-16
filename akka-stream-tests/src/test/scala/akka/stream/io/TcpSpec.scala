@@ -736,14 +736,16 @@ class TcpSpec extends StreamSpec("""
     }
 
     def initSslMess() = {
+      // #setting-up-ssl-context
       import akka.stream.TLSClientAuth
       import akka.stream.TLSProtocol
       import com.typesafe.sslconfig.akka.AkkaSSLConfig
       import java.security.KeyStore
+      import javax.net.ssl._
+
       val sslConfig = AkkaSSLConfig()
 
-      val config = sslConfig.config
-
+      // Don't hardcode your password in actual code
       val password = "abcdef".toCharArray
 
       // trust store and keys in one keystore
@@ -763,12 +765,12 @@ class TcpSpec extends StreamSpec("""
       // protocols
       val defaultParams = sslContext.getDefaultSSLParameters
       val defaultProtocols = defaultParams.getProtocols
-      val protocols = sslConfig.configureProtocols(defaultProtocols, config)
+      val protocols = sslConfig.configureProtocols(defaultProtocols, sslConfig.config)
       defaultParams.setProtocols(protocols)
 
       // ciphers
       val defaultCiphers = defaultParams.getCipherSuites
-      val cipherSuites = sslConfig.configureCipherSuites(defaultCiphers, config)
+      val cipherSuites = sslConfig.configureCipherSuites(defaultCiphers, sslConfig.config)
       defaultParams.setCipherSuites(cipherSuites)
 
       val firstSession = TLSProtocol.NegotiateNewSession
@@ -776,6 +778,8 @@ class TcpSpec extends StreamSpec("""
         .withProtocols(protocols: _*)
         .withParameters(defaultParams)
         .withClientAuth(TLSClientAuth.None)
+
+      // #setting-up-ssl-context
 
       (sslContext, firstSession)
     }
