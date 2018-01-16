@@ -47,10 +47,11 @@ object RemoteDeploymentSpec {
       case p: Props ⇒
         sender() ! context.actorOf(p)
 
-      case (p: Props, firstMsg: Int) ⇒
+      case (p: Props, numMessages: Int) ⇒
         val child = context.actorOf(p)
         sender() ! child
-        child.tell(firstMsg, sender())
+        // stress as quick send as possible
+        (0 until numMessages).foreach(n ⇒ child.tell(n, sender()))
     }
   }
 
@@ -126,14 +127,12 @@ class RemoteDeploymentSpec extends ArteryMultiNodeSpec(
       val probes = Vector.fill(numParents, numChildren)(TestProbe()(masterSystem))
       val childProps = Props[Echo1]
       for (p ← (0 until numParents); c ← (0 until numChildren)) {
-        parents(p).tell((childProps, 0), probes(p)(c).ref)
+        parents(p).tell((childProps, numMessages), probes(p)(c).ref)
       }
 
       for (p ← (0 until numParents); c ← (0 until numChildren)) {
         val probe = probes(p)(c)
-        val child = probe.expectMsgType[ActorRef]
-        // message 0 was sent by parent when child was created (stress as quick send as possible)
-        (1 until numMessages).foreach(n ⇒ child.tell(n, probe.ref))
+        probe.expectMsgType[ActorRef] // the child
       }
 
       val expectedMessages = (0 until numMessages).toVector
