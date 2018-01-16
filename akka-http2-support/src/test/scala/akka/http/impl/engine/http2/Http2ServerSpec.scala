@@ -9,7 +9,7 @@ import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, 
 import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ StreamUtils, StringRendering }
+import akka.http.impl.util.{ StreamUtils, StringRendering, WithLogCapturing }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
@@ -33,10 +33,11 @@ import scala.util.control.NoStackTrace
 
 class Http2ServerSpec extends AkkaSpec("""
     akka.loglevel = debug
+    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
     
     akka.http.server.remote-address-header = on
   """)
-  with WithInPendingUntilFixed with Eventually {
+  with WithInPendingUntilFixed with Eventually with WithLogCapturing {
   implicit val mat = ActorMaterializer()
 
   "The Http/2 server implementation" should {
