@@ -149,27 +149,31 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
         val cluster3 = Cluster(system3)
 
         //#cluster-subscribe
-        val testProbe = TestProbe[MemberEvent]()
-        cluster1.subscriptions ! Subscribe(testProbe.ref, classOf[MemberEvent])
+        val probe1 = TestProbe[MemberEvent]()(system1)
+        cluster1.subscriptions ! Subscribe(probe1.ref, classOf[MemberEvent])
         //#cluster-subscribe
 
         cluster1.manager ! Join(cluster1.selfMember.address)
         eventually {
           cluster1.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up)
         }
-        testProbe.expectMsg(MemberUp(cluster1.selfMember))
+        probe1.expectMsg(MemberUp(cluster1.selfMember))
 
         cluster2.manager ! Join(cluster1.selfMember.address)
-        testProbe.expectMsgType[MemberJoined].member.address shouldEqual cluster2.selfMember.address
-        testProbe.expectMsgType[MemberUp].member.address shouldEqual cluster2.selfMember.address
+        probe1.within(10.seconds) {
+          probe1.expectMsgType[MemberJoined].member.address shouldEqual cluster2.selfMember.address
+          probe1.expectMsgType[MemberUp].member.address shouldEqual cluster2.selfMember.address
+        }
         eventually {
           cluster1.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up)
           cluster2.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up)
         }
 
         cluster3.manager ! Join(cluster1.selfMember.address)
-        testProbe.expectMsgType[MemberJoined].member.address shouldEqual cluster3.selfMember.address
-        testProbe.expectMsgType[MemberUp].member.address shouldEqual cluster3.selfMember.address
+        probe1.within(10.seconds) {
+          probe1.expectMsgType[MemberJoined].member.address shouldEqual cluster3.selfMember.address
+          probe1.expectMsgType[MemberUp].member.address shouldEqual cluster3.selfMember.address
+        }
         eventually {
           cluster1.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
           cluster2.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
@@ -178,9 +182,11 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
 
         //#cluster-leave-example
         cluster1.manager ! Leave(cluster2.selfMember.address)
-        testProbe.expectMsgType[MemberLeft].member.address shouldEqual cluster2.selfMember.address
-        testProbe.expectMsgType[MemberExited].member.address shouldEqual cluster2.selfMember.address
-        testProbe.expectMsgType[MemberRemoved].member.address shouldEqual cluster2.selfMember.address
+        probe1.within(10.seconds) {
+          probe1.expectMsgType[MemberLeft].member.address shouldEqual cluster2.selfMember.address
+          probe1.expectMsgType[MemberExited].member.address shouldEqual cluster2.selfMember.address
+          probe1.expectMsgType[MemberRemoved].member.address shouldEqual cluster2.selfMember.address
+        }
         //#cluster-leave-example
 
         eventually {
@@ -188,11 +194,21 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
           cluster3.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up)
         }
 
+        eventually {
+          cluster2.isTerminated should ===(true)
+        }
+        // via coordinated shutdown
+        system2.whenTerminated.futureValue
+
         system1.log.info("Downing node 3")
         cluster1.manager ! Down(cluster3.selfMember.address)
-        testProbe.expectMsgType[MemberRemoved](10.seconds).member.address shouldEqual cluster3.selfMember.address
+        probe1.expectMsgType[MemberRemoved](10.seconds).member.address shouldEqual cluster3.selfMember.address
 
-        testProbe.expectNoMessage()
+        probe1.expectNoMessage()
+
+        // via coordinated shutdown
+        system3.whenTerminated.futureValue
+
       } finally {
         system1.terminate().futureValue
         system2.terminate().futureValue
