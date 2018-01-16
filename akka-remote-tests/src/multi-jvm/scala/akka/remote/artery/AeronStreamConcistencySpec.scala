@@ -3,11 +3,15 @@
  */
 package akka.remote.artery
 
+import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import akka.Done
+import akka.actor.ExtendedActorSystem
+import akka.actor.Props
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -17,14 +21,11 @@ import akka.stream.KillSwitches
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Source
 import akka.testkit._
+import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import io.aeron.Aeron
 import io.aeron.driver.MediaDriver
-import akka.actor.ExtendedActorSystem
 import org.agrona.IoUtil
-import java.io.File
-
-import akka.util.ByteString
 
 object AeronStreamConsistencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -42,7 +43,6 @@ object AeronStreamConsistencySpec extends MultiNodeConfig {
          remote.artery.enabled = off
        }
        """)))
-
 }
 
 class AeronStreamConsistencySpecMultiJvmNode1 extends AeronStreamConsistencySpec
@@ -77,8 +77,10 @@ abstract class AeronStreamConsistencySpec
   override def initialParticipants = roles.size
 
   def channel(roleName: RoleName) = {
-    val a = node(roleName).address
-    s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
+    val n = node(roleName)
+    system.actorSelection(n / "user" / "updPort") ! UdpPortActor.GetUdpPort
+    val port = expectMsgType[Int]
+    s"aeron:udp?endpoint=${n.address.host.get}:$port"
   }
 
   val streamId = 1
@@ -93,6 +95,11 @@ abstract class AeronStreamConsistencySpec
   }
 
   "Message consistency of Aeron Streams" must {
+
+    "start upd port" in {
+      system.actorOf(Props[UdpPortActor], "updPort")
+      enterBarrier("udp-port-started")
+    }
 
     "start echo" in {
       runOn(second) {
