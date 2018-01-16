@@ -111,12 +111,41 @@ private[client] object NewHostConnectionPool {
               .getOrElse(throw new IllegalStateException("Tried to dispatch request when no slot is idle"))
 
           slot.debug("Dispatching request") // FIXME: add abbreviation
-          slot.dispatchRequest(req)
+          slot.onNewRequest(req)
         }
 
         def numConnectedSlots: Int = slots.count(_.isConnected)
 
-        private class Slot(val slotId: Int) extends SlotContext {
+        final case class Event[T](name: String, transition: (SlotState, Slot, T) ⇒ SlotState) {
+          override def toString: String = s"Event($name)"
+        }
+        object Event {
+          val onPreConnect = event0("onPreConnect", _.onPreConnect(_))
+          val onConnectionAttemptSucceeded = event[Http.OutgoingConnection]("onConnectionAttemptSucceeded", _.onConnectionAttemptSucceeded(_, _))
+          val onConnectionAttemptFailed = event[Throwable]("onConnectionAttemptFailed", _.onConnectionAttemptFailed(_, _))
+          val onNewRequest = event[RequestContext]("onNewRequest", _.onNewRequest(_, _))
+
+          val onRequestEntityCompleted = event0("onRequestEntityCompleted", _.onRequestEntityCompleted(_))
+          val onRequestEntityFailed = event[Throwable]("onRequestEntityFailed", _.onRequestEntityFailed(_, _))
+
+          val onResponseReceived = event[HttpResponse]("onResponseReceived", _.onResponseReceived(_, _))
+          val onResponseDispatchable = event0("onResponseDispatchable", _.onResponseDispatchable(_))
+          val onResponseEntitySubscribed = event0("onResponseEntitySubscribed", _.onResponseEntitySubscribed(_))
+          val onResponseEntityCompleted = event0("onResponseEntityCompleted", _.onResponseEntityCompleted(_))
+          val onResponseEntityFailed = event[Throwable]("onResponseEntityFailed", _.onResponseEntityFailed(_, _))
+
+          val onConnectionCompleted = event0("onConnectionCompleted", _.onConnectionCompleted(_))
+          val onConnectionFailed = event[Throwable]("onConnectionFailed", _.onConnectionFailed(_, _))
+
+          val onTimeout = event0("onTimeout", _.onTimeout(_))
+
+          val setState = event[SlotState]("setState", (old, slot, newState) ⇒ newState)
+
+          private def event0(name: String, transition: (SlotState, Slot) ⇒ SlotState): Event[Unit] = new Event(name, (state, slot, _) ⇒ transition(state, slot))
+          private def event[T](name: String, transition: (SlotState, Slot, T) ⇒ SlotState): Event[T] = new Event[T](name, transition)
+        }
+
+        final class Slot(val slotId: Int) extends SlotContext {
           private[this] var state: SlotState = SlotState.Unconnected
           private[this] var currentTimeoutId: Long = -1
           private[this] var currentTimeout: Cancellable = _
@@ -132,49 +161,49 @@ private[client] object NewHostConnectionPool {
           }
 
           def initialize(): Unit =
-            if (slotId < settings.minConnections) {
-              debug("Preconnecting")
-              updateState(_.onPreConnect(this))
-            }
+            if (slotId < settings.minConnections)
+              updateState(Event.onPreConnect)
 
-          def onConnected(outgoing: Http.OutgoingConnection): Unit =
-            updateState(_.onConnectionAttemptSucceeded(this, outgoing))
+          def onConnectionAttemptSucceeded(outgoing: Http.OutgoingConnection): Unit =
+            updateState(Event.onConnectionAttemptSucceeded, outgoing)
 
-          def onConnectFailed(cause: Throwable): Unit =
-            updateState(_.onConnectionAttemptFailed(this, cause))
+          def onConnectionAttemptFailed(cause: Throwable): Unit =
+            updateState(Event.onConnectionAttemptFailed, cause)
 
-          def dispatchRequest(req: RequestContext): Unit =
-            updateState(_.onNewRequest(this, req))
+          def onNewRequest(req: RequestContext): Unit =
+            updateState(Event.onNewRequest, req)
 
           def onRequestEntityCompleted(): Unit =
-            updateState(_.onRequestEntityCompleted(this))
+            updateState(Event.onRequestEntityCompleted)
           def onRequestEntityFailed(cause: Throwable): Unit =
-            updateState(_.onRequestEntityFailed(this, cause))
+            updateState(Event.onRequestEntityFailed, cause)
 
           def onResponseReceived(response: HttpResponse): Unit =
-            updateState(_.onResponseReceived(this, response))
+            updateState(Event.onResponseReceived, response)
           def onResponseDispatchable(): Unit =
-            updateState(_.onResponseDispatchable(this))
+            updateState(Event.onResponseDispatchable)
 
           def onResponseEntitySubscribed(): Unit =
-            updateState(_.onResponseEntitySubscribed(this))
+            updateState(Event.onResponseEntitySubscribed)
           def onResponseEntityCompleted(): Unit =
-            updateState(_.onResponseEntityCompleted(this))
+            updateState(Event.onResponseEntityCompleted)
           def onResponseEntityFailed(cause: Throwable): Unit =
-            updateState(_.onResponseEntityFailed(this, cause))
+            updateState(Event.onResponseEntityFailed, cause)
 
-          def onConnectionCompleted(): Unit = updateState(_.onConnectionCompleted(this))
-          def onConnectionFailed(cause: Throwable): Unit = updateState(_.onConnectionFailed(this, cause))
+          def onConnectionCompleted(): Unit =
+            updateState(Event.onConnectionCompleted)
+          def onConnectionFailed(cause: Throwable): Unit =
+            updateState(Event.onConnectionFailed, cause)
 
-          type StateTransition = SlotState ⇒ SlotState
-          protected def updateState(f: StateTransition): Unit = {
-            def runOneTransition(f: StateTransition): OptionVal[StateTransition] =
+          protected def updateState(event: Event[Unit]): Unit = updateState(event, ())
+          protected def updateState[T](event: Event[T], arg: T): Unit = {
+            def runOneTransition[U](event: Event[U], arg: U): OptionVal[Event[Unit]] =
               try {
                 cancelCurrentTimeout()
 
                 val previousState = state
-                state = f(state)
-                debug(s"State change [${previousState.name}] -> [${state.name}]")
+                state = event.transition(state, this, arg)
+                debug(s"After event [${event.name}] State change [${previousState.name}] -> [${state.name}]")
 
                 state.stateTimeout match {
                   case d: FiniteDuration ⇒
@@ -184,7 +213,7 @@ private[client] object NewHostConnectionPool {
                       materializer.scheduleOnce(d, safeRunnable {
                         if (myTimeoutId == currentTimeoutId) { // timeout may race with state changes, ignore if timeout isn't current any more
                           debug(s"Slot timeout after $d")
-                          updateState(_.onTimeout(this))
+                          updateState(Event.onTimeout)
                         }
                       })
                   case _ ⇒ // no timeout set, nothing to do
@@ -202,20 +231,20 @@ private[client] object NewHostConnectionPool {
 
                 state match {
                   case _: WaitingForResponseDispatch ⇒
-                    if (isAvailable(responsesOut)) OptionVal.Some(_.onResponseDispatchable(this))
+                    if (isAvailable(responsesOut)) OptionVal.Some(Event.onResponseDispatchable)
                     else {
                       logic.slotsWaitingForDispatch.addLast(this)
                       OptionVal.None
                     }
                   case WaitingForResponseEntitySubscription(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _) ⇒
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
-                    OptionVal.Some(_.onResponseEntitySubscribed(this))
+                    OptionVal.Some(Event.onResponseEntitySubscribed)
                   case WaitingForEndOfResponseEntity(_, HttpResponse(_, _, _: HttpEntity.Strict, _)) ⇒
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
-                    OptionVal.Some(_.onResponseEntityCompleted(this))
+                    OptionVal.Some(Event.onResponseEntityCompleted)
                   case Unconnected if numConnectedSlots < settings.minConnections ⇒
                     debug(s"Preconnecting because number of connected slots fell down to $numConnectedSlots")
-                    OptionVal.Some(_.onPreConnect(this))
+                    OptionVal.Some(Event.onPreConnect)
                   case _ ⇒ OptionVal.None
                 }
 
@@ -237,26 +266,27 @@ private[client] object NewHostConnectionPool {
                       error(ex, "Shutting down slot after error failed.")
                   }
                   state = Unconnected
-                  OptionVal.Some(_.onPreConnect(this))
+                  OptionVal.Some(Event.onPreConnect)
               }
 
             /** Run a loop of state transitions */
-            @tailrec def loop(f: StateTransition, remainingIterations: Int): Unit =
+            /* @tailrec (does not work for some reason?) */
+            def loop[U](event: Event[U], arg: U, remainingIterations: Int): Unit =
               if (remainingIterations > 0)
-                runOneTransition(f) match {
+                runOneTransition(event, arg) match {
                   case OptionVal.None       ⇒ // no more changes
-                  case OptionVal.Some(next) ⇒ loop(next, remainingIterations - 1)
+                  case OptionVal.Some(next) ⇒ loop(next, (), remainingIterations - 1)
                 }
               else
                 throw new IllegalStateException(
                   "State transition loop exceeded maximum number of loops. The pool will shutdown itself. " +
                     "That's probably a bug. Please file a bug at https://github.com/akka/akka-http/issues. ")
 
-            loop(f, 10)
+            loop(event, arg, 10)
           }
 
           protected def setState(newState: SlotState): Unit =
-            updateState(_ ⇒ newState)
+            updateState(Event.setState, newState)
 
           def debug(msg: String): Unit =
             if (log.isDebugEnabled)
@@ -439,8 +469,8 @@ private[client] object NewHostConnectionPool {
           responseIn.setHandler(slotCon)
 
           connection.onComplete(safely {
-            case Success(outgoingConnection) ⇒ slotCon.withSlot(_.onConnected(outgoingConnection))
-            case Failure(cause)              ⇒ slotCon.withSlot(_.onConnectFailed(cause))
+            case Success(outgoingConnection) ⇒ slotCon.withSlot(_.onConnectionAttemptSucceeded(outgoingConnection))
+            case Failure(cause)              ⇒ slotCon.withSlot(_.onConnectionAttemptFailed(cause))
           })(ExecutionContexts.sameThreadExecutionContext)
 
           slotCon
