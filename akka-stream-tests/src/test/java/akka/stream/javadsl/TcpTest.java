@@ -174,8 +174,7 @@ public class TcpTest extends StreamTest {
     String[] cipherSuites = sslConfig.configureCipherSuites(defaultCiphers, sslConfig.config());
     defaultParams.setCipherSuites(cipherSuites);
 
-    TLSProtocol.NegotiateNewSession firstSession = TLSProtocol.NegotiateNewSession
-        .withDefaults()
+    TLSProtocol.NegotiateNewSession negotiateNewSession = TLSProtocol.negotiateNewSession()
         .withCipherSuites(cipherSuites)
         .withProtocols(protocols)
         .withParameters(defaultParams)

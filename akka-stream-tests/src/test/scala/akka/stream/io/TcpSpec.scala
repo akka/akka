@@ -773,7 +773,7 @@ class TcpSpec extends StreamSpec("""
       val cipherSuites = sslConfig.configureCipherSuites(defaultCiphers, sslConfig.config)
       defaultParams.setCipherSuites(cipherSuites)
 
-      val firstSession = TLSProtocol.NegotiateNewSession
+      val negotiateNewSession = TLSProtocol.NegotiateNewSession
         .withCipherSuites(cipherSuites: _*)
         .withProtocols(protocols: _*)
         .withParameters(defaultParams)
@@ -781,7 +781,7 @@ class TcpSpec extends StreamSpec("""
 
       // #setting-up-ssl-context
 
-      (sslContext, firstSession)
+      (sslContext, negotiateNewSession)
     }
 
   }
