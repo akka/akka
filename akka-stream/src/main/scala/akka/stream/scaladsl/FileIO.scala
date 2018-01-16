@@ -15,7 +15,7 @@ import akka.util.ByteString
 import scala.concurrent.Future
 
 /**
- * Java API: Factories to create sinks and sources from files
+ * Factories to create sinks and sources from files
  */
 object FileIO {
 
@@ -102,6 +102,11 @@ object FileIO {
    * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
    * unless configured otherwise by using [[akka.stream.ActorAttributes]].
    *
+   * Accepts as arguments a set of [[java.nio.file.StandardOpenOption]], which will determine
+   * the underlying behavior when writing the file. If [[java.nio.file.StandardOpenOption.SYNC]] is
+   * provided, every update to the file's content be written synchronously to the underlying storage
+   * device. Otherwise (the default), the write will be written to the storage device asynchronously.
+   *
    * @param f the file path to write to
    * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, TRUNCATE_EXISTING, CREATE)
    */
@@ -117,6 +122,11 @@ object FileIO {
    *
    * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
    * unless configured otherwise by using [[ActorAttributes]].
+   *
+   * Accepts as arguments a set of [[java.nio.file.StandardOpenOption]], which will determine
+   * the underlying behavior when writing the file. If [[java.nio.file.StandardOpenOption.SYNC]] is
+   * provided, every update to the file's content be written synchronously to the underlying storage
+   * device. Otherwise (the default), the write will be written to the storage device asynchronously.
    *
    * @param f the file path to write to
    * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, CREATE)

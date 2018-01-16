@@ -14,7 +14,7 @@ import akka.util.ByteString
 import scala.collection.JavaConverters._
 
 /**
- * Factories to create sinks and sources from files
+ * Java API: Factories to create sinks and sources from files
  */
 object FileIO {
 
@@ -44,6 +44,11 @@ object FileIO {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * Accepts as arguments a set of [[java.nio.file.StandardOpenOption]], which will determine
+   * the underlying behavior when writing the file. If [[java.nio.file.StandardOpenOption.SYNC]] is
+   * provided, every update to the file's content be written synchronously to the underlying storage
+   * device. Otherwise (the default), the write will be written to the storage device asynchronously.
    *
    * @param f The file path to write to
    */
@@ -75,6 +80,11 @@ object FileIO {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
+   * Accepts as arguments a set of [[java.nio.file.StandardOpenOption]], which will determine
+   * the underlying behavior when writing the file. If [[java.nio.file.StandardOpenOption.SYNC]] is
+   * provided, every update to the file's content be written synchronously to the underlying storage
+   * device. Otherwise (the default), the write will be written to the storage device asynchronously.
+   *
    * @param f The file path to write to
    * @param options File open options, see [[java.nio.file.StandardOpenOption]]
    */
@@ -89,6 +99,11 @@ object FileIO {
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
+   *
+   * Accepts as arguments a set of [[java.nio.file.StandardOpenOption]], which will determine
+   * the underlying behavior when writing the file. If [[java.nio.file.StandardOpenOption.SYNC]] is
+   * provided, every update to the file's content be written synchronously to the underlying storage
+   * device. Otherwise (the default), the write will be written to the storage device asynchronously.
    *
    * @param f The file path to write to
    * @param options File open options, see [[java.nio.file.StandardOpenOption]]
