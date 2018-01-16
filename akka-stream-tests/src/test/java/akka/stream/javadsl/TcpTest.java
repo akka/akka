@@ -161,7 +161,7 @@ public class TcpTest extends StreamTest {
 
     // initial ssl context
     SSLContext sslContext = SSLContext.getInstance("TLS");
-    sslContext.init(keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom);
+    sslContext.init(keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
     // protocols
     SSLParameters defaultParams = sslContext.getDefaultSSLParameters();
