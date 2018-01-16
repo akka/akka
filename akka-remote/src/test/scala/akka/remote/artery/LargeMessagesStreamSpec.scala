@@ -119,5 +119,7 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
     }
   }
 
-  def awaitResolve(selection: ActorSelection): ActorRef = Await.result(selection.resolveOne(3.seconds), 3.seconds)
+  def awaitResolve(selection: ActorSelection): ActorRef = awaitAssert(
+    selection.resolveOne(300.millis).futureValue(timeout(300.millis)),
+    3.seconds)
 }
