@@ -62,7 +62,7 @@ object Configuration {
       val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty.ssl.security")
       val settings = new SSLSettings(fullConfig)
 
-      val rng = settings.createSecureRandom(NoMarkerLogging)
+      val rng = settings.createSecureRandom()
 
       rng.nextInt() // Has to work
       val sRng = settings.SSLRandomNumberGenerator
