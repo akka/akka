@@ -543,7 +543,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         Http().singleRequest(request(i), settings = clientSettings).futureValue
           .entity.dataBytes.runFold(ByteString.empty) { (prev, cur) ⇒
             val res = prev ++ cur
-            println(s"Received ${res.size} of [${res.take(1).utf8String}]")
+            system.log.debug(s"Received ${res.size} of [${res.take(1).utf8String}]")
             res
           }.futureValue
           .size shouldBe responseSize
