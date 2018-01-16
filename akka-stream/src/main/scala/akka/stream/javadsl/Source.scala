@@ -12,13 +12,12 @@ import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
-import akka.stream.impl.{ LinearTraversalBuilder, SourceQueueAdapter, StreamLayout }
+import akka.stream.impl.{ LinearTraversalBuilder, SourceQueueAdapter }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.collection.immutable.Range.Inclusive
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.OptionConverters._
@@ -939,6 +938,26 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def runForeach(f: function.Procedure[Out], materializer: Materializer): CompletionStage[Done] =
     runWith(Sink.foreach(f), materializer)
+
+  /**
+   * Shortcut for running this `Source` to retrieve the first value received.
+   * If the stream completes before signaling at least a single element, the CompletionStage will be failed with a [[NoSuchElementException]].
+   * If the stream signals an error before signaling at least a single element, the CompletionStage will be failed with the streams exception.
+   *
+   * See also [[runHeadOption]].
+   */
+  def runHead(implicit materializer: Materializer): CompletionStage[Out @uncheckedVariance] =
+    runWith(Sink.head(), materializer)
+
+  /**
+   * Shortcut for running this `Source` to retrieve the first value received.
+   * If the stream completes before signaling at least a single element, the value of the CompletionStage will be an empty [[java.util.Optional]].
+   * If the stream signals an error errors before signaling at least a single element, the CompletionStage will be failed with the streams exception.
+   *
+   * See also [[runHead]].
+   */
+  def runHeadOption(implicit materializer: Materializer): CompletionStage[Optional[Out @uncheckedVariance]] =
+    runWith(Sink.headOption(), materializer)
 
   // COMMON OPS //
 
