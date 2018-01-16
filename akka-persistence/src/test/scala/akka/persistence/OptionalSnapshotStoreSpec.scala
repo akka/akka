@@ -47,8 +47,8 @@ class OptionalSnapshotStoreSpec extends PersistenceSpec(ConfigFactory.parseStrin
 
   "Persistence extension" must {
     "initialize properly even in absence of configured snapshot store" in {
-      system.actorOf(Props(classOf[AnyPersistentActor], name))
       system.eventStream.subscribe(testActor, classOf[Logging.Warning])
+      system.actorOf(Props(classOf[AnyPersistentActor], name))
       val message = expectMsgType[Warning].message.toString
       message should include("No default snapshot store configured")
     }
@@ -64,7 +64,6 @@ class OptionalSnapshotStoreSpec extends PersistenceSpec(ConfigFactory.parseStrin
       persistentActor ! "snap"
       expectMsgType[SaveSnapshotSuccess]
     }
-
   }
 }
 
