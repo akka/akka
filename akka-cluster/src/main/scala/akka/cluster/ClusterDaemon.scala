@@ -1062,6 +1062,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       member.dataCenter == selfDc && member.status == Exiting
     }
 
+    val removedOtherDc =
+      if (latestGossip.isMultiDc) {
+        latestGossip.members.filter { m ⇒
+          (m.dataCenter != selfDc && removeUnreachableWithMemberStatus(m.status))
+        }
+      } else
+        Set.empty[Member]
+
     val changedMembers = {
       val enoughMembers: Boolean = isMinNrOfMembersFulfilled
       def isJoiningToUp(m: Member): Boolean = (m.status == Joining || m.status == WeaklyUp) && enoughMembers
@@ -1091,10 +1099,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     }
 
     val updatedGossip: Gossip =
-      if (removedUnreachable.nonEmpty || removedExitingConfirmed.nonEmpty || changedMembers.nonEmpty) {
+      if (removedUnreachable.nonEmpty || removedExitingConfirmed.nonEmpty || changedMembers.nonEmpty ||
+        removedOtherDc.nonEmpty) {
 
         // replace changed members
         val removed = removedUnreachable.map(_.uniqueAddress).union(removedExitingConfirmed)
+          .union(removedOtherDc.map(_.uniqueAddress))
         val newGossip =
           latestGossip.update(changedMembers).removeAll(removed, System.currentTimeMillis())
 
@@ -1119,6 +1129,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         }
         removedExitingConfirmed.foreach { n ⇒
           logInfo("Leader is removing confirmed Exiting node [{}]", n.address)
+        }
+        removedOtherDc foreach { m ⇒
+          logInfo("Leader is removing {} node [{}] in DC [{}]", m.status, m.address, m.dataCenter)
         }
 
         newGossip
