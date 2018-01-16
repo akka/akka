@@ -337,6 +337,38 @@ class HostConnectionPoolSpec extends AkkaSpec(
           a[Throwable] should be thrownBy oneCycle()
         }
       }
+      "dispatch multiple failures on different slots when request entity fails" in new SetupWithServerProbes(_.withMaxConnections(3)) {
+        val req1 = pushChunkedRequest(numRetries = 0)
+        val conn1 = expectNextConnection()
+        val req1Bytes = conn1.expectChunkedRequestBytesAsProbe()
+
+        val req2 = pushChunkedRequest(numRetries = 0)
+        val conn2 = expectNextConnection()
+        val req2Bytes = conn2.expectChunkedRequestBytesAsProbe()
+
+        req1.sendError(new RuntimeException("First request stumbled and fell"))
+        conn1.failConnection(new RuntimeException("First connection crash-landed on mars"))
+
+        // don't check for first error yet
+
+        req2.sendError(new RuntimeException("Second request stumbled and flew"))
+        conn2.failConnection(new RuntimeException("Second connection crash-landed on the moon"))
+
+        expectResponseError()
+        expectResponseError()
+
+        // check that we are not still dispatchable (#1726)
+        pushRequest()
+        pushRequest()
+
+        val conn3 = expectNextConnection()
+        val conn4 = expectNextConnection()
+
+        conn3.pushResponse()
+        conn4.pushResponse()
+        expectResponse()
+        expectResponse()
+      }
       "not send requests to known-to-be-closed-soon connections" in pending
       "support retries" in pending
       "strictly enforce number of established connections in longer running case" in pending

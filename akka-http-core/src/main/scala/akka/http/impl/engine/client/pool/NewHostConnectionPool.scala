@@ -148,6 +148,7 @@ private[client] object NewHostConnectionPool {
           private[this] var state: SlotState = SlotState.Unconnected
           private[this] var currentTimeoutId: Long = -1
           private[this] var currentTimeout: Cancellable = _
+          private[this] var isEnqueuedForResponseDispatch: Boolean = false
 
           private[this] var connection: SlotConnection = _
           def isIdle: Boolean = state.isIdle
@@ -179,8 +180,11 @@ private[client] object NewHostConnectionPool {
 
           def onResponseReceived(response: HttpResponse): Unit =
             updateState(Event.onResponseReceived, response)
-          def onResponseDispatchable(): Unit =
+
+          def onResponseDispatchable(): Unit = {
+            isEnqueuedForResponseDispatch = false
             updateState(Event.onResponseDispatchable)
+          }
 
           def onResponseEntitySubscribed(): Unit =
             updateState(Event.onResponseEntitySubscribed)
@@ -232,7 +236,10 @@ private[client] object NewHostConnectionPool {
                   case _: WaitingForResponseDispatch ⇒
                     if (isAvailable(responsesOut)) OptionVal.Some(Event.onResponseDispatchable)
                     else {
-                      logic.slotsWaitingForDispatch.addLast(this)
+                      if (!isEnqueuedForResponseDispatch) {
+                        isEnqueuedForResponseDispatch = true
+                        logic.slotsWaitingForDispatch.addLast(this)
+                      }
                       OptionVal.None
                     }
                   case WaitingForResponseEntitySubscription(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _) ⇒
