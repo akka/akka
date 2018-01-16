@@ -40,6 +40,22 @@ Scala
 Java
 :   @@snip [RecipeLoggingElements.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #log-custom }
 
+### Creating a source that continuously evaluates a function
+
+**Situation:** A source is required that continuously provides elements obtained by evaluating a given function, so long as there is demand.
+
+The simplest implementation is to use a `Source.repeat` that produces some arbitrary element - e.g. `NotUsed` -
+and then map those elements to the function evaluation. E.g. if we have some `builderFunction()`, we can use:
+
+Scala
+:   @@snip [RecipeSourceFromFunction.scala]($code$/scala/docs/stream/cookbook/RecipeSourceFromFunction.scala) { #source-from-function }
+
+Java
+:   @@snip [RecipeSourceFromFunction.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeSourceFromFunction.java) { #source-from-function }
+
+Note: if the element-builder function touches mutable state, then a guaranteed single-threaded source should be used
+instead; e.g. `Source.unfold` or `Source.unfoldResource`.
+
 ### Flattening a stream of sequences
 
 **Situation:** A stream is given as a stream of sequence of elements, but a stream of elements needed instead, streaming
