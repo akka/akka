@@ -533,22 +533,20 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
     addAttributes(Attributes.name(name))
 
   /**
-   * Note that an async boundary around a runnable graph does not make sense
+   * This does nothing, as an async boundary around a runnable graph does not make sense
    */
-  override def async: RunnableGraph[Mat] =
-    super.async.asInstanceOf[RunnableGraph[Mat]]
+  override def async: RunnableGraph[Mat] = this
 
   /**
-   * Note that an async boundary around a runnable graph does not make sense
+   * This does nothing, as an async boundary around a runnable graph does not make sense
    */
-  override def async(dispatcher: String): RunnableGraph[Mat] =
-    super.async(dispatcher).asInstanceOf[RunnableGraph[Mat]]
+  override def async(dispatcher: String) = this
 
   /**
-   * Note that an async boundary around a runnable graph does not make sense
+   * This does nothing, as an async boundary around a runnable graph does not make sense
    */
-  override def async(dispatcher: String, inputBufferSize: Int): RunnableGraph[Mat] =
-    super.async(dispatcher, inputBufferSize).asInstanceOf[RunnableGraph[Mat]]
+  override def async(dispatcher: String, inputBufferSize: Int): RunnableGraph[Mat] = this
+
 }
 
 /**
