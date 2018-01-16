@@ -11,25 +11,26 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
-
 import akka.actor.ActorSystem
 import akka.event.Logging
+import akka.http.impl.util.WithLogCapturing
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.Utils.assertAllStagesStopped
-import akka.testkit.{ TestKit, SocketUtil }
-
+import akka.testkit.{ SocketUtil, TestKit }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
-abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String) extends WordSpecLike with Matchers with BeforeAndAfterAll {
+abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String)
+  extends WordSpecLike with Matchers with BeforeAndAfterAll with WithLogCapturing {
 
   val config = ConfigFactory.parseString(s"""
     akka {
       # disable logs (very noisy tests - 100 expected errors)
-      loglevel = OFF
-      stdout-loglevel = OFF
+      loglevel = DEBUG
+      akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
 
       http.host-connection-pool.pool-implementation = $poolImplementation
     }""").withFallback(ConfigFactory.load())
