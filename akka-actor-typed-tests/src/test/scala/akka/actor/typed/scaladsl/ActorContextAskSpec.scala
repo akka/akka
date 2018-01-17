@@ -3,10 +3,12 @@
  */
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.{ ActorRef, Props, TypedAkkaSpec }
+import akka.actor.typed.{ ActorRef, PostStop, PreRestart, Props, TypedAkkaSpec }
 import akka.pattern.AskTimeoutException
+import akka.testkit.EventFilter
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.scaladsl.adapter._
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
@@ -16,6 +18,7 @@ import scala.util.{ Failure, Success }
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString(
     """
+      akka.loggers = ["akka.testkit.TestEventListener"]
       ping-pong-dispatcher {
         executor = thread-pool-executor
         type = PinnedDispatcher
@@ -28,6 +31,8 @@ object ActorContextAskSpec {
 }
 
 class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with TypedAkkaSpec {
+
+  implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 
   "The Scala DSL ActorContext" must {
 
@@ -74,6 +79,47 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
       pongs.map(_.threadName).forall(_.startsWith("ActorContextAskSpec-snitch-dispatcher")) should ===(true)
     }
 
+    "fail actor when mapping does not match response" in {
+      val probe = TestProbe[AnyRef]()
+
+      trait Protocol
+      case class Ping(respondTo: ActorRef[Pong.type]) extends Protocol
+      case object Pong extends Protocol
+
+      val pingPong = spawn(Actor.immutable[Protocol]((_, msg) ⇒
+        msg match {
+          case Ping(respondTo) ⇒
+            respondTo ! Pong
+            Actor.same
+        }
+      ))
+
+      val snitch = Actor.deferred[AnyRef] { (ctx) ⇒
+        ctx.ask(pingPong, Ping) {
+          // uh oh, missing case for the response, this can never end well
+          case Failure(x) ⇒ x
+        }
+
+        Actor.immutable[AnyRef] {
+          case (_, msg) ⇒
+            probe.ref ! msg
+            Actor.same
+        }.onSignal {
+
+          case (_, PostStop) ⇒
+            probe.ref ! "stopped"
+            Actor.same
+        }
+      }
+
+      EventFilter[MatchError](occurrences = 1, start = "Success(Pong)").intercept {
+        spawn(snitch)
+      }
+
+      // no-match should cause failure and subsequent stop of actor
+      probe.expectMsg("stopped")
+    }
+
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
       val snitch = Actor.deferred[AnyRef] { (ctx) ⇒
@@ -90,7 +136,11 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
         }
       }
 
-      spawn(snitch)
+      EventFilter.warning(occurrences = 1, message = "received dead letter without sender: boo").intercept {
+        EventFilter.info(occurrences = 1, start = "Message [java.lang.String] without sender").intercept {
+          spawn(snitch)
+        }
+      }
 
       probe.expectMsgType[AskTimeoutException]
 
