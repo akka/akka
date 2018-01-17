@@ -1,7 +1,7 @@
 package docs.akka.typed.coexistence
 
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.TestKit
 //#adapter-import
 // adds support for typed actors to an untyped actor system and context
@@ -53,13 +53,13 @@ object UntypedWatchingTypedSpec {
     case object Pong
 
     val behavior: Behavior[Command] =
-      Actor.immutable { (ctx, msg) ⇒
+      Behaviors.immutable { (ctx, msg) ⇒
         msg match {
           case Ping(replyTo) ⇒
             println(s"${ctx.self} got Ping from $replyTo")
             // replyTo is an untyped actor that has been converted for coexistence
             replyTo ! Pong
-            Actor.same
+            Behaviors.same
         }
       }
   }

@@ -17,7 +17,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void testMutableCounter() {
-    Behavior<BehaviorBuilderTest.CounterMessage> mutable = Actor.mutable(ctx -> new Actor.MutableBehavior<BehaviorBuilderTest.CounterMessage>() {
+    Behavior<BehaviorBuilderTest.CounterMessage> mutable = Behaviors.mutable(ctx -> new Behaviors.MutableBehavior<BehaviorBuilderTest.CounterMessage>() {
       int currentValue = 0;
 
       private Behavior<BehaviorBuilderTest.CounterMessage> receiveIncrease(BehaviorBuilderTest.Increase msg) {
@@ -31,7 +31,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
       }
 
       @Override
-      public Actor.Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
+      public Behaviors.Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
         return receiveBuilder()
           .onMessage(BehaviorBuilderTest.Increase.class, this::receiveIncrease)
           .onMessage(BehaviorBuilderTest.Get.class, this::receiveGet)
@@ -40,7 +40,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
     });
   }
 
-  private static class MyMutableBehavior extends Actor.MutableBehavior<BehaviorBuilderTest.CounterMessage> {
+  private static class MyMutableBehavior extends Behaviors.MutableBehavior<BehaviorBuilderTest.CounterMessage> {
     private int value;
 
     public MyMutableBehavior(int initialValue) {
@@ -49,7 +49,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
     }
 
     @Override
-    public Actor.Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
+    public Behaviors.Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
       assertEquals(42, value);
       return receiveBuilder().build();
     }
@@ -58,6 +58,6 @@ public class ReceiveBuilderTest extends JUnitSuite {
   @Test
   public void testInitializationOrder() throws Exception {
     MyMutableBehavior mutable = new MyMutableBehavior(42);
-    assertEquals(Actor.unhandled(), mutable.receiveMessage(null, new BehaviorBuilderTest.Increase()));
+    assertEquals(Behaviors.unhandled(), mutable.receiveMessage(null, new BehaviorBuilderTest.Increase()));
   }
 }

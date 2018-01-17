@@ -4,7 +4,7 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed.TypedAkkaSpecWithShutdown
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
 import akka.testkit.typed.TestKit
@@ -39,7 +39,7 @@ class MiscMessageSerializerSpec extends TestKit(MiscMessageSerializerSpec.config
     }
 
     "must serialize and deserialize typed actor refs" in {
-      val ref = spawn(Actor.empty[Unit])
+      val ref = spawn(Behaviors.empty[Unit])
       checkSerialization(ref)
     }
   }

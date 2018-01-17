@@ -6,7 +6,7 @@ package akka.actor.typed
 import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.TimeoutException
 
-import akka.actor.typed.scaladsl.Actor._
+import akka.actor.typed.scaladsl.Behaviors._
 
 import scala.concurrent.duration.Deadline
 

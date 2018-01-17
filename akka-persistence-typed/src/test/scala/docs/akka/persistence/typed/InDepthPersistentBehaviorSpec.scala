@@ -5,10 +5,10 @@ package docs.akka.persistence.typed
 
 import akka.Done
 import akka.actor.typed.{ ActorRef, Behavior }
-import akka.persistence.typed.scaladsl.PersistentActor
-import akka.persistence.typed.scaladsl.PersistentActor.{ CommandHandler, Effect }
+import akka.persistence.typed.scaladsl.PersistentBehaviors
+import akka.persistence.typed.scaladsl.PersistentBehaviors.{ CommandHandler, Effect }
 
-object InDepthPersistentActorSpec {
+object InDepthPersistentBehaviorSpec {
 
   //#event
   sealed trait BlogEvent extends Serializable
@@ -117,7 +117,7 @@ object InDepthPersistentActorSpec {
 
   //#behavior
   def behavior: Behavior[BlogCommand] =
-    PersistentActor.immutable[BlogCommand, BlogEvent, BlogState](
+    PersistentBehaviors.immutable[BlogCommand, BlogEvent, BlogState](
       persistenceId = "abc",
       initialState = BlogState.empty,
       commandHandler,
@@ -125,6 +125,6 @@ object InDepthPersistentActorSpec {
   //#behavior
 }
 
-class InDepthPersistentActorSpec {
+class InDepthPersistentBehaviorSpec {
 
 }

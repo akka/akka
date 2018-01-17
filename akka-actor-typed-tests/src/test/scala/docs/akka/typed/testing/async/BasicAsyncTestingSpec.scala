@@ -1,6 +1,6 @@
 package docs.akka.typed.testing.async
 
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed._
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl._
@@ -11,11 +11,11 @@ object BasicAsyncTestingSpec {
   case class Ping(msg: String, response: ActorRef[Pong])
   case class Pong(msg: String)
 
-  val echoActor = Actor.immutable[Ping] { (_, msg) ⇒
+  val echoActor = Behaviors.immutable[Ping] { (_, msg) ⇒
     msg match {
       case Ping(m, replyTo) ⇒
         replyTo ! Pong(m)
-        Actor.same
+        Behaviors.same
     }
   }
   //#under-test

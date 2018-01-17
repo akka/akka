@@ -6,13 +6,13 @@ package akka.persistence.typed.scaladsl
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.TimerScheduler
 
 object PersistentActorCompileOnlyTest {
 
-  import akka.persistence.typed.scaladsl.PersistentActor._
+  import akka.persistence.typed.scaladsl.PersistentBehaviors._
 
   object Simple {
     //#command
@@ -42,7 +42,7 @@ object PersistentActorCompileOnlyTest {
 
     //#behavior
     val simpleBehavior: PersistentBehavior[SimpleCommand, SimpleEvent, ExampleState] =
-      PersistentActor.immutable[SimpleCommand, SimpleEvent, ExampleState](
+      PersistentBehaviors.immutable[SimpleCommand, SimpleEvent, ExampleState](
         persistenceId = "sample-id-1",
         initialState = ExampleState(Nil),
         commandHandler = commandHandler,
@@ -62,7 +62,7 @@ object PersistentActorCompileOnlyTest {
 
     case class ExampleState(events: List[String] = Nil)
 
-    PersistentActor.immutable[MyCommand, MyEvent, ExampleState](
+    PersistentBehaviors.immutable[MyCommand, MyEvent, ExampleState](
       persistenceId = "sample-id-1",
 
       initialState = ExampleState(Nil),
@@ -106,7 +106,7 @@ object PersistentActorCompileOnlyTest {
         .foreach(sender ! _)
     }
 
-    PersistentActor.immutable[Command, Event, EventsInFlight](
+    PersistentBehaviors.immutable[Command, Event, EventsInFlight](
       persistenceId = "recovery-complete-id",
 
       initialState = EventsInFlight(0, Map.empty),
@@ -149,7 +149,7 @@ object PersistentActorCompileOnlyTest {
     sealed trait Event
     case class MoodChanged(to: Mood) extends Event
 
-    val b: Behavior[Command] = PersistentActor.immutable[Command, Event, Mood](
+    val b: Behavior[Command] = PersistentBehaviors.immutable[Command, Event, Mood](
       persistenceId = "myPersistenceId",
       initialState = Happy,
       commandHandler = CommandHandler.byState {
@@ -171,7 +171,7 @@ object PersistentActorCompileOnlyTest {
       })
 
     // FIXME this doesn't work, wrapping is not supported
-    Actor.withTimers((timers: TimerScheduler[Command]) ⇒ {
+    Behaviors.withTimers((timers: TimerScheduler[Command]) ⇒ {
       timers.startPeriodicTimer("swing", MoodSwing, 10.seconds)
       b
     })
@@ -190,7 +190,7 @@ object PersistentActorCompileOnlyTest {
 
     case class State(tasksInFlight: List[Task])
 
-    PersistentActor.immutable[Command, Event, State](
+    PersistentBehaviors.immutable[Command, Event, State](
       persistenceId = "asdf",
       initialState = State(Nil),
       commandHandler = CommandHandler.command {
@@ -217,7 +217,7 @@ object PersistentActorCompileOnlyTest {
 
     def worker(task: Task): Behavior[Nothing] = ???
 
-    PersistentActor.immutable[Command, Event, State](
+    PersistentBehaviors.immutable[Command, Event, State](
       persistenceId = "asdf",
       initialState = State(Nil),
       commandHandler = (ctx, _, cmd) ⇒ cmd match {
@@ -268,7 +268,7 @@ object PersistentActorCompileOnlyTest {
 
     def isFullyHydrated(basket: Basket, ids: List[Id]) = basket.items.map(_.id) == ids
 
-    Actor.deferred { ctx: ActorContext[Command] ⇒
+    Behaviors.deferred { ctx: ActorContext[Command] ⇒
       // FIXME this doesn't work, wrapping not supported
 
       var basket = Basket(Nil)
@@ -280,7 +280,7 @@ object PersistentActorCompileOnlyTest {
           .persist[Event, List[Id]](ItemAdded(id))
           .andThen(metadataRegistry ! GetMetaData(id, adapt))
 
-      PersistentActor.immutable[Command, Event, List[Id]](
+      PersistentBehaviors.immutable[Command, Event, List[Id]](
         persistenceId = "basket-1",
         initialState = Nil,
         commandHandler =
@@ -342,7 +342,7 @@ object PersistentActorCompileOnlyTest {
       if (currentState == newMood) Effect.none
       else Effect.persist(MoodChanged(newMood))
 
-    PersistentActor.immutable[Command, Event, Mood](
+    PersistentBehaviors.immutable[Command, Event, Mood](
       persistenceId = "myPersistenceId",
       initialState = Sad,
       commandHandler = (_, state, cmd) ⇒
@@ -378,7 +378,7 @@ object PersistentActorCompileOnlyTest {
 
     class State
 
-    PersistentActor.immutable[Command, Event, State](
+    PersistentBehaviors.immutable[Command, Event, State](
       persistenceId = "myPersistenceId",
       initialState = new State,
       commandHandler = CommandHandler.command {

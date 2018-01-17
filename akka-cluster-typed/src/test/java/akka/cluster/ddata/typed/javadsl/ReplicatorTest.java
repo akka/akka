@@ -24,9 +24,9 @@ import akka.testkit.javadsl.TestKit;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.cluster.ddata.typed.javadsl.Replicator.Command;
-import akka.actor.typed.javadsl.Actor;
+import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Adapter;
-import akka.actor.typed.javadsl.Actor.MutableBehavior;
+import akka.actor.typed.javadsl.Behaviors.MutableBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 
 public class ReplicatorTest extends JUnitSuite {
@@ -105,11 +105,11 @@ public class ReplicatorTest extends JUnitSuite {
     }
 
     public static Behavior<ClientCommand> create(ActorRef<Command> replicator, Cluster node) {
-      return Actor.mutable(ctx -> new Client(replicator, node, ctx));
+      return Behaviors.mutable(ctx -> new Client(replicator, node, ctx));
     }
 
     @Override
-    public Actor.Receive<ClientCommand> createReceive() {
+    public Behaviors.Receive<ClientCommand> createReceive() {
       return receiveBuilder()
         .onMessage(Increment.class, cmd -> {
           replicator.tell(

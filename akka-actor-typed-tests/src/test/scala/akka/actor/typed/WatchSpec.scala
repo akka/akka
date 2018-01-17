@@ -3,7 +3,7 @@
  */
 package akka.actor.typed
 
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 
 import scala.concurrent._
 import akka.testkit.typed.TestKit
@@ -12,8 +12,8 @@ object WatchSpec {
   case object Stop
 
   val terminatorBehavior =
-    Actor.immutable[Stop.type] {
-      case (_, Stop) ⇒ Actor.stopped
+    Behaviors.immutable[Stop.type] {
+      case (_, Stop) ⇒ Behaviors.stopped
     }
 
   sealed trait Message
@@ -32,14 +32,14 @@ class WatchSpec extends TestKit("WordSpec")
       val terminator = systemActor(terminatorBehavior)
       val receivedTerminationSignal: Promise[ActorRef[Nothing]] = Promise()
 
-      val watcher = systemActor(Actor.immutable[StartWatching] {
+      val watcher = systemActor(Behaviors.immutable[StartWatching] {
         case (ctx, StartWatching(watchee)) ⇒
           ctx.watch(watchee)
-          Actor.same
+          Behaviors.same
       }.onSignal {
         case (_, Terminated(stopped)) ⇒
           receivedTerminationSignal.success(stopped)
-          Actor.stopped
+          Behaviors.stopped
       })
 
       watcher ! StartWatching(terminator)
@@ -52,13 +52,13 @@ class WatchSpec extends TestKit("WordSpec")
       val terminator = systemActor(terminatorBehavior)
       val receivedTerminationSignal: Promise[Message] = Promise()
 
-      val watcher = systemActor(Actor.immutable[Message] {
+      val watcher = systemActor(Behaviors.immutable[Message] {
         case (ctx, StartWatchingWith(watchee, msg)) ⇒
           ctx.watchWith(watchee, msg)
-          Actor.same
+          Behaviors.same
         case (_, msg) ⇒
           receivedTerminationSignal.success(msg)
-          Actor.stopped
+          Behaviors.stopped
       })
 
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)

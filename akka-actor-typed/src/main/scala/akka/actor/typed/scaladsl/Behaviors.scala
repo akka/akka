@@ -10,8 +10,11 @@ import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl 
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 
+/**
+ * Factories for [[akka.actor.typed.Behavior]].
+ */
 @ApiMayChange
-object Actor {
+object Behaviors {
 
   private val _unitFunction = (_: ActorContext[Any], _: Any) ⇒ ()
   private def unitFunction[T] = _unitFunction.asInstanceOf[((ActorContext[T], Signal) ⇒ Unit)]
@@ -38,7 +41,7 @@ object Actor {
 
   /**
    * `deferred` is a factory for a behavior. Creation of the behavior instance is deferred until
-   * the actor is started, as opposed to [[Actor.immutable]] that creates the behavior instance
+   * the actor is started, as opposed to [[Behaviors.immutable]] that creates the behavior instance
    * immediately before the actor is running. The `factory` function pass the `ActorContext`
    * as parameter and that can for example be used for spawning child actors.
    *
@@ -70,11 +73,11 @@ object Actor {
    * abstract method [[MutableBehavior#onMessage]] and optionally override
    * [[MutableBehavior#onSignal]].
    *
-   * Instances of this behavior should be created via [[Actor#Mutable]] and if
+   * Instances of this behavior should be created via [[Behaviors#Mutable]] and if
    * the [[ActorContext]] is needed it can be passed as a constructor parameter
    * from the factory function.
    *
-   * @see [[Actor#Mutable]]
+   * @see [[Behaviors#Mutable]]
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
     @throws(classOf[Exception])
@@ -189,7 +192,7 @@ object Actor {
    * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
    */
   def immutablePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Immutable[T] =
-    Actor.immutable[T] { (ctx, t) ⇒ onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ Actor.unhandled[T]) }
+    Behaviors.immutable[T] { (ctx, t) ⇒ onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ Behaviors.unhandled[T]) }
 
   /**
    * Construct an actor behavior that can react to lifecycle signals only.

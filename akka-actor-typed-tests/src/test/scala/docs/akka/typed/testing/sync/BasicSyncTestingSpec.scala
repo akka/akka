@@ -10,8 +10,8 @@ import org.scalatest.{ Matchers, WordSpec }
 
 object BasicSyncTestingSpec {
   //#child
-  val childActor = Actor.immutable[String] { (_, _) ⇒
-    Actor.same[String]
+  val childActor = Behaviors.immutable[String] { (_, _) ⇒
+    Behaviors.same[String]
   }
   //#child
 
@@ -23,24 +23,24 @@ object BasicSyncTestingSpec {
   case object SayHelloToAnonymousChild extends Cmd
   case class SayHello(who: ActorRef[String]) extends Cmd
 
-  val myBehaviour = Actor.immutablePartial[Cmd] {
+  val myBehaviour = Behaviors.immutablePartial[Cmd] {
     case (ctx, CreateChild(name)) ⇒
       ctx.spawn(childActor, name)
-      Actor.same
+      Behaviors.same
     case (ctx, CreateAnonymousChild) ⇒
       ctx.spawnAnonymous(childActor)
-      Actor.same
+      Behaviors.same
     case (ctx, SayHelloToChild(childName)) ⇒
       val child: ActorRef[String] = ctx.spawn(childActor, childName)
       child ! "hello"
-      Actor.same
+      Behaviors.same
     case (ctx, SayHelloToAnonymousChild) ⇒
       val child: ActorRef[String] = ctx.spawnAnonymous(childActor)
       child ! "hello stranger"
-      Actor.same
+      Behaviors.same
     case (_, SayHello(who)) ⇒
       who ! "hello"
-      Actor.same
+      Behaviors.same
     //#under-test
   }
 

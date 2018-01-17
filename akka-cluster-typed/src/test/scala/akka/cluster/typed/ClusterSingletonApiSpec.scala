@@ -6,7 +6,7 @@ package akka.cluster.typed
 import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.typed.{ TestKit, TestKitSettings }
 import akka.testkit.typed.scaladsl.TestProbe
@@ -48,15 +48,15 @@ object ClusterSingletonApiSpec {
 
   case object Perish extends PingProtocol
 
-  val pingPong = Actor.immutable[PingProtocol] { (_, msg) ⇒
+  val pingPong = Behaviors.immutable[PingProtocol] { (_, msg) ⇒
 
     msg match {
       case Ping(respondTo) ⇒
         respondTo ! Pong
-        Actor.same
+        Behaviors.same
 
       case Perish ⇒
-        Actor.stopped
+        Behaviors.stopped
     }
 
   }
