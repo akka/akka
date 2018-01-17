@@ -12,18 +12,11 @@ import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-
 import akka.actor.DeadLetterSuppression
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.actor.typed.ActorContext
-import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
-import akka.actor.typed.ExtensibleBehavior
-import akka.actor.typed.PreRestart
-import akka.actor.typed.Signal
 import akka.actor.typed.SupervisorStrategy._
-import akka.actor.typed.scaladsl.Behaviors._
 import akka.util.OptionVal
 import akka.actor.typed.scaladsl.Behaviors
 
@@ -41,6 +34,7 @@ import akka.actor.typed.scaladsl.Behaviors
         case r: Restart ⇒
           new LimitedRestarter(initialBehavior, startedBehavior, r, retries = 0, deadline = OptionVal.None)
         case Resume(loggingEnabled) ⇒ new Resumer(startedBehavior, loggingEnabled)
+        case _: Stop                ⇒ initialBehavior
         case b: Backoff ⇒
           val backoffRestarter =
             new BackoffRestarter(

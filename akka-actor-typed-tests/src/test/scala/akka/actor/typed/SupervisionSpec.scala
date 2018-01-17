@@ -252,12 +252,20 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
       probe.expectMsg(Pong)
     }
 
+    "stop when strategy is stop" in {
+      val probe = TestProbe[Event]("evt")
+      val behv = Behaviors.supervise(targetBehavior(probe.ref))
+        .onFailure[Throwable](SupervisorStrategy.stop)
+      val ref = spawn(behv)
+      ref ! Throw(new Exc3)
+      probe.expectMsg(GotSignal(PostStop))
+    }
+
     "stop when not supervised" in {
       val probe = TestProbe[Event]("evt")
       val behv = targetBehavior(probe.ref)
       val ref = spawn(behv)
       ref ! Throw(new Exc3)
-
       probe.expectMsg(GotSignal(PostStop))
     }
 
