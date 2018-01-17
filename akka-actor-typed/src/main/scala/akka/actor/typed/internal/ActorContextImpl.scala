@@ -7,7 +7,12 @@ package internal
 import akka.annotation.InternalApi
 import java.util.Optional
 import java.util.ArrayList
+
+import akka.util.Timeout
+
 import scala.concurrent.ExecutionContextExecutor
+import scala.reflect.ClassTag
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -61,6 +66,16 @@ import scala.concurrent.ExecutionContextExecutor
 
   override def spawnAdapter[U](f: java.util.function.Function[U, T], name: String): akka.actor.typed.ActorRef[U] =
     internalSpawnAdapter(f.apply, name)
+
+  // FIXME missing implicit error message
+  override def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
+    import akka.actor.typed.scaladsl.AskPattern._
+    implicit val scheduler = system.scheduler
+
+    (new Askable(otherActor) ? createMessage).onComplete(res ⇒
+      self.asInstanceOf[ActorRef[AnyRef]] ! new AskResponse(res, responseToOwnProtocol))
+
+  }
 
   /**
    * INTERNAL API: Needed to make Scala 2.12 compiler happy.

@@ -19,6 +19,9 @@ import akka.actor.typed.internal.{ adapter ⇒ adapt }
  * The ask-pattern implements the initiator side of a request–reply protocol.
  * The `?` operator is pronounced as "ask".
  *
+ * Note that if you are inside of an actor you should prefer [[ActorContext.ask]]
+ * as that provides better safety.
+ *
  * The party that asks may be within or without an Actor, since the
  * implementation will fabricate a (hidden) [[ActorRef]] that is bound to a
  * [[scala.concurrent.Promise]]. This ActorRef will need to be injected in the
