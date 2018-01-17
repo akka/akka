@@ -186,6 +186,14 @@ object Behaviors {
 
     def onSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
       new BehaviorImpl.ImmutableBehavior(onMessage, onSignal)
+
+    def onResponse[M: ClassTag](handler: (ActorContext[T], M) ⇒ Behavior[T]): Immutable[T] = {
+      val x: (ActorContext[T], Any) ⇒ Behavior[T] = (ctx, msg) ⇒ msg match {
+        case m: M ⇒ handler(ctx, m)
+        case _    ⇒ onMessage(ctx, msg.asInstanceOf[T])
+      }
+      new Immutable[T](x.asInstanceOf[(ActorContext[T], T) ⇒ Behavior[T]])
+    }
   }
 
   /**
