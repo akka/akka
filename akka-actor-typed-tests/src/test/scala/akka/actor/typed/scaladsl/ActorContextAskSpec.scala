@@ -36,8 +36,6 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
 
   "The Scala DSL ActorContext" must {
 
-    // FIXME we should have a test over remoting as well in typed-cluster
-
     "provide a safe ask" in {
       case class Ping(sender: ActorRef[Pong])
       case class Pong(selfName: String, threadName: String)

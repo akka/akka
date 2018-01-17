@@ -3,11 +3,15 @@
  */
 package akka.actor.typed.javadsl
 
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ BiFunction, Function ⇒ JFunction }
+
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
 import akka.actor.typed._
 import java.util.Optional
+
+import akka.util.Timeout
+
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContextExecutor
 
@@ -166,5 +170,35 @@ trait ActorContext[T] {
    * these ActorRefs or to stop them when no longer needed.
    */
   def spawnAdapter[U](f: JFunction[U, T]): ActorRef[U]
+
+  /**
+   * Perform a single request-response message interaction with another actor, and transform the messages back to
+   * the protocol of this actor.
+   *
+   * The interaction has a timeout (to avoid resource a resource leak). If the timeout hits without any response it
+   * will be passed as an [[akka.pattern.AskTimeoutException]] to the `responseToOwnProtocol` function.
+   *
+   * For other messaging patterns with other actors, see [[spawnAdapter]].
+   *
+   * @param createMessage A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
+   *                      the other actor can send a message back through.
+   * @param responseToOwnProtocol Transforms the response from the `otherActor` into a message this actor understands.
+   *                              Will be invoked with either the response message or an AskTimeoutException failed or
+   *                              potentially another exception if the remote actor is untyped and sent a
+   *                              [[akka.actor.Status.Failure]] as response. The returned message of type `T` is then
+   *                              fed into this actor as a message. Should be a pure function but is executed inside
+   *                              the actor when the response arrives so can safely touch the actor internals. If this
+   *                              function throws an exception it is just as if the normal message receiving logic would
+   *                              throw.
+   *
+   * @tparam Req The request protocol, what the other actor accepts
+   * @tparam Res The response protocol, what the other actor sends back
+   */
+  def ask[Req, Res](
+    resClass:              Class[Res],
+    otherActor:            ActorRef[Req],
+    responseTimeout:       Timeout,
+    createMessage:         java.util.function.Function[ActorRef[Res], Req],
+    responseToOwnProtocol: BiFunction[Res, Throwable, T]): Unit
 
 }

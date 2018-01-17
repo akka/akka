@@ -4,14 +4,15 @@
 package akka.actor.typed
 package internal
 
-import java.util.{ ArrayList, Optional }
+import java.util.function.BiFunction
+import java.util.{ ArrayList, Optional, function }
 
 import akka.annotation.InternalApi
 import akka.util.Timeout
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.reflect.ClassTag
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API
@@ -66,12 +67,20 @@ import scala.util.Try
   override def spawnAdapter[U](f: java.util.function.Function[U, T], name: String): akka.actor.typed.ActorRef[U] =
     internalSpawnAdapter(f.apply, name)
 
+  // Scala API impl
   override def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
     import akka.actor.typed.scaladsl.AskPattern._
     (otherActor ? createMessage)(responseTimeout, system.scheduler).onComplete(res ⇒
       self.asInstanceOf[ActorRef[AnyRef]] ! new AskResponse(res, responseToOwnProtocol)
     )
+  }
 
+  // Java API impl
+  def ask[Req, Res](resClass: Class[Res], otherActor: ActorRef[Req], responseTimeout: Timeout, createMessage: function.Function[ActorRef[Res], Req], responseToOwnProtocol: BiFunction[Res, Throwable, T]): Unit = {
+    this.ask(otherActor, createMessage.apply) {
+      case Success(message) ⇒ responseToOwnProtocol.apply(message, null)
+      case Failure(ex)      ⇒ responseToOwnProtocol.apply(null.asInstanceOf[Res], ex)
+    }(responseTimeout, ClassTag[Res](resClass))
   }
 
   /**

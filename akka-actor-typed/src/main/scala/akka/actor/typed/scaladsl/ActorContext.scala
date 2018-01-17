@@ -171,7 +171,8 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    *                      the other actor can send a message back through.
    * @param responseToOwnProtocol Transforms the response from the `otherActor` into a message this actor understands.
    *                              Should be a pure function but is executed inside the actor when the response arrives
-   *                              so can safely touch the actor internals.
+   *                              so can safely touch the actor internals. If this function throws an exception it is
+   *                              just as if the normal message receiving logic would throw.
    *
    * @tparam Req The request protocol, what the other actor accepts
    * @tparam Res The response protocol, what the other actor sends back
