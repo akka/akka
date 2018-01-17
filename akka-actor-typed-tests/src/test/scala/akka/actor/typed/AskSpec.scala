@@ -7,9 +7,12 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.adapter._
 import akka.pattern.AskTimeoutException
 import akka.testkit.typed.TestKit
+import akka.util.Timeout
 import org.scalatest.concurrent.ScalaFutures
+import scala.concurrent.duration._
 
 import scala.concurrent.ExecutionContext
 
@@ -61,6 +64,31 @@ class AskSpec extends TestKit("AskSpec") with TypedAkkaSpec with ScalaFutures {
 
       val answer = noSuchActor ? Foo("bar")
       answer.recover { case _: AskTimeoutException ⇒ "ask" }.futureValue should ===("ask")
+    }
+
+    "must transform a replied akka.actor.Status.Failure to a failed future" in {
+      implicit val untypedSystem = akka.actor.ActorSystem("AskSpec-untyped-1")
+      try {
+        // to be honest I'm not too sure this would actually ever happen
+        case class Ping(respondTo: ActorRef[AnyRef])
+        val ex = new RuntimeException("not good!")
+
+        class LegacyActor extends akka.actor.Actor {
+          def receive = {
+            case Ping(respondTo) ⇒ respondTo ! akka.actor.Status.Failure(ex)
+          }
+        }
+
+        val legacyActor = untypedSystem.actorOf(akka.actor.Props(new LegacyActor))
+
+        import scaladsl.AskPattern._
+        implicit val timeout: Timeout = 3.seconds
+        implicit val scheduler = untypedSystem.toTyped.scheduler
+        val typedLegacy: ActorRef[AnyRef] = legacyActor
+        (typedLegacy ? Ping).failed.futureValue should ===(ex)
+      } finally {
+        akka.testkit.TestKit.shutdownActorSystem(untypedSystem)
+      }
     }
   }
 }
