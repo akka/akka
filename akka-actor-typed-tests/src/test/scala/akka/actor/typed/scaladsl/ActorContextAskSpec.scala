@@ -76,16 +76,15 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
     }
 
     "deal with timeouts in ask" in {
-      pending // ask timeout does not seem to work on adapted actor system
+      // pending // ask timeout does not seem to work on adapted actor system
 
       val probe = TestProbe[AnyRef]()
       val snitch = Actor.deferred[AnyRef] { (ctx) ⇒
 
         ctx.ask[String, String](system.deadLetters, ref ⇒ "boo") {
-          case Success(_) ⇒ ???
-          case Failure(x) ⇒
-            x
-        }(10.millis, implicitly[ClassTag[String]])
+          case Success(m) ⇒ m
+          case Failure(x) ⇒ x
+        }(20.millis, implicitly[ClassTag[String]])
 
         Actor.immutable {
           case (_, msg) ⇒
@@ -93,6 +92,8 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
             Actor.same
         }
       }
+
+      spawn(snitch)
 
       probe.expectMsgType[AskTimeoutException]
 

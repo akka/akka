@@ -4,11 +4,9 @@
 package akka.actor.typed
 package internal
 
-import akka.annotation.InternalApi
-import java.util.Optional
-import java.util.ArrayList
+import java.util.{ ArrayList, Optional }
 
-import akka.actor.Scheduler
+import akka.annotation.InternalApi
 import akka.util.Timeout
 
 import scala.concurrent.ExecutionContextExecutor
@@ -70,9 +68,7 @@ import scala.util.Try
 
   override def ask[Req, Res](otherActor: ActorRef[Req], createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
     import akka.actor.typed.scaladsl.AskPattern._
-    implicit val scheduler: Scheduler = system.scheduler
-
-    (otherActor ? createMessage).onComplete(res ⇒
+    (otherActor ? createMessage)(responseTimeout, system.scheduler).onComplete(res ⇒
       self.asInstanceOf[ActorRef[AnyRef]] ! new AskResponse(res, responseToOwnProtocol)
     )
 
