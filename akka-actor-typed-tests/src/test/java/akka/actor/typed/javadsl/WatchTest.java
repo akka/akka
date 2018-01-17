@@ -74,7 +74,8 @@ public class WatchTest extends JUnitSuite {
         try {
           // Not sure why this does not compile without an explicit cast?
           // system.tell(new RunTest());
-          CompletionStage<Done> result = AskPattern.ask((ActorRef<RunTest<Done>>)system, (ActorRef<Done> ref) -> new RunTest<Done>(ref), timeout, system.scheduler());
+          CompletionStage<Done> result = AskPattern.ask(
+            (ActorRef<RunTest<Done>>)system, (ActorRef<Done> ref) -> new RunTest<>(ref), timeout);
           result.toCompletableFuture().get(3, TimeUnit.SECONDS);
         } finally {
           Await.ready(system.terminate(), Duration.create(10, TimeUnit.SECONDS));
@@ -97,7 +98,7 @@ public class WatchTest extends JUnitSuite {
         try {
           // Not sure why this does not compile without an explicit cast?
           // system.tell(new RunTest());
-          CompletionStage<Done> result = AskPattern.ask((ActorRef<Message>)system, (ActorRef<Done> ref) -> new RunTest<Done>(ref), timeout, system.scheduler());
+          CompletionStage<Done> result = AskPattern.ask((ActorRef<Message>)system, (ActorRef<Done> ref) -> new RunTest<>(ref), timeout);
           result.toCompletableFuture().get(3, TimeUnit.SECONDS);
         } finally {
           Await.ready(system.terminate(), Duration.create(10, TimeUnit.SECONDS));

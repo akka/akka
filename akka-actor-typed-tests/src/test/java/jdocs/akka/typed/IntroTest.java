@@ -63,7 +63,7 @@ public class IntroTest {
     final CompletionStage<HelloWorld.Greeted> reply =
       AskPattern.ask(system,
         (ActorRef<HelloWorld.Greeted> replyTo) -> new HelloWorld.Greet("world", replyTo),
-        new Timeout(3, TimeUnit.SECONDS), system.scheduler());
+        new Timeout(3, TimeUnit.SECONDS));
 
     reply.thenAccept(greeting -> {
       System.out.println("result: " + greeting.whom);
