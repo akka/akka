@@ -13,7 +13,7 @@ import akka.cluster.{ ddata ⇒ dd }
 import akka.pattern.ask
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.util.Timeout
 import akka.cluster.ddata.ReplicatedData
@@ -35,7 +35,7 @@ import akka.actor.typed.Terminated
 
   def behavior(settings: dd.ReplicatorSettings, underlyingReplicator: Option[akka.actor.ActorRef]): Behavior[SReplicator.Command] = {
 
-    Actor.deferred { ctx ⇒
+    Behaviors.deferred { ctx ⇒
       val untypedReplicator = underlyingReplicator match {
         case Some(ref) ⇒ ref
         case None ⇒
@@ -54,17 +54,17 @@ import akka.actor.typed.Terminated
               ctx.stop(adapter)
               withState(subscribeAdapters - subscriber)
             case None ⇒ // already unsubscribed or terminated
-              Actor.same
+              Behaviors.same
           }
         }
 
-        Actor.immutable[SReplicator.Command] { (ctx, msg) ⇒
+        Behaviors.immutable[SReplicator.Command] { (ctx, msg) ⇒
           msg match {
             case cmd: SReplicator.Get[_] ⇒
               untypedReplicator.tell(
                 dd.Replicator.Get(cmd.key, cmd.consistency, cmd.request),
                 sender = cmd.replyTo.toUntyped)
-              Actor.same
+              Behaviors.same
 
             case cmd: JReplicator.Get[d] ⇒
               implicit val timeout = Timeout(cmd.consistency.timeout match {
@@ -82,13 +82,13 @@ import akka.actor.typed.Terminated
                     case _ ⇒ JReplicator.GetFailure(cmd.key, cmd.request)
                   }
               reply.foreach { cmd.replyTo ! _ }
-              Actor.same
+              Behaviors.same
 
             case cmd: SReplicator.Update[_] ⇒
               untypedReplicator.tell(
                 dd.Replicator.Update(cmd.key, cmd.writeConsistency, cmd.request)(cmd.modify),
                 sender = cmd.replyTo.toUntyped)
-              Actor.same
+              Behaviors.same
 
             case cmd: JReplicator.Update[d] ⇒
               implicit val timeout = Timeout(cmd.writeConsistency.timeout match {
@@ -107,14 +107,14 @@ import akka.actor.typed.Terminated
                     case _ ⇒ JReplicator.UpdateTimeout(cmd.key, cmd.request)
                   }
               reply.foreach { cmd.replyTo ! _ }
-              Actor.same
+              Behaviors.same
 
             case cmd: SReplicator.Subscribe[_] ⇒
               // For the Scala API the Changed messages can be sent directly to the subscriber
               untypedReplicator.tell(
                 dd.Replicator.Subscribe(cmd.key, cmd.subscriber.toUntyped),
                 sender = cmd.subscriber.toUntyped)
-              Actor.same
+              Behaviors.same
 
             case cmd: JReplicator.Subscribe[ReplicatedData] @unchecked ⇒
               // For the Java API the Changed messages must be mapped to the JReplicator.Changed class.
@@ -134,7 +134,7 @@ import akka.actor.typed.Terminated
 
             case InternalChanged(chg, subscriber) ⇒
               subscriber ! JReplicator.Changed(chg.key)(chg.dataValue)
-              Actor.same
+              Behaviors.same
 
             case cmd: JReplicator.Unsubscribe[ReplicatedData] @unchecked ⇒
               stopSubscribeAdapter(cmd.subscriber)
@@ -143,7 +143,7 @@ import akka.actor.typed.Terminated
               untypedReplicator.tell(
                 dd.Replicator.Delete(cmd.key, cmd.consistency, cmd.request),
                 sender = cmd.replyTo.toUntyped)
-              Actor.same
+              Behaviors.same
 
             case cmd: JReplicator.Delete[d] ⇒
               implicit val timeout = Timeout(cmd.consistency.timeout match {
@@ -162,11 +162,11 @@ import akka.actor.typed.Terminated
                     case _ ⇒ JReplicator.ReplicationDeleteFailure(cmd.key, cmd.request)
                   }
               reply.foreach { cmd.replyTo ! _ }
-              Actor.same
+              Behaviors.same
 
             case SReplicator.GetReplicaCount(replyTo) ⇒
               untypedReplicator.tell(dd.Replicator.GetReplicaCount, sender = replyTo.toUntyped)
-              Actor.same
+              Behaviors.same
 
             case JReplicator.GetReplicaCount(replyTo) ⇒
               implicit val timeout = Timeout(localAskTimeout)
@@ -175,11 +175,11 @@ import akka.actor.typed.Terminated
                 (untypedReplicator ? dd.Replicator.GetReplicaCount)
                   .mapTo[dd.Replicator.ReplicaCount].map(rsp ⇒ JReplicator.ReplicaCount(rsp.n))
               reply.foreach { replyTo ! _ }
-              Actor.same
+              Behaviors.same
 
             case SReplicator.FlushChanges | JReplicator.FlushChanges ⇒
               untypedReplicator.tell(dd.Replicator.FlushChanges, sender = akka.actor.ActorRef.noSender)
-              Actor.same
+              Behaviors.same
 
           }
         }

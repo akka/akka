@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.TestKit
@@ -46,21 +46,21 @@ class TimerSpec extends TestKit("TimerSpec")
       target(monitor, timer, nextCount)
     }
 
-    Actor.immutable[Command] { (ctx, cmd) ⇒
+    Behaviors.immutable[Command] { (ctx, cmd) ⇒
       cmd match {
         case Tick(n) ⇒
           monitor ! Tock(n)
-          Actor.same
+          Behaviors.same
         case Bump ⇒
           bump()
         case SlowThenBump(latch) ⇒
           latch.await(10, TimeUnit.SECONDS)
           bump()
         case End ⇒
-          Actor.stopped
+          Behaviors.stopped
         case Cancel ⇒
           timer.cancel("T")
-          Actor.same
+          Behaviors.same
         case Throw(e) ⇒
           throw e
         case SlowThenThrow(latch, e) ⇒
@@ -70,17 +70,17 @@ class TimerSpec extends TestKit("TimerSpec")
     } onSignal {
       case (ctx, PreRestart) ⇒
         monitor ! GotPreRestart(timer.isTimerActive("T"))
-        Actor.same
+        Behaviors.same
       case (ctx, PostStop) ⇒
         monitor ! GotPostStop(timer.isTimerActive("T"))
-        Actor.same
+        Behaviors.same
     }
   }
 
   "A timer" must {
     "schedule non-repeated ticks" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.withTimers[Command] { timer ⇒
+      val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startSingleTimer("T", Tick(1), 10.millis)
         target(probe.ref, timer, 1)
       }
@@ -95,7 +95,7 @@ class TimerSpec extends TestKit("TimerSpec")
 
     "schedule repeated ticks" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.withTimers[Command] { timer ⇒
+      val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
@@ -113,7 +113,7 @@ class TimerSpec extends TestKit("TimerSpec")
 
     "replace timer" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.withTimers[Command] { timer ⇒
+      val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
@@ -133,7 +133,7 @@ class TimerSpec extends TestKit("TimerSpec")
 
     "cancel timer" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.withTimers[Command] { timer ⇒
+      val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
@@ -150,7 +150,7 @@ class TimerSpec extends TestKit("TimerSpec")
     "discard timers from old incarnation after restart, alt 1" in {
       val probe = TestProbe[Event]("evt")
       val startCounter = new AtomicInteger(0)
-      val behv = Actor.supervise(Actor.withTimers[Command] { timer ⇒
+      val behv = Behaviors.supervise(Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(startCounter.incrementAndGet()), interval)
         target(probe.ref, timer, 1)
       }).onFailure[Exception](SupervisorStrategy.restart)
@@ -173,7 +173,7 @@ class TimerSpec extends TestKit("TimerSpec")
 
     "discard timers from old incarnation after restart, alt 2" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.supervise(Actor.withTimers[Command] { timer ⇒
+      val behv = Behaviors.supervise(Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }).onFailure[Exception](SupervisorStrategy.restart)
@@ -199,7 +199,7 @@ class TimerSpec extends TestKit("TimerSpec")
 
     "cancel timers when stopped from exception" in {
       val probe = TestProbe[Event]()
-      val behv = Actor.withTimers[Command] { timer ⇒
+      val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
@@ -210,7 +210,7 @@ class TimerSpec extends TestKit("TimerSpec")
 
     "cancel timers when stopped voluntarily" in {
       val probe = TestProbe[Event]()
-      val behv = Actor.withTimers[Command] { timer ⇒
+      val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }

@@ -18,21 +18,21 @@ import scala.collection.immutable.Set
 object RandomRouter {
 
   def router[T](serviceKey: ServiceKey[T]): Behavior[T] =
-    Actor.deferred[Any] { ctx ⇒
+    Behaviors.deferred[Any] { ctx ⇒
       ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self)
 
       def routingBehavior(routees: Vector[ActorRef[T]]): Behavior[Any] =
-        Actor.immutable { (_, msg) ⇒
+        Behaviors.immutable { (_, msg) ⇒
           msg match {
             case Listing(_, services: Set[ActorRef[T]]) ⇒
               routingBehavior(services.toVector)
             case other: T @unchecked ⇒
               if (routees.isEmpty)
-                Actor.unhandled
+                Behaviors.unhandled
               else {
                 val i = ThreadLocalRandom.current.nextInt(routees.size)
                 routees(i) ! other
-                Actor.same
+                Behaviors.same
               }
           }
         }
@@ -45,7 +45,7 @@ object RandomRouter {
   // same as above, but also subscribes to cluster reachability events and
   // avoids routees that are unreachable
   def clusterRouter[T](serviceKey: ServiceKey[T]): Behavior[T] =
-    Actor.deferred[Any] { ctx ⇒
+    Behaviors.deferred[Any] { ctx ⇒
       ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self)
 
       val cluster = Cluster(ctx.system)
@@ -55,7 +55,7 @@ object RandomRouter {
       cluster.subscriptions ! Subscribe(reachabilityAdapter, classOf[ReachabilityEvent])
 
       def routingBehavior(routees: Vector[ActorRef[T]], unreachable: Set[Address]): Behavior[Any] =
-        Actor.immutable { (_, msg) ⇒
+        Behaviors.immutable { (_, msg) ⇒
           msg match {
             case Listing(_, services: Set[ActorRef[T]]) ⇒
               routingBehavior(services.toVector, unreachable)
@@ -68,7 +68,7 @@ object RandomRouter {
 
             case other: T @unchecked ⇒
               if (routees.isEmpty)
-                Actor.unhandled
+                Behaviors.unhandled
               else {
                 val reachableRoutes =
                   if (unreachable.isEmpty) routees
@@ -76,7 +76,7 @@ object RandomRouter {
 
                 val i = ThreadLocalRandom.current.nextInt(reachableRoutes.size)
                 reachableRoutes(i) ! other
-                Actor.same
+                Behaviors.same
               }
           }
         }
@@ -93,68 +93,68 @@ object PingPongExample {
   final case object Pong
 
   val pingService: Behavior[Ping] =
-    Actor.deferred { ctx ⇒
+    Behaviors.deferred { ctx ⇒
       ctx.system.receptionist ! Receptionist.Register(PingServiceKey, ctx.self, ctx.system.deadLetters)
-      Actor.immutable[Ping] { (_, msg) ⇒
+      Behaviors.immutable[Ping] { (_, msg) ⇒
         msg match {
           case Ping(replyTo) ⇒
             replyTo ! Pong
-            Actor.stopped
+            Behaviors.stopped
         }
       }
     }
   //#ping-service
 
   //#pinger
-  def pinger(pingService: ActorRef[Ping]) = Actor.deferred[Pong.type] { ctx ⇒
+  def pinger(pingService: ActorRef[Ping]) = Behaviors.deferred[Pong.type] { ctx ⇒
     pingService ! Ping(ctx.self)
-    Actor.immutable { (_, msg) ⇒
+    Behaviors.immutable { (_, msg) ⇒
       println("I was ponged!!" + msg)
-      Actor.same
+      Behaviors.same
     }
   }
   //#pinger
 
   //#pinger-guardian
-  val guardian: Behavior[Listing[Ping]] = Actor.deferred { ctx ⇒
+  val guardian: Behavior[Listing[Ping]] = Behaviors.deferred { ctx ⇒
     ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
     val ps = ctx.spawnAnonymous(pingService)
     ctx.watch(ps)
-    Actor.immutablePartial[Listing[Ping]] {
+    Behaviors.immutablePartial[Listing[Ping]] {
       case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty ⇒
         listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
-        Actor.same
+        Behaviors.same
     } onSignal {
       case (_, Terminated(`ps`)) ⇒
         println("Ping service has shut down")
-        Actor.stopped
+        Behaviors.stopped
     }
   }
   //#pinger-guardian
 
   //#pinger-guardian-pinger-service
-  val guardianJustPingService: Behavior[Listing[Ping]] = Actor.deferred { ctx ⇒
+  val guardianJustPingService: Behavior[Listing[Ping]] = Behaviors.deferred { ctx ⇒
     val ps = ctx.spawnAnonymous(pingService)
     ctx.watch(ps)
-    Actor.immutablePartial[Listing[Ping]] {
+    Behaviors.immutablePartial[Listing[Ping]] {
       case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty ⇒
         listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
-        Actor.same
+        Behaviors.same
     } onSignal {
       case (_, Terminated(`ps`)) ⇒
         println("Ping service has shut down")
-        Actor.stopped
+        Behaviors.stopped
     }
   }
   //#pinger-guardian-pinger-service
 
   //#pinger-guardian-just-pinger
-  val guardianJustPinger: Behavior[Listing[Ping]] = Actor.deferred { ctx ⇒
+  val guardianJustPinger: Behavior[Listing[Ping]] = Behaviors.deferred { ctx ⇒
     ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
-    Actor.immutablePartial[Listing[Ping]] {
+    Behaviors.immutablePartial[Listing[Ping]] {
       case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty ⇒
         listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
-        Actor.same
+        Behaviors.same
     }
   }
   //#pinger-guardian-just-pinger

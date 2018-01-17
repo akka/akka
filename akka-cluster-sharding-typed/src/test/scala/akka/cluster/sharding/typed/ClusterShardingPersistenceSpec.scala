@@ -4,7 +4,7 @@
 package akka.cluster.sharding.typed
 
 import akka.actor.typed.{ ActorRef, Behavior, Props, TypedAkkaSpecWithShutdown }
-import akka.persistence.typed.scaladsl.PersistentActor
+import akka.persistence.typed.scaladsl.PersistentBehaviors
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
@@ -36,10 +36,10 @@ object ClusterShardingPersistenceSpec {
   final case class Get(replyTo: ActorRef[String]) extends Command
   final case object StopPlz extends Command
 
-  import PersistentActor._
+  import PersistentBehaviors._
 
   val persistentActor: Behavior[Command] =
-    PersistentActor.persistentEntity[Command, String, String](
+    PersistentBehaviors.persistentEntity[Command, String, String](
       persistenceIdFromActorName = name ⇒ "Test-" + name,
       initialState = "",
       commandHandler = (_, state, cmd) ⇒ cmd match {

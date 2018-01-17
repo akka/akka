@@ -1,6 +1,6 @@
 package akka.testkit.typed
 
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.annotation.ApiMayChange
@@ -17,13 +17,13 @@ object TestKit {
   private[akka] case class SpawnActor[T](name: String, behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]]) extends TestKitCommand
   private[akka] case class SpawnActorAnonymous[T](behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]]) extends TestKitCommand
 
-  private val testKitGuardian = Actor.immutable[TestKitCommand] {
+  private val testKitGuardian = Behaviors.immutable[TestKitCommand] {
     case (ctx, SpawnActor(name, behavior, reply)) ⇒
       reply ! ctx.spawn(behavior, name)
-      Actor.same
+      Behaviors.same
     case (ctx, SpawnActorAnonymous(behavior, reply)) ⇒
       reply ! ctx.spawnAnonymous(behavior)
-      Actor.same
+      Behaviors.same
   }
 
   private def getCallerName(clazz: Class[_]): String = {

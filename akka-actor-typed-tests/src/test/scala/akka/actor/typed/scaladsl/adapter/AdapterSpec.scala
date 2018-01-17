@@ -9,7 +9,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.{ InvalidMessageException, Props }
 import akka.actor.typed.Behavior
 import akka.actor.typed.Terminated
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.{ actor ⇒ untyped }
 import akka.testkit._
 import akka.actor.typed.Behavior.UntypedBehavior
@@ -33,39 +33,39 @@ object AdapterSpec {
   }
 
   def typed1(ref: untyped.ActorRef, probe: ActorRef[String]): Behavior[String] =
-    Actor.immutable[String] {
+    Behaviors.immutable[String] {
       (ctx, msg) ⇒
         msg match {
           case "send" ⇒
             val replyTo = ctx.self.toUntyped
             ref.tell("ping", replyTo)
-            Actor.same
+            Behaviors.same
           case "pong" ⇒
             probe ! "ok"
-            Actor.same
+            Behaviors.same
           case "actorOf" ⇒
             val child = ctx.actorOf(untyped1)
             child.tell("ping", ctx.self.toUntyped)
-            Actor.same
+            Behaviors.same
           case "watch" ⇒
             ctx.watch(ref)
-            Actor.same
+            Behaviors.same
           case "supervise-stop" ⇒
             val child = ctx.actorOf(untyped1)
             ctx.watch(child)
             child ! ThrowIt3
             child.tell("ping", ctx.self.toUntyped)
-            Actor.same
+            Behaviors.same
           case "stop-child" ⇒
             val child = ctx.actorOf(untyped1)
             ctx.watch(child)
             ctx.stop(child)
-            Actor.same
+            Behaviors.same
         }
     } onSignal {
       case (ctx, Terminated(ref)) ⇒
         probe ! "terminated"
-        Actor.same
+        Behaviors.same
     }
 
   sealed trait Typed2Msg
@@ -131,13 +131,13 @@ object AdapterSpec {
   }
 
   def typed2: Behavior[Typed2Msg] =
-    Actor.immutable { (ctx, msg) ⇒
+    Behaviors.immutable { (ctx, msg) ⇒
       msg match {
         case Ping(replyTo) ⇒
           replyTo ! "pong"
-          Actor.same
+          Behaviors.same
         case StopIt ⇒
-          Actor.stopped
+          Behaviors.stopped
         case t: ThrowIt ⇒
           throw t
       }
@@ -188,7 +188,7 @@ class AdapterSpec extends AkkaSpec {
 
     "spawn typed child from untyped parent" in {
       val probe = TestProbe()
-      val ign = system.spawnAnonymous(Actor.ignore[Ping])
+      val ign = system.spawnAnonymous(Behaviors.ignore[Ping])
       val untypedRef = system.actorOf(untyped2(ign, probe.ref))
       untypedRef ! "spawn"
       probe.expectMsg("ok")
@@ -196,7 +196,7 @@ class AdapterSpec extends AkkaSpec {
 
     "actorOf typed child via Props from untyped parent" in {
       val probe = TestProbe()
-      val ign = system.spawnAnonymous(Actor.ignore[Ping])
+      val ign = system.spawnAnonymous(Behaviors.ignore[Ping])
       val untypedRef = system.actorOf(untyped2(ign, probe.ref))
       untypedRef ! "actorOf-props"
       probe.expectMsg("ok")
@@ -230,7 +230,7 @@ class AdapterSpec extends AkkaSpec {
 
     "supervise typed child from untyped parent" in {
       val probe = TestProbe()
-      val ign = system.spawnAnonymous(Actor.ignore[Ping])
+      val ign = system.spawnAnonymous(Behaviors.ignore[Ping])
       val untypedRef = system.actorOf(untyped2(ign, probe.ref))
 
       untypedRef ! "supervise-stop"
@@ -260,7 +260,7 @@ class AdapterSpec extends AkkaSpec {
 
     "stop typed child from untyped parent" in {
       val probe = TestProbe()
-      val ignore = system.spawnAnonymous(Actor.ignore[Ping])
+      val ignore = system.spawnAnonymous(Behaviors.ignore[Ping])
       val untypedRef = system.actorOf(untyped2(ignore, probe.ref))
       untypedRef ! "stop-child"
       probe.expectMsg("terminated")

@@ -6,13 +6,13 @@ package akka.actor.typed.javadsl
 
 import scala.annotation.tailrec
 import akka.japi.function.{ Creator, Function, Predicate }
-import akka.actor.typed.javadsl.Actor.Receive
+import akka.actor.typed.javadsl.Behaviors.Receive
 import akka.actor.typed.{ Behavior, Signal }
 import ReceiveBuilder._
 import akka.annotation.InternalApi
 
 /**
- * Used when implementing [[Actor.MutableBehavior]].
+ * Used when implementing [[Behaviors.MutableBehavior]].
  *
  * When handling a message or signal, this [[Behavior]] will consider all handlers in the order they were added,
  * looking for the first handler for which both the type and the (optional) predicate match.
@@ -145,7 +145,7 @@ object ReceiveBuilder {
 }
 
 /**
- * Receive type for [[Actor.MutableBehavior]]
+ * Receive type for [[Behaviors.MutableBehavior]]
  */
 private class BuiltReceive[T](
   private val messageHandlers: List[Case[T, T]],
@@ -163,7 +163,7 @@ private class BuiltReceive[T](
         if (cls.isAssignableFrom(msg.getClass) && (predicate.isEmpty || predicate.get.apply(msg))) handler(msg)
         else receive[M](msg, tail)
       case _ ⇒
-        Actor.unhandled
+        Behaviors.unhandled
     }
 
 }
