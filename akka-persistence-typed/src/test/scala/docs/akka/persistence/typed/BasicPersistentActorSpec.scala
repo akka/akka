@@ -33,4 +33,14 @@ object BasicPersistentActorSpec {
       }
   //#recovery
 
+  //#tagging
+  val taggingBehavior: Behavior[Command] =
+    PersistentActor.immutable[Command, Event, State](
+      persistenceId = "abc",
+      initialState = State(),
+      commandHandler = (ctx, state, cmd) ⇒ ???,
+      eventHandler = (state, evt) ⇒ ???
+    ).withTagger(_ ⇒ Set("tag1", "tag2"))
+
+  //#tagging
 }

@@ -178,6 +178,14 @@ Scala
 
 The `onRecoveryCompleted` takes on an `ActorContext` and the current `State`.
 
+## Tagging
+
+Persistence typed allows you to use event tags with the following `withTagging` method,
+without using @ref[`EventAdapter`](persistence.md#event-adapters).
+
+Scala
+:  @@snip [BasicPersistentActorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentActorSpec.scala) { #tagging }
+
 ## Current limitations
 
 * The `PersistentBehavior` can't be wrapped in other behaviors, such as `Actor.deferred`. See [#23694](https://github.com/akka/akka/issues/23694)
