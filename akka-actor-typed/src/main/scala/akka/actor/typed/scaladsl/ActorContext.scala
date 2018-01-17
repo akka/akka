@@ -10,9 +10,8 @@ import akka.annotation.DoNotInherit
 import akka.actor.typed._
 import akka.util.Timeout
 
-import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
-import scala.util.Try
+import scala.util.{ Success, Failure, Try }
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -184,24 +183,25 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
 
   /**
    * Implicit decoration of actorrefs to provide syntax sugar for [[ask]]
-   * @see [[?]]
+   * @see [[Ask#ask]]
    */
   implicit final class Ask[Req](otherActor: ActorRef[Req]) {
     /**
-     * Provides syntax sugar for [[ask]]:
+     * Provides syntax sugar to call [[ask]] directly on an `ActorRef`:
      * ```
      * import ctx.Ask
      * ...
-     * actorRef.? (createOutgoingMessage(_)) {
+     * actorRef.ask(createOutgoingMessage(_), {
      *   case Success(incomingMessage) => MyProtocolOk(...)
      *   case Failure(ex) => MyProtocolFail(...)
-     * }
+     * })
      * ```
      *
-     * @see [[ask]] for details
+     * @see [[ActorContext.ask]] for details
      */
-    def ?[Res](createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
-      ask(otherActor, createMessage)(responseToOwnProtocol)
+    def ask[Res](createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
+      ActorContext.this.ask(otherActor, createMessage)(responseToOwnProtocol)
     }
+
   }
 }
