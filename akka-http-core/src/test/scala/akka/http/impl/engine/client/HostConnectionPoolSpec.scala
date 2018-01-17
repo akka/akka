@@ -78,9 +78,9 @@ class HostConnectionPoolSpec extends AkkaSpec(
   testSet(poolImplementation = NewPoolImplementation, clientServerImplementation = AkkaHttpEngineTCP)
   //testSet(poolImplementation = NewPoolImplementation, clientServerImplementation = AkkaHttpEngineTLS)
 
-  testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = PassThrough)
-  testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = AkkaHttpEngineNoNetwork)
-  testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = AkkaHttpEngineTCP)
+  //testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = PassThrough)
+  //testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = AkkaHttpEngineNoNetwork)
+  //testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = AkkaHttpEngineTCP)
   //testSet(poolImplementation = OldPoolImplementation, clientServerImplementation = AkkaHttpEngineTLS)
 
   def testSet(poolImplementation: PoolImplementation, clientServerImplementation: ClientServerImplementation) =
