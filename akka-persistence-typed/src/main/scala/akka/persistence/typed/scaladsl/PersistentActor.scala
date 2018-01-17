@@ -3,11 +3,12 @@
  */
 package akka.persistence.typed.scaladsl
 
-import scala.collection.{ immutable ⇒ im }
-import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.actor.typed.Behavior.UntypedBehavior
-import akka.persistence.typed.internal.PersistentActorImpl
 import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.persistence.typed.internal.PersistentActorImpl
+
+import scala.collection.{ immutable ⇒ im }
 
 object PersistentActor {
 
@@ -34,10 +35,11 @@ object PersistentActor {
     commandHandler:             CommandHandler[Command, Event, State],
     eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
-      recoveryCompleted = (_, _) ⇒ ())
+      recoveryCompleted = (_, _) ⇒ (),
+      tagger = _ ⇒ Set.empty)
 
   /**
-   * Factories for effects - how a persitent actor reacts on a command
+   * Factories for effects - how a persistent actor reacts on a command
    */
   object Effect {
 
@@ -187,7 +189,8 @@ class PersistentBehavior[Command, Event, State](
   val initialState:                                          State,
   val commandHandler:                                        PersistentActor.CommandHandler[Command, Event, State],
   val eventHandler:                                          (State, Event) ⇒ State,
-  val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit) extends UntypedBehavior[Command] {
+  val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit,
+  val tagger:                                                Event ⇒ Set[String]) extends UntypedBehavior[Command] {
   import PersistentActor._
 
   /** INTERNAL API */
@@ -210,11 +213,18 @@ class PersistentBehavior[Command, Event, State](
    */
   def snapshotOn(predicate: (State, Event) ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
 
+  /**
+   * The `tagger` function should give event tags, which will be used in persistence query
+   */
+  def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State] =
+    copy(tagger = tagger)
+
   private def copy(
     persistenceIdFromActorName: String ⇒ String                       = persistenceIdFromActorName,
     initialState:               State                                 = initialState,
     commandHandler:             CommandHandler[Command, Event, State] = commandHandler,
     eventHandler:               (State, Event) ⇒ State                = eventHandler,
-    recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted)
+    recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted,
+    tagger:                     Event ⇒ Set[String]                   = tagger): PersistentBehavior[Command, Event, State] =
+    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, tagger)
 }
