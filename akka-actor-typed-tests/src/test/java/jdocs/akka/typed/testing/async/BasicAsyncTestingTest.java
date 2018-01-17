@@ -5,7 +5,7 @@ package jdocs.akka.typed.testing.async;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.Actor;
+import akka.actor.typed.javadsl.Behaviors;
 import akka.testkit.typed.javadsl.TestProbe;
 import akka.testkit.typed.TestKit;
 import org.junit.AfterClass;
@@ -33,9 +33,9 @@ public class BasicAsyncTestingTest extends TestKit {
     }
   }
 
-  Behavior<Ping> echoActor = Actor.immutable((ctx, ping) -> {
+  Behavior<Ping> echoActor = Behaviors.immutable((ctx, ping) -> {
     ping.replyTo.tell(new Pong(ping.msg));
-    return Actor.same();
+    return Behaviors.same();
   });
   //#under-test
 

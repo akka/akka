@@ -11,19 +11,22 @@ import akka.util.OptionVal
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
 import akka.japi.function.{ Procedure, Procedure2 }
 import akka.japi.pf.PFBuilder
-
 import akka.actor.typed.Behavior
 import akka.actor.typed.ExtensibleBehavior
 import akka.actor.typed.Signal
 import akka.actor.typed.ActorRef
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
-
 import akka.actor.typed.internal.BehaviorImpl
 import akka.actor.typed.internal.Restarter
 import akka.actor.typed.internal.TimerSchedulerImpl
+import akka.annotation.ApiMayChange
 
-object Actor {
+/**
+ * Factories for [[akka.actor.typed.Behavior]].
+ */
+@ApiMayChange
+object Behaviors {
 
   private val _unitFunction = (_: SAC[Any], _: Any) ⇒ ()
   private def unitFunction[T] = _unitFunction.asInstanceOf[((SAC[T], Signal) ⇒ Unit)]
@@ -62,11 +65,11 @@ object Actor {
    * abstract method [[MutableBehavior#onMessage]] and optionally override
    * [[MutableBehavior#onSignal]].
    *
-   * Instances of this behavior should be created via [[Actor#mutable]] and if
+   * Instances of this behavior should be created via [[Behaviors#mutable]] and if
    * the [[ActorContext]] is needed it can be passed as a constructor parameter
    * from the factory function.
    *
-   * @see [[Actor#mutable]]
+   * @see [[Behaviors#mutable]]
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
     private var _receive: OptionVal[Receive[T]] = OptionVal.None

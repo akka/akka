@@ -14,13 +14,13 @@ final class OnSignalSpec extends TestKit with TypedAkkaSpecWithShutdown {
     "must correctly install the signal handler" in {
       val probe = TestProbe[Done]("probe")
       val behavior =
-        Actor.deferred[Nothing] { context ⇒
-          val stoppedChild = context.spawn(Actor.stopped, "stopped-child")
+        Behaviors.deferred[Nothing] { context ⇒
+          val stoppedChild = context.spawn(Behaviors.stopped, "stopped-child")
           context.watch(stoppedChild)
-          Actor.onSignal[Nothing] {
+          Behaviors.onSignal[Nothing] {
             case (_, Terminated(`stoppedChild`)) ⇒
               probe.ref ! Done
-              Actor.stopped
+              Behaviors.stopped
           }
         }
       spawn[Nothing](behavior)

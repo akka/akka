@@ -14,8 +14,7 @@ import akka.util.Timeout;
 import org.junit.Test;
 
 import akka.actor.typed.*;
-import static akka.actor.typed.javadsl.Actor.*;
-import static akka.actor.typed.javadsl.AskPattern.*;
+import static akka.actor.typed.javadsl.Behaviors.*;
 
 public class WatchTest extends JUnitSuite {
 

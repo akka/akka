@@ -5,7 +5,7 @@ package akka.actor.typed.receptionist
 
 import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist._
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKit, TestKitSettings }
 import akka.testkit.typed.scaladsl.TestProbe
@@ -17,14 +17,14 @@ class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with 
 
   trait ServiceA
   val ServiceKeyA = ServiceKey[ServiceA]("service-a")
-  val behaviorA = Actor.empty[ServiceA]
+  val behaviorA = Behaviors.empty[ServiceA]
 
   trait ServiceB
   val ServiceKeyB = ServiceKey[ServiceB]("service-b")
-  val behaviorB = Actor.empty[ServiceB]
+  val behaviorB = Behaviors.empty[ServiceB]
 
   case object Stop extends ServiceA with ServiceB
-  val stoppableBehavior = Actor.immutable[Any] { (_, msg) ⇒
+  val stoppableBehavior = Behaviors.immutable[Any] { (_, msg) ⇒
     msg match {
       case Stop ⇒ Behavior.stopped
       case _    ⇒ Behavior.same

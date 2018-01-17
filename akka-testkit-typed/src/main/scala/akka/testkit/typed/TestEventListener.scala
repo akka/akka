@@ -5,7 +5,7 @@ import akka.testkit.{ EventFilter, TestEvent ⇒ TE }
 import akka.event.typed.Logger.{ Command, Initialize }
 
 import scala.annotation.tailrec
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.Behavior
 import akka.event.typed.Logger
 
@@ -23,10 +23,10 @@ import akka.event.typed.Logger
 class TestEventListener extends Logger with StdOutLogger {
 
   override val initialBehavior: Behavior[Command] = {
-    Actor.deferred[Command] { _ ⇒
-      Actor.immutable[Command] {
+    Behaviors.deferred[Command] { _ ⇒
+      Behaviors.immutable[Command] {
         case (ctx, Initialize(eventStream, replyTo)) ⇒
-          val log = ctx.spawn(Actor.deferred[AnyRef] { childCtx ⇒
+          val log = ctx.spawn(Behaviors.deferred[AnyRef] { childCtx ⇒
             var filters: List[EventFilter] = Nil
 
             def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })
@@ -42,17 +42,17 @@ class TestEventListener extends Logger with StdOutLogger {
               filters = removeFirst(filters)
             }
 
-            Actor.immutable[AnyRef] {
+            Behaviors.immutable[AnyRef] {
               case (_, TE.Mute(filters)) ⇒
                 filters foreach addFilter
-                Actor.same
+                Behaviors.same
               case (_, TE.UnMute(filters)) ⇒
                 filters foreach removeFilter
-                Actor.same
+                Behaviors.same
               case (_, event: LogEvent) ⇒
                 if (!filter(event)) print(event)
-                Actor.same
-              case _ ⇒ Actor.unhandled
+                Behaviors.same
+              case _ ⇒ Behaviors.unhandled
             }
           }, "logger")
 
@@ -61,7 +61,7 @@ class TestEventListener extends Logger with StdOutLogger {
           ctx.watch(log) // sign death pact
           replyTo ! log
 
-          Actor.empty
+          Behaviors.empty
       }
     }
   }

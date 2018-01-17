@@ -6,8 +6,8 @@ package jdocs.akka.actor.typed;
 //#imports
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.Actor;
-import akka.actor.typed.javadsl.Actor.Receive;
+import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Behaviors.Receive;
 import akka.actor.typed.javadsl.ActorContext;
 //#imports
 import java.util.ArrayList;
@@ -72,10 +72,10 @@ public class MutableIntroTest {
     //#chatroom-behavior
 
     public static Behavior<Command> behavior() {
-      return Actor.mutable(ChatRoomBehavior::new);
+      return Behaviors.mutable(ChatRoomBehavior::new);
     }
 
-    public static class ChatRoomBehavior extends Actor.MutableBehavior<Command> {
+    public static class ChatRoomBehavior extends Behaviors.MutableBehavior<Command> {
       final ActorContext<Command> ctx;
       final List<ActorRef<SessionEvent>> sessions = new ArrayList<ActorRef<SessionEvent>>();
 
@@ -91,7 +91,7 @@ public class MutableIntroTest {
               new PostSessionMessage(getSession.screenName, p.message));
             getSession.replyTo.tell(new SessionGranted(wrapper));
             sessions.add(getSession.replyTo);
-            return Actor.same();
+            return Behaviors.same();
           })
           .onMessage(PostSessionMessage.class, post -> {
             MessagePosted mp = new MessagePosted(post.screenName, post.message);

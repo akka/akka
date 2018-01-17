@@ -4,7 +4,7 @@
 
 package akka.testkit.typed
 
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ Behavior, Props }
 import akka.testkit.typed.BehaviorTestkitSpec.Father._
 import akka.testkit.typed.BehaviorTestkitSpec.{ Child, Father }
@@ -27,38 +27,38 @@ object BehaviorTestkitSpec {
 
     def behavior: Behavior[Command] = init()
 
-    def init(): Behavior[Command] = Actor.immutable[Command] { (ctx, msg) ⇒
+    def init(): Behavior[Command] = Behaviors.immutable[Command] { (ctx, msg) ⇒
       msg match {
         case SpawnChildren(numberOfChildren) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { i ⇒
             ctx.spawn(Child.initial, s"child$i")
           }
-          Actor.same
+          Behaviors.same
         case SpawnChildrenWithProps(numberOfChildren, props) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { i ⇒
             ctx.spawn(Child.initial, s"child$i", props)
           }
-          Actor.same
+          Behaviors.same
         case SpawnAnonymous(numberOfChildren) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { _ ⇒
             ctx.spawnAnonymous(Child.initial)
           }
-          Actor.same
+          Behaviors.same
         case SpawnAnonymousWithProps(numberOfChildren, props) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { _ ⇒
             ctx.spawnAnonymous(Child.initial, props)
           }
-          Actor.same
+          Behaviors.same
         case SpawnAdapter ⇒
           ctx.spawnAdapter {
             r: Reproduce ⇒ SpawnAnonymous(r.times)
           }
-          Actor.same
+          Behaviors.same
         case SpawnAdapterWithName(name) ⇒
           ctx.spawnAdapter({
             r: Reproduce ⇒ SpawnAnonymous(r.times)
           }, name)
-          Actor.same
+          Behaviors.same
       }
     }
   }
@@ -67,10 +67,10 @@ object BehaviorTestkitSpec {
 
     sealed trait Action
 
-    val initial: Behavior[Action] = Actor.immutable[Action] { (_, msg) ⇒
+    val initial: Behavior[Action] = Behaviors.immutable[Action] { (_, msg) ⇒
       msg match {
         case _ ⇒
-          Actor.empty
+          Behaviors.empty
       }
     }
 

@@ -11,7 +11,7 @@ import org.scalatest.junit.JUnitSuite;
 public class BasicSyncTestingTest extends JUnitSuite {
 
   //#child
-  public static Behavior<String> childActor = Actor.immutable((ctx, msg) -> Actor.same());
+  public static Behavior<String> childActor = Behaviors.immutable((ctx, msg) -> Behaviors.same());
   //#child
 
   //#under-test
@@ -38,27 +38,27 @@ public class BasicSyncTestingTest extends JUnitSuite {
     }
   }
 
-  public static Behavior<Command> myBehaviour = Actor.immutable(Command.class)
+  public static Behavior<Command> myBehaviour = Behaviors.immutable(Command.class)
     .onMessage(CreateAChild.class, (ctx, msg) -> {
       ctx.spawn(childActor, msg.childName);
-      return Actor.same();
+      return Behaviors.same();
     })
     .onMessage(CreateAnAnonymousChild.class, (ctx, msg) -> {
       ctx.spawnAnonymous(childActor);
-      return Actor.same();
+      return Behaviors.same();
     })
     .onMessage(SayHelloToChild.class, (ctx, msg) -> {
       ActorRef<String> child = ctx.spawn(childActor, msg.childName);
       child.tell("hello");
-      return Actor.same();
+      return Behaviors.same();
     })
     .onMessage(SayHelloToAnonymousChild.class, (ctx, msg) -> {
       ActorRef<String> child = ctx.spawnAnonymous(childActor);
       child.tell("hello stranger");
-      return Actor.same();
+      return Behaviors.same();
     }).onMessage(SayHello.class, (ctx, msg) -> {
       msg.who.tell("hello");
-      return Actor.same();
+      return Behaviors.same();
     }).build();
   //#under-test
 

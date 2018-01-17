@@ -17,8 +17,8 @@ import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 
-import static akka.actor.typed.javadsl.Actor.same;
-import static akka.actor.typed.javadsl.Actor.stopped;
+import static akka.actor.typed.javadsl.Behaviors.same;
+import static akka.actor.typed.javadsl.Behaviors.stopped;
 
 public class TypedWatchingUntypedTest extends JUnitSuite {
 
@@ -36,7 +36,7 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
     public static class Pong implements Command { }
 
     public static Behavior<Command> behavior() {
-      return akka.actor.typed.javadsl.Actor.deferred(context -> {
+      return akka.actor.typed.javadsl.Behaviors.deferred(context -> {
         akka.actor.ActorRef second = Adapter.actorOf(context, Untyped.props(), "second");
 
         Adapter.watch(context, second);
@@ -44,7 +44,7 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
         second.tell(new Typed.Ping(context.getSelf().narrow()),
           Adapter.toUntyped(context.getSelf()));
 
-        return akka.actor.typed.javadsl.Actor.immutable(Typed.Command.class)
+        return akka.actor.typed.javadsl.Behaviors.immutable(Typed.Command.class)
           .onMessage(Typed.Pong.class, (ctx, msg) -> {
             Adapter.stop(ctx, second);
             return same();

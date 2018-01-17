@@ -12,8 +12,8 @@ import akka.actor.typed.ActorRef;
 
 import java.util.ArrayList;
 
-import static akka.actor.typed.javadsl.Actor.same;
-import static akka.actor.typed.javadsl.Actor.stopped;
+import static akka.actor.typed.javadsl.Behaviors.same;
+import static akka.actor.typed.javadsl.Behaviors.stopped;
 
 /**
  * Test creating [[Behavior]]s using [[BehaviorBuilder]]
@@ -32,7 +32,7 @@ public class BehaviorBuilderTest extends JUnitSuite {
 
     @Test
     public void shouldCompile() {
-      Behavior<Message> b = Actor.immutable(Message.class)
+      Behavior<Message> b = Behaviors.immutable(Message.class)
         .onMessage(One.class, (ctx, o) -> {
           o.foo();
           return same();
@@ -40,7 +40,7 @@ public class BehaviorBuilderTest extends JUnitSuite {
         .onMessage(One.class, o -> o.foo().startsWith("a"), (ctx, o) -> same())
         .onMessageUnchecked(MyList.class, (ActorContext<Message> ctx, MyList<String> l) -> {
           String first = l.get(0);
-          return Actor.<Message>same();
+          return Behaviors.<Message>same();
         })
         .onSignal(Terminated.class, (ctx, t) -> {
           System.out.println("Terminating along with " + t.getRef());
@@ -65,7 +65,7 @@ public class BehaviorBuilderTest extends JUnitSuite {
     }
 
     public Behavior<CounterMessage> immutableCounter(int currentValue) {
-      return Actor.immutable(CounterMessage.class)
+      return Behaviors.immutable(CounterMessage.class)
           .onMessage(Increase.class, (ctx, o) -> {
             return immutableCounter(currentValue + 1);
           })
