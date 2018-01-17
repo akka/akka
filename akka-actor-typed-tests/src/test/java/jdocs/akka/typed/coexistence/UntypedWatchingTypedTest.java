@@ -7,7 +7,7 @@ import akka.actor.AbstractActor;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.Actor;
+import akka.actor.typed.javadsl.Behaviors;
 //#adapter-import
 // In java use the static methods on Adapter to convert from typed to untyped
 import akka.actor.typed.javadsl.Adapter;
@@ -18,7 +18,7 @@ import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 
-import static akka.actor.typed.javadsl.Actor.same;
+import static akka.actor.typed.javadsl.Behaviors.same;
 
 public class UntypedWatchingTypedTest extends JUnitSuite {
 
@@ -66,7 +66,7 @@ public class UntypedWatchingTypedTest extends JUnitSuite {
     public static class Pong { }
 
     public static Behavior<Command> behavior() {
-      return Actor.immutable(Typed.Command.class)
+      return Behaviors.immutable(Typed.Command.class)
         .onMessage(Typed.Ping.class, (ctx, msg) -> {
           msg.replyTo.tell(new Pong());
           return same();

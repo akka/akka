@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 import java.util.concurrent.BlockingDeque
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.ActorSystem
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicInteger
@@ -34,9 +34,9 @@ object TestProbe {
   def apply[M](name: String)(implicit system: ActorSystem[_]): TestProbe[M] =
     new TestProbe(name)
 
-  private def testActor[M](queue: BlockingDeque[M]): Behavior[M] = Actor.immutable { (ctx, msg) ⇒
+  private def testActor[M](queue: BlockingDeque[M]): Behavior[M] = Behaviors.immutable { (ctx, msg) ⇒
     queue.offerLast(msg)
-    Actor.same
+    Behaviors.same
   }
 }
 

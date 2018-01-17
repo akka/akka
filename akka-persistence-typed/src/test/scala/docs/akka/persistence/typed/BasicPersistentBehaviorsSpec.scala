@@ -4,9 +4,9 @@
 package docs.akka.persistence.typed
 
 import akka.actor.typed.Behavior
-import akka.persistence.typed.scaladsl.PersistentActor
+import akka.persistence.typed.scaladsl.PersistentBehaviors
 
-object BasicPersistentActorSpec {
+object BasicPersistentBehaviorsSpec {
 
   //#structure
   sealed trait Command
@@ -14,7 +14,7 @@ object BasicPersistentActorSpec {
   case class State()
 
   val behavior: Behavior[Command] =
-    PersistentActor.immutable[Command, Event, State](
+    PersistentBehaviors.immutable[Command, Event, State](
       persistenceId = "abc",
       initialState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,
@@ -23,7 +23,7 @@ object BasicPersistentActorSpec {
 
   //#recovery
   val recoveryBehavior: Behavior[Command] =
-    PersistentActor.immutable[Command, Event, State](
+    PersistentBehaviors.immutable[Command, Event, State](
       persistenceId = "abc",
       initialState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,
@@ -35,7 +35,7 @@ object BasicPersistentActorSpec {
 
   //#tagging
   val taggingBehavior: Behavior[Command] =
-    PersistentActor.immutable[Command, Event, State](
+    PersistentBehaviors.immutable[Command, Event, State](
       persistenceId = "abc",
       initialState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,

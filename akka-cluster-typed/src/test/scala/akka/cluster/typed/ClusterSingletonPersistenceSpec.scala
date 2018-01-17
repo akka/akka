@@ -5,8 +5,8 @@
 package akka.cluster.typed
 
 import akka.actor.typed.{ ActorRef, Behavior, Props, TypedAkkaSpecWithShutdown }
-import akka.persistence.typed.scaladsl.PersistentActor
-import akka.persistence.typed.scaladsl.PersistentActor.{ CommandHandler, Effect }
+import akka.persistence.typed.scaladsl.PersistentBehaviors
+import akka.persistence.typed.scaladsl.PersistentBehaviors.{ CommandHandler, Effect }
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
@@ -37,7 +37,7 @@ object ClusterSingletonPersistenceSpec {
   private final case object StopPlz extends Command
 
   val persistentActor: Behavior[Command] =
-    PersistentActor.immutable[Command, String, String](
+    PersistentBehaviors.immutable[Command, String, String](
       persistenceId = "TheSingleton",
       initialState = "",
       commandHandler = (_, state, cmd) ⇒ cmd match {

@@ -6,7 +6,7 @@ package akka.actor.typed.javadsl;
 import akka.actor.typed.*;
 import akka.actor.typed.ActorContext;
 
-import static akka.actor.typed.javadsl.Actor.*;
+import static akka.actor.typed.javadsl.Behaviors.*;
 
 import java.util.concurrent.TimeUnit;
 import scala.concurrent.duration.Duration;
@@ -48,7 +48,7 @@ public class ActorCompile {
   ActorSystem<MyMsg> system = ActorSystem.create(actor1, "Sys");
 
   {
-    Actor.<MyMsg>immutable((ctx, msg) -> {
+    Behaviors.<MyMsg>immutable((ctx, msg) -> {
       if (msg instanceof MyMsgA) {
         return immutable((ctx2, msg2) -> {
           if (msg2 instanceof MyMsgB) {
@@ -63,9 +63,9 @@ public class ActorCompile {
   }
 
   {
-    Behavior<MyMsg> b = Actor.withTimers(timers -> {
+    Behavior<MyMsg> b = Behaviors.withTimers(timers -> {
       timers.startPeriodicTimer("key", new MyMsgB("tick"), Duration.create(1, TimeUnit.SECONDS));
-      return Actor.ignore();
+      return Behaviors.ignore();
     });
   }
 
@@ -107,8 +107,8 @@ public class ActorCompile {
     SupervisorStrategy strategy7 = strategy6.withResetBackoffAfter(Duration.create(2, TimeUnit.SECONDS));
 
     Behavior<MyMsg> behv =
-      Actor.supervise(
-        Actor.supervise(Actor.<MyMsg>ignore()).onFailure(IllegalStateException.class, strategy6)
+      Behaviors.supervise(
+        Behaviors.supervise(Behaviors.<MyMsg>ignore()).onFailure(IllegalStateException.class, strategy6)
       ).onFailure(RuntimeException.class, strategy1);
   }
 

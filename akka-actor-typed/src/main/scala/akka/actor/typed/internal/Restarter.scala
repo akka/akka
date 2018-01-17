@@ -23,16 +23,16 @@ import akka.actor.typed.ExtensibleBehavior
 import akka.actor.typed.PreRestart
 import akka.actor.typed.Signal
 import akka.actor.typed.SupervisorStrategy._
-import akka.actor.typed.scaladsl.Actor._
+import akka.actor.typed.scaladsl.Behaviors._
 import akka.util.OptionVal
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] object Restarter {
   def apply[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], strategy: SupervisorStrategy): Behavior[T] =
-    Actor.deferred[T] { ctx ⇒
+    Behaviors.deferred[T] { ctx ⇒
       val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
       val startedBehavior = initialUndefer(c, initialBehavior)
       strategy match {

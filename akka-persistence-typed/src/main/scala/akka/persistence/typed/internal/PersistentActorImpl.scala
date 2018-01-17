@@ -11,7 +11,7 @@ import akka.persistence.RecoveryCompleted
 import akka.persistence.SnapshotOffer
 import akka.actor.typed.Signal
 import akka.actor.typed.internal.adapter.ActorContextAdapter
-import akka.persistence.typed.scaladsl.PersistentActor
+import akka.persistence.typed.scaladsl.PersistentBehaviors
 import akka.persistence.typed.scaladsl.PersistentBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.Terminated
@@ -43,7 +43,7 @@ import akka.persistence.journal.Tagged
   behavior: PersistentBehavior[C, E, S]) extends UntypedPersistentActor {
 
   import PersistentActorImpl._
-  import PersistentActor._
+  import PersistentBehaviors._
 
   override val persistenceId: String = behavior.persistenceIdFromActorName(self.path.name)
 
