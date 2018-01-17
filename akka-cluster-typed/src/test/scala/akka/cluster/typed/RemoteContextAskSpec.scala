@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.receptionist.Receptionist.Registered
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorRefResolver, ActorSystem }
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.typed.TestKit
@@ -71,11 +71,11 @@ object RemoteContextAskSpec {
   case object Pong
   case class Ping(respondTo: ActorRef[Pong.type])
 
-  def pingPong = Actor.immutable[Ping] { (_, msg) ⇒
+  def pingPong = Behaviors.immutable[Ping] { (_, msg) ⇒
     msg match {
       case Ping(sender) ⇒
         sender ! Pong
-        Actor.same
+        Behaviors.same
     }
   }
 
@@ -108,7 +108,7 @@ class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with Wor
       // wait until the service is seen on the first node
       val remoteRef = node1Probe.expectMsgType[Receptionist.Listing[Ping]].serviceInstances.head
 
-      spawn(Actor.deferred[AnyRef] { (ctx) ⇒
+      spawn(Behaviors.deferred[AnyRef] { (ctx) ⇒
         implicit val timeout: Timeout = 3.seconds
 
         ctx.ask(remoteRef, Ping) {
@@ -116,9 +116,9 @@ class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with Wor
           case Failure(ex)   ⇒ ex
         }
 
-        Actor.immutable { (_, msg) ⇒
+        Behaviors.immutable { (_, msg) ⇒
           node1Probe.ref ! msg
-          Actor.same
+          Behaviors.same
         }
       })
 

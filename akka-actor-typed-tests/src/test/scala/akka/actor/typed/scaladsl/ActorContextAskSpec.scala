@@ -42,14 +42,14 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
       case class Ping(sender: ActorRef[Pong])
       case class Pong(selfName: String, threadName: String)
 
-      val pingPong = spawn(Actor.immutable[Ping] { (ctx, msg) ⇒
+      val pingPong = spawn(Behaviors.immutable[Ping] { (ctx, msg) ⇒
         msg.sender ! Pong(ctx.self.path.name, Thread.currentThread().getName)
-        Actor.same
+        Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
       val probe = TestProbe[AnyRef]()
 
-      val snitch = Actor.deferred[Pong] { (ctx) ⇒
+      val snitch = Behaviors.deferred[Pong] { (ctx) ⇒
 
         // Timeout comes from TypedAkkaSpec
 
@@ -64,10 +64,10 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
           case Success(pong) ⇒ Pong(ctx.self.path.name + "2", Thread.currentThread().getName)
           case Failure(ex)   ⇒ throw ex
         }
-        Actor.immutable {
+        Behaviors.immutable {
           case (ctx, pong: Pong) ⇒
             probe.ref ! pong
-            Actor.same
+            Behaviors.same
         }
       }
 
@@ -86,29 +86,29 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
       case class Ping(respondTo: ActorRef[Pong.type]) extends Protocol
       case object Pong extends Protocol
 
-      val pingPong = spawn(Actor.immutable[Protocol]((_, msg) ⇒
+      val pingPong = spawn(Behaviors.immutable[Protocol]((_, msg) ⇒
         msg match {
           case Ping(respondTo) ⇒
             respondTo ! Pong
-            Actor.same
+            Behaviors.same
         }
       ))
 
-      val snitch = Actor.deferred[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.deferred[AnyRef] { (ctx) ⇒
         ctx.ask(pingPong, Ping) {
           // uh oh, missing case for the response, this can never end well
           case Failure(x) ⇒ x
         }
 
-        Actor.immutable[AnyRef] {
+        Behaviors.immutable[AnyRef] {
           case (_, msg) ⇒
             probe.ref ! msg
-            Actor.same
+            Behaviors.same
         }.onSignal {
 
           case (_, PostStop) ⇒
             probe.ref ! "stopped"
-            Actor.same
+            Behaviors.same
         }
       }
 
@@ -122,17 +122,17 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
 
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
-      val snitch = Actor.deferred[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.deferred[AnyRef] { (ctx) ⇒
 
         ctx.ask[String, String](system.deadLetters, ref ⇒ "boo") {
           case Success(m) ⇒ m
           case Failure(x) ⇒ x
         }(20.millis, implicitly[ClassTag[String]])
 
-        Actor.immutable {
+        Behaviors.immutable {
           case (_, msg) ⇒
             probe.ref ! msg
-            Actor.same
+            Behaviors.same
         }
       }
 
