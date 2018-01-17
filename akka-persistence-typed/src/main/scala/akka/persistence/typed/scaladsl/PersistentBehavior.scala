@@ -9,7 +9,7 @@ import akka.actor.typed.Behavior.UntypedBehavior
 import akka.persistence.typed.internal.PersistentActorImpl
 import akka.actor.typed.scaladsl.ActorContext
 
-object PersistentActor {
+object PersistentBehavior {
 
   /**
    * Create a `Behavior` for a persistent actor.
@@ -185,10 +185,10 @@ object PersistentActor {
 class PersistentBehavior[Command, Event, State](
   @InternalApi private[akka] val persistenceIdFromActorName: String ⇒ String,
   val initialState:                                          State,
-  val commandHandler:                                        PersistentActor.CommandHandler[Command, Event, State],
+  val commandHandler:                                        PersistentBehavior.CommandHandler[Command, Event, State],
   val eventHandler:                                          (State, Event) ⇒ State,
   val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit) extends UntypedBehavior[Command] {
-  import PersistentActor._
+  import PersistentBehavior._
 
   /** INTERNAL API */
   @InternalApi private[akka] override def untypedProps: akka.actor.Props = PersistentActorImpl.props(() ⇒ this)

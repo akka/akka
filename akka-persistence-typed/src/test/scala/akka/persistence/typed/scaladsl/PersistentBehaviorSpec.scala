@@ -11,9 +11,9 @@ import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
-import akka.persistence.typed.scaladsl.PersistentActor._
+import akka.persistence.typed.scaladsl.PersistentBehavior._
 
-object PersistentActorSpec {
+object PersistentBehaviorSpec {
 
   val config = ConfigFactory.parseString(
     """
@@ -46,7 +46,7 @@ object PersistentActorSpec {
 
   def counter(persistenceId: String, loggingActor: ActorRef[String]): Behavior[Command] = {
 
-    PersistentActor.immutable[Command, Event, State](
+    PersistentBehavior.immutable[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
       commandHandler = (ctx, state, cmd) ⇒ cmd match {
@@ -106,8 +106,8 @@ object PersistentActorSpec {
 
 }
 
-class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Eventually with TypedAkkaSpecWithShutdown {
-  import PersistentActorSpec._
+class PersistentBehaviorSpec extends TestKit(PersistentBehaviorSpec.config) with Eventually with TypedAkkaSpecWithShutdown {
+  import PersistentBehaviorSpec._
 
   implicit val testSettings = TestKitSettings(system)
 
