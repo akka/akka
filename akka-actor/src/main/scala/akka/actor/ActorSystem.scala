@@ -551,13 +551,13 @@ abstract class ActorSystem extends ActorRefFactory {
   def whenTerminated: Future[Terminated]
 
   /**
-    * Returns a CompletionStage which will be completed after the ActorSystem has been terminated
-    * and termination hooks have been executed. If you registered any callback with
-    * [[ActorSystem#registerOnTermination]], the returned CompletionStage from this method will not complete
-    * until all the registered callbacks are finished. Be careful to not schedule any operations
-    * on the `dispatcher` of this actor system as it will have been shut down before this
-    * future completes.
-    */
+   * Returns a CompletionStage which will be completed after the ActorSystem has been terminated
+   * and termination hooks have been executed. If you registered any callback with
+   * [[ActorSystem#registerOnTermination]], the returned CompletionStage from this method will not complete
+   * until all the registered callbacks are finished. Be careful to not schedule any operations
+   * on the `dispatcher` of this actor system as it will have been shut down before this
+   * future completes.
+   */
   def getWhenTerminated: CompletionStage[Terminated]
 
   /**

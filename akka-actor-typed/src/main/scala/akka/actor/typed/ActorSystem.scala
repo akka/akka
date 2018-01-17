@@ -123,9 +123,9 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
   def whenTerminated: Future[Terminated]
 
   /**
-    * Returns a CompletionStage which will be completed after the ActorSystem has been terminated
-    * and termination hooks have been executed.
-    */
+   * Returns a CompletionStage which will be completed after the ActorSystem has been terminated
+   * and termination hooks have been executed.
+   */
   def getWhenTerminated: CompletionStage[Terminated]
 
   /**
