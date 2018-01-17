@@ -3,8 +3,8 @@
  */
 package akka.actor.typed
 
-import akka.actor.typed.scaladsl.{ Actor ⇒ SActor }
-import akka.actor.typed.javadsl.{ Actor ⇒ JActor, ActorContext ⇒ JActorContext }
+import akka.actor.typed.scaladsl.{ ActorBehavior ⇒ SActor }
+import akka.actor.typed.javadsl.{ ActorBehavior ⇒ JActor, ActorContext ⇒ JActorContext }
 import akka.japi.function.{ Function ⇒ F1e, Function2 ⇒ F2, Procedure2 ⇒ P2 }
 import akka.japi.pf.{ FI, PFBuilder }
 import java.util.function.{ Function ⇒ F1 }

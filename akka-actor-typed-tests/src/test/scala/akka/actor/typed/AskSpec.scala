@@ -4,8 +4,8 @@
 package akka.actor.typed
 
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.scaladsl.Actor
-import akka.actor.typed.scaladsl.Actor._
+import akka.actor.typed.scaladsl.ActorBehavior
+import akka.actor.typed.scaladsl.ActorBehavior._
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.pattern.AskTimeoutException
 import akka.testkit.typed.TestKit
@@ -29,10 +29,10 @@ class AskSpec extends TestKit("AskSpec") with TypedAkkaSpec with ScalaFutures {
   val behavior: Behavior[Msg] = immutable[Msg] {
     case (_, foo: Foo) ⇒
       foo.replyTo ! "foo"
-      Actor.same
+      ActorBehavior.same
     case (_, Stop(r)) ⇒
       r ! ()
-      Actor.stopped
+      ActorBehavior.stopped
   }
 
   "Ask pattern" must {

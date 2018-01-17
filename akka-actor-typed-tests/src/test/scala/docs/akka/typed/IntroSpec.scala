@@ -4,15 +4,20 @@
 package docs.akka.typed
 
 //#imports
-import akka.actor.typed._
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.Behavior
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Terminated
+import akka.actor.typed.scaladsl.ActorBehavior
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.testkit.typed.TestKit
 
+import akka.testkit.typed.TestKit
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.concurrent.Await
 //#imports
+
+import akka.actor.typed.TypedAkkaSpecWithShutdown
 
 object IntroSpec {
 
@@ -21,10 +26,10 @@ object IntroSpec {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String)
 
-    val greeter = Actor.immutable[Greet] { (_, msg) ⇒
+    val greeter = ActorBehavior.immutable[Greet] { (_, msg) ⇒
       println(s"Hello ${msg.whom}!")
       msg.replyTo ! Greeted(msg.whom)
-      Actor.same
+      ActorBehavior.same
     }
   }
   //#hello-world-actor
@@ -55,7 +60,7 @@ object IntroSpec {
       chatRoom(List.empty)
 
     private def chatRoom(sessions: List[ActorRef[SessionEvent]]): Behavior[Command] =
-      Actor.immutable[Command] { (ctx, msg) ⇒
+      ActorBehavior.immutable[Command] { (ctx, msg) ⇒
         msg match {
           case GetSession(screenName, client) ⇒
             val wrapper = ctx.spawnAdapter {
@@ -66,7 +71,7 @@ object IntroSpec {
           case PostSessionMessage(screenName, message) ⇒
             val mp = MessagePosted(screenName, message)
             sessions foreach (_ ! mp)
-            Actor.same
+            ActorBehavior.same
         }
       }
     //#chatroom-behavior
@@ -106,38 +111,38 @@ class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
       import ChatRoom._
 
       val gabbler =
-        Actor.immutable[SessionEvent] { (_, msg) ⇒
+        ActorBehavior.immutable[SessionEvent] { (_, msg) ⇒
           msg match {
             //#chatroom-gabbler
             // We document that the compiler warns about the missing handler for `SessionDenied`
             case SessionDenied(reason) ⇒
               println(s"cannot start chat room session: $reason")
-              Actor.stopped
+              ActorBehavior.stopped
             //#chatroom-gabbler
             case SessionGranted(handle) ⇒
               handle ! PostMessage("Hello World!")
-              Actor.same
+              ActorBehavior.same
             case MessagePosted(screenName, message) ⇒
               println(s"message has been posted by '$screenName': $message")
-              Actor.stopped
+              ActorBehavior.stopped
           }
         }
       //#chatroom-gabbler
 
       //#chatroom-main
       val main: Behavior[String] =
-        Actor.deferred { ctx ⇒
+        ActorBehavior.deferred { ctx ⇒
           val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
           val gabblerRef = ctx.spawn(gabbler, "gabbler")
           ctx.watch(gabblerRef)
 
-          Actor.immutablePartial[String] {
+          ActorBehavior.immutablePartial[String] {
             case (_, "go") ⇒
               chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
-              Actor.same
+              ActorBehavior.same
           } onSignal {
             case (_, Terminated(ref)) ⇒
-              Actor.stopped
+              ActorBehavior.stopped
           }
         }
 

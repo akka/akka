@@ -9,9 +9,9 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Terminated
 import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.scaladsl.Actor
-import akka.actor.typed.scaladsl.Actor.immutable
-import akka.actor.typed.scaladsl.Actor.same
+import akka.actor.typed.scaladsl.ActorBehavior
+import akka.actor.typed.scaladsl.ActorBehavior.immutable
+import akka.actor.typed.scaladsl.ActorBehavior.same
 import akka.actor.typed.scaladsl.ActorContext
 import akka.util.TypedMultiMap
 
@@ -63,7 +63,7 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
   type SubscriptionRegistry = TypedMultiMap[AbstractServiceKey, SubscriptionsKV]
 
   private[akka] def init(externalInterfaceFactory: ActorContext[AllCommands] ⇒ ExternalInterface): Behavior[Command] =
-    Actor.deferred[AllCommands] { ctx ⇒
+    ActorBehavior.deferred[AllCommands] { ctx ⇒
       val externalInterface = externalInterfaceFactory(ctx)
       behavior(
         TypedMultiMap.empty[AbstractServiceKey, KV],
@@ -85,13 +85,13 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
      * FIXME: replace by simple map in our state
      */
     def watchWith(ctx: ActorContext[AllCommands], target: ActorRef[_], msg: AllCommands): Unit =
-      ctx.spawnAnonymous[Nothing](Actor.deferred[Nothing] { innerCtx ⇒
+      ctx.spawnAnonymous[Nothing](ActorBehavior.deferred[Nothing] { innerCtx ⇒
         innerCtx.watch(target)
-        Actor.immutable[Nothing]((_, _) ⇒ Actor.same)
+        ActorBehavior.immutable[Nothing]((_, _) ⇒ ActorBehavior.same)
           .onSignal {
             case (_, Terminated(`target`)) ⇒
               ctx.self ! msg
-              Actor.stopped
+              ActorBehavior.stopped
           }
       })
 
@@ -157,7 +157,7 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
 
         case _: InternalCommand ⇒
           // silence compiler exhaustive check
-          Actor.unhandled
+          ActorBehavior.unhandled
       }
     }
   }

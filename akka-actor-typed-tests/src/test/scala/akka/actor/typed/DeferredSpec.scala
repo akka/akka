@@ -5,8 +5,8 @@ package akka.actor.typed
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.actor.typed.scaladsl.Actor
-import akka.actor.typed.scaladsl.Actor.BehaviorDecorators
+import akka.actor.typed.scaladsl.ActorBehavior
+import akka.actor.typed.scaladsl.ActorBehavior.BehaviorDecorators
 import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKit, TestKitSettings }
 import akka.testkit.typed.scaladsl._
 
@@ -19,10 +19,10 @@ object DeferredSpec {
   case object Started extends Event
 
   def target(monitor: ActorRef[Event]): Behavior[Command] =
-    Actor.immutable((_, cmd) ⇒ cmd match {
+    ActorBehavior.immutable((_, cmd) ⇒ cmd match {
       case Ping ⇒
         monitor ! Pong
-        Actor.same
+        ActorBehavior.same
     })
 }
 
@@ -34,7 +34,7 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
   "Deferred behaviour" must {
     "must create underlying" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.deferred[Command] { _ ⇒
+      val behv = ActorBehavior.deferred[Command] { _ ⇒
         probe.ref ! Started
         target(probe.ref)
       }
@@ -46,16 +46,16 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
 
     "must stop when exception from factory" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.deferred[Command] { ctx ⇒
-        val child = ctx.spawnAnonymous(Actor.deferred[Command] { _ ⇒
+      val behv = ActorBehavior.deferred[Command] { ctx ⇒
+        val child = ctx.spawnAnonymous(ActorBehavior.deferred[Command] { _ ⇒
           probe.ref ! Started
           throw new RuntimeException("simulated exc from factory") with NoStackTrace
         })
         ctx.watch(child)
-        Actor.immutable[Command]((_, _) ⇒ Actor.same).onSignal {
+        ActorBehavior.immutable[Command]((_, _) ⇒ ActorBehavior.same).onSignal {
           case (_, Terminated(`child`)) ⇒
             probe.ref ! Pong
-            Actor.stopped
+            ActorBehavior.stopped
         }
       }
       spawn(behv)
@@ -65,13 +65,13 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
 
     "must stop when deferred result it Stopped" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.deferred[Command] { ctx ⇒
-        val child = ctx.spawnAnonymous(Actor.deferred[Command](_ ⇒ Actor.stopped))
+      val behv = ActorBehavior.deferred[Command] { ctx ⇒
+        val child = ctx.spawnAnonymous(ActorBehavior.deferred[Command](_ ⇒ ActorBehavior.stopped))
         ctx.watch(child)
-        Actor.immutable[Command]((_, _) ⇒ Actor.same).onSignal {
+        ActorBehavior.immutable[Command]((_, _) ⇒ ActorBehavior.same).onSignal {
           case (_, Terminated(`child`)) ⇒
             probe.ref ! Pong
-            Actor.stopped
+            ActorBehavior.stopped
         }
       }
       spawn(behv)
@@ -80,8 +80,8 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
 
     "must create underlying when nested" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.deferred[Command] { _ ⇒
-        Actor.deferred[Command] { _ ⇒
+      val behv = ActorBehavior.deferred[Command] { _ ⇒
+        ActorBehavior.deferred[Command] { _ ⇒
           probe.ref ! Started
           target(probe.ref)
         }
@@ -92,7 +92,7 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
 
     "must un-defer underlying when wrapped by widen" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.deferred[Command] { _ ⇒
+      val behv = ActorBehavior.deferred[Command] { _ ⇒
         probe.ref ! Started
         target(probe.ref)
       }.widen[Command] {
@@ -110,7 +110,7 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
       // monitor is implemented with tap, so this is testing both
       val probe = TestProbe[Event]("evt")
       val monitorProbe = TestProbe[Command]("monitor")
-      val behv = Actor.monitor(monitorProbe.ref, Actor.deferred[Command] { _ ⇒
+      val behv = ActorBehavior.monitor(monitorProbe.ref, ActorBehavior.deferred[Command] { _ ⇒
         probe.ref ! Started
         target(probe.ref)
       })
@@ -131,7 +131,7 @@ class DeferredStubbedSpec extends TypedAkkaSpec {
 
   "must create underlying deferred behavior immediately" in {
     val inbox = TestInbox[Event]("evt")
-    val behv = Actor.deferred[Command] { _ ⇒
+    val behv = ActorBehavior.deferred[Command] { _ ⇒
       inbox.ref ! Started
       target(inbox.ref)
     }
@@ -143,7 +143,7 @@ class DeferredStubbedSpec extends TypedAkkaSpec {
   "must stop when exception from factory" in {
     val inbox = TestInbox[Event]("evt")
     val exc = new RuntimeException("simulated exc from factory") with NoStackTrace
-    val behv = Actor.deferred[Command] { _ ⇒
+    val behv = ActorBehavior.deferred[Command] { _ ⇒
       inbox.ref ! Started
       throw exc
     }

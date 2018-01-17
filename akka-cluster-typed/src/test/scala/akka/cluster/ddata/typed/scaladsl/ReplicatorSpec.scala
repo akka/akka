@@ -6,7 +6,7 @@ package akka.cluster.ddata.typed.scaladsl
 import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, Behavior, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.ActorBehavior
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.Cluster
 import akka.cluster.ddata.typed.scaladsl.Replicator._
@@ -42,7 +42,7 @@ object ReplicatorSpec {
   val Key = GCounterKey("counter")
 
   def client(replicator: ActorRef[Replicator.Command])(implicit cluster: Cluster): Behavior[ClientCommand] =
-    Actor.deferred[ClientCommand] { ctx ⇒
+    ActorBehavior.deferred[ClientCommand] { ctx ⇒
       val updateResponseAdapter: ActorRef[Replicator.UpdateResponse[GCounter]] =
         ctx.spawnAdapter(InternalUpdateResponse.apply)
 
@@ -55,30 +55,30 @@ object ReplicatorSpec {
       replicator ! Replicator.Subscribe(Key, changedAdapter)
 
       def behavior(cachedValue: Int): Behavior[ClientCommand] = {
-        Actor.immutable[ClientCommand] { (ctx, msg) ⇒
+        ActorBehavior.immutable[ClientCommand] { (ctx, msg) ⇒
           msg match {
             case Increment ⇒
               replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, updateResponseAdapter)(_ + 1)
-              Actor.same
+              ActorBehavior.same
 
             case GetValue(replyTo) ⇒
               replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
-              Actor.same
+              ActorBehavior.same
 
             case GetCachedValue(replyTo) ⇒
               replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
-              Actor.same
+              ActorBehavior.same
 
             case internal: InternalMsg ⇒ internal match {
-              case InternalUpdateResponse(_) ⇒ Actor.same // ok
+              case InternalUpdateResponse(_) ⇒ ActorBehavior.same // ok
 
               case InternalGetResponse(rsp @ Replicator.GetSuccess(Key, Some(replyTo: ActorRef[Int] @unchecked))) ⇒
                 val value = rsp.get(Key).value.toInt
                 replyTo ! value
-                Actor.same
+                ActorBehavior.same
 
               case InternalGetResponse(rsp) ⇒
-                Actor.unhandled // not dealing with failures
+                ActorBehavior.unhandled // not dealing with failures
 
               case InternalChanged(chg @ Replicator.Changed(Key)) ⇒
                 val value = chg.get(Key).value.intValue
