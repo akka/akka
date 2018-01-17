@@ -7,7 +7,6 @@ import akka.actor.typed.{ ActorRef, Props, TypedAkkaSpec }
 import akka.pattern.AskTimeoutException
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
-import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
