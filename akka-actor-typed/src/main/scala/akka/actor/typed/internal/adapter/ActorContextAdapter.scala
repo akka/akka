@@ -19,6 +19,7 @@ import akka.actor.typed.Behavior.UntypedBehavior
   import ActorRefAdapter.toUntyped
 
   override def self = ActorRefAdapter(untyped.self)
+  override def responseRef[R](responseClass: Class[R]): ActorRef[R] = self.asInstanceOf[ActorRef[R]]
   override val system = ActorSystemAdapter(untyped.system)
   override def mailboxCapacity = 1 << 29 // FIXME
   override def children = untyped.children.map(ActorRefAdapter(_))

@@ -39,35 +39,39 @@ object ReplicatorSpec {
 
   def client(replicator: ActorRef[Replicator.Command])(implicit cluster: Cluster): Behavior[ClientCommand] =
     Behaviors.deferred[ClientCommand] { ctx ⇒
-      replicator ! Replicator.Subscribe(Key, ctx.self.upcast)
+      replicator ! Replicator.Subscribe(Key, ctx.responseRef(classOf[Replicator.Changed[GCounter]]))
 
       def behavior(cachedValue: Int): Behavior[ClientCommand] = {
         Behaviors.immutable[ClientCommand] { (ctx, msg) ⇒
           msg match {
             case Increment ⇒
-              replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, ctx.self.upcast)(_ + 1)
+              val responseTo = ctx.responseRef(classOf[Replicator.UpdateResponse[GCounter]])
+              replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, responseTo)(_ + 1)
               Behaviors.same
 
             case GetValue(replyTo) ⇒
-              replicator ! Replicator.Get(Key, Replicator.ReadLocal, ctx.self.upcast, Some(replyTo))
+              val responseTo = ctx.responseRef(classOf[Replicator.GetResponse[GCounter]])
+              replicator ! Replicator.Get(Key, Replicator.ReadLocal, responseTo, Some(replyTo))
               Behaviors.same
 
             case GetCachedValue(replyTo) ⇒
-              replicator ! Replicator.Get(Key, Replicator.ReadLocal, ctx.self.upcast, Some(replyTo))
+              val responseTo = ctx.responseRef(classOf[Replicator.GetResponse[GCounter]])
+              replicator ! Replicator.Get(Key, Replicator.ReadLocal, responseTo, Some(replyTo))
               Behaviors.same
 
           }
         }
-      }.onResponse[Replicator.GetResponse[GCounter]] { (_, msg) ⇒
-        msg match {
-          case rsp @ Replicator.GetSuccess(Key, Some(replyTo: ActorRef[Int] @unchecked)) ⇒
-            val value = rsp.get(Key).value.toInt
-            replyTo ! value
-            Behaviors.same
-          case _ ⇒
-            Behaviors.unhandled // not dealing with failures
-        }
       }
+        .onResponse[Replicator.GetResponse[GCounter]] { (_, msg) ⇒
+          msg match {
+            case rsp @ Replicator.GetSuccess(Key, Some(replyTo: ActorRef[Int] @unchecked)) ⇒
+              val value = rsp.get(Key).value.toInt
+              replyTo ! value
+              Behaviors.same
+            case _ ⇒
+              Behaviors.unhandled // not dealing with failures
+          }
+        }
         .onResponse[Replicator.Changed[GCounter]] { (ctx, chg) ⇒
           val value = chg.get(Key).value.intValue
           behavior(value)

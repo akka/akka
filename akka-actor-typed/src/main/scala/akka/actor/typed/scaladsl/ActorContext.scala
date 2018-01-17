@@ -45,6 +45,17 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
   def self: ActorRef[T]
 
   /**
+   * In interactions with other actors the response messages that don't conform
+   * to this actor's type `T` can be handled by the defined response handlers,
+   * e.g. with `onResponse` of `Actor.immutable`. For that purpose the type of the
+   * [[ActorContext#self]] can be adjusted to a given response message type.
+   *
+   * Note that there is no compile time verification that a response handler
+   * has been defined for `R`.
+   */
+  def responseRef[R](responseClass: Class[R]): ActorRef[R]
+
+  /**
    * Return the mailbox capacity that was configured by the parent for this actor.
    */
   def mailboxCapacity: Int

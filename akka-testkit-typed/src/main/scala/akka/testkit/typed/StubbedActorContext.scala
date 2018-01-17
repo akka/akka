@@ -50,6 +50,7 @@ private[akka] final class FunctionRef[-T](
   @InternalApi private[akka] val selfInbox = TestInbox[T](name)
 
   override val self = selfInbox.ref
+  override def responseRef[R](responseClass: Class[R]): ActorRef[R] = self.asInstanceOf[ActorRef[R]]
   override val system = new ActorSystemStub("StubbedActorContext")
   // Not used for a stubbed actor context
   override def mailboxCapacity = 1
