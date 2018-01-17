@@ -59,9 +59,8 @@ import akka.actor.typed.Behavior.UntypedBehavior
     untyped.system.scheduler.scheduleOnce(delay, toUntyped(target), msg)
   }
   override private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U] = {
-    val cell = untyped.asInstanceOf[akka.actor.ActorCell]
-    val ref = cell.addFunctionRef((_, msg) ⇒ untyped.self ! f(msg.asInstanceOf[U]), _name)
-    ActorRefAdapter[U](ref)
+    // FIXME name does not make sense anymore
+    new AdaptingActorRef[U, T](self, f)
   }
 }
 
