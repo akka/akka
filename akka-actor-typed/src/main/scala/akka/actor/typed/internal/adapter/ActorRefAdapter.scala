@@ -33,6 +33,9 @@ private[akka] object ActorRefAdapter {
   def toUntyped[U](ref: ActorRef[U]): akka.actor.InternalActorRef =
     ref match {
       case adapter: ActorRefAdapter[_] ⇒ adapter.untyped
+      case adapted: AdaptingActorRef[_, _] ⇒
+        val untypedActualRef = toUntyped(adapted.actualRef)
+        new UntypedAdaptingActorRef(untypedActualRef, adapted.transform)
       case _ ⇒
         throw new UnsupportedOperationException("only adapted untyped ActorRefs permissible " +
           s"($ref of class ${ref.getClass.getName})")

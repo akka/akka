@@ -770,6 +770,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     }
 
     "create a named adapter" in {
+      pending // does not make sense anymore
       sync(setup("ctx41") { (ctx, startWith) ⇒
         startWith.keep { subj ⇒
           subj ! GetAdapter(ctx.self, "named")
