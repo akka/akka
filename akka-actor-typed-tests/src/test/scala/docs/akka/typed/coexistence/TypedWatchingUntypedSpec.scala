@@ -1,7 +1,7 @@
 package docs.akka.typed.coexistence
 
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.ActorBehavior
 import akka.testkit.TestKit
 //#adapter-import
 // adds support for typed actors to an untyped actor system and context
@@ -23,7 +23,7 @@ object TypedWatchingUntypedSpec {
     case object Pong extends Command
 
     val behavior: Behavior[Command] =
-      Actor.deferred { context ⇒
+      ActorBehavior.deferred { context ⇒
         // context.spawn is an implicit extension method
         val untyped = context.actorOf(Untyped.props(), "second")
 
@@ -33,15 +33,15 @@ object TypedWatchingUntypedSpec {
         // illustrating how to pass sender, toUntyped is an implicit extension method
         untyped.tell(Typed.Ping(context.self), context.self.toUntyped)
 
-        Actor.immutablePartial[Command] {
+        ActorBehavior.immutablePartial[Command] {
           case (ctx, Pong) ⇒
             // it's not possible to get the sender, that must be sent in message
             // context.stop is an implicit extension method
             ctx.stop(untyped)
-            Actor.same
+            ActorBehavior.same
         } onSignal {
           case (_, akka.actor.typed.Terminated(_)) ⇒
-            Actor.stopped
+            ActorBehavior.stopped
         }
       }
   }

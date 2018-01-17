@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedAkkaSpecWithShutdown }
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.ActorBehavior
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.MemberStatus
 import akka.cluster.typed.{ Cluster, Join }
@@ -135,31 +135,31 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
   }
 
   val typeKey = EntityTypeKey[TestProtocol]("envelope-shard")
-  val behavior = Actor.immutable[TestProtocol] {
+  val behavior = ActorBehavior.immutable[TestProtocol] {
     case (_, StopPlz()) ⇒
-      Actor.stopped
+      ActorBehavior.stopped
 
     case (ctx, WhoAreYou(replyTo)) ⇒
       replyTo ! s"I'm ${ctx.self.path.name}"
-      Actor.same
+      ActorBehavior.same
 
     case (_, ReplyPlz(toMe)) ⇒
       toMe ! "Hello!"
-      Actor.same
+      ActorBehavior.same
   }
 
   val typeKey2 = EntityTypeKey[IdTestProtocol]("no-envelope-shard")
-  val behaviorWithId = Actor.immutable[IdTestProtocol] {
+  val behaviorWithId = ActorBehavior.immutable[IdTestProtocol] {
     case (_, IdStopPlz(_)) ⇒
-      Actor.stopped
+      ActorBehavior.stopped
 
     case (ctx, IdWhoAreYou(_, replyTo)) ⇒
       replyTo ! s"I'm ${ctx.self.path.name}"
-      Actor.same
+      ActorBehavior.same
 
     case (_, IdReplyPlz(_, toMe)) ⇒
       toMe ! "Hello!"
-      Actor.same
+      ActorBehavior.same
   }
 
   "Typed cluster sharding" must {

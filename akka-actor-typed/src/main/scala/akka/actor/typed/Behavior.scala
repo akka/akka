@@ -19,7 +19,7 @@ import akka.util.OptionVal
  * its child actors.
  *
  * Behaviors can be formulated in a number of different ways, either by
- * using the DSLs in [[akka.actor.typed.scaladsl.Actor]] and [[akka.actor.typed.javadsl.Actor]]
+ * using the DSLs in [[akka.actor.typed.scaladsl.ActorBehavior]] and [[akka.actor.typed.javadsl.ActorBehavior]]
  * or extending the abstract [[ExtensibleBehavior]] class.
  *
  * Closing over ActorContext makes a Behavior immobile: it cannot be moved to
@@ -42,7 +42,7 @@ sealed abstract class Behavior[T] {
 
 /**
  * Extension point for implementing custom behaviors in addition to the existing
- * set of behaviors available through the DSLs in [[akka.actor.typed.scaladsl.Actor]] and [[akka.actor.typed.javadsl.Actor]]
+ * set of behaviors available through the DSLs in [[akka.actor.typed.scaladsl.ActorBehavior]] and [[akka.actor.typed.javadsl.ActorBehavior]]
  */
 abstract class ExtensibleBehavior[T] extends Behavior[T] {
   /**

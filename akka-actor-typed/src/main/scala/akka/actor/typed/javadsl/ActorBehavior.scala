@@ -23,7 +23,7 @@ import akka.actor.typed.internal.BehaviorImpl
 import akka.actor.typed.internal.Restarter
 import akka.actor.typed.internal.TimerSchedulerImpl
 
-object Actor {
+object ActorBehavior {
 
   private val _unitFunction = (_: SAC[Any], _: Any) ⇒ ()
   private def unitFunction[T] = _unitFunction.asInstanceOf[((SAC[T], Signal) ⇒ Unit)]
@@ -62,11 +62,11 @@ object Actor {
    * abstract method [[MutableBehavior#onMessage]] and optionally override
    * [[MutableBehavior#onSignal]].
    *
-   * Instances of this behavior should be created via [[Actor#mutable]] and if
+   * Instances of this behavior should be created via [[ActorBehavior#mutable]] and if
    * the [[ActorContext]] is needed it can be passed as a constructor parameter
    * from the factory function.
    *
-   * @see [[Actor#mutable]]
+   * @see [[ActorBehavior#mutable]]
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
     private var _receive: OptionVal[Receive[T]] = OptionVal.None

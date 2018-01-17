@@ -6,7 +6,7 @@ package akka.persistence.typed.scaladsl
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.ActorBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.TimerScheduler
 
@@ -171,7 +171,7 @@ object PersistentActorCompileOnlyTest {
       })
 
     // FIXME this doesn't work, wrapping is not supported
-    Actor.withTimers((timers: TimerScheduler[Command]) ⇒ {
+    ActorBehavior.withTimers((timers: TimerScheduler[Command]) ⇒ {
       timers.startPeriodicTimer("swing", MoodSwing, 10.seconds)
       b
     })
@@ -268,7 +268,7 @@ object PersistentActorCompileOnlyTest {
 
     def isFullyHydrated(basket: Basket, ids: List[Id]) = basket.items.map(_.id) == ids
 
-    Actor.deferred { ctx: ActorContext[Command] ⇒
+    ActorBehavior.deferred { ctx: ActorContext[Command] ⇒
       // FIXME this doesn't work, wrapping not supported
 
       var basket = Basket(Nil)

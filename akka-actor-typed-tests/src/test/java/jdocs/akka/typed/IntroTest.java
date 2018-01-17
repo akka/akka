@@ -8,7 +8,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Terminated;
-import akka.actor.typed.javadsl.Actor;
+import akka.actor.typed.javadsl.ActorBehavior;
 import akka.actor.typed.javadsl.AskPattern;
 import akka.util.Timeout;
 
@@ -47,10 +47,10 @@ public class IntroTest {
       }
     }
 
-    public static final Behavior<Greet> greeter = Actor.immutable((ctx, msg) -> {
+    public static final Behavior<Greet> greeter = ActorBehavior.immutable((ctx, msg) -> {
       System.out.println("Hello " + msg.whom + "!");
       msg.replyTo.tell(new Greeted(msg.whom));
-      return Actor.same();
+      return ActorBehavior.same();
     });
   }
   //#hello-world-actor
@@ -133,7 +133,7 @@ public class IntroTest {
     }
 
     private static Behavior<Command> chatRoom(List<ActorRef<SessionEvent>> sessions) {
-      return Actor.immutable(Command.class)
+      return ActorBehavior.immutable(Command.class)
         .onMessage(GetSession.class, (ctx, getSession) -> {
           ActorRef<PostMessage> wrapper = ctx.spawnAdapter(p ->
             new PostSessionMessage(getSession.screenName, p.message));
@@ -146,7 +146,7 @@ public class IntroTest {
         .onMessage(PostSessionMessage.class, (ctx, post) -> {
           MessagePosted mp = new MessagePosted(post.screenName, post.message);
           sessions.forEach(s -> s.tell(mp));
-          return Actor.same();
+          return ActorBehavior.same();
         })
         .build();
     }
@@ -161,19 +161,19 @@ public class IntroTest {
     }
 
     public static Behavior<ChatRoom.SessionEvent> behavior() {
-      return Actor.immutable(ChatRoom.SessionEvent.class)
+      return ActorBehavior.immutable(ChatRoom.SessionEvent.class)
         .onMessage(ChatRoom.SessionDenied.class, (ctx, msg) -> {
           System.out.println("cannot start chat room session: " + msg.reason);
-          return Actor.stopped();
+          return ActorBehavior.stopped();
         })
         .onMessage(ChatRoom.SessionGranted.class, (ctx, msg) -> {
           msg.handle.tell(new ChatRoom.PostMessage("Hello World!"));
-          return Actor.same();
+          return ActorBehavior.same();
         })
         .onMessage(ChatRoom.MessagePosted.class, (ctx, msg) -> {
           System.out.println("message has been posted by '" +
             msg.screenName +"': " + msg.message);
-          return Actor.stopped();
+          return ActorBehavior.stopped();
         })
         .build();
     }
@@ -184,7 +184,7 @@ public class IntroTest {
   public static void runChatRoom() throws Exception {
 
     //#chatroom-main
-    Behavior<Void> main = Actor.deferred(ctx -> {
+    Behavior<Void> main = ActorBehavior.deferred(ctx -> {
       ActorRef<ChatRoom.Command> chatRoom =
         ctx.spawn(ChatRoom.behavior(), "chatRoom");
       ActorRef<ChatRoom.SessionEvent> gabbler =
@@ -192,8 +192,8 @@ public class IntroTest {
       ctx.watch(gabbler);
       chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
 
-      return Actor.immutable(Void.class)
-        .onSignal(Terminated.class, (c, sig) -> Actor.stopped())
+      return ActorBehavior.immutable(Void.class)
+        .onSignal(Terminated.class, (c, sig) -> ActorBehavior.stopped())
         .build();
     });
 

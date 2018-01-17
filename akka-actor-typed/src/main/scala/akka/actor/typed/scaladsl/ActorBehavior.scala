@@ -11,7 +11,7 @@ import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 
 @ApiMayChange
-object Actor {
+object ActorBehavior {
 
   private val _unitFunction = (_: ActorContext[Any], _: Any) ⇒ ()
   private def unitFunction[T] = _unitFunction.asInstanceOf[((ActorContext[T], Signal) ⇒ Unit)]
@@ -38,7 +38,7 @@ object Actor {
 
   /**
    * `deferred` is a factory for a behavior. Creation of the behavior instance is deferred until
-   * the actor is started, as opposed to [[Actor.immutable]] that creates the behavior instance
+   * the actor is started, as opposed to [[ActorBehavior.immutable]] that creates the behavior instance
    * immediately before the actor is running. The `factory` function pass the `ActorContext`
    * as parameter and that can for example be used for spawning child actors.
    *
@@ -70,11 +70,11 @@ object Actor {
    * abstract method [[MutableBehavior#onMessage]] and optionally override
    * [[MutableBehavior#onSignal]].
    *
-   * Instances of this behavior should be created via [[Actor#Mutable]] and if
+   * Instances of this behavior should be created via [[ActorBehavior#Mutable]] and if
    * the [[ActorContext]] is needed it can be passed as a constructor parameter
    * from the factory function.
    *
-   * @see [[Actor#Mutable]]
+   * @see [[ActorBehavior#Mutable]]
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
     @throws(classOf[Exception])
@@ -189,7 +189,7 @@ object Actor {
    * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
    */
   def immutablePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Immutable[T] =
-    Actor.immutable[T] { (ctx, t) ⇒ onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ Actor.unhandled[T]) }
+    ActorBehavior.immutable[T] { (ctx, t) ⇒ onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ ActorBehavior.unhandled[T]) }
 
   /**
    * Construct an actor behavior that can react to lifecycle signals only.

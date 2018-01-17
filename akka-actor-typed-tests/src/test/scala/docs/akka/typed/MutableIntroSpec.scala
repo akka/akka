@@ -5,7 +5,7 @@ package docs.akka.typed
 
 //#imports
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.ActorBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.testkit.typed.TestKit
 
@@ -38,9 +38,9 @@ object MutableIntroSpec {
     //#chatroom-behavior
 
     def behavior(): Behavior[Command] =
-      Actor.mutable[Command](ctx ⇒ new ChatRoomBehavior(ctx))
+      ActorBehavior.mutable[Command](ctx ⇒ new ChatRoomBehavior(ctx))
 
-    class ChatRoomBehavior(ctx: ActorContext[Command]) extends Actor.MutableBehavior[Command] {
+    class ChatRoomBehavior(ctx: ActorContext[Command]) extends ActorBehavior.MutableBehavior[Command] {
       private var sessions: List[ActorRef[SessionEvent]] = List.empty
 
       override def onMessage(msg: Command): Behavior[Command] = {
@@ -76,36 +76,36 @@ class MutableIntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
       import ChatRoom._
 
       val gabbler =
-        Actor.immutable[SessionEvent] { (_, msg) ⇒
+        ActorBehavior.immutable[SessionEvent] { (_, msg) ⇒
           msg match {
             case SessionDenied(reason) ⇒
               println(s"cannot start chat room session: $reason")
-              Actor.stopped
+              ActorBehavior.stopped
             case SessionGranted(handle) ⇒
               handle ! PostMessage("Hello World!")
-              Actor.same
+              ActorBehavior.same
             case MessagePosted(screenName, message) ⇒
               println(s"message has been posted by '$screenName': $message")
-              Actor.stopped
+              ActorBehavior.stopped
           }
         }
       //#chatroom-gabbler
 
       //#chatroom-main
       val main: Behavior[String] =
-        Actor.deferred { ctx ⇒
+        ActorBehavior.deferred { ctx ⇒
           val chatRoom = ctx.spawn(ChatRoom.behavior(), "chatroom")
           val gabblerRef = ctx.spawn(gabbler, "gabbler")
           ctx.watch(gabblerRef)
 
-          Actor.immutablePartial[String] {
+          ActorBehavior.immutablePartial[String] {
             case (_, "go") ⇒
               chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
-              Actor.same
+              ActorBehavior.same
           } onSignal {
             case (_, Terminated(_)) ⇒
               println("Stopping guardian")
-              Actor.stopped
+              ActorBehavior.stopped
           }
         }
 

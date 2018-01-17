@@ -16,10 +16,10 @@ class ImmutablePartialSpec extends TestKit with TypedAkkaSpecWithShutdown {
     "correctly install the message handler" in {
       val probe = TestProbe[Command]("probe")
       val behavior =
-        Actor.immutablePartial[Command] {
+        ActorBehavior.immutablePartial[Command] {
           case (_, Command2) ⇒
             probe.ref ! Command2
-            Actor.same
+            ActorBehavior.same
         }
       val testkit = BehaviorTestkit(behavior)
 

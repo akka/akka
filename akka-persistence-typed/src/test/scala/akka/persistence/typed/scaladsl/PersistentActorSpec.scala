@@ -5,7 +5,7 @@ package akka.persistence.typed.scaladsl
 
 import scala.concurrent.duration._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.ActorBehavior
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl._
@@ -57,10 +57,10 @@ object PersistentActorSpec {
           Effect.none
         case IncrementLater ⇒
           // purpose is to test signals
-          val delay = ctx.spawnAnonymous(Actor.withTimers[Tick.type] { timers ⇒
+          val delay = ctx.spawnAnonymous(ActorBehavior.withTimers[Tick.type] { timers ⇒
             timers.startSingleTimer(Tick, Tick, 10.millis)
-            Actor.immutable((_, msg) ⇒ msg match {
-              case Tick ⇒ Actor.stopped
+            ActorBehavior.immutable((_, msg) ⇒ msg match {
+              case Tick ⇒ ActorBehavior.stopped
             })
           })
           ctx.watchWith(delay, DelayFinished)
@@ -214,7 +214,7 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       // wrap it in Actor.deferred or Actor.supervise
       pending
       val probe = TestProbe[State]
-      val behavior = Actor.supervise[Command](counter("c13"))
+      val behavior = ActorBehavior.supervise[Command](counter("c13"))
         .onFailure(SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.1))
       val c = spawn(behavior)
       c ! Increment
