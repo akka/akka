@@ -104,7 +104,7 @@ private[akka] final class FunctionRef[-T](
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
+  @InternalApi private[akka] def internalSpawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
     val i = TestInbox[U](n)

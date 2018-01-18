@@ -59,12 +59,12 @@ object Effect {
     ref
   }
 
-  override def spawnAdapter[U](f: U ⇒ T): ActorRef[U] = {
-    spawnAdapter(f, "")
+  override def spawnMessageAdapter[U](f: U ⇒ T): ActorRef[U] = {
+    spawnMessageAdapter(f, "")
   }
 
-  override def spawnAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
-    val ref = super.spawnAdapter(f, name)
+  override def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
+    val ref = super.spawnMessageAdapter(f, name)
     effectQueue.offer(SpawnedAdapter)
     ref
   }

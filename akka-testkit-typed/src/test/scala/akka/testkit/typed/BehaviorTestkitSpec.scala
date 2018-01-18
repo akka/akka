@@ -50,12 +50,12 @@ object BehaviorTestkitSpec {
           }
           Behaviors.same
         case SpawnAdapter ⇒
-          ctx.spawnAdapter {
+          ctx.spawnMessageAdapter {
             r: Reproduce ⇒ SpawnAnonymous(r.times)
           }
           Behaviors.same
         case SpawnAdapterWithName(name) ⇒
-          ctx.spawnAdapter({
+          ctx.spawnMessageAdapter({
             r: Reproduce ⇒ SpawnAnonymous(r.times)
           }, name)
           Behaviors.same
@@ -115,7 +115,7 @@ class BehaviorTestkitSpec extends WordSpec with Matchers {
     }
   }
 
-  "BehaviorTestkit's spawnAdapter" must {
+  "BehaviorTestkit's spawnMessageAdapter" must {
     "create adapters without name and record effects" in {
       val testkit = BehaviorTestkit[Father.Command](Father.init())
       testkit.run(SpawnAdapter)

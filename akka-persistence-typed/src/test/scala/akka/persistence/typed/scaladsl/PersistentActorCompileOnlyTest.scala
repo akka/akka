@@ -273,7 +273,7 @@ object PersistentActorCompileOnlyTest {
 
       var basket = Basket(Nil)
       var stash: Seq[Command] = Nil
-      val adapt = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
+      val adapt = ctx.messageAdapter((m: MetaData) ⇒ GotMetaData(m))
 
       def addItem(id: Id, self: ActorRef[Command]) =
         Effect
@@ -316,8 +316,7 @@ object PersistentActorCompileOnlyTest {
           case ItemAdded(id)   ⇒ id +: state
           case ItemRemoved(id) ⇒ state.filter(_ != id)
         }).onRecoveryCompleted((ctx, state) ⇒ {
-          val ad = ctx.spawnAdapter((m: MetaData) ⇒ GotMetaData(m))
-          state.foreach(id ⇒ metadataRegistry ! GetMetaData(id, ad))
+          state.foreach(id ⇒ metadataRegistry ! GetMetaData(id, adapt))
         })
     }
   }

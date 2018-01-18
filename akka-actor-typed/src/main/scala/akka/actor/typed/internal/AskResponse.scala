@@ -13,7 +13,7 @@ import scala.util.Try
  * Message wrapper used to allow ActorContext.ask to map the response inside the asking actor.
  */
 @InternalApi
-private[akka] final class AskResponse[T, U](result: Try[T], adapt: Try[T] ⇒ U) {
+private[akka] final class AskResponse[U, T](result: Try[U], adapt: Try[U] ⇒ T) {
 
-  def adapted: U = adapt(result)
+  def adapted: T = adapt(result)
 }

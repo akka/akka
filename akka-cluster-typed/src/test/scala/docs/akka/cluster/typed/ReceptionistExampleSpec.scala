@@ -51,7 +51,7 @@ object RandomRouter {
       val cluster = Cluster(ctx.system)
       // typically you have to map such external messages into this
       // actor's protocol with a message adapter
-      val reachabilityAdapter: ActorRef[ReachabilityEvent] = ctx.spawnAdapter(WrappedReachabilityEvent.apply)
+      val reachabilityAdapter: ActorRef[ReachabilityEvent] = ctx.messageAdapter(WrappedReachabilityEvent.apply)
       cluster.subscriptions ! Subscribe(reachabilityAdapter, classOf[ReachabilityEvent])
 
       def routingBehavior(routees: Vector[ActorRef[T]], unreachable: Set[Address]): Behavior[Any] =

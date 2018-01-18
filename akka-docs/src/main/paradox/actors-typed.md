@@ -140,7 +140,7 @@ In the next section we demonstrate this on a more realistic example.
 The next example demonstrates some important patterns:
 
 * Using a sealed trait and case class/objects to represent multiple messages an actor can receive
-* Handle incoming messages of different types by using `adapter`s
+* Handle sessions by using child actors
 * Handling state by changing behavior
 * Using multiple typed actors to represent different parts of a protocol in a type safe way
 
@@ -182,33 +182,31 @@ When a new `GetSession` command comes in we add that client to the
 list that is in the returned behavior. Then we also need to create the session’s
 `ActorRef` that will be used to post messages. In this case we want to
 create a very simple Actor that just repackages the `PostMessage`
-command into a `PostSessionMessage` command which also includes the
-screen name. Such a wrapper Actor can be created by using the
-`spawnAdapter` method on the `ActorContext`, so that we can then
-go on to reply to the client with the `SessionGranted` result.
+command into a `PublishSessionMessage` command which also includes the
+screen name.
 
-The behavior that we declare here can handle both subtypes of `Command`.
+The behavior that we declare here can handle both subtypes of `RoomCommand`.
 `GetSession` has been explained already and the
-`PostSessionMessage` commands coming from the wrapper Actors will
+`PublishSessionMessage` commands coming from the session Actors will
 trigger the dissemination of the contained chat room message to all connected
 clients. But we do not want to give the ability to send
-`PostSessionMessage` commands to arbitrary clients, we reserve that
-right to the wrappers we create—otherwise clients could pose as completely
+`PublishSessionMessage` commands to arbitrary clients, we reserve that
+right to the internal session actors we create—otherwise clients could pose as completely
 different screen names (imagine the `GetSession` protocol to include
-authentication information to further secure this). Therefore `PostSessionMessage`
-has `private` visibility and can't be created outside the actor.
+authentication information to further secure this). Therefore `PublishSessionMessage`
+has `private` visibility and can't be created outside the `ChatRoom` @scala[object]@java[class].
 
 If we did not care about securing the correspondence between a session and a
 screen name then we could change the protocol such that `PostMessage` is
-removed and all clients just get an @scala[`ActorRef[PostSessionMessage]`]@java[`ActorRef<PostSessionMessage>`] to
-send to. In this case no wrapper would be needed and we could just use
+removed and all clients just get an @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] to
+send to. In this case no session actor would be needed and we could just use
 @scala[`ctx.self`]@java[`ctx.getSelf()`]. The type-checks work out in that case because
 @scala[`ActorRef[-T]`]@java[`ActorRef<T>`] is contravariant in its type parameter, meaning that we
-can use a @scala[`ActorRef[Command]`]@java[`ActorRef<Command>`] wherever an
-@scala[`ActorRef[PostSessionMessage]`]@java[`ActorRef<PostSessionMessage>`] is needed—this makes sense because the
+can use a @scala[`ActorRef[RoomCommand]`]@java[`ActorRef<RoomCommand>`] wherever an
+@scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] is needed—this makes sense because the
 former simply speaks more languages than the latter. The opposite would be
-problematic, so passing an @scala[`ActorRef[PostSessionMessage]`]@java[`ActorRef<PostSessionMessage>`] where
-@scala[`ActorRef[Command]`]@java[`ActorRef<Command>`] is required will lead to a type error.
+problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] where
+@scala[`ActorRef[RoomCommand]`]@java[`ActorRef<RoomCommand>`] is required will lead to a type error.
 
 ### Trying it out
 

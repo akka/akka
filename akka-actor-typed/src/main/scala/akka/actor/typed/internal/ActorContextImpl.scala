@@ -4,20 +4,29 @@
 package akka.actor.typed
 package internal
 
+import java.util.function.{ Function ⇒ JFunction }
+import java.util.ArrayList
+import java.util.Optional
+import java.util.function
 import java.util.function.BiFunction
-import java.util.{ ArrayList, Optional, function }
-
-import akka.annotation.InternalApi
-import akka.util.Timeout
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.reflect.ClassTag
-import scala.util.{ Failure, Success, Try }
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
+import akka.annotation.InternalApi
+import akka.util.OptionVal
+import akka.util.Timeout
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] trait ActorContextImpl[T] extends ActorContext[T] with javadsl.ActorContext[T] with scaladsl.ActorContext[T] {
+
+  private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
+  private var _messageAdapters: List[(Class[_], Any ⇒ T)] = Nil
 
   override def asJava: javadsl.ActorContext[T] = this
 
@@ -55,18 +64,6 @@ import scala.util.{ Failure, Success, Try }
   override def spawnAnonymous[U](behavior: akka.actor.typed.Behavior[U]): akka.actor.typed.ActorRef[U] =
     spawnAnonymous(behavior, Props.empty)
 
-  override def spawnAdapter[U](f: U ⇒ T, name: String): ActorRef[U] =
-    internalSpawnAdapter(f, name)
-
-  override def spawnAdapter[U](f: U ⇒ T): ActorRef[U] =
-    internalSpawnAdapter(f, "")
-
-  override def spawnAdapter[U](f: java.util.function.Function[U, T]): akka.actor.typed.ActorRef[U] =
-    internalSpawnAdapter(f.apply, "")
-
-  override def spawnAdapter[U](f: java.util.function.Function[U, T], name: String): akka.actor.typed.ActorRef[U] =
-    internalSpawnAdapter(f.apply, name)
-
   // Scala API impl
   override def ask[Req, Res](otherActor: ActorRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
     import akka.actor.typed.scaladsl.AskPattern._
@@ -83,10 +80,45 @@ import scala.util.{ Failure, Success, Try }
     }(responseTimeout, ClassTag[Res](resClass))
   }
 
+  private[akka] override def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] =
+    internalSpawnMessageAdapter(f, name)
+
+  private[akka] override def spawnMessageAdapter[U](f: U ⇒ T): ActorRef[U] =
+    internalSpawnMessageAdapter(f, name = "")
+
   /**
-   * INTERNAL API: Needed to make Scala 2.12 compiler happy.
+   * INTERNAL API: Needed to make Scala 2.12 compiler happy if spawnMessageAdapter is overloaded for scaladsl/javadsl.
    * Otherwise "ambiguous reference to overloaded definition" because Function is lambda.
    */
-  @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U]
+  @InternalApi private[akka] def internalSpawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U]
+
+  override def messageAdapter[U: ClassTag](f: U ⇒ T): ActorRef[U] = {
+    val messageClass = implicitly[ClassTag[U]].runtimeClass.asInstanceOf[Class[U]]
+    internalMessageAdapter(messageClass, f)
+  }
+
+  override def messageAdapter[U](messageClass: Class[U], f: JFunction[U, T]): ActorRef[U] =
+    internalMessageAdapter(messageClass, f.apply)
+
+  private def internalMessageAdapter[U](messageClass: Class[U], f: U ⇒ T): ActorRef[U] = {
+    // replace existing adapter for same class, only one per class is supported to avoid unbounded growth
+    // in case "same" adapter is added repeatedly
+    _messageAdapters = (messageClass, f.asInstanceOf[Any ⇒ T]) ::
+      _messageAdapters.filterNot { case (cls, _) ⇒ cls == messageClass }
+    val ref = messageAdapterRef match {
+      case OptionVal.Some(ref) ⇒ ref.asInstanceOf[ActorRef[U]]
+      case OptionVal.None ⇒
+        // AdaptMessage is not really a T, but that is erased
+        val ref = internalSpawnMessageAdapter[Any](msg ⇒ AdaptWithRegisteredMessageAdapter(msg).asInstanceOf[T], "adapter")
+        messageAdapterRef = OptionVal.Some(ref)
+        ref
+    }
+    ref.asInstanceOf[ActorRef[U]]
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def messageAdapters: List[(Class[_], Any ⇒ T)] = _messageAdapters
 }
 
