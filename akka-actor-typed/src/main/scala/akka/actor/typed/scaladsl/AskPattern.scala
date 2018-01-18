@@ -59,7 +59,7 @@ object AskPattern {
      * val f: Future[Reply] = target ? (Request("hello", _))
      * }}}
      */
-    def ?[U](f: ActorRef[U] ⇒ T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] =
+    def ?[U](f: ActorRef[U] ⇒ T)(implicit timeout: Timeout): Future[U] =
       ref match {
         case a: adapt.ActorRefAdapter[_]    ⇒ askUntyped(ref, a.untyped, timeout, f)
         case a: adapt.ActorSystemAdapter[_] ⇒ askUntyped(ref, a.untyped.guardian, timeout, f)
