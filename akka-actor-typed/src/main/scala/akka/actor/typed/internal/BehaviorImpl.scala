@@ -40,7 +40,7 @@ import scala.reflect.ClassTag
   private final case class Widened[T, U](behavior: Behavior[T], matcher: PartialFunction[U, T]) extends ExtensibleBehavior[U] {
 
     private def widen(b: Behavior[T], ctx: AC[T]): Behavior[U] =
-      Behavior.wrapNonSpecial(this, b, ctx)(b ⇒ Widened[T, U](b, matcher))
+      Behavior.wrap(this, b, ctx)(b ⇒ Widened[T, U](b, matcher))
 
     override def receiveSignal(ctx: AC[U], signal: Signal): Behavior[U] =
       widen(Behavior.interpretSignal(behavior, ctx.as[T], signal), ctx.as[T])
@@ -126,7 +126,7 @@ import scala.reflect.ClassTag
     toStringPrefix:  String                                      = "Intercept") extends ExtensibleBehavior[T] {
 
     private def intercept(nextBehavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
-      Behavior.wrapNonSpecial(this, nextBehavior, ctx)(Intercept(beforeOnMessage, beforeOnSignal, afterMessage, afterSignal, _))
+      Behavior.wrap(this, nextBehavior, ctx)(Intercept(beforeOnMessage, beforeOnSignal, afterMessage, afterSignal, _))
     }
 
     override def receiveSignal(ctx: AC[T], signal: Signal): Behavior[T] = {

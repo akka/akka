@@ -223,23 +223,21 @@ object Behavior {
     }
 
   /**
-   * Return special behaviors, undefer deferred, if behavior is non-special, apply the wrap function to get
-   * and return the result from that.
+   * Return special behaviors as is, undefer deferred, if behavior is "non-special" apply the wrap function `f` to get
+   * and return the result from that. Useful for cases where a [[Behavior]] implementation that is decorating another
+   * behavior has processed a message and needs to re-wrap the resulting behavior with itself.
    *
-   * INTERNAL API (for now)
+   * INTERNAL API
    */
-  // FIXME not an amazing name this
-  // FIXME should it be public?
-  // FIXME java api
   @InternalApi
-  private[akka] def wrapNonSpecial[T, U](currentBehavior: Behavior[_], nextBehavior: Behavior[T], ctx: ActorContext[T])(wrap: Behavior[T] ⇒ Behavior[U]): Behavior[U] =
+  @tailrec
+  private[akka] def wrap[T, U](currentBehavior: Behavior[_], nextBehavior: Behavior[T], ctx: ActorContext[T])(f: Behavior[T] ⇒ Behavior[U]): Behavior[U] =
     nextBehavior match {
       case SameBehavior | `currentBehavior` ⇒ same
       case UnhandledBehavior                ⇒ unhandled
-      // FIXME isStopped behavior -> stopped or current or something
-      case b if !isAlive(b)                 ⇒ stopped
-      case deferred: DeferredBehavior[T]    ⇒ wrapNonSpecial(currentBehavior, undefer(deferred, ctx), ctx)(wrap)
-      case other                            ⇒ wrap(other)
+      case StoppedBehavior                  ⇒ stopped
+      case deferred: DeferredBehavior[T]    ⇒ wrap(currentBehavior, undefer(deferred, ctx), ctx)(f)
+      case other                            ⇒ f(other)
     }
 
   @tailrec

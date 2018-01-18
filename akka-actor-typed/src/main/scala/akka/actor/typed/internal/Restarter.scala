@@ -84,7 +84,7 @@ import akka.actor.typed.scaladsl.Behaviors
   }
 
   protected final def supervise(nextBehavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] =
-    Behavior.wrapNonSpecial[T, T](behavior, nextBehavior, ctx)(wrap(_, afterException = false))
+    Behavior.wrap[T, T](behavior, nextBehavior, ctx)(wrap(_, afterException = false))
 
   override def receiveSignal(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
     try {
