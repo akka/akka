@@ -1,6 +1,3 @@
-# Missed out in previous releases
-ProblemFilters.exclude[MissingTypesProblem]("akka.persistence.AbstractPersistentActorWithTimers")
-
 # #23841 Remove backward compatibility on some akka-persistence internal API
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Persistence.journalConfigFor")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Persistence.journalFor")
