@@ -255,7 +255,8 @@ import scala.collection.JavaConverters._
       failStage(ex)
     }
 
-    private def needToPull: Boolean = !(hasBeenPulled(in) || isClosed(in) || hasNextElement)
+    private def needToPull: Boolean =
+      !(hasBeenPulled(in) || isClosed(in) || hasNextElement || substreamWaitingToBePushed.nonEmpty)
 
     override def preStart(): Unit =
       timeout = ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
