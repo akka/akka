@@ -23,7 +23,7 @@ import akka.actor.typed.scaladsl.Behaviors
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object Restarter {
+@InternalApi private[akka] object Supervisor {
   def apply[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], strategy: SupervisorStrategy): Behavior[T] =
     Behaviors.deferred[T] { ctx ⇒
       val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
@@ -34,7 +34,7 @@ import akka.actor.typed.scaladsl.Behaviors
         case r: Restart ⇒
           new LimitedRestarter(initialBehavior, startedBehavior, r, retries = 0, deadline = OptionVal.None)
         case Resume(loggingEnabled) ⇒ new Resumer(startedBehavior, loggingEnabled)
-        case _: Stop                ⇒ initialBehavior
+        case Stop(loggingEnabled)   ⇒ new Stopper(startedBehavior, loggingEnabled)
         case b: Backoff ⇒
           val backoffRestarter =
             new BackoffRestarter(
@@ -66,7 +66,7 @@ import akka.actor.typed.scaladsl.Behaviors
    */
   protected def wrap(nextBehavior: Behavior[T], afterException: Boolean): Supervisor[T, Thr]
 
-  protected def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Supervisor[T, Thr]]
+  protected def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Behavior[T]]
 
   protected def restart(ctx: ActorContext[T], initialBehavior: Behavior[T], startedBehavior: Behavior[T]): Supervisor[T, Thr] = {
     try Behavior.interpretSignal(startedBehavior, ctx, PreRestart) catch {
@@ -74,7 +74,7 @@ import akka.actor.typed.scaladsl.Behaviors
         "failure during PreRestart"))
     }
     // no need to canonicalize, it's done in the calling methods
-    wrap(Restarter.initialUndefer(ctx, initialBehavior), afterException = true)
+    wrap(Supervisor.initialUndefer(ctx, initialBehavior), afterException = true)
   }
 
   @tailrec
@@ -127,6 +127,22 @@ import akka.actor.typed.scaladsl.Behaviors
   override protected def wrap(nextBehavior: Behavior[T], afterException: Boolean): Supervisor[T, Thr] =
     new Resumer[T, Thr](nextBehavior, loggingEnabled)
 
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class Stopper[T, Thr <: Throwable: ClassTag](
+  override val behavior: Behavior[T], override val loggingEnabled: Boolean) extends Supervisor[T, Thr] {
+
+  override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Behavior[T]] = {
+    case NonFatal(ex: Thr) ⇒
+      log(ctx, ex)
+      Behaviors.stopped
+  }
+
+  override protected def wrap(nextBehavior: Behavior[T], afterException: Boolean): Supervisor[T, Thr] =
+    new Stopper[T, Thr](nextBehavior, loggingEnabled)
 }
 
 /**
@@ -232,7 +248,7 @@ import akka.actor.typed.scaladsl.Behaviors
     msg match {
       case ScheduledRestart ⇒
         // actual restart after scheduled backoff delay
-        val restartedBehavior = Restarter.initialUndefer(ctx, initialBehavior)
+        val restartedBehavior = Supervisor.initialUndefer(ctx, initialBehavior)
         ctx.asScala.schedule(strategy.resetBackoffAfter, ctx.asScala.self, ResetRestartCount(restartCount))
         new BackoffRestarter[T, Thr](initialBehavior, restartedBehavior, strategy, restartCount, blackhole = false)
       case ResetRestartCount(current) ⇒
