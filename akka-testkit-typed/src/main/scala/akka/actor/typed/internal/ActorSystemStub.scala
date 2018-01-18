@@ -4,7 +4,7 @@
 package akka.actor.typed
 package internal
 
-import java.util.concurrent.ThreadFactory
+import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.annotation.InternalApi
 import akka.event.Logging
@@ -13,6 +13,7 @@ import akka.util.Timeout
 import akka.{ actor ⇒ a, event ⇒ e }
 import com.typesafe.config.ConfigFactory
 
+import scala.compat.java8.FutureConverters
 import scala.concurrent._
 
 /**
@@ -62,6 +63,7 @@ import scala.concurrent._
     terminationPromise.future
   }
   override def whenTerminated: Future[akka.actor.typed.Terminated] = terminationPromise.future
+  override def getWhenTerminated: CompletionStage[Terminated] = FutureConverters.toJava(whenTerminated)
   override val startTime: Long = System.currentTimeMillis()
   override def uptime: Long = System.currentTimeMillis() - startTime
   override def threadFactory: java.util.concurrent.ThreadFactory = new ThreadFactory {
