@@ -222,6 +222,24 @@ object Behavior {
       case other                         ⇒ other
     }
 
+  /**
+   * INTERNAL API
+   *
+   * Return special behaviors as is, undefer deferred, if behavior is "non-special" apply the wrap function `f` to get
+   * and return the result from that. Useful for cases where a [[Behavior]] implementation that is decorating another
+   * behavior has processed a message and needs to re-wrap the resulting behavior with itself.
+   */
+  @InternalApi
+  @tailrec
+  private[akka] def wrap[T, U](currentBehavior: Behavior[_], nextBehavior: Behavior[T], ctx: ActorContext[T])(f: Behavior[T] ⇒ Behavior[U]): Behavior[U] =
+    nextBehavior match {
+      case SameBehavior | `currentBehavior` ⇒ same
+      case UnhandledBehavior                ⇒ unhandled
+      case StoppedBehavior                  ⇒ stopped
+      case deferred: DeferredBehavior[T]    ⇒ wrap(currentBehavior, undefer(deferred, ctx), ctx)(f)
+      case other                            ⇒ f(other)
+    }
+
   @tailrec
   def undefer[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
     behavior match {
