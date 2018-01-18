@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package docs.ddata
 
@@ -123,7 +123,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     replicator ! Update(Set2Key, ORSet.empty[String], writeMajority)(_ + "hello")
 
     val writeAll = WriteAll(timeout = 5.seconds)
-    replicator ! Update(ActiveFlagKey, Flag.empty, writeAll)(_.switchOn)
+    replicator ! Update(ActiveFlagKey, Flag.Disabled, writeAll)(_.switchOn)
     //#update
 
     probe.expectMsgType[UpdateResponse[_]] match {
@@ -347,7 +347,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
   "demonstrate Flag" in {
     def println(o: Any): Unit = ()
     //#flag
-    val f0 = Flag.empty
+    val f0 = Flag.Disabled
     val f1 = f0.switchOn
     println(f1.enabled)
     //#flag

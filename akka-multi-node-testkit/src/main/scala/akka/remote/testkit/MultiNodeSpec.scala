@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.testkit
 
@@ -303,10 +303,10 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     if (selfIndex == 0) {
       testConductor.removeNode(myself)
       within(testConductor.Settings.BarrierTimeout.duration) {
-        awaitCond {
+        awaitCond({
           // Await.result(testConductor.getNodes, remaining).filterNot(_ == myself).isEmpty
-          testConductor.getNodes.await.filterNot(_ == myself).isEmpty
-        }
+          testConductor.getNodes.await.forall(_ == myself)
+        }, message = s"Nodes not shutdown: ${testConductor.getNodes.await}")
       }
     }
     shutdown(system, duration = shutdownTimeout)

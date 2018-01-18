@@ -83,7 +83,7 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 When you specify to write to `n` out of `x`  nodes, the update will first replicate to `n` nodes. 
 If there are not enough Acks after 1/5th of the timeout, the update will be replicated to `n` other 
 nodes. If there are less than n nodes left all of the remaining nodes are used. Reachable nodes 
-are prefered over unreachable nodes.
+are preferred over unreachable nodes.
 
 Note that `WriteMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
 
@@ -219,7 +219,7 @@ in a 5 node cluster it writes to 3 nodes and reads from 3 nodes. In a 6 node clu
 to 4 nodes and reads from 4 nodes.
 
 You can define a minimum number of nodes for `WriteMajority` and `ReadMajority`,
-this will minimize the risk of reading steal data. Minimum cap is
+this will minimize the risk of reading stale data. Minimum cap is
 provided by minCap property of `WriteMajority` and `ReadMajority` and defines the required majority.
 If the minCap is higher then **N / 2 + 1** the minCap will be used.
 
@@ -443,7 +443,7 @@ Java
 ### Maps
 
 `ORMap` (observed-remove map) is a map with keys of `Any` type and the values are `ReplicatedData`
-types themselves. It supports add, remove and delete any number of times for a map entry.
+types themselves. It supports add, update and remove any number of times for a map entry.
 
 If an entry is concurrently added and removed, the add will win. You cannot remove an entry that
 you have not seen. This is the same semantics as for the `ORSet`.
@@ -469,17 +469,6 @@ delivery of deltas. Support for deltas here means that the `ORSet` being underly
 uses delta propagation to deliver updates. Effectively, the update for map is then a pair, consisting of delta for the `ORSet`
 being the key and full update for the respective value (`ORSet`, `PNCounter` or `LWWRegister`) kept in the map.
 
-There is a special version of `ORMultiMap`, created by using separate constructor
-`ORMultiMap.emptyWithValueDeltas[A, B]`, that also propagates the updates to its values (of `ORSet` type) as deltas.
-This means that the `ORMultiMap` initiated with `ORMultiMap.emptyWithValueDeltas` propagates its updates as pairs
-consisting of delta of the key and delta of the value. It is much more efficient in terms of network bandwith consumed.
-However, this behaviour has not been made default for `ORMultiMap` because currently the merge process for
-updates for `ORMultiMap.emptyWithValueDeltas` results in a tombstone (being a form of [CRDT Garbage](#crdt-garbage) )
-in form of additional `ORSet` entry being created in a situation when a key has been added and then removed.
-There is ongoing work aimed at removing necessity of creation of the aforementioned tombstone. Please also note
-that despite having the same Scala type, `ORMultiMap.emptyWithValueDeltas` is not compatible with 'vanilla' `ORMultiMap`,
-because of different replication mechanism.
-
 Scala
 : @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #ormultimap }
 
@@ -487,12 +476,28 @@ Java
 : @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #ormultimap }
 
 When a data entry is changed the full state of that entry is replicated to other nodes, i.e.
-when you update a map the whole map is replicated. Therefore, instead of using one `ORMap`
+when you update a map, the whole map is replicated. Therefore, instead of using one `ORMap`
 with 1000 elements it is more efficient to split that up in 10 top level `ORMap` entries
 with 100 elements each. Top level entries are replicated individually, which has the
 trade-off that different entries may not be replicated at the same time and you may see
 inconsistencies between related entries. Separate top level entries cannot be updated atomically
 together.
+
+There is a special version of `ORMultiMap`, created by using separate constructor
+`ORMultiMap.emptyWithValueDeltas[A, B]`, that also propagates the updates to its values (of `ORSet` type) as deltas.
+This means that the `ORMultiMap` initiated with `ORMultiMap.emptyWithValueDeltas` propagates its updates as pairs
+consisting of delta of the key and delta of the value. It is much more efficient in terms of network bandwith consumed.
+
+However, this behaviour has not been made default for `ORMultiMap` and if you wish to use it in your code, you
+need to replace invocations of `ORMultiMap.empty[A, B]` (or `ORMultiMap()`) with `ORMultiMap.emptyWithValueDeltas[A, B]`
+where `A` and `B` are types respectively of keys and values in the map.
+
+Please also note, that despite having the same Scala type, `ORMultiMap.emptyWithValueDeltas`
+is not compatible with 'vanilla' `ORMultiMap`, because of different replication mechanism.
+One needs to be extra careful not to mix the two, as they have the same
+type, so compiler will not hint the error.
+Nonetheless `ORMultiMap.emptyWithValueDeltas` uses the same `ORMultiMapKey` type as the
+'vanilla' `ORMultiMap` for referencing.
 
 Note that `LWWRegister` and therefore `LWWMap` relies on synchronized clocks and should only be used
 when the choice of value is not important for concurrent updates occurring within the clock skew. Read more
@@ -705,7 +710,7 @@ durable entry if the data could not be stored for some reason. When enabling `wr
 such errors will only be logged and `UpdateSuccess` will still be the reply to the `Update`.
 
 There is one important caveat when it comes pruning of [CRDT Garbage](#crdt-garbage) for durable data.
-If and old data entry that was never pruned is injected and merged with existing data after
+If an old data entry that was never pruned is injected and merged with existing data after
 that the pruning markers have been removed the value will not be correct. The time-to-live
 of the markers is defined by configuration
 `akka.cluster.distributed-data.durable.remove-pruning-marker-after` and is in the magnitude of days.

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -266,8 +266,8 @@ object MemberStatus {
    */
   private[cluster] val allowedTransitions: Map[MemberStatus, Set[MemberStatus]] =
     Map(
-      Joining → Set(WeaklyUp, Up, Down, Removed),
-      WeaklyUp → Set(Up, Down, Removed),
+      Joining → Set(WeaklyUp, Up, Leaving, Down, Removed),
+      WeaklyUp → Set(Up, Leaving, Down, Removed),
       Up → Set(Leaving, Down, Removed),
       Leaving → Set(Exiting, Down, Removed),
       Down → Set(Removed),

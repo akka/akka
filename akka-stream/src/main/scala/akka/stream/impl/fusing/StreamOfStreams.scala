@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl.fusing
 
@@ -87,7 +87,7 @@ import scala.collection.JavaConverters._
       sinkIn.pull()
       sources += sinkIn
       val graph = Source.fromGraph(source).to(sinkIn.sink)
-      interpreter.subFusingMaterializer.materialize(graph, initialAttributes = enclosingAttributes)
+      interpreter.subFusingMaterializer.materialize(graph, defaultAttributes = enclosingAttributes)
     }
 
     def removeSource(src: SubSinkInlet[T]): Unit = {
@@ -223,7 +223,7 @@ import scala.collection.JavaConverters._
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with OutHandler with InHandler {
     parent ⇒
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
     private val activeSubstreamsMap = new java.util.HashMap[Any, SubstreamSource]()
     private val closedSubstreams = new java.util.HashSet[Any]()
     private var timeout: FiniteDuration = _

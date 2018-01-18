@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.config
@@ -45,6 +45,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         getBoolean("akka.jvm-exit-on-fatal-error") should ===(true)
         settings.JvmExitOnFatalError should ===(true)
+        settings.JvmShutdownHooks should ===(true)
 
         getInt("akka.actor.deployment.default.virtual-nodes-factor") should ===(10)
         settings.DefaultVirtualNodesFactor should ===(10)

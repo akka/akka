@@ -1,14 +1,14 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
-import akka.actor.ActorRef
+import akka.actor.SupervisorStrategy.Resume
+import akka.actor.{ ActorRef, OneForOneStrategy, Actor, Props }
 import akka.persistence.journal.SteppingInmemJournal
 import akka.testkit.ImplicitSender
 import com.typesafe.config.Config
-
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
@@ -139,6 +139,39 @@ object PersistentActorStashingSpec {
     }
   }
 
+  class StashWithinHandlerSupervisor(target: ActorRef, name: String) extends Actor {
+
+    val child = context.actorOf(Props(classOf[StashWithinHandlerPersistentActor], name))
+
+    override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
+      case ex: Exception ⇒
+        target ! ex
+        Resume
+    }
+
+    def receive = {
+      case c: Cmd ⇒ child ! c
+    }
+  }
+
+  class StashWithinHandlerPersistentActor(name: String) extends NamedPersistentActor(name) {
+    val receiveRecover: Receive = {
+      case _ ⇒ // ignore
+    }
+
+    def stashWithinHandler(evt: Evt) = {
+      stash()
+    }
+
+    val receiveCommand: Receive = {
+      case Cmd("a") ⇒ persist(Evt("a"))(stashWithinHandler)
+      case Cmd("b") ⇒ persistAsync(Evt("b"))(stashWithinHandler)
+      case Cmd("c") ⇒
+        persist(Evt("x")) { _ ⇒ }
+        deferAsync(Evt("c"))(stashWithinHandler)
+    }
+
+  }
 }
 
 abstract class PersistentActorStashingSpec(config: Config) extends PersistenceSpec(config)
@@ -194,6 +227,23 @@ abstract class PersistentActorStashingSpec(config: Config) extends PersistenceSp
     behave like stashUnderFailures[UserStashWithinHandlerFailureCallbackPersistentActor]()
   }
 
+  "Stashing(stash called in handler) in a persistent actor" must {
+    "fail when calling stash in persist handler" in {
+
+      val actor = system.actorOf(Props(classOf[StashWithinHandlerSupervisor], testActor, name))
+
+      def stashInPersist(s: String): Unit = {
+        actor ! Cmd(s)
+        expectMsgPF() {
+          case ex: IllegalStateException if ex.getMessage.startsWith("Do not call stash") ⇒ ()
+        }
+      }
+
+      stashInPersist("a")
+      stashInPersist("b")
+      stashInPersist("c")
+    }
+  }
 }
 
 class SteppingInMemPersistentActorStashingSpec extends PersistenceSpec(

@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
 import scala.concurrent.Future
 import akka.Done
+import akka.annotation.DoNotInherit
 import akka.stream.QueueOfferResult
 import akka.stream.stage.GraphStageLogic
 

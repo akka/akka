@@ -1,6 +1,14 @@
-# Contributing to Akka
+# Welcome! Thank you for contributing to Akka!
+
+We follow the standard GitHub [fork & pull](https://help.github.com/articles/using-pull-requests/#fork--pull) approach to pull requests. Just fork the official repo, develop in a branch, and submit a PR!
+
+You're always welcome to submit your PR straight away and start the discussion (without reading the rest of this wonderful doc, or the README.md). The goal of these notes is to make your experience contributing to Akka as smooth and pleasant as possible. We're happy to guide you through the process once you've submitted your PR.
+
+# The Akka Community
 
 In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
+
+You may also check out these [other resources](https://akka.io/get-involved/).
 
 # Navigating around the project & codebase
 
@@ -25,6 +33,7 @@ Most notably many tags start with a `t:` prefix (as in `topic:`), which categori
 In general *all issues are open for anyone working on them*, however if you're new to the project and looking for an issue
 that will be accepted and likely is a nice one to get started you should check out the following tags:
 
+- [good first issue](https://github.com/akka/akka/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) - which identifies simple entry level tickets, such as improvements of documentation or tests. If you're not sure how to solve a ticket but would like to work on it feel free to ask in the issue about clarification or tips.
 - [help wanted](https://github.com/akka/akka/labels/help%20wanted) - which identifies issues that the core team will likely not have time to work on, or the issue is a nice entry level ticket. If you're not sure how to solve a ticket but would like to work on it feel free to ask in the issue about clarification or tips.
 - [nice-to-have (low-priority)](https://github.com/akka/akka/labels/nice-to-have%20%28low-prio%29) - are tasks which make sense, however are not very high priority (in face of other very high priority issues). If you see something interesting in this list, a contribution would be really wonderful!
 
@@ -57,8 +66,8 @@ We encourage changes that make it easier to achieve our goals in an efficient wa
 The steps below describe how to get a patch into a main development branch (e.g. `master`). 
 The steps are exactly the same for everyone involved in the project (be it core team, or first time contributor).
 
-1. Make sure an issue exists in the [issue tracker](https://github.com/akka/akka/issues) for the work you want to contribute. 
-   - If there is no ticket for it, [create one](https://github.com/akka/akka/issues/new) first.
+1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/akka/akka/issues) and [existing pull requests](https://github.com/akka/akka/pulls) for existing work.
+   - If there is no ticket yet, feel free to [create one](https://github.com/akka/akka/issues/new) to discuss the problem and the approach you want to take to solve it.
 1. [Fork the project](https://github.com/akka/akka#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a pull request against the mainline Akka.
 1. Create a branch on your fork and work on the feature. For example: `git checkout -b wip-custom-headers-akka-http`
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
@@ -210,7 +219,7 @@ For a pull request to be considered at all it has to meet these requirements:
 
 Some additional guidelines regarding source code are:
 
-- Files should start with a ``Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>`` copyright header.
+- Files should start with a ``Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>`` copyright header.
 - Keep the code [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself).
 - Apply the [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) whenever you have the chance to.
 - Never delete or change existing copyright notices, just add additional info.

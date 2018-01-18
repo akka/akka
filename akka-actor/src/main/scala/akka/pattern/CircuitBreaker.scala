@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.pattern
 
@@ -852,7 +852,7 @@ class CircuitBreaker(
         callThrough(body, defineFailureFn)
       else {
         notifyCallBreakerOpenListeners()
-        Promise.failed[T](new CircuitBreakerOpenException(0.seconds)).future
+        Future.failed[T](new CircuitBreakerOpenException(0.seconds))
       }
 
     /**
@@ -897,7 +897,7 @@ class CircuitBreaker(
      */
     override def invoke[T](body: ⇒ Future[T], defineFailureFn: Try[T] ⇒ Boolean): Future[T] = {
       notifyCallBreakerOpenListeners()
-      Promise.failed[T](new CircuitBreakerOpenException(remainingDuration())).future
+      Future.failed(new CircuitBreakerOpenException(remainingDuration()))
     }
 
     /**

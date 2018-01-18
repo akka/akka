@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -17,6 +17,7 @@ import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
+import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
@@ -59,7 +60,7 @@ import io.aeron.exceptions.DriverTimeoutException
 import org.agrona.{ DirectBuffer, ErrorHandler, IoUtil }
 import org.agrona.concurrent.BackoffIdleStrategy
 import akka.remote.artery.Decoder.InboundCompressionAccess
-import io.aeron.driver.status.ChannelEndpointStatus
+import io.aeron.status.ChannelEndpointStatus
 import org.agrona.collections.IntObjConsumer
 import org.agrona.concurrent.status.CountersReader.MetaData
 
@@ -357,6 +358,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .insert(Array("system", "remote-watcher"), NotUsed)
       // these belongs to cluster and should come from there
       .insert(Array("system", "cluster", "core", "daemon", "heartbeatSender"), NotUsed)
+      .insert(Array("system", "cluster", "core", "daemon", "crossDcHeartbeatSender"), NotUsed)
       .insert(Array("system", "cluster", "heartbeatReceiver"), NotUsed)
 
   private def inboundChannel = s"aeron:udp?endpoint=${_bindAddress.address.host.get}:${_bindAddress.address.port.get}"
@@ -406,7 +408,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def settings: ArterySettings = provider.remoteSettings.Artery
 
   override def start(): Unit = {
-    Runtime.getRuntime.addShutdownHook(shutdownHook)
+    if (system.settings.JvmShutdownHooks)
+      Runtime.getRuntime.addShutdownHook(shutdownHook)
+
     startMediaDriver()
     startAeron()
     topLevelFREvents.loFreq(Transport_AeronStarted, NoMetaData)
@@ -876,7 +880,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def shutdown(): Future[Done] = {
     if (hasBeenShutdown.compareAndSet(false, true)) {
       log.debug("Shutting down [{}]", localAddress)
-      Runtime.getRuntime.removeShutdownHook(shutdownHook)
+      if (system.settings.JvmShutdownHooks)
+        Try(Runtime.getRuntime.removeShutdownHook(shutdownHook)) // may throw if shutdown already in progress
       val allAssociations = associationRegistry.allAssociations
       val flushing: Future[Done] =
         if (allAssociations.isEmpty) Future.successful(Done)

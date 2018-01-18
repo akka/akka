@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl.fusing
 
@@ -194,7 +194,7 @@ import scala.util.control.NonFatal
   val log:          LoggingAdapter,
   val logics:       Array[GraphStageLogic], // Array of stage logics
   val connections:  Array[GraphInterpreter.Connection],
-  val onAsyncInput: (GraphStageLogic, Any, OptionVal[Promise[Done]], (Any) ⇒ Unit) ⇒ Unit,
+  val onAsyncInput: (GraphStageLogic, Any, Promise[Done], (Any) ⇒ Unit) ⇒ Unit,
   val fuzzingMode:  Boolean,
   val context:      ActorRef) {
 
@@ -435,7 +435,7 @@ import scala.util.control.NonFatal
     eventsRemaining
   }
 
-  def runAsyncInput(logic: GraphStageLogic, evt: Any, promise: OptionVal[Promise[Done]], handler: (Any) ⇒ Unit): Unit =
+  def runAsyncInput(logic: GraphStageLogic, evt: Any, promise: Promise[Done], handler: (Any) ⇒ Unit): Unit =
     if (!isStageCompleted(logic)) {
       if (GraphInterpreter.Debug) println(s"$Name ASYNC $evt ($handler) [$logic]")
       val currentInterpreterHolder = _currentInterpreter.get()
@@ -445,10 +445,16 @@ import scala.util.control.NonFatal
         activeStage = logic
         try {
           handler(evt)
-          if (promise.isDefined) promise.get.success(Done)
+          if (promise ne GraphStageLogic.NoPromise) {
+            promise.success(Done)
+            logic.onFeedbackDispatched()
+          }
         } catch {
           case NonFatal(ex) ⇒
-            if (promise.isDefined) promise.get.failure(ex)
+            if (promise ne GraphStageLogic.NoPromise) {
+              promise.failure(ex)
+              logic.onFeedbackDispatched()
+            }
             logic.failStage(ex)
         }
         afterStageHasRun(logic)

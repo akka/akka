@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.actor;
@@ -832,7 +832,8 @@ public class ActorDocTest extends AbstractJavaTest {
     // don't run this
     if (false) {
       //#coordinated-shutdown-run
-      CompletionStage<Done> done = CoordinatedShutdown.get(system).runAll();
+      CompletionStage<Done> done = CoordinatedShutdown.get(system).runAll(
+          CoordinatedShutdown.unknownReason());
       //#coordinated-shutdown-run
     }
   }

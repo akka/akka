@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package docs.actor
 
@@ -756,7 +756,7 @@ class ActorDocSpec extends AkkaSpec("""
     // don't run this
     def dummy(): Unit = {
       //#coordinated-shutdown-run
-      val done: Future[Done] = CoordinatedShutdown(system).run()
+      val done: Future[Done] = CoordinatedShutdown(system).run(CoordinatedShutdown.UnknownReason)
       //#coordinated-shutdown-run
     }
   }

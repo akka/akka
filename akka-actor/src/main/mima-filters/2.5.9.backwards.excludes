@@ -1,0 +1,2 @@
+# #24330 ActorSystem.getWhenTerminated
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorSystem.getWhenTerminated")

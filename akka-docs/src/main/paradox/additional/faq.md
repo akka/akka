@@ -12,7 +12,7 @@ Akka is also the name of a goddess in the Sámi (the native Swedish population)
 mythology. She is the goddess that stands for all the beauty and good in the
 world. The mountain can be seen as the symbol of this goddess.
 
-Also, the name AKKA is the a palindrome of letters A and K as in Actor Kernel.
+Also, the name AKKA is a palindrome of the letters A and K as in Actor Kernel.
 
 Akka is also:
 

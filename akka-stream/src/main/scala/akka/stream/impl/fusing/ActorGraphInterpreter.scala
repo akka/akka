@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl.fusing
 
@@ -442,6 +442,7 @@ import scala.util.control.NonFatal
   var connections: Array[Connection],
   var logics:      Array[GraphStageLogic],
   settings:        ActorMaterializerSettings,
+  attributes:      Attributes,
   val mat:         ExtendedActorMaterializer) {
 
   import ActorGraphInterpreter._
@@ -457,7 +458,7 @@ import scala.util.control.NonFatal
     shell:   GraphInterpreterShell,
     logic:   GraphStageLogic,
     evt:     Any,
-    promise: OptionVal[Promise[Done]],
+    promise: Promise[Done],
     handler: (Any) ⇒ Unit) extends BoundaryEvent {
     override def execute(eventLimit: Int): Int = {
       if (!waitingForShutdown) {
@@ -524,7 +525,7 @@ import scala.util.control.NonFatal
    *  because no data can enter “fast enough” from the outside
    */
   // TODO: Fix event limit heuristic
-  val shellEventLimit = settings.maxInputBufferSize * 16
+  val shellEventLimit = attributes.mandatoryAttribute[Attributes.InputBuffer].max * 16
   // Limits the number of events processed by the interpreter on an abort event.
   // TODO: Better heuristic here
   private val abortLimit = shellEventLimit * 2
