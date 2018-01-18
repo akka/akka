@@ -125,7 +125,7 @@ class DistributedPubSubMediatorMultiJvmNode1 extends DistributedPubSubMediatorSp
 class DistributedPubSubMediatorMultiJvmNode2 extends DistributedPubSubMediatorSpec
 class DistributedPubSubMediatorMultiJvmNode3 extends DistributedPubSubMediatorSpec
 
-class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMediatorSpec) with STMultiNodeSpec with ImplicitSender with DeadLettersProbe {
+class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMediatorSpec) with STMultiNodeSpec with ImplicitSender {
   import DistributedPubSubMediatorSpec._
   import DistributedPubSubMediatorSpec.TestChatUser._
   import DistributedPubSubMediator._
