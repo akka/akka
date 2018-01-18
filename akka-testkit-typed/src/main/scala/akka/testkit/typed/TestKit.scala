@@ -10,6 +10,12 @@ import com.typesafe.config.Config
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, TimeoutException }
+import scala.util.control.NoStackTrace
+
+/**
+ * Exception without stack trace to use for verifying exceptions in tests
+ */
+case class TE(message: String) extends RuntimeException(message) with NoStackTrace
 
 object TestKit {
 

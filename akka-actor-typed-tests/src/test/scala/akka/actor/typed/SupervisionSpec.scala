@@ -11,9 +11,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.testkit.EventFilter
 import akka.testkit.typed.scaladsl._
-import akka.testkit.typed.{BehaviorTestkit, TestInbox, TestKit, TestKitSettings}
+import akka.testkit.typed._
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -253,13 +253,12 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
   import scaladsl.adapter._
   implicit val untypedSystem = system.toUntyped
 
-  class ConstructionFailedException(msg: String) extends RuntimeException
   class FailingConstructorTestSetup(failCount: Int) {
     val failCounter = new AtomicInteger(0)
     class FailingConstructor(monitor: ActorRef[Event]) extends MutableBehavior[Command] {
       monitor ! Started
       if (failCounter.getAndIncrement() < failCount) {
-        throw new RuntimeException("simulated exc from constructor") with NoStackTrace
+        throw TE("simulated exc from constructor")
       }
       override def onMessage(msg: Command): Behavior[Command] = {
         monitor ! Pong
@@ -275,12 +274,12 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       val count = failCounter.getAndIncrement()
       if (count < failCount) {
         probe.ref ! StartFailed
-        throw new ConstructionFailedException(s"construction ${count} failed")
+        throw TE(s"construction ${count} failed")
       } else {
         probe.ref ! Started
         Behaviors.empty
       }
-    }).onFailure[ConstructionFailedException](strategy)
+    }).onFailure[TE](strategy)
   }
 
   class FailingUnhandledTestSetup(strategy: SupervisorStrategy) {
@@ -288,7 +287,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
     def behv = supervise(deferred[Command] { _ ⇒
       probe.ref ! StartFailed
       throw new RuntimeException("construction failed")
-    }).onFailure[ConstructionFailedException](strategy)
+    }).onFailure[TE](strategy)
   }
 
   "A supervised actor" must {
@@ -531,7 +530,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       strategy = SupervisorStrategy.restartWithBackoff(minBackoff = 100.millis.dilated, maxBackoff = 1.second, 0)
     ) {
 
-      EventFilter[ConstructionFailedException](occurrences = 1).intercept {
+      EventFilter[TE](occurrences = 1).intercept {
         spawn(behv)
 
         probe.expectMsg(StartFailed)
@@ -555,7 +554,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       strategy = SupervisorStrategy.restartWithLimit(3, 1.second)
     ) {
 
-      EventFilter[ConstructionFailedException](occurrences = 1).intercept {
+      EventFilter[TE](occurrences = 1).intercept {
         spawn(behv)
 
         probe.expectMsg(StartFailed)
@@ -569,7 +568,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
     ) {
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
-        EventFilter[ConstructionFailedException](occurrences = 2).intercept {
+        EventFilter[TE](occurrences = 2).intercept {
           spawn(behv)
 
           // restarted 2 times before it gave up
@@ -610,7 +609,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       val beh = supervise[String](deferred(ctx ⇒
         supervise[String](deferred { ctx ⇒
           probe.ref ! Started
-          scaladsl.Actor.empty[String]
+          scaladsl.Behaviors.empty[String]
         }).onFailure[RuntimeException](strategy)
       )).onFailure[Exception](strategy)
 
