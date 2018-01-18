@@ -13,7 +13,7 @@ import akka.util.Timeout
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, TimeoutException}
+import scala.concurrent.{ ExecutionContext, TimeoutException }
 
 object AskSpec {
   sealed trait Msg
