@@ -3,20 +3,13 @@
  */
 package akka.persistence.typed.internal
 
-import akka.{ actor ⇒ a }
-import akka.annotation.InternalApi
-import akka.event.Logging
-import akka.persistence.{ PersistentActor ⇒ UntypedPersistentActor }
-import akka.persistence.RecoveryCompleted
-import akka.persistence.SnapshotOffer
-import akka.actor.typed.Signal
+import akka.actor.ActorLogging
 import akka.actor.typed.internal.adapter.ActorContextAdapter
-import akka.persistence.typed.scaladsl.PersistentBehaviors
-import akka.persistence.typed.scaladsl.PersistentBehavior
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.Terminated
-import akka.actor.typed.internal.adapter.ActorRefAdapter
+import akka.annotation.InternalApi
 import akka.persistence.journal.Tagged
+import akka.persistence.typed.scaladsl.{ PersistentBehavior, PersistentBehaviors }
+import akka.persistence.{ RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer, PersistentActor ⇒ UntypedPersistentActor }
+import akka.{ actor ⇒ a }
 
 /**
  * INTERNAL API
@@ -40,9 +33,8 @@ import akka.persistence.journal.Tagged
  * The `PersistentActor` that runs a `PersistentBehavior`.
  */
 @InternalApi private[akka] class PersistentActorImpl[C, E, S](
-  behavior: PersistentBehavior[C, E, S]) extends UntypedPersistentActor {
+  behavior: PersistentBehavior[C, E, S]) extends UntypedPersistentActor with ActorLogging {
 
-  import PersistentActorImpl._
   import PersistentBehaviors._
 
   override val persistenceId: String = behavior.persistenceIdFromActorName(self.path.name)
@@ -74,6 +66,11 @@ import akka.persistence.journal.Tagged
     case PersistentActorImpl.StopForPassivation ⇒
       context.stop(self)
 
+    case SaveSnapshotSuccess(meta) ⇒
+      log.debug("Snapshot saved: {}", meta)
+    case SaveSnapshotFailure(meta, thr) ⇒
+      log.error(thr, "Snapshot failed: {}", meta)
+
     case msg ⇒
       try {
         val effects = msg match {
@@ -90,7 +87,6 @@ import akka.persistence.journal.Tagged
           s"Undefined state [${state.getClass.getName}] or handler for [${msg.getClass.getName} " +
             s"in [${behavior.getClass.getName}] with persistenceId [$persistenceId]")
       }
-
   }
 
   private def applyEffects(msg: Any, effect: Effect[E, S], sideEffects: Seq[ChainableEffect[_, S]] = Nil): Unit = effect match {
@@ -107,6 +103,8 @@ import akka.persistence.journal.Tagged
       val eventToPersist = if (tags.isEmpty) event else Tagged(event, tags)
       persist(eventToPersist) { _ ⇒
         sideEffects.foreach(applySideEffect)
+        if (shouldSnapshot(state, event))
+          saveSnapshot(state)
       }
     case PersistAll(events) ⇒
       if (events.nonEmpty) {
@@ -119,9 +117,17 @@ import akka.persistence.journal.Tagged
           val tags = behavior.tagger(event)
           if (tags.isEmpty) event else Tagged(event, tags)
         }
-        persistAll(eventsToPersist) { _ ⇒
+        persistAll(eventsToPersist) { evt ⇒
           count -= 1
-          if (count == 0) sideEffects.foreach(applySideEffect)
+          if (count == 0) {
+            sideEffects.foreach(applySideEffect)
+            val event = (evt match {
+              case Tagged(e, _) ⇒ e
+              case e            ⇒ e
+            }).asInstanceOf[E]
+            if (shouldSnapshot(state, event))
+              saveSnapshot(state)
+          }
         }
       } else {
         // run side-effects even when no events are emitted
@@ -138,5 +144,10 @@ import akka.persistence.journal.Tagged
     case _: Stop.type @unchecked ⇒ context.stop(self)
     case SideEffect(callbacks)   ⇒ callbacks.apply(state)
   }
+
+  private def shouldSnapshot(state: S, event: E): Boolean = {
+    behavior.snapshotOn(state, event, lastSequenceNr)
+  }
+
 }
 
