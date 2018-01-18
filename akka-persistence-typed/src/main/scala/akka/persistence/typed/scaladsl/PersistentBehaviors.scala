@@ -106,10 +106,17 @@ object PersistentBehaviors {
   @InternalApi
   private[akka] object CompositeEffect {
     def apply[Event, State](effect: Effect[Event, State], sideEffects: ChainableEffect[Event, State]): Effect[Event, State] =
-      CompositeEffect[Event, State](
-        if (effect.events.isEmpty) None else Some(effect),
-        sideEffects :: Nil
-      )
+      if (effect.events.isEmpty) {
+        CompositeEffect[Event, State](
+          None,
+          effect.sideEffects ++ (sideEffects :: Nil)
+        )
+      } else {
+        CompositeEffect[Event, State](
+          Some(effect),
+          sideEffects :: Nil
+        )
+      }
   }
 
   @InternalApi
