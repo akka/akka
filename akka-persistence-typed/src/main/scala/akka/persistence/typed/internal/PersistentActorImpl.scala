@@ -70,10 +70,6 @@ import akka.persistence.journal.Tagged
   def applyEvent(s: S, event: E): S =
     eventHandler.apply(s, event)
 
-  private val unhandledSignal: PartialFunction[(ActorContext[C], S, Signal), Effect[E, S]] = {
-    case sig ⇒ Effect.unhandled
-  }
-
   override def receiveCommand: Receive = {
     case PersistentActorImpl.StopForPassivation ⇒
       context.stop(self)
@@ -88,10 +84,9 @@ import akka.persistence.journal.Tagged
             // FIXME we could make it more safe by using ClassTag for C
             commandHandler(ctx, state, cmd)
         }
-
         applyEffects(msg, effects)
       } catch {
-        case e: MatchError ⇒ throw new IllegalStateException(
+        case _: MatchError ⇒ throw new IllegalStateException(
           s"Undefined state [${state.getClass.getName}] or handler for [${msg.getClass.getName} " +
             s"in [${behavior.getClass.getName}] with persistenceId [$persistenceId]")
       }
