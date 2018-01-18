@@ -156,7 +156,7 @@ with HTTP response parts or rejections. Sometimes, however, you will want to ver
 @ref[Rejections](rejections.md) to HTTP responses in the way you expect.
 
 You do this by calling the `Route.seal()` method. The `Route.seal()` method applies the logic of the @scala[in-scope]
-@ref[RejectionHandler](rejections.md#the-rejectionhandler) and @ref[RejectionHandler](rejections.md#the-rejectionhandler)
+@ref[ExceptionHandler](exception-handling.md) and @ref[RejectionHandler](rejections.md#the-rejectionhandler)
 @java[passed as method arguments] to all exceptions and rejections coming back from the
 route, and translates them to the respective @unidoc[HttpResponse].
 
