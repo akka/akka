@@ -5,7 +5,7 @@ package akka.actor.typed
 
 import scala.concurrent.ExecutionContext
 import akka.{ actor ⇒ a, event ⇒ e }
-import java.util.concurrent.ThreadFactory
+import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.actor.setup.ActorSystemSetup
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -121,6 +121,12 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
    * and termination hooks have been executed.
    */
   def whenTerminated: Future[Terminated]
+
+  /**
+   * Returns a CompletionStage which will be completed after the ActorSystem has been terminated
+   * and termination hooks have been executed.
+   */
+  def getWhenTerminated: CompletionStage[Terminated]
 
   /**
    * The deadLetter address is a destination that will accept (and discard)
