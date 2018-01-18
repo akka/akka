@@ -4,17 +4,16 @@
 package akka.actor.typed
 
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
+import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
-import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
-import akka.pattern.AskTimeoutException
 import akka.testkit.typed.TestKit
 import akka.util.Timeout
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, TimeoutException }
+import scala.concurrent.{ExecutionContext, TimeoutException}
 
 object AskSpec {
   sealed trait Msg
