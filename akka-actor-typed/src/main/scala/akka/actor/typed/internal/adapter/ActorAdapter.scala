@@ -5,6 +5,8 @@ package akka.actor.typed
 package internal
 package adapter
 
+import scala.annotation.tailrec
+
 import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
@@ -35,9 +37,23 @@ import akka.util.OptionVal
       next(Behavior.interpretSignal(behavior, ctx, msg), msg)
     case a.ReceiveTimeout ⇒
       next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
-    case msg: AskResponse[AnyRef, T] @unchecked ⇒ receive(msg.adapted)
+    case wrapped: AskResponse[Any, T] @unchecked ⇒
+      handleMessage(wrapped.adapted)
+    case wrapped: AdaptMessage[Any, T] @unchecked ⇒
+      wrapped.adapted match {
+        case AdaptWithRegisteredMessageAdapter(msg) ⇒
+          adaptAndHandle(msg)
+        case msg: T @unchecked ⇒
+          handleMessage(msg)
+      }
+    case AdaptWithRegisteredMessageAdapter(msg) ⇒
+      adaptAndHandle(msg)
     case msg: T @unchecked ⇒
-      next(Behavior.interpretMessage(behavior, ctx, msg), msg)
+      handleMessage(msg)
+  }
+
+  private def handleMessage(msg: T): Unit = {
+    next(Behavior.interpretMessage(behavior, ctx, msg), msg)
   }
 
   private def next(b: Behavior[T], msg: Any): Unit = {
@@ -61,6 +77,23 @@ import akka.util.OptionVal
           behavior = Behavior.canonicalize(b, behavior, ctx)
       }
     }
+  }
+
+  private def adaptAndHandle(msg: Any): Unit = {
+    @tailrec def handle(adapters: List[(Class[_], Any ⇒ T)]): Unit = {
+      adapters match {
+        case Nil ⇒
+          // no adapter function registered for message class
+          unhandled(msg)
+        case (clazz, f) :: tail ⇒
+          if (clazz.isAssignableFrom(msg.getClass)) {
+            val adaptedMsg = f(msg)
+            handleMessage(adaptedMsg)
+          } else
+            handle(tail) // recursive
+      }
+    }
+    handle(ctx.messageAdapters)
   }
 
   override def unhandled(msg: Any): Unit = msg match {

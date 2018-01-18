@@ -107,15 +107,13 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     }
 
     val adapter: ActorRef[Replicator.ReplicatorMessage] =
-      ctx.spawnAdapter[Replicator.ReplicatorMessage] { (x: Replicator.ReplicatorMessage) ⇒
-        x match {
-          case changed @ Replicator.Changed(ReceptionistKey) ⇒
-            val value = changed.get(ReceptionistKey)
-            val oldState = state
-            val newState = ServiceRegistry(value)
-            val changes = diff(oldState, newState)
-            externalInterface.RegistrationsChangedExternally(changes, newState)
-        }
+      ctx.messageAdapter[Replicator.ReplicatorMessage] {
+        case changed @ Replicator.Changed(ReceptionistKey) ⇒
+          val value = changed.get(ReceptionistKey)
+          val oldState = state
+          val newState = ServiceRegistry(value)
+          val changes = diff(oldState, newState)
+          externalInterface.RegistrationsChangedExternally(changes, newState)
       }
 
     replicator ! Replicator.Subscribe(ReceptionistKey, adapter.toUntyped)

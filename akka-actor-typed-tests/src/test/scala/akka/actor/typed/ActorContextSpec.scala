@@ -164,7 +164,7 @@ object ActorContextSpec {
                 Behaviors.same
             }
           case GetAdapter(replyTo, name) ⇒
-            replyTo ! Adapter(ctx.spawnAdapter(identity, name))
+            replyTo ! Adapter(ctx.spawnMessageAdapter(identity, name))
             Behaviors.same
         }
     } onSignal {
@@ -252,7 +252,7 @@ object ActorContextSpec {
               Behaviors.same
           }
         case GetAdapter(replyTo, name) ⇒
-          replyTo ! Adapter(ctx.spawnAdapter(identity, name))
+          replyTo ! Adapter(ctx.spawnMessageAdapter(identity, name))
           Behaviors.same
       }
     } onSignal {
@@ -510,7 +510,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
       sync(setup("ctx03") { (ctx, startWith) ⇒
         val self = ctx.self
         val ex = new Exception("KABOOM2")
-        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self) {
+        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self) {
           case (subj, child) ⇒
             val log = muteExpectedException[Exception]("KABOOM2", occurrences = 1)
             child ! Throw(ex)
@@ -541,7 +541,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "stop a child actor" in {
       sync(setup("ctx04") { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self, inert = true) {
+        startWith.mkChild(Some("A"), ctx.spawnMessageAdapter(ChildEvent), self, inert = true) {
           case (subj, child) ⇒
             subj ! Kill(child, self)
             child
@@ -602,7 +602,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "not stop non-child actor" in {
       sync(setup("ctx08") { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self) {
+        startWith.mkChild(Some("A"), ctx.spawnMessageAdapter(ChildEvent), self) {
           case (subj, child) ⇒
             val other = ctx.spawn(behavior(ctx, ignorePostStop = true), "A")
             subj ! Kill(other, ctx.self)
@@ -616,7 +616,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "watch a child actor before its termination" in {
       sync(setup("ctx10") { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self) {
+        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self) {
           case (subj, child) ⇒
             subj ! Watch(child, self)
             child
@@ -632,7 +632,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "watch a child actor after its termination" in {
       sync(setup("ctx11") { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
+        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self).keep {
           case (subj, child) ⇒
             ctx.watch(child)
             child ! Stop
@@ -650,7 +650,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "unwatch a child actor before its termination" in {
       sync(setup("ctx12") { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
+        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self).keep {
           case (subj, child) ⇒
             subj ! Watch(child, self)
         }.expectMessageKeep(expectTimeout) {
@@ -672,7 +672,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "terminate upon not handling Terminated" in {
       sync(setup("ctx13", ignorePostStop = false) { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
+        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self).keep {
           case (subj, child) ⇒
             muteExpectedException[DeathPactException]()
             subj ! Watch(child, self)
@@ -711,7 +711,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
       sync(setup("ctx21") { (ctx, startWith) ⇒
         val self = ctx.self
         startWith
-          .mkChild(Some("B"), ctx.spawnAdapter(ChildEvent), self)
+          .mkChild(Some("B"), ctx.spawnMessageAdapter(ChildEvent), self)
           .stimulate(_._1 ! GetChild("A", self), _ ⇒ Child(None))
           .stimulate(_._1 ! GetChild("B", self), x ⇒ Child(Some(x._2)))
           .stimulate(_._1 ! GetChildren(self), x ⇒ Children(Set(x._2)))
