@@ -161,9 +161,9 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * Perform a single request-response message interaction with another actor, and transform the messages back to
    * the protocol of this actor.
    *
-   * The interaction has a timeout (to avoid resource a resource leak). If the timeout hits without any response it
-   * will be transformed to a message for this actor through the `failToOwnProtocol` function (this is the only
-   * "normal" way a `Failure` is passed to the function).
+   * The interaction has a timeout (to avoid a resource leak). If the timeout hits without any response it
+   * will be passed as a `Failure(`[[java.util.concurrent.TimeoutException]]`)` to the `responseToOwnProtocol` function
+   * (this is the only "normal" way a `Failure` is passed to the function).
    *
    * For other messaging patterns with other actors, see [[spawnAdapter]].
    *

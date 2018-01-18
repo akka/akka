@@ -175,8 +175,8 @@ trait ActorContext[T] {
    * Perform a single request-response message interaction with another actor, and transform the messages back to
    * the protocol of this actor.
    *
-   * The interaction has a timeout (to avoid resource a resource leak). If the timeout hits without any response it
-   * will be passed as an [[akka.pattern.AskTimeoutException]] to the `responseToOwnProtocol` function.
+   * The interaction has a timeout (to avoid a resource leak). If the timeout hits without any response it
+   * will be passed as an [[java.util.concurrent.TimeoutException]] to the `responseToOwnProtocol` function.
    *
    * For other messaging patterns with other actors, see [[spawnAdapter]].
    *
