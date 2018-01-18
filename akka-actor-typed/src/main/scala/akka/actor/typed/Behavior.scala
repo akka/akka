@@ -223,11 +223,11 @@ object Behavior {
     }
 
   /**
+   * INTERNAL API
+   *
    * Return special behaviors as is, undefer deferred, if behavior is "non-special" apply the wrap function `f` to get
    * and return the result from that. Useful for cases where a [[Behavior]] implementation that is decorating another
    * behavior has processed a message and needs to re-wrap the resulting behavior with itself.
-   *
-   * INTERNAL API
    */
   @InternalApi
   @tailrec
