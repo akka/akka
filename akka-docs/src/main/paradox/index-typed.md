@@ -10,6 +10,7 @@
 * [fault-tolerance](fault-tolerance-typed.md)
 * [actor-discovery](actor-discovery-typed.md)
 * [cluster](cluster-typed.md)
+* [cluster-singleton](cluster-singleton-typed.md)
 * [cluster-sharding](cluster-sharding-typed.md)
 * [persistence](persistence-typed.md)
 * [testing](testing-typed.md)

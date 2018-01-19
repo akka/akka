@@ -415,7 +415,8 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     clusterSharding,
     testkit % "test->test",
     typedTestkit % "test->test",
-    actorTypedTests % "test->test"
+    actorTypedTests % "test->test",
+    persistenceTyped % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
