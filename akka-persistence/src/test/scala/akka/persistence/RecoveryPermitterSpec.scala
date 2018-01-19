@@ -169,11 +169,6 @@ class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(
       val persistentActor = system.actorOf(testProps("p3", p3.ref, throwFromRecoveryCompleted = true))
       p3.expectMsg(RecoveryCompleted)
       p3.expectMsg("postStop")
-      // it's restarting
-      (1 to 5).foreach { _ ⇒
-        p3.expectMsg(RecoveryCompleted)
-        p3.expectMsg("postStop")
-      }
       // stop it
       val stopProbe = TestProbe()
       stopProbe.watch(persistentActor)

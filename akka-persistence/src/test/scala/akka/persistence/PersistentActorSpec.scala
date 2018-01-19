@@ -663,6 +663,18 @@ object PersistentActorSpec {
       case Cmd(d) ⇒ persist(Evt(d))(updateState)
     }
   }
+
+  class ExceptionActor(name: String) extends ExamplePersistentActor(name) {
+    override def receiveCommand = commonBehavior
+    override def receiveRecover = {
+      case _ ⇒ throw new Exception("boom")
+    }
+  }
+
+  class ExceptionActor2(name: String) extends ExamplePersistentActor(name) {
+    override def receiveCommand = commonBehavior
+    override def receiveRecover = throw new Exception("boom")
+  }
 }
 
 abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
@@ -1160,6 +1172,18 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg(List("a-1", "a-2", "rc-1", "rc-2", "rc-3", "invalid"))
       watch(persistentActor)
       persistentActor ! "boom"
+      expectTerminated(persistentActor)
+    }
+
+    "stop actor when exception from receiveRecover" in {
+      val persistentActor = namedPersistentActor[ExceptionActor]
+      watch(persistentActor)
+      expectTerminated(persistentActor)
+    }
+
+    "stop actor when direct exception from receiveRecover" in {
+      val persistentActor = namedPersistentActor[ExceptionActor2]
+      watch(persistentActor)
       expectTerminated(persistentActor)
     }
   }
