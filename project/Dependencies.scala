@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka
 
@@ -17,10 +17,10 @@ object Dependencies {
   val sslConfigVersion = "0.2.2"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
-  val aeronVersion = "1.3.0"
+  val aeronVersion = "1.7.0"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.11", "2.12.4"),
+    crossScalaVersions := Seq("2.11.12", "2.12.4"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
@@ -58,7 +58,7 @@ object Dependencies {
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.1" // CC0
+    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.2" // CC0
 
     // ssl-config
     val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
@@ -108,7 +108,7 @@ object Dependencies {
       val slf4jLog4j = "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % "test" // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.2-RC1" % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.2" % "test" // CC0
     }
 
     object Provided {
@@ -116,7 +116,7 @@ object Dependencies {
       // If changed, update akka-docs/build.sbt as well
       val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
 
-      val levelDB = "org.iq80.leveldb" % "leveldb" % "0.9" % "optional;provided" // ApacheV2
+      val levelDB = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided" // ApacheV2
       val levelDBNative = "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % "optional;provided" // New BSD
     }
 

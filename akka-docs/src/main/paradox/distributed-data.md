@@ -443,7 +443,7 @@ Java
 ### Maps
 
 `ORMap` (observed-remove map) is a map with keys of `Any` type and the values are `ReplicatedData`
-types themselves. It supports add, remove and delete any number of times for a map entry.
+types themselves. It supports add, update and remove any number of times for a map entry.
 
 If an entry is concurrently added and removed, the add will win. You cannot remove an entry that
 you have not seen. This is the same semantics as for the `ORSet`.
@@ -710,7 +710,7 @@ durable entry if the data could not be stored for some reason. When enabling `wr
 such errors will only be logged and `UpdateSuccess` will still be the reply to the `Update`.
 
 There is one important caveat when it comes pruning of [CRDT Garbage](#crdt-garbage) for durable data.
-If and old data entry that was never pruned is injected and merged with existing data after
+If an old data entry that was never pruned is injected and merged with existing data after
 that the pruning markers have been removed the value will not be correct. The time-to-live
 of the markers is defined by configuration
 `akka.cluster.distributed-data.durable.remove-pruning-marker-after` and is in the magnitude of days.

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -44,10 +44,9 @@ private[persistence] object Eventsourced {
  */
 private[persistence] trait Eventsourced extends Snapshotter with PersistenceStash
   with PersistenceIdentity with PersistenceRecovery {
-  import JournalProtocol._
-  import SnapshotProtocol.LoadSnapshotResult
-  import SnapshotProtocol.LoadSnapshotFailed
   import Eventsourced._
+  import JournalProtocol._
+  import SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
 
   {
     val interfaces = getClass.getInterfaces
@@ -153,14 +152,15 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
   /**
    * Called when the journal rejected `persist` of an event. The event was not
-   * stored. By default this method logs the problem as a warning, and the actor continues.
+   * stored. By default this method logs the problem as an error, and the actor continues.
    * The callback handler that was passed to the `persist` method will not be invoked.
    *
    * @param cause failure cause
    * @param event the event that was to be persisted
    */
   protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
-    log.warning(
+    log.error(
+      cause,
       "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
       event.getClass.getName, seqNr, persistenceId, cause.getMessage)
   }
@@ -194,6 +194,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   /** INTERNAL API. */
   override protected[akka] def aroundPreStart(): Unit = {
     require(persistenceId ne null, s"persistenceId is [null] for PersistentActor [${self.path}]")
+    require(persistenceId.trim.nonEmpty, s"persistenceId cannot be empty for PersistentActor [${self.path}]")
 
     // Fail fast on missing plugins.
     val j = journal; val s = snapshotStore

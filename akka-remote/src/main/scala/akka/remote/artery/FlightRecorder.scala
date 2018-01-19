@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -152,7 +152,7 @@ private[remote] class RollingEventLogSection(
    * sane way to use the same code here and in the test, too.
    */
   def write(logId: Int, recordBuffer: ByteBuffer): Unit = {
-    val logBuffer = buffers(logId)
+    val logBuffer: MappedResizeableBuffer = buffers(logId)
 
     @tailrec def writeRecord(): Unit = {
       // Advance the head
@@ -162,7 +162,8 @@ private[remote] class RollingEventLogSection(
       // if the head *wraps over* and points again to this location. Without this we would end up with partial or corrupted
       // writes to the slot.
       if (logBuffer.compareAndSetInt(recordOffset, Committed, Dirty)) {
-        logBuffer.putBytes(payloadOffset, recordBuffer, recordSize)
+        // 128 bytes total, 4 bytes used for Commit/Dirty flag
+        logBuffer.putBytes(payloadOffset, recordBuffer, recordSize - 4)
         //println(logBuffer.getLong(recordOffset + 4))
 
         // Now this is free to be overwritten

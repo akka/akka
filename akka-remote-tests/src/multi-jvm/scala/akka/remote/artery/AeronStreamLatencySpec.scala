@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -110,8 +110,10 @@ abstract class AeronStreamLatencySpec
   override def initialParticipants = roles.size
 
   def channel(roleName: RoleName) = {
-    val a = node(roleName).address
-    s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
+    val n = node(roleName)
+    system.actorSelection(n / "user" / "updPort") ! UdpPortActor.GetUdpPort
+    val port = expectMsgType[Int]
+    s"aeron:udp?endpoint=${n.address.host.get}:$port"
   }
 
   val streamId = 1
@@ -303,6 +305,11 @@ abstract class AeronStreamLatencySpec
   }
 
   "Latency of Aeron Streams" must {
+
+    "start upd port" in {
+      system.actorOf(Props[UdpPortActor], "updPort")
+      enterBarrier("udp-port-started")
+    }
 
     "start echo" in {
       runOn(second) {

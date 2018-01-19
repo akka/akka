@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import java.io.Closeable
-import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, RejectedExecutionException, ThreadFactory }
+import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicReference
 
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -25,6 +25,7 @@ import java.util.Optional
 
 import akka.actor.setup.{ ActorSystemSetup, Setup }
 
+import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters._
 
 object BootstrapSetup {
@@ -503,28 +504,28 @@ abstract class ActorSystem extends ActorRefFactory {
   def mailboxes: Mailboxes
 
   /**
-   * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
+   * Register a block of code (callback) to run after [[ActorSystem.terminate()]] has been issued and
    * all actors in this actor system have been stopped.
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    * Note that ActorSystem will not terminate until all the registered callbacks are finished.
    *
-   * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
+   * Throws a RejectedExecutionException if the System has already been terminated or if termination has been initiated.
    *
    * Scala API
    */
   def registerOnTermination[T](code: ⇒ T): Unit
 
   /**
-   * Java API: Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
+   * Java API: Register a block of code (callback) to run after [[ActorSystem.terminate()]] has been issued and
    * all actors in this actor system have been stopped.
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    * Note that ActorSystem will not terminate until all the registered callbacks are finished.
    *
-   * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
+   * Throws a RejectedExecutionException if the System has already been terminated or if termination has been initiated.
    */
   def registerOnTermination(code: Runnable): Unit
 
@@ -548,6 +549,16 @@ abstract class ActorSystem extends ActorRefFactory {
    * future completes.
    */
   def whenTerminated: Future[Terminated]
+
+  /**
+   * Returns a CompletionStage which will be completed after the ActorSystem has been terminated
+   * and termination hooks have been executed. If you registered any callback with
+   * [[ActorSystem#registerOnTermination]], the returned CompletionStage from this method will not complete
+   * until all the registered callbacks are finished. Be careful to not schedule any operations
+   * on the `dispatcher` of this actor system as it will have been shut down before this
+   * future completes.
+   */
+  def getWhenTerminated: CompletionStage[Terminated]
 
   /**
    * Registers the provided extension and creates its payload, if this extension isn't already registered
@@ -684,7 +695,7 @@ private[akka] class ActorSystemImpl(
         err.print(cause.getMessage)
         err.print(", ")
         err.print(message)
-        err.print(" for ActorSystem[")
+        err.print(" ActorSystem[")
         err.print(name)
         err.println("]")
         System.err.flush()
@@ -784,6 +795,7 @@ private[akka] class ActorSystemImpl(
   private[this] final val terminationCallbacks = new TerminationCallbacks(provider.terminationFuture)(dispatcher)
 
   override def whenTerminated: Future[Terminated] = terminationCallbacks.terminationFuture
+  override def getWhenTerminated: CompletionStage[Terminated] = FutureConverters.toJava(whenTerminated)
   def lookupRoot: InternalActorRef = provider.rootGuardian
   def guardian: LocalActorRef = provider.guardian
   def systemGuardian: LocalActorRef = provider.systemGuardian
@@ -973,7 +985,9 @@ private[akka] class ActorSystemImpl(
     private[this] final val ref = new AtomicReference(done)
 
     // onComplete never fires twice so safe to avoid null check
-    upStreamTerminated onComplete { t ⇒ ref.getAndSet(null).complete(t) }
+    upStreamTerminated onComplete {
+      t ⇒ ref.getAndSet(null).complete(t)
+    }
 
     /**
      * Adds a Runnable that will be executed on ActorSystem termination.

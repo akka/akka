@@ -70,7 +70,7 @@ In an actor system, we need to determine exact meaning of a guarantee &#8212; at
 Most frameworks and protocols that claim guaranteed delivery actually provide something similar to points 4 and 5. While this sounds reasonable, **is it actually useful?** To understand the implications, consider a simple, practical example: a user attempts to place an order and we only want to claim that it has successfully processed once it is actually on disk in the orders database.
 
 If we rely on the successful processing of the message, the actor will report success as soon as the order has been submitted to the internal API that has the responsibility to validate it, process it and put it into the database. Unfortunately,
-immediately after the API has been invoked any the following can happen:
+immediately after the API has been invoked any of the following can happen:
 
  * The host can crash.
  * Deserialization can fail.

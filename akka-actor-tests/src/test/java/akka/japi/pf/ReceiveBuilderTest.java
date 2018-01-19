@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.japi.pf;
@@ -189,6 +189,21 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
     assertFalse(rcv.onMessage().isDefinedAt("hello"));
     assertFalse(rcv.onMessage().isDefinedAt(42));
+  }
+
+  private boolean externalPredicateAlwaysTrue(){
+      return true;
+  }
+
+  @Test
+  public void shouldMatchByExternalPredicate(){
+      Receive rcv = ReceiveBuilder.create()
+              .match(Msg1.class, this::externalPredicateAlwaysTrue, m -> result("match Msg1"))
+              .build();
+      assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+      rcv.onMessage().apply(new Msg1());
+      assertEquals("match Msg1", result());
+      assertFalse(rcv.onMessage().isDefinedAt(new Msg2("foo")));
   }
 
   @Test

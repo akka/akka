@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster.metrics
 
@@ -232,7 +232,7 @@ object StandardMetrics {
  * INTERNAL API
  *
  * Encapsulates evaluation of validity of metric values, conversion of an actual metric value to
- * a [[akka.cluster.Metric]] for consumption by subscribed cluster entities.
+ * a [[akka.cluster.metrics.Metric]] for consumption by subscribed cluster entities.
  */
 private[metrics] trait MetricNumericConverter {
 

@@ -6,9 +6,9 @@ import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.testkit.{ ImplicitSender, TestActor, TestProbe }
+import akka.testkit.{ ImplicitSender, TestActor, TestLatch, TestProbe }
 
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.{ Failure, Try }
 
@@ -37,8 +37,21 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
     "refuse materialization after shutdown" in {
       val m = ActorMaterializer.create(system)
       m.shutdown()
-      an[IllegalStateException] should be thrownBy
-        Source(1 to 5).runForeach(println)(m)
+      the[IllegalStateException] thrownBy {
+        Source(1 to 5).runWith(Sink.ignore)(m)
+      } should have message "Trying to materialize stream after materializer has been shutdown"
+    }
+
+    "refuse materialization when shutdown while materializing" in {
+      val m = ActorMaterializer.create(system)
+
+      the[IllegalStateException] thrownBy {
+        Source(1 to 5).mapMaterializedValue { _ ⇒
+          // shutdown while materializing
+          m.shutdown()
+          Thread.sleep(100)
+        }.runWith(Sink.ignore)(m)
+      } should have message "Materializer shutdown while materializing stream"
     }
 
     "shut down the supervisor actor it encapsulates" in {
@@ -90,7 +103,6 @@ object ActorMaterializerSpec {
     Source.repeat("hello")
       .alsoTo(Flow[String].take(1).to(Sink.actorRef(p.ref, "one")))
       .runWith(Sink.onComplete(signal ⇒ {
-        println(signal)
         p.ref ! signal
       }))
 

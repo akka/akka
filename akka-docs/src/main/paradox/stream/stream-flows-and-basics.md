@@ -404,7 +404,7 @@ for example because of the materializer's settings etc.
 @@@ warning
 
 Do not create new actor materializers inside actors by passing the `context.system` to it. 
-This will cause a new @ActorMaterializer@ to be created and potentially leaked (unless you shut it down explicitly) for each such actor.
+This will cause a new `ActorMaterializer` to be created and potentially leaked (unless you shut it down explicitly) for each such actor.
 It is instead recommended to either pass-in the Materializer or create one using the actor's `context`.
 
 @@@

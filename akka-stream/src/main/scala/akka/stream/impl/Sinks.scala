@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl
 
@@ -113,7 +113,7 @@ import scala.collection.generic.CanBuildFrom
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
     val impl = actorMaterializer.actorOf(
       context,
-      FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(context.effectiveAttributes)))
+      FanoutProcessorImpl.props(context.effectiveAttributes, actorMaterializer.settings))
     val fanoutProcessor = new ActorProcessor[In, In](impl)
     impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
     // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
@@ -174,10 +174,10 @@ import scala.collection.generic.CanBuildFrom
 
   override def create(context: MaterializationContext) = {
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val effectiveSettings = actorMaterializer.effectiveSettings(context.effectiveAttributes)
+    val maxInputBufferSize = context.effectiveAttributes.mandatoryAttribute[Attributes.InputBuffer].max
     val subscriberRef = actorMaterializer.actorOf(
       context,
-      ActorRefSinkActor.props(ref, effectiveSettings.maxInputBufferSize, onCompleteMessage))
+      ActorRefSinkActor.props(ref, maxInputBufferSize, onCompleteMessage))
     (akka.stream.actor.ActorSubscriber[In](subscriberRef), NotUsed)
   }
 
@@ -469,7 +469,7 @@ import scala.collection.generic.CanBuildFrom
   override def toString: String = "LazySink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(stoppingDecider)
+    lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
     var completed = false
     val promise = Promise[M]()

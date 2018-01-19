@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl
 
 import akka.NotUsed
 import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.dispatch.Dispatchers
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 import org.reactivestreams._

@@ -1,9 +1,9 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
 import akka.Done
 import akka.actor.ActorSystem
@@ -243,6 +243,64 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       result.futureValue should ===(Seq(1, 2, 3))
       startCount.get should ===(2)
+    }
+
+    "fail stream when restarting and close throws" in assertAllStagesStopped {
+      val out = TestSubscriber.probe[Int]()
+      Source.unfoldResourceAsync[Int, Iterator[Int]](
+        () ⇒ Future.successful(List(1, 2, 3).iterator),
+        reader ⇒ throw TE("read-error"),
+        _ ⇒ throw new TE("close-error")
+      ).withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+        .runWith(Sink.fromSubscriber(out))
+
+      out.request(1)
+      out.expectError().getMessage should ===("close-error")
+    }
+
+    "fail stream when restarting and close returns failed future" in assertAllStagesStopped {
+      val out = TestSubscriber.probe[Int]()
+      Source.unfoldResourceAsync[Int, Iterator[Int]](
+        () ⇒ Future.successful(List(1, 2, 3).iterator),
+        reader ⇒ throw TE("read-error"),
+        _ ⇒ Future.failed(new TE("close-error"))
+      ).withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+        .runWith(Sink.fromSubscriber(out))
+
+      out.request(1)
+      out.expectError().getMessage should ===("close-error")
+    }
+
+    "fail stream when restarting and start throws" in assertAllStagesStopped {
+      val startCounter = new AtomicInteger(0)
+      val out = TestSubscriber.probe[Int]()
+      Source.unfoldResourceAsync[Int, Iterator[Int]](
+        () ⇒
+          if (startCounter.incrementAndGet() < 2) Future.successful(List(1, 2, 3).iterator)
+          else throw TE("start-error"),
+        reader ⇒ throw TE("read-error"),
+        _ ⇒ Future.successful(Done)
+      ).withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+        .runWith(Sink.fromSubscriber(out))
+
+      out.request(1)
+      out.expectError().getMessage should ===("start-error")
+    }
+
+    "fail stream when restarting and start returns failed future" in assertAllStagesStopped {
+      val startCounter = new AtomicInteger(0)
+      val out = TestSubscriber.probe[Int]()
+      Source.unfoldResourceAsync[Int, Iterator[Int]](
+        () ⇒
+          if (startCounter.incrementAndGet() < 2) Future.successful(List(1, 2, 3).iterator)
+          else Future.failed(TE("start-error")),
+        reader ⇒ throw TE("read-error"),
+        _ ⇒ Future.successful(Done)
+      ).withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+        .runWith(Sink.fromSubscriber(out))
+
+      out.request(1)
+      out.expectError().getMessage should ===("start-error")
     }
 
     "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster
 
@@ -680,7 +680,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    */
   def leaving(address: Address): Unit = {
     // only try to update if the node is available (in the member ring)
-    if (latestGossip.members.exists(m ⇒ m.address == address && m.status == Up)) {
+    if (latestGossip.members.exists(m ⇒ m.address == address && (m.status == Joining || m.status == WeaklyUp || m.status == Up))) {
       val newMembers = latestGossip.members map { m ⇒ if (m.address == address) m.copy(status = Leaving) else m } // mark node as LEAVING
       val newGossip = latestGossip copy (members = newMembers)
 
@@ -1062,6 +1062,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       member.dataCenter == selfDc && member.status == Exiting
     }
 
+    val removedOtherDc =
+      if (latestGossip.isMultiDc) {
+        latestGossip.members.filter { m ⇒
+          (m.dataCenter != selfDc && removeUnreachableWithMemberStatus(m.status))
+        }
+      } else
+        Set.empty[Member]
+
     val changedMembers = {
       val enoughMembers: Boolean = isMinNrOfMembersFulfilled
       def isJoiningToUp(m: Member): Boolean = (m.status == Joining || m.status == WeaklyUp) && enoughMembers
@@ -1091,10 +1099,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     }
 
     val updatedGossip: Gossip =
-      if (removedUnreachable.nonEmpty || removedExitingConfirmed.nonEmpty || changedMembers.nonEmpty) {
+      if (removedUnreachable.nonEmpty || removedExitingConfirmed.nonEmpty || changedMembers.nonEmpty ||
+        removedOtherDc.nonEmpty) {
 
         // replace changed members
         val removed = removedUnreachable.map(_.uniqueAddress).union(removedExitingConfirmed)
+          .union(removedOtherDc.map(_.uniqueAddress))
         val newGossip =
           latestGossip.update(changedMembers).removeAll(removed, System.currentTimeMillis())
 
@@ -1119,6 +1129,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         }
         removedExitingConfirmed.foreach { n ⇒
           logInfo("Leader is removing confirmed Exiting node [{}]", n.address)
+        }
+        removedOtherDc foreach { m ⇒
+          logInfo("Leader is removing {} node [{}] in DC [{}]", m.status, m.address, m.dataCenter)
         }
 
         newGossip

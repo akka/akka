@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl.fusing
 
@@ -346,7 +346,7 @@ import scala.util.control.NonFatal
         def onFutureSourceCompleted(result: Try[Graph[SourceShape[T], M]]): Unit = {
           result.map { graph ⇒
             val runnable = Source.fromGraph(graph).toMat(sinkIn.sink)(Keep.left)
-            val matVal = interpreter.subFusingMaterializer.materialize(runnable, initialAttributes = attr)
+            val matVal = interpreter.subFusingMaterializer.materialize(runnable, defaultAttributes = attr)
             materialized.success(matVal)
 
             setHandler(out, this)
