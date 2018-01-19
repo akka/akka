@@ -435,6 +435,7 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.stream.typed"))
   .disablePlugins(MimaPlugin)
+  .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val typedTestkit = akkaModule("akka-testkit-typed")
   .dependsOn(actorTyped, testkit % "compile->compile;test->test")
