@@ -6,13 +6,11 @@ package akka.testkit.typed.scaladsl
 import scala.concurrent.duration._
 import java.util.concurrent.BlockingDeque
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.ActorSystem
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.typed.ActorRef
 import akka.util.Timeout
 import akka.util.PrettyDuration.PrettyPrintableDuration
 
@@ -34,9 +32,17 @@ object TestProbe {
   def apply[M](name: String)(implicit system: ActorSystem[_]): TestProbe[M] =
     new TestProbe(name)
 
-  private def testActor[M](queue: BlockingDeque[M]): Behavior[M] = Behaviors.immutable { (ctx, msg) ⇒
-    queue.offerLast(msg)
+  private case class WatchActor[U](actor: ActorRef[U])
+  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] = Behaviors.immutable[M] { (ctx, msg) ⇒
+    msg match {
+      case WatchActor(ref) ⇒ ctx.watch(ref)
+      case other           ⇒ queue.offerLast(other)
+    }
     Behaviors.same
+  }.onSignal {
+    case (_, t: Terminated) ⇒
+      terminations.offerLast(t)
+      Behaviors.same
   }
 }
 
@@ -45,6 +51,7 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
   import TestProbe._
   private implicit val settings = TestKitSettings(system)
   private val queue = new LinkedBlockingDeque[M]
+  private val terminations = new LinkedBlockingDeque[Terminated]
 
   private var end: Duration = Duration.Undefined
 
@@ -58,7 +65,7 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
 
   val testActor: ActorRef[M] = {
     implicit val timeout = Timeout(3.seconds)
-    val futRef = system.systemActorOf(TestProbe.testActor(queue), s"$name-${testActorId.incrementAndGet()}")
+    val futRef = system.systemActorOf(TestProbe.testActor(queue, terminations), s"$name-${testActorId.incrementAndGet()}")
     Await.result(futRef, timeout.duration + 1.second)
   }
 
@@ -188,7 +195,7 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
    */
   private def receiveOne(max: Duration): M = {
     val message =
-      if (max == 0.seconds) {
+      if (max == Duration.Zero) {
         queue.pollFirst
       } else if (max.isFinite) {
         queue.pollFirst(max.length, max.unit)
@@ -239,6 +246,24 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
     assert(o != null, s"timeout ($max) during expectMsgClass waiting for $c")
     assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
     o.asInstanceOf[C]
+  }
+
+  /**
+   * Expect the given actor to be stopped or stop withing the given timeout or
+   * throw an AssertionFailure.
+   */
+  def expectStopped[U](actorRef: ActorRef[U], max: FiniteDuration): Unit = {
+    testActor.asInstanceOf[ActorRef[AnyRef]] ! WatchActor(actorRef)
+    val message =
+      if (max == Duration.Zero) {
+        terminations.pollFirst
+      } else if (max.isFinite) {
+        terminations.pollFirst(max.length, max.unit)
+      } else {
+        terminations.takeFirst
+      }
+    assert(message != null, s"timeout ($max) during expectStop waiting for actor [${actorRef.path}] to stop")
+    assert(message.ref == actorRef, s"expected [${actorRef.path}] to stop, but saw [${message.ref.path}] stop")
   }
 
   /**
