@@ -3,6 +3,8 @@
  */
 package akka.actor.typed
 
+import java.io.IOException
+
 import akka.actor.typed.scaladsl.Behaviors
 
 import scala.concurrent.duration._
@@ -234,7 +236,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
   }
 }
 
-class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithShutdown {
+class SupervisionSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   import SupervisionSpec._
   private val nameCounter = Iterator.from(0)
@@ -252,12 +254,37 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
       probe.expectMsg(Pong)
     }
 
+    "stop when strategy is stop" in {
+      val probe = TestProbe[Event]("evt")
+      val behv = Behaviors.supervise(targetBehavior(probe.ref))
+        .onFailure[Throwable](SupervisorStrategy.stop)
+      val ref = spawn(behv)
+      ref ! Throw(new Exc3)
+      probe.expectMsg(GotSignal(PostStop))
+    }
+
+    "support nesting exceptions with different strategies" in {
+      val probe = TestProbe[Event]("evt")
+      val behv =
+        supervise(
+          supervise(targetBehavior(probe.ref))
+            .onFailure[RuntimeException](SupervisorStrategy.stop)
+        ).onFailure[Exception](SupervisorStrategy.restart)
+
+      val ref = spawn(behv)
+
+      ref ! Throw(new IOException())
+      probe.expectMsg(GotSignal(PreRestart))
+
+      ref ! Throw(new IllegalArgumentException("cat"))
+      probe.expectMsg(GotSignal(PostStop))
+    }
+
     "stop when not supervised" in {
       val probe = TestProbe[Event]("evt")
       val behv = targetBehavior(probe.ref)
       val ref = spawn(behv)
       ref ! Throw(new Exc3)
-
       probe.expectMsg(GotSignal(PostStop))
     }
 

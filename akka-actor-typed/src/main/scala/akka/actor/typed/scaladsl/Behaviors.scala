@@ -254,7 +254,7 @@ object Behaviors {
     def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
       val tag = implicitly[ClassTag[Thr]]
       val effectiveTag = if (tag == NothingClassTag) ThrowableClassTag else tag
-      akka.actor.typed.internal.Restarter(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
+      Supervisor(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
     }
   }
 

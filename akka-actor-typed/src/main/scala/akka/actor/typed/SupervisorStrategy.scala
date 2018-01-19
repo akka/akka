@@ -21,6 +21,11 @@ object SupervisorStrategy {
   val restart: SupervisorStrategy = Restart(-1, Duration.Zero, loggingEnabled = true)
 
   /**
+   * Stop the actor
+   */
+  val stop: SupervisorStrategy = Stop(loggingEnabled = true)
+
+  /**
    * Restart with a limit of number of restart retries.
    * The number of restarts are limited to a number of restart attempts (`maxNrOfRetries`)
    * within a time range (`withinTimeRange`). When the time window has elapsed without reaching
@@ -69,6 +74,14 @@ object SupervisorStrategy {
   @InternalApi private[akka] case class Resume(loggingEnabled: Boolean) extends SupervisorStrategy {
     override def withLoggingEnabled(enabled: Boolean): SupervisorStrategy =
       copy(loggingEnabled = enabled)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] case class Stop(loggingEnabled: Boolean) extends SupervisorStrategy {
+    override def withLoggingEnabled(on: Boolean) =
+      copy(loggingEnabled = on)
   }
 
   /**
