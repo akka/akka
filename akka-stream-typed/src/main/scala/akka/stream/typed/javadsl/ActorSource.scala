@@ -1,8 +1,10 @@
-/*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+/**
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com/>
  */
 
 package akka.stream.typed.javadsl
+
+import java.util.function.Predicate
 
 import akka.actor.typed._
 import akka.stream.OverflowStrategy
@@ -46,11 +48,11 @@ object ActorSource {
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def actorRef[T](
-    completionMatcher: PartialFunction[T, Unit],
+    completionMatcher: Predicate[T],
     failureMatcher:    PartialFunction[T, Throwable],
     bufferSize:        Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef[T]] = {
     akka.stream.typed.scaladsl.ActorSource.actorRef(
-      completionMatcher, failureMatcher,
-      bufferSize, overflowStrategy).asJava
+      { case m if completionMatcher.test(m) ⇒ }: PartialFunction[T, Unit],
+      failureMatcher, bufferSize, overflowStrategy).asJava
   }
 }

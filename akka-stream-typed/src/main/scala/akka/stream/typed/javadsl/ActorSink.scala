@@ -1,11 +1,11 @@
-/*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
-  */
+/**
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com/>
+ */
 package akka.stream.typed.javadsl
 
 import akka.actor.typed._
 import akka.NotUsed
-import akka.stream.scaladsl._
+import akka.stream.javadsl._
 import akka.stream.typed
 
 /**
@@ -29,7 +29,7 @@ object ActorSink {
    * limiting stage in front of this `Sink`.
    */
   def actorRef[T](ref: ActorRef[T], onCompleteMessage: T, onFailureMessage: akka.japi.function.Function[Throwable, T]): Sink[T, NotUsed] =
-    typed.scaladsl.ActorSink.actorRef(ref, onCompleteMessage, onFailureMessage.apply)
+    typed.scaladsl.ActorSink.actorRef(ref, onCompleteMessage, onFailureMessage.apply).asJava
 
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
@@ -52,6 +52,6 @@ object ActorSink {
     onCompleteMessage: M,
     onFailureMessage:  akka.japi.function.Function[Throwable, M]): Sink[T, NotUsed] =
     typed.scaladsl.ActorSink.actorRefWithAck(
-      ref, messageAdapter.apply, onInitMessage.apply, ackMessage, onCompleteMessage, onFailureMessage.apply)
+      ref, messageAdapter.apply, onInitMessage.apply, ackMessage, onCompleteMessage, onFailureMessage.apply).asJava
 
 }

@@ -11,6 +11,7 @@
 * [fault-tolerance](fault-tolerance.md)
 * [actor-discovery](actor-discovery.md)
 * [stash](stash.md)
+* [stream](stream.md)
 * [cluster](cluster.md)
 * [cluster-singleton](cluster-singleton.md)
 * [cluster-sharding](cluster-sharding.md)

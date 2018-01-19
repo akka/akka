@@ -1,9 +1,9 @@
-/*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+/**
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com/>
  */
 package akka.stream.typed.scaladsl
 
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.OverflowStrategy
 import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.testkit.TestKit
@@ -59,20 +59,20 @@ class ActorSourceSinkSpec extends TestKit(akka.actor.ActorSystem("ActorSourceSin
     "obey protocol" in {
       val p = TestProbe[AckProto]()
 
-      val autoPilot = Actor.immutable[AckProto] {
+      val autoPilot = Behaviors.immutable[AckProto] {
         (ctx, msg) ⇒
           msg match {
             case m @ Init(sender) ⇒
               p.ref ! m
               sender ! "ACK"
-              Actor.same
+              Behaviors.same
             case m @ Msg(sender, _) ⇒
               p.ref ! m
               sender ! "ACK"
-              Actor.same
+              Behaviors.same
             case m ⇒
               p.ref ! m
-              Actor.same
+              Behaviors.same
           }
       }
 

@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 import java.util.concurrent.CompletionStage
 
 import akka.actor.{ ActorRef, Cancellable, Props }
+import akka.annotation.InternalApi
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
@@ -431,6 +432,8 @@ object Source {
   }
 
   /**
+   * INTERNAL API
+   *
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
    * Messages sent to this actor will be emitted to the stream if there is demand from downstream,
    * otherwise they will be buffered until request for demand is received.
@@ -462,7 +465,7 @@ object Source {
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def actorRef[T](
+  @InternalApi private[akka] def actorRef[T](
     completionMatcher: PartialFunction[Any, Unit],
     failureMatcher:    PartialFunction[Any, Throwable],
     bufferSize:        Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
@@ -500,12 +503,10 @@ object Source {
    *
    * See also [[akka.stream.scaladsl.Source.queue]].
    *
-   * @deprecated Use `actorRef` that takes matchers instead. It allows controlling the completion and failure messages that are sent to the actor.
    *
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  @deprecated("Use `actorRef` that takes matchers instead. It allows controlling the messages that are used for completion and failure.", since = "2.5.10")
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
     actorRef(
       { case akka.actor.Status.Success(_) ⇒ },
