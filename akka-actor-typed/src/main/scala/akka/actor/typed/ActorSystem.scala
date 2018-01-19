@@ -3,23 +3,21 @@
  */
 package akka.actor.typed
 
-import scala.concurrent.ExecutionContext
-import akka.{ actor ⇒ a, event ⇒ e }
+import java.util.Optional
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
+import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
+import akka.actor.typed.internal.DelayedStart
+import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, PropsAdapter }
+import akka.actor.typed.receptionist.Receptionist
+import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.event.typed.EventStream
+import akka.util.Timeout
+import akka.{ actor ⇒ a, event ⇒ e }
 import com.typesafe.config.{ Config, ConfigFactory }
 
-import scala.concurrent.{ ExecutionContextExecutor, Future }
-import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, PropsAdapter }
-import akka.util.Timeout
-import akka.annotation.DoNotInherit
-import akka.annotation.ApiMayChange
-import java.util.Optional
-
-import akka.actor.BootstrapSetup
-import akka.actor.typed.receptionist.Receptionist
-import akka.event.typed.EventStream
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future }
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -227,42 +225,13 @@ object ActorSystem {
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
     val setup = ActorSystemSetup(BootstrapSetup(classLoader, config, executionContext))
     val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext,
-      Some(PropsAdapter(() ⇒ delayedGuardianStart(guardianBehavior), guardianProps)), setup)
+      Some(PropsAdapter(() ⇒ DelayedStart.delayStart(guardianBehavior), guardianProps)), setup)
     untyped.start()
 
     val adapter: ActorSystemAdapter.AdapterExtension = ActorSystemAdapter.AdapterExtension(untyped)
-    untyped.guardian ! Started
+    untyped.guardian ! DelayedStart.Start
     adapter.adapter
   }
-
-  private[akka] case object Started
-  private def delayedGuardianStart[T](guardianBehavior: Behavior[T], buffer: List[Any] = Nil): Behavior[Any] =
-    scaladsl.Actor.immutable[Any] { (sctx, msg) ⇒
-      // delay actual initialization until the actor system is started as the actor may touch
-      // other parts of the actor system which would not be ready unless delayed
-      val ctx = sctx.asInstanceOf[ActorContext[T]]
-      msg match {
-        case Started ⇒
-          val endState = buffer.reverseIterator.foldLeft(Behavior.undefer(guardianBehavior, ctx)) { (behavior, buffered) ⇒
-            if (!Behavior.isAlive(behavior)) behavior
-            else {
-              // delayed application of signals and messages in the order they arrived
-              buffer match {
-                case s: Signal ⇒
-                  Behavior.interpretSignal(behavior, ctx.asInstanceOf[ActorContext[T]], s)
-                case other ⇒
-                  Behavior.interpretMessage(behavior, ctx, other.asInstanceOf[T])
-              }
-            }
-          }
-          endState.asInstanceOf[Behavior[Any]]
-        case t ⇒
-          delayedGuardianStart(guardianBehavior, t :: buffer)
-      }
-    }.onSignal {
-      case (_, signal) ⇒
-        delayedGuardianStart(guardianBehavior, signal :: buffer)
-    }
 
   /**
    * Wrap an untyped [[akka.actor.ActorSystem]] such that it can be used from
