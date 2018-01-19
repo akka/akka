@@ -298,17 +298,13 @@ private[akka] class RemoteActorRefProvider(
         }
       }
 
-      println(s"in remote deployer for $path, $elems")
       Iterator(props.deploy) ++ deployment.iterator reduce ((a, b) ⇒ b withFallback a) match {
         case d @ Deploy(_, _, _, RemoteScope(address), _, _) ⇒
           if (hasAddress(address)) {
-            println("hasAddress(address)")
             local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
           } else if (props.deploy.scope == LocalScope) {
-            println("error as expected")
             throw new ConfigurationException(s"configuration requested remote deployment for local-only Props at [$path]")
           } else try {
-            println("unexpected everyting is fine")
             try {
               // for consistency we check configuration of dispatcher and mailbox locally
               val dispatcher = system.dispatchers.lookup(props.dispatcher)
@@ -326,7 +322,6 @@ private[akka] class RemoteActorRefProvider(
           }
 
         case _ ⇒
-          println("catchall")
           local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
       }
     }

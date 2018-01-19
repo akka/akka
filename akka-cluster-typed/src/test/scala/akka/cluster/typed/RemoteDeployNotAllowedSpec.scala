@@ -34,7 +34,7 @@ object RemoteDeployNotAllowedSpec {
   def configWithRemoteDeployment(otherSystemPort: Int) = ConfigFactory.parseString(
     s"""
       akka.actor.deployment {
-        /remoteDeployed {
+        "/*" {
           remote = "akka.tcp://sampleActorSystem@127.0.0.1:$otherSystemPort"
         }
       }
@@ -52,6 +52,8 @@ class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.conf
 
       trait GuardianProtocol
       case class SpawnChild(name: String) extends GuardianProtocol
+      case object SpawnAnonymous extends GuardianProtocol
+
       val guardianBehavior = Behaviors.immutable[GuardianProtocol] { (ctx, msg) ⇒
 
         msg match {
@@ -61,6 +63,15 @@ class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.conf
               ctx.spawn(
                 Behaviors.deferred[AnyRef] { ctx ⇒ Behaviors.empty },
                 name)
+            } catch {
+              case ex: Exception ⇒ probe.ref ! ex
+            }
+            Behaviors.same
+
+          case SpawnAnonymous ⇒
+            // this should throw
+            try {
+              ctx.spawnAnonymous(Behaviors.deferred[AnyRef] { ctx ⇒ Behaviors.empty })
             } catch {
               case ex: Exception ⇒ probe.ref ! ex
             }
@@ -76,7 +87,10 @@ class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.conf
       node2.manager ! Join(node1.selfMember.address)
 
       system2 ! SpawnChild("remoteDeployed")
-      probe.expectMsgType[Exception].getMessage
+      probe.expectMsgType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
+
+      system2 ! SpawnAnonymous
+      probe.expectMsgType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
 
     }
   }
