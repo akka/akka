@@ -4,6 +4,11 @@
 package akka.actor.typed
 
 import java.util.function.Consumer
+import java.util.function.{ Function ⇒ JFunction }
+
+import scala.annotation.tailrec
+
+// FIXME break these up in scaladsl/javadsl interfaces and common impl
 
 object ImmutableStashBuffer {
   /**
@@ -90,6 +95,14 @@ final class ImmutableStashBuffer[T](val capacity: Int, buffer: Vector[T]) {
     else throw new NoSuchElementException("head of empty buffer")
 
   /**
+   * Remove the first `numberOfMessages` of the message buffer. Note that this class is
+   * immutable so the elements are removed in the returned instance.
+   */
+  def drop(numberOfMessages: Int): ImmutableStashBuffer[T] =
+    if (isEmpty) this
+    else new ImmutableStashBuffer(capacity, buffer.drop(numberOfMessages))
+
+  /**
    * Return the first element of the message buffer.
    *
    * @return the first element or throws `NoSuchElementException` if the buffer is empty
@@ -121,32 +134,49 @@ final class ImmutableStashBuffer[T](val capacity: Int, buffer: Vector[T]) {
    * [[Behavior]] from each processed message.
    */
   def unstashAll(ctx: scaladsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
-    internalUnstashAll(ctx.asInstanceOf[ActorContext[T]], behavior)
+    internalUnstash(ctx.asInstanceOf[ActorContext[T]], behavior, size, identity)
 
   /**
    * Java API: Process all stashed messages with the `behavior` and the returned
    * [[Behavior]] from each processed message.
    */
   def unstashAll(ctx: javadsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
-    internalUnstashAll(ctx.asInstanceOf[ActorContext[T]], behavior)
+    internalUnstash(ctx.asInstanceOf[ActorContext[T]], behavior, size, identity)
 
   /**
-   * Process all stashed messages with the `behavior` and the returned
-   * [[Behavior]] from each processed message.
+   * Scala API: Process `numberOfMessages` of the stashed messages with the `behavior`
+   * and the returned [[Behavior]] from each processed message.
    */
-  private def internalUnstashAll(ctx: ActorContext[T], behavior: Behavior[T]): Behavior[T] = {
-    buffer.foldLeft(behavior) { (b, msg) ⇒
-      if (!Behavior.isAlive(b)) b
+  def unstash(ctx: scaladsl.ActorContext[T], behavior: Behavior[T], numberOfMessages: Int, wrap: T ⇒ T): Behavior[T] =
+    internalUnstash(ctx.asInstanceOf[ActorContext[T]], behavior, numberOfMessages, wrap)
+
+  /**
+   * Java API: Process `numberOfMessages` of the stashed messages with the `behavior`
+   * and the returned [[Behavior]] from each processed message.
+   */
+  def unstash(ctx: javadsl.ActorContext[T], behavior: Behavior[T], numberOfMessages: Int, wrap: JFunction[T, T]): Behavior[T] =
+    internalUnstash(ctx.asInstanceOf[ActorContext[T]], behavior, numberOfMessages, wrap.apply)
+
+  private def internalUnstash(ctx: ActorContext[T], behavior: Behavior[T], numberOfMessages: Int, wrap: T ⇒ T): Behavior[T] = {
+
+    @tailrec def unstashOne(iter: Iterator[T], count: Int, b: Behavior[T]): Behavior[T] = {
+      val b2 = Behavior.undefer(b, ctx)
+      if (!Behavior.isAlive(b2) || count == numberOfMessages || !iter.hasNext) b2
       else {
-        // delayed application of signals and messages in the order they arrived
-        msg match {
-          case s: Signal ⇒
-            Behavior.interpretSignal(b, ctx, s)
-          case other ⇒
-            Behavior.interpretMessage(b, ctx, other)
+        val nextB = iter.next() match {
+          case sig: Signal ⇒
+            // FIXME wrapping of signals, but how can signals be stashed in the first place?
+            Behavior.interpretSignal(b2, ctx, sig)
+          case msg ⇒
+            Behavior.interpretMessage(b2, ctx, wrap(msg))
         }
+        unstashOne(iter, count + 1, Behavior.canonicalize(nextB, b, ctx)) // recursive
       }
     }
+
+    // FIXME I'm not sure I got these undefer and canonicalize right
+
+    unstashOne(buffer.iterator, count = 0, Behavior.undefer(behavior, ctx))
   }
 
 }
@@ -287,7 +317,7 @@ final class MutableStashBuffer[T] private (
    * `MutableStashBuffer`, but unprocessed messages remain.
    */
   def unstashAll(ctx: scaladsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
-    internalUnstashAll(ctx.asInstanceOf[ActorContext[T]], behavior)
+    internalUnstash(ctx.asInstanceOf[ActorContext[T]], behavior, size)
 
   /**
    * Java API: Process all stashed messages with the `behavior` and the returned
@@ -298,32 +328,46 @@ final class MutableStashBuffer[T] private (
    * `MutableStashBuffer`, but unprocessed messages remain.
    */
   def unstashAll(ctx: javadsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
-    internalUnstashAll(ctx.asInstanceOf[ActorContext[T]], behavior)
+    internalUnstash(ctx.asInstanceOf[ActorContext[T]], behavior, size)
 
   /**
-   * Process all stashed messages with the `behavior` and the returned
-   * [[Behavior]] from each processed message. The `MutableStashBuffer` will be
-   * empty after processing all messages, unless an exception is thrown.
+   * Scala API: Process `numberOfMessages` of the stashed messages with the `behavior`
+   * and the returned [[Behavior]] from each processed message.
    * If an exception is thrown by processing a message a proceeding messages
    * and the message causing the exception have been removed from the
    * `MutableStashBuffer`, but unprocessed messages remain.
    */
-  private def internalUnstashAll(ctx: ActorContext[T], behavior: Behavior[T]): Behavior[T] = {
-    var b = behavior
-    while (nonEmpty) {
-      val msg = dropHead()
-      if (Behavior.isAlive(b)) {
-        msg match {
-          case s: Signal ⇒
-            Behavior.interpretSignal(b, ctx, s)
-          case other ⇒
-            b = Behavior.interpretMessage(b, ctx, other)
+  def unstash(ctx: scaladsl.ActorContext[T], behavior: Behavior[T], numberOfMessages: Int): Behavior[T] =
+    internalUnstash(ctx.asInstanceOf[ActorContext[T]], behavior, numberOfMessages)
+
+  /**
+   * Java API: Process `numberOfMessages` of the stashed messages with the `behavior`
+   * and the returned [[Behavior]] from each processed message.
+   * If an exception is thrown by processing a message a proceeding messages
+   * and the message causing the exception have been removed from the
+   * `MutableStashBuffer`, but unprocessed messages remain.
+   */
+  def unstash(ctx: javadsl.ActorContext[T], behavior: Behavior[T], numberOfMessages: Int): Behavior[T] =
+    internalUnstash(ctx.asInstanceOf[ActorContext[T]], behavior, numberOfMessages)
+
+  private def internalUnstash(ctx: ActorContext[T], behavior: Behavior[T], numberOfMessages: Int): Behavior[T] = {
+    // FIXME DRY with the one in ImmutableStashBuffer, should probably be a method in Behavior instead
+
+    @tailrec def unstashOne(count: Int, b: Behavior[T]): Behavior[T] = {
+      if (!Behavior.isAlive(b) || count == numberOfMessages || isEmpty) b
+      else {
+        val nextB = dropHead() match {
+          case sig: Signal ⇒
+            Behavior.interpretSignal(b, ctx, sig)
+          case msg ⇒
+            Behavior.interpretMessage(b, ctx, msg)
         }
+        unstashOne(count + 1, Behavior.canonicalize(nextB, b, ctx)) // recursive
       }
     }
-    b
-  }
 
+    unstashOne(count = 0, Behavior.undefer(behavior, ctx))
+  }
 }
 
 /**
