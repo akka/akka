@@ -6,7 +6,6 @@ package akka.actor.typed.javadsl
 import java.util.function.{ Function ⇒ JFunction }
 
 import scala.reflect.ClassTag
-
 import akka.util.OptionVal
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
 import akka.japi.function.{ Procedure, Procedure2 }
@@ -17,9 +16,7 @@ import akka.actor.typed.Signal
 import akka.actor.typed.ActorRef
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
-import akka.actor.typed.internal.BehaviorImpl
-import akka.actor.typed.internal.Restarter
-import akka.actor.typed.internal.TimerSchedulerImpl
+import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl }
 import akka.annotation.ApiMayChange
 
 /**
@@ -261,12 +258,12 @@ object Behaviors {
 
   final class Supervise[T] private[akka] (wrapped: Behavior[T]) {
     /**
-     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws.
+     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws.
      *
      * Only exceptions of the given type (and their subclasses) will be handled by this supervision behavior.
      */
     def onFailure[Thr <: Throwable](clazz: Class[Thr], strategy: SupervisorStrategy): Behavior[T] =
-      akka.actor.typed.internal.Restarter(Behavior.validateAsInitial(wrapped), strategy)(ClassTag(clazz))
+      Supervisor(Behavior.validateAsInitial(wrapped), strategy)(ClassTag(clazz))
 
     /**
      * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws.
