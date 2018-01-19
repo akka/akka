@@ -167,7 +167,7 @@ class BehaviorTestkit[T] private (_name: String, _initialBehavior: Behavior[T]) 
   def expectEffect(expectedEffect: Effect): Unit = {
     ctx.effectQueue.poll() match {
       case null   ⇒ assert(assertion = false, s"expected: $expectedEffect but no effects were recorded")
-      case effect ⇒ assert(expectedEffect == effect, s"expected: $expectedEffect but for $effect")
+      case effect ⇒ assert(expectedEffect == effect, s"expected: $expectedEffect but found $effect")
     }
   }
 
