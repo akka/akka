@@ -214,18 +214,23 @@ class PersistentBehavior[Command, Event, State](
 
   /**
    * Initiates a snapshot if the given function returns true.
-   * For persisting multiple events at once the check is only done once the last event is persisted.
+   * When persisting multiple events at once the snapshot is triggered after all the events have
+   * been persisted.
+   *
+   * `predicate` receives the State, Event and the sequenceNr used for the Event
    */
   def snapshotOn(predicate: (State, Event, Long) ⇒ Boolean): PersistentBehavior[Command, Event, State] =
     copy(snapshotOn = predicate)
 
   /**
    * Snapshot every N events
+   *
+   * `numberOfEvents` should be greater than 0
    */
-  def snapshotEvery(nrSequenceNr: Long): PersistentBehavior[Command, Event, State] =
-    copy(snapshotOn = (_, _, seqNr) ⇒ {
-      seqNr % nrSequenceNr == 0
-    })
+  def snapshotEvery(numberOfEvents: Long): PersistentBehavior[Command, Event, State] = {
+    require(numberOfEvents > 0, s"numberOfEvents should be positive: Was $numberOfEvents")
+    copy(snapshotOn = (_, _, seqNr) ⇒ seqNr % numberOfEvents == 0)
+  }
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query

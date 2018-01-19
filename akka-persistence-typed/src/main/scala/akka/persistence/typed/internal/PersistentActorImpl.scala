@@ -103,7 +103,7 @@ import akka.{ actor ⇒ a }
       val eventToPersist = if (tags.isEmpty) event else Tagged(event, tags)
       persist(eventToPersist) { _ ⇒
         sideEffects.foreach(applySideEffect)
-        if (shouldSnapshot(state, event))
+        if (shouldSnapshot(state, event, lastSequenceNr))
           saveSnapshot(state)
       }
     case PersistAll(events) ⇒
@@ -112,20 +112,22 @@ import akka.{ actor ⇒ a }
         // the invalid event, in case such validation is implemented in the event handler.
         // also, ensure that there is an event handler for each single event
         var count = events.size
-        state = events.foldLeft(state)(applyEvent)
+        var seqNr = lastSequenceNr
+        val (newState, shouldSnapshotAfterPersist) = events.foldLeft((state, false)) {
+          case ((currentState, snapshot), event) ⇒
+            seqNr += 1
+            (applyEvent(currentState, event), snapshot || shouldSnapshot(currentState, event, seqNr))
+        }
+        state = newState
         val eventsToPersist = events.map { event ⇒
           val tags = behavior.tagger(event)
           if (tags.isEmpty) event else Tagged(event, tags)
         }
-        persistAll(eventsToPersist) { evt ⇒
+        persistAll(eventsToPersist) { _ ⇒
           count -= 1
           if (count == 0) {
             sideEffects.foreach(applySideEffect)
-            val event = (evt match {
-              case Tagged(e, _) ⇒ e
-              case e            ⇒ e
-            }).asInstanceOf[E]
-            if (shouldSnapshot(state, event))
+            if (shouldSnapshotAfterPersist)
               saveSnapshot(state)
           }
         }
@@ -145,8 +147,8 @@ import akka.{ actor ⇒ a }
     case SideEffect(callbacks)   ⇒ callbacks.apply(state)
   }
 
-  private def shouldSnapshot(state: S, event: E): Boolean = {
-    behavior.snapshotOn(state, event, lastSequenceNr)
+  private def shouldSnapshot(state: S, event: E, sequenceNr: Long): Boolean = {
+    behavior.snapshotOn(state, event, sequenceNr)
   }
 
 }

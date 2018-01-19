@@ -293,7 +293,7 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       replyProbe.expectMsg(State(2, Vector(0, 1)))
     }
 
-    "check for last event for snapshot in PersistAll" in {
+    "check all events for snapshot in PersistAll" in {
       val snapshotAtTwo = counter("c11").snapshotOn { (s, e, _) ⇒
         s.value == 2
       }
@@ -301,18 +301,18 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()
 
-      c ! IncrementWithPersistAll(2)
+      c ! IncrementWithPersistAll(3)
       c ! GetValue(replyProbe.ref)
-      replyProbe.expectMsg(State(2, Vector(0, 1)))
+      replyProbe.expectMsg(State(3, Vector(0, 1, 2)))
       c ! LogThenStop
       watchProbe.expectMsg("Terminated")
 
-      val probe = TestProbe[(State, Event)]()
-      val c2 = spawn(counterWithProbe("c11", probe.ref))
-      // state from snapshot
-      probe.expectNoMessage()
+      val probeC2 = TestProbe[(State, Event)]()
+      val c2 = spawn(counterWithProbe("c11", probeC2.ref))
+      // middle event triggered all to be snapshot
+      probeC2.expectNoMessage()
       c2 ! GetValue(replyProbe.ref)
-      replyProbe.expectMsg(State(2, Vector(0, 1)))
+      replyProbe.expectMsg(State(3, Vector(0, 1, 2)))
     }
 
     "snapshot every N sequence nrs" in {
@@ -341,6 +341,24 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       probeC3.expectNoMessage()
       c3 ! GetValue(replyProbe.ref)
       replyProbe.expectMsg(State(2, Vector(0, 1)))
+    }
+
+    "snapshot every N sequence nrs when persisting multiple events" in {
+      val c = spawn(counter("c12").snapshotEvery(2))
+      val watchProbe = watcher(c)
+      val replyProbe = TestProbe[State]()
+
+      c ! IncrementWithPersistAll(3)
+      c ! GetValue(replyProbe.ref)
+      replyProbe.expectMsg(State(3, Vector(0, 1, 2)))
+      c ! LogThenStop
+      watchProbe.expectMsg("Terminated")
+
+      val probeC2 = TestProbe[(State, Event)]()
+      val c2 = spawn(counterWithProbe("c12", probeC2.ref).snapshotEvery(2))
+      probeC2.expectNoMessage()
+      c2 ! GetValue(replyProbe.ref)
+      replyProbe.expectMsg(State(3, Vector(0, 1, 2)))
     }
 
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {
