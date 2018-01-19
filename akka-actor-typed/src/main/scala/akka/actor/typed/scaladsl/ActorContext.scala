@@ -162,14 +162,14 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * the protocol of this actor.
    *
    * The interaction has a timeout (to avoid a resource leak). If the timeout hits without any response it
-   * will be passed as a `Failure(`[[java.util.concurrent.TimeoutException]]`)` to the `responseToOwnProtocol` function
+   * will be passed as a `Failure(`[[java.util.concurrent.TimeoutException]]`)` to the `mapResponse` function
    * (this is the only "normal" way a `Failure` is passed to the function).
    *
    * For other messaging patterns with other actors, see [[spawnAdapter]].
    *
-   * @param createMessage A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
+   * @param createRequest A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
    *                      the other actor can send a message back through.
-   * @param responseToOwnProtocol Transforms the response from the `otherActor` into a message this actor understands.
+   * @param mapResponse Transforms the response from the `otherActor` into a message this actor understands.
    *                              Should be a pure function but is executed inside the actor when the response arrives
    *                              so can safely touch the actor internals. If this function throws an exception it is
    *                              just as if the normal message receiving logic would throw.
@@ -178,31 +178,6 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * @tparam Res The response protocol, what the other actor sends back
    */
   def ask[Req, Res](
-    otherActor:    ActorRef[Req],
-    createMessage: ActorRef[Res] ⇒ Req
-  )(responseToOwnProtocol: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
+    otherActor: ActorRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
 
-  /**
-   * Implicit decoration of actorrefs to provide syntax sugar for [[ask]]
-   * @see [[Ask#ask]]
-   */
-  implicit final class Ask[Req](otherActor: ActorRef[Req]) {
-    /**
-     * Provides syntax sugar to call [[ask]] directly on an `ActorRef`:
-     * ```
-     * import ctx.Ask
-     * ...
-     * actorRef.ask(createOutgoingMessage(_), {
-     *   case Success(incomingMessage) => MyProtocolOk(...)
-     *   case Failure(ex) => MyProtocolFail(...)
-     * })
-     * ```
-     *
-     * @see [[ActorContext.ask]] for details
-     */
-    def ask[Res](createMessage: ActorRef[Res] ⇒ Req)(responseToOwnProtocol: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
-      ActorContext.this.ask(otherActor, createMessage)(responseToOwnProtocol)
-    }
-
-  }
 }

@@ -176,29 +176,29 @@ trait ActorContext[T] {
    * the protocol of this actor.
    *
    * The interaction has a timeout (to avoid a resource leak). If the timeout hits without any response it
-   * will be passed as an [[java.util.concurrent.TimeoutException]] to the `responseToOwnProtocol` function.
+   * will be passed as an [[java.util.concurrent.TimeoutException]] to the `applyToResponse` function.
    *
    * For other messaging patterns with other actors, see [[spawnAdapter]].
    *
-   * @param createMessage A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
+   * @param createREquest A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
    *                      the other actor can send a message back through.
-   * @param responseToOwnProtocol Transforms the response from the `otherActor` into a message this actor understands.
-   *                              Will be invoked with either the response message or an AskTimeoutException failed or
-   *                              potentially another exception if the remote actor is untyped and sent a
-   *                              [[akka.actor.Status.Failure]] as response. The returned message of type `T` is then
-   *                              fed into this actor as a message. Should be a pure function but is executed inside
-   *                              the actor when the response arrives so can safely touch the actor internals. If this
-   *                              function throws an exception it is just as if the normal message receiving logic would
-   *                              throw.
+   * @param applyToResponse Transforms the response from the `otherActor` into a message this actor understands.
+   *                        Will be invoked with either the response message or an AskTimeoutException failed or
+   *                        potentially another exception if the remote actor is untyped and sent a
+   *                        [[akka.actor.Status.Failure]] as response. The returned message of type `T` is then
+   *                        fed into this actor as a message. Should be a pure function but is executed inside
+   *                        the actor when the response arrives so can safely touch the actor internals. If this
+   *                        function throws an exception it is just as if the normal message receiving logic would
+   *                        throw.
    *
    * @tparam Req The request protocol, what the other actor accepts
    * @tparam Res The response protocol, what the other actor sends back
    */
   def ask[Req, Res](
-    resClass:              Class[Res],
-    otherActor:            ActorRef[Req],
-    responseTimeout:       Timeout,
-    createMessage:         java.util.function.Function[ActorRef[Res], Req],
-    responseToOwnProtocol: BiFunction[Res, Throwable, T]): Unit
+    resClass:        Class[Res],
+    otherActor:      ActorRef[Req],
+    responseTimeout: Timeout,
+    createREquest:   java.util.function.Function[ActorRef[Res], Req],
+    applyToResponse: BiFunction[Res, Throwable, T]): Unit
 
 }

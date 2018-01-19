@@ -51,17 +51,11 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
 
         // Timeout comes from TypedAkkaSpec
 
-        ctx.ask(pingPong, Ping) {
+        ctx.ask(pingPong)(Ping) {
           case Success(pong) ⇒ Pong(ctx.self.path.name + "1", Thread.currentThread().getName)
           case Failure(ex)   ⇒ throw ex
         }
 
-        // FIXME it is nice that it is the actorref you ask but not sure it is justified with the implicit at all WDYT?
-        import ctx.Ask
-        pingPong.ask(Ping) {
-          case Success(pong) ⇒ Pong(ctx.self.path.name + "2", Thread.currentThread().getName)
-          case Failure(ex)   ⇒ throw ex
-        }
         Behaviors.immutable {
           case (ctx, pong: Pong) ⇒
             probe.ref ! pong
@@ -71,10 +65,10 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
 
       spawn(snitch, "snitch", Props.empty.withDispatcherFromConfig("snitch-dispatcher"))
 
-      val pongs = Set(probe.expectMsgType[Pong], probe.expectMsgType[Pong])
+      val pong = probe.expectMsgType[Pong]
 
-      pongs.map(_.selfName) should ===(Set("snitch1", "snitch2"))
-      pongs.map(_.threadName).forall(_.startsWith("ActorContextAskSpec-snitch-dispatcher")) should ===(true)
+      pong.selfName should ===("snitch1")
+      pong.threadName should startWith("ActorContextAskSpec-snitch-dispatcher")
     }
 
     "fail actor when mapping does not match response" in {
@@ -93,7 +87,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
       ))
 
       val snitch = Behaviors.deferred[AnyRef] { (ctx) ⇒
-        ctx.ask(pingPong, Ping) {
+        ctx.ask(pingPong)(Ping) {
           // uh oh, missing case for the response, this can never end well
           case Failure(x) ⇒ x
         }
@@ -122,7 +116,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
       val probe = TestProbe[AnyRef]()
       val snitch = Behaviors.deferred[AnyRef] { (ctx) ⇒
 
-        ctx.ask[String, String](system.deadLetters, ref ⇒ "boo") {
+        ctx.ask[String, String](system.deadLetters)(ref ⇒ "boo") {
           case Success(m) ⇒ m
           case Failure(x) ⇒ x
         }(20.millis, implicitly[ClassTag[String]])
