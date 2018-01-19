@@ -7,19 +7,19 @@ import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.receptionist.Receptionist.Registered
-import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
+import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, ActorRefResolver, ActorSystem }
+import akka.actor.typed.{ActorRef, ActorRefResolver, ActorSystem, TypedAkkaSpecWithShutdown}
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.adapter._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpecLike }
+import org.scalatest.{Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 class RemoteContextAskSpecSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
   override def identifier = 41
@@ -83,7 +83,7 @@ object RemoteContextAskSpec {
 
 }
 
-class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with WordSpecLike with Matchers {
+class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with TypedAkkaSpecWithShutdown {
 
   import RemoteContextAskSpec._
 

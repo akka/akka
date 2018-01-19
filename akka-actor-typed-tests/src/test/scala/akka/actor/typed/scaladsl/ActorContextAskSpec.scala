@@ -4,7 +4,7 @@
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ ActorRef, PostStop, Props, TypedAkkaSpec }
+import akka.actor.typed.{ActorRef, PostStop, Props, TypedAkkaSpecWithShutdown}
 import akka.testkit.EventFilter
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
@@ -13,7 +13,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString(
@@ -30,7 +30,7 @@ object ActorContextAskSpec {
     """)
 }
 
-class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with TypedAkkaSpec {
+class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with TypedAkkaSpecWithShutdown  {
 
   implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 

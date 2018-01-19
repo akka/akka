@@ -1,6 +1,6 @@
 # Typed Actor Interaction Patterns
 
-Interacting with an Actor in Akka Typed is done through an @scala[`ActorRef[T]`]@java[`ActorRef<T>`] where `T` is the type of messages the actor accepts, also known as "protocol". This ensures that only the right kind of messages can be sent to an actor and also ensures no access to the Actor instance internals is available to anyone else but the Actor itself. 
+Interacting with an Actor in Akka Typed is done through an @scala[`ActorRef[T]`]@java[`ActorRef<T>`] where `T` is the type of messages the actor accepts, also known as the "protocol". This ensures that only the right kind of messages can be sent to an actor and also ensures no access to the Actor instance internals is available to anyone else but the Actor itself. 
 
 Message exchange with Actors follow a few common patterns, let's go through each one of them. 
 
@@ -41,7 +41,7 @@ TODO sample
 
 **Problems request-response:**
 
- * Often the response that the other actor wants to send back is not a part of the protocol the sending actor (see adapted request response or ask)
+ * Often the response that the other actor wants to send back is not a part of the sending actor's protocol (see adapted request response or ask)
  * It is hard to detect and that a message request was not delivered or processed (see ask)
  * Unless the protocol already includes a way to provide context, for example a request id that is also sent in the response, it is not possible to tie an interaction to some specific context without introducing a new, separate, actor
 
@@ -64,7 +64,7 @@ TODO sample
  
 ## 1:1 Request-Response with ask between two actors
  
-In an interaction where there is a 1:1 mapping between a request and a response we can use @scala[`ActorContext.ask` or the implicitly provided `ActorRef.ask`]@java[`ActorContext.ask`] to interact with another actor.
+In an interaction where there is a 1:1 mapping between a request and a response we can use `ask` on the `ActorContext` to interact with another actor.
 
 The interaction has two steps, first we need to construct the outgoing message, to do that we need an @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`] to put as recipient in the outgoing message. The second step is to transform the `Response` or the failure to produce a response, into a message that is part of the protocol of the sending actor.
 
@@ -74,7 +74,7 @@ TODO sample
 **Scenarios where ask is useful:**
 
  * Single response queries
- * When an actor need to know that the message was processed before continuing 
+ * When an actor needs to know that the message was processed before continuing 
  * To allow an actor to resend if a timely response is not produced
  * To keep track of outstanding requests and not overwhelm a recipient with messages (simple backpressure)
  * When some context should be attached to the interaction but the protocol does not support that (request id, what query the response was for)
@@ -83,6 +83,7 @@ TODO sample
 
  * There can only be a single response to one `ask`
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
+ * Finding a good value for the timeout, especially when `ask` is triggers chained `ask`s in the receiving actor. You want a short timeout to be responsive and answer back to the requestor, but at the same time you do not want to have many false positives 
 
 
 ## 1:1 Request-Response with ask from outside the ActorSystem
@@ -101,3 +102,19 @@ TODO sample
  * There can only be a single response to one `ask`
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
 
+
+## Per session child Actor
+
+Keeping context for an interaction, or multiple interactions can be done by moving the work for one "session", into a child actor.
+
+TODO
+
+**Scenarios where per session child actor is useful:**
+
+ * A single incoming request should result in multiple interactions with other actions before a result can be built
+ * ???
+
+**Problems with ask:**
+
+ * Children have lifecycles that must be managed to not create a resource leak
+ * ???
