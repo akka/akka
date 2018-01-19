@@ -6,7 +6,9 @@ package jdocs.akka.typed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.javadsl.BehaviorBuilder;
 import akka.actor.typed.javadsl.Behaviors;
+import javafx.print.Printer;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
@@ -28,29 +30,19 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
 
   public Behavior<PrinterProtocol> enabledPrinterBehavior() {
-    return Behaviors.immutable((ctx, message) -> {
-      if (message instanceof DisableOutput) {
-        return disabledPrinterBehavior();
-      } else if (message instanceof PrintMe) {
-        System.out.println(((PrintMe) message).message);
+    return BehaviorBuilder.<PrinterProtocol>create()
+      .onMessage(DisableOutput.class, (ctx, disableOutput) -> disabledPrinterBehavior())
+      .onMessage(PrintMe.class, (ctx, printMe) -> {
+        System.out.println(printMe.message);
         return Behaviors.same();
-      } else {
-        return Behaviors.ignore();
-      }
-    });
+      }).build();
   }
 
   public Behavior<PrinterProtocol> disabledPrinterBehavior() {
-    return Behaviors.immutable((ctx, message) -> {
-      if (message instanceof EnableOutput) {
-        return enabledPrinterBehavior();
-      } else {
-        // ignore any other message than enable
-        return Behaviors.ignore();
-      }
-    });
+    return BehaviorBuilder.<PrinterProtocol>create()
+      .onMessage(EnableOutput.class, (ctx, enableOutput) -> enabledPrinterBehavior())
+      .build();
   }
-
   // #fire-and-forget
 
 
