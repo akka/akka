@@ -6,6 +6,7 @@
 
 * [actors](actors-typed.md)
 * [coexisting](coexisting.md)
+* [actor-lifecycle](actor-lifecycle-typed.md)
 * [fault-tolerance](fault-tolerance-typed.md)
 * [actor-discovery](actor-discovery-typed.md)
 * [cluster](cluster-typed.md)
