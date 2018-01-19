@@ -2,7 +2,7 @@ package akka.testkit.typed
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.annotation.ApiMayChange
 import akka.testkit.typed.TestKit._
 import akka.util.Timeout
@@ -14,15 +14,15 @@ import scala.concurrent.{ Await, TimeoutException }
 object TestKit {
 
   private[akka] sealed trait TestKitCommand
-  private[akka] case class SpawnActor[T](name: String, behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]]) extends TestKitCommand
-  private[akka] case class SpawnActorAnonymous[T](behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]]) extends TestKitCommand
+  private[akka] case class SpawnActor[T](name: String, behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
+  private[akka] case class SpawnActorAnonymous[T](behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
 
   private val testKitGuardian = Behaviors.immutable[TestKitCommand] {
-    case (ctx, SpawnActor(name, behavior, reply)) ⇒
-      reply ! ctx.spawn(behavior, name)
+    case (ctx, SpawnActor(name, behavior, reply, props)) ⇒
+      reply ! ctx.spawn(behavior, name, props)
       Behaviors.same
-    case (ctx, SpawnActorAnonymous(behavior, reply)) ⇒
-      reply ! ctx.spawnAnonymous(behavior)
+    case (ctx, SpawnActorAnonymous(behavior, reply, props)) ⇒
+      reply ! ctx.spawnAnonymous(behavior, props)
       Behaviors.same
   }
 
@@ -87,14 +87,28 @@ trait TestKitBase {
    * guardian
    */
   def spawn[T](behavior: Behavior[T]): ActorRef[T] =
-    Await.result(system ? (SpawnActorAnonymous(behavior, _)), timeoutDuration)
+    spawn(behavior, Props.empty)
+
+  /**
+   * Spawn the given behavior. This is created as a child of the test kit
+   * guardian
+   */
+  def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] =
+    Await.result(system ? (SpawnActorAnonymous(behavior, _, props)), timeoutDuration)
 
   /**
    * Spawn the given behavior. This is created as a child of the test kit
    * guardian
    */
   def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] =
-    Await.result(system ? (SpawnActor(name, behavior, _)), timeoutDuration)
+    spawn(behavior, name, Props.empty)
+
+  /**
+   * Spawn the given behavior. This is created as a child of the test kit
+   * guardian
+   */
+  def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
+    Await.result(system ? (SpawnActor(name, behavior, _, props)), timeoutDuration)
 
   def systemActor[T](behaviour: Behavior[T], name: String): ActorRef[T] =
     Await.result(system.systemActorOf(behaviour, name), timeoutDuration)

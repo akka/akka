@@ -35,6 +35,7 @@ import akka.util.OptionVal
       next(Behavior.interpretSignal(behavior, ctx, msg), msg)
     case a.ReceiveTimeout ⇒
       next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
+    case msg: AskResponse[AnyRef, T] @unchecked ⇒ receive(msg.adapted)
     case msg: T @unchecked ⇒
       next(Behavior.interpretMessage(behavior, ctx, msg), msg)
   }
