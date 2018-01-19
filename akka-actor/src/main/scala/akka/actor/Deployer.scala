@@ -6,6 +6,7 @@ package akka.actor
 
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.annotation.InternalApi
 import akka.routing._
 import akka.util.WildcardIndex
 import com.typesafe.config._
@@ -106,6 +107,16 @@ case object LocalScope extends LocalScope {
    */
   def getInstance = this
 
+  def withFallback(other: Scope): Scope = this
+}
+
+/**
+ * INTERNAL API
+ *
+ * Used for disallowing remote deployment for adapted typed actors
+ */
+@InternalApi
+private[akka] case object DisallowRemoteScope extends LocalScope {
   def withFallback(other: Scope): Scope = this
 }
 
