@@ -6,9 +6,9 @@ Message exchange with Actors follow a few common patterns, let's go through each
 
 ## Fire and Forget
 
-The most basic way to interact with an actor is through @scala[`ActorRef ! message` or `ActorRef.tell(message)`]@java[`ActorRef.tell(message)`] which immediately sends the message to an actor to be asynchronously processed. Sending a message to an actor like this can be done both from inside another actor and from any logic outside of the `ActorSystem`.
+The fundamental way to interact with an actor is through @scala["tell", which is so common that it has a special symbolic method name: `actorRef ! message`]@java[`actorRef.tell(message)`]. Sending a message to an actor like this can be done both from inside another actor and from any logic outside of the `ActorSystem`.
 
-That tell is asynchronous means that the method returns right away and that when execution of the statement after it in the code is executed there is no guarantee that the message has been processed by the recipient yet. It also means there is no way to way to know if the processing succeeded or failed without additional interaction with the actor in question.
+Tell is asynchronous which means that the method returns right away and that when execution of the statement after it in the code is executed there is no guarantee that the message has been processed by the recipient yet. It also means there is no way to way to know if the processing succeeded or failed without additional interaction with the actor in question.
 
 Scala
 :  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #fire-and-forget }
@@ -58,7 +58,7 @@ TODO sample
 **Problems with adapted request-response:**
 
  * It is hard to detect and that a message request was not delivered or processed (see ask)
- * Only one adaption can be made per response message type, if a new one is registered the old one is lost
+ * Only one adaption can be made per response message type, if a new one is registered the old one is replaced, for example different target actors can't have different adaption if they use the same response types, unless some correlation is encoded in the messages
  * Unless the protocol already includes a way to provide context, for example a request id that is also sent in the response, it is not possible to tie an interaction to some specific context without introducing a new, separate, actor 
 
  
