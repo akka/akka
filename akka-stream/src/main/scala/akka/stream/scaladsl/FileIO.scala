@@ -105,7 +105,8 @@ object FileIO {
    * Accepts as arguments a set of [[java.nio.file.StandardOpenOption]], which will determine
    * the underlying behavior when writing the file. If [[java.nio.file.StandardOpenOption.SYNC]] is
    * provided, every update to the file's content be written synchronously to the underlying storage
-   * device. Otherwise (the default), the write will be written to the storage device asynchronously.
+   * device. Otherwise (the default), the write will be written to the storage device asynchronously
+   * by the OS, and may not be stored durably on the storage device at the time the stream completes.
    *
    * @param f the file path to write to
    * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, TRUNCATE_EXISTING, CREATE)
@@ -126,7 +127,8 @@ object FileIO {
    * Accepts as arguments a set of [[java.nio.file.StandardOpenOption]], which will determine
    * the underlying behavior when writing the file. If [[java.nio.file.StandardOpenOption.SYNC]] is
    * provided, every update to the file's content be written synchronously to the underlying storage
-   * device. Otherwise (the default), the write will be written to the storage device asynchronously.
+   * device. Otherwise (the default), the write will be written to the storage device asynchronously
+   * by the OS, and may not be stored durably on the storage device at the time the stream completes.
    *
    * @param f the file path to write to
    * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, CREATE)
