@@ -1,0 +1,5 @@
+# #24330 ActorSystem.getWhenTerminated
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorSystem.getWhenTerminated")
+
+# #23770 typed actor context ask
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.apply")

@@ -9,7 +9,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.typed.{ ActorRef, ActorRefResolver, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.Cluster
 import akka.serialization.SerializerWithStringManifest
@@ -50,14 +50,14 @@ object ClusterReceptionistSpec {
   case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol
   case object Perish extends PingProtocol
 
-  val pingPongBehavior = Actor.immutable[PingProtocol] { (_, msg) ⇒
+  val pingPongBehavior = Behaviors.immutable[PingProtocol] { (_, msg) ⇒
     msg match {
       case Ping(respondTo) ⇒
         respondTo ! Pong
-        Actor.same
+        Behaviors.same
 
       case Perish ⇒
-        Actor.stopped
+        Behaviors.stopped
     }
   }
 

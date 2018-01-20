@@ -5,10 +5,13 @@ package akka.actor.typed.scaladsl
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
-
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.actor.typed._
+import akka.util.Timeout
+
+import scala.reflect.ClassTag
+import scala.util.{ Success, Failure, Try }
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -153,5 +156,28 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * these ActorRefs or to stop them when no longer needed.
    */
   def spawnAdapter[U](f: U ⇒ T): ActorRef[U]
+
+  /**
+   * Perform a single request-response message interaction with another actor, and transform the messages back to
+   * the protocol of this actor.
+   *
+   * The interaction has a timeout (to avoid a resource leak). If the timeout hits without any response it
+   * will be passed as a `Failure(`[[java.util.concurrent.TimeoutException]]`)` to the `mapResponse` function
+   * (this is the only "normal" way a `Failure` is passed to the function).
+   *
+   * For other messaging patterns with other actors, see [[spawnAdapter]].
+   *
+   * @param createRequest A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
+   *                      the other actor can send a message back through.
+   * @param mapResponse Transforms the response from the `otherActor` into a message this actor understands.
+   *                              Should be a pure function but is executed inside the actor when the response arrives
+   *                              so can safely touch the actor internals. If this function throws an exception it is
+   *                              just as if the normal message receiving logic would throw.
+   *
+   * @tparam Req The request protocol, what the other actor accepts
+   * @tparam Res The response protocol, what the other actor sends back
+   */
+  def ask[Req, Res](
+    otherActor: ActorRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
 
 }

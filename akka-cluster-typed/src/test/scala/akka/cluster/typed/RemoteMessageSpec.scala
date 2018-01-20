@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 import akka.Done
 import akka.testkit.AkkaSpec
 import akka.actor.typed.{ ActorRef, ActorRefResolver }
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.{ ExtendedActorSystem, ActorSystem ⇒ UntypedActorSystem }
 import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
@@ -70,12 +70,12 @@ class RemoteMessageSpec extends AkkaSpec(RemoteMessageSpec.config) {
     "something something" in {
 
       val pingPromise = Promise[Done]()
-      val ponger = Actor.immutable[Ping]((_, msg) ⇒
+      val ponger = Behaviors.immutable[Ping]((_, msg) ⇒
         msg match {
           case Ping(sender) ⇒
             pingPromise.success(Done)
             sender ! "pong"
-            Actor.stopped
+            Behaviors.stopped
         })
 
       // typed actor on system1
@@ -91,9 +91,9 @@ class RemoteMessageSpec extends AkkaSpec(RemoteMessageSpec.config) {
           ActorRefResolver(typedSystem2).resolveActorRef[Ping](remoteRefStr)
 
         val pongPromise = Promise[Done]()
-        val recipient = system2.spawn(Actor.immutable[String] { (_, _) ⇒
+        val recipient = system2.spawn(Behaviors.immutable[String] { (_, _) ⇒
           pongPromise.success(Done)
-          Actor.stopped
+          Behaviors.stopped
         }, "recipient")
         remoteRef ! Ping(recipient)
 

@@ -3,10 +3,12 @@
  */
 package akka.actor.typed
 
-import akka.actor.typed.scaladsl.Actor
+import java.io.IOException
+
+import akka.actor.typed.scaladsl.Behaviors
 
 import scala.concurrent.duration._
-import akka.actor.typed.scaladsl.Actor._
+import akka.actor.typed.scaladsl.Behaviors._
 import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKit, TestKitSettings }
 
 import scala.util.control.NoStackTrace
@@ -37,23 +39,23 @@ object SupervisionSpec {
       cmd match {
         case Ping ⇒
           monitor ! Pong
-          Actor.same
+          Behaviors.same
         case IncrementState ⇒
           targetBehavior(monitor, state.copy(n = state.n + 1))
         case GetState ⇒
           val reply = state.copy(children = ctx.children.map(c ⇒ c.path.name → c.upcast[Command]).toMap)
           monitor ! reply
-          Actor.same
+          Behaviors.same
         case CreateChild(childBehv, childName) ⇒
           ctx.spawn(childBehv, childName)
-          Actor.same
+          Behaviors.same
         case Throw(e) ⇒
           throw e
       }
     } onSignal {
       case (_, sig) ⇒
         monitor ! GotSignal(sig)
-        Actor.same
+        Behaviors.same
     }
 
   class FailingConstructor(monitor: ActorRef[Event]) extends MutableBehavior[Command] {
@@ -62,7 +64,7 @@ object SupervisionSpec {
 
     override def onMessage(msg: Command): Behavior[Command] = {
       monitor ! Pong
-      Actor.same
+      Behaviors.same
     }
   }
 }
@@ -163,7 +165,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
 
     "not catch fatal error" in {
       val inbox = TestInbox[Event]()
-      val behv = Actor.supervise(targetBehavior(inbox.ref))
+      val behv = Behaviors.supervise(targetBehavior(inbox.ref))
         .onFailure[Throwable](SupervisorStrategy.restart)
       val testkit = BehaviorTestkit(behv)
       intercept[StackOverflowError] {
@@ -234,23 +236,48 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
   }
 }
 
-class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithShutdown {
+class SupervisionSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   import SupervisionSpec._
   private val nameCounter = Iterator.from(0)
   private def nextName(prefix: String = "a"): String = s"$prefix-${nameCounter.next()}"
-  private val waitTime = 50.millis
 
   implicit val testSettings = TestKitSettings(system)
 
   "A supervised actor" must {
     "receive message" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.supervise(targetBehavior(probe.ref))
+      val behv = Behaviors.supervise(targetBehavior(probe.ref))
         .onFailure[Throwable](SupervisorStrategy.restart)
       val ref = spawn(behv)
       ref ! Ping
       probe.expectMsg(Pong)
+    }
+
+    "stop when strategy is stop" in {
+      val probe = TestProbe[Event]("evt")
+      val behv = Behaviors.supervise(targetBehavior(probe.ref))
+        .onFailure[Throwable](SupervisorStrategy.stop)
+      val ref = spawn(behv)
+      ref ! Throw(new Exc3)
+      probe.expectMsg(GotSignal(PostStop))
+    }
+
+    "support nesting exceptions with different strategies" in {
+      val probe = TestProbe[Event]("evt")
+      val behv =
+        supervise(
+          supervise(targetBehavior(probe.ref))
+            .onFailure[RuntimeException](SupervisorStrategy.stop)
+        ).onFailure[Exception](SupervisorStrategy.restart)
+
+      val ref = spawn(behv)
+
+      ref ! Throw(new IOException())
+      probe.expectMsg(GotSignal(PreRestart))
+
+      ref ! Throw(new IllegalArgumentException("cat"))
+      probe.expectMsg(GotSignal(PostStop))
     }
 
     "stop when not supervised" in {
@@ -258,13 +285,12 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
       val behv = targetBehavior(probe.ref)
       val ref = spawn(behv)
       ref ! Throw(new Exc3)
-
       probe.expectMsg(GotSignal(PostStop))
     }
 
     "stop when unhandled exception" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.supervise(targetBehavior(probe.ref))
+      val behv = Behaviors.supervise(targetBehavior(probe.ref))
         .onFailure[Exc1](SupervisorStrategy.restart)
       val ref = spawn(behv)
       ref ! Throw(new Exc3)
@@ -273,7 +299,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
 
     "restart when handled exception" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.supervise(targetBehavior(probe.ref))
+      val behv = Behaviors.supervise(targetBehavior(probe.ref))
         .onFailure[Exc1](SupervisorStrategy.restart)
       val ref = spawn(behv)
       ref ! IncrementState
@@ -288,7 +314,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
 
     "NOT stop children when restarting" in {
       val parentProbe = TestProbe[Event]("evt")
-      val behv = Actor.supervise(targetBehavior(parentProbe.ref))
+      val behv = Behaviors.supervise(targetBehavior(parentProbe.ref))
         .onFailure[Exc1](SupervisorStrategy.restart)
       val ref = spawn(behv)
 
@@ -304,7 +330,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
       // TODO document this difference compared to classic actors, and that
       //      children can be stopped if needed in PreRestart
       parentProbe.expectMsgType[State].children.keySet should contain(childName)
-      childProbe.expectNoMsg(waitTime)
+      childProbe.expectNoMessage()
     }
 
     "resume when handled exception" in {
@@ -322,8 +348,8 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
 
     "support nesting to handle different exceptions" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.supervise(
-        Actor.supervise(targetBehavior(probe.ref))
+      val behv = Behaviors.supervise(
+        Behaviors.supervise(targetBehavior(probe.ref))
           .onFailure[Exc2](SupervisorStrategy.resume)
       ).onFailure[Exc3](SupervisorStrategy.restart)
       val ref = spawn(behv)
@@ -333,7 +359,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
 
       // resume
       ref ! Throw(new Exc2)
-      probe.expectNoMsg(waitTime)
+      probe.expectNoMessage()
       ref ! GetState
       probe.expectMsg(State(1, Map.empty))
 
@@ -355,7 +381,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
       val strategy = SupervisorStrategy
         .restartWithBackoff(minBackoff, 10.seconds, 0.0)
         .withResetBackoffAfter(10.seconds)
-      val behv = Actor.supervise(Actor.deferred[Command] { _ ⇒
+      val behv = Behaviors.supervise(Behaviors.deferred[Command] { _ ⇒
         startedProbe.ref ! Started
         targetBehavior(probe.ref)
       }).onFailure[Exception](strategy)
@@ -367,8 +393,8 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
       probe.expectMsg(GotSignal(PreRestart))
       ref ! Ping // dropped due to backoff
 
-      startedProbe.expectNoMsg(minBackoff - 100.millis)
-      probe.expectNoMsg(minBackoff + 100.millis)
+      startedProbe.expectNoMessage(minBackoff - 100.millis)
+      probe.expectNoMessage(minBackoff + 100.millis)
       startedProbe.expectMsg(Started)
       ref ! GetState
       probe.expectMsg(State(0, Map.empty))
@@ -379,8 +405,8 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
       probe.expectMsg(GotSignal(PreRestart))
       ref ! Ping // dropped due to backoff
 
-      startedProbe.expectNoMsg((minBackoff * 2) - 100.millis)
-      probe.expectNoMsg((minBackoff * 2) + 100.millis)
+      startedProbe.expectNoMessage((minBackoff * 2) - 100.millis)
+      probe.expectNoMessage((minBackoff * 2) + 100.millis)
       startedProbe.expectMsg(Started)
       ref ! GetState
       probe.expectMsg(State(0, Map.empty))
@@ -399,19 +425,19 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
       probe.expectMsg(GotSignal(PreRestart))
       ref ! Ping // dropped due to backoff
 
-      probe.expectNoMsg(minBackoff + 100.millis)
+      probe.expectNoMessage(minBackoff + 100.millis.dilated)
       ref ! GetState
       probe.expectMsg(State(0, Map.empty))
 
       // one more time after the reset timeout
-      probe.expectNoMsg(strategy.resetBackoffAfter + 100.millis)
+      probe.expectNoMessage(strategy.resetBackoffAfter + 100.millis.dilated)
       ref ! IncrementState
       ref ! Throw(new Exc1)
       probe.expectMsg(GotSignal(PreRestart))
       ref ! Ping // dropped due to backoff
 
       // backoff was reset, so restarted after the minBackoff
-      probe.expectNoMsg(minBackoff + 100.millis)
+      probe.expectNoMessage(minBackoff + 100.millis.dilated)
       ref ! GetState
       probe.expectMsg(State(0, Map.empty))
     }
@@ -422,7 +448,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
         probe.ref ! Started
         targetBehavior(probe.ref)
       }).onFailure[Exception](SupervisorStrategy.restart)
-      probe.expectNoMsg(100.millis) // not yet
+      probe.expectNoMessage() // not yet
       spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
       probe.expectMsg(Started)
@@ -435,7 +461,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec") with TypedAkkaSpecWithS
       val ref = spawn(behv)
       probe.expectMsg(Started)
       ref ! Ping
-      probe.expectNoMsg(100.millis)
+      probe.expectNoMessage()
     }
   }
 }

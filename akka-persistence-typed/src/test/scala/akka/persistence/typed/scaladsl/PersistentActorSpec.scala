@@ -5,13 +5,13 @@ package akka.persistence.typed.scaladsl
 
 import scala.concurrent.duration._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
-import akka.persistence.typed.scaladsl.PersistentActor._
+import akka.persistence.typed.scaladsl.PersistentBehaviors._
 
 object PersistentActorSpec {
 
@@ -30,6 +30,7 @@ object PersistentActorSpec {
   final case class GetValue(replyTo: ActorRef[State]) extends Command
   final case object DelayFinished extends Command
   private case object Timeout extends Command
+  final case object LogThenStop extends Command
 
   sealed trait Event
   final case class Incremented(delta: Int) extends Event
@@ -46,7 +47,7 @@ object PersistentActorSpec {
 
   def counter(persistenceId: String, loggingActor: ActorRef[String]): Behavior[Command] = {
 
-    PersistentActor.immutable[Command, Event, State](
+    PersistentBehaviors.immutable[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
       commandHandler = (ctx, state, cmd) ⇒ cmd match {
@@ -57,10 +58,10 @@ object PersistentActorSpec {
           Effect.none
         case IncrementLater ⇒
           // purpose is to test signals
-          val delay = ctx.spawnAnonymous(Actor.withTimers[Tick.type] { timers ⇒
+          val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] { timers ⇒
             timers.startSingleTimer(Tick, Tick, 10.millis)
-            Actor.immutable((_, msg) ⇒ msg match {
-              case Tick ⇒ Actor.stopped
+            Behaviors.immutable((_, msg) ⇒ msg match {
+              case Tick ⇒ Behaviors.stopped
             })
           })
           ctx.watchWith(delay, DelayFinished)
@@ -73,7 +74,6 @@ object PersistentActorSpec {
         case Timeout ⇒
           ctx.cancelReceiveTimeout()
           Effect.persist(Incremented(100))
-
         case IncrementTwiceAndThenLog ⇒
           Effect
             .persist(Incremented(1), Incremented(1))
@@ -97,6 +97,10 @@ object PersistentActorSpec {
             .andThen {
               loggingActor ! firstLogging
             }
+        case LogThenStop ⇒
+          Effect.none.andThen {
+            loggingActor ! firstLogging
+          }.andThenStop
       },
       eventHandler = (state, evt) ⇒ evt match {
         case Incremented(delta) ⇒
@@ -214,12 +218,32 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       // wrap it in Actor.deferred or Actor.supervise
       pending
       val probe = TestProbe[State]
-      val behavior = Actor.supervise[Command](counter("c13"))
+      val behavior = Behaviors.supervise[Command](counter("c13"))
         .onFailure(SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.1))
       val c = spawn(behavior)
       c ! Increment
       c ! GetValue(probe.ref)
       probe.expectMsg(State(1, Vector(0)))
+    }
+
+    "stop after persisting" in {
+      val loggingProbe = TestProbe[String]
+      val watchProbe = TestProbe[String]
+      val c: ActorRef[Command] = spawn(counter("c8", loggingProbe.ref))
+      case class StartWatching(watchee: ActorRef[_])
+      val watcher = spawn(Behaviors.immutable[StartWatching] {
+        case (ctx, StartWatching(watchee)) ⇒
+          ctx.watch(watchee)
+          Behaviors.same
+      }.onSignal {
+        case (_, Terminated(_)) ⇒
+          watchProbe.ref ! "Terminated"
+          Behaviors.stopped
+      })
+      watcher ! StartWatching(c)
+      c ! LogThenStop
+      loggingProbe.expectMsg(firstLogging)
+      watchProbe.expectMsg("Terminated")
     }
   }
 

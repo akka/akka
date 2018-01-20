@@ -3,13 +3,14 @@
  */
 package akka.persistence.typed.scaladsl
 
-import scala.collection.{ immutable ⇒ im }
-import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.actor.typed.Behavior.UntypedBehavior
-import akka.persistence.typed.internal.PersistentActorImpl
 import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.persistence.typed.internal.PersistentActorImpl
 
-object PersistentActor {
+import scala.collection.{ immutable ⇒ im }
+
+object PersistentBehaviors {
 
   /**
    * Create a `Behavior` for a persistent actor.
@@ -34,10 +35,11 @@ object PersistentActor {
     commandHandler:             CommandHandler[Command, Event, State],
     eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
-      recoveryCompleted = (_, _) ⇒ ())
+      recoveryCompleted = (_, _) ⇒ (),
+      tagger = _ ⇒ Set.empty)
 
   /**
-   * Factories for effects - how a persitent actor reacts on a command
+   * Factories for effects - how a persistent actor reacts on a command
    */
   object Effect {
 
@@ -104,10 +106,17 @@ object PersistentActor {
   @InternalApi
   private[akka] object CompositeEffect {
     def apply[Event, State](effect: Effect[Event, State], sideEffects: ChainableEffect[Event, State]): Effect[Event, State] =
-      CompositeEffect[Event, State](
-        if (effect.events.isEmpty) None else Some(effect),
-        sideEffects :: Nil
-      )
+      if (effect.events.isEmpty) {
+        CompositeEffect[Event, State](
+          None,
+          effect.sideEffects ++ (sideEffects :: Nil)
+        )
+      } else {
+        CompositeEffect[Event, State](
+          Some(effect),
+          sideEffects :: Nil
+        )
+      }
   }
 
   @InternalApi
@@ -185,10 +194,11 @@ object PersistentActor {
 class PersistentBehavior[Command, Event, State](
   @InternalApi private[akka] val persistenceIdFromActorName: String ⇒ String,
   val initialState:                                          State,
-  val commandHandler:                                        PersistentActor.CommandHandler[Command, Event, State],
+  val commandHandler:                                        PersistentBehaviors.CommandHandler[Command, Event, State],
   val eventHandler:                                          (State, Event) ⇒ State,
-  val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit) extends UntypedBehavior[Command] {
-  import PersistentActor._
+  val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit,
+  val tagger:                                                Event ⇒ Set[String]) extends UntypedBehavior[Command] {
+  import PersistentBehaviors._
 
   /** INTERNAL API */
   @InternalApi private[akka] override def untypedProps: akka.actor.Props = PersistentActorImpl.props(() ⇒ this)
@@ -210,11 +220,18 @@ class PersistentBehavior[Command, Event, State](
    */
   def snapshotOn(predicate: (State, Event) ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
 
+  /**
+   * The `tagger` function should give event tags, which will be used in persistence query
+   */
+  def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State] =
+    copy(tagger = tagger)
+
   private def copy(
     persistenceIdFromActorName: String ⇒ String                       = persistenceIdFromActorName,
     initialState:               State                                 = initialState,
     commandHandler:             CommandHandler[Command, Event, State] = commandHandler,
     eventHandler:               (State, Event) ⇒ State                = eventHandler,
-    recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted)
+    recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted,
+    tagger:                     Event ⇒ Set[String]                   = tagger): PersistentBehavior[Command, Event, State] =
+    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, tagger)
 }

@@ -11,11 +11,12 @@ import akka.persistence.RecoveryCompleted
 import akka.persistence.SnapshotOffer
 import akka.actor.typed.Signal
 import akka.actor.typed.internal.adapter.ActorContextAdapter
-import akka.persistence.typed.scaladsl.PersistentActor
+import akka.persistence.typed.scaladsl.PersistentBehaviors
 import akka.persistence.typed.scaladsl.PersistentBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.Terminated
 import akka.actor.typed.internal.adapter.ActorRefAdapter
+import akka.persistence.journal.Tagged
 
 /**
  * INTERNAL API
@@ -42,7 +43,7 @@ import akka.actor.typed.internal.adapter.ActorRefAdapter
   behavior: PersistentBehavior[C, E, S]) extends UntypedPersistentActor {
 
   import PersistentActorImpl._
-  import PersistentActor._
+  import PersistentBehaviors._
 
   override val persistenceId: String = behavior.persistenceIdFromActorName(self.path.name)
 
@@ -69,10 +70,6 @@ import akka.actor.typed.internal.adapter.ActorRefAdapter
   def applyEvent(s: S, event: E): S =
     eventHandler.apply(s, event)
 
-  private val unhandledSignal: PartialFunction[(ActorContext[C], S, Signal), Effect[E, S]] = {
-    case sig ⇒ Effect.unhandled
-  }
-
   override def receiveCommand: Receive = {
     case PersistentActorImpl.StopForPassivation ⇒
       context.stop(self)
@@ -87,10 +84,9 @@ import akka.actor.typed.internal.adapter.ActorRefAdapter
             // FIXME we could make it more safe by using ClassTag for C
             commandHandler(ctx, state, cmd)
         }
-
         applyEffects(msg, effects)
       } catch {
-        case e: MatchError ⇒ throw new IllegalStateException(
+        case _: MatchError ⇒ throw new IllegalStateException(
           s"Undefined state [${state.getClass.getName}] or handler for [${msg.getClass.getName} " +
             s"in [${behavior.getClass.getName}] with persistenceId [$persistenceId]")
       }
@@ -107,7 +103,9 @@ import akka.actor.typed.internal.adapter.ActorRefAdapter
       // the invalid event, in case such validation is implemented in the event handler.
       // also, ensure that there is an event handler for each single event
       state = applyEvent(state, event)
-      persist(event) { _ ⇒
+      val tags = behavior.tagger(event)
+      val eventToPersist = if (tags.isEmpty) event else Tagged(event, tags)
+      persist(eventToPersist) { _ ⇒
         sideEffects.foreach(applySideEffect)
       }
     case PersistAll(events) ⇒
@@ -117,7 +115,11 @@ import akka.actor.typed.internal.adapter.ActorRefAdapter
         // also, ensure that there is an event handler for each single event
         var count = events.size
         state = events.foldLeft(state)(applyEvent)
-        persistAll(events) { _ ⇒
+        val eventsToPersist = events.map { event ⇒
+          val tags = behavior.tagger(event)
+          if (tags.isEmpty) event else Tagged(event, tags)
+        }
+        persistAll(eventsToPersist) { _ ⇒
           count -= 1
           if (count == 0) sideEffects.foreach(applySideEffect)
         }

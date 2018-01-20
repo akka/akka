@@ -5,6 +5,8 @@ package akka.actor.typed
 package internal
 package adapter
 
+import java.util.concurrent.CompletionStage
+
 import akka.actor.InvalidMessageException
 import akka.{ actor ⇒ a }
 
@@ -14,6 +16,8 @@ import akka.util.Timeout
 import scala.concurrent.Future
 import akka.annotation.InternalApi
 import akka.event.typed.EventStream
+
+import scala.compat.java8.FutureConverters
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
@@ -76,6 +80,8 @@ import akka.event.typed.EventStream
     untyped.terminate().map(t ⇒ Terminated(ActorRefAdapter(t.actor))(null))(sameThreadExecutionContext)
   override lazy val whenTerminated: scala.concurrent.Future[akka.actor.typed.Terminated] =
     untyped.whenTerminated.map(t ⇒ Terminated(ActorRefAdapter(t.actor))(null))(sameThreadExecutionContext)
+  override lazy val getWhenTerminated: CompletionStage[akka.actor.typed.Terminated] =
+    FutureConverters.toJava(whenTerminated)
 
   def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(implicit timeout: Timeout): Future[ActorRef[U]] = {
     val ref = untyped.systemActorOf(PropsAdapter(() ⇒ behavior, props), name)

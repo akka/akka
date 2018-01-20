@@ -13,8 +13,8 @@ import docs.akka.cluster.typed.BasicClusterManualSpec;
 //FIXME make these tests
 public class BasicClusterExampleTest {
   public void clusterApiExample() {
-    ActorSystem<Object> system = ActorSystem.create(Actor.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
-    ActorSystem<Object> system2 = ActorSystem.create(Actor.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
+    ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
+    ActorSystem<Object> system2 = ActorSystem.create(Behaviors.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
 
     try {
       //#cluster-create
@@ -36,8 +36,8 @@ public class BasicClusterExampleTest {
   }
 
   public void clusterLeave() throws Exception {
-    ActorSystem<Object> system = ActorSystem.create(Actor.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
-    ActorSystem<Object> system2 = ActorSystem.create(Actor.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
+    ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
+    ActorSystem<Object> system2 = ActorSystem.create(Behaviors.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
 
     try {
       Cluster cluster = Cluster.get(system);

@@ -19,7 +19,7 @@ import akka.util.OptionVal
  * its child actors.
  *
  * Behaviors can be formulated in a number of different ways, either by
- * using the DSLs in [[akka.actor.typed.scaladsl.Actor]] and [[akka.actor.typed.javadsl.Actor]]
+ * using the DSLs in [[akka.actor.typed.scaladsl.Behaviors]] and [[akka.actor.typed.javadsl.Behaviors]]
  * or extending the abstract [[ExtensibleBehavior]] class.
  *
  * Closing over ActorContext makes a Behavior immobile: it cannot be moved to
@@ -42,7 +42,7 @@ sealed abstract class Behavior[T] {
 
 /**
  * Extension point for implementing custom behaviors in addition to the existing
- * set of behaviors available through the DSLs in [[akka.actor.typed.scaladsl.Actor]] and [[akka.actor.typed.javadsl.Actor]]
+ * set of behaviors available through the DSLs in [[akka.actor.typed.scaladsl.Behaviors]] and [[akka.actor.typed.javadsl.Behaviors]]
  */
 abstract class ExtensibleBehavior[T] extends Behavior[T] {
   /**
@@ -220,6 +220,24 @@ object Behavior {
       case UnhandledBehavior             ⇒ current
       case deferred: DeferredBehavior[T] ⇒ canonicalize(deferred(ctx), deferred, ctx)
       case other                         ⇒ other
+    }
+
+  /**
+   * INTERNAL API
+   *
+   * Return special behaviors as is, undefer deferred, if behavior is "non-special" apply the wrap function `f` to get
+   * and return the result from that. Useful for cases where a [[Behavior]] implementation that is decorating another
+   * behavior has processed a message and needs to re-wrap the resulting behavior with itself.
+   */
+  @InternalApi
+  @tailrec
+  private[akka] def wrap[T, U](currentBehavior: Behavior[_], nextBehavior: Behavior[T], ctx: ActorContext[T])(f: Behavior[T] ⇒ Behavior[U]): Behavior[U] =
+    nextBehavior match {
+      case SameBehavior | `currentBehavior` ⇒ same
+      case UnhandledBehavior                ⇒ unhandled
+      case StoppedBehavior                  ⇒ stopped
+      case deferred: DeferredBehavior[T]    ⇒ wrap(currentBehavior, undefer(deferred, ctx), ctx)(f)
+      case other                            ⇒ f(other)
     }
 
   @tailrec

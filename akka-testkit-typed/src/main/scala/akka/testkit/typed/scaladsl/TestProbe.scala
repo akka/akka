@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 import java.util.concurrent.BlockingDeque
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.ActorSystem
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicInteger
@@ -34,9 +34,9 @@ object TestProbe {
   def apply[M](name: String)(implicit system: ActorSystem[_]): TestProbe[M] =
     new TestProbe(name)
 
-  private def testActor[M](queue: BlockingDeque[M]): Behavior[M] = Actor.immutable { (ctx, msg) ⇒
+  private def testActor[M](queue: BlockingDeque[M]): Behavior[M] = Behaviors.immutable { (ctx, msg) ⇒
     queue.offerLast(msg)
-    Actor.same
+    Behaviors.same
   }
 }
 
@@ -202,8 +202,15 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
 
   /**
    * Assert that no message is received for the specified time.
+   * Supplied value is not dilated.
    */
-  def expectNoMsg(max: FiniteDuration) { expectNoMsg_internal(max.dilated) }
+  def expectNoMessage(max: FiniteDuration) { expectNoMsg_internal(max) }
+
+  /**
+   * Assert that no message is received. Waits for the default period configured as `akka.actor.typed.test.expect-no-message-default`
+   * That value is dilated.
+   */
+  def expectNoMessage() { expectNoMsg_internal(settings.ExpectNoMessageDefaultTimeout.dilated) }
 
   private def expectNoMsg_internal(max: FiniteDuration) {
     val o = receiveOne(max)
