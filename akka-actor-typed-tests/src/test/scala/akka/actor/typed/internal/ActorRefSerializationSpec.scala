@@ -3,14 +3,14 @@
   */
 package akka.actor.typed.internal
 
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.serialization.SerializationExtension
+import akka.actor.typed.{ ActorRef, TypedAkkaSpecWithShutdown }
+import akka.serialization.{ JavaSerializer, SerializationExtension }
 import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
 
-object MiscMessageSerializerSpec {
+object ActorRefSerializationSpec {
   def config = ConfigFactory.parseString(
     """
       akka.actor {
@@ -20,14 +20,17 @@ object MiscMessageSerializerSpec {
       akka.remote.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
     """)
+
+  case class MessageWrappingActorRef(s: String, ref: ActorRef[Unit]) extends java.io.Serializable
 }
 
-class MiscMessageSerializerSpec extends TestKit(MiscMessageSerializerSpec.config) with TypedAkkaSpecWithShutdown {
+class ActorRefSerializationSpec extends TestKit(ActorRefSerializationSpec.config) with TypedAkkaSpecWithShutdown {
 
   val serialization = SerializationExtension(system.toUntyped)
 
-  "MiscMessageSerializer" must {
-    def checkSerialization(obj: AnyRef): Unit = {
+  "ActorRef[T]" must {
+    "be serialized and deserialized by MiscMessageSerializer" in {
+      val obj = spawn(Behaviors.empty[Unit])
       serialization.findSerializerFor(obj) match {
         case serializer: MiscMessageSerializer ⇒
           val blob = serializer.toBinary(obj)
@@ -38,9 +41,18 @@ class MiscMessageSerializerSpec extends TestKit(MiscMessageSerializerSpec.config
       }
     }
 
-    "must serialize and deserialize typed actor refs" in {
+    "be serialized and deserialized by JavaSerializer inside another java.io.Serializable message" in {
       val ref = spawn(Behaviors.empty[Unit])
-      checkSerialization(ref)
+      val obj = ActorRefSerializationSpec.MessageWrappingActorRef("some message", ref)
+
+      serialization.findSerializerFor(obj) match {
+        case serializer: JavaSerializer ⇒
+          val blob = serializer.toBinary(obj)
+          val restored = serializer.fromBinary(blob, None)
+          restored should ===(obj)
+        case s ⇒
+          throw new IllegalStateException(s"Wrong serializer ${s.getClass} for ${obj.getClass}")
+      }
     }
   }
 }
