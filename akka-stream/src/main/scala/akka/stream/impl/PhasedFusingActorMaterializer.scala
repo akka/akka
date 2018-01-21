@@ -24,9 +24,11 @@ import org.reactivestreams.{ Processor, Publisher, Subscriber }
 
 import scala.collection.immutable.Map
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
 import scala.annotation.tailrec
-import akka.util.OptionVal
+import akka.util.{ OptionVal, PrettyDuration }
+
+import scala.util.{ Failure, Success }
 
 /**
  * INTERNAL API
@@ -431,6 +433,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     val traversalStack = new java.util.ArrayDeque[Traversal](16)
     traversalStack.addLast(current)
 
+    var needsFlattening = false
     val matValueStack = new java.util.ArrayDeque[Any](8)
 
     if (Debug) {
@@ -478,7 +481,18 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
           case compose: Compose ⇒
             val second = matValueStack.removeLast()
             val first = matValueStack.removeLast()
-            val result = compose(first, second)
+
+            val result =
+              if (needsFlattening && (first.isInstanceOf[FlattenMatHolder[_]] || second.isInstanceOf[FlattenMatHolder[_]])) {
+                (first, second) match {
+                  case (FlattenMatHolder(f1, t1), FlattenMatHolder(f2, t2)) ⇒
+                    FlattenMatHolder[Any](f1.zip(f2).map({ case (left, right) ⇒ compose(left, right) })(system.dispatcher), t1) // FIXME dedicate a dispatcher thread?
+                  case (FlattenMatHolder(f1, t1), v2) ⇒
+                    FlattenMatHolder(f1.map(compose(_, v2))(system.dispatcher), t1) // FIXME dedicate a dispatcher thread?
+                  case (v1, FlattenMatHolder(f2, t2)) ⇒
+                    FlattenMatHolder(f2.map(compose(v1, _))(system.dispatcher), t2) // FIXME dedicate a dispatcher thread?
+                }
+              } else compose(first, second)
             matValueStack.addLast(result)
             if (Debug) println(s"COMP: $matValueStack")
           case PushAttributes(attr) ⇒
@@ -491,6 +505,13 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
             islandTracking.enterIsland(tag, attributesStack.getLast)
           case ExitIsland ⇒
             islandTracking.exitIsland()
+          case flatten: FlattenMat ⇒
+            val prev = matValueStack.removeLast()
+            if (!prev.isInstanceOf[Future[_]]) throw new IllegalArgumentException("flattenMaterializedValue MUST be applied immediately after a materialized value ")
+            val result = FlattenMatHolder(prev.asInstanceOf[Future[Mat]], flatten.timeout)
+            needsFlattening = true
+            matValueStack.addLast(result)
+            if (Debug) println(s"FLTN: $matValueStack")
           case _ ⇒
         }
         current = nextStep
@@ -504,7 +525,23 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
       islandTracking.allNestedIslandsReady()
 
       if (Debug) println("--- Finished materialization")
-      matValueStack.peekLast().asInstanceOf[Mat]
+      matValueStack.peekLast() match {
+        case FlattenMatHolder(f: Future[Mat @unchecked], t) ⇒
+          f.value match {
+            case Some(Success(m))  ⇒ m
+            case Some(Failure(ex)) ⇒ throw new Exception("Flattened materialized value failed!", ex)
+            case None ⇒
+              // last resort, await
+              val start = System.currentTimeMillis()
+              val mat = Await.result(f, t)
+              val stop = System.currentTimeMillis()
+              import scala.concurrent.duration._
+              println(s"Waiting took: >>> ${PrettyDuration.format((stop - start).millis)} <<<")
+              mat
+          }
+
+        case mat: Mat ⇒ mat
+      }
 
     } finally {
       if (isShutdown) throw shutdownWhileMaterializingFailure

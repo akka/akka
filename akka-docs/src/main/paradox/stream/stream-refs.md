@@ -69,11 +69,17 @@ That sink materializes the `SourceRef` that you can then send to other nodes. Pl
 Scala
 :   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-source }
 
+Java
+:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-source }
+
 The origin actor which creates and owns the Source could also perform some validation or additional setup
 when preparing the source. Once it has handed out the `SourceRef` the remote side can run it like this:
 
 Scala
 :   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-source-use }
+
+Java
+:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-source-use }
 
 The process of preparing and running a `SourceRef` powered distributed stream is shown by the animation below:
 
@@ -104,15 +110,22 @@ into various other systems (e.g. any of the Alpakka provided Sinks).
 Scala
 :   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-sink }
 
+Java
+:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-sink }
+
 Using the offered `SinkRef` to send data to the origin of the Sink is also simple, as we can treat the 
 SinkRef just as any other Sink and directly `runWith` or `run` with it.
 
 Scala
 :   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-sink-use }
 
+Java
+:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-sink-use }
 
+The process of preparing and running a `SinkRef` powered distributed stream is shown by the animation below: 
 
-![simple-graph-example.png](../images/sink-ref-dance.png)
+![SourceRef usage animation](../images/sink-ref-animation.gif)
+
 
 @@@ warning
   A `SinkeRef` is *by design* "single-shot". i.e. it may only be materialized once.
@@ -127,14 +140,12 @@ Scala
 ## Bulk Stream References
 
 @@@ warning
-  Not yet implemented. See ticket ...... FIXME, ticket number 
+  Bulk stream references are not implemented yet.
+  See ticket [Bulk Transfer Stream Refs #24276](https://github.com/akka/akka/issues/24276) to track progress or signal demand for this feature.  
 @@@
 
-Bulk stream references can be used to create simple to use side-channels to transfer humongous amounts 
+Bulk stream refs can be used to create simple to use side-channels to transfer humongous amounts 
 of data such as huge log files, messages or even media, with as much ease as if it was a trivial local stream.
-
-Connections for each stream ref bulk stream ref are established independently, and do not utilise
-actor messaging (which is not designed for such bulk transfers, but rather small messages).
 
 ## Configuration
 
@@ -156,6 +167,8 @@ globally (`akka.stream.materializer.stream-ref.subscription-timeout`), but also 
 Scala
 :   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #attr-sub-timeout }
 
+Java
+:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #attr-sub-timeout }
 
 
 ## General configuration

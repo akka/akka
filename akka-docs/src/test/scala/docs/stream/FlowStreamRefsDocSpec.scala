@@ -62,8 +62,8 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     import akka.pattern._
     import akka.stream.SinkRef
 
-    case class PrepareUpload(sourceId: String)
-    case class MeasurementsSinkReady(sourceId: String, sinkRef: SinkRef[String])
+    case class PrepareUpload(id: String)
+    case class MeasurementsSinkReady(id: String, sinkRef: SinkRef[String])
 
     class DataReceiver extends Actor {
 
@@ -112,7 +112,7 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     import scala.concurrent.duration._
     import akka.stream.StreamRefAttributes
 
-    // configuring SourceRef.sink (notice that we apply the attributes to the Sink!):
+    // configuring Sink.sourceRef (notice that we apply the attributes to the Sink!):
     Source.repeat("hello")
       .runWith(Sink.sourceRef().addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds)))
 

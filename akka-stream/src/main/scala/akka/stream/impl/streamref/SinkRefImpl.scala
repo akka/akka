@@ -6,7 +6,7 @@ package akka.stream.impl.streamref
 import scala.language.implicitConversions
 import akka.Done
 import akka.NotUsed
-import akka.actor.{ ActorRef, Terminated }
+import akka.actor.{ ActorRef, ActorSystem, Terminated }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream._
@@ -20,10 +20,8 @@ import scala.util.Try
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi
 private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) extends SinkRef[In] {
-  override def sink: Sink[In, NotUsed] =
+  override def sink(): Sink[In, NotUsed] =
     Sink.fromGraph(new SinkRefStageImpl[In](OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ ⇒ NotUsed)
-
-  override def getSink: javadsl.Sink[In, NotUsed] = sink.asJava
 }
 
 /**
@@ -35,7 +33,7 @@ private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) ex
 @InternalApi
 private[stream] final class SinkRefStageImpl[In] private[akka] (
   val initialPartnerRef: OptionVal[ActorRef]
-) extends GraphStageWithMaterializedValue[SinkShape[In], SourceRef[In]] {
+) extends GraphStageWithMaterializedValue[SinkShape[In], Future[SourceRef[In]]] {
 
   val in: Inlet[In] = Inlet[In](s"${Logging.simpleName(getClass)}($initialRefName).in")
   override def shape: SinkShape[In] = SinkShape.of(in)
@@ -199,10 +197,9 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
       }
 
       setHandler(in, this)
-
     }
 
-    (logic, MaterializedSourceRef[In](promise.future))
+    (logic, promise.future)
   }
 
   override def toString = s"${Logging.simpleName(getClass)}($initialRefName)"

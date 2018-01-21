@@ -25,6 +25,7 @@ import scala.compat.java8.OptionConverters._
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
 
+import akka.annotation.InternalApi
 import akka.stream.scaladsl.Sink
 
 import scala.compat.java8.FutureConverters._
@@ -483,6 +484,13 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): Source[Out, Mat2] =
     new Source(delegate.mapMaterializedValue(f.apply _))
+
+  /**
+   * INTERNAL API: Unsafe BLOCKING flattening if current materialized value is a Future.
+   */
+  @InternalApi
+  private[akka] def flattenMaterializedValue[Mat2](timeout: FiniteDuration): Source[Out, Mat2] =
+    new Source(delegate.flattenMaterializedValue[Mat2](timeout))
 
   /**
    * Transform this [[Source]] by appending the given processing stages.
