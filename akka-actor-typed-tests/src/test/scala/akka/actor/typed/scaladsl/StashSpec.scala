@@ -17,6 +17,7 @@ object StashSpec {
   case object UnstashAll extends Command
   case object Unstash extends Command
   final case class GetProcessed(replyTo: ActorRef[Vector[String]]) extends Command
+  final case class GetStashSize(replyTo: ActorRef[Int]) extends Command
 
   // FIXME replace when we get the logging in place, #23326
   def log(ctx: ActorContext[_]): LoggingAdapter = ctx.system.log
@@ -30,7 +31,10 @@ object StashSpec {
           replyTo ! processed
           Behaviors.same
         case Stash ⇒
-          stashing(ImmutableStashBuffer.empty(10), processed)
+          stashing(ImmutableStashBuffer(capacity = 10), processed)
+        case GetStashSize(replyTo) ⇒
+          replyTo ! 0
+          Behaviors.same
         case UnstashAll ⇒
           Behaviors.unhandled
         case Unstash ⇒
@@ -45,8 +49,10 @@ object StashSpec {
       cmd match {
         case msg: Msg ⇒
           stashing(buffer :+ msg, processed)
-        case GetProcessed(replyTo) ⇒
-          replyTo ! processed
+        case g: GetProcessed ⇒
+          stashing(buffer :+ g, processed)
+        case GetStashSize(replyTo) ⇒
+          replyTo ! buffer.size
           Behaviors.same
         case UnstashAll ⇒
           buffer.unstashAll(ctx, active(processed))
@@ -95,6 +101,9 @@ object StashSpec {
             log(ctx).debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
             buffer.unstash(ctx, unstashing(buffer.drop(numberOfMessages), processed), numberOfMessages, Unstashed)
           }
+        case GetStashSize(replyTo) ⇒
+          replyTo ! buffer.size
+          Behaviors.same
         case UnstashAll ⇒
           Behaviors.unhandled
         case u: Unstashed ⇒
@@ -102,16 +111,86 @@ object StashSpec {
       }
     }
 
+  class MutableStash(ctx: ActorContext[Command]) extends Behaviors.MutableBehavior[Command] {
+
+    private val buffer = MutableStashBuffer.apply[Command](capacity = 10)
+    private var stashing = false
+    private var processed = Vector.empty[String]
+
+    override def onMessage(cmd: Command): Behavior[Command] = {
+      cmd match {
+        case msg: Msg ⇒
+          if (stashing)
+            buffer.stash(msg)
+          else
+            processed :+= msg.s
+          this
+        case g @ GetProcessed(replyTo) ⇒
+          if (stashing)
+            buffer.stash(g)
+          else
+            replyTo ! processed
+          this
+        case GetStashSize(replyTo) ⇒
+          replyTo ! buffer.size
+          this
+        case Stash ⇒
+          stashing = true
+          this
+        case UnstashAll ⇒
+          stashing = false
+          buffer.unstashAll(ctx, this)
+        case Unstash ⇒
+          if (buffer.isEmpty) {
+            stashing = false
+            this
+          } else {
+            ctx.self ! Unstash // continue unstashing until buffer is empty
+            val numberOfMessages = 2
+            log(ctx).debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
+            buffer.unstash(ctx, this, numberOfMessages, Unstashed)
+          }
+        case Unstashed(msg: Msg) ⇒
+          log(ctx).debug(s"unstashed $msg")
+          processed :+= msg.s
+          this
+        case Unstashed(GetProcessed(replyTo)) ⇒
+          log(ctx).debug(s"unstashed GetProcessed")
+          replyTo ! processed
+          Behaviors.same
+        case _: Unstashed ⇒
+          Behaviors.unhandled
+      }
+    }
+
+  }
+
 }
 
-class StashSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class ImmutableStashSpec extends StashSpec {
+  import StashSpec._
+  def testQualifier: String = "immutable behavior"
+  def behaviorUnderTest: Behavior[Command] = active(Vector.empty)
+}
+
+class MutableStashSpec extends StashSpec {
+  import StashSpec._
+  def testQualifier: String = "mutable behavior"
+  def behaviorUnderTest: Behavior[Command] = Behaviors.mutable(ctx ⇒ new MutableStash(ctx))
+}
+
+abstract class StashSpec extends TestKit with TypedAkkaSpecWithShutdown {
   import StashSpec._
 
-  "Stashing with immutable behavior" must {
+  def testQualifier: String
+  def behaviorUnderTest: Behavior[Command]
+
+  s"Stashing with $testQualifier" must {
 
     "support unstash all" in {
-      val actor = spawn(active(Vector.empty))
+      val actor = spawn(behaviorUnderTest)
       val probe = TestProbe[Vector[String]]("probe")
+      val sizeProbe = TestProbe[Int]("sizeProbe")
 
       actor ! Msg("a")
       actor ! Msg("b")
@@ -119,11 +198,10 @@ class StashSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
       actor ! Stash
       actor ! Msg("d")
-      actor ! GetProcessed(probe.ref)
-      probe.expectMsg(Vector("a", "b", "c"))
-
       actor ! Msg("e")
       actor ! Msg("f")
+      actor ! GetStashSize(sizeProbe.ref)
+      sizeProbe.expectMsg(3)
 
       actor ! UnstashAll
       actor ! GetProcessed(probe.ref)
@@ -131,8 +209,9 @@ class StashSpec extends TestKit with TypedAkkaSpecWithShutdown {
     }
 
     "support unstash a few at a time" in {
-      val actor = spawn(active(Vector.empty))
+      val actor = spawn(behaviorUnderTest)
       val probe = TestProbe[Vector[String]]("probe")
+      val sizeProbe = TestProbe[Int]("sizeProbe")
 
       actor ! Msg("a")
       actor ! Msg("b")
@@ -140,12 +219,10 @@ class StashSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
       actor ! Stash
       actor ! Msg("d")
-      actor ! GetProcessed(probe.ref)
-      probe.expectMsg(Vector("a", "b", "c"))
-
       actor ! Msg("e")
       actor ! Msg("f")
-      // now 3 messages are stashed
+      actor ! GetStashSize(sizeProbe.ref)
+      sizeProbe.expectMsg(3)
 
       actor ! Unstash
       actor ! Msg("g") // might arrive in the middle of the unstashing
