@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 import akka.{ Done, NotUsed }
 import akka.dispatch.ExecutionContexts
 import akka.actor.{ ActorRef, Props, Status }
+import akka.annotation.InternalApi
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl._
@@ -19,6 +20,7 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
@@ -57,6 +59,15 @@ final class Sink[-In, +Mat](
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =
     new Sink(
       traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]),
+      shape)
+
+  /**
+   * INTERNAL API: Unsafe BLOCKING flattening if current materialized value is a Future.
+   */
+  @InternalApi
+  private[akka] def flattenMaterializedValue[Mat2](timeout: FiniteDuration): Sink[In, Mat2] =
+    new Sink(
+      traversalBuilder.flattenMat(timeout),
       shape)
 
   /**
@@ -461,6 +472,10 @@ object Sink {
    *
    * See more detailed documentation on [[SourceRef]].
    */
-  def sourceRef[T](): Sink[T, SourceRef[T]] =
-    Sink.fromGraph(new SinkRefStageImpl[T](OptionVal.None))
+  def sourceRef[T](): Sink[T, SourceRef[T]] = {
+    import scala.concurrent.duration._
+    val sink = Sink.fromGraph(new SinkRefStageImpl[T](OptionVal.None))
+    sink.flattenMaterializedValue[SourceRef[T]](10.seconds)
+  }
+
 }

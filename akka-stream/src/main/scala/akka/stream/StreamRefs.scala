@@ -4,7 +4,7 @@
 package akka.stream
 
 import akka.NotUsed
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.stream.scaladsl.{ Sink, Source }
 
 import scala.language.implicitConversions
@@ -14,7 +14,7 @@ import scala.language.implicitConversions
  */
 object SinkRef {
   /** Implicitly converts a [[SinkRef]] to a [[Sink]]. The same can be achieved by calling `.sink` on the reference. */
-  implicit def convertRefToSink[T](sinkRef: SinkRef[T]): Sink[T, NotUsed] = sinkRef.sink
+  implicit def convertRefToSink[T](sinkRef: SinkRef[T]): Sink[T, NotUsed] = sinkRef.sink()
 }
 
 /**
@@ -33,9 +33,9 @@ object SinkRef {
 trait SinkRef[In] {
 
   /** Scala API: Get [[Sink]] underlying to this source ref. */
-  def sink: Sink[In, NotUsed]
+  def sink(): Sink[In, NotUsed]
   /** Java API: Get [[javadsl.Sink]] underlying to this source ref. */
-  def getSink: javadsl.Sink[In, NotUsed]
+  final def getSink(): javadsl.Sink[In, NotUsed] = sink().asJava
 }
 
 /**
@@ -63,7 +63,7 @@ trait SourceRef[T] {
   /** Scala API: Get [[Source]] underlying to this source ref. */
   def source: Source[T, NotUsed]
   /** Java API: Get [[javadsl.Source]] underlying to this source ref. */
-  def getSource: javadsl.Source[T, NotUsed]
+  final def getSource: javadsl.Source[T, NotUsed] = source.asJava
 }
 
 // --- exceptions ---

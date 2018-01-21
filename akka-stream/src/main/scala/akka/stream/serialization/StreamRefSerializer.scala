@@ -7,10 +7,10 @@ import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
-import akka.stream.StreamRefMessages
+import akka.stream.{ SourceRef, StreamRefMessages }
 import akka.stream.impl.streamref._
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import scala.concurrent.Await
 
 /** INTERNAL API */
@@ -39,9 +39,9 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
     case _: StreamRefsProtocol.RemoteStreamCompleted ⇒ RemoteSinkCompletedManifest
     // refs
     case _: SourceRefImpl[_]                         ⇒ SourceRefManifest
-    case _: MaterializedSourceRef[_]                 ⇒ SourceRefManifest
+    //    case _: MaterializedSourceRef[_]                 ⇒ SourceRefManifest
     case _: SinkRefImpl[_]                           ⇒ SinkRefManifest
-    case _: MaterializedSinkRef[_]                   ⇒ SinkRefManifest
+    //    case _: MaterializedSinkRef[_]                   ⇒ SinkRefManifest
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
@@ -55,9 +55,9 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
     case d: StreamRefsProtocol.RemoteStreamCompleted ⇒ serializeRemoteSinkCompleted(d).toByteArray
     // refs
     case ref: SinkRefImpl[_]                         ⇒ serializeSinkRef(ref).toByteArray
-    case ref: MaterializedSinkRef[_]                 ⇒ serializeSinkRef(Await.result(ref.futureSink, 100.millis)).toByteArray
+    //    case ref: MaterializedSinkRef[_]                 ⇒ ??? // serializeSinkRef(ref).toByteArray
     case ref: SourceRefImpl[_]                       ⇒ serializeSourceRef(ref).toByteArray
-    case ref: MaterializedSourceRef[_]               ⇒ serializeSourceRef(Await.result(ref.futureSource, 100.millis)).toByteArray
+    //    case ref: MaterializedSourceRef[_]               ⇒ serializeSourceRef(ref.).toByteArray
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {

@@ -14,7 +14,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
 
-import scala.concurrent.Promise
+import scala.concurrent.{ Future, Promise }
 import scala.language.implicitConversions
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
@@ -22,8 +22,6 @@ import scala.language.implicitConversions
 private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) extends SourceRef[T] {
   def source: Source[T, NotUsed] =
     Source.fromGraph(new SourceRefStageImpl(OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ ⇒ NotUsed)
-
-  def getSource: javadsl.Source[T, NotUsed] = source.asJava
 }
 
 /**
@@ -35,7 +33,7 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
 @InternalApi
 private[stream] final class SourceRefStageImpl[Out](
   val initialPartnerRef: OptionVal[ActorRef]
-) extends GraphStageWithMaterializedValue[SourceShape[Out], SinkRef[Out]] {
+) extends GraphStageWithMaterializedValue[SourceShape[Out], Future[SinkRef[Out]]] { stage ⇒
 
   val out: Outlet[Out] = Outlet[Out](s"${Logging.simpleName(getClass)}.out")
   override def shape = SourceShape.of(out)
@@ -46,7 +44,7 @@ private[stream] final class SourceRefStageImpl[Out](
       case _                   ⇒ "<no-initial-ref>"
     }
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, SinkRef[Out]) = {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[SinkRef[Out]]) = {
     val promise = Promise[SinkRefImpl[Out]]()
 
     val logic = new TimerGraphStageLogic(shape) with StageLogging with OutHandler {
@@ -226,7 +224,8 @@ private[stream] final class SourceRefStageImpl[Out](
 
       setHandler(out, this)
     }
-    (logic, MaterializedSinkRef[Out](promise.future))
+    //    (logic, MaterializedSinkRef[Out](promise.future))
+    (logic, promise.future)
   }
 
   override def toString: String =

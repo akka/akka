@@ -4,9 +4,11 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.CompletionStage
+
 import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
+import akka.annotation.InternalApi
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
@@ -24,7 +26,6 @@ import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
-
 import akka.stream.impl.streamref.SourceRefStageImpl
 import akka.stream.stage.{ GraphStage, GraphStageWithMaterializedValue }
 import akka.util.OptionVal
@@ -91,6 +92,13 @@ final class Source[+Out, +Mat](
    */
   override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
     new Source[Out, Mat2](traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]), shape)
+
+  /**
+   * INTERNAL API: Unsafe BLOCKING flattening if current materialized value is a Future.
+   */
+  @InternalApi
+  private[akka] override def flattenMaterializedValue[Mat2](timeout: FiniteDuration): ReprMat[Out, Mat2] =
+    new Source[Out, Mat2](traversalBuilder.flattenMat(timeout), shape)
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
@@ -617,6 +625,9 @@ object Source {
    *
    * See more detailed documentation on [[SinkRef]].
    */
-  def sinkRef[T](): Source[T, SinkRef[T]] =
-    Source.fromGraph(new SourceRefStageImpl[T](OptionVal.None))
+  def sinkRef[T](): Source[T, SinkRef[T]] = {
+    import scala.concurrent.duration._
+    val value: Source[T, Future[SinkRef[T]]] = Source.fromGraph(new SourceRefStageImpl[T](OptionVal.None))
+    value.flattenMaterializedValue[SinkRef[T]](1.second)
+  }
 }
