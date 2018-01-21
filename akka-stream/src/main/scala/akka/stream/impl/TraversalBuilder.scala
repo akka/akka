@@ -13,6 +13,8 @@ import akka.util.OptionVal
 
 import scala.language.existentials
 import scala.collection.immutable.Map.Map1
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ Await, Future }
 
 /**
  * INTERNAL API
@@ -154,6 +156,12 @@ import scala.collection.immutable.Map.Map1
 @InternalApi private[akka] final case class Transform(mapper: AnyFunction1) extends MaterializedValueOp {
   def apply(arg: Any): Any = mapper.asInstanceOf[Any ⇒ Any](arg)
 }
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final case class FlattenMat(timeout: FiniteDuration) extends MaterializedValueOp
+/** INTERNAL API */
+@InternalApi private[akka] final case class FlattenMatHolder[M](f: Future[M], timeout: FiniteDuration)
 
 /**
  * INTERNAL API
@@ -365,6 +373,8 @@ import scala.collection.immutable.Map.Map1
    */
   def transformMat(f: AnyFunction1): TraversalBuilder
 
+  def flattenMat(timeout: FiniteDuration): TraversalBuilder
+
   protected def internalSetAttributes(attributes: Attributes): TraversalBuilder
 
   def setAttributes(attributes: Attributes): TraversalBuilder = {
@@ -480,6 +490,9 @@ import scala.collection.immutable.Map.Map1
   override def transformMat(f: AnyFunction1): TraversalBuilder =
     copy(traversalSoFar = traversalSoFar.concat(Transform(f)))
 
+  override def flattenMat(timeout: FiniteDuration): TraversalBuilder =
+    copy(traversalSoFar = traversalSoFar.concat(FlattenMat(timeout)))
+
   override def offsetOf(in: InPort): Int = inToOffset(in)
 
   override def isTraversalComplete: Boolean = true
@@ -531,6 +544,9 @@ import scala.collection.immutable.Map.Map1
 
   override def transformMat(f: AnyFunction1): TraversalBuilder =
     TraversalBuilder.empty().add(this, module.shape, Keep.right).transformMat(f)
+
+  override def flattenMat(timeout: FiniteDuration): TraversalBuilder =
+    TraversalBuilder.empty().add(this, module.shape, Keep.right).flattenMat(timeout)
 
   override val inSlots: Int = module.shape.inlets.size
 
@@ -1051,6 +1067,15 @@ import scala.collection.immutable.Map.Map1
   }
 
   /**
+   * UNSAFE API: May cause blocking DURING MATERIALIZATION.
+   * Use this API only in places where it is KNOWN that the flattened Future will be completed ASAP (less than a few ms, zero at best).
+   * WITH GREAT POWER, COMES GREAT RESPONSIBILITY.
+   */
+  override def flattenMat(timeout: FiniteDuration): LinearTraversalBuilder = {
+    copy(traversalSoFar = traversalSoFar.concat(FlattenMat(timeout)))
+  }
+
+  /**
    * Wraps the builder in an island that can be materialized differently, using async boundaries to bridge
    * between islands.
    */
@@ -1300,6 +1325,9 @@ import scala.collection.immutable.Map.Map1
 
   override def transformMat(f: AnyFunction1): TraversalBuilder = {
     copy(finalSteps = finalSteps.concat(Transform(f)))
+  }
+  override def flattenMat(timeout: FiniteDuration): TraversalBuilder = {
+    copy(finalSteps = finalSteps.concat(FlattenMat(timeout)))
   }
 
   override def makeIsland(islandTag: IslandTag): TraversalBuilder = {

@@ -43,7 +43,7 @@ object StreamRefsSpec {
 
       case "give-infinite" ⇒
         val source: Source[String, NotUsed] = Source.fromIterator(() ⇒ Iterator.from(1)).map("ping-" + _)
-        val ref: SourceRef[String] = source.runWith(Sink.sourceRef())
+        val (r: NotUsed, ref: SourceRef[String]) = source.toMat(Sink.sourceRef())(Keep.both).run()
 
         sender() ! ref
 
@@ -85,14 +85,14 @@ object StreamRefsSpec {
          * For them it's a Sink; for us it's a Source.
          */
         val sink: SinkRef[String] =
-          Source.sinkRef[String]
+          Source.sinkRef[String]()
             .to(Sink.actorRef(probe, "<COMPLETE>"))
             .run()
 
         sender() ! sink
 
       case "receive-subscribe-timeout" ⇒
-        val sink = Source.sinkRef[String]
+        val sink = Source.sinkRef[String]()
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
           .to(Sink.actorRef(probe, "<COMPLETE>"))
           .run()
@@ -100,7 +100,7 @@ object StreamRefsSpec {
         sender() ! sink
 
       case "receive-32" ⇒
-        val (sink, driver) = Source.sinkRef[String]
+        val (sink, driver) = Source.sinkRef[String]()
           .toMat(TestSink.probe(context.system))(Keep.both)
           .run()
 
