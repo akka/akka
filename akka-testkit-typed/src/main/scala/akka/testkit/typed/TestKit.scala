@@ -64,8 +64,9 @@ class TestKit(name: String, config: Option[Config]) extends TestKitBase {
   def this(name: String) = this(name, None)
   def this(config: Config) = this(TestKit.getCallerName(classOf[TestKit]), Some(config))
   def this(name: String, config: Config) = this(name, Some(config))
+
   import TestKit._
-  implicit val system = ActorSystem(testKitGuardian, name, config = config)
+  implicit val system: ActorSystem[TestKitCommand] = ActorSystem(testKitGuardian, name, config = config)
 }
 
 @ApiMayChange

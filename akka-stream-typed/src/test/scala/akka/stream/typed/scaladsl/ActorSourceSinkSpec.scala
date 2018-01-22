@@ -4,15 +4,15 @@
 package akka.stream.typed.scaladsl
 
 import akka.actor.typed.scaladsl.Actor
+import akka.actor.typed.{ ActorRef, TypedAkkaSpec }
 import akka.stream.OverflowStrategy
-import akka.actor.typed.{ ActorRef, ActorSystem }
-import akka.testkit.TestKit
-import akka.testkit.typed.scaladsl._
 import akka.stream.scaladsl.{ Keep, Sink, Source }
 import akka.stream.typed.ActorMaterializer
-import akka.testkit.typed.TestKitSettings
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+import akka.stream.typed.scaladsl.ActorSourceSinkSpec.AckProto
+import akka.testkit.typed.TestKit
+import akka.testkit.typed.scaladsl._
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
 object ActorSourceSinkSpec {
 
@@ -23,21 +23,11 @@ object ActorSourceSinkSpec {
   case object Failed extends AckProto
 }
 
-class ActorSourceSinkSpec extends TestKit(akka.actor.ActorSystem("ActorSourceSinkSpec")) with WordSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures {
+class ActorSourceSinkSpec extends TestKit with TypedAkkaSpec with WordSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures {
   import ActorSourceSinkSpec._
   import akka.actor.typed.scaladsl.adapter._
 
-  // FIXME use Typed Teskit
-  // The materializer creates a top-level actor when materializing a stream.
-  // Currently that is not supported, because a Typed Teskit uses a typed actor system
-  // with a custom guardian. Because of custom guardian, an exception is being thrown
-  // when trying to create a top level actor during materialization.
-  implicit val sys = ActorSystem.wrap(system)
-  implicit val testkitSettings = TestKitSettings(sys)
   implicit val mat = ActorMaterializer()
-
-  override protected def afterAll(): Unit =
-    sys.terminate()
 
   "ActorSink" should {
 
@@ -59,24 +49,21 @@ class ActorSourceSinkSpec extends TestKit(akka.actor.ActorSystem("ActorSourceSin
     "obey protocol" in {
       val p = TestProbe[AckProto]()
 
-      val autoPilot = Actor.immutable[AckProto] {
-        (ctx, msg) ⇒
-          msg match {
-            case m @ Init(sender) ⇒
-              p.ref ! m
-              sender ! "ACK"
-              Actor.same
-            case m @ Msg(sender, _) ⇒
-              p.ref ! m
-              sender ! "ACK"
-              Actor.same
-            case m ⇒
-              p.ref ! m
-              Actor.same
-          }
-      }
-
-      val pilotRef: ActorRef[AckProto] = system.actorOf(PropsAdapter(autoPilot))
+      val pilotRef = spawn(Actor.immutable[AckProto] { (ctx, msg) ⇒
+        msg match {
+          case m @ Init(sender) ⇒
+            p.ref ! m
+            sender ! "ACK"
+            Actor.same
+          case m @ Msg(sender, _) ⇒
+            p.ref ! m
+            sender ! "ACK"
+            Actor.same
+          case m ⇒
+            p.ref ! m
+            Actor.same
+        }
+      })
 
       val in =
         Source.queue[String](10, OverflowStrategy.dropBuffer)

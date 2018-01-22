@@ -6,7 +6,7 @@ package akka.stream
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
+import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ActorSystemImpl, ExtendedActorSystem, Props }
 import akka.event.LoggingAdapter
 import akka.util.Helpers.toRootLowerCase
 import akka.stream.ActorMaterializerSettings.defaultMaxFixedBufferSize
@@ -61,10 +61,19 @@ object ActorMaterializer {
       system,
       materializerSettings,
       system.dispatchers,
-      context.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName()),
+      actorOfStreamSupervisor(materializerSettings, context, haveShutDown),
       haveShutDown,
       FlowNames(system).name.copy(namePrefix))
   }
+
+  private def actorOfStreamSupervisor(materializerSettings: ActorMaterializerSettings, context: ActorRefFactory, haveShutDown: AtomicBoolean) =
+    context match {
+      case s: ExtendedActorSystem ⇒
+        s.systemActorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName())
+
+      case a: ActorContext ⇒
+        a.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName())
+    }
 
   /**
    * Scala API: * Scala API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
