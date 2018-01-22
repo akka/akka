@@ -177,4 +177,17 @@ class GraphPartitionSpec extends StreamSpec {
     }
 
   }
+
+  "divertTo must send matching elements to the sink" in assertAllStagesStopped {
+    val odd = TestSubscriber.probe[Int]()
+    val even = TestSubscriber.probe[Int]()
+    Source(1 to 2).divertTo(Sink.fromSubscriber(odd), _ % 2 != 0).to(Sink.fromSubscriber(even)).run()
+    even.request(1)
+    even.expectNoMsg(1.second)
+    odd.request(1)
+    odd.expectNext(1)
+    even.expectNext(2)
+    odd.expectComplete()
+    even.expectComplete()
+  }
 }

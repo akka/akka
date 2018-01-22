@@ -2298,6 +2298,28 @@ trait FlowOps[+Out, +Mat] {
       FlowShape(bcast.in, bcast.out(0))
     }
 
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements will be sent to the [[Sink]]
+   * instead of being passed through if the predicate `when` returns `true`.
+   *
+   * '''Emits when''' emits when an element is available from the input and the chosen output has demand
+   *
+   * '''Backpressures when''' the currently chosen output back-pressures
+   *
+   * '''Completes when''' upstream completes and no output is pending
+   *
+   * '''Cancels when''' when all downstreams cancel
+   */
+  def divertTo(that: Graph[SinkShape[Out], _], when: Out ⇒ Boolean): Repr[Out] = via(divertToGraph(that, when))
+
+  protected def divertToGraph[M](that: Graph[SinkShape[Out], M], when: Out ⇒ Boolean): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      import GraphDSL.Implicits._
+      val partition = b.add(Partition[Out](2, out ⇒ if (when(out)) 1 else 0))
+      partition.out(1) ~> r
+      FlowShape(partition.in, partition.out(0))
+    }
+
   def withAttributes(attr: Attributes): Repr[Out]
 
   def addAttributes(attr: Attributes): Repr[Out]
@@ -2538,6 +2560,18 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def alsoToMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[Out, Mat3] =
     viaMat(alsoToGraph(that))(matF)
+
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements will be sent to the [[Sink]]
+   * instead of being passed through if the predicate `when` returns `true`.
+   *
+   * @see [[#divertTo]]
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def divertToMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2], when: Out ⇒ Boolean)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[Out, Mat3] =
+    viaMat(divertToGraph(that, when))(matF)
 
   /**
    * Materializes to `Future[Done]` that completes on getting termination message.
