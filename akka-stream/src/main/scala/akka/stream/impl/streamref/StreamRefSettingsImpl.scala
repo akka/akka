@@ -18,7 +18,7 @@ private[akka] final case class StreamRefSettingsImpl private (
 ) extends StreamRefSettings {
 
   override def withBufferCapacity(value: Int): StreamRefSettings = copy(bufferCapacity = value)
-  override def withDemandRedeliveryInterval(value: scala.concurrent.duration.FiniteDuration): StreamRefSettings = copy(demandRedeliveryInterval = value)
+  override def withDemandRedeliveryInterval(value: FiniteDuration): StreamRefSettings = copy(demandRedeliveryInterval = value)
   override def withSubscriptionTimeout(value: FiniteDuration): StreamRefSettings = copy(subscriptionTimeout = value)
 
   override def productPrefix: String = Logging.simpleName(classOf[StreamRefSettings])

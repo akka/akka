@@ -32,16 +32,6 @@ private[stream] final class StreamRefsMaster(system: ExtendedActorSystem) extend
   private[this] val sourceRefStageNames = SeqActorName("SourceRef") // "local target"
   private[this] val sinkRefStageNames = SeqActorName("SinkRef") // "remote sender"
 
-  //  // needed because serialization may want to serialize a ref, before we have finished materialization
-  //  def bufferedRefFor[T](allocatedName: String, future: Future[SourceRefImpl[T]]): SourceRef[T] = {
-  //    def mkProxyOnDemand(): ActorRef = {
-  //      log.warning("HAVE TO CREATE PROXY!!!")
-  //      val proxyName = allocatedName + "Proxy"
-  //      system.actorOf(Props(new ProxyRefFor(future)), proxyName)
-  //    }
-  //    MaterializedSourceRef[T](future)
-  //  }
-
   // TODO introduce a master with which all stages running the streams register themselves?
 
   def nextSourceRefStageName(): String =
@@ -50,30 +40,4 @@ private[stream] final class StreamRefsMaster(system: ExtendedActorSystem) extend
   def nextSinkRefStageName(): String =
     sinkRefStageNames.next()
 
-}
-
-/** INTERNAL API */
-@InternalApi
-private[akka] final class ProxyRefFor[T](futureRef: Future[SourceRefImpl[T]]) extends Actor with Stash with ActorLogging {
-  import context.dispatcher
-  import akka.pattern.pipe
-
-  override def preStart(): Unit = {
-    futureRef.pipeTo(self)
-  }
-
-  override def receive: Receive = {
-    case ref: SourceRefImpl[T] ⇒
-      log.warning("REF:::: initial = " + ref.initialPartnerRef)
-      context become initialized(ref)
-      unstashAll()
-
-    case msg ⇒
-      log.warning("Stashing [{}], since target reference is still not initialized...", msg.getClass)
-      stash()
-  }
-
-  def initialized(ref: SourceRefImpl[T]): Receive = {
-    case any ⇒ ???
-  }
 }

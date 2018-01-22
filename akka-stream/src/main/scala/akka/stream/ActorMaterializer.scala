@@ -9,13 +9,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
 import akka.event.LoggingAdapter
 import akka.util.Helpers.toRootLowerCase
-import akka.stream.ActorMaterializerSettings.defaultMaxFixedBufferSize
 import akka.stream.impl._
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.duration._
 import akka.japi.function
-import akka.stream.impl.streamref.StreamRefSettingsImpl
 import akka.stream.stage.GraphStageLogic
 
 import scala.util.control.NoStackTrace
@@ -249,7 +247,8 @@ object ActorMaterializerSettings {
     maxFixedBufferSize:          Int) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, defaultMaxFixedBufferSize, defaultIoSettings, defaultStreamRefSettings)
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, 1000, IOSettings(tcpWriteBufferSize = 16 * 1024),
+      StreamRefSettings(ConfigFactory.load().getConfig("akka.stream.materializer.stream-ref")))
 
   /**
    * Create [[ActorMaterializerSettings]] from the settings of an [[akka.actor.ActorSystem]] (Scala).
@@ -294,7 +293,8 @@ object ActorMaterializerSettings {
     maxFixedBufferSize:          Int) =
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, defaultMaxFixedBufferSize, defaultIoSettings, defaultStreamRefSettings)
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, 1000, IOSettings(tcpWriteBufferSize = 16 * 1024),
+      StreamRefSettings(ConfigFactory.load().getConfig("akka.stream.materializer.stream-ref")))
 
   /**
    * Create [[ActorMaterializerSettings]] from the settings of an [[akka.actor.ActorSystem]] (Java).
@@ -308,10 +308,6 @@ object ActorMaterializerSettings {
   def create(config: Config): ActorMaterializerSettings =
     apply(config)
 
-  private val defaultMaxFixedBufferSize = 1000
-  private val defaultIoSettings = IOSettings(tcpWriteBufferSize = 16 * 1024)
-  // sadly due to the existence of the create-from-individual-parts methods, we need to replicate the defaults here from reference.conf...
-  private val defaultStreamRefSettings: StreamRefSettings = StreamRefSettings(ConfigFactory.load().getConfig("akka.stream.materializer.stream-ref"))
 }
 
 /**
@@ -344,6 +340,57 @@ final class ActorMaterializerSettings private (
 
   requirePowerOfTwo(maxInputBufferSize, "maxInputBufferSize")
   require(initialInputBufferSize <= maxInputBufferSize, s"initialInputBufferSize($initialInputBufferSize) must be <= maxInputBufferSize($maxInputBufferSize)")
+
+  // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
+  def this(
+    initialInputBufferSize:      Int,
+    maxInputBufferSize:          Int,
+    dispatcher:                  String,
+    supervisionDecider:          Supervision.Decider,
+    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+    debugLogging:                Boolean,
+    outputBurstLimit:            Int,
+    fuzzingMode:                 Boolean,
+    autoFusing:                  Boolean,
+    maxFixedBufferSize:          Int,
+    syncProcessingLimit:         Int,
+    ioSettings:                  IOSettings) =
+    this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit, ioSettings,
+      StreamRefSettings(ConfigFactory.load().getConfig("akka.stream.materializer.stream-ref")))
+
+  // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
+  def this(
+    initialInputBufferSize:      Int,
+    maxInputBufferSize:          Int,
+    dispatcher:                  String,
+    supervisionDecider:          Supervision.Decider,
+    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+    debugLogging:                Boolean,
+    outputBurstLimit:            Int,
+    fuzzingMode:                 Boolean,
+    autoFusing:                  Boolean,
+    maxFixedBufferSize:          Int,
+    syncProcessingLimit:         Int) =
+    this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit,
+      IOSettings(tcpWriteBufferSize = 16 * 1024), StreamRefSettings(ConfigFactory.load().getConfig("akka.stream.materializer.stream-ref")))
+
+  // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
+  def this(
+    initialInputBufferSize:      Int,
+    maxInputBufferSize:          Int,
+    dispatcher:                  String,
+    supervisionDecider:          Supervision.Decider,
+    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+    debugLogging:                Boolean,
+    outputBurstLimit:            Int,
+    fuzzingMode:                 Boolean,
+    autoFusing:                  Boolean,
+    maxFixedBufferSize:          Int) =
+    this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
+      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, 1000, IOSettings(tcpWriteBufferSize = 16 * 1024),
+      StreamRefSettings(ConfigFactory.load().getConfig("akka.stream.materializer.stream-ref")))
 
   private def copy(
     initialInputBufferSize:      Int                               = this.initialInputBufferSize,

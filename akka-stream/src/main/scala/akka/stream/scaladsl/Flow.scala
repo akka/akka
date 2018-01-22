@@ -19,7 +19,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.annotation.DoNotInherit
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -112,15 +112,6 @@ final class Flow[-In, +Out, +Mat](
   override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
     new Flow(
       traversalBuilder.transformMat(f),
-      shape)
-
-  /**
-   * INTERNAL API: Unsafe BLOCKING flattening if current materialized value is a Future.
-   */
-  @InternalApi
-  private[akka] override def flattenMaterializedValue[Mat2](timeout: FiniteDuration): ReprMat[Out, Mat2] =
-    new Flow(
-      traversalBuilder.flattenMat(timeout),
       shape)
 
   /**
@@ -2564,12 +2555,6 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * Transform the materialized value of this graph, leaving all other properties as they were.
    */
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2]
-
-  /**
-   * INTERNAL API: Unsafe BLOCKING flattening if current materialized value is a Future.
-   */
-  @InternalApi
-  private[akka] def flattenMaterializedValue[Mat2](timeout: FiniteDuration): ReprMat[Out, Mat2]
 
   /**
    * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
