@@ -25,6 +25,9 @@ import akka.dispatch.sysmsg
   override def isLocal: Boolean = untyped.isLocal
   override def sendSystem(signal: internal.SystemMessage): Unit =
     ActorRefAdapter.sendSystemMessage(untyped, signal)
+
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = SerializedActorRef[T](this)
 }
 
 private[akka] object ActorRefAdapter {
