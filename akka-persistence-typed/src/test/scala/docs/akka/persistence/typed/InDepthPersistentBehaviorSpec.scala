@@ -125,6 +125,3 @@ object InDepthPersistentBehaviorSpec {
   //#behavior
 }
 
-class InDepthPersistentBehaviorSpec {
-
-}
