@@ -111,16 +111,6 @@ case object LocalScope extends LocalScope {
 }
 
 /**
- * INTERNAL API
- *
- * Used for disallowing remote deployment for adapted typed actors
- */
-@InternalApi
-private[akka] case object DisallowRemoteScope extends LocalScope {
-  def withFallback(other: Scope): Scope = this
-}
-
-/**
  * This is the default value and as such allows overrides.
  */
 @SerialVersionUID(1L)

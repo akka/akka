@@ -9,6 +9,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
+import scala.concurrent.duration._
 
 object RemoteDeployNotAllowedSpec {
   def config = ConfigFactory.parseString(
@@ -35,7 +36,7 @@ object RemoteDeployNotAllowedSpec {
     s"""
       akka.actor.deployment {
         "/*" {
-          remote = "akka.tcp://sampleActorSystem@127.0.0.1:$otherSystemPort"
+          remote = "akka://sampleActorSystem@127.0.0.1:$otherSystemPort"
         }
       }
     """).withFallback(config)
@@ -82,16 +83,18 @@ class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.conf
 
       val system2 = ActorSystem(guardianBehavior, system.name,
         RemoteDeployNotAllowedSpec.configWithRemoteDeployment(node1.selfMember.address.port.get))
+      try {
+        val node2 = Cluster(system2)
+        node2.manager ! Join(node1.selfMember.address)
 
-      val node2 = Cluster(system2)
-      node2.manager ! Join(node1.selfMember.address)
+        system2 ! SpawnChild("remoteDeployed")
+        probe.expectMsgType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
 
-      system2 ! SpawnChild("remoteDeployed")
-      probe.expectMsgType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
-
-      system2 ! SpawnAnonymous
-      probe.expectMsgType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
-
+        system2 ! SpawnAnonymous
+        probe.expectMsgType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
+      } finally {
+        TestKit.shutdown(system2, 5.seconds)
+      }
     }
   }
 
