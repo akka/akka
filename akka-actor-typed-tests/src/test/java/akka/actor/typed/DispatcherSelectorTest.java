@@ -10,7 +10,4 @@ public class DispatcherSelectorTest {
 
   private DispatcherSelector def = DispatcherSelector.defaultDispatcher();
   private DispatcherSelector conf = DispatcherSelector.fromConfig("somepath");
-  private DispatcherSelector ex = DispatcherSelector.fromExecutor((Executor) null);
-  private DispatcherSelector ec = DispatcherSelector.fromExecutionContext((ExecutionContext) null);
-
 }
