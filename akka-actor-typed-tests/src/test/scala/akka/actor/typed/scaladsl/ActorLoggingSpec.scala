@@ -3,7 +3,7 @@
  */
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.TypedAkkaSpec
+import akka.actor.typed.{ TypedAkkaSpec, scaladsl }
 import akka.testkit.EventFilter
 import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
@@ -32,6 +32,36 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
         actor ! "Hello"
       }
 
+    }
+
+  }
+
+  "Logging with MDC for a typed actor" must {
+
+    "provide the MDC values in the log" in {
+      val behaviors = LoggingBehaviors.withMdc[String](
+        { (msg) ⇒
+          if (msg == "first")
+            Map(
+              "message" -> msg,
+              "first" -> true
+            )
+          else Map("message" -> msg)
+        },
+        Behaviors.deferred { ctx ⇒
+          ctx.log.info("Starting")
+          Behaviors.immutable { (ctx, msg) ⇒
+            ctx.log.info("Got message!")
+            Behaviors.same
+          }
+        }
+      )
+
+      val ref = spawn(behaviors)
+
+      ref ! "first"
+      ref ! "second"
+      // FIXME how to test that logger actually sees MDC?
     }
 
   }
