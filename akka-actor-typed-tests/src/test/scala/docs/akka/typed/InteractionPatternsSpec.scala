@@ -6,9 +6,11 @@ package docs.akka.typed
 import java.net.URI
 
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, TypedAkkaSpecWithShutdown }
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
+
+import scala.concurrent.duration._
 
 class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
@@ -138,4 +140,53 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   }
 
+  "contain a sample for scheduling messages to self" in {
+
+    //#timer
+    case object TimerKey
+
+    trait Msg
+    case class ExcitingMessage(msg: String) extends Msg
+    final case class Batch(messages: Vector[Msg])
+    case object Timeout extends Msg
+
+    def behavior(target: ActorRef[Batch], after: FiniteDuration, maxSize: Int): Behavior[Msg] = {
+      Behaviors.withTimers(timers ⇒ idle(timers, target, after, maxSize))
+    }
+
+    def idle(timers: TimerScheduler[Msg], target: ActorRef[Batch],
+             after: FiniteDuration, maxSize: Int): Behavior[Msg] = {
+      Behaviors.immutable[Msg] { (ctx, msg) ⇒
+        timers.startSingleTimer(TimerKey, Timeout, after)
+        active(Vector(msg), timers, target, after, maxSize)
+      }
+    }
+
+    def active(buffer: Vector[Msg], timers: TimerScheduler[Msg],
+               target: ActorRef[Batch], after: FiniteDuration, maxSize: Int): Behavior[Msg] = {
+      Behaviors.immutable[Msg] { (_, msg) ⇒
+        msg match {
+          case Timeout ⇒
+            target ! Batch(buffer)
+            idle(timers, target, after, maxSize)
+          case m ⇒
+            val newBuffer = buffer :+ m
+            if (newBuffer.size == maxSize) {
+              timers.cancel(TimerKey)
+              target ! Batch(newBuffer)
+              idle(timers, target, after, maxSize)
+            } else
+              active(newBuffer, timers, target, after, maxSize)
+        }
+      }
+    }
+    //#timer
+
+    val probe: TestProbe[Batch] = TestProbe[Batch]()
+    val bufferer: ActorRef[Msg] = spawn(behavior(probe.ref, 1.second, 10))
+    bufferer ! ExcitingMessage("one")
+    bufferer ! ExcitingMessage("two")
+    probe.expectNoMessage(1.millisecond)
+    probe.expectMsg(2.seconds, Batch(Vector[Msg](ExcitingMessage("one"), ExcitingMessage("two"))))
+  }
 }

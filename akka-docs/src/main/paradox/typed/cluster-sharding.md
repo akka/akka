@@ -2,7 +2,7 @@
 
 @@@ warning
 
-This module is currently marked as @ref:[may change](common/may-change.md) in the sense
+This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
   of being the subject of active research. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
   this module in production just yet—you have been warned.
@@ -17,7 +17,7 @@ To use cluster sharding add the following dependency:
   version=$akka.version$
 }
 
-For an introduction to Sharding concepts see @ref:[Cluster Sharding](cluster-sharding.md). This documentation shows how to use the typed
+For an introduction to Sharding concepts see @ref:[Cluster Sharding](../cluster-sharding.md). This documentation shows how to use the typed
 Cluster Sharding API.
 
 ## Basic example
@@ -61,7 +61,7 @@ When using sharding entities can be moved to different nodes in the cluster. Per
 an actor after it has moved. Currently Akka typed only has a Scala API for persistence, you can track the progress of the
 Java API [here](https://github.com/akka/akka/issues/24193).
 
-Taking the larger example from the @ref:[persistence documentation](persistence-typed.md#larger-example) and making it into
+Taking the larger example from the @ref:[persistence documentation](persistence.md#larger-example) and making it into
 a sharded entity is the same as for a non persistent behavior. The behavior:
 
 Scala
@@ -73,4 +73,4 @@ Scala
 :  @@snip [ShardingCompileOnlySpec.scala]($akka$/akka-cluster-sharding-typed/src/test/scala/doc/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #persistence }
 
 Sending messages to entities is the same as the example above. The only difference is ow when an entity is moved the state will be restored. 
-See @ref:[persistence](persistence-typed.md) for more details.
+See @ref:[persistence](persistence.md) for more details.

@@ -148,3 +148,27 @@ TODO
 
  * Children have lifecycles that must be managed to not create a resource leak
  * ???
+ 
+## Scheduling messages to self
+
+The following example demonstrates how to use timers to schedule messages to an actor. 
+
+The `Buncher` actor buffers a burst of incoming messages and delivers them as a batch after a timeout or when the number of batched messages exceeds a maximum size.
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #timer }
+
+Java
+:  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #timer }
+
+There are a few things worth noting here:
+
+* To get access to the timers you start with `Behaviors.withTimers` that will pass a `TimerScheduler` instance to the function. This can be used with any type of `Behavior`, such as `immutable` or `mutable`.
+* Each timer has a key and if a new timer with same key is started the previous is cancelled and it's guaranteed that a message from the previous timer is not received, even though it might already be enqueued in the mailbox when the new timer is started.
+* Both periodic and single message timers are supported. 
+* The `TimerScheduler` is mutable in itself, because it performs and manages the side effects of registering the scheduled tasks.
+* The `TimerScheduler` is bound to the lifecycle of the actor that owns it and it's cancelled automatically when the actor is stopped.
+* `Behaviors.withTimers` can also be used inside `Behaviors.supervise` and it will automatically cancel the started timers correctly when the actor is restarted, so that the new incarnation will not receive scheduled messages from previous incarnation.
+
+
+

@@ -2,7 +2,7 @@
 
 @@@ warning
 
-This module is currently marked as @ref:[may change](common/may-change.md) in the sense
+This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
   of being the subject of active research. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
   this module in production just yet—you have been warned.
@@ -17,7 +17,7 @@ To use the testkit add the following dependency:
   version=$akka.version$
 }
 
-For an introduction to Akka Cluster concepts see @ref:[Cluster Specification](common/cluster.md). This documentation shows how to use the typed
+For an introduction to Akka Cluster concepts see @ref:[Cluster Specification](../common/cluster.md). This documentation shows how to use the typed
 Cluster API. All of the examples below assume the following imports:
 
 Scala
@@ -77,7 +77,7 @@ Java
 
 Cluster `subscriptions` can be used to receive messages when cluster state changes. For example, registering
 for all `MemberEvent`s, then using the `manager` to have a node leave the cluster will result in events
-for the node going through the lifecycle described in @ref:[Cluster Specification](common/cluster.md).
+for the node going through the lifecycle described in @ref:[Cluster Specification](../common/cluster.md).
 
 This example subscribes with a `TestProbe` but in a real application it would be an Actor:
 
