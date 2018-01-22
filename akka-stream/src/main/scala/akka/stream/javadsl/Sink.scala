@@ -18,10 +18,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 import java.util.concurrent.CompletionStage
 
-import akka.annotation.InternalApi
-
 import scala.compat.java8.FutureConverters._
-import scala.concurrent.duration.FiniteDuration
 
 /** Java API */
 object Sink {
@@ -281,18 +278,6 @@ object Sink {
     new Sink(scaladsl.Sink.lazyInit[T, M](
       t ⇒ sinkFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
       () ⇒ fallback.create()).mapMaterializedValue(_.toJava))
-
-  /**
-   * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
-   * to consume data from this local stream, as if they were attached in the spot of the local Sink directly.
-   *
-   * Adheres to [[StreamRefAttributes]].
-   *
-   * See more detailed documentation on [[SourceRef]].
-   */
-
-  def sourceRef[T](): javadsl.Sink[T, SourceRef[T]] =
-    scaladsl.Sink.sourceRef[T]().asJava
 }
 
 /**
@@ -335,13 +320,6 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
    */
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): Sink[In, Mat2] =
     new Sink(delegate.mapMaterializedValue(f.apply _))
-
-  /**
-   * INTERNAL API: Unsafe BLOCKING flattening if current materialized value is a Future.
-   */
-  @InternalApi
-  private[akka] def flattenMaterializedValue[Mat2](timeout: FiniteDuration): Sink[In, Mat2] =
-    new Sink(delegate.flattenMaterializedValue[Mat2](timeout))
 
   /**
    * Replace the attributes of this [[Sink]] with the given ones. If this Sink is a composite

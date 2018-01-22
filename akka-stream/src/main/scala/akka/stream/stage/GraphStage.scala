@@ -186,6 +186,15 @@ object GraphStageLogic {
     initialReceive:   StageActorRef.Receive,
     name:             String) {
 
+    // not really needed, but let's keep MiMa happy
+    def this(
+      materializer:     akka.stream.ActorMaterializer,
+      getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
+      initialReceive:   StageActorRef.Receive
+    ) {
+      this(materializer, getAsyncCallback, initialReceive, "")
+    }
+
     private val callback = getAsyncCallback(internalReceive)
     private def cell = materializer.supervisor match {
       case ref: LocalActorRef                        ⇒ ref.underlying

@@ -1,3 +1,0 @@
-# #24230 stream refs - SourceRef / SinkRef
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializerSettings.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic#StageActor.this")

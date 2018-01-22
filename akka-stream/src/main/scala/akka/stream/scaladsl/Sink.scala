@@ -6,21 +6,17 @@ package akka.stream.scaladsl
 import akka.{ Done, NotUsed }
 import akka.dispatch.ExecutionContexts
 import akka.actor.{ ActorRef, Props, Status }
-import akka.annotation.InternalApi
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
-import akka.stream.impl.streamref.{ SinkRefStageImpl, SourceRefStageImpl }
 import akka.stream.stage._
 import akka.stream.{ javadsl, _ }
-import akka.util.OptionVal
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
@@ -59,15 +55,6 @@ final class Sink[-In, +Mat](
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =
     new Sink(
       traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]),
-      shape)
-
-  /**
-   * INTERNAL API: Unsafe BLOCKING flattening if current materialized value is a Future.
-   */
-  @InternalApi
-  private[akka] def flattenMaterializedValue[Mat2](timeout: FiniteDuration): Sink[In, Mat2] =
-    new Sink(
-      traversalBuilder.flattenMat(timeout),
       shape)
 
   /**
@@ -463,19 +450,5 @@ object Sink {
    */
   def lazyInit[T, M](sinkFactory: T ⇒ Future[Sink[T, M]], fallback: () ⇒ M): Sink[T, Future[M]] =
     Sink.fromGraph(new LazySink(sinkFactory, fallback))
-
-  /**
-   * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
-   * to consume data from this local stream, as if they were attached in the spot of the local Sink directly.
-   *
-   * Adheres to [[StreamRefAttributes]].
-   *
-   * See more detailed documentation on [[SourceRef]].
-   */
-  def sourceRef[T](): Sink[T, SourceRef[T]] = {
-    import scala.concurrent.duration._
-    val sink = Sink.fromGraph(new SinkRefStageImpl[T](OptionVal.None))
-    sink.flattenMaterializedValue[SourceRef[T]](10.seconds)
-  }
 
 }

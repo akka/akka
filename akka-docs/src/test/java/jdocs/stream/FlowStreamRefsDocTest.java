@@ -8,6 +8,7 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.pattern.PatternsCS;
 import akka.remote.WireFormats;
 import akka.stream.*;
 import akka.stream.javadsl.*;
@@ -21,6 +22,7 @@ import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletionStage;
 
 import static org.junit.Assert.assertEquals;
 
@@ -61,9 +63,10 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
 
     private void handleRequestLogs(RequestLogs requestLogs) {
       Source<String, NotUsed> logs = streamLogs(requestLogs.streamId);
-      SourceRef<String> logsRef = logs.runWith(Sink.sourceRef(), mat);
-      LogsOffer offer = new LogsOffer(logsRef);
-      sender().tell(offer, self());
+      CompletionStage<SourceRef<String>> logsRef = logs.runWith(StreamRefs.sourceRef(), mat);
+
+      PatternsCS.pipe(logsRef.thenApply(ref -> new LogsOffer(ref)), context().dispatcher())
+          .to(sender());
     }
 
     private Source<String, NotUsed> streamLogs(long streamId) {
@@ -89,18 +92,18 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
   }
 
   //#offer-sink
-  class PrepareUpload {
+  static class PrepareUpload {
     final String id;
 
     public PrepareUpload(String id) {
       this.id = id;
     }
   }
-  class MeasurementsSinkReady {
+  static class MeasurementsSinkReady {
     final String id;
     final SinkRef<String> sinkRef;
 
-    public PrepareUpload(String id, SinkRef<String> ref) {
+    public MeasurementsSinkReady(String id, SinkRef<String> ref) {
       this.id = id;
       this.sinkRef = ref;
     }
@@ -112,15 +115,16 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
       return receiveBuilder()
           .match(PrepareUpload.class, prepare -> {
             Sink<String, NotUsed> sink = logsSinkFor(prepare.id);
-            SinkRef<String> sinkRef = Source.sinkRef().to(sink).run(mat);
+            CompletionStage<SinkRef<String>> sinkRef = StreamRefs.<String>sinkRef().to(sink).run(mat);
 
-            sender().tell(new MeasurementsSinkReady(sinkRef), self());
+            PatternsCS.pipe(sinkRef.thenApply(ref -> new MeasurementsSinkReady(prepare.id, ref)), context().dispatcher())
+                .to(sender());
           })
-          .create();
+          .build();
     }
 
     private Sink<String, NotUsed> logsSinkFor(String id) {
-      return Sink.ignore(); // would be actual useful Sink in reality
+      return Sink.<String>ignore().mapMaterializedValue(done -> NotUsed.getInstance());
     }
   }
   //#offer-sink
@@ -132,10 +136,10 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
       ActorRef receiver = system.actorOf(Props.create(DataReceiver.class), "dataReceiver");
 
       receiver.tell(new PrepareUpload("system-42-tmp"), getTestActor());
-      MeasurementsSinkReady ready = expectMsgClass(LogsOffer.class);
+      MeasurementsSinkReady ready = expectMsgClass(MeasurementsSinkReady.class);
 
       Source.repeat("hello")
-          .runWith(ready.sinkRef, mat);
+          .runWith(ready.sinkRef.getSink(), mat);
       //#offer-sink-use
     }};
   }
@@ -149,11 +153,11 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
 
       // configuring Sink.sourceRef (notice that we apply the attributes to the Sink!):
       Source.repeat("hello")
-          .runWith(Sink.sourceRef().addAttributes(timeoutAttributes), mat);
+          .runWith(StreamRefs.<String>sourceRef().addAttributes(timeoutAttributes), mat);
 
       // configuring SinkRef.source:
-      Source.sinkRef().addAttributes(timeoutAttributes)
-          .runWith(Sink.ignore(), mat); // not very interesting sink, just an example
+      StreamRefs.<String>sinkRef().addAttributes(timeoutAttributes)
+          .runWith(Sink.<String>ignore(), mat); // not very interesting sink, just an example
 
       //#attr-sub-timeout
     }};

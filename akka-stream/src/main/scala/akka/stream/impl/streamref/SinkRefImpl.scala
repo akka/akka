@@ -106,6 +106,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
               s"Local stream terminating, message loss (on remote side) may have happened."))
 
         case (sender, StreamRefsProtocol.CumulativeDemand(d)) ⇒
+          // the other side may attempt to "double subscribe", which we want to fail eagerly since we're 1:1 pairings
           observeAndValidateSender(sender, "Illegal sender for CumulativeDemand")
 
           if (remoteCumulativeDemandReceived < d) {
@@ -154,6 +155,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
           case _ ⇒
             completedBeforeRemoteConnected = OptionVal(scala.util.Failure(ex))
             // not terminating on purpose, since other side may subscribe still and then we want to fail it
+            // the stage will be terminated either by timeout, or by the handling in `observeAndValidateSender`
             setKeepGoing(true)
         }
 

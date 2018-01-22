@@ -23,7 +23,7 @@ object SinkRef {
  * to accept some data from it, and the remote one decides to accept the request to send data in a back-pressured
  * streaming fashion -- using a sink ref.
  *
- * To create a [[SinkRef]] you have to materialize the `Sink` that you want to obtain a reference to by attaching it to a `Source.sinkRef`.
+ * To create a [[SinkRef]] you have to materialize the `Sink` that you want to obtain a reference to by attaching it to a `StreamRefs.sinkRef()`.
  *
  * Stream refs can be seen as Reactive Streams over network boundaries.
  * See also [[akka.stream.SourceRef]] which is the dual of a `SinkRef`.
@@ -69,14 +69,16 @@ trait SourceRef[T] {
 // --- exceptions ---
 
 final case class TargetRefNotInitializedYetException()
-  extends IllegalStateException("Internal remote target actor ref not yet resolved, yet attempted to send messages to it. This should not happen due to proper flow-control, please open a ticket on the issue tracker: https://github.com/akka/akka")
+  extends IllegalStateException("Internal remote target actor ref not yet resolved, yet attempted to send messages to it. " +
+    "This should not happen due to proper flow-control, please open a ticket on the issue tracker: https://github.com/akka/akka")
 
 final case class StreamRefSubscriptionTimeoutException(msg: String)
   extends IllegalStateException(msg)
 
 final case class RemoteStreamRefActorTerminatedException(msg: String) extends RuntimeException(msg)
 final case class InvalidSequenceNumberException(expectedSeqNr: Long, gotSeqNr: Long, msg: String)
-  extends IllegalStateException(s"$msg (expected: $expectedSeqNr, got: $gotSeqNr)")
+  extends IllegalStateException(s"$msg (expected: $expectedSeqNr, got: $gotSeqNr). " +
+    s"In most cases this means that message loss on this connection has occurred and the stream will fail eagerly.")
 
 /**
  * Stream refs establish a connection between a local and remote actor, representing the origin and remote sides
@@ -89,4 +91,7 @@ final case class InvalidSequenceNumberException(expectedSeqNr: Long, gotSeqNr: L
  * This is not meant as a security feature, but rather as plain sanity-check.
  */
 final case class InvalidPartnerActorException(expectedRef: ActorRef, gotRef: ActorRef, msg: String)
-  extends IllegalStateException(s"$msg (expected: $expectedRef, got: $gotRef)")
+  extends IllegalStateException(s"$msg (expected: $expectedRef, got: $gotRef). " +
+    s"This may happen due to 'double-materialization' on the other side of this stream ref. " +
+    s"Do note that stream refs are one-shot references and have to be paired up in 1:1 pairs. " +
+    s"Multi-cast such as broadcast etc can be implemented by sharing multiple new stream references. ")

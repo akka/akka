@@ -5,8 +5,7 @@ an Akka Cluster.
 
 Unlike heavier "streaming data processing" frameworks, Akka Streams are not "deployed" nor automatically distributed.
 Akka stream refs are, as the name implies, references to existing parts of a stream, and can be used to create a 
-distributed processing framework or introduce such capabilities in specific parts of your application, however they 
-are not on that level of abstraction by themselves. 
+distributed processing framework or introduce such capabilities in specific parts of your application. 
   
 Stream refs are trivial to make use of in existing clustered Akka applications, and require no additional configuration 
 or setup. They automatically maintain flow-control / back-pressure over the network, and employ Akka's failure detection 
@@ -19,7 +18,7 @@ implement manually.
   A useful way to think about stream refs is: 
   "like an `ActorRef`, but for Akka Streams's `Source` and `Sink`".
   
-  Since they refer to an already existing, possibly remote, `Sink` or `Source`.
+  Stream refs refer to an already existing, possibly remote, `Sink` or `Source`.
   This is not to be mistaken with deploying streams remotely, which this feature is not intended for.
 @@@
 
@@ -48,7 +47,7 @@ Actors would usually be used to establish the stream, by means of some initial m
 "I want to offer you many log elements (the stream ref)", or alternatively in the opposite way "If you need
 to send me much data, here is the stream ref you can use to do so".   
 
-Since the two sides ("local" and "remote") of reach reference may be confusing to simply refer to as
+Since the two sides ("local" and "remote") of each reference may be confusing to simply refer to as
 "remote" and "local" -- since either side can be seen as "local" or "remote" depending how we look at it --
 we propose to use the terminology "origin" and "target", which is defined by where the stream ref was created.
 For `SourceRef`s, the "origin" is the side which has the data that it is going to stream out. For `SinkRef`s
@@ -56,7 +55,7 @@ the "origin" side is the actor system that is ready to receive the data and has 
 two may be seen as duals of each other, however to explain patterns about sharing references, we found this
  wording to be rather useful.  
 
-### Source Refs - offering streaming data over network
+### Source Refs - offering streaming data to a remote system
 
 A @scala[@scaladoc[`SourceRef`](akka.stream.SourceRef)]@java[@javadoc[`SourceRef`](akka.stream.SourceRef)]
 can be offered to a remote actor system in order for it to consume some source of data that we have prepared
@@ -89,16 +88,17 @@ The process of preparing and running a `SourceRef` powered distributed stream is
   A `SourceRef` is *by design* "single-shot". i.e. it may only be materialized once.
   This is in order to not complicate the mental model what materializing such value would mean.
   
-  By being single-shot, we always know what it means, and on top of those semantics offer a fan-out
-  by emitting multiple `SourceRef`s which target the same `Source` that uses `Broadcast`.
-  This also allows for fine grained control how many streams a system can expect to be running 
-  at the same time, which is useful for capacity planning and "allowed number of concurrent streams
-  limiting" of clients.
+  While stream refs are designed to be single shot, you may use them to mimic multicast scenarios,
+  simply by starting a `Broadcast` stage once, and attaching multiple new streams to it, for each
+  emitting a new stream ref. This way each output of the broadcast is by itself an unique single-shot
+  reference, however they can all be powered using a single `Source` -- located before the `Broadcast` stage.
 @@@
 
-### Sink Refs - offering to receive streaming data
+### Sink Refs - offering to receive streaming data from a remote system
 
-The dual of source references are A @scala[@scaladoc[`SourceRef`](akka.stream.SinkRef)]@java[@javadoc[`SourceRef`](akka.stream.SinkRef)]s. They can be used to offer the other side the capability to 
+The dual of @scala[@scaladoc[`SourceRef`](akka.stream.SinkRef)]@java[@javadoc[`SourceRef`](akka.stream.SinkRef)]s.
+
+They can be used to offer the other side the capability to 
 send to the *origin* side data in a streaming, flow-controlled fashion. The origin here allocates a Sink,
 which could be as simple as a `Sink.foreach` or as advanced as a complex sink which streams the incoming data
 into various other systems (e.g. any of the Alpakka provided Sinks).
@@ -128,7 +128,7 @@ The process of preparing and running a `SinkRef` powered distributed stream is s
 
 
 @@@ warning
-  A `SinkeRef` is *by design* "single-shot". i.e. it may only be materialized once.
+  A `SinkRef` is *by design* "single-shot". i.e. it may only be materialized once.
   This is in order to not complicate the mental model what materializing such value would mean.
   
   If you have an use case for building a fan-in operation accepting writes from multiple remote nodes,
@@ -153,10 +153,9 @@ of data such as huge log files, messages or even media, with as much ease as if 
 
 All stream references have a subscription timeout, which is intended to prevent resource leaks
 in situations in which a remote node would requests the allocation of many streams yet never actually run
-them. In order to prevent this, each stream reference has a default timeout (of 30 seconds), after which
-if it's "handed out" side has not been materialized, the origin will terminate with a timeout exception,
-and IF the remote side eventually would be run afterwards, it would also immediately fail with an exception
-pointing out that the origin seems to be missing.
+them. In order to prevent this, each stream reference has a default timeout (of 30 seconds), after which the
+origin will abort the stream offer if the target has not materialized the stream ref in time. After the 
+timeout has triggered, materialization of the target side will fail pointing out that the origin is missing.
 
 Since these timeouts are often very different based on the kind of stream offered, and there can be 
 many different kinds of them in the same application, it is possible to not only configure this setting
