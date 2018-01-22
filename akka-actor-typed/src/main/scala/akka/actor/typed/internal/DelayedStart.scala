@@ -17,7 +17,7 @@ private[akka] object DelayedStart {
 
   case object Start
 
-  // FIXME use the stash buffer when that is merged #22275
+  // note that we cannot use StashBuffer here as we need to buffer signals as well as messages
   def delayStart[T](delayedBehavior: Behavior[T], buffer: List[Any] = Nil): Behavior[Any] =
     scaladsl.Behaviors.immutable[Any] { (sctx, msg) ⇒
       // delay actual initialization until the actor system is started as the actor may touch
