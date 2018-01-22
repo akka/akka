@@ -8,7 +8,6 @@ import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.typed.javadsl.ActorSource;
-import scala.PartialFunction;
 // #actor-source-ref
 
 public class ActorSourceExample {
@@ -36,7 +35,7 @@ public class ActorSourceExample {
   {
     // #actor-source-ref
 
-    final PartialFunction<Protocol, Throwable> failureMatcher =
+    final JavaPartialFunction<Protocol, Throwable> failureMatcher =
       new JavaPartialFunction<Protocol, Throwable>() {
         public Throwable apply(Protocol p, boolean isCheck) {
           if (p instanceof Fail) {

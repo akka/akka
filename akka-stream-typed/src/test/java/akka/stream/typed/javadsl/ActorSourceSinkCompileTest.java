@@ -6,12 +6,11 @@ package akka.stream.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
+import akka.japi.JavaPartialFunction;
 import akka.stream.ActorMaterializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import scala.PartialFunction$;
-import scala.runtime.AbstractPartialFunction;
 
 public class ActorSourceSinkCompileTest {
 
@@ -53,22 +52,27 @@ public class ActorSourceSinkCompileTest {
     ActorSource
       .actorRef(
         (m) -> m == "complete",
-        PartialFunction$.MODULE$.empty(), // FIXME make the API nicer
+        new JavaPartialFunction<String, Throwable>() {
+          @Override
+          public Throwable apply(String x, boolean isCheck) throws Exception {
+            throw noMatch();
+          }
+        },
         10,
         OverflowStrategy.dropBuffer())
       .to(Sink.seq());
   }
 
   {
-    final AbstractPartialFunction<Protocol, Throwable> failureMatcher = new AbstractPartialFunction<Protocol, Throwable>() {
+    final JavaPartialFunction<Protocol, Throwable> failureMatcher = new JavaPartialFunction<Protocol, Throwable>() {
       @Override
-      public boolean isDefinedAt(Protocol p) {
-        return p instanceof Failure;
-      }
-
-      @Override
-      public Throwable apply(Protocol p) {
-        return ((Failure)p).ex;
+      public Throwable apply(Protocol p, boolean isCheck) throws Exception {
+        if (p instanceof Failure) {
+          return ((Failure)p).ex;
+        }
+        else {
+          throw noMatch();
+        }
       }
     };
 
