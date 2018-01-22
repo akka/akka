@@ -32,11 +32,11 @@ object GracefulStopDocSpec {
     val mcpa = Behaviors.immutable[JobControlLanguage] { (ctx, msg) ⇒
       msg match {
         case SpawnJob(jobName) ⇒
-          ctx.system.log.info("Spawning job {}!", jobName)
+          ctx.log.info("Spawning job {}!", jobName)
           ctx.spawn(Job.job(jobName), name = jobName)
           Behaviors.same
         case GracefulShutdown ⇒
-          ctx.system.log.info("Initiating graceful shutdown...")
+          ctx.log.info("Initiating graceful shutdown...")
           // perform graceful stop, executing cleanup before final system termination
           // behavior executing cleanup is passed as a parameter to Actor.stopped
           Behaviors.stopped {
@@ -49,7 +49,7 @@ object GracefulStopDocSpec {
       }
     }.onSignal {
       case (ctx, PostStop) ⇒
-        ctx.system.log.info("MCPA stopped")
+        ctx.log.info("MCPA stopped")
         Behaviors.same
     }
   }
@@ -62,7 +62,7 @@ object GracefulStopDocSpec {
 
     def job(name: String) = Behaviors.onSignal[JobControlLanguage] {
       case (ctx, PostStop) ⇒
-        ctx.system.log.info("Worker {} stopped", name)
+        ctx.log.info("Worker {} stopped", name)
         Behaviors.same
     }
   }

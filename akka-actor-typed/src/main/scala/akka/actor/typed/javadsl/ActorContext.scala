@@ -10,6 +10,7 @@ import akka.annotation.ApiMayChange
 import akka.actor.typed._
 import java.util.Optional
 
+import akka.event.LoggingAdapter
 import akka.util.Timeout
 
 import scala.concurrent.duration.FiniteDuration
@@ -59,6 +60,11 @@ trait ActorContext[T] {
    * The [[ActorSystem]] to which this Actor belongs.
    */
   def getSystem: ActorSystem[Void]
+
+  /**
+   * An actor specific logger
+   */
+  def getLog: LoggingAdapter
 
   /**
    * The list of child Actors created by this Actor during its lifetime that

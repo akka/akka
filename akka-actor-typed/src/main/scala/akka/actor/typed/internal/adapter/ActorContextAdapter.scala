@@ -11,6 +11,8 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContextExecutor
 import akka.annotation.InternalApi
 import akka.actor.typed.Behavior.UntypedBehavior
+import akka.event.LoggingAdapter
+import akka.util.OptionVal
 
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[ActorContext]].
@@ -18,6 +20,9 @@ import akka.actor.typed.Behavior.UntypedBehavior
 @InternalApi private[akka] class ActorContextAdapter[T](val untyped: a.ActorContext) extends ActorContextImpl[T] {
 
   import ActorRefAdapter.toUntyped
+
+  // lazily initialized
+  private var loggingAdapter: OptionVal[LoggingAdapter] = OptionVal.None
 
   override def self = ActorRefAdapter(untyped.self)
   override val system = ActorSystemAdapter(untyped.system)
@@ -64,6 +69,16 @@ import akka.actor.typed.Behavior.UntypedBehavior
     // apply the function inside the actor by wrapping the msg and f, handled by ActorAdapter
     val ref = cell.addFunctionRef((_, msg) ⇒ untyped.self ! AdaptMessage[U, T](msg.asInstanceOf[U], f), _name)
     ActorRefAdapter[U](ref)
+  }
+
+  override def log: LoggingAdapter = {
+    loggingAdapter match {
+      case OptionVal.Some(adapter) ⇒ adapter
+      case OptionVal.None ⇒
+        val adapter = akka.event.Logging(untyped.system, untyped.self)
+        loggingAdapter = OptionVal.Some(adapter)
+        adapter
+    }
   }
 }
 

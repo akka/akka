@@ -11,6 +11,8 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import akka.annotation.InternalApi
 import akka.actor.typed.internal.{ ActorContextImpl, ActorRefImpl, ActorSystemStub, SystemMessage }
+import akka.event.Logging.{ Info, LogEvent, LogLevel }
+import akka.event.{ Logging, LoggingAdapter }
 
 /**
  * A local synchronous ActorRef that invokes the given function for every message send.
@@ -30,6 +32,39 @@ private[akka] final class FunctionRef[-T](
   override def path = _path
   override def sendSystem(signal: SystemMessage): Unit = {}
   override def isLocal = true
+}
+
+/**
+ * INTERNAL API
+ *
+ * Captures log events for test inspection
+ */
+@InternalApi private[akka] final class StubbedLoggingAdapter extends LoggingAdapter {
+
+  private var logBuffer: List[(LogLevel, String)] = Nil
+
+  def isErrorEnabled: Boolean = true
+  def isWarningEnabled: Boolean = true
+  def isInfoEnabled: Boolean = true
+  def isDebugEnabled: Boolean = true
+
+  protected def notifyError(message: String): Unit =
+    logBuffer = (Logging.ErrorLevel, message) :: logBuffer
+  protected def notifyError(cause: Throwable, message: String): Unit =
+    logBuffer = (Logging.ErrorLevel, message) :: logBuffer
+
+  protected def notifyWarning(message: String): Unit =
+    logBuffer = (Logging.WarningLevel, message) :: logBuffer
+
+  protected def notifyInfo(message: String): Unit =
+    logBuffer = (Logging.InfoLevel, message) :: logBuffer
+
+  protected def notifyDebug(message: String): Unit =
+    logBuffer = (Logging.DebugLevel, message) :: logBuffer
+
+  def logEntries: List[(LogLevel, String)] = logBuffer.reverse
+  def clearLog(): Unit = logBuffer = Nil
+
 }
 
 /**
@@ -56,6 +91,7 @@ private[akka] final class FunctionRef[-T](
 
   private var _children = TreeMap.empty[String, TestInbox[_]]
   private val childName = Iterator from 0 map (Helpers.base64(_))
+  private val loggingAdapter = new StubbedLoggingAdapter
 
   override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ref)
   def childrenNames: Iterable[String] = _children.keys
@@ -138,4 +174,17 @@ private[akka] final class FunctionRef[-T](
   def removeChildInbox(child: ActorRef[Nothing]): Unit = _children -= child.path.name
 
   override def toString: String = s"Inbox($self)"
+
+  override def log: LoggingAdapter = loggingAdapter
+
+  /**
+   * The log entries logged through ctx.log.{debug, info, warn, error} are captured and can be verified through
+   * this method.
+   */
+  def logEntries: List[(LogLevel, String)] = loggingAdapter.logEntries
+
+  /**
+   * Clear the log entries
+   */
+  def clearLog(): Unit = loggingAdapter.clearLog()
 }
