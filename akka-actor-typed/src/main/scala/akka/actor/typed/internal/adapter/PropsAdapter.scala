@@ -15,7 +15,6 @@ import akka.annotation.InternalApi
 
   def apply[T](behavior: () ⇒ Behavior[T], deploy: Props = Props.empty): akka.actor.Props = {
 
-
     val props = akka.actor.Props(new ActorAdapter(behavior()))
 
     (deploy.firstOrElse[DispatcherSelector](DispatcherDefault()) match {
