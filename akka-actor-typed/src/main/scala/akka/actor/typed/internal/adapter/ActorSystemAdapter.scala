@@ -53,10 +53,6 @@ import scala.compat.java8.FutureConverters
       selector match {
         case DispatcherDefault(_)         ⇒ untyped.dispatcher
         case DispatcherFromConfig(str, _) ⇒ untyped.dispatchers.lookup(str)
-        case DispatcherFromExecutionContext(_, _) ⇒
-          throw new UnsupportedOperationException("Cannot use DispatcherFromExecutionContext with ActorSystemAdapter")
-        case DispatcherFromExecutor(_, _) ⇒
-          throw new UnsupportedOperationException("Cannot use DispatcherFromExecutor with ActorSystemAdapter")
       }
     override def shutdown(): Unit = () // there was no shutdown in untyped Akka
   }
