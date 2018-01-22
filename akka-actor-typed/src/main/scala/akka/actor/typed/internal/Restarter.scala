@@ -13,7 +13,7 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.util.OptionVal
 
-import scala.concurrent.duration.{Deadline, FiniteDuration}
+import scala.concurrent.duration.{ Deadline, FiniteDuration }
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
@@ -133,6 +133,9 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] final class Stopper[T, Thr <: Throwable: ClassTag](
   override val behavior: Behavior[T], override val loggingEnabled: Boolean) extends Supervisor[T, Thr] {
 
+  def init(ctx: ActorContext[T]): Supervisor[T, Thr] =
+    wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), false)
+
   override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Behavior[T]] = {
     case NonFatal(ex: Thr) ⇒
       log(ctx, ex)
@@ -141,6 +144,7 @@ import scala.util.control.NonFatal
 
   override protected def wrap(nextBehavior: Behavior[T], afterException: Boolean): Supervisor[T, Thr] =
     new Stopper[T, Thr](nextBehavior, loggingEnabled)
+
 }
 
 /**
