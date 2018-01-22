@@ -370,8 +370,8 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
   .settings(
     initialCommands := """
-      import akka.typed._
-      import akka.typed.scaladsl.Actor
+      import akka.actor.typed._
+      import akka.actor.typed.scaladsl.Behaviors
       import scala.concurrent._
       import scala.concurrent.duration._
       import akka.util.Timeout
