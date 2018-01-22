@@ -16,7 +16,7 @@ class TestProbeSpec extends TestKit with WordSpecLike with Matchers with BeforeA
       case object Stop
       val probe = TestProbe()
       val ref = spawn(Behaviors.stopped)
-      probe.expectStopped(ref, 100.millis)
+      probe.expectTerminated(ref, 100.millis)
     }
 
     "allow probing for actor stop when actor has not stopped yet" in {
@@ -33,7 +33,7 @@ class TestProbeSpec extends TestKit with WordSpecLike with Matchers with BeforeA
       ))
       ref ! Stop
       // race, but not sure how to test in any other way
-      probe.expectStopped(ref, 500.millis)
+      probe.expectTerminated(ref, 500.millis)
     }
 
   }

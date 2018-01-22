@@ -164,7 +164,7 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
   /**
    * Receive one message from the test actor and assert that it equals the
    * given object. Wait time is bounded by the given duration, with an
-   * AssertionFailure being thrown in case of timeout.
+   * [[AssertionError]] being thrown in case of timeout.
    *
    * @return the received object
    */
@@ -173,7 +173,7 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
   /**
    * Receive one message from the test actor and assert that it equals the
    * given object. Wait time is bounded by the given duration, with an
-   * AssertionFailure being thrown in case of timeout.
+   * [[AssertionError]] being thrown in case of timeout.
    *
    * @return the received object
    */
@@ -234,7 +234,7 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
   /**
    * Receive one message from the test actor and assert that it conforms to the
    * given type (after erasure). Wait time is bounded by the given duration,
-   * with an AssertionFailure being thrown in case of timeout.
+   * with an [[AssertionError]] being thrown in case of timeout.
    *
    * @return the received object
    */
@@ -250,9 +250,9 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
 
   /**
    * Expect the given actor to be stopped or stop withing the given timeout or
-   * throw an AssertionFailure.
+   * throw an [[AssertionError]].
    */
-  def expectStopped[U](actorRef: ActorRef[U], max: FiniteDuration): Unit = {
+  def expectTerminated[U](actorRef: ActorRef[U], max: FiniteDuration): Unit = {
     testActor.asInstanceOf[ActorRef[AnyRef]] ! WatchActor(actorRef)
     val message =
       if (max == Duration.Zero) {
