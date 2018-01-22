@@ -35,3 +35,8 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConve
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$RsProcessorConverter")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$FlowProcessorConverter$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$FlowProcessorConverter")
+
+# divertTo
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.divertToMat")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.divertTo")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.divertToGraph")
