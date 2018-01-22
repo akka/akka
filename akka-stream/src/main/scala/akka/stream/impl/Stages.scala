@@ -125,7 +125,6 @@ import akka.stream._
     val fanoutPublisherSink = name("fanoutPublisherSink")
     val ignoreSink = name("ignoreSink")
     val actorRefSink = name("actorRefSink")
-    val futureFlattenSink = name("futureFlattenSink")
     val actorRefWithAck = name("actorRefWithAckSink")
     val actorSubscriberSink = name("actorSubscriberSink")
     val queueSink = name("queueSink")

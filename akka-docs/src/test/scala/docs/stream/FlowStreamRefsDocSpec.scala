@@ -9,18 +9,20 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
+import scala.concurrent.Future
 
 class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
   "offer a source ref" in compileOnlySpec {
     //#offer-source
     import akka.stream.SourceRef
+    import akka.pattern.pipe
 
     case class RequestLogs(streamId: Int)
     case class LogsOffer(streamId: Int, sourceRef: SourceRef[String])
 
     class DataSource extends Actor {
-
+      import context.dispatcher
       implicit val mat = ActorMaterializer()(context)
 
       def receive = {
@@ -29,13 +31,13 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
           val source: Source[String, NotUsed] = streamLogs(streamId)
 
           // materialize the SourceRef:
-          val ref: SourceRef[String] = source.runWith(Sink.sourceRef())
+          val ref: Future[SourceRef[String]] = source.runWith(StreamRefs.sourceRef())
 
           // wrap the SourceRef in some domain message, such that the sender knows what source it is
-          val reply: LogsOffer = LogsOffer(streamId, ref)
+          val reply: Future[LogsOffer] = ref.map(LogsOffer(streamId, _))
 
           // reply to sender
-          sender() ! reply
+          reply pipeTo sender()
       }
 
       def streamLogs(streamId: Long): Source[String, NotUsed] = ???
@@ -59,7 +61,7 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
   "offer a sink ref" in compileOnlySpec {
     //#offer-sink
-    import akka.pattern._
+    import akka.pattern.pipe
     import akka.stream.SinkRef
 
     case class PrepareUpload(id: String)
@@ -76,13 +78,13 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
           val sink: Sink[String, NotUsed] = logsSinkFor(nodeId)
 
           // materialize the SinkRef (the remote is like a source of data for us):
-          val ref: SinkRef[String] = Source.sinkRef[String]().to(sink).run()
+          val ref: Future[SinkRef[String]] = StreamRefs.sinkRef[String]().to(sink).run()
 
           // wrap the SinkRef in some domain message, such that the sender knows what source it is
-          val reply: MeasurementsSinkReady = MeasurementsSinkReady(nodeId, ref)
+          val reply: Future[MeasurementsSinkReady] = ref.map(MeasurementsSinkReady(nodeId, _))
 
           // reply to sender
-          sender() ! reply
+          reply pipeTo sender()
       }
 
       def logsSinkFor(nodeId: String): Sink[String, NotUsed] = ???
@@ -114,10 +116,10 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
     // configuring Sink.sourceRef (notice that we apply the attributes to the Sink!):
     Source.repeat("hello")
-      .runWith(Sink.sourceRef().addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds)))
+      .runWith(StreamRefs.sourceRef().addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds)))
 
     // configuring SinkRef.source:
-    Source.sinkRef().addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds))
+    StreamRefs.sinkRef().addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds))
       .runWith(Sink.ignore) // not very interesting Sink, just an example
     //#attr-sub-timeout
   }

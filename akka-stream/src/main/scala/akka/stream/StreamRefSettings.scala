@@ -46,7 +46,7 @@ trait StreamRefSettings {
   // --- with... methods ---
 
   def withBufferCapacity(value: Int): StreamRefSettings
-  def withDemandRedeliveryInterval(value: scala.concurrent.duration.FiniteDuration): StreamRefSettings
+  def withDemandRedeliveryInterval(value: FiniteDuration): StreamRefSettings
   def withSubscriptionTimeout(value: FiniteDuration): StreamRefSettings
 }
 

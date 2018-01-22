@@ -11,9 +11,10 @@ import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.scaladsl._
 import akka.stream.{ ActorMaterializer, SinkRef, SourceRef, StreamRefAttributes }
 import akka.testkit.{ AkkaSpec, ImplicitSender, SocketUtil, TestKit, TestProbe }
-import akka.util.ByteString
+import akka.util.{ ByteString, PrettyDuration }
 import com.typesafe.config._
 
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
@@ -27,6 +28,7 @@ object StreamRefsSpec {
   }
 
   class DataSourceActor(probe: ActorRef) extends Actor with ActorLogging {
+    import context.dispatcher
     implicit val mat = ActorMaterializer()
 
     def receive = {
@@ -37,35 +39,35 @@ object StreamRefsSpec {
          * For them it's a Source; for us it is a Sink we run data "into"
          */
         val source: Source[String, NotUsed] = Source(List("hello", "world"))
-        val ref: SourceRef[String] = source.runWith(Sink.sourceRef())
+        val ref: Future[SourceRef[String]] = source.runWith(StreamRefs.sourceRef())
 
-        sender() ! ref
+        ref pipeTo sender()
 
       case "give-infinite" ⇒
         val source: Source[String, NotUsed] = Source.fromIterator(() ⇒ Iterator.from(1)).map("ping-" + _)
-        val (r: NotUsed, ref: SourceRef[String]) = source.toMat(Sink.sourceRef())(Keep.both).run()
+        val (r: NotUsed, ref: Future[SourceRef[String]]) = source.toMat(StreamRefs.sourceRef())(Keep.both).run()
 
-        sender() ! ref
+        ref pipeTo sender()
 
       case "give-fail" ⇒
         val ref = Source.failed[String](new Exception("Booooom!") with NoStackTrace)
-          .runWith(Sink.sourceRef())
+          .runWith(StreamRefs.sourceRef())
 
-        sender() ! ref
+        ref pipeTo sender()
 
       case "give-complete-asap" ⇒
         val ref = Source.empty
-          .runWith(Sink.sourceRef())
+          .runWith(StreamRefs.sourceRef())
 
-        sender() ! ref
+        ref pipeTo sender()
 
       case "give-subscribe-timeout" ⇒
         val ref = Source.repeat("is anyone there?")
-          .toMat(Sink.sourceRef())(Keep.right) // attributes like this so they apply to the Sink.sourceRef
+          .toMat(StreamRefs.sourceRef())(Keep.right) // attributes like this so they apply to the Sink.sourceRef
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
           .run()
 
-        sender() ! ref
+        ref pipeTo sender()
 
       //      case "send-bulk" ⇒
       //        /*
@@ -84,23 +86,23 @@ object StreamRefsSpec {
          *
          * For them it's a Sink; for us it's a Source.
          */
-        val sink: SinkRef[String] =
-          Source.sinkRef[String]()
+        val sink =
+          StreamRefs.sinkRef[String]()
             .to(Sink.actorRef(probe, "<COMPLETE>"))
             .run()
 
-        sender() ! sink
+        sink pipeTo sender()
 
       case "receive-subscribe-timeout" ⇒
-        val sink = Source.sinkRef[String]()
+        val sink = StreamRefs.sinkRef[String]()
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
           .to(Sink.actorRef(probe, "<COMPLETE>"))
           .run()
 
-        sender() ! sink
+        sink pipeTo sender()
 
       case "receive-32" ⇒
-        val (sink, driver) = Source.sinkRef[String]()
+        val (sink, driver) = StreamRefs.sinkRef[String]()
           .toMat(TestSink.probe(context.system))(Keep.both)
           .run()
 
@@ -117,7 +119,7 @@ object StreamRefsSpec {
           "<COMPLETED>"
         } pipeTo probe
 
-        sender() ! sink
+        sink pipeTo sender()
 
       //      case "receive-bulk" ⇒
       //        /*

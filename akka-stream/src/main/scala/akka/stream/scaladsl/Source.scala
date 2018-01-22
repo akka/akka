@@ -5,16 +5,12 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.util.ConstantFun
-import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
-import akka.annotation.InternalApi
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages._
 import akka.stream.impl.{ PublisherSource, _ }
-import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.{ Outlet, SourceShape, _ }
 import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
@@ -23,12 +19,9 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
-import akka.stream.impl.streamref.SourceRefStageImpl
-import akka.stream.stage.{ GraphStage, GraphStageWithMaterializedValue }
-import akka.util.OptionVal
+import akka.stream.stage.GraphStageWithMaterializedValue
 
 import scala.compat.java8.FutureConverters._
 
@@ -92,13 +85,6 @@ final class Source[+Out, +Mat](
    */
   override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
     new Source[Out, Mat2](traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]), shape)
-
-  /**
-   * INTERNAL API: Unsafe BLOCKING flattening if current materialized value is a Future.
-   */
-  @InternalApi
-  private[akka] override def flattenMaterializedValue[Mat2](timeout: FiniteDuration): ReprMat[Out, Mat2] =
-    new Source[Out, Mat2](traversalBuilder.flattenMat(timeout), shape)
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
@@ -617,17 +603,4 @@ object Source {
   def unfoldResourceAsync[T, S](create: () ⇒ Future[S], read: (S) ⇒ Future[Option[T]], close: (S) ⇒ Future[Done]): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
 
-  /**
-   * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
-   * to consume data from this local stream, as if they were attached in the spot of the local Sink directly.
-   *
-   * Adheres to [[StreamRefAttributes]].
-   *
-   * See more detailed documentation on [[SinkRef]].
-   */
-  def sinkRef[T](): Source[T, SinkRef[T]] = {
-    import scala.concurrent.duration._
-    val value: Source[T, Future[SinkRef[T]]] = Source.fromGraph(new SourceRefStageImpl[T](OptionVal.None))
-    value.flattenMaterializedValue[SinkRef[T]](1.second)
-  }
 }

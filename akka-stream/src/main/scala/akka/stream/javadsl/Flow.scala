@@ -16,8 +16,6 @@ import akka.japi.Util
 import java.util.Comparator
 import java.util.concurrent.CompletionStage
 
-import akka.annotation.InternalApi
-
 import scala.compat.java8.FutureConverters._
 
 object Flow {
@@ -220,13 +218,6 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): Flow[In, Out, Mat2] =
     new Flow(delegate.mapMaterializedValue(f.apply _))
-
-  /**
-   * INTERNAL API: Unsafe BLOCKING flattening if current materialized value is a Future.
-   */
-  @InternalApi
-  private[akka] def flattenMaterializedValue[Mat2](timeout: FiniteDuration): Flow[In, Out, Mat2] =
-    new Flow(delegate.flattenMaterializedValue(timeout))
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
