@@ -12,7 +12,6 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import scala.PartialFunction$;
 import scala.runtime.AbstractPartialFunction;
-import scala.runtime.BoxedUnit;
 
 public class ActorSourceSinkCompileTest {
 
@@ -51,16 +50,9 @@ public class ActorSourceSinkCompileTest {
   }
 
   {
-    final AbstractPartialFunction<String, BoxedUnit> completionMatcher = new AbstractPartialFunction<String, BoxedUnit>() {
-      @Override
-      public boolean isDefinedAt(String s) {
-        return s == "complete";
-      }
-    };
-
     ActorSource
       .actorRef(
-        completionMatcher,
+        (m) -> m == "complete",
         PartialFunction$.MODULE$.empty(), // FIXME make the API nicer
         10,
         OverflowStrategy.dropBuffer())
@@ -82,7 +74,7 @@ public class ActorSourceSinkCompileTest {
 
     ActorSource
       .actorRef(
-        PartialFunction$.MODULE$.empty(), // FIXME make the API nicer
+        (m) -> false,
         failureMatcher, 10,
         OverflowStrategy.dropBuffer())
       .to(Sink.seq());

@@ -9,7 +9,6 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.typed.javadsl.ActorSource;
 import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 // #actor-source-ref
 
 public class ActorSourceExample {
@@ -37,18 +36,6 @@ public class ActorSourceExample {
   {
     // #actor-source-ref
 
-    final PartialFunction<Protocol, BoxedUnit> completionMatcher =
-      new JavaPartialFunction<Protocol, BoxedUnit>() {
-        public BoxedUnit apply(Protocol p, boolean isCheck) {
-          if (p instanceof Complete) {
-            return BoxedUnit.UNIT;
-          }
-          else {
-            throw noMatch();
-          }
-        }
-      };
-
     final PartialFunction<Protocol, Throwable> failureMatcher =
       new JavaPartialFunction<Protocol, Throwable>() {
         public Throwable apply(Protocol p, boolean isCheck) {
@@ -62,7 +49,7 @@ public class ActorSourceExample {
       };
 
     final Source<Protocol, ActorRef<Protocol>> source = ActorSource.actorRef(
-      completionMatcher,
+      (m) -> m instanceof Complete,
       failureMatcher,
       8,
       OverflowStrategy.fail()
