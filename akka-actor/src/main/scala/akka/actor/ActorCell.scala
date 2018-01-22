@@ -148,6 +148,10 @@ trait ActorContext extends ActorRefFactory {
    * Registers this actor as a Monitor for the provided ActorRef.
    * This actor will receive a Terminated(subject) message when watched
    * actor is terminated.
+   *
+   * Will fail with an [[IllegalStateException]] if the same subject was watched before using `watchWith`.
+   * To change the termination message, unwatch first.
+   *
    * @return the provided ActorRef
    */
   def watch(subject: ActorRef): ActorRef
@@ -156,6 +160,10 @@ trait ActorContext extends ActorRefFactory {
    * Registers this actor as a Monitor for the provided ActorRef.
    * This actor will receive the specified message when watched
    * actor is terminated.
+   *
+   * Will fail with an [[IllegalStateException]] if the same subject was watched before using `watch` or `watchWith` with
+   * another termination message. To change the termination message, unwatch first.
+   *
    * @return the provided ActorRef
    */
   def watchWith(subject: ActorRef, msg: Any): ActorRef
