@@ -43,9 +43,9 @@ data centers but that may result in problems like:
 
 To avoid some of these problems one can run a separate Akka Cluster per data center and use another
 communication channel between the data centers, such as HTTP, an external message broker or
-[Cluster Client](cluster-singleton.md). However, many of the nice tools that are built on
+@ref[Cluster Client](cluster-singleton.md). However, many of the nice tools that are built on
 top of the Cluster membership information are lost. For example, it wouldn't be possible
-to use [Distributed Data](distributed-data.md) across the separate clusters.
+to use @ref[Distributed Data](distributed-data.md) across the separate clusters.
 
 We often recommend implementing a micro-service as one Akka Cluster. The external API of the
 service would be HTTP or a message broker, and not Akka Remoting or Cluster, but the internal
@@ -131,7 +131,7 @@ It's best to leave the oldest nodes until last.
 
 ## Cluster Singleton
 
-The [Cluster Singleton](cluster-singleton.md) is a singleton per data center. If you start the 
+The @ref[Cluster Singleton](cluster-singleton.md) is a singleton per data center. If you start the 
 `ClusterSingletonManager` on all nodes and you have defined 3 different data centers there will be
 3 active singleton instances in the cluster, one in each data center. This is taken care of automatically,
 but is important to be aware of. Designing the system for one singleton per data center makes it possible
@@ -163,7 +163,7 @@ is also the default if `withDataCenter` is not given.
 
 ## Cluster Sharding
 
-The coordinator in [Cluster Sharding](cluster-sharding.md) is a Cluster Singleton and therefore,
+The coordinator in @ref[Cluster Sharding](cluster-sharding.md) is a Cluster Singleton and therefore,
 as explained above, Cluster Sharding is also per data center. Each data center will have its own coordinator
 and regions, isolated from other data centers. If you start an entity type with the same name on all 
 nodes and you have defined 3 different data centers and then send messages to the same entity id to
