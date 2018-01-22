@@ -153,6 +153,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
 
     "load registered typed extensions eagerly even for untyped system" in {
       import akka.actor.typed.scaladsl.adapter._
+      val beforeCreation = InstanceCountingExtension.createCount.get()
       val untypedSystem = akka.actor.ActorSystem()
       try {
         val before = InstanceCountingExtension.createCount.get()
@@ -161,6 +162,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
 
         // should have been loaded even before it was accessed in the test because InstanceCountingExtension is listed
         // as a typed library-extension in the config
+        before shouldEqual beforeCreation + 1
         after shouldEqual before
       } finally {
         untypedSystem.terminate().futureValue
