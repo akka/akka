@@ -7,8 +7,8 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.Pair;
 import akka.japi.function.Function3;
-import akka.persistence.typed.scaladsl.PersistentActorSpec;
-import akka.persistence.typed.scaladsl.PersistentActorSpec$;
+import akka.persistence.typed.scaladsl.PersistentBehaviorSpec;
+import akka.persistence.typed.scaladsl.PersistentBehaviorSpec$;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.typed.javadsl.TestKitJunitResource;
 import akka.testkit.typed.scaladsl.ActorTestKit;
@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class PersistentActorTest {
 
   @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource(PersistentActorSpec$.MODULE$.config());
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(PersistentBehaviorSpec$.MODULE$.config());
 
   static final Incremented timeoutEvent = new Incremented(100);
   static final State emptyState = new State(0, Collections.emptyList());

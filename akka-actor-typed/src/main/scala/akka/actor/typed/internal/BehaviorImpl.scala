@@ -61,7 +61,9 @@ import scala.reflect.ClassTag
 
     override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
       onSignal.applyOrElse((ctx.asScala, msg), Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+
     override def receiveMessage(ctx: AC[T], msg: T) = onMessage(ctx.asScala, msg)
+
     override def toString = s"Immutable(${LineNumbers(onMessage)})"
   }
 

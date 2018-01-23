@@ -6,7 +6,8 @@ package docs.akka.persistence.typed
 import akka.Done
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.typed.scaladsl.PersistentBehaviors
-import akka.persistence.typed.scaladsl.PersistentBehaviors.{ CommandHandler, Effect }
+import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
+import akka.persistence.typed.scaladsl.Effect
 
 object InDepthPersistentBehaviorSpec {
 

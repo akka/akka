@@ -10,7 +10,7 @@ import akka.actor.{ InvalidMessageException, Props }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.{ Done, NotUsed, actor ⇒ untyped }
 import akka.testkit._
-import akka.actor.typed.Behavior.UntypedBehavior
+import akka.actor.typed.Behavior.UntypedPropsBehavior
 
 import scala.concurrent.Await
 
@@ -301,8 +301,9 @@ class AdapterSpec extends AkkaSpec {
 
     "spawn untyped behavior anonymously" in {
       val probe = TestProbe()
-      val untypedBehavior: Behavior[String] = new UntypedBehavior[String] {
-        override private[akka] def untypedProps: Props = untypedForwarder(probe.ref)
+      val untypedBehavior: Behavior[String] = new UntypedPropsBehavior[String] {
+        override def untypedProps(props: akka.actor.typed.Props): akka.actor.Props =
+          untypedForwarder(probe.ref)
       }
       val ref = system.spawnAnonymous(untypedBehavior)
       ref ! "hello"
@@ -311,8 +312,9 @@ class AdapterSpec extends AkkaSpec {
 
     "spawn untyped behavior" in {
       val probe = TestProbe()
-      val untypedBehavior: Behavior[String] = new UntypedBehavior[String] {
-        override private[akka] def untypedProps: Props = untypedForwarder(probe.ref)
+      val untypedBehavior: Behavior[String] = new UntypedPropsBehavior[String] {
+        override def untypedProps(props: akka.actor.typed.Props): akka.actor.Props =
+          untypedForwarder(probe.ref)
       }
       val ref = system.spawn(untypedBehavior, "test")
       ref ! "hello"
