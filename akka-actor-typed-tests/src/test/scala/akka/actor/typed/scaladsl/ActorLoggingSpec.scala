@@ -9,12 +9,16 @@ import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.Logging
+import akka.event.Logging.LogEventWithMarker
 
 class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
   """
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.TestEventListener"]
   """)) with TypedAkkaSpec {
+
+  val marker = LogMarker("marker")
+  val cause = new TestException("böö")
 
   implicit val untyped = system.toUntyped
 
@@ -39,8 +43,22 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
       }
     }
 
+    "pass markers to the log" in {
+      EventFilter.custom({
+        case event: LogEventWithMarker if event.marker == marker ⇒ true
+      }, occurrences = 5).intercept(
+        spawn(Behaviors.deferred[Any] { ctx ⇒
+          ctx.log.debug(marker, "whatever")
+          ctx.log.info(marker, "whatever")
+          ctx.log.warning(marker, "whatever")
+          ctx.log.error(marker, "whatever")
+          ctx.log.error(marker, cause, "whatever")
+          Behaviors.stopped
+        })
+      )
+    }
+
     "provide a whole bunch of logging overloads" in {
-      val marker = LogMarker("marker")
 
       // Not the best test but at least it exercises every log overload ;)
 
@@ -100,7 +118,6 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
           ctx.log.error(marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
           ctx.log.error(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
 
-          val cause = new TestException("böö")
           ctx.log.error(cause, "message")
           ctx.log.error(cause, "{}", "arg1")
           ctx.log.error(cause, "{} {}", "arg1", "arg2")
