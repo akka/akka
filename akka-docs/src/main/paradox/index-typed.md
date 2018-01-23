@@ -4,16 +4,16 @@
 
 @@@ index
 
-* [actors](actors-typed.md)
-* [coexisting](coexisting.md)
-* [actor-lifecycle](actor-lifecycle-typed.md)
-* [interaction patterns](interaction-patterns-typed.md)
-* [fault-tolerance](fault-tolerance-typed.md)
-* [actor-discovery](actor-discovery-typed.md)
-* [cluster](cluster-typed.md)
-* [cluster-singleton](cluster-singleton-typed.md)
-* [cluster-sharding](cluster-sharding-typed.md)
-* [persistence](persistence-typed.md)
-* [testing](testing-typed.md)
+* [actors](typed/actors.md)
+* [coexisting](typed/coexisting.md)
+* [actor-lifecycle](typed/actor-lifecycle.md)
+* [interaction patterns](typed/interaction-patterns.md)
+* [fault-tolerance](typed/fault-tolerance.md)
+* [actor-discovery](typed/actor-discovery.md)
+* [cluster](typed/cluster.md)
+* [cluster-singleton](cluster-singleton.md)
+* [cluster-sharding](typed/cluster-sharding.md)
+* [persistence](typed/persistence.md)
+* [testing](typed/testing.md)
 
 @@@

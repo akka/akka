@@ -6,25 +6,28 @@ package jdocs.akka.typed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.BehaviorBuilder;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.TimerScheduler;
+import akka.testkit.typed.scaladsl.TestProbe;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class InteractionPatternsTest extends JUnitSuite {
 
   // #fire-and-forget
-  interface PrinterProtocol {}
-  class DisableOutput implements PrinterProtocol {}
-  class EnableOutput implements PrinterProtocol {}
+  interface PrinterProtocol { }
+  class DisableOutput implements PrinterProtocol { }
+  class EnableOutput implements PrinterProtocol { }
   class PrintMe implements PrinterProtocol {
     public final String message;
     public PrintMe(String message) {
@@ -197,7 +200,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   public void fireAndForgetSample() throws Exception {
     // #fire-and-forget
     final ActorSystem<PrinterProtocol> system =
-        ActorSystem.create(enabledPrinterBehavior(), "printer-sample-system");
+      ActorSystem.create(enabledPrinterBehavior(), "printer-sample-system");
 
     // note that system is also the ActorRef to the guardian actor
     final ActorRef<PrinterProtocol> ref = system;
@@ -213,5 +216,105 @@ public class InteractionPatternsTest extends JUnitSuite {
     Await.ready(system.terminate(), Duration.create(3, TimeUnit.SECONDS));
   }
 
+  //#timer
+  interface Msg {
+  }
+
+  public static final class Batch {
+    private final List<Msg> messages;
+
+    public Batch(List<Msg> messages) {
+      this.messages = Collections.unmodifiableList(messages);
+    }
+
+    public List<Msg> getMessages() {
+      return messages;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Batch batch = (Batch) o;
+      return Objects.equals(messages, batch.messages);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(messages);
+    }
+  }
+
+  public static final class ExcitingMessage implements Msg {
+    private final String msg;
+
+    public ExcitingMessage(String msg) {
+      this.msg = msg;
+    }
+  }
+
+  private static final Object TIMER_KEY = new Object();
+
+  private static class Timeout implements Msg {
+  }
+
+  public static Behavior<Msg> behavior(ActorRef<Batch> target, FiniteDuration after, int maxSize) {
+    return Behaviors.withTimers(timers -> idle(timers, target, after, maxSize));
+  }
+
+  private static Behavior<Msg> idle(TimerScheduler<Msg> timers, ActorRef<Batch> target,
+                                    FiniteDuration after, int maxSize) {
+    return Behaviors.immutable(Msg.class)
+      .onMessage(Msg.class, (ctx, msg) -> {
+        timers.startSingleTimer(TIMER_KEY, new Timeout(), after);
+        List<Msg> buffer = new ArrayList<>();
+        buffer.add(msg);
+        return active(buffer, timers, target, after, maxSize);
+      })
+      .build();
+  }
+
+  private static Behavior<Msg> active(List<Msg> buffer, TimerScheduler<Msg> timers,
+                                      ActorRef<Batch> target, FiniteDuration after, int maxSize) {
+    return Behaviors.immutable(Msg.class)
+      .onMessage(Timeout.class, (ctx, msg) -> {
+        target.tell(new Batch(buffer));
+        return idle(timers, target, after, maxSize);
+      })
+      .onMessage(Msg.class, (ctx, msg) -> {
+        buffer.add(msg);
+        if (buffer.size() == maxSize) {
+          timers.cancel(TIMER_KEY);
+          target.tell(new Batch(buffer));
+          return idle(timers, target, after, maxSize);
+        } else {
+          return active(buffer, timers, target, after, maxSize);
+        }
+      })
+      .build();
+  }
+  //#timer
+
+  @Test
+  public void timers() throws Exception {
+    final ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "timers-sample");
+    TestProbe<Batch> probe = new TestProbe<>("batcher", system);
+    ActorRef<Msg> bufferer = Await.result(system.systemActorOf(
+      behavior(probe.ref(), new FiniteDuration(1, TimeUnit.SECONDS), 10),
+      "batcher", Props.empty(), akka.util.Timeout.apply(1, TimeUnit.SECONDS)), new FiniteDuration(1, TimeUnit.SECONDS));
+
+    ExcitingMessage msgOne = new ExcitingMessage("one");
+    ExcitingMessage msgTwo = new ExcitingMessage("two");
+    bufferer.tell(msgOne);
+    bufferer.tell(msgTwo);
+    probe.expectNoMessage(new FiniteDuration(1, TimeUnit.MILLISECONDS));
+    probe.expectMsg(new FiniteDuration(2, TimeUnit.SECONDS),
+      new Batch(Arrays.asList(msgOne, msgTwo)));
+
+    Await.ready(system.terminate(), Duration.create(3, TimeUnit.SECONDS));
+  }
 
 }
+
+
+

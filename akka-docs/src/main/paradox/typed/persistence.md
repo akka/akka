@@ -2,7 +2,7 @@
 
 @@@ warning
 
-This module is currently marked as @ref:[may change](common/may-change.md) in the sense
+This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
   of being the subject of active research. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
   this module in production just yet—you have been warned.
@@ -27,7 +27,7 @@ To use typed persistence add the following dependency:
 
 
 Akka Persistence is a library for building event sourced actors. For background about how it works
-see the @ref:[untyped Akka Persistence section](persistence.md). This documentation shows how the typed API for persistence
+see the @ref:[untyped Akka Persistence section](../persistence.md). This documentation shows how the typed API for persistence
 works and assumes you know what is meant by `Command`, `Event` and `State`.
 
 Let's start with a simple example. The minimum required for a `PersistentBehavior` is:
@@ -163,10 +163,10 @@ Scala
 
 ## Serialization
 
-The same @ref:[serialization](serialization.md) mechanism as for untyped 
+The same @ref:[serialization](../serialization.md) mechanism as for untyped 
 actors is also used in Akka Typed, also for persistent actors. When picking serialization solution for the events 
 you should also consider that it must be possible read old events when the application has evolved. 
-Strategies for that can be found in the @ref:[schema evolution](persistence-schema-evolution.md).
+Strategies for that can be found in the @ref:[schema evolution](../persistence-schema-evolution.md).
 
 ## Recovery
 
@@ -181,7 +181,7 @@ The `onRecoveryCompleted` takes on an `ActorContext` and the current `State`.
 ## Tagging
 
 Persistence typed allows you to use event tags with the following `withTagging` method,
-without using @ref[`EventAdapter`](persistence.md#event-adapters).
+without using @ref[`EventAdapter`](../persistence.md#event-adapters).
 
 Scala
 :  @@snip [BasicPersistentActorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #tagging }
