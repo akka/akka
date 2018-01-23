@@ -10,6 +10,7 @@ import akka.testkit.EventFilter
 import akka.testkit.typed.scaladsl.TestProbe
 
 import scala.concurrent._
+import scala.concurrent.duration._
 import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
 
@@ -171,7 +172,6 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
     class ErrorTestSetup {
       val terminator = systemActor(terminatorBehavior)
       private val stopProbe = TestProbe[Done]()
-      def expectStopped(): Unit = stopProbe.expectMsg(Done)
 
       val watcher = systemActor(
         Behaviors.supervise(
@@ -186,11 +186,12 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
               Behaviors.stopped
           }.onSignal {
             case (_, PostStop) ⇒
-              stopProbe.ref ! Done
               Behaviors.stopped
           }
         ).onFailure[Throwable](SupervisorStrategy.stop)
       )
+
+      def expectStopped(): Unit = stopProbe.expectTerminated(watcher, 1.second)
     }
 
     "fail when watch is used after watchWith on same subject" in new ErrorTestSetup {
