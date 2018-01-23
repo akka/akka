@@ -49,10 +49,8 @@ class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: Thre
     Thread.sleep(10)
 
     val newTime = currentTime.get + amount.toMillis
-    log.debug(s"Time proceeds from ${currentTime.get} to $newTime, currently scheduled for this period:")
-    scheduledTasks(newTime).foreach(item ⇒
-      log.debug(s"- $item")
-    )
+    log.debug(s"Time proceeds from ${currentTime.get} to $newTime, currently scheduled for this period:" + scheduledTasks(newTime).map(item ⇒ s"\n- $item"))
+
     executeTasks(newTime)
     currentTime.set(newTime)
   }
