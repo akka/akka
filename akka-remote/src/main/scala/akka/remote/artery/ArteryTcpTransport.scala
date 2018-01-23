@@ -79,12 +79,21 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         tcp
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
-      import scala.concurrent.duration._
+      val flowFactory = () ⇒ connectionFlow.mapMaterializedValue(_ ⇒ NotUsed)
+        .log(name = s"outbound connection to [${outboundContext.remoteAddress}]")
+        .addAttributes(Attributes.logLevels(onElement = LogLevels.Off))
+
       // FIXME config of backoff
-      RestartFlow.withBackoff[ByteString, ByteString](1.second, 5.seconds, 0.1) { () ⇒
-        connectionFlow.mapMaterializedValue(_ ⇒ NotUsed)
-          .log(name = s"outbound connection to [${outboundContext.remoteAddress}]")
-          .addAttributes(Attributes.logLevels(onElement = LogLevels.Off))
+      import scala.concurrent.duration._
+      if (streamId == controlStreamId) {
+        // restart of inner connection part important in control flow, since system messages
+        // are buffered and resent from the outer SystemMessageDelivery stage.
+        // FIXME The mat value Future is currently never completed, because RestartFlow will retry forever, should it give up?
+        //       related to give-up-system-message-after ?
+        RestartFlow.withBackoff[ByteString, ByteString](1.second, 5.seconds, 0.1)(flowFactory)
+      } else {
+        // Best effort retry a few times
+        RestartFlow.withBackoff[ByteString, ByteString](1.second, 5.seconds, 0.1, maxRestarts = 3)(flowFactory)
       }
     }
 
@@ -95,9 +104,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         bytes
       }
       .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal ⇒ Source.empty })
-      // restart of inner connection part only needed in control flow, since system messages
-      // are buffered and resent from the outer SystemMessageDelivery stage
-      .via(if (streamId == controlStreamId) connectionFlowWithRestart else connectionFlow)
+      .via(connectionFlowWithRestart)
       .map(_ ⇒ throw new IllegalStateException(s"Unexpected incoming bytes in outbound connection to [${outboundContext.remoteAddress}]"))
       .toMat(Sink.ignore)(Keep.right)
 
