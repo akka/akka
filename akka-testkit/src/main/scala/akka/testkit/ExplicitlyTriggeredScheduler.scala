@@ -51,7 +51,8 @@ class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: Thre
     Thread.sleep(10)
 
     val newTime = currentTime.get + amount.toMillis
-    log.debug(s"Time proceeds from ${currentTime.get} to $newTime, currently scheduled for this period:" + scheduledTasks(newTime).map(item ⇒ s"\n- $item"))
+    if (log.isDebugEnabled)
+      log.debug(s"Time proceeds from ${currentTime.get} to $newTime, currently scheduled for this period:" + scheduledTasks(newTime).map(item ⇒ s"\n- $item"))
 
     executeTasks(newTime)
     currentTime.set(newTime)
@@ -85,7 +86,7 @@ class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: Thre
   private def schedule(initialDelay: FiniteDuration, interval: Option[FiniteDuration], runnable: Runnable): Cancellable = {
     val firstTime = currentTime.get + initialDelay.toMillis
     val item = Item(firstTime, interval, runnable)
-    log.debug(s"Scheduled item for $firstTime: $item")
+    log.debug("Scheduled item for {}: {}", firstTime, item)
     scheduled.put(item, ())
 
     if (initialDelay <= Duration.Zero)
