@@ -47,8 +47,10 @@ class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: Thre
    * this method.
    */
   def timePasses(amount: FiniteDuration) = {
-    // Give dispatchers time to clear :(
-    Thread.sleep(10)
+    // Give dispatchers time to clear :(. See
+    // https://github.com/akka/akka/pull/24243#discussion_r160985493
+    // for some discussion on how to deal with this properly.
+    Thread.sleep(100)
 
     val newTime = currentTime.get + amount.toMillis
     if (log.isDebugEnabled)
