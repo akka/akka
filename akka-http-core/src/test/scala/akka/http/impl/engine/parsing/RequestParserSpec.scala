@@ -429,13 +429,13 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
       "with a too-long header name" in new Test {
         """|GET / HTTP/1.1
           |UserxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAgent: curl/7.19.7""" should parseToError(
-          BadRequest, ErrorInfo("HTTP header name exceeds the configured limit of 64 characters"))
+          RequestHeaderFieldsTooLarge, ErrorInfo("HTTP header name exceeds the configured limit of 64 characters"))
       }
 
       "with a too-long header-value" in new Test {
         """|GET / HTTP/1.1
           |Fancy: 123456789012345678901234567890123""" should parseToError(
-          BadRequest,
+          RequestHeaderFieldsTooLarge,
           ErrorInfo("HTTP header value exceeds the configured limit of 32 characters"))
       }
 

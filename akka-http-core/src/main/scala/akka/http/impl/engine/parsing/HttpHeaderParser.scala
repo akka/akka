@@ -548,7 +548,7 @@ private[http] object HttpHeaderParser {
         case c if tchar(c) ⇒ scanHeaderNameAndReturnIndexOfColon(input, start, limit)(ix + 1)
         case c             ⇒ fail(s"Illegal character '${escape(c)}' in header name")
       }
-    else fail(s"HTTP header name exceeds the configured limit of ${limit - start - 1} characters")
+    else fail(s"HTTP header name exceeds the configured limit of ${limit - start - 1} characters", StatusCodes.RequestHeaderFieldsTooLarge)
 
   @tailrec private def scanHeaderValue(hhp: HttpHeaderParser, input: ByteString, start: Int, limit: Int, log: LoggingAdapter,
                                        mode: IllegalResponseHeaderValueProcessingMode)(sb: JStringBuilder = null, ix: Int = start): (String, Int) = {
@@ -611,10 +611,10 @@ private[http] object HttpHeaderParser {
             }
           scanHeaderValue(hhp, input, start, limit, log, mode)(nsb, nix)
       }
-    else fail(s"HTTP header value exceeds the configured limit of ${limit - start - 2} characters")
+    else fail(s"HTTP header value exceeds the configured limit of ${limit - start - 2} characters", StatusCodes.RequestHeaderFieldsTooLarge)
   }
 
-  def fail(summary: String) = throw new ParsingException(StatusCodes.BadRequest, ErrorInfo(summary))
+  def fail(summary: String, status: StatusCode = StatusCodes.BadRequest) = throw new ParsingException(status, ErrorInfo(summary))
 
   private object OutOfTrieSpaceException extends SingletonException
 
