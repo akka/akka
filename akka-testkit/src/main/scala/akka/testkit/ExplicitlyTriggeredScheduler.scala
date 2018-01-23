@@ -10,6 +10,8 @@ import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.Try
+
 import akka.actor.Cancellable
 import akka.actor.Scheduler
 import akka.event.LoggingAdapter
@@ -68,9 +70,11 @@ class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: Thre
     scheduledTasks(runTo).headOption match {
       case Some(task) ⇒
         currentTime.set(task.time)
-        task.runnable.run()
+        val runResult = Try(task.runnable.run())
         scheduled.remove(task)
-        task.interval.foreach(i ⇒ scheduled.put(task.copy(time = task.time + i.toMillis), ()))
+
+        if (runResult.isSuccess)
+          task.interval.foreach(i ⇒ scheduled.put(task.copy(time = task.time + i.toMillis), ()))
 
         // running the runnable might have scheduled new events
         executeTasks(runTo)
