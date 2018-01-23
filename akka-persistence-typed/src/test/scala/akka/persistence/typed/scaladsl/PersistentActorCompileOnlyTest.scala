@@ -199,7 +199,7 @@ object PersistentActorCompileOnlyTest {
       eventHandler = (state, evt) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
-      }).snapshotOn { (state, e, seqNr) ⇒ state.tasksInFlight.isEmpty }
+      }).snapshotWhen { (state, e, seqNr) ⇒ state.tasksInFlight.isEmpty }
   }
 
   object SpawnChild {

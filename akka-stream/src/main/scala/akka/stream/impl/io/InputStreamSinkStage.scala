@@ -3,7 +3,7 @@
  */
 package akka.stream.impl.io
 
-import java.io.{ IOException, InputStream }
+import java.io.{ BufferedOutputStream, ByteArrayOutputStream, IOException, InputStream }
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingDeque, TimeUnit }
 
 import akka.annotation.InternalApi
