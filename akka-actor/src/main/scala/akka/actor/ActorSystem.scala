@@ -808,10 +808,25 @@ private[akka] class ActorSystemImpl(
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path
 
+  @volatile private var _initialized = false
+  /**
+   *  Asserts that the ActorSystem has been fully initialized. Can be used to guard code blocks that might accidentally
+   *  be run during initialization but require a fully initialized ActorSystem before proceeding.
+   */
+  def assertInitialized(): Unit =
+    if (!_initialized)
+      throw new IllegalStateException(
+        "The calling code expected that the ActorSystem was initialized but it wasn't yet. " +
+          "This is probably a bug in the ActorSystem initialization sequence often related to initialization of extensions. " +
+          "Please report at https://github.com/akka/akka/issues."
+      )
   private lazy val _start: this.type = try {
     registerOnTermination(stopScheduler())
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
+    // at this point it should be initialized "enough" for most extensions that we might want to guard against otherwise
+    _initialized = true
+
     if (settings.LogDeadLetters > 0)
       logDeadLetterListener = Some(systemActorOf(Props[DeadLetterListener], "deadLetterListener"))
     eventStream.startUnsubscriber()
