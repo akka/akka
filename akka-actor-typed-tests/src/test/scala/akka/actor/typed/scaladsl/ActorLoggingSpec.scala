@@ -8,6 +8,7 @@ import akka.testkit.EventFilter
 import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
 import akka.actor.typed.scaladsl.adapter._
+import akka.event.Logging
 
 class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
   """akka.loggers = ["akka.testkit.TestEventListener"]""")) with TypedAkkaSpec {
@@ -36,17 +37,22 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
 
   }
 
+  trait Protocol {
+    def transactionId: Long
+  }
+  case class Message(transactionId: Long, message: String) extends Protocol
+
   "Logging with MDC for a typed actor" must {
 
     "provide the MDC values in the log" in {
-      val behaviors = LoggingBehaviors.withMdc[String](
+      val behaviors = LoggingBehaviors.withMdc[Protocol](
         { (msg) ⇒
-          if (msg == "first")
+          if (msg.transactionId == 1)
             Map(
-              "message" -> msg,
+              "txId" -> msg.transactionId,
               "first" -> true
             )
-          else Map("message" -> msg)
+          else Map("txId" -> msg.transactionId)
         },
         Behaviors.deferred { ctx ⇒
           ctx.log.info("Starting")
@@ -57,11 +63,38 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
         }
       )
 
-      val ref = spawn(behaviors)
+      // mdc on defer is empty (thread and timestamp MDC is added by logger backend)
+      val ref = EventFilter.custom({
+        case logEvent if logEvent.level == Logging.InfoLevel ⇒
+          logEvent.message should ===("Starting")
+          logEvent.mdc shouldBe empty
+          true
+        case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
+      }, occurrences = 1).intercept {
+        spawn(behaviors)
+      }
 
-      ref ! "first"
-      ref ! "second"
-      // FIXME how to test that logger actually sees MDC?
+      // mdc on message
+      EventFilter.custom({
+        case logEvent if logEvent.level == Logging.InfoLevel ⇒
+          logEvent.message should ===("Got message!")
+          logEvent.mdc should ===(Map("txId" -> 1L, "first" -> true))
+          true
+        case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
+      }, occurrences = 1).intercept {
+        ref ! Message(1, "first")
+      }
+
+      // mdc does not leak between messages
+      EventFilter.custom({
+        case logEvent if logEvent.level == Logging.InfoLevel ⇒
+          logEvent.message should ===("Got message!")
+          logEvent.mdc should ===(Map("txId" -> 2L))
+          true
+        case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
+      }, occurrences = 1).intercept {
+        ref ! Message(2, "second")
+      }
     }
 
   }

@@ -6,7 +6,7 @@ package akka.actor.typed.internal
 import akka.actor.Cancellable
 import akka.actor.typed.internal.adapter.ActorContextAdapter
 import akka.actor.typed.{ ActorContext, ActorRef, ActorSystem, Behavior, ExtensibleBehavior, Props, Signal }
-import akka.event.{ BusLogging, DiagnosticLoggingAdapter, LogSource, LoggingAdapter }
+import akka.event._
 import akka.util.OptionVal
 import akka.actor.typed.{ ActorContext ⇒ AC }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
@@ -58,7 +58,7 @@ import scala.concurrent.duration.FiniteDuration
           // FIXME the clazz here probably does not make much sense
           val untypedSystem = actual.untyped.system
           val (str, clazz) = LogSource(actual.untyped.self, untypedSystem)
-          val b = new BusLogging(untypedSystem.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
+          val b = new DiagnosticMarkerBusLoggingAdapter(untypedSystem.eventStream, str, clazz, system.logFilter)
           _diagnosticLoggingAdapter = OptionVal.Some(b)
           b
       }
@@ -90,7 +90,7 @@ import scala.concurrent.duration.FiniteDuration
 
     def init(): Behavior[T] = {
       // initial defer also uses the MDC context
-      Behavior.validateAsInitial(Behavior.undefer(behavior, mdcCtx))
+      withMdc(Behavior.validateAsInitial(Behavior.undefer(behavior, mdcCtx)))
     }
 
     // FIXME allocating a new wrapper for each message, should/can we avoid it?
