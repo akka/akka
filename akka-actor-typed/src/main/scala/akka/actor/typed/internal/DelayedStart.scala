@@ -4,7 +4,7 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed.scaladsl.MutableStashBuffer
-import akka.actor.typed.{Behavior, scaladsl}
+import akka.actor.typed.{ Behavior, scaladsl }
 import akka.annotation.InternalApi
 
 /**
