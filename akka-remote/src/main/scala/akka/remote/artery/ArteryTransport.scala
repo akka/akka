@@ -6,6 +6,7 @@ package akka.remote.artery
 import java.net.InetSocketAddress
 import java.nio.channels.DatagramChannel
 import java.nio.channels.FileChannel
+import java.nio.channels.ServerSocketChannel
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -398,15 +399,16 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     startTransport()
 
+    val udp = settings.Transport == ArterySettings.AeronUpd
     val port =
       if (settings.Canonical.Port == 0) {
         if (settings.Bind.Port != 0) settings.Bind.Port // if bind port is set, use bind port instead of random
-        else ArteryTransport.autoSelectPort(settings.Canonical.Hostname)
+        else ArteryTransport.autoSelectPort(settings.Canonical.Hostname, udp)
       } else settings.Canonical.Port
 
     val bindPort = if (settings.Bind.Port == 0) {
       if (settings.Canonical.Port == 0) port // canonical and bind ports are zero. Use random port for both
-      else ArteryTransport.autoSelectPort(settings.Bind.Hostname)
+      else ArteryTransport.autoSelectPort(settings.Bind.Hostname, udp)
     } else settings.Bind.Port
 
     _localAddress = UniqueAddress(
@@ -873,13 +875,20 @@ private[remote] object ArteryTransport {
     aeronSourceLifecycle: Option[AeronSource.ResourceLifecycle],
     completed:            Future[Done])
 
-  def autoSelectPort(hostname: String): Int = {
-    // FIXME must be different for TCP
-    val socket = DatagramChannel.open().socket()
-    socket.bind(new InetSocketAddress(hostname, 0))
-    val port = socket.getLocalPort
-    socket.close()
-    port
+  def autoSelectPort(hostname: String, udp: Boolean): Int = {
+    if (udp) {
+      val socket = DatagramChannel.open().socket()
+      socket.bind(new InetSocketAddress(hostname, 0))
+      val port = socket.getLocalPort
+      socket.close()
+      port
+    } else {
+      val socket = ServerSocketChannel.open().socket()
+      socket.bind(new InetSocketAddress(hostname, 0))
+      val port = socket.getLocalPort
+      socket.close()
+      port
+    }
   }
 
 }

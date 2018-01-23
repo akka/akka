@@ -57,7 +57,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
   import ArteryTransport.InboundStreamMatValues
   import FlightRecorderEvents._
 
-  private var inboundConnectionsKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundConnectionsKillSwitch")
+  @volatile private var inboundConnectionsKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundConnectionsKillSwitch")
   private var serverBinding: Option[Future[ServerBinding]] = None
 
   override protected def startTransport(): Unit = {
@@ -311,6 +311,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
   override protected def shutdownTransport(): Future[Done] = {
     implicit val ec = materializer.executionContext
+    inboundConnectionsKillSwitch.shutdown()
     unbind().map { _ ⇒
       topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
       Done
