@@ -4,7 +4,7 @@
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed._
-import akka.annotation.{ApiMayChange, DoNotInherit}
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.event.LoggingAdapter
 import akka.util.Timeout
 
