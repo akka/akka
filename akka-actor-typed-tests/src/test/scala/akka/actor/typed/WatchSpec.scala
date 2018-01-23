@@ -5,6 +5,7 @@ package akka.actor.typed
 
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.Behaviors.MutableBehavior
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
 import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
@@ -22,6 +23,12 @@ object WatchSpec {
     Behaviors.immutable[Stop.type] {
       case (_, Stop) ⇒ Behaviors.stopped
     }
+
+  val mutableTerminatorBehavior = new MutableBehavior[Stop.type] {
+    override def onMessage(msg: Stop.type) = msg match {
+      case Stop ⇒ Behaviors.stopped
+    }
+  }
 
   sealed trait Message
   sealed trait CustomTerminationMessage extends Message
