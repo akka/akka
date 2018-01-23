@@ -362,7 +362,7 @@ private[remote] class Association(
         case ShuttingDown ⇒ // silence it
       }
     } else if (log.isDebugEnabled)
-      log.warning( // FIXME debug level
+      log.debug(
         "Dropping message [{}] from [{}] to [{}] due to quarantined system [{}]",
         Logging.messageClassName(message), sender.getOrElse(deadletters), recipient.getOrElse(recipient), remoteAddress)
   }
@@ -529,7 +529,7 @@ private[remote] class Association(
     materializing.countDown()
 
     updateStreamMatValues(ControlQueueIndex, streamKillSwitch, completed)
-    attachStreamRestart("Outbound control stream", ControlQueueIndex, controlQueueSize,
+    attachOutboundStreamRestart("Outbound control stream", ControlQueueIndex, controlQueueSize,
       completed, () ⇒ runOutboundControlStream())
   }
 
@@ -568,7 +568,7 @@ private[remote] class Association(
       outboundCompressionAccess = Vector(changeCompression)
 
       updateStreamMatValues(OrdinaryQueueIndex, streamKillSwitch, completed)
-      attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
+      attachOutboundStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
         completed, () ⇒ runOutboundOrdinaryMessagesStream())
 
     } else {
@@ -623,7 +623,7 @@ private[remote] class Association(
 
       outboundCompressionAccess = compressionAccessValues
 
-      attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
+      attachOutboundStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
         allCompleted, () ⇒ runOutboundOrdinaryMessagesStream())
     }
   }
@@ -649,12 +649,12 @@ private[remote] class Association(
     queuesVisibility = true // volatile write for visibility of the queues array
 
     updateStreamMatValues(LargeQueueIndex, streamKillSwitch, completed)
-    attachStreamRestart("Outbound large message stream", LargeQueueIndex, largeQueueSize,
+    attachOutboundStreamRestart("Outbound large message stream", LargeQueueIndex, largeQueueSize,
       completed, () ⇒ runOutboundLargeMessagesStream())
   }
 
-  private def attachStreamRestart(streamName: String, queueIndex: Int, queueCapacity: Int,
-                                  streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
+  private def attachOutboundStreamRestart(streamName: String, queueIndex: Int, queueCapacity: Int,
+                                          streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
 
     def lazyRestart(): Unit = {
       outboundCompressionAccess = Vector.empty

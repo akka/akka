@@ -555,7 +555,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   }
 
-  protected def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
+  protected def attachInboundStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
     implicit val ec = materializer.executionContext
     streamCompleted.failed.foreach {
       case ShutdownSignal     ⇒ // shutdown as expected
@@ -874,6 +874,7 @@ private[remote] object ArteryTransport {
     completed:            Future[Done])
 
   def autoSelectPort(hostname: String): Int = {
+    // FIXME must be different for TCP
     val socket = DatagramChannel.open().socket()
     socket.bind(new InetSocketAddress(hostname, 0))
     val port = socket.getLocalPort

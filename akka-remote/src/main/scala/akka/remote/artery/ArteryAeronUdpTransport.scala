@@ -326,7 +326,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     attachControlMessageObserver(ctrl)
 
     updateStreamMatValues(controlStreamId, resourceLife, completed)
-    attachStreamRestart("Inbound control stream", completed, () ⇒ runInboundControlStream())
+    attachInboundStreamRestart("Inbound control stream", completed, () ⇒ runInboundControlStream())
   }
 
   private def runInboundOrdinaryMessagesStream(): Unit = {
@@ -372,7 +372,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     setInboundCompressionAccess(inboundCompressionAccess)
 
     updateStreamMatValues(ordinaryStreamId, resourceLife, completed)
-    attachStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream())
+    attachInboundStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream())
   }
 
   private def runInboundLargeMessagesStream(): Unit = {
@@ -384,7 +384,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       .run()(materializer)
 
     updateStreamMatValues(largeStreamId, resourceLife, completed)
-    attachStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
+    attachInboundStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
   }
 
   private def updateStreamMatValues(streamId: Int, aeronSourceLifecycle: AeronSource.ResourceLifecycle, completed: Future[Done]): Unit = {
