@@ -24,6 +24,7 @@ object ReplicatorSpec {
 
   val config = ConfigFactory.parseString(
     """
+    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -43,14 +44,15 @@ object ReplicatorSpec {
 
   def client(replicator: ActorRef[Replicator.Command])(implicit cluster: Cluster): Behavior[ClientCommand] =
     Behaviors.deferred[ClientCommand] { ctx ⇒
+
       val updateResponseAdapter: ActorRef[Replicator.UpdateResponse[GCounter]] =
-        ctx.spawnAdapter(InternalUpdateResponse.apply)
+        ctx.messageAdapter(InternalUpdateResponse.apply)
 
       val getResponseAdapter: ActorRef[Replicator.GetResponse[GCounter]] =
-        ctx.spawnAdapter(InternalGetResponse.apply)
+        ctx.messageAdapter(InternalGetResponse.apply)
 
       val changedAdapter: ActorRef[Replicator.Changed[GCounter]] =
-        ctx.spawnAdapter(InternalChanged.apply)
+        ctx.messageAdapter(InternalChanged.apply)
 
       replicator ! Replicator.Subscribe(Key, changedAdapter)
 

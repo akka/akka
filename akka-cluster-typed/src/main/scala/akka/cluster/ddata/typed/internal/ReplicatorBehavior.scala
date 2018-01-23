@@ -120,7 +120,7 @@ import akka.actor.typed.Terminated
               // For the Java API the Changed messages must be mapped to the JReplicator.Changed class.
               // That is done with an adapter, and we have to keep track of the lifecycle of the original
               // subscriber and stop the adapter when the original subscriber is stopped.
-              val adapter: ActorRef[dd.Replicator.Changed[ReplicatedData]] = ctx.spawnAdapter {
+              val adapter: ActorRef[dd.Replicator.Changed[ReplicatedData]] = ctx.spawnMessageAdapter {
                 chg ⇒ InternalChanged(chg, cmd.subscriber)
               }
 

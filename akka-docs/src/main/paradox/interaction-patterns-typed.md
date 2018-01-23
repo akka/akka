@@ -1,4 +1,4 @@
-# Typed Actor Interaction Patterns
+# Interaction Patterns
 
 Interacting with an Actor in Akka Typed is done through an @scala[`ActorRef[T]`]@java[`ActorRef<T>`] where `T` is the type of messages the actor accepts, also known as the "protocol". This ensures that only the right kind of messages can be sent to an actor and also ensures no access to the Actor instance internals is available to anyone else but the Actor itself. 
 
@@ -16,13 +16,13 @@ Scala
 Java
 :  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #fire-and-forget }
 
-**Scenarios fire and forget is useful:**
+**Useful when:**
 
  * When it is not critical to be sure that the message was processed
  * When there is no way to act on non successful delivery or processing
  * When we want to minimize the number of messages created to get higher throughput
 
-**Problems with fire and forget:**
+**Problems:**
 
  * Consistently higher rates of fire and forget to an actor than it process will make the inbox fill up and can in the worst case cause the JVM crash with an `OutOfMemoryError`
  * If the message got lost, we will not notice
@@ -33,33 +33,60 @@ In many interactions a request is followed by a response back from the actor. In
 
 TODO sample
 
-**Scenarios where request response with tell is useful:**
+**Useful when:**
 
  * Subscribing to an actor that will send many response messages (of the same protocol) back
  * When communicating between a parent and its children, where the protocol can be made include the messages for the interaction 
  * ???
 
-**Problems request-response:**
+**Problems:**
 
  * Often the response that the other actor wants to send back is not a part of the sending actor's protocol (see adapted request response or ask)
  * It is hard to detect and that a message request was not delivered or processed (see ask)
  * Unless the protocol already includes a way to provide context, for example a request id that is also sent in the response, it is not possible to tie an interaction to some specific context without introducing a new, separate, actor
 
-## Adapted Request-Response
+## Adapted Response
 
-Very often the receiving does not, and should not be made, know of the protocol of the sending actor, and will respond with one or more messages that the sending actor cannot receive.
+Very often the receiving actor does not, and should, know of the protocol of the sending actor, and
+will respond with one or more messages that the sending actor cannot receive.
 
-TODO sample
+Scala
+:  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #adapted-response }
 
-**Scenarios where Adapted Request-Response is useful:**
+Java
+:  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #adapted-response }
 
- * Subscribing to an actor that will send many response messages back 
+You can register several message adapters for different message classes.
+It's only possible to have one message adapter per message class to make sure
+that the number of adapters are not growing unbounded if registered repeatedly.
+That also means that a registered adapter will replace an existing adapter for
+the same message class.
+
+A message adapter will be used if the message class matches the given class or
+is a subclass thereof. The registered adapters are tried in reverse order of
+their registration order, i.e. the last registered first.
+
+A message adapter (and the returned `ActorRef`) has the same lifecycle as
+the receiving actor. It's recommended to register the adapters in a top level
+`Behaviors.deferred` or constructor of `MutableBehavior` but it's possible to
+register them later also if needed.
+
+The function is running in the receiving actor and can safely access state of it.
+
+**Useful when:**
+
+ * Subscribing to an actor that will send many response messages back
+ * Translating between different actor message protocols
  
-**Problems with adapted request-response:**
+**Problems:**
 
- * It is hard to detect and that a message request was not delivered or processed (see ask)
- * Only one adaption can be made per response message type, if a new one is registered the old one is replaced, for example different target actors can't have different adaption if they use the same response types, unless some correlation is encoded in the messages
- * Unless the protocol already includes a way to provide context, for example a request id that is also sent in the response, it is not possible to tie an interaction to some specific context without introducing a new, separate, actor 
+ * It is hard to detect that a message request was not delivered or processed (see ask)
+ * Only one adaption can be made per response message type, if a new one is registered the old one is replaced,
+   for example different target actors can't have different adaption if they use the same response types, unless some
+   correlation is encoded in the messages
+ * Unless the protocol already includes a way to provide context, for example a request id that is also sent in the
+   response, it is not possible to tie an interaction to some specific context without introducing a new,
+   separate, actor
 
  
 ## 1:1 Request-Response with ask between two actors
@@ -70,8 +97,9 @@ The interaction has two steps, first we need to construct the outgoing message, 
 
 TODO sample
 
+The function is running in the receiving actor and can safely access state of it.
 
-**Scenarios where ask is useful:**
+**Useful when:**
 
  * Single response queries
  * When an actor needs to know that the message was processed before continuing 
@@ -79,7 +107,7 @@ TODO sample
  * To keep track of outstanding requests and not overwhelm a recipient with messages (simple backpressure)
  * When some context should be attached to the interaction but the protocol does not support that (request id, what query the response was for)
  
-**Problems with ask:**
+**Problems:**
 
  * There can only be a single response to one `ask`
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
@@ -92,12 +120,12 @@ In an interaction where there is a 1:1 mapping between a request and a response 
 
 TODO sample
 
-**Scenarios where this ask variant is useful:**
+**Useful when:**
 
  * Single response queries where the response should be passed on to some other actor
  * ???
 
-**Problems with ask:**
+**Problems:**
 
  * There can only be a single response to one `ask`
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
@@ -109,12 +137,14 @@ Keeping context for an interaction, or multiple interactions can be done by movi
 
 TODO
 
-**Scenarios where per session child actor is useful:**
+**Useful when:**
 
- * A single incoming request should result in multiple interactions with other actions before a result can be built
+ * A single incoming request should result in multiple interactions with other actors before a result can be built,
+   for example aggregation of several results
+ * Handle acknowledgement and retry messages for at-least-once delivery
  * ???
 
-**Problems with ask:**
+**Problems:**
 
  * Children have lifecycles that must be managed to not create a resource leak
  * ???

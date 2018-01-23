@@ -5,13 +5,14 @@ package akka.actor.typed.scaladsl
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
+import scala.util.Try
+
+import akka.actor.typed._
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
-import akka.actor.typed._
+import akka.annotation.InternalApi
 import akka.util.Timeout
-
-import scala.reflect.ClassTag
-import scala.util.{ Success, Failure, Try }
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -138,24 +139,54 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
   implicit def executionContext: ExecutionContextExecutor
 
   /**
-   * Create a child actor that will wrap messages such that other Actor’s
-   * protocols can be ingested by this Actor. You are strongly advised to cache
-   * these ActorRefs or to stop them when no longer needed.
+   * INTERNAL API: It is currently internal because it's too easy to create
+   * resource leaks by spawning adapters without stopping them. `messageAdapter`
+   * is the public API.
+   *
+   * Create a "lightweight" child actor that will convert or wrap messages such that
+   * other Actor’s protocols can be ingested by this Actor. You are strongly advised
+   * to cache these ActorRefs or to stop them when no longer needed.
    *
    * The name of the child actor will be composed of a unique identifier
    * starting with a dollar sign to which the given `name` argument is
    * appended, with an inserted hyphen between these two parts. Therefore
    * the given `name` argument does not need to be unique within the scope
    * of the parent actor.
+   *
+   * The function is applied inside the "parent" actor and can safely access
+   * state of the "parent".
    */
-  def spawnAdapter[U](f: U ⇒ T, name: String): ActorRef[U]
+  @InternalApi private[akka] def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U]
 
   /**
-   * Create an anonymous child actor that will wrap messages such that other Actor’s
-   * protocols can be ingested by this Actor. You are strongly advised to cache
-   * these ActorRefs or to stop them when no longer needed.
+   * INTERNAL API: See `spawnMessageAdapter` with name parameter
    */
-  def spawnAdapter[U](f: U ⇒ T): ActorRef[U]
+  @InternalApi private[akka] def spawnMessageAdapter[U](f: U ⇒ T): ActorRef[U]
+
+  /**
+   * Create a message adapter that will convert or wrap messages such that other Actor’s
+   * protocols can be ingested by this Actor.
+   *
+   * You can register several message adapters for different message classes.
+   * It's only possible to have one message adapter per message class to make sure
+   * that the number of adapters are not growing unbounded if registered repeatedly.
+   * That also means that a registered adapter will replace an existing adapter for
+   * the same message class.
+   *
+   * A message adapter will be used if the message class matches the given class or
+   * is a subclass thereof. The registered adapters are tried in reverse order of
+   * their registration order, i.e. the last registered first.
+   *
+   * A message adapter (and the returned `ActorRef`) has the same lifecycle as
+   * this actor. It's recommended to register the adapters in a top level
+   * `Behaviors.deferred` or constructor of `MutableBehavior` but it's possible to
+   * register them later also if needed. Message adapters don't have to be stopped since
+   * they consume no resources other than an entry in an internal `Map` and the number
+   * of adapters are bounded since it's only possible to have one per message class.
+   * *
+   * The function is running in this actor and can safely access state of it.
+   */
+  def messageAdapter[U: ClassTag](f: U ⇒ T): ActorRef[U]
 
   /**
    * Perform a single request-response message interaction with another actor, and transform the messages back to
@@ -165,7 +196,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * will be passed as a `Failure(`[[java.util.concurrent.TimeoutException]]`)` to the `mapResponse` function
    * (this is the only "normal" way a `Failure` is passed to the function).
    *
-   * For other messaging patterns with other actors, see [[spawnAdapter]].
+   * For other messaging patterns with other actors, see [[ActorContext#messageAdapter]].
    *
    * @param createRequest A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
    *                      the other actor can send a message back through.
