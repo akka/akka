@@ -5,7 +5,8 @@ package akka.actor.typed
 package internal
 package adapter
 
-import akka.{ actor ⇒ a }
+import akka.{ ConfigurationException, actor ⇒ a }
+
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContextExecutor
 import akka.annotation.InternalApi
@@ -103,8 +104,13 @@ import akka.actor.typed.Behavior.UntypedBehavior
         // TODO dispatcher from props
         ActorRefAdapter(ctx.actorOf(b.untypedProps))
       case _ ⇒
-        Behavior.validateAsInitial(behavior)
-        ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props)))
+        try {
+          Behavior.validateAsInitial(behavior)
+          ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props)))
+        } catch {
+          case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
+            throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
+        }
     }
   }
 
@@ -114,8 +120,14 @@ import akka.actor.typed.Behavior.UntypedBehavior
         // TODO dispatcher from props
         ActorRefAdapter(ctx.actorOf(b.untypedProps, name))
       case _ ⇒
-        Behavior.validateAsInitial(behavior)
-        ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props), name))
+        try {
+          Behavior.validateAsInitial(behavior)
+          ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props), name))
+        } catch {
+          case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
+            throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
+        }
     }
   }
+
 }
