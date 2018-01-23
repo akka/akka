@@ -4,8 +4,7 @@
 package akka.persistence.typed.javadsl
 
 import akka.annotation.DoNotInherit
-import akka.persistence.typed.scaladsl.PersistentBehaviors._
-import akka.japi.{ function ⇒ japi }
+import akka.japi.function
 import akka.persistence.typed.internal._
 
 import scala.collection.JavaConverters._
@@ -53,10 +52,10 @@ object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
 @DoNotInherit abstract class Effect[+Event, State] {
   self: EffectImpl[Event, State] ⇒
   /** Convenience method to register a side effect with just a callback function */
-  final def andThen(callback: japi.Procedure[State]): Effect[Event, State] =
+  final def andThen(callback: function.Procedure[State]): Effect[Event, State] =
     CompositeEffect(this, SideEffect[Event, State](s ⇒ callback.apply(s)))
 
   /** Convenience method to register a side effect that doesn't need access to state */
-  final def andThen(callback: japi.Effect): Effect[Event, State] =
+  final def andThen(callback: function.Effect): Effect[Event, State] =
     CompositeEffect(this, SideEffect[Event, State]((_: State) ⇒ callback.apply()))
 }

@@ -30,22 +30,12 @@ public class BasicPersistentBehaviorsTest {
 
     @Override
     public CommandHandler<Command, Event, State> commandHandler() {
-      return new CommandHandler<Command, Event, State>() {
-        @Override
-        public Effect<Event, State> apply(ActorContext<Command> ctx, State state, Command command) {
-          return Effect().none();
-        }
-      };
+      return (ctx, state, command) -> Effect().none();
     }
 
     @Override
     public EventHandler<Event, State> eventHandler() {
-      return new EventHandler<Event, State>() {
-        @Override
-        public State apply(State state, Event event) {
-          return state;
-        }
-      };
+      return (state, event) -> state;
     }
 
     //#recovery
