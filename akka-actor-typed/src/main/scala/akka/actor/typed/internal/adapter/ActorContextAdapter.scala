@@ -5,24 +5,25 @@ package akka.actor.typed
 package internal
 package adapter
 
+import akka.actor.ExtendedActorSystem
 import akka.{ ConfigurationException, actor ⇒ a }
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContextExecutor
 import akka.annotation.InternalApi
 import akka.actor.typed.Behavior.UntypedBehavior
-import akka.event.LoggingAdapter
+import akka.event.{ LogSource, LoggingAdapter }
 import akka.util.OptionVal
 
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[ActorContext]].
  */
-@InternalApi private[akka] class ActorContextAdapter[T](val untyped: a.ActorContext) extends ActorContextImpl[T] {
+@InternalApi private[akka] final class ActorContextAdapter[T](val untyped: a.ActorContext) extends ActorContextImpl[T] {
 
   import ActorRefAdapter.toUntyped
 
   // lazily initialized
-  private var loggingAdapter: OptionVal[LoggingAdapter] = OptionVal.None
+  private var actorLogger: OptionVal[ActorLogger] = OptionVal.None
 
   override def self = ActorRefAdapter(untyped.self)
   override val system = ActorSystemAdapter(untyped.system)
@@ -71,13 +72,16 @@ import akka.util.OptionVal
     ActorRefAdapter[U](ref)
   }
 
-  override def log: LoggingAdapter = {
-    loggingAdapter match {
-      case OptionVal.Some(adapter) ⇒ adapter
+  override def log: ActorLogger = {
+    actorLogger match {
+      case OptionVal.Some(logger) ⇒ logger
       case OptionVal.None ⇒
-        val adapter = akka.event.Logging(untyped.system, untyped.self)
-        loggingAdapter = OptionVal.Some(adapter)
-        adapter
+        import scala.language.existentials
+        val (str, clazz) = LogSource(untyped.self) // FIXME clazz doesn't really make as much sense for typed, what to do?
+        val system = untyped.system.asInstanceOf[ExtendedActorSystem]
+        val logger = new ActorLoggerImpl(system.eventStream, clazz, str, system.logFilter)
+        actorLogger = OptionVal.Some(logger)
+        logger
     }
   }
 }

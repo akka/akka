@@ -15,6 +15,8 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
 
   implicit val untyped = system.toUntyped
 
+  // FIXME test coverage of all those gazilion overloads of log methods
+
   "Logging in a typed actor" must {
 
     "be conveniently available from the ctx" in {
@@ -45,7 +47,7 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
   "Logging with MDC for a typed actor" must {
 
     "provide the MDC values in the log" in {
-      val behaviors = LoggingBehaviors.withMdc[Protocol](
+      val behaviors = Behaviors.withMdc[Protocol](
         { (msg) ⇒
           if (msg.transactionId == 1)
             Map(
