@@ -6,6 +6,7 @@ package akka.actor
 
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.annotation.InternalApi
 import akka.routing._
 import akka.util.WildcardIndex
 import com.typesafe.config._
