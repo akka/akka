@@ -14,4 +14,8 @@ public abstract class UserAgent extends akka.http.scaladsl.model.HttpHeader {
     public static UserAgent create(ProductVersion... products) {
         return new akka.http.scaladsl.model.headers.User$minusAgent(akka.http.impl.util.Util.<ProductVersion, akka.http.scaladsl.model.headers.ProductVersion>convertArray(products));
     }
+
+    public static UserAgent create(String products) {
+      return akka.http.scaladsl.model.headers.User$minusAgent$.MODULE$.apply(products);
+    }
 }
