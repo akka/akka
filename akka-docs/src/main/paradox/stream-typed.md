@@ -9,7 +9,7 @@ This module is currently marked as @ref:[may change](common/may-change.md) in th
   
 @@@
 
-[Akka Streams](stream/index.md) make it easy to model typesafe message processing pipelines. With typed actors it is possible to connect streams to actors without loosing the type information.
+@ref:[Akka Streams](stream/index.md) make it easy to model type-safe message processing pipelines. With typed actors it is possible to connect streams to actors without loosing the type information.
 
 To use the typed stream source and sink factories add the following dependency:
 
@@ -18,6 +18,10 @@ To use the typed stream source and sink factories add the following dependency:
   artifact=akka-stream-typed_2.12
   version=$akka.version$
 }
+
+This dependency contains typed alternatives to the @ref:[already existing `ActorRef` sources and sinks](stream/stream-integrations.md) together with a factory methods for @scala[@scaladoc[`ActorMaterializer`](akka.stream.typed.ActorMaterializer)]@java[@javadoc[`ActorMaterializer`](akka.stream.typed.ActorMaterializer)] which take a typed `ActorSystem`.
+
+The materializer created from these factory methods and sources together with sinks contained in this module can be mixed and matched with the original Akka Streams building blocks from the original module.
 
 ## Actor Source
 

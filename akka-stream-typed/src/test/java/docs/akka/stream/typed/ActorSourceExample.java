@@ -44,8 +44,7 @@ public class ActorSourceExample {
         public Throwable apply(Protocol p, boolean isCheck) {
           if (p instanceof Fail) {
             return ((Fail)p).ex;
-          }
-          else {
+          } else {
             throw noMatch();
           }
         }
@@ -62,8 +61,7 @@ public class ActorSourceExample {
       public String apply(Protocol p, boolean isCheck) {
         if (p instanceof Message) {
           return ((Message)p).msg;
-       }
-       else {
+       } else {
           throw noMatch();
        }
      }
