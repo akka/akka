@@ -16,9 +16,12 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
 class Receptionist(system: ActorSystem[_]) extends Extension {
-  private def hasCluster: Boolean =
+
+  private def hasCluster: Boolean = {
     // FIXME: replace with better indicator that cluster is enabled
-    system.settings.config.getString("akka.actor.provider") == "cluster"
+    val provider = system.settings.config.getString("akka.actor.provider")
+    (provider == "cluster") || (provider == "akka.cluster.ClusterActorRefProvider")
+  }
 
   val ref: ActorRef[Receptionist.Command] = {
     val behavior =
