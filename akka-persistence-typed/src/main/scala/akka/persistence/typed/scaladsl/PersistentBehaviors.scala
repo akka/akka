@@ -36,7 +36,8 @@ object PersistentBehaviors {
     eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
       recoveryCompleted = (_, _) ⇒ (),
-      tagger = _ ⇒ Set.empty)
+      tagger = _ ⇒ Set.empty,
+      snapshotOn = (_, _, _) ⇒ false)
 
   /**
    * Factories for effects - how a persistent actor reacts on a command
@@ -197,7 +198,8 @@ class PersistentBehavior[Command, Event, State](
   val commandHandler:                                        PersistentBehaviors.CommandHandler[Command, Event, State],
   val eventHandler:                                          (State, Event) ⇒ State,
   val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit,
-  val tagger:                                                Event ⇒ Set[String]) extends UntypedBehavior[Command] {
+  val tagger:                                                Event ⇒ Set[String],
+  val snapshotOn:                                            (State, Event, Long) ⇒ Boolean) extends UntypedBehavior[Command] {
   import PersistentBehaviors._
 
   /** INTERNAL API */
@@ -211,14 +213,24 @@ class PersistentBehavior[Command, Event, State](
     copy(recoveryCompleted = callback)
 
   /**
-   * FIXME snapshots are not implemented yet, this is only an API placeholder
+   * Initiates a snapshot if the given function returns true.
+   * When persisting multiple events at once the snapshot is triggered after all the events have
+   * been persisted.
+   *
+   * `predicate` receives the State, Event and the sequenceNr used for the Event
    */
-  def snapshotOnState(predicate: State ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
+  def snapshotOn(predicate: (State, Event, Long) ⇒ Boolean): PersistentBehavior[Command, Event, State] =
+    copy(snapshotOn = predicate)
 
   /**
-   * FIXME snapshots are not implemented yet, this is only an API placeholder
+   * Snapshot every N events
+   *
+   * `numberOfEvents` should be greater than 0
    */
-  def snapshotOn(predicate: (State, Event) ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
+  def snapshotEvery(numberOfEvents: Long): PersistentBehavior[Command, Event, State] = {
+    require(numberOfEvents > 0, s"numberOfEvents should be positive: Was $numberOfEvents")
+    copy(snapshotOn = (_, _, seqNr) ⇒ seqNr % numberOfEvents == 0)
+  }
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
@@ -232,6 +244,7 @@ class PersistentBehavior[Command, Event, State](
     commandHandler:             CommandHandler[Command, Event, State] = commandHandler,
     eventHandler:               (State, Event) ⇒ State                = eventHandler,
     recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted,
-    tagger:                     Event ⇒ Set[String]                   = tagger): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, tagger)
+    tagger:                     Event ⇒ Set[String]                   = tagger,
+    snapshotOn:                 (State, Event, Long) ⇒ Boolean        = snapshotOn): PersistentBehavior[Command, Event, State] =
+    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, tagger, snapshotOn)
 }
