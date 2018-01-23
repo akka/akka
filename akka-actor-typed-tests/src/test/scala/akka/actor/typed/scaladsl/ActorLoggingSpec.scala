@@ -3,7 +3,7 @@
  */
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.{ TypedAkkaSpec, scaladsl }
+import akka.actor.typed.{ LogMarker, TestException, TypedAkkaSpec, scaladsl }
 import akka.testkit.EventFilter
 import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
@@ -11,7 +11,10 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.event.Logging
 
 class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
-  """akka.loggers = ["akka.testkit.TestEventListener"]""")) with TypedAkkaSpec {
+  """
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.TestEventListener"]
+  """)) with TypedAkkaSpec {
 
   implicit val untyped = system.toUntyped
 
@@ -34,7 +37,86 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
       EventFilter.info("got message Hello", source = "akka://ActorLoggingSpec/user/the-actor", occurrences = 1).intercept {
         actor ! "Hello"
       }
+    }
 
+    "provide a whole bunch of logging overloads" in {
+      val marker = LogMarker("marker")
+
+      // Not the best test but at least it exercises every log overload ;)
+
+      EventFilter.custom({
+        case _ ⇒ true // any is fine, we're just after the right count of statements reaching the listener
+      }, occurrences = 60).intercept {
+        spawn(Behaviors.deferred[String] { ctx ⇒
+          ctx.log.debug("message")
+          ctx.log.debug("{}", "arg1")
+          ctx.log.debug("{} {}", "arg1", "arg2")
+          ctx.log.debug("{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.debug("{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.debug("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+          ctx.log.debug(marker, "message")
+          ctx.log.debug(marker, "{}", "arg1")
+          ctx.log.debug(marker, "{} {}", "arg1", "arg2")
+          ctx.log.debug(marker, "{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.debug(marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.debug(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+
+          ctx.log.info("message")
+          ctx.log.info("{}", "arg1")
+          ctx.log.info("{} {}", "arg1", "arg2")
+          ctx.log.info("{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.info("{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.info("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+          ctx.log.info(marker, "message")
+          ctx.log.info(marker, "{}", "arg1")
+          ctx.log.info(marker, "{} {}", "arg1", "arg2")
+          ctx.log.info(marker, "{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.info(marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.info(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+
+          ctx.log.warning("message")
+          ctx.log.warning("{}", "arg1")
+          ctx.log.warning("{} {}", "arg1", "arg2")
+          ctx.log.warning("{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.warning("{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.warning("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+          ctx.log.warning(marker, "message")
+          ctx.log.warning(marker, "{}", "arg1")
+          ctx.log.warning(marker, "{} {}", "arg1", "arg2")
+          ctx.log.warning(marker, "{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.warning(marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.warning(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+
+          ctx.log.error("message")
+          ctx.log.error("{}", "arg1")
+          ctx.log.error("{} {}", "arg1", "arg2")
+          ctx.log.error("{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.error("{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.error("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+          ctx.log.error(marker, "message")
+          ctx.log.error(marker, "{}", "arg1")
+          ctx.log.error(marker, "{} {}", "arg1", "arg2")
+          ctx.log.error(marker, "{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.error(marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.error(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+
+          val cause = new TestException("böö")
+          ctx.log.error(cause, "message")
+          ctx.log.error(cause, "{}", "arg1")
+          ctx.log.error(cause, "{} {}", "arg1", "arg2")
+          ctx.log.error(cause, "{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.error(cause, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.error(cause, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+          ctx.log.error(marker, cause, "message")
+          ctx.log.error(marker, cause, "{}", "arg1")
+          ctx.log.error(marker, cause, "{} {}", "arg1", "arg2")
+          ctx.log.error(marker, cause, "{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.error(marker, cause, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.error(marker, cause, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+
+          Behaviors.stopped
+        })
+      }
     }
 
   }
