@@ -93,7 +93,9 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         bytes
       }
       .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal ⇒ Source.empty })
-      .via(connectionFlowWithRestart)
+      // restart of inner connection part only needed in control flow, since system messages
+      // are buffered and resent from the outer SystemMessageDelivery stage
+      .via(if (streamId == controlStreamId) connectionFlowWithRestart else connectionFlow)
       .map(_ ⇒ throw new IllegalStateException(s"Unexpected incoming bytes in outbound connection to [${outboundContext.remoteAddress}]"))
       .toMat(Sink.ignore)(Keep.right)
 
