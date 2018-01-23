@@ -18,11 +18,13 @@ import akka.actor.ExtendedActorSystem
 import akka.dispatch.ExecutionContexts
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransportException
+import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.compress._
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
 import akka.stream.Client
 import akka.stream.IgnoreComplete
+import akka.stream.KillSwitches
 import akka.stream.Server
 import akka.stream.SinkShape
 import akka.stream.TLSProtocol._
@@ -196,24 +198,54 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
   private def runInboundOrdinaryMessagesStream(): Sink[EnvelopeBuffer, NotUsed] = {
     if (isShutdown) throw ArteryTransport.ShuttingDown
 
-    // FIXME inboundLanes > 1
+    val (inboundHub: Sink[EnvelopeBuffer, NotUsed], inboundCompressionAccess, completed) =
+      if (inboundLanes == 1) {
+        MergeHub.source[EnvelopeBuffer].addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
+          .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
+          .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) ⇒ (a, b, c) })
+          .run()(materializer)
 
-    val (hub, inboundCompressionAccesses, completed) =
-      MergeHub.source[EnvelopeBuffer].addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
-        .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
-        .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) ⇒ (a, b, c) })
-        .run()(materializer)
+      } else {
+        // TODO perhaps a few more things can be extracted and DRY with AeronUpdTransport.runInboundOrdinaryMessagesStream
+        val hubKillSwitch = KillSwitches.shared("hubKillSwitch")
 
-    setInboundCompressionAccess(inboundCompressionAccesses)
+        val source: Source[InboundEnvelope, (Sink[EnvelopeBuffer, NotUsed], InboundCompressionAccess)] =
+          MergeHub.source[EnvelopeBuffer].addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
+            .via(hubKillSwitch.flow)
+            .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
+            .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
 
-    updateStreamMatValues(controlStreamId, completed)
+        val (inboundHub, compressionAccess, hub) =
+          source
+            .toMat(Sink.fromGraph(new FixedSizePartitionHub[InboundEnvelope](inboundLanePartitioner, inboundLanes,
+              settings.Advanced.InboundHubBufferSize)))({ case ((a, b), c) ⇒ (a, b, c) })
+            .run()(materializer)
+
+        val lane = inboundSink(envelopeBufferPool)
+        val completedValues: Vector[Future[Done]] =
+          (0 until inboundLanes).map { _ ⇒
+            hub.toMat(lane)(Keep.right).run()(materializer)
+          }(collection.breakOut)
+
+        import system.dispatcher
+
+        // tear down the upstream hub part if downstream lane fails
+        // lanes are not completed with success by themselves so we don't have to care about onSuccess
+        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
+        val allCompleted = Future.sequence(completedValues).map(_ ⇒ Done)
+
+        (inboundHub, compressionAccess, allCompleted)
+      }
+
+    setInboundCompressionAccess(inboundCompressionAccess)
+
+    updateStreamMatValues(ordinaryStreamId, completed)
 
     // FIXME restart of inbound is not working, see failing SurviveInboundStreamRestartWithCompressionInFlightSpec
     //       we must restart the whole inbound thing, not this part only
-
     attachStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream())
 
-    hub
+    inboundHub
   }
 
   private def runInboundLargeMessagesStream(): Sink[EnvelopeBuffer, NotUsed] = {

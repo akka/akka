@@ -439,6 +439,25 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   protected def startTransport(): Unit
 
+  protected def runInboundStreams(): Unit
+
+  // Select inbound lane based on destination to preserve message order,
+  // Also include the uid of the sending system in the hash to spread
+  // "hot" destinations, e.g. ActorSelection anchor.
+  protected val inboundLanePartitioner: InboundEnvelope ⇒ Int = env ⇒ {
+    env.recipient match {
+      case OptionVal.Some(r) ⇒
+        val a = r.path.uid
+        val b = env.originUid
+        val hashA = 23 + a
+        val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
+        math.abs(hash) % inboundLanes
+      case OptionVal.None ⇒
+        // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
+        env.lane
+    }
+  }
+
   private lazy val shutdownHook = new Thread {
     override def run(): Unit = {
       if (!hasBeenShutdown.get) {
@@ -457,8 +476,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       }
     }
   }
-
-  protected def runInboundStreams(): Unit
 
   protected def attachControlMessageObserver(ctrl: ControlMessageSubject): Unit = {
     controlSubject = ctrl

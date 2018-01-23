@@ -332,7 +332,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   private def runInboundOrdinaryMessagesStream(): Unit = {
     if (isShutdown) throw ShuttingDown
 
-    val (resourceLife, inboundCompressionAccesses, completed) =
+    val (resourceLife, inboundCompressionAccess, completed) =
       if (inboundLanes == 1) {
         aeronSource(ordinaryStreamId, envelopeBufferPool)
           .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
@@ -347,26 +347,9 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
             .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
 
-        // Select lane based on destination to preserve message order,
-        // Also include the uid of the sending system in the hash to spread
-        // "hot" destinations, e.g. ActorSelection anchor.
-        val partitioner: InboundEnvelope ⇒ Int = env ⇒ {
-          env.recipient match {
-            case OptionVal.Some(r) ⇒
-              val a = r.path.uid
-              val b = env.originUid
-              val hashA = 23 + a
-              val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
-              math.abs(hash) % inboundLanes
-            case OptionVal.None ⇒
-              // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
-              env.lane
-          }
-        }
-
         val (resourceLife, compressionAccess, hub) =
           source
-            .toMat(Sink.fromGraph(new FixedSizePartitionHub[InboundEnvelope](partitioner, inboundLanes,
+            .toMat(Sink.fromGraph(new FixedSizePartitionHub[InboundEnvelope](inboundLanePartitioner, inboundLanes,
               settings.Advanced.InboundHubBufferSize)))({ case ((a, b), c) ⇒ (a, b, c) })
             .run()(materializer)
 
@@ -386,7 +369,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         (resourceLife, compressionAccess, allCompleted)
       }
 
-    setInboundCompressionAccess(inboundCompressionAccesses)
+    setInboundCompressionAccess(inboundCompressionAccess)
 
     updateStreamMatValues(ordinaryStreamId, resourceLife, completed)
     attachStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream())
