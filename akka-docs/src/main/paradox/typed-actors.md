@@ -2,7 +2,7 @@
 
 @@@ note
 
-This module will be deprecated as it will be superseded by the @ref:[Akka Typed](actors-typed.md)
+This module will be deprecated as it will be superseded by the @ref:[Akka Typed](typed/actors.md)
 project which is currently being developed in open preview mode.
 
 @@@

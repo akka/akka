@@ -1,6 +1,6 @@
 # Actor discovery
 
-With @ref:[untyped actors](general/addressing.md) you would use `ActorSelection` to "lookup" actors. Given an actor path with 
+With @ref:[untyped actors](../general/addressing.md) you would use `ActorSelection` to "lookup" actors. Given an actor path with 
 address information you can get hold of an `ActorRef` to any actor. `ActorSelection` does not exist in Akka Typed, 
 so how do you get the actor references? You can send refs in messages but you need something to bootstrap the interaction.
 
@@ -54,6 +54,6 @@ guardian actor spawns a pinger to ping it.
 
 The `Receptionist` also works in a cluster, an actor registered to the receptionist will appear in the receptionist of the other nodes of the cluster.
 
-The state for the receptionist is propagated via @ref:[distributed data](distributed-data.md) which means that each node will eventually reach the same set of actors per `ServiceKey`.
+The state for the receptionist is propagated via @ref:[distributed data](../distributed-data.md) which means that each node will eventually reach the same set of actors per `ServiceKey`.
 
-One important difference from a local only receptions is the serialisation concerns, all messages sent to and back from an actor on another node must be serializable, see @ref:[clustering](cluster-typed.md#serialization).
+One important difference from a local only receptions is the serialisation concerns, all messages sent to and back from an actor on another node must be serializable, see @ref:[clustering](cluster.md#serialization).
