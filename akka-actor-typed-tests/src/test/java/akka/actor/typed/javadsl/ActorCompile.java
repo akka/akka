@@ -54,7 +54,7 @@ public class ActorCompile {
           if (msg2 instanceof MyMsgB) {
             ((MyMsgA) msg).replyTo.tell(((MyMsgB) msg2).greeting);
 
-            ActorRef<String> adapter = ctx2.spawnAdapter(s -> new MyMsgB(s.toUpperCase()));
+            ActorRef<String> adapter = ctx2.messageAdapter(String.class, s -> new MyMsgB(s.toUpperCase()));
           }
           return same();
         });
@@ -79,7 +79,7 @@ public class ActorCompile {
 
     @Override
     public Behavior<MyMsg> receiveMessage(ActorContext<MyMsg> ctx, MyMsg msg) throws Exception {
-      ActorRef<String> adapter = ctx.asJava().spawnAdapter(s -> new MyMsgB(s.toUpperCase()));
+      ActorRef<String> adapter = ctx.asJava().messageAdapter(String.class, s -> new MyMsgB(s.toUpperCase()));
       return this;
     }
 

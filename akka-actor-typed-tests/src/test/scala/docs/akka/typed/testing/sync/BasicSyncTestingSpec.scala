@@ -91,7 +91,7 @@ class BasicSyncTestingSpec extends WordSpec with Matchers {
       val testKit = BehaviorTestkit(myBehaviour)
       testKit.run(SayHelloToAnonymousChild)
       // Anonymous actors are created as: $a $b etc
-      val childInbox = testKit.childInbox[String]("$a")
+      val childInbox = testKit.childInbox[String](s"$$a")
       childInbox.expectMsg("hello stranger")
       //#test-child-message-anonymous
     }

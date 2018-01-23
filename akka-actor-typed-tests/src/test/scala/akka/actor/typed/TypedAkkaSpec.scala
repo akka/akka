@@ -6,8 +6,8 @@ import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.Span
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
-
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 /**
  * Helper trait to include standard traits for typed tests
@@ -29,3 +29,5 @@ trait TypedAkkaSpecWithShutdown extends TypedAkkaSpec {
   self: TestKit ⇒
   override protected def afterAll(): Unit = shutdown()
 }
+
+class TestException(msg: String) extends RuntimeException(msg) with NoStackTrace
