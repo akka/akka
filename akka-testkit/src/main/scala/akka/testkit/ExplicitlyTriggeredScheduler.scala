@@ -84,7 +84,7 @@ class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: Thre
     log.debug(s"Scheduled item for $firstTime: $item")
     scheduled.put(item, ())
 
-    if (initialDelay == Duration.Zero)
+    if (initialDelay <= Duration.Zero)
       executeTasks(currentTime.get)
 
     new Cancellable {
