@@ -108,8 +108,10 @@ trait ActorContext[T] {
    * is on a node that has been removed from the cluster when using akka-cluster
    * or has been marked unreachable when using akka-remote directly.
    *
-   * Will fail with an [[IllegalStateException]] if the same subject was watched before using `watchWith`.
-   * To change the termination message, unwatch first.
+   * `watch` is idempotent if it is not mixed with `watchWith`.
+   *
+   * It will fail with an [[IllegalStateException]] if the same subject was watched before using `watchWith`.
+   * To clear the termination message, unwatch first.
    */
   def watch[U](other: ActorRef[U]): Unit
 
@@ -119,7 +121,9 @@ trait ActorContext[T] {
    * is on a node that has been removed from the cluster when using akka-cluster
    * or has been marked unreachable when using akka-remote directly.
    *
-   * Will fail with an [[IllegalStateException]] if the same subject was watched before using `watch` or `watchWith` with
+   * `watchWith` is idempotent if it is called with the same `msg` and not mixed with `watch`.
+   *
+   * It will fail with an [[IllegalStateException]] if the same subject was watched before using `watch` or `watchWith` with
    * another termination message. To change the termination message, unwatch first.
    */
   def watchWith[U](other: ActorRef[U], msg: T): Unit
