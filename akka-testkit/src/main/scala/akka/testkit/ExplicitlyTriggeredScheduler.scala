@@ -26,10 +26,10 @@ import akka.event.LoggingAdapter
  */
 class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: ThreadFactory) extends Scheduler {
 
-  case class Item(time: Long, interval: Option[FiniteDuration], runnable: Runnable)
+  private case class Item(time: Long, interval: Option[FiniteDuration], runnable: Runnable)
 
-  val currentTime = new AtomicLong()
-  val scheduled = new ConcurrentHashMap[Item, Unit]()
+  private val currentTime = new AtomicLong()
+  private val scheduled = new ConcurrentHashMap[Item, Unit]()
 
   override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
     schedule(initialDelay, Some(interval), runnable)
