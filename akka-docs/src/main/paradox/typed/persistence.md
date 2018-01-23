@@ -15,9 +15,9 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 
 @@@ warning
 
-This module only has a Scala DSL. See [#24193](https://github.com/akka/akka/issues/24193)
+This module only has a Scala DSL. See [#24193](https://github.com/akka/akka/issues/24193) 
 to track progress and to contribute to the Java DSL.
-
+  
 @@@
 
 ## Dependency
@@ -26,7 +26,7 @@ To use Akka Persistence Typed, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-persistence-typed_2.11
+  artifact=akka-persistence-typed_2.12
   version=$akka.version$
 }
 
@@ -83,15 +83,24 @@ Command and event:
 Scala
 :  @@snip [PersistentActorCompileOnyTest.scala]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #command }
 
+Java
+:  @@snip [PersistentActorCompileOnyTest.java]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #command }
+
 State is a List containing all the events:
 
 Scala
 :  @@snip [PersistentActorCompileOnyTest.scala]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #state }
 
+Java
+:  @@snip [PersistentActorCompileOnyTest.java]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #state }
+
 The command handler just persists the `Cmd` payload in an `Evt`:
 
 Scala
 :  @@snip [PersistentActorCompileOnyTest.scala]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #command-handler }
+
+Java
+:  @@snip [PersistentActorCompileOnyTest.java]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #command-handler }
 
 The event handler appends the event to the state. This is called after successfully
 persisting the event in the database:
@@ -99,10 +108,16 @@ persisting the event in the database:
 Scala
 :  @@snip [PersistentActorCompileOnyTest.scala]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #event-handler }
 
+Java
+:  @@snip [PersistentActorCompileOnyTest.java]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #event-handler }
+
 These are used to create a `PersistentBehavior`:
 
 Scala
 :  @@snip [PersistentActorCompileOnyTest.scala]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #behavior }
+
+Java
+:  @@snip [PersistentActorCompileOnyTest.java]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #behavior }
 
 The behavior can then be run as with any normal typed actor as described in [typed actors documentation](actors-typed.md).
 
