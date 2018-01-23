@@ -7,3 +7,18 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefPr
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefProvider#Internals.copy")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefProvider#Internals.copy$default$3")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefProvider#Internals.this")
+
+# #24390 Artery TCP/TLS transport
+ProblemFilters.exclude[Problem]("akka.remote.artery.ArteryTransport*")
+ProblemFilters.exclude[Problem]("akka.remote.artery.HeaderBuilder*")
+ProblemFilters.exclude[Problem]("akka.remote.artery.SendQueue*")
+ProblemFilters.exclude[Problem]("akka.remote.artery.InboundEnvelope*")
+ProblemFilters.exclude[Problem]("akka.remote.artery.Encoder*")
+ProblemFilters.exclude[Problem]("akka.remote.artery.RemoteInstruments*")
+ProblemFilters.exclude[Problem]("akka.remote.artery.ReusableInboundEnvelope*")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.artery.ArterySettings#Bind.BindTimeout")
+
+
+
+
+
