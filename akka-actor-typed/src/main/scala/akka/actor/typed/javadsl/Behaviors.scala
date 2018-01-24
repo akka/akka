@@ -325,12 +325,10 @@ object Behaviors {
    *                      the MDC is cleared.
    * @param behavior The behavior that this should be applied to.
    */
-  // FIXME api test cocerage
   def withMdc[T](
     `type`:        Class[T],
     mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Object]],
     behavior:      Behavior[T]): Behavior[T] =
-    // FIXME is this conversion really right?
     LoggingBehaviorImpl.withMdc[T](message ⇒ mdcForMessage.apply(message).asScala.toMap, behavior)(ClassTag(`type`))
 
 }

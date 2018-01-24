@@ -21,9 +21,7 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
   val cause = new TestException("böö")
 
   implicit val untyped = system.toUntyped
-
-  // FIXME test coverage of all those gazilion overloads of log methods
-
+  
   "Logging in a typed actor" must {
 
     "be conveniently available from the ctx" in {
