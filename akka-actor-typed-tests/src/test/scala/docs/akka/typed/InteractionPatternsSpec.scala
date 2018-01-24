@@ -11,6 +11,7 @@ import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
@@ -153,15 +154,12 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
             replyTo ! Backend.JobCompleted(taskId, new URI("https://akka.io/docs/sv/"))
             Behaviors.same
         }
-
-      }
-      )
+      })
 
       val frontend = spawn(Frontend.translator(backend))
       val probe = TestProbe[URI]()
       frontend ! Frontend.Translate(new URI("https://akka.io/docs/"), probe.ref)
       probe.expectMessage(new URI("https://akka.io/docs/sv/"))
-
     }
 
   }
@@ -223,7 +221,6 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
     case class HalResponse(message: String)
 
     val halBehavior = Behaviors.immutable[HalProtocol] { (ctx, msg) ⇒
-
       msg match {
         case OpenThePodBayDoorsPlease(respondTo) ⇒
           respondTo ! HalResponse("I'm sorry Dave, I cannot do that!")
@@ -241,10 +238,10 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       // the ask is failed with a TimeoutException
       implicit val timeout: Timeout = 3.seconds
 
-      // Note: The second parameter list takes a function ActorRef[T] => Message,
+      // Note: The second parameter list takes a function `ActorRef[T] => Message`,
       // as OpenThePodBayDoorsPlease is a case class it has a factory apply method
       // that is what we are passing as the second parameter here it could also be written
-      // OpenThePodBayDoorsPlease.apply or ref => OpenThePodBayDoorsPlease(ref)
+      // as `ref => OpenThePodBayDoorsPlease(ref)`
       ctx.ask(hal)(OpenThePodBayDoorsPlease) {
         case Success(HalResponse(message)) ⇒ AdaptedResponse(message)
         case Failure(ex)                   ⇒ AdaptedResponse("Request failed")
@@ -261,7 +258,6 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       }
 
       Behaviors.immutable { (ctx, msg) ⇒
-
         msg match {
           // the adapted message ends up being processed like any other
           // message sent to the actor
@@ -269,10 +265,32 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
             println(s"Got response from hal: $msg")
             Behaviors.same
         }
-
       }
-
     }
     // #actor-ask
+  }
+
+  "contain a sample for ask from outside the actor system" in {
+    // #standalone-ask
+    trait CookieProtocol {}
+    case class GiveMeCookies private[typed] (val cookies: ActorRef[Cookies]) extends CookieProtocol
+    case class Cookies(count: Int)
+
+    def askAndPrint(system: ActorSystem[AnyRef], cookieActorRef: ActorRef[CookieProtocol]): Unit = {
+      import akka.actor.typed.scaladsl.AskPattern._
+
+      // asking someone requires a timeout, if the timeout hits without response
+      // the ask is failed with a TimeoutException
+      implicit val timeout: Timeout = 3.seconds
+      import system.executionContext
+
+      val result: Future[Cookies] = cookieActorRef ? GiveMeCookies
+
+      result.onComplete {
+        case Success(cookies) ⇒ println("Yay, cookies!")
+        case Failure(ex)      ⇒ println("Boo! didn't get cookies in time.")
+      }
+    }
+    // #standalone-ask
   }
 }

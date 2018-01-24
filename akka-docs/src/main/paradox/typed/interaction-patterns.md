@@ -163,17 +163,23 @@ The function is running in the receiving actor and can safely access state of it
 
 ## 1:1 Request-Response with ask from outside the ActorSystem
 
-In an interaction where there is a 1:1 mapping between a request and a response we can use @scala[`ActorRef.?` implicitly provided by `akka.actor.typed.scaladsl.AskPattern`]@java[`akka.actor.typed.javadsl.AskPattern.ask`] to send a message to an actor and get a @scala[`Future[Response]`]@java[`CompletionState[Response]`] back.
+Some times you need to interact with actors from outside of the actor system, this can be done with fire-and-forget as described above or through another version of `ask` that returns a @scala[`Future[Response]`]@java[`CompletionStage<Response>`] that is either completed with a succesful response or failed with a `TimeoutException` if there was no response within the specified timeout. 
+ 
+To do this we use @scala[`ActorRef.?` implicitly provided by `akka.actor.typed.scaladsl.AskPattern`]@java[`akka.actor.typed.javadsl.AskPattern.ask`] to send a message to an actor and get a @scala[`Future[Response]`]@java[`CompletionState[Response]`] back.
 
-TODO sample
+Scala
+:  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #standalone-ask }
+
+Java
+:  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #standalone-ask }
 
 **Useful when:**
 
- * Single response queries where the response should be passed on to some other actor
- * ???
+ * Querying an actor about something from outside of the actor system 
 
 **Problems:**
 
+ * It is easy to accidentally close over and unsafely mutable state with the callbacks on the returned @scala[`Future`]@java[`CompletionStage`]
  * There can only be a single response to one `ask`
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
 

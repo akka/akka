@@ -7,13 +7,9 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
-import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.BehaviorBuilder;
-import akka.actor.typed.javadsl.Behaviors;
-import akka.actor.typed.javadsl.TimerScheduler;
+import akka.actor.typed.javadsl.*;
 import akka.testkit.typed.scaladsl.TestProbe;
 import akka.util.Timeout;
-import javafx.scene.control.DateCell;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
@@ -22,6 +18,7 @@ import scala.concurrent.duration.FiniteDuration;
 
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 public class InteractionPatternsTest extends JUnitSuite {
@@ -443,8 +440,36 @@ public class InteractionPatternsTest extends JUnitSuite {
         }).build();
     });
   }
-
   // #actor-ask
+
+
+  // #standalone-ask
+  interface CookieProtocol {}
+  static class GiveMeCookies implements CookieProtocol {
+    public final ActorRef<Cookies> cookies;
+    GiveMeCookies(ActorRef<Cookies> cookies) {
+      this.cookies = cookies;
+    }
+  };
+  static class Cookies {}
+
+
+  public void askAndPrint(ActorSystem<Object> system, ActorRef<CookieProtocol> cookieActorRef) {
+    CompletionStage<Cookies> result = AskPattern.ask(
+      cookieActorRef,
+      GiveMeCookies::new,
+      Timeout.apply(3, TimeUnit.SECONDS),
+      system.scheduler());
+
+    result.whenComplete((cookies, failure) -> {
+      if (cookies != null) System.out.println("Yay, cookies!");
+      else System.out.println("Boo! didn't get cookies in time.");
+    });
+  }
+  // #standalone-ask
+
+
+
 
 }
 
