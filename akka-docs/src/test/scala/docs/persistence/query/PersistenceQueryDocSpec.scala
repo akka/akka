@@ -238,7 +238,8 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     // assuming journal is able to work with numeric offsets we can:
 
     val blueThings: Source[EventEnvelope, NotUsed] =
-      readJournal.eventsByTag("blue")
+      readJournal.eventsByTag("blue",offset=Offset.NoOffset)
+    
 
     // find top 10 blue things:
     val top10BlueThings: Future[Vector[Any]] =
