@@ -6,18 +6,20 @@ package docs.akka.typed
 import java.net.URI
 
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, TypedAkkaSpecWithShutdown }
-import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, TimerScheduler }
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
+import akka.util.Timeout
 
 import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
 
 class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   "The interaction patterns docs" must {
 
     "contain a sample for fire and forget" in {
-      // #fire-and-forget
+      // #fire-and-forget-definition
 
       sealed trait PrinterProtocol
       case object DisableOutput extends PrinterProtocol
@@ -25,27 +27,27 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       case class PrintMe(message: String) extends PrinterProtocol
 
       // two state behavior
+      // in this state messages are printed
       def enabledPrinterBehavior: Behavior[PrinterProtocol] = Behaviors.immutable {
-        case (_, DisableOutput) ⇒
-          disabledPrinterBehavior
-
-        case (_, EnableOutput) ⇒
-          Behaviors.ignore
-
+        // switch to the non printing-behavior
+        case (_, DisableOutput) ⇒ disabledPrinterBehavior
+        case (_, EnableOutput)  ⇒ Behaviors.ignore
         case (_, PrintMe(message)) ⇒
           println(message)
           Behaviors.same
       }
 
+      // in this state messages are swallowed
       def disabledPrinterBehavior: Behavior[PrinterProtocol] = Behaviors.immutable {
-        case (_, DisableOutput) ⇒
-          enabledPrinterBehavior
+        // switch back to the printing behavior
+        case (_, DisableOutput) ⇒ enabledPrinterBehavior
 
-        case (_, _) ⇒
-          // ignore any message
-          Behaviors.ignore
+        // ignore any other message
+        case (_, _)             ⇒ Behaviors.ignore
       }
+      // #fire-and-forget-definition
 
+      // #fire-and-forget-doit
       val system = ActorSystem(enabledPrinterBehavior, "fire-and-forget-sample")
 
       // note how the system is also the top level actor ref
@@ -56,10 +58,34 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       printer ! DisableOutput
       printer ! PrintMe("not printed")
       printer ! EnableOutput
-
-      // #fire-and-forget
+      // #fire-and-forget-doit
 
       system.terminate().futureValue
+    }
+
+    // #request-response-protocol
+    trait Protocol
+    case class Request(query: String, respondTo: ActorRef[Response]) extends Protocol
+    case class Response(result: String)
+    // #request-response-protocol
+
+    def compileOnlyRequestResponse(): Unit = {
+      // #request-response-respond
+      Behaviors.immutable[Protocol] { (ctx, msg) ⇒
+        msg match {
+          case Request(query, respondTo) ⇒
+            // ... process query ...
+            respondTo ! Response("Here's your response!")
+            Behaviors.same
+        }
+      }
+      // #request-response-respond
+
+      val otherActor: ActorRef[Protocol] = ???
+      val ctx: ActorContext[Response] = ???
+      // #request-response-send
+      otherActor ! Request("give me cookies", ctx.self)
+      // #request-response-send
     }
 
     "contain a sample for adapted response" in {
@@ -188,5 +214,65 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
     bufferer ! ExcitingMessage("two")
     probe.expectNoMessage(1.millisecond)
     probe.expectMessage(2.seconds, Batch(Vector[Msg](ExcitingMessage("one"), ExcitingMessage("two"))))
+  }
+
+  "contain a sample for ask" in {
+    // #actor-ask
+    trait HalProtocol
+    case class OpenThePodBayDoorsPlease(respondTo: ActorRef[HalResponse]) extends HalProtocol
+    case class HalResponse(message: String)
+
+    val halBehavior = Behaviors.immutable[HalProtocol] { (ctx, msg) ⇒
+
+      msg match {
+        case OpenThePodBayDoorsPlease(respondTo) ⇒
+          respondTo ! HalResponse("I'm sorry Dave, I cannot do that!")
+          Behaviors.same
+      }
+    }
+
+    trait DaveProtocol
+    // this is a part of the protocol that is internal to the actor itself
+    case class AdaptedResponse(message: String) extends DaveProtocol
+
+    def daveBehavior(hal: ActorRef[HalProtocol]) = Behaviors.deferred[DaveProtocol] { ctx ⇒
+
+      // asking someone requires a timeout, if the timeout hits without response
+      // the ask is failed with a TimeoutException
+      implicit val timeout: Timeout = 3.seconds
+
+      // Note: The second parameter list takes a function ActorRef[T] => Message,
+      // as OpenThePodBayDoorsPlease is a case class it has a factory apply method
+      // that is what we are passing as the second parameter here it could also be written
+      // OpenThePodBayDoorsPlease.apply or ref => OpenThePodBayDoorsPlease(ref)
+      ctx.ask(hal)(OpenThePodBayDoorsPlease) {
+        case Success(HalResponse(message)) ⇒ AdaptedResponse(message)
+        case Failure(ex)                   ⇒ AdaptedResponse("Request failed")
+      }
+
+      // we can also tie in request context into an interaction, it is safe to look at
+      // actor internal state from the transformation function, but remember that it may have
+      // changed at the time the response arrives and the transformation is done, best is to
+      // use immutable state we have closed over like here.
+      val requestId = 1
+      ctx.ask(hal)(OpenThePodBayDoorsPlease) {
+        case Success(HalResponse(message)) ⇒ AdaptedResponse(s"$requestId: message")
+        case Failure(ex)                   ⇒ AdaptedResponse(s"$requestId: Request failed")
+      }
+
+      Behaviors.immutable { (ctx, msg) ⇒
+
+        msg match {
+          // the adapted message ends up being processed like any other
+          // message sent to the actor
+          case AdaptedResponse(msg) ⇒
+            println(s"Got response from hal: $msg")
+            Behaviors.same
+        }
+
+      }
+
+    }
+    // #actor-ask
   }
 }

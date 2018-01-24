@@ -12,6 +12,8 @@ import akka.actor.typed.javadsl.BehaviorBuilder;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.TimerScheduler;
 import akka.testkit.typed.scaladsl.TestProbe;
+import akka.util.Timeout;
+import javafx.scene.control.DateCell;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
@@ -24,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 public class InteractionPatternsTest extends JUnitSuite {
 
-  // #fire-and-forget
+  // #fire-and-forget-definition
   interface PrinterProtocol { }
   class DisableOutput implements PrinterProtocol { }
   class EnableOutput implements PrinterProtocol { }
@@ -49,7 +51,46 @@ public class InteractionPatternsTest extends JUnitSuite {
       .onMessage(EnableOutput.class, (ctx, enableOutput) -> enabledPrinterBehavior())
       .build();
   }
-  // #fire-and-forget
+  // #fire-and-forget-definition
+
+  // #request-response-protocol
+  interface Protocol {}
+  class Request implements Protocol {
+    public final String query;
+    public final ActorRef<Response> respondTo;
+    public Request(String query, ActorRef<Response> respondTo) {
+      this.query = query;
+      this.respondTo = respondTo;
+    }
+  }
+
+  class Response {
+    public final String result;
+    public Response(String result) {
+      this.result = result;
+    }
+  }
+  // #request-response-protocol
+
+  public void compileOnlyRequestResponse() {
+
+    // #request-response-respond
+    // actor behavior
+    Behaviors.immutable(Protocol.class)
+      .onMessage(Request.class, (ctx, request) -> {
+        // ... process request ...
+        request.respondTo.tell(new Response("Here's your response!"));
+        return Behaviors.same();
+      }).build();
+    // #request-response-respond
+
+    ActorRef<Protocol> otherActor = null;
+    ActorContext<Response> ctx = null;
+    // #request-response-send
+    otherActor.tell(new Request("give me cookies", ctx.getSelf()));
+    // #request-response-send
+  }
+
 
   // #adapted-response
 
@@ -181,11 +222,13 @@ public class InteractionPatternsTest extends JUnitSuite {
             return this;
           })
           .onMessage(WrappedJobProgress.class, wrapped -> {
-            System.out.println("Progress " + wrapped.response.taskId + ": " + wrapped.response.progress);
+            System.out.println("Progress " + wrapped.response.taskId + ": " +
+              wrapped.response.progress);
             return this;
           })
           .onMessage(WrappedJobCompleted.class, wrapped -> {
-            System.out.println("Completed " + wrapped.response.taskId + ": " + wrapped.response.result);
+            System.out.println("Completed " + wrapped.response.taskId + ": " +
+              wrapped.response.result);
             return this;
           })
           .onMessage(OtherResponse.class, other -> Behaviors.unhandled())
@@ -198,7 +241,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
   @Test
   public void fireAndForgetSample() throws Exception {
-    // #fire-and-forget
+    // #fire-and-forget-doit
     final ActorSystem<PrinterProtocol> system =
       ActorSystem.create(enabledPrinterBehavior(), "printer-sample-system");
 
@@ -211,7 +254,7 @@ public class InteractionPatternsTest extends JUnitSuite {
     ref.tell(new PrintMe("message"));
     ref.tell(new EnableOutput());
 
-    // #fire-and-forget
+    // #fire-and-forget-doit
 
     Await.ready(system.terminate(), Duration.create(3, TimeUnit.SECONDS));
   }
@@ -255,7 +298,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
   private static final Object TIMER_KEY = new Object();
 
-  private static class Timeout implements Msg {
+  private static class TimeoutMsg implements Msg {
   }
 
   public static Behavior<Msg> behavior(ActorRef<Batch> target, FiniteDuration after, int maxSize) {
@@ -266,7 +309,7 @@ public class InteractionPatternsTest extends JUnitSuite {
                                     FiniteDuration after, int maxSize) {
     return Behaviors.immutable(Msg.class)
       .onMessage(Msg.class, (ctx, msg) -> {
-        timers.startSingleTimer(TIMER_KEY, new Timeout(), after);
+        timers.startSingleTimer(TIMER_KEY, new TimeoutMsg(), after);
         List<Msg> buffer = new ArrayList<>();
         buffer.add(msg);
         return active(buffer, timers, target, after, maxSize);
@@ -277,7 +320,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   private static Behavior<Msg> active(List<Msg> buffer, TimerScheduler<Msg> timers,
                                       ActorRef<Batch> target, FiniteDuration after, int maxSize) {
     return Behaviors.immutable(Msg.class)
-      .onMessage(Timeout.class, (ctx, msg) -> {
+      .onMessage(TimeoutMsg.class, (ctx, msg) -> {
         target.tell(new Batch(buffer));
         return idle(timers, target, after, maxSize);
       })
@@ -301,7 +344,8 @@ public class InteractionPatternsTest extends JUnitSuite {
     TestProbe<Batch> probe = new TestProbe<>("batcher", system);
     ActorRef<Msg> bufferer = Await.result(system.systemActorOf(
       behavior(probe.ref(), new FiniteDuration(1, TimeUnit.SECONDS), 10),
-      "batcher", Props.empty(), akka.util.Timeout.apply(1, TimeUnit.SECONDS)), new FiniteDuration(1, TimeUnit.SECONDS));
+      "batcher", Props.empty(), akka.util.Timeout.apply(1, TimeUnit.SECONDS)),
+      new FiniteDuration(1, TimeUnit.SECONDS));
 
     ExcitingMessage msgOne = new ExcitingMessage("one");
     ExcitingMessage msgTwo = new ExcitingMessage("two");
@@ -313,6 +357,94 @@ public class InteractionPatternsTest extends JUnitSuite {
 
     Await.ready(system.terminate(), Duration.create(3, TimeUnit.SECONDS));
   }
+
+
+
+  // #actor-ask
+  interface HalProtocol {}
+  static final class OpenThePodBayDoorsPlease implements HalProtocol {
+    public final ActorRef<HalResponse> respondTo;
+    OpenThePodBayDoorsPlease(ActorRef<HalResponse> respondTo) {
+      this.respondTo = respondTo;
+    }
+  }
+  static final class HalResponse {
+    public final String message;
+    HalResponse(String message) {
+      this.message = message;
+    }
+  }
+
+  static final Behavior<HalProtocol> halBehavior =
+    Behaviors.immutable(HalProtocol.class)
+      .onMessage(OpenThePodBayDoorsPlease.class, (ctx, msg) -> {
+        msg.respondTo.tell(new HalResponse("I'm sorry Dave, I cannot do that!"));
+        return Behaviors.same();
+      }).build();
+
+  interface DaveProtocol {}
+
+  // this is a part of the protocol that is internal to the actor itself
+  private static final class AdaptedResponse implements DaveProtocol {
+    public final String message;
+    public AdaptedResponse(String message) {
+      this.message = message;
+    }
+  }
+
+  public static Behavior<DaveProtocol> daveBehavior(final ActorRef<HalProtocol> hal) {
+    return Behaviors.deferred((ActorContext<DaveProtocol> ctx) -> {
+
+      // asking someone requires a timeout, if the timeout hits without response
+      // the ask is failed with a TimeoutException
+      final Timeout timeout = Timeout.apply(3, TimeUnit.SECONDS);
+
+      ctx.ask(
+        HalResponse.class,
+        hal,
+        timeout,
+        // construct the outgoing message
+        (ActorRef<HalResponse> ref) -> new OpenThePodBayDoorsPlease(ref),
+        // adapt the response (or failure to respond)
+        (response, throwable) -> {
+          if (response != null) {
+            return new AdaptedResponse(response.message);
+          } else {
+            return new AdaptedResponse("Request failed");
+          }
+      });
+
+      // we can also tie in request context into an interaction, it is safe to look at
+      // actor internal state from the transformation function, but remember that it may have
+      // changed at the time the response arrives and the transformation is done, best is to
+      // use immutable state we have closed over like here.
+      final int requestId = 1;
+      ctx.ask(
+        HalResponse.class,
+        hal,
+        timeout,
+        // construct the outgoing message
+        (ActorRef<HalResponse> ref) -> new OpenThePodBayDoorsPlease(ref),
+        // adapt the response (or failure to respond)
+        (response, throwable) -> {
+          if (response != null) {
+            return new AdaptedResponse(requestId + ": " + response.message);
+          } else {
+            return new AdaptedResponse(requestId + ": Request failed");
+          }
+        });
+
+      return Behaviors.immutable(DaveProtocol.class)
+        // the adapted message ends up being processed like any other
+        // message sent to the actor
+        .onMessage(AdaptedResponse.class, (innerCtx, response) -> {
+          System.out.println("Got response from HAL: " + response.message);
+          return Behaviors.same();
+        }).build();
+    });
+  }
+
+  // #actor-ask
 
 }
 

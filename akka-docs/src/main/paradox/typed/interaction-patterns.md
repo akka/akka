@@ -10,44 +10,86 @@ The fundamental way to interact with an actor is through @scala["tell", which is
 
 Tell is asynchronous which means that the method returns right away and that when execution of the statement after it in the code is executed there is no guarantee that the message has been processed by the recipient yet. It also means there is no way to way to know if the processing succeeded or failed without additional interaction with the actor in question.
 
+With the given protocol and actor behavior:
+
 Scala
-:  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #fire-and-forget }
+:  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #fire-and-forget-definition }
 
 Java
-:  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #fire-and-forget }
+:  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #fire-and-forget-definition }
+
+
+Fire and forget looks like this:
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #fire-and-forget-doit }
+
+Java
+:  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #fire-and-forget-doit }
+
 
 **Useful when:**
 
- * When it is not critical to be sure that the message was processed
- * When there is no way to act on non successful delivery or processing
- * When we want to minimize the number of messages created to get higher throughput
+ * It is not critical to be sure that the message was processed
+ * There is no way to act on non successful delivery or processing
+ * We want to minimize the number of messages created to get higher throughput
 
 **Problems:**
 
  * Consistently higher rates of fire and forget to an actor than it process will make the inbox fill up and can in the worst case cause the JVM crash with an `OutOfMemoryError`
  * If the message got lost, we will not notice
 
-## Same protocol Request-Response
+## Request-Response
 
-In many interactions a request is followed by a response back from the actor. In Akka Typed the recipient of responses has to be encoded as a field in the message itself, which the recipient can then use to send a response back. When the response message is already a part of the sending actor protocol we can simply use @scala[`ActorContext.self`]@java[`ActorContext.getSelf()`] when constructing the message.
+In many interactions between actors a message leads to a response message back being sent back from the other actor, it can be the result of a query or some form of acknowledgment that the message was received and processed. In Akka Typed the recipient of responses has to be encoded as a field in the message itself, which the recipient can then use to send a response back. 
 
-TODO sample
+With the following protocol:
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #request-response-protocol }
+
+Java
+:  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #request-response-protocol }
+
+
+The sender would use its own @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`], which it can access through @scala[`ActorContext.self`]@java[`ActorContext.getSelf()`], for the `respondTo`. 
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #request-response-send }
+
+Java
+:  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #request-response-send }
+
+
+On the receiving side the `ActorRef` can then be used to send one or more responses back:
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #request-response-respond }
+
+Java
+:  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #request-response-respond }
+
 
 **Useful when:**
 
- * Subscribing to an actor that will send many response messages (of the same protocol) back
- * When communicating between a parent and its children, where the protocol can be made include the messages for the interaction 
- * ???
-
+ * Subscribing to an actor that will send many response messages back
+ * Translating between different actor message protocols
+ 
 **Problems:**
 
- * Often the response that the other actor wants to send back is not a part of the sending actor's protocol (see adapted request response or ask)
- * It is hard to detect and that a message request was not delivered or processed (see ask)
- * Unless the protocol already includes a way to provide context, for example a request id that is also sent in the response, it is not possible to tie an interaction to some specific context without introducing a new, separate, actor
+ * Actors seldom have a response message from another actor as a part of their protocol (see adapted response)
+ * It is hard to detect that a message request was not delivered or processed (see ask)
+ * Only one adaption can be made per response message type, if a new one is registered the old one is replaced,
+   for example different target actors can't have different adaption if they use the same response types, unless some
+   correlation is encoded in the messages
+ * Unless the protocol already includes a way to provide context, for example a request id that is also sent in the
+   response, it is not possible to tie an interaction to some specific context without introducing a new,
+   separate, actor
+
 
 ## Adapted Response
 
-Very often the receiving actor does not, and should, know of the protocol of the sending actor, and
+Most often the receiving actor does not, and should, know of the protocol of the sending actor, and
 will respond with one or more messages that the sending actor cannot receive.
 
 Scala
@@ -95,7 +137,12 @@ In an interaction where there is a 1:1 mapping between a request and a response 
 
 The interaction has two steps, first we need to construct the outgoing message, to do that we need an @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`] to put as recipient in the outgoing message. The second step is to transform the `Response` or the failure to produce a response, into a message that is part of the protocol of the sending actor.
 
-TODO sample
+Scala
+:  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #actor-ask }
+
+Java
+:  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #actor-ask }
+
 
 The function is running in the receiving actor and can safely access state of it.
 
