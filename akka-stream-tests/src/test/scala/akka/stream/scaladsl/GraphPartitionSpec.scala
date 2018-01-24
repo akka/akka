@@ -89,13 +89,13 @@ class GraphPartitionSpec extends StreamSpec {
       c2.expectComplete()
     }
 
-    "cancel upstream when downstreams cancel" in assertAllStagesStopped {
+    "cancel upstream when all downstreams cancel if eagerCancel is false" in assertAllStagesStopped {
       val p1 = TestPublisher.probe[Int]()
       val c1 = TestSubscriber.probe[Int]()
       val c2 = TestSubscriber.probe[Int]()
 
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val partition = b.add(Partition[Int](2, { case l if l < 6 ⇒ 0; case _ ⇒ 1 }))
+        val partition = b.add(Partition[Int](2, { case l if l < 6 ⇒ 0; case _ ⇒ 1 }, eagerCancel = false))
         Source.fromPublisher(p1.getPublisher) ~> partition.in
         partition.out(0) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c1)
         partition.out(1) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c2)
@@ -114,7 +114,35 @@ class GraphPartitionSpec extends StreamSpec {
       p1Sub.sendNext(2)
       c1.expectNext(2)
       sub1.cancel()
+      p1Sub.sendNext(9)
+      c2.expectNext(9)
       sub2.cancel()
+      p1Sub.expectCancellation()
+    }
+
+    "cancel upstream when any downstream cancel if eagerCancel is true" in assertAllStagesStopped {
+      val p1 = TestPublisher.probe[Int]()
+      val c1 = TestSubscriber.probe[Int]()
+      val c2 = TestSubscriber.probe[Int]()
+
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+        val partition = b.add(Partition[Int](2, { case l if l < 6 ⇒ 0; case _ ⇒ 1 }, eagerCancel = true))
+        Source.fromPublisher(p1.getPublisher) ~> partition.in
+        partition.out(0) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c1)
+        partition.out(1) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c2)
+        ClosedShape
+      }).run()
+
+      val p1Sub = p1.expectSubscription()
+      val sub1 = c1.expectSubscription()
+      val sub2 = c2.expectSubscription()
+      sub1.request(3)
+      sub2.request(3)
+      p1Sub.sendNext(1)
+      p1Sub.sendNext(8)
+      c1.expectNext(1)
+      c2.expectNext(8)
+      sub1.cancel()
       p1Sub.expectCancellation()
     }
 
@@ -189,5 +217,17 @@ class GraphPartitionSpec extends StreamSpec {
     even.expectNext(2)
     odd.expectComplete()
     even.expectComplete()
+  }
+
+  "divertTo must cancel when any of the downstreams cancel" in assertAllStagesStopped {
+    val pub = TestPublisher.probe[Int]()
+    val odd = TestSubscriber.probe[Int]()
+    val even = TestSubscriber.probe[Int]()
+    Source.fromPublisher(pub.getPublisher).divertTo(Sink.fromSubscriber(odd), _ % 2 != 0).to(Sink.fromSubscriber(even)).run()
+    even.request(1)
+    pub.sendNext(2)
+    even.expectNext(2)
+    odd.cancel()
+    pub.expectCancellation()
   }
 }

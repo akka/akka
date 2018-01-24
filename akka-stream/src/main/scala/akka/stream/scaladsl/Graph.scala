@@ -628,16 +628,26 @@ final class Broadcast[T](val outputPorts: Int, val eagerCancel: Boolean) extends
 }
 
 object Partition {
-
+  // FIXME make `PartitionOutOfBoundsException` a `final` class when possible
   case class PartitionOutOfBoundsException(msg: String) extends IndexOutOfBoundsException(msg) with NoStackTrace
+
+  /**
+   * Create a new `Partition` stage with the specified input type. This method sets `eagerCancel` to `false`.
+   *
+   * @param outputPorts number of output ports
+   * @param partitioner function deciding which output each element will be targeted
+   * @param eagerCancel if true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
+   */
+  def apply[T](outputPorts: Int, partitioner: T ⇒ Int): Partition[T] = new Partition(outputPorts, partitioner, false)
 
   /**
    * Create a new `Partition` stage with the specified input type.
    *
    * @param outputPorts number of output ports
    * @param partitioner function deciding which output each element will be targeted
+   * @param eagerCancel if true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    */
-  def apply[T](outputPorts: Int, partitioner: T ⇒ Int): Partition[T] = new Partition(outputPorts, partitioner)
+  def apply[T](outputPorts: Int, partitioner: T ⇒ Int, eagerCancel: Boolean): Partition[T] = new Partition(outputPorts, partitioner, eagerCancel)
 }
 
 /**
@@ -650,11 +660,15 @@ object Partition {
  *
  * '''Completes when''' upstream completes and no output is pending
  *
- * '''Cancels when'''
- *   when all downstreams cancel
+ * '''Cancels when''' all downstreams have cancelled (eagerCancel=false) or one downstream cancels (eagerCancel=true)
  */
 
-final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int) extends GraphStage[UniformFanOutShape[T, T]] {
+final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int, val eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
+
+  /**
+   * Sets `eagerCancel` to `false`.
+   **/
+  def this (outputPorts: Int, partitioner: T => Int) = this(outputPorts, partitioner, false)
 
   val in: Inlet[T] = Inlet[T]("Partition.in")
   val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i))
@@ -690,11 +704,10 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int) exten
 
     setHandler(in, this)
 
-    out.zipWithIndex.foreach {
+    out.iterator.zipWithIndex.foreach {
       case (o, idx) ⇒
         setHandler(o, new OutHandler {
           override def onPull() = {
-
             if (outPendingElem != null) {
               val elem = outPendingElem.asInstanceOf[T]
               if (idx == outPendingIdx) {
@@ -711,24 +724,25 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int) exten
               pull(in)
           }
 
-          override def onDownstreamFinish(): Unit = {
-            downstreamRunning -= 1
-            if (downstreamRunning == 0)
-              completeStage()
-            else if (outPendingElem != null) {
-              if (idx == outPendingIdx) {
-                outPendingElem = null
-                if (!hasBeenPulled(in))
-                  pull(in)
+          override def onDownstreamFinish(): Unit =
+            if (eagerCancel) completeStage()
+            else {
+              downstreamRunning -= 1
+              if (downstreamRunning == 0)
+                completeStage()
+              else if (outPendingElem != null) {
+                if (idx == outPendingIdx) {
+                  outPendingElem = null
+                  if (!hasBeenPulled(in))
+                    pull(in)
+                }
               }
             }
-          }
         })
     }
   }
 
   override def toString = s"Partition($outputPorts)"
-
 }
 
 object Balance {
