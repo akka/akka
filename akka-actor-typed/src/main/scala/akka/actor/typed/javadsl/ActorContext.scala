@@ -32,6 +32,8 @@ import scala.concurrent.ExecutionContextExecutor
  * An `ActorContext` in addition provides access to the Actor’s own identity (“`getSelf`”),
  * the [[ActorSystem]] it is part of, methods for querying the list of child Actors it
  * created, access to [[Terminated]] and timed message scheduling.
+ *
+ * Not for user extension.
  */
 @DoNotInherit
 @ApiMayChange

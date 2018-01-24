@@ -117,7 +117,7 @@ abstract class ExtensionId[T <: Extension] {
 /**
  * API for registering and looking up extensions.
  *
- * Not intended to be extended by user code.
+ * Not for user extension.
  */
 @DoNotInherit
 trait Extensions {
