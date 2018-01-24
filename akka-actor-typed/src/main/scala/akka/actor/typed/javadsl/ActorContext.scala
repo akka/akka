@@ -64,7 +64,7 @@ trait ActorContext[T] {
   /**
    * An actor specific logger
    */
-  def getLog: ActorLogger
+  def getLog: Logger
 
   /**
    * The list of child Actors created by this Actor during its lifetime that

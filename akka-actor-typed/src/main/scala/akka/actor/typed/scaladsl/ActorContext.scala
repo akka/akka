@@ -61,7 +61,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
   /**
    * An actor specific logger
    */
-  def log: ActorLogger
+  def log: Logger
 
   /**
    * The list of child Actors created by this Actor during its lifetime that

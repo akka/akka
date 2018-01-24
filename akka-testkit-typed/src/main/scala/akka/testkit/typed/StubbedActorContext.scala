@@ -175,7 +175,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
 
   override def toString: String = s"Inbox($self)"
 
-  override def log: ActorLogger = loggingAdapter
+  override def log: Logger = loggingAdapter
 
   /**
    * The log entries logged through ctx.log.{debug, info, warn, error} are captured and can be inspected through

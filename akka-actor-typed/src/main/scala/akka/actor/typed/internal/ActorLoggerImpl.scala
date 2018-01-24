@@ -3,7 +3,7 @@
  */
 package akka.actor.typed.internal
 
-import akka.actor.typed.{ ActorLogger, LogMarker }
+import akka.actor.typed.{ Logger, LogMarker }
 import akka.annotation.InternalApi
 import akka.event.Logging.{ Debug, Error, Info, Warning }
 import akka.event.{ LoggingBus, LoggingFilter, LogMarker ⇒ UntypedLM }
@@ -13,7 +13,7 @@ import akka.util.OptionVal
  * INTERNAL API
  */
 @InternalApi
-private[akka] class ActorLoggerImpl(bus: LoggingBus, logClass: Class[_], logSource: String, loggingFilter: LoggingFilter) extends ActorLogger {
+private[akka] class ActorLoggerImpl(bus: LoggingBus, logClass: Class[_], logSource: String, loggingFilter: LoggingFilter) extends Logger {
 
   private[akka] var mdc: Map[String, Any] = Map.empty
 

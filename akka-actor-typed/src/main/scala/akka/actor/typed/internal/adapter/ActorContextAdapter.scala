@@ -6,14 +6,13 @@ package internal
 package adapter
 
 import akka.actor.ExtendedActorSystem
+import akka.actor.typed.Behavior.UntypedBehavior
+import akka.annotation.InternalApi
+import akka.util.OptionVal
 import akka.{ ConfigurationException, actor ⇒ a }
 
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContextExecutor
-import akka.annotation.InternalApi
-import akka.actor.typed.Behavior.UntypedBehavior
-import akka.event.{ LogSource, LoggingAdapter }
-import akka.util.OptionVal
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[ActorContext]].
@@ -23,7 +22,7 @@ import akka.util.OptionVal
   import ActorRefAdapter.toUntyped
 
   // lazily initialized
-  private var actorLogger: OptionVal[ActorLogger] = OptionVal.None
+  private var actorLogger: OptionVal[Logger] = OptionVal.None
 
   override def self = ActorRefAdapter(untyped.self)
   override val system = ActorSystemAdapter(untyped.system)
@@ -72,14 +71,15 @@ import akka.util.OptionVal
     ActorRefAdapter[U](ref)
   }
 
-  override def log: ActorLogger = {
+  override def log: Logger = {
     actorLogger match {
       case OptionVal.Some(logger) ⇒ logger
       case OptionVal.None ⇒
         import scala.language.existentials
-        val (str, clazz) = LogSource(untyped.self) // FIXME clazz doesn't really make as much sense for typed, what to do?
+        val logSource = self.path.toString
+        val logClass = classOf[Behavior[_]] // FIXME figure out a better class somehow
         val system = untyped.system.asInstanceOf[ExtendedActorSystem]
-        val logger = new ActorLoggerImpl(system.eventStream, clazz, str, system.logFilter)
+        val logger = new ActorLoggerImpl(system.eventStream, logClass, logSource, system.logFilter)
         actorLogger = OptionVal.Some(logger)
         logger
     }

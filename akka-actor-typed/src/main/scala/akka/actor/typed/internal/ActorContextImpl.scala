@@ -59,7 +59,7 @@ import akka.util.Timeout
   override def getSystem: akka.actor.typed.ActorSystem[Void] =
     system.asInstanceOf[ActorSystem[Void]]
 
-  override def getLog: ActorLogger = log
+  override def getLog: Logger = log
 
   override def spawn[U](behavior: akka.actor.typed.Behavior[U], name: String): akka.actor.typed.ActorRef[U] =
     spawn(behavior, name, Props.empty)

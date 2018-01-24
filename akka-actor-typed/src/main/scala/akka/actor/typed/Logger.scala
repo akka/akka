@@ -59,13 +59,13 @@ object LogMarker {
  * logging for both user implemented actors and built in Akka actors where the actual logging backend can be selected
  * by the user.
  *
- * The [[ActorLogger]] of an actor is tied to the actor path and should not be shared with other threads outside of
+ * The [[Logger]] of an actor is tied to the actor path and should not be shared with other threads outside of
  * the actor.
  *
  * Not for user extension
  */
 @DoNotInherit
-abstract class ActorLogger private[akka] () {
+abstract class Logger private[akka] () {
 
   /**
    * Whether error logging is enabled on the actor system level, may not represent the setting all the way to the
@@ -100,7 +100,7 @@ abstract class ActorLogger private[akka] () {
   /**
    * Log message at error level, without providing the exception that caused the error.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(message: String): Unit
   /**
@@ -109,25 +109,25 @@ abstract class ActorLogger private[akka] () {
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(template: String, arg1: Any): Unit
   /**
    * Message template with 2 replacement arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(template: String, arg1: Any, arg2: Any): Unit
   /**
    * Message template with 3 replacement arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 
@@ -136,7 +136,7 @@ abstract class ActorLogger private[akka] () {
   /**
    * Log message at error level, including the exception that caused the error.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(cause: Throwable, message: String): Unit
   /**
@@ -145,25 +145,25 @@ abstract class ActorLogger private[akka] () {
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(cause: Throwable, template: String, arg1: Any): Unit
   /**
    * Message template with 2 replacement arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit
   /**
    * Message template with 3 replacement arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 
@@ -172,7 +172,7 @@ abstract class ActorLogger private[akka] () {
   /**
    * Log message at error level, including the exception that caused the error.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(marker: LogMarker, cause: Throwable, message: String): Unit
   /**
@@ -181,25 +181,25 @@ abstract class ActorLogger private[akka] () {
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit
   /**
    * Message template with 2 replacement arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit
   /**
    * Message template with 3 replacement arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
   /**
@@ -207,7 +207,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(marker: LogMarker, message: String): Unit
   /**
@@ -218,7 +218,7 @@ abstract class ActorLogger private[akka] () {
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(marker: LogMarker, template: String, arg1: Any): Unit
   /**
@@ -226,7 +226,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit
   /**
@@ -234,7 +234,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
@@ -242,7 +242,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 
@@ -258,22 +258,25 @@ abstract class ActorLogger private[akka] () {
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def warning(template: String, arg1: Any): Unit
   /**
    * Message template with 2 replacement arguments.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def warning(template: String, arg1: Any, arg2: Any): Unit
   /**
    * Message template with 3 replacement arguments.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def warning(template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def warning(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 
@@ -324,7 +327,7 @@ abstract class ActorLogger private[akka] () {
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any): Unit
   /**
@@ -332,7 +335,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit
   /**
@@ -340,12 +343,13 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 
@@ -397,7 +401,8 @@ abstract class ActorLogger private[akka] () {
 
   /**
    * Log message at info level.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def info(message: String): Unit
   /**
@@ -405,22 +410,26 @@ abstract class ActorLogger private[akka] () {
    *
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def info(template: String, arg1: Any): Unit
   /**
    * Message template with 2 replacement arguments.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def info(template: String, arg1: Any, arg2: Any): Unit
   /**
    * Message template with 3 replacement arguments.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def info(template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def info(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 
@@ -431,7 +440,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def info(marker: LogMarker, message: String): Unit
   /**
@@ -441,7 +450,8 @@ abstract class ActorLogger private[akka] () {
    *
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def info(marker: LogMarker, template: String, arg1: Any): Unit
   /**
@@ -449,7 +459,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit
   /**
@@ -457,7 +467,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
@@ -465,7 +475,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 
@@ -473,7 +483,8 @@ abstract class ActorLogger private[akka] () {
 
   /**
    * Log message at debug level.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def debug(message: String): Unit
   /**
@@ -481,22 +492,26 @@ abstract class ActorLogger private[akka] () {
    *
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def debug(template: String, arg1: Any): Unit
   /**
    * Message template with 2 replacement arguments.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def debug(template: String, arg1: Any, arg2: Any): Unit
   /**
    * Message template with 3 replacement arguments.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def debug(template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def debug(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 
@@ -507,7 +522,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def debug(marker: LogMarker, message: String): Unit
   /**
@@ -517,7 +532,8 @@ abstract class ActorLogger private[akka] () {
    *
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
-   * @see [[ActorLogger]]
+   *
+   * @see [[Logger]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any): Unit
   /**
@@ -525,7 +541,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit
   /**
@@ -533,7 +549,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
@@ -541,7 +557,7 @@ abstract class ActorLogger private[akka] () {
    *
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 

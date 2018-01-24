@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.actor.typed.javadsl;
 
 import akka.actor.typed.Behavior;
@@ -15,9 +18,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
- */
 public class ActorLoggingTest extends JUnitSuite {
 
   private final static TestKit testKit = new TestKit("ActorLoggingTest",
