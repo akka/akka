@@ -4,7 +4,7 @@
 package akka.actor.typed
 
 import scala.concurrent.ExecutionContext
-import akka.{ actor ⇒ a, event ⇒ e }
+import akka.{ actor ⇒ a }
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.actor.setup.ActorSystemSetup
@@ -18,6 +18,7 @@ import akka.annotation.ApiMayChange
 import java.util.Optional
 
 import akka.actor.BootstrapSetup
+import akka.actor.typed.internal.adapter.GuardianActorAdapter
 import akka.actor.typed.receptionist.Receptionist
 
 /**
@@ -211,15 +212,16 @@ object ActorSystem {
                                 executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
 
     Behavior.validateAsInitial(guardianBehavior)
+    require(Behavior.isAlive(guardianBehavior))
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
     val setup = ActorSystemSetup(BootstrapSetup(classLoader, config, executionContext))
     val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext,
-      Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps)), setup)
+      Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps, isGuardian = true)), setup)
     untyped.start()
 
-    val adapter: ActorSystemAdapter.AdapterExtension = ActorSystemAdapter.AdapterExtension(untyped)
-    adapter.adapter
+    untyped.guardian ! GuardianActorAdapter.Start
+    ActorSystemAdapter.AdapterExtension(untyped).adapter
   }
 
   /**
