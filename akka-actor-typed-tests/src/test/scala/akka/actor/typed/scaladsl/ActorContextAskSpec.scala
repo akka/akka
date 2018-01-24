@@ -88,8 +88,10 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
 
       val snitch = Behaviors.deferred[AnyRef] { (ctx) ⇒
         ctx.ask(pingPong)(Ping) {
-          // uh oh, missing case for the response, this can never end well
-          case Failure(x) ⇒ x
+          (_: scala.util.Try[Pong.type] @unchecked) match {
+            // uh oh, missing case for the response, this can never end well
+            case Failure(x) ⇒ x
+          }
         }
 
         Behaviors.immutable[AnyRef] {
