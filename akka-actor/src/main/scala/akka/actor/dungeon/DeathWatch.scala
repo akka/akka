@@ -23,22 +23,28 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   override final def watch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef ⇒
-      if (a != self && !watchingContains(a)) {
-        maintainAddressTerminatedSubscription(a) {
-          a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-          watching = watching.updated(a, None)
-        }
+      if (a != self) {
+        if (!watchingContains(a))
+          maintainAddressTerminatedSubscription(a) {
+            a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+            updateWatching(a, None)
+          }
+        else
+          checkWatchingSame(a, None)
       }
       a
   }
 
   override final def watchWith(subject: ActorRef, msg: Any): ActorRef = subject match {
     case a: InternalActorRef ⇒
-      if (a != self && !watchingContains(a)) {
-        maintainAddressTerminatedSubscription(a) {
-          a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-          watching = watching.updated(a, Some(msg))
-        }
+      if (a != self) {
+        if (!watchingContains(a))
+          maintainAddressTerminatedSubscription(a) {
+            a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+            updateWatching(a, Some(msg))
+          }
+        else
+          checkWatchingSame(a, Some(msg))
       }
       a
   }
@@ -110,6 +116,18 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   private def removeFromMap[T](subject: ActorRef, map: Map[ActorRef, T]): Map[ActorRef, T] =
     if (subject.path.uid != ActorCell.undefinedUid) (map - subject) - new UndefinedUidActorRef(subject)
     else map filterKeys (_.path != subject.path)
+
+  private def updateWatching(ref: InternalActorRef, newMessage: Option[Any]): Unit =
+    watching = watching.updated(ref, newMessage)
+
+  /** Call only if it was checked before that `watching contains ref` */
+  private def checkWatchingSame(ref: InternalActorRef, newMessage: Option[Any]): Unit = {
+    val previous = watching.get(ref).get
+    if (previous != newMessage)
+      throw new IllegalStateException(
+        s"Watch($self, $ref) termination message was not overwritten from [$previous] to [$newMessage]. " +
+          s"If this was intended, unwatch first before using `watch` / `watchWith` with another message.")
+  }
 
   protected def tellWatchersWeDied(): Unit =
     if (!watchedBy.isEmpty) {
