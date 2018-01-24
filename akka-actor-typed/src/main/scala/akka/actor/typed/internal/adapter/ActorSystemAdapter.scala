@@ -7,6 +7,8 @@ package adapter
 
 import java.util.concurrent.CompletionStage
 
+import akka.actor
+import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
 import akka.{ actor ⇒ a }
 
@@ -28,8 +30,6 @@ import scala.compat.java8.FutureConverters
  */
 @InternalApi private[akka] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
   extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] with ExtensionsImpl {
-
-  loadExtensions()
 
   import ActorRefAdapter.sendSystemMessage
 
@@ -96,9 +96,26 @@ private[akka] object ActorSystemAdapter {
 
   object AdapterExtension extends a.ExtensionId[AdapterExtension] with a.ExtensionIdProvider {
     override def get(system: a.ActorSystem): AdapterExtension = super.get(system)
-    override def lookup = AdapterExtension
+    override def lookup() = AdapterExtension
     override def createExtension(system: a.ExtendedActorSystem): AdapterExtension =
       new AdapterExtension(system)
+  }
+
+  /**
+   * An untyped extension to load configured typed extensions. It is loaded via
+   * akka.library-extensions. `loadExtensions` cannot be called from the AdapterExtension
+   * directly because the adapter is created too early during typed actor system creation.
+   *
+   * When on the classpath typed extensions will be loaded for untyped ActorSystems as well.
+   */
+  class LoadTypedExtensions(system: a.ExtendedActorSystem) extends a.Extension {
+    ActorSystemAdapter.AdapterExtension(system).adapter.loadExtensions()
+  }
+
+  object LoadTypedExtensions extends a.ExtensionId[LoadTypedExtensions] with a.ExtensionIdProvider {
+    override def lookup(): actor.ExtensionId[_ <: actor.Extension] = this
+    override def createExtension(system: ExtendedActorSystem): LoadTypedExtensions =
+      new LoadTypedExtensions(system)
   }
 
   def toUntyped[U](sys: ActorSystem[_]): a.ActorSystem =
@@ -108,4 +125,3 @@ private[akka] object ActorSystemAdapter {
         s"($sys of class ${sys.getClass.getName})")
     }
 }
-
