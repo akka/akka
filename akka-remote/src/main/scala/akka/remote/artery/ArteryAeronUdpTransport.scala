@@ -340,15 +340,15 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
           .run()(materializer)
 
       } else {
-        val hubKillSwitch = KillSwitches.shared("hubKillSwitch")
-        val source: Source[InboundEnvelope, (ResourceLifecycle, InboundCompressionAccess)] =
+        val laneKillSwitch = KillSwitches.shared("laneKillSwitch")
+        val laneSource: Source[InboundEnvelope, (ResourceLifecycle, InboundCompressionAccess)] =
           aeronSource(ordinaryStreamId, envelopeBufferPool)
-            .via(hubKillSwitch.flow)
+            .via(laneKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
             .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
 
-        val (resourceLife, compressionAccess, hub) =
-          source
+        val (resourceLife, compressionAccess, laneHub) =
+          laneSource
             .toMat(Sink.fromGraph(new FixedSizePartitionHub[InboundEnvelope](inboundLanePartitioner, inboundLanes,
               settings.Advanced.InboundHubBufferSize)))({ case ((a, b), c) ⇒ (a, b, c) })
             .run()(materializer)
@@ -356,14 +356,14 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         val lane = inboundSink(envelopeBufferPool)
         val completedValues: Vector[Future[Done]] =
           (0 until inboundLanes).map { _ ⇒
-            hub.toMat(lane)(Keep.right).run()(materializer)
+            laneHub.toMat(lane)(Keep.right).run()(materializer)
           }(collection.breakOut)
 
         import system.dispatcher
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
-        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
+        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ laneKillSwitch.abort(reason) }
         val allCompleted = Future.sequence(completedValues).map(_ ⇒ Done)
 
         (resourceLife, compressionAccess, allCompleted)

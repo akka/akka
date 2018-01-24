@@ -356,6 +356,13 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   protected val ordinaryStreamId = 2
   protected val largeStreamId = 3
 
+  protected def streamName(streamId: Int): String =
+    streamId match {
+      case `controlStreamId` ⇒ "control"
+      case `largeStreamId`   ⇒ "large message"
+      case _                 ⇒ "message"
+    }
+
   private val restartCounter = new RestartCounter(settings.Advanced.InboundMaxRestarts, settings.Advanced.InboundRestartTimeout)
 
   protected val envelopeBufferPool = new EnvelopeBufferPool(settings.Advanced.MaximumFrameSize, settings.Advanced.BufferPoolSize)

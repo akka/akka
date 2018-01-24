@@ -27,6 +27,8 @@ import akka.remote.artery.compress._
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
 import akka.stream.Client
+import akka.stream.FlowShape
+import akka.stream.Graph
 import akka.stream.IgnoreComplete
 import akka.stream.KillSwitches
 import akka.stream.Server
@@ -34,6 +36,7 @@ import akka.stream.SharedKillSwitch
 import akka.stream.SinkShape
 import akka.stream.TLSProtocol._
 import akka.stream.TLSRole
+import akka.stream.scaladsl.Broadcast
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Framing
 import akka.stream.scaladsl.GraphDSL
@@ -57,7 +60,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
   import ArteryTransport.InboundStreamMatValues
   import FlightRecorderEvents._
 
-  @volatile private var inboundConnectionsKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundConnectionsKillSwitch")
+  @volatile private var inboundKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundKillSwitch")
   private var serverBinding: Option[Future[ServerBinding]] = None
 
   override protected def startTransport(): Unit = {
@@ -94,8 +97,8 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
       val flowFactory = () ⇒ connectionFlow.mapMaterializedValue(_ ⇒ NotUsed)
-        .log(name = s"outbound connection to [${outboundContext.remoteAddress}]")
-        .addAttributes(Attributes.logLevels(onElement = LogLevels.Off))
+        .log(name = s"outbound connection to [${outboundContext.remoteAddress}], ${streamName(streamId)} stream")
+        .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = Logging.WarningLevel))
 
       // FIXME config of backoff
       import scala.concurrent.duration._
@@ -107,6 +110,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         RestartFlow.withBackoff[ByteString, ByteString](1.second, 5.seconds, 0.1)(flowFactory)
       } else {
         // Best effort retry a few times
+        // FIXME only restart on failures?, but missing in RestartFlow, see https://github.com/akka/akka/pull/23911
         RestartFlow.withBackoff[ByteString, ByteString](1.second, 5.seconds, 0.1, maxRestarts = 3)(flowFactory)
       }
     }
@@ -121,10 +125,6 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
       .via(connectionFlowWithRestart)
       .map(_ ⇒ throw new IllegalStateException(s"Unexpected incoming bytes in outbound connection to [${outboundContext.remoteAddress}]"))
       .toMat(Sink.ignore)(Keep.right)
-
-    // FIXME The mat value Future is currently never completed, because RestartFlow will retry forever, should it give up?
-    //       related to give-up-system-message-after ?
-
   }
 
   override protected def runInboundStreams(): Unit = {
@@ -164,10 +164,20 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
       if (largeMessageChannelEnabled) settings.Advanced.MaximumLargeFrameSize
       else settings.Advanced.MaximumFrameSize
 
-    // FIXME error handling in case something fails in this part
+    // TODO `Flow.alsoTo` is currently using eagerCancel = false, which is not what I want in the
+    // inboundConnectionFlow. If that is changed (see issue #24291) this custom impl can be replaced.
+    def alsoToEagerCancel[M](that: Graph[SinkShape[EnvelopeBuffer], M]): Graph[FlowShape[EnvelopeBuffer, EnvelopeBuffer], M] =
+      GraphDSL.create(that) { implicit b ⇒ r ⇒
+        import GraphDSL.Implicits._
+        val bcast = b.add(Broadcast[EnvelopeBuffer](2, eagerCancel = true))
+        bcast.out(1) ~> r
+        FlowShape(bcast.in, bcast.out(0))
+      }
 
+    // If something in the inboundConnectionFlow fails, e.g. framing, the connection will be teared down,
+    // but other parts of the inbound streams don't have to restarted.
     val inboundConnectionFlow = Flow[ByteString]
-      .via(inboundConnectionsKillSwitch.flow)
+      .via(inboundKillSwitch.flow)
       .via(Framing.lengthField(fieldLength = 4, fieldOffset = EnvelopeBuffer.FrameLengthOffset,
         maxFrameSize, byteOrder = ByteOrder.LITTLE_ENDIAN))
       .map { frame ⇒
@@ -175,12 +185,9 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         buffer.order(ByteOrder.LITTLE_ENDIAN)
         new EnvelopeBuffer(buffer)
       }
-      .alsoTo(inboundStream)
+      .via(alsoToEagerCancel(inboundStream))
       .filter(_ ⇒ false) // don't send back anything in this TCP socket
       .map(_ ⇒ ByteString.empty) // make it a Flow[ByteString] again
-
-    val host = localAddress.address.host.get
-    val port = localAddress.address.port.get
 
     serverBinding =
       Some(Tcp().bind(
@@ -211,16 +218,26 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     Await.result(serverBinding.get, settings.Bind.BindTimeout)
 
+    // Failures in any of the inbound streams should be extremely rare, probably an unforeseen accident.
+    // Tear down everything and start over again. Inbound streams are "stateless" so that should be fine.
+    // Tested in SurviveInboundStreamRestartWithCompressionInFlightSpec
     implicit val ec = materializer.executionContext
     val completed = Future.firstCompletedOf(
       List(controlStreamCompleted, ordinaryMessagesStreamCompleted, largeMessagesStreamCompleted))
     val restart = () ⇒ {
-      inboundConnectionsKillSwitch.shutdown()
-      inboundConnectionsKillSwitch = KillSwitches.shared("inboundConnectionsKillSwitch")
-      unbind().onComplete { _ ⇒
-        runInboundStreams()
-      }
+      inboundKillSwitch.shutdown()
+      inboundKillSwitch = KillSwitches.shared("inboundKillSwitch")
+
+      val allStopped: Future[Done] = for {
+        _ ← controlStreamCompleted.recover { case _ ⇒ Done }
+        _ ← ordinaryMessagesStreamCompleted.recover { case _ ⇒ Done }
+        _ ← if (largeMessageChannelEnabled)
+          largeMessagesStreamCompleted.recover { case _ ⇒ Done } else Future.successful(Done)
+        _ ← unbind().recover { case _ ⇒ Done }
+      } yield Done
+      allStopped.foreach(_ ⇒ runInboundStreams())
     }
+
     attachInboundStreamRestart("Inbound streams", completed, restart)
   }
 
@@ -229,6 +246,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     val (hub, ctrl, completed) =
       MergeHub.source[EnvelopeBuffer].addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
+        .via(inboundKillSwitch.flow)
         .via(inboundFlow(settings, NoInboundCompressions))
         .toMat(inboundControlSink)({ case (a, (c, d)) ⇒ (a, c, d) })
         .run()(controlMaterializer)
@@ -245,22 +263,23 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     val (inboundHub: Sink[EnvelopeBuffer, NotUsed], inboundCompressionAccess, completed) =
       if (inboundLanes == 1) {
         MergeHub.source[EnvelopeBuffer].addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
+          .via(inboundKillSwitch.flow)
           .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
           .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) ⇒ (a, b, c) })
           .run()(materializer)
 
       } else {
         // TODO perhaps a few more things can be extracted and DRY with AeronUpdTransport.runInboundOrdinaryMessagesStream
-        val hubKillSwitch = KillSwitches.shared("hubKillSwitch")
-
-        val source: Source[InboundEnvelope, (Sink[EnvelopeBuffer, NotUsed], InboundCompressionAccess)] =
+        val laneKillSwitch = KillSwitches.shared("laneKillSwitch")
+        val laneSource: Source[InboundEnvelope, (Sink[EnvelopeBuffer, NotUsed], InboundCompressionAccess)] =
           MergeHub.source[EnvelopeBuffer].addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
-            .via(hubKillSwitch.flow)
+            .via(inboundKillSwitch.flow)
+            .via(laneKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
             .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
 
-        val (inboundHub, compressionAccess, hub) =
-          source
+        val (inboundHub, compressionAccess, laneHub) =
+          laneSource
             .toMat(Sink.fromGraph(new FixedSizePartitionHub[InboundEnvelope](inboundLanePartitioner, inboundLanes,
               settings.Advanced.InboundHubBufferSize)))({ case ((a, b), c) ⇒ (a, b, c) })
             .run()(materializer)
@@ -268,14 +287,14 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         val lane = inboundSink(envelopeBufferPool)
         val completedValues: Vector[Future[Done]] =
           (0 until inboundLanes).map { _ ⇒
-            hub.toMat(lane)(Keep.right).run()(materializer)
+            laneHub.toMat(lane)(Keep.right).run()(materializer)
           }(collection.breakOut)
 
         import system.dispatcher
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
-        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
+        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ laneKillSwitch.abort(reason) }
         val allCompleted = Future.sequence(completedValues).map(_ ⇒ Done)
 
         (inboundHub, compressionAccess, allCompleted)
@@ -293,6 +312,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     val (hub, completed) =
       MergeHub.source[EnvelopeBuffer].addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
+        .via(inboundKillSwitch.flow)
         .via(inboundLargeFlow(settings))
         .toMat(inboundSink(largeEnvelopeBufferPool))(Keep.both)
         .run()(materializer)
@@ -311,7 +331,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
   override protected def shutdownTransport(): Future[Done] = {
     implicit val ec = materializer.executionContext
-    inboundConnectionsKillSwitch.shutdown()
+    inboundKillSwitch.shutdown()
     unbind().map { _ ⇒
       topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
       Done

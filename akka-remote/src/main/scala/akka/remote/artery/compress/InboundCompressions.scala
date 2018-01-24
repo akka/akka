@@ -396,7 +396,10 @@ private[remote] abstract class InboundCompression[T >: Null](
       case None ⇒
         inboundContext.association(originUid) match {
           case OptionVal.Some(association) ⇒
-            if (alive) {
+            if (association.associationState.isQuarantined(originUid)) {
+              // FIXME cleanup compresssion for quarantined associations, see #23967
+              log.debug("Ignoring {} for quarantined originUid [{}].", Logging.simpleName(tables.activeTable), originUid)
+            } else if (alive) {
               val table = prepareCompressionAdvertisement(tables.nextTable.version)
               // TODO expensive, check if building the other way wouldn't be faster?
               val nextState = tables.copy(nextTable = table.invert, advertisementInProgress = Some(table))
@@ -404,8 +407,9 @@ private[remote] abstract class InboundCompression[T >: Null](
               alive = false // will be set to true on first incoming message
               resendCount = 0
               advertiseCompressionTable(association, table)
-            } else
+            } else {
               log.debug("{} for originUid [{}] not changed, no need to advertise same.", Logging.simpleName(tables.activeTable), originUid)
+            }
 
           case OptionVal.None ⇒
             // otherwise it's too early, association not ready yet.
@@ -417,12 +421,19 @@ private[remote] abstract class InboundCompression[T >: Null](
         resendCount += 1
         if (resendCount <= 5) {
           // The ActorRefCompressionAdvertisement message is resent because it can be lost
-          log.debug(
-            "Advertisment in progress for originUid [{}] version {}, resending",
-            originUid, inProgress.version)
+
           inboundContext.association(originUid) match {
             case OptionVal.Some(association) ⇒
-              advertiseCompressionTable(association, inProgress) // resend
+              if (association.associationState.isQuarantined(originUid)) {
+                // give up
+                log.debug("Skipping advertisment in progress for quarantined originUid [{}].", originUid)
+                confirmAdvertisement(inProgress.version)
+              } else {
+                log.debug(
+                  "Advertisment in progress for originUid [{}] version {}, resending",
+                  originUid, inProgress.version)
+                advertiseCompressionTable(association, inProgress) // resend
+              }
             case OptionVal.None ⇒
           }
         } else {
