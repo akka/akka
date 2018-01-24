@@ -6,113 +6,12 @@ package akka.actor.typed.javadsl
 import java.util.function.Consumer
 import java.util.function.{ Function ⇒ JFunction }
 
-import scala.annotation.tailrec
-
-import akka.annotation.DoNotInherit
 import akka.actor.typed.Behavior
-import akka.actor.typed.internal.ImmutableStashBufferImpl
-import akka.actor.typed.internal.MutableStashBufferImpl
+import akka.actor.typed.internal.StashBufferImpl
 import akka.actor.typed.scaladsl
+import akka.annotation.DoNotInherit
 
-object ImmutableStashBuffer {
-  /**
-   * Create an empty message buffer.
-   *
-   * @param capacity the buffer can hold at most this number of messages
-   * @return an empty message buffer
-   */
-  def create[T](capacity: Int): ImmutableStashBuffer[T] =
-    ImmutableStashBufferImpl[T](capacity)
-
-}
-
-/**
- * A thread safe immutable message buffer that can be used to buffer messages inside actors.
- *
- * The buffer can hold at most the given `capacity` number of messages.
- */
-@DoNotInherit abstract class ImmutableStashBuffer[T] {
-
-  /**
-   * Check if the message buffer is empty.
-   *
-   * @return if the buffer is empty
-   */
-  def isEmpty: Boolean
-
-  /**
-   * Check if the message buffer is not empty.
-   *
-   * @return if the buffer is not empty
-   */
-  def nonEmpty: Boolean
-
-  /**
-   * How many elements are in the message buffer.
-   *
-   * @return the number of elements in the message buffer
-   */
-  def size: Int
-
-  /**
-   * @return `true` if no more messages can be added, i.e. size equals the capacity of the stash buffer
-   */
-  def isFull: Boolean
-
-  /**
-   * Add one element to the end of the message buffer. Note that this class is
-   * immutable so the returned instance contains the added message.
-   *
-   * @param message the message to buffer, must not be `null`
-   * @return this message buffer
-   * @throws  `StashOverflowException` is thrown if the buffer [[MutableStashBuffer#isFull]].
-   */
-  def stash(message: T): ImmutableStashBuffer[T]
-
-  /**
-   * Remove the first element of the message buffer. Note that this class is
-   * immutable so the head element is removed in the returned instance.
-   *
-   * @throws `NoSuchElementException` if the buffer is empty
-   */
-  def dropHead(): ImmutableStashBuffer[T]
-
-  /**
-   * Remove the first `numberOfMessages` of the message buffer. Note that this class is
-   * immutable so the elements are removed in the returned instance.
-   */
-  def drop(numberOfMessages: Int): ImmutableStashBuffer[T]
-
-  /**
-   * Return the first element of the message buffer.
-   *
-   * @return the first element or throws `NoSuchElementException` if the buffer is empty
-   * @throws `NoSuchElementException` if the buffer is empty
-   */
-  def head: T
-
-  /**
-   * Iterate over all elements of the buffer and apply a function to each element.
-   *
-   * @param f the function to apply to each element
-   */
-  def forEach(f: Consumer[T]): Unit
-
-  /**
-   * Process all stashed messages with the `behavior` and the returned
-   * [[Behavior]] from each processed message.
-   */
-  def unstashAll(ctx: ActorContext[T], behavior: Behavior[T]): Behavior[T]
-
-  /**
-   * Process `numberOfMessages` of the stashed messages with the `behavior`
-   * and the returned [[Behavior]] from each processed message.
-   */
-  def unstash(ctx: ActorContext[T], behavior: Behavior[T], numberOfMessages: Int, wrap: JFunction[T, T]): Behavior[T]
-
-}
-
-object MutableStashBuffer {
+object StashBuffer {
 
   /**
    * Create an empty message buffer.
@@ -120,16 +19,19 @@ object MutableStashBuffer {
    * @param capacity the buffer can hold at most this number of messages
    * @return an empty message buffer
    */
-  def create[T](capacity: Int): MutableStashBuffer[T] =
-    MutableStashBufferImpl[T](capacity)
+  def create[T](capacity: Int): StashBuffer[T] =
+    StashBufferImpl[T](capacity)
 }
 
 /**
- * A non thread safe mutable message buffer that can be used to buffer messages inside actors.
+ * A non thread safe mutable message buffer that can be used to buffer messages inside actors
+ * and then unstash them.
  *
  * The buffer can hold at most the given `capacity` number of messages.
+ *
+ * Not for user extension.
  */
-@DoNotInherit abstract class MutableStashBuffer[T] {
+@DoNotInherit abstract class StashBuffer[T] {
 
   /**
    * Check if the message buffer is empty.
@@ -160,21 +62,13 @@ object MutableStashBuffer {
   /**
    * Add one element to the end of the message buffer.
    *
-   * [[StashOverflowException]] is thrown if the buffer [[MutableStashBuffer#isFull]].
+   * [[StashOverflowException]] is thrown if the buffer [[StashBuffer#isFull]].
    *
    * @param message the message to buffer
    * @return this message buffer
-   * @throws  `StashOverflowException` is thrown if the buffer [[MutableStashBuffer#isFull]].
+   * @throws  `StashOverflowException` is thrown if the buffer [[StashBuffer#isFull]].
    */
-  def stash(message: T): MutableStashBuffer[T]
-
-  /**
-   * Return the first element of the message buffer and removes it.
-   *
-   * @return the first element or throws `NoSuchElementException` if the buffer is empty
-   * @throws `NoSuchElementException` if the buffer is empty
-   */
-  def dropHead(): T
+  def stash(message: T): StashBuffer[T]
 
   /**
    * Return the first element of the message buffer without removing it.
@@ -185,7 +79,8 @@ object MutableStashBuffer {
   def head: T
 
   /**
-   * Iterate over all elements of the buffer and apply a function to each element.
+   * Iterate over all elements of the buffer and apply a function to each element,
+   * without removing them.
    *
    * @param f the function to apply to each element
    */
@@ -193,20 +88,38 @@ object MutableStashBuffer {
 
   /**
    * Process all stashed messages with the `behavior` and the returned
-   * [[Behavior]] from each processed message. The `MutableStashBuffer` will be
-   * empty after processing all messages, unless an exception is thrown.
+   * [[Behavior]] from each processed message. The `StashBuffer` will be
+   * empty after processing all messages, unless an exception is thrown
+   * or messages are stashed while unstashing.
+   *
    * If an exception is thrown by processing a message a proceeding messages
    * and the message causing the exception have been removed from the
-   * `MutableStashBuffer`, but unprocessed messages remain.
+   * `StashBuffer`, but unprocessed messages remain.
+   *
+   * It's allowed to stash messages while unstashing. Those newly added
+   * messages will not be processed by this call and have to be unstashed
+   * in another call.
    */
   def unstashAll(ctx: ActorContext[T], behavior: Behavior[T]): Behavior[T]
 
   /**
    * Process `numberOfMessages` of the stashed messages with the `behavior`
    * and the returned [[Behavior]] from each processed message.
+   *
+   * The purpose of this method, compared to `unstashAll`, is to unstash a limited
+   * number of messages and then send a message to `self` before continuing unstashing
+   * more. That means that other new messages may arrive in-between and those must
+   * be stashed to keep the original order of messages. To differentiate between
+   * unstashed and new incoming messages the unstashed messages can be wrapped
+   * in another message with the `wrap`.
+   *
    * If an exception is thrown by processing a message a proceeding messages
    * and the message causing the exception have been removed from the
-   * `MutableStashBuffer`, but unprocessed messages remain.
+   * `StashBuffer`, but unprocessed messages remain.
+   *
+   * It's allowed to stash messages while unstashing. Those newly added
+   * messages will not be processed by this call and have to be unstashed
+   * in another call.
    */
   def unstash(ctx: ActorContext[T], behavior: Behavior[T], numberOfMessages: Int, wrap: JFunction[T, T]): Behavior[T]
 
@@ -215,4 +128,4 @@ object MutableStashBuffer {
 /**
  * Is thrown when the size of the stash exceeds the capacity of the stash buffer.
  */
-class StashOverflowException(message: String) extends scaladsl.StashOverflowException(message)
+final class StashOverflowException(message: String) extends scaladsl.StashOverflowException(message)

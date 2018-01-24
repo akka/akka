@@ -4,7 +4,6 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.event.LoggingAdapter
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
 
@@ -19,98 +18,109 @@ object StashSpec {
   final case class GetProcessed(replyTo: ActorRef[Vector[String]]) extends Command
   final case class GetStashSize(replyTo: ActorRef[Int]) extends Command
 
-  def active(processed: Vector[String]): Behavior[Command] =
-    Behaviors.immutable { (ctx, cmd) ⇒
-      cmd match {
-        case msg: Msg ⇒
-          active(processed :+ msg.s)
-        case GetProcessed(replyTo) ⇒
-          replyTo ! processed
-          Behaviors.same
-        case Stash ⇒
-          stashing(ImmutableStashBuffer(capacity = 10), processed)
-        case GetStashSize(replyTo) ⇒
-          replyTo ! 0
-          Behaviors.same
-        case UnstashAll ⇒
-          Behaviors.unhandled
-        case Unstash ⇒
-          Behaviors.unhandled
-        case u: Unstashed ⇒
-          throw new IllegalStateException(s"Unexpected $u in active")
-      }
-    }
+  val immutableStash: Behavior[Command] =
+    Behaviors.deferred[Command] { _ ⇒
+      val buffer = StashBuffer[Command](capacity = 10)
 
-  def stashing(buffer: ImmutableStashBuffer[Command], processed: Vector[String]): Behavior[Command] =
-    Behaviors.immutable { (ctx, cmd) ⇒
-      cmd match {
-        case msg: Msg ⇒
-          stashing(buffer :+ msg, processed)
-        case g: GetProcessed ⇒
-          stashing(buffer :+ g, processed)
-        case GetStashSize(replyTo) ⇒
-          replyTo ! buffer.size
-          Behaviors.same
-        case UnstashAll ⇒
-          buffer.unstashAll(ctx, active(processed))
-        case Unstash ⇒
-          ctx.log.debug(s"Unstash ${buffer.size}")
-          if (buffer.isEmpty)
-            active(processed)
-          else {
-            ctx.self ! Unstash // continue unstashing until buffer is empty
-            val numberOfMessages = 2
-            ctx.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
-            buffer.unstash(ctx, unstashing(buffer.drop(numberOfMessages), processed), numberOfMessages, Unstashed)
+      def active(processed: Vector[String]): Behavior[Command] =
+        Behaviors.immutable { (ctx, cmd) ⇒
+          cmd match {
+            case msg: Msg ⇒
+              active(processed :+ msg.s)
+            case GetProcessed(replyTo) ⇒
+              replyTo ! processed
+              Behaviors.same
+            case Stash ⇒
+              stashing(processed)
+            case GetStashSize(replyTo) ⇒
+              replyTo ! 0
+              Behaviors.same
+            case UnstashAll ⇒
+              Behaviors.unhandled
+            case Unstash ⇒
+              Behaviors.unhandled
+            case u: Unstashed ⇒
+              throw new IllegalStateException(s"Unexpected $u in active")
           }
-        case Stash ⇒
-          Behaviors.unhandled
-        case u: Unstashed ⇒
-          throw new IllegalStateException(s"Unexpected $u in stashing")
-      }
-    }
+        }
 
-  def unstashing(buffer: ImmutableStashBuffer[Command], processed: Vector[String]): Behavior[Command] =
-    Behaviors.immutable { (ctx, cmd) ⇒
-      cmd match {
-        case Unstashed(msg: Msg) ⇒
-          ctx.log.debug(s"unstashed $msg")
-          unstashing(buffer, processed :+ msg.s)
-        case Unstashed(GetProcessed(replyTo)) ⇒
-          ctx.log.debug(s"unstashed GetProcessed")
-          replyTo ! processed
-          Behaviors.same
-        case msg: Msg ⇒
-          ctx.log.debug(s"got $msg in unstashing")
-          unstashing(buffer :+ msg, processed)
-        case get: GetProcessed ⇒
-          ctx.log.debug(s"got GetProcessed in unstashing")
-          unstashing(buffer :+ get, processed)
-        case Stash ⇒
-          stashing(buffer, processed)
-        case Unstash ⇒
-          if (buffer.isEmpty) {
-            ctx.log.debug(s"unstashing done")
-            active(processed)
-          } else {
-            ctx.self ! Unstash // continue unstashing until buffer is empty
-            val numberOfMessages = 2
-            ctx.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
-            buffer.unstash(ctx, unstashing(buffer.drop(numberOfMessages), processed), numberOfMessages, Unstashed)
+      def stashing(processed: Vector[String]): Behavior[Command] =
+        Behaviors.immutable { (ctx, cmd) ⇒
+          cmd match {
+            case msg: Msg ⇒
+              buffer.stash(msg)
+              Behaviors.same
+            case g: GetProcessed ⇒
+              buffer.stash(g)
+              Behaviors.same
+            case GetStashSize(replyTo) ⇒
+              replyTo ! buffer.size
+              Behaviors.same
+            case UnstashAll ⇒
+              buffer.unstashAll(ctx, active(processed))
+            case Unstash ⇒
+              ctx.log.debug(s"Unstash ${buffer.size}")
+              if (buffer.isEmpty)
+                active(processed)
+              else {
+                ctx.self ! Unstash // continue unstashing until buffer is empty
+                val numberOfMessages = 2
+                ctx.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
+                buffer.unstash(ctx, unstashing(processed), numberOfMessages, Unstashed)
+              }
+            case Stash ⇒
+              Behaviors.unhandled
+            case u: Unstashed ⇒
+              throw new IllegalStateException(s"Unexpected $u in stashing")
           }
-        case GetStashSize(replyTo) ⇒
-          replyTo ! buffer.size
-          Behaviors.same
-        case UnstashAll ⇒
-          Behaviors.unhandled
-        case u: Unstashed ⇒
-          throw new IllegalStateException(s"Unexpected $u in unstashing")
-      }
+        }
+
+      def unstashing(processed: Vector[String]): Behavior[Command] =
+        Behaviors.immutable { (ctx, cmd) ⇒
+          cmd match {
+            case Unstashed(msg: Msg) ⇒
+              ctx.log.debug(s"unstashed $msg")
+              unstashing(processed :+ msg.s)
+            case Unstashed(GetProcessed(replyTo)) ⇒
+              ctx.log.debug(s"unstashed GetProcessed")
+              replyTo ! processed
+              Behaviors.same
+            case msg: Msg ⇒
+              ctx.log.debug(s"got $msg in unstashing")
+              buffer.stash(msg)
+              Behaviors.same
+            case g: GetProcessed ⇒
+              ctx.log.debug(s"got GetProcessed in unstashing")
+              buffer.stash(g)
+              Behaviors.same
+            case Stash ⇒
+              stashing(processed)
+            case Unstash ⇒
+              if (buffer.isEmpty) {
+                ctx.log.debug(s"unstashing done")
+                active(processed)
+              } else {
+                ctx.self ! Unstash // continue unstashing until buffer is empty
+                val numberOfMessages = 2
+                ctx.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
+                buffer.unstash(ctx, unstashing(processed), numberOfMessages, Unstashed)
+              }
+            case GetStashSize(replyTo) ⇒
+              replyTo ! buffer.size
+              Behaviors.same
+            case UnstashAll ⇒
+              Behaviors.unhandled
+            case u: Unstashed ⇒
+              throw new IllegalStateException(s"Unexpected $u in unstashing")
+          }
+        }
+
+      active(Vector.empty)
     }
 
   class MutableStash(ctx: ActorContext[Command]) extends Behaviors.MutableBehavior[Command] {
 
-    private val buffer = MutableStashBuffer.apply[Command](capacity = 10)
+    private val buffer = StashBuffer.apply[Command](capacity = 10)
     private var stashing = false
     private var processed = Vector.empty[String]
 
@@ -167,7 +177,7 @@ object StashSpec {
 class ImmutableStashSpec extends StashSpec {
   import StashSpec._
   def testQualifier: String = "immutable behavior"
-  def behaviorUnderTest: Behavior[Command] = active(Vector.empty)
+  def behaviorUnderTest: Behavior[Command] = immutableStash
 }
 
 class MutableStashSpec extends StashSpec {
