@@ -21,7 +21,7 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
   val cause = new TestException("böö")
 
   implicit val untyped = system.toUntyped
-  
+
   "Logging in a typed actor" must {
 
     "be conveniently available from the ctx" in {

@@ -34,6 +34,8 @@ private[akka] final class FunctionRef[-T](
   override def isLocal = true
 }
 
+final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker])
+
 /**
  * INTERNAL API
  *
@@ -41,9 +43,7 @@ private[akka] final class FunctionRef[-T](
  */
 @InternalApi private[akka] final class StubbedActorLogger extends ActorLoggerImpl(null, null, null, null) {
 
-  // FIXME capture more details here?
-
-  private var logBuffer: List[(LogLevel, String)] = Nil
+  private var logBuffer: List[CapturedLogEvent] = Nil
 
   override def isErrorEnabled: Boolean = true
   override def isWarningEnabled: Boolean = true
@@ -51,18 +51,18 @@ private[akka] final class FunctionRef[-T](
   override def isDebugEnabled: Boolean = true
 
   override protected def notifyError(message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker]): Unit =
-    logBuffer = (Logging.ErrorLevel, message) :: logBuffer
+    logBuffer = CapturedLogEvent(Logging.ErrorLevel, message, cause, marker) :: logBuffer
 
   override protected def notifyWarning(message: String, marker: OptionVal[LogMarker]): Unit =
-    logBuffer = (Logging.WarningLevel, message) :: logBuffer
+    logBuffer = CapturedLogEvent(Logging.WarningLevel, message, OptionVal.None, marker) :: logBuffer
 
   override protected def notifyInfo(message: String, marker: OptionVal[LogMarker]): Unit =
-    logBuffer = (Logging.InfoLevel, message) :: logBuffer
+    logBuffer = CapturedLogEvent(Logging.InfoLevel, message, OptionVal.None, marker) :: logBuffer
 
   override protected def notifyDebug(message: String, marker: OptionVal[LogMarker]): Unit =
-    logBuffer = (Logging.DebugLevel, message) :: logBuffer
+    logBuffer = CapturedLogEvent(Logging.DebugLevel, message, OptionVal.None, marker) :: logBuffer
 
-  def logEntries: List[(LogLevel, String)] = logBuffer.reverse
+  def logEntries: List[CapturedLogEvent] = logBuffer.reverse
   def clearLog(): Unit = logBuffer = Nil
 
 }
@@ -178,10 +178,10 @@ private[akka] final class FunctionRef[-T](
   override def log: ActorLogger = loggingAdapter
 
   /**
-   * The log entries logged through ctx.log.{debug, info, warn, error} are captured and can be verified through
+   * The log entries logged through ctx.log.{debug, info, warn, error} are captured and can be inspected through
    * this method.
    */
-  def logEntries: List[(LogLevel, String)] = loggingAdapter.logEntries
+  def logEntries: List[CapturedLogEvent] = loggingAdapter.logEntries
 
   /**
    * Clear the log entries
