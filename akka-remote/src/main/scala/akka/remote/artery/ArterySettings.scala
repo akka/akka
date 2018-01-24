@@ -73,11 +73,11 @@ private[akka] final class ArterySettings private (config: Config) {
   val LogAeronCounters: Boolean = config.getBoolean("log-aeron-counters")
 
   val Transport: Transport = toRootLowerCase(getString("transport")) match {
-    case "aeron-udp" ⇒ AeronUpd
-    case "tcp"       ⇒ Tcp
-    case "tls-tcp"   ⇒ TlsTcp
+    case AeronUpd.configName ⇒ AeronUpd
+    case Tcp.configName      ⇒ Tcp
+    case TlsTcp.configName   ⇒ TlsTcp
     case other ⇒ throw new IllegalArgumentException(s"Unknown transport [$other], possible values: " +
-      """"aeron-udp", "tcp", or "tls-tcp"""")
+      s""""${AeronUpd.configName}", "${Tcp.configName}", or "${TlsTcp.configName}"""")
   }
 
   val Version: Byte = Transport match {
@@ -206,14 +206,19 @@ private[akka] object ArterySettings {
     case other              ⇒ other
   }
 
-  sealed trait Transport
+  sealed trait Transport {
+    val configName: String
+  }
   object AeronUpd extends Transport {
-    override def toString = "aeron-udp"
+    override val configName: String = "aeron-udp"
+    override def toString = configName
   }
   object Tcp extends Transport {
-    override def toString = "tcp"
+    override val configName: String = "tcp"
+    override def toString = configName
   }
   object TlsTcp extends Transport {
-    override def toString = "tls-tcp"
+    override val configName: String = "tls-tcp"
+    override def toString = configName
   }
 }

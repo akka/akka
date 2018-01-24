@@ -3,6 +3,7 @@
  */
 package akka.remote.artery
 
+import scala.concurrent.duration._
 import akka.actor.{ ActorSystem, RootActorPath }
 import akka.remote.RARP
 import akka.testkit.AkkaSpec

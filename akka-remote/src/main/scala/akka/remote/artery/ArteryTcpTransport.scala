@@ -26,16 +26,12 @@ import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.compress._
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
-import akka.stream.Client
 import akka.stream.FlowShape
 import akka.stream.Graph
-import akka.stream.IgnoreComplete
 import akka.stream.KillSwitches
-import akka.stream.Server
 import akka.stream.SharedKillSwitch
 import akka.stream.SinkShape
-import akka.stream.TLSProtocol._
-import akka.stream.TLSRole
+import akka.stream.TLSProtocol.NegotiateNewSession
 import akka.stream.scaladsl.Broadcast
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Framing
@@ -46,7 +42,6 @@ import akka.stream.scaladsl.Partition
 import akka.stream.scaladsl.RestartFlow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.TLS
 import akka.stream.scaladsl.Tcp
 import akka.stream.scaladsl.Tcp.ServerBinding
 import akka.util.ByteString
@@ -76,24 +71,22 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     val host = outboundContext.remoteAddress.host.get
     val port = outboundContext.remoteAddress.port.get
-
-    def tcp = Tcp()
-      .outgoingConnection(
-        remoteAddress = InetSocketAddress.createUnresolved(host, port),
-        halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
-        connectTimeout = Duration.Inf // FIXME should this be set, default is Inf?
-      )
+    val remoteAddress = InetSocketAddress.createUnresolved(host, port)
 
     def connectionFlow: Flow[ByteString, ByteString, Future[Tcp.OutgoingConnection]] =
       if (tlsEnabled) {
-        Flow[ByteString]
-          .map(bytes ⇒ SendBytes(bytes))
-          .viaMat(tls(role = Client).joinMat(tcp)(Keep.right))(Keep.right)
-          .collect {
-            case SessionBytes(_, bytes) ⇒ bytes
-          }
-      } else
-        tcp
+        Tcp().outgoingTlsConnection(
+          remoteAddress,
+          sslContext = sslContext,
+          negotiateNewSession = cipherSuites)
+      } else {
+        Tcp()
+          .outgoingConnection(
+            remoteAddress,
+            halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
+            connectTimeout = Duration.Inf // FIXME should this be set, default is Inf?
+          )
+      }
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
       val flowFactory = () ⇒ connectionFlow.mapMaterializedValue(_ ⇒ NotUsed)
@@ -189,31 +182,33 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
       .filter(_ ⇒ false) // don't send back anything in this TCP socket
       .map(_ ⇒ ByteString.empty) // make it a Flow[ByteString] again
 
-    serverBinding =
-      Some(Tcp().bind(
-        interface = localAddress.address.host.get,
-        port = localAddress.address.port.get,
-        halfClose = false)
-        .to(Sink.foreach { connection ⇒
-          if (tlsEnabled) {
-            val rhs: Flow[SslTlsInbound, SslTlsOutbound, Any] =
-              Flow[SslTlsInbound]
-                .collect {
-                  case SessionBytes(_, bytes) ⇒ bytes
-                }
-                .via(inboundConnectionFlow)
-                .map(SendBytes.apply)
+    val connectionSource: Source[Tcp.IncomingConnection, Future[ServerBinding]] =
+      if (tlsEnabled) {
+        Tcp().bindTls(
+          interface = localAddress.address.host.get,
+          port = localAddress.address.port.get,
+          sslContext = sslContext,
+          negotiateNewSession = cipherSuites
+        )
+      } else {
+        Tcp().bind(
+          interface = localAddress.address.host.get,
+          port = localAddress.address.port.get,
+          halfClose = false)
+      }
 
-            connection.handleWith(tls(role = Server).reversed join rhs)
-          } else
+    serverBinding =
+      Some(
+        connectionSource
+          .to(Sink.foreach { connection ⇒
             connection.handleWith(inboundConnectionFlow)
-        })
-        .run()
-        .recoverWith {
-          case e ⇒ Future.failed(new RemoteTransportException(
-            s"Failed to bind TCP to [${localAddress.address.host.get}:${localAddress.address.port.get}] due to: " +
-              e.getMessage, e))
-        }(ExecutionContexts.sameThreadExecutionContext)
+          })
+          .run()
+          .recoverWith {
+            case e ⇒ Future.failed(new RemoteTransportException(
+              s"Failed to bind TCP to [${localAddress.address.host.get}:${localAddress.address.port.get}] due to: " +
+                e.getMessage, e))
+          }(ExecutionContexts.sameThreadExecutionContext)
       )
 
     Await.result(serverBinding.get, settings.Bind.BindTimeout)
@@ -379,7 +374,5 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
   lazy val sslContext = initSslContext()
   lazy val cipherSuites = NegotiateNewSession.withCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_128_CBC_SHA")
-
-  def tls(role: TLSRole) = TLS(sslContext, None, cipherSuites, role, IgnoreComplete)
 
 }
