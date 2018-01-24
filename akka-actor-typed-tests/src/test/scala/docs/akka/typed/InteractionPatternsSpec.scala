@@ -21,58 +21,39 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
     "contain a sample for fire and forget" in {
       // #fire-and-forget-definition
-
-      sealed trait PrinterProtocol
-      case object DisableOutput extends PrinterProtocol
-      case object EnableOutput extends PrinterProtocol
-      case class PrintMe(message: String) extends PrinterProtocol
+      case class PrintMe(message: String)
 
       // two state behavior
       // in this state messages are printed
-      def enabledPrinterBehavior: Behavior[PrinterProtocol] = Behaviors.immutable {
-        // switch to the non printing-behavior
-        case (_, DisableOutput) ⇒ disabledPrinterBehavior
-        case (_, EnableOutput)  ⇒ Behaviors.ignore
+      val printerBehavior: Behavior[PrintMe] = Behaviors.immutable {
         case (_, PrintMe(message)) ⇒
           println(message)
           Behaviors.same
       }
-
-      // in this state messages are swallowed
-      def disabledPrinterBehavior: Behavior[PrinterProtocol] = Behaviors.immutable {
-        // switch back to the printing behavior
-        case (_, DisableOutput) ⇒ enabledPrinterBehavior
-
-        // ignore any other message
-        case (_, _)             ⇒ Behaviors.ignore
-      }
       // #fire-and-forget-definition
 
       // #fire-and-forget-doit
-      val system = ActorSystem(enabledPrinterBehavior, "fire-and-forget-sample")
+      val system = ActorSystem(printerBehavior, "fire-and-forget-sample")
 
       // note how the system is also the top level actor ref
-      val printer: ActorRef[PrinterProtocol] = system
+      val printer: ActorRef[PrintMe] = system
 
       // these are all fire and forget
-      printer ! PrintMe("printed")
-      printer ! DisableOutput
-      printer ! PrintMe("not printed")
-      printer ! EnableOutput
+      printer ! PrintMe("message 1")
+      printer ! PrintMe("not message 2")
       // #fire-and-forget-doit
 
       system.terminate().futureValue
     }
 
     // #request-response-protocol
-    trait Protocol
-    case class Request(query: String, respondTo: ActorRef[Response]) extends Protocol
+    case class Request(query: String, respondTo: ActorRef[Response])
     case class Response(result: String)
     // #request-response-protocol
 
     def compileOnlyRequestResponse(): Unit = {
       // #request-response-respond
-      Behaviors.immutable[Protocol] { (ctx, msg) ⇒
+      Behaviors.immutable[Request] { (ctx, msg) ⇒
         msg match {
           case Request(query, respondTo) ⇒
             // ... process query ...
@@ -82,7 +63,7 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       }
       // #request-response-respond
 
-      val otherActor: ActorRef[Protocol] = ???
+      val otherActor: ActorRef[Request] = ???
       val ctx: ActorContext[Response] = ???
       // #request-response-send
       otherActor ! Request("give me cookies", ctx.self)
@@ -216,23 +197,23 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   "contain a sample for ask" in {
     // #actor-ask
-    trait HalProtocol
-    case class OpenThePodBayDoorsPlease(respondTo: ActorRef[HalResponse]) extends HalProtocol
+    sealed trait HalCommand
+    case class OpenThePodBayDoorsPlease(respondTo: ActorRef[HalResponse]) extends HalCommand
     case class HalResponse(message: String)
 
-    val halBehavior = Behaviors.immutable[HalProtocol] { (ctx, msg) ⇒
+    val halBehavior = Behaviors.immutable[HalCommand] { (ctx, msg) ⇒
       msg match {
         case OpenThePodBayDoorsPlease(respondTo) ⇒
-          respondTo ! HalResponse("I'm sorry Dave, I cannot do that!")
+          respondTo ! HalResponse("I'm sorry, Dave. I'm afraid I can't do that.")
           Behaviors.same
       }
     }
 
-    trait DaveProtocol
+    sealed trait DaveMessage
     // this is a part of the protocol that is internal to the actor itself
-    case class AdaptedResponse(message: String) extends DaveProtocol
+    case class AdaptedResponse(message: String) extends DaveMessage
 
-    def daveBehavior(hal: ActorRef[HalProtocol]) = Behaviors.deferred[DaveProtocol] { ctx ⇒
+    def daveBehavior(hal: ActorRef[HalCommand]) = Behaviors.deferred[DaveMessage] { ctx ⇒
 
       // asking someone requires a timeout, if the timeout hits without response
       // the ask is failed with a TimeoutException
@@ -253,11 +234,11 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       // use immutable state we have closed over like here.
       val requestId = 1
       ctx.ask(hal)(OpenThePodBayDoorsPlease) {
-        case Success(HalResponse(message)) ⇒ AdaptedResponse(s"$requestId: message")
+        case Success(HalResponse(message)) ⇒ AdaptedResponse(s"$requestId: $message")
         case Failure(ex)                   ⇒ AdaptedResponse(s"$requestId: Request failed")
       }
 
-      Behaviors.immutable { (ctx, msg) ⇒
+      Behaviors.immutable { (_, msg) ⇒
         msg match {
           // the adapted message ends up being processed like any other
           // message sent to the actor
@@ -272,11 +253,11 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   "contain a sample for ask from outside the actor system" in {
     // #standalone-ask
-    trait CookieProtocol {}
-    case class GiveMeCookies private[typed] (val cookies: ActorRef[Cookies]) extends CookieProtocol
+    trait CookieCommand {}
+    case class GiveMeCookies(replyTo: ActorRef[Cookies]) extends CookieCommand
     case class Cookies(count: Int)
 
-    def askAndPrint(system: ActorSystem[AnyRef], cookieActorRef: ActorRef[CookieProtocol]): Unit = {
+    def askAndPrint(system: ActorSystem[AnyRef], cookieActorRef: ActorRef[CookieCommand]): Unit = {
       import akka.actor.typed.scaladsl.AskPattern._
 
       // asking someone requires a timeout, if the timeout hits without response

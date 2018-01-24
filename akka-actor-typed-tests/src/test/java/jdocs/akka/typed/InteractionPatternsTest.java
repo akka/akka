@@ -24,35 +24,22 @@ import java.util.concurrent.TimeUnit;
 public class InteractionPatternsTest extends JUnitSuite {
 
   // #fire-and-forget-definition
-  interface PrinterProtocol { }
-  class DisableOutput implements PrinterProtocol { }
-  class EnableOutput implements PrinterProtocol { }
-  class PrintMe implements PrinterProtocol {
+  class PrintMe {
     public final String message;
     public PrintMe(String message) {
       this.message = message;
     }
   }
 
-  public Behavior<PrinterProtocol> enabledPrinterBehavior() {
-    return BehaviorBuilder.<PrinterProtocol>create()
-      .onMessage(DisableOutput.class, (ctx, disableOutput) -> disabledPrinterBehavior())
-      .onMessage(PrintMe.class, (ctx, printMe) -> {
-        System.out.println(printMe.message);
-        return Behaviors.same();
-      }).build();
-  }
-
-  public Behavior<PrinterProtocol> disabledPrinterBehavior() {
-    return BehaviorBuilder.<PrinterProtocol>create()
-      .onMessage(EnableOutput.class, (ctx, enableOutput) -> enabledPrinterBehavior())
-      .build();
-  }
+  static final Behavior<PrintMe> printerBehavior = Behaviors.immutable(PrintMe.class)
+    .onMessage(PrintMe.class, (ctx, printMe) -> {
+      System.out.println(printMe.message);
+      return Behaviors.same();
+    }).build();
   // #fire-and-forget-definition
 
   // #request-response-protocol
-  interface Protocol {}
-  class Request implements Protocol {
+  class Request {
     public final String query;
     public final ActorRef<Response> respondTo;
     public Request(String query, ActorRef<Response> respondTo) {
@@ -73,7 +60,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
     // #request-response-respond
     // actor behavior
-    Behaviors.immutable(Protocol.class)
+    Behaviors.immutable(Request.class)
       .onMessage(Request.class, (ctx, request) -> {
         // ... process request ...
         request.respondTo.tell(new Response("Here's your response!"));
@@ -81,8 +68,9 @@ public class InteractionPatternsTest extends JUnitSuite {
       }).build();
     // #request-response-respond
 
-    ActorRef<Protocol> otherActor = null;
+    ActorRef<Request> otherActor = null;
     ActorContext<Response> ctx = null;
+
     // #request-response-send
     otherActor.tell(new Request("give me cookies", ctx.getSelf()));
     // #request-response-send
@@ -139,7 +127,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   public static class Frontend {
 
     interface Command {}
-    public static class  Translate implements Command {
+    public static class Translate implements Command {
       public final URI site;
       public final ActorRef<URI> replyTo;
 
@@ -239,18 +227,15 @@ public class InteractionPatternsTest extends JUnitSuite {
   @Test
   public void fireAndForgetSample() throws Exception {
     // #fire-and-forget-doit
-    final ActorSystem<PrinterProtocol> system =
-      ActorSystem.create(enabledPrinterBehavior(), "printer-sample-system");
+    final ActorSystem<PrintMe> system =
+      ActorSystem.create(printerBehavior, "printer-sample-system");
 
     // note that system is also the ActorRef to the guardian actor
-    final ActorRef<PrinterProtocol> ref = system;
+    final ActorRef<PrintMe> ref = system;
 
     // these are all fire and forget
-    ref.tell(new PrintMe("message"));
-    ref.tell(new DisableOutput());
-    ref.tell(new PrintMe("message"));
-    ref.tell(new EnableOutput());
-
+    ref.tell(new PrintMe("message 1"));
+    ref.tell(new PrintMe("message 2"));
     // #fire-and-forget-doit
 
     Await.ready(system.terminate(), Duration.create(3, TimeUnit.SECONDS));
@@ -358,8 +343,8 @@ public class InteractionPatternsTest extends JUnitSuite {
 
 
   // #actor-ask
-  interface HalProtocol {}
-  static final class OpenThePodBayDoorsPlease implements HalProtocol {
+  interface HalCommand {}
+  static final class OpenThePodBayDoorsPlease implements HalCommand {
     public final ActorRef<HalResponse> respondTo;
     OpenThePodBayDoorsPlease(ActorRef<HalResponse> respondTo) {
       this.respondTo = respondTo;
@@ -372,10 +357,10 @@ public class InteractionPatternsTest extends JUnitSuite {
     }
   }
 
-  static final Behavior<HalProtocol> halBehavior =
-    Behaviors.immutable(HalProtocol.class)
+  static final Behavior<HalCommand> halBehavior =
+    Behaviors.immutable(HalCommand.class)
       .onMessage(OpenThePodBayDoorsPlease.class, (ctx, msg) -> {
-        msg.respondTo.tell(new HalResponse("I'm sorry Dave, I cannot do that!"));
+        msg.respondTo.tell(new HalResponse("I'm sorry, Dave. I'm afraid I can't do that."));
         return Behaviors.same();
       }).build();
 
@@ -389,7 +374,7 @@ public class InteractionPatternsTest extends JUnitSuite {
     }
   }
 
-  public static Behavior<DaveProtocol> daveBehavior(final ActorRef<HalProtocol> hal) {
+  public static Behavior<DaveProtocol> daveBehavior(final ActorRef<HalCommand> hal) {
     return Behaviors.deferred((ActorContext<DaveProtocol> ctx) -> {
 
       // asking someone requires a timeout, if the timeout hits without response
@@ -444,8 +429,8 @@ public class InteractionPatternsTest extends JUnitSuite {
 
 
   // #standalone-ask
-  interface CookieProtocol {}
-  static class GiveMeCookies implements CookieProtocol {
+  interface CookieCommand {}
+  static class GiveMeCookies implements CookieCommand {
     public final ActorRef<Cookies> cookies;
     GiveMeCookies(ActorRef<Cookies> cookies) {
       this.cookies = cookies;
@@ -454,7 +439,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   static class Cookies {}
 
 
-  public void askAndPrint(ActorSystem<Object> system, ActorRef<CookieProtocol> cookieActorRef) {
+  public void askAndPrint(ActorSystem<Object> system, ActorRef<CookieCommand> cookieActorRef) {
     CompletionStage<Cookies> result = AskPattern.ask(
       cookieActorRef,
       GiveMeCookies::new,
