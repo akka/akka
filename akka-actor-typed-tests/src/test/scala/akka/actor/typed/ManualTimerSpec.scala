@@ -10,7 +10,7 @@ import org.scalatest.WordSpecLike
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.{ ManualTime, TestProbe }
 
-class ManualTimerSpec extends TestKit() with ManualTime with WordSpecLike {
+class ManualTimerSpec extends TestKit(ManualTime.config) with ManualTime with WordSpecLike {
 
   "A timer" must {
     "schedule non-repeated ticks" in {

@@ -4,11 +4,9 @@ import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.testkit.typed._
 
-trait ManualTime extends TestKitMixin { self: TestKit ⇒
-  override def mixedInConfig: Config =
-    ConfigFactory
-      .parseString("""akka.scheduler.implementation = "akka.testkit.typed.ExplicitlyTriggeredScheduler"""")
-      .withFallback(super.mixedInConfig)
-
+object ManualTime {
+  val config: Config = ConfigFactory.parseString("""akka.scheduler.implementation = "akka.testkit.typed.ExplicitlyTriggeredScheduler"""")
+}
+trait ManualTime { self: TestKit ⇒
   override val scheduler: ExplicitlyTriggeredScheduler = self.system.scheduler.asInstanceOf[ExplicitlyTriggeredScheduler]
 }
