@@ -157,15 +157,14 @@ private[remote] final class RemoteInstruments(
     }
   }
 
-  def deserialize(inboundEnvelope: InboundEnvelope, positionOfMetaData: Int): Unit = {
+  def deserialize(inboundEnvelope: InboundEnvelope): Unit = {
     if (inboundEnvelope.flag(EnvelopeBuffer.MetadataPresentFlag)) {
-      inboundEnvelope.envelopeBuffer.byteBuffer.position(positionOfMetaData)
       deserializeRaw(inboundEnvelope)
     }
   }
 
   def deserializeRaw(inboundEnvelope: InboundEnvelope): Unit = {
-    val buffer = inboundEnvelope.envelopeBuffer.byteBuffer
+    val buffer = inboundEnvelope.byteBufferStartingAtMetaData()
     val length = buffer.getInt
     val endPos = buffer.position() + length
     try {

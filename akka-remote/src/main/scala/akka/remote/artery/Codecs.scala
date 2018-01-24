@@ -641,7 +641,7 @@ private[remote] class Deserializer(
           val envelopeWithMessage = envelope.withMessage(deserializedMessage)
 
           if (instruments.nonEmpty) {
-            instruments.deserialize(envelopeWithMessage, envelope.positionOfMetaData)
+            instruments.deserialize(envelopeWithMessage)
             val time = if (instruments.timeSerialization) System.nanoTime - startTime else 0
             instruments.messageReceived(envelopeWithMessage, envelope.envelopeBuffer.byteBuffer.limit(), time)
           }

@@ -3,6 +3,8 @@
  */
 package akka.remote.artery
 
+import java.nio.ByteBuffer
+
 import akka.actor.InternalActorRef
 import akka.util.OptionVal
 import akka.actor.Address
@@ -42,6 +44,16 @@ private[remote] trait InboundEnvelope {
   def message: AnyRef
   def envelopeBuffer: EnvelopeBuffer
 
+  /**
+   * The enclosed `ByteBuffer` with position set to the point where
+   * meta data for RemoteInstrument begins.
+   */
+  def byteBufferStartingAtMetaData(): ByteBuffer
+  /**
+   * The position in the ByteBuffer of the meta data for RemoteInstrument
+   */
+  def positionOfMetaData: Int
+
   def flags: Byte
   def flag(byteFlag: ByteFlag): Boolean
 
@@ -54,10 +66,6 @@ private[remote] trait InboundEnvelope {
   def lane: Int
   def copyForLane(lane: Int): InboundEnvelope
 
-  /**
-   * The position in the ByteBuffer of the meta data for RemoteInstrument
-   */
-  def positionOfMetaData: Int
 }
 
 /**
@@ -100,6 +108,12 @@ private[remote] final class ReusableInboundEnvelope extends InboundEnvelope {
   override def lane: Int = _lane
 
   override def positionOfMetaData: Int = _positionOfMetaData
+
+  override def byteBufferStartingAtMetaData(): ByteBuffer = {
+    val buffer = envelopeBuffer.byteBuffer
+    buffer.position(positionOfMetaData)
+    buffer
+  }
 
   override def withMessage(message: AnyRef): InboundEnvelope = {
     _message = message

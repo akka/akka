@@ -13,7 +13,7 @@ import javax.net.ssl._
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 import akka.Done
 import akka.NotUsed
@@ -52,7 +52,7 @@ import akka.util.ByteString
 private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider,
                                          tlsEnabled: Boolean)
   extends ArteryTransport(_system, _provider) {
-  import ArteryTransport.InboundStreamMatValues
+  import ArteryTransport._
   import FlightRecorderEvents._
 
   @volatile private var inboundKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundKillSwitch")
@@ -72,20 +72,21 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     val host = outboundContext.remoteAddress.host.get
     val port = outboundContext.remoteAddress.port.get
     val remoteAddress = InetSocketAddress.createUnresolved(host, port)
+    val connectionTimeout = 5.seconds // FIXME config
 
     def connectionFlow: Flow[ByteString, ByteString, Future[Tcp.OutgoingConnection]] =
       if (tlsEnabled) {
         Tcp().outgoingTlsConnection(
           remoteAddress,
           sslContext = sslContext,
-          negotiateNewSession = cipherSuites)
+          negotiateNewSession = cipherSuites,
+          connectTimeout = connectionTimeout)
       } else {
         Tcp()
           .outgoingConnection(
             remoteAddress,
             halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
-            connectTimeout = Duration.Inf // FIXME should this be set, default is Inf?
-          )
+            connectTimeout = connectionTimeout)
       }
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
@@ -95,7 +96,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
       // FIXME config of backoff
       import scala.concurrent.duration._
-      if (streamId == controlStreamId) {
+      if (streamId == ControlStreamId) {
         // restart of inner connection part important in control flow, since system messages
         // are buffered and resent from the outer SystemMessageDelivery stage.
         // FIXME The mat value Future is currently never completed, because RestartFlow will retry forever, should it give up?
@@ -141,11 +142,11 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
       Sink.fromGraph(GraphDSL.create() { implicit b ⇒
         import GraphDSL.Implicits._
         val partition = b.add(Partition[EnvelopeBuffer](3, env ⇒ {
-          env.byteBuffer.get(EnvelopeBuffer.StreamIdOffset).toInt match {
-            case `ordinaryStreamId` ⇒ 1
-            case `controlStreamId`  ⇒ 0
-            case `largeStreamId`    ⇒ 2
-          }
+          val streamId: Int = env.byteBuffer.get(EnvelopeBuffer.StreamIdOffset).toInt
+          if (streamId == OrdinaryStreamId) 1
+          else if (streamId == ControlStreamId) 0
+          else if (streamId == LargeStreamId) 2
+          else throw new IllegalArgumentException(s"Unexpected streamId [$streamId]")
         }))
         partition.out(0) ~> controlStream
         partition.out(1) ~> ordinaryMessagesStream
@@ -228,6 +229,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         _ ← ordinaryMessagesStreamCompleted.recover { case _ ⇒ Done }
         _ ← if (largeMessageChannelEnabled)
           largeMessagesStreamCompleted.recover { case _ ⇒ Done } else Future.successful(Done)
+        // FIXME unbind is probably not needed, and might be more correct to not do that
         _ ← unbind().recover { case _ ⇒ Done }
       } yield Done
       allStopped.foreach(_ ⇒ runInboundStreams())
@@ -247,7 +249,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         .run()(controlMaterializer)
     attachControlMessageObserver(ctrl)
     implicit val ec = materializer.executionContext
-    updateStreamMatValues(controlStreamId, completed)
+    updateStreamMatValues(ControlStreamId, completed)
 
     (hub, completed)
   }
@@ -297,7 +299,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     setInboundCompressionAccess(inboundCompressionAccess)
 
-    updateStreamMatValues(ordinaryStreamId, completed)
+    updateStreamMatValues(OrdinaryStreamId, completed)
 
     (inboundHub, completed)
   }
@@ -312,14 +314,14 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         .toMat(inboundSink(largeEnvelopeBufferPool))(Keep.both)
         .run()(materializer)
 
-    updateStreamMatValues(largeStreamId, completed)
+    updateStreamMatValues(LargeStreamId, completed)
 
     (hub, completed)
   }
 
   private def updateStreamMatValues(streamId: Int, completed: Future[Done]): Unit = {
     implicit val ec = materializer.executionContext
-    updateStreamMatValues(controlStreamId, InboundStreamMatValues(
+    updateStreamMatValues(ControlStreamId, InboundStreamMatValues(
       None,
       completed.recover { case _ ⇒ Done }))
   }

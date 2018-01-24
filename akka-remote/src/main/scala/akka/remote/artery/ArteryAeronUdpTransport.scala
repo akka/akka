@@ -60,7 +60,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   @volatile private[this] var aeron: Aeron = _
   @volatile private[this] var aeronCounterTask: Cancellable = _
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
-  @volatile private[this] var areonErrorLog: AeronErrorLog = _
+  @volatile private[this] var aeronErrorLog: AeronErrorLog = _
 
   private val taskRunner = new TaskRunner(system, settings.Advanced.IdleCpuLevel)
 
@@ -229,14 +229,14 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       if (status == ChannelEndpointStatus.ACTIVE) {
         log.debug("Inbound channel is now active")
       } else if (status == ChannelEndpointStatus.ERRORED) {
-        areonErrorLog.logErrors(log, 0L)
+        aeronErrorLog.logErrors(log, 0L)
         stopMediaDriver()
         throw new RemoteTransportException("Inbound Aeron channel is in errored state. See Aeron logs for details.")
       } else if (status == ChannelEndpointStatus.INITIALIZING && retries > 0) {
         Thread.sleep(waitInterval)
         retry(retries - 1)
       } else {
-        areonErrorLog.logErrors(log, 0L)
+        aeronErrorLog.logErrors(log, 0L)
         stopMediaDriver()
         throw new RemoteTransportException("Timed out waiting for Aeron transport to bind. See Aeoron logs.")
       }
@@ -260,12 +260,12 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
   // TODO Add FR Events
   private def startAeronErrorLog(): Unit = {
-    areonErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE), log)
+    aeronErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE), log)
     val lastTimestamp = new AtomicLong(0L)
     import system.dispatcher
     aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
       if (!isShutdown) {
-        val newLastTimestamp = areonErrorLog.logErrors(log, lastTimestamp.get)
+        val newLastTimestamp = aeronErrorLog.logErrors(log, lastTimestamp.get)
         lastTimestamp.set(newLastTimestamp + 1)
       }
     }
@@ -290,7 +290,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
     // FIXME in previous impl giveUpAfter was Duration.Inf for the outboundControl ?
     val giveUpAfter =
-      if (streamId == controlStreamId) settings.Advanced.GiveUpSystemMessageAfter
+      if (streamId == ControlStreamId) settings.Advanced.GiveUpSystemMessageAfter
       else settings.Advanced.GiveUpMessageAfter
     Sink.fromGraph(new AeronSink(outboundChannel(outboundContext.remoteAddress), streamId, aeron, taskRunner,
       bufferPool, giveUpAfter, createFlightRecorderEventSink()))
@@ -318,14 +318,14 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   private def runInboundControlStream(): Unit = {
     if (isShutdown) throw ShuttingDown
     val (resourceLife, ctrl, completed) =
-      aeronSource(controlStreamId, envelopeBufferPool)
+      aeronSource(ControlStreamId, envelopeBufferPool)
         .via(inboundFlow(settings, NoInboundCompressions))
         .toMat(inboundControlSink)({ case (a, (c, d)) ⇒ (a, c, d) })
         .run()(controlMaterializer)
 
     attachControlMessageObserver(ctrl)
 
-    updateStreamMatValues(controlStreamId, resourceLife, completed)
+    updateStreamMatValues(ControlStreamId, resourceLife, completed)
     attachInboundStreamRestart("Inbound control stream", completed, () ⇒ runInboundControlStream())
   }
 
@@ -334,7 +334,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
     val (resourceLife, inboundCompressionAccess, completed) =
       if (inboundLanes == 1) {
-        aeronSource(ordinaryStreamId, envelopeBufferPool)
+        aeronSource(OrdinaryStreamId, envelopeBufferPool)
           .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
           .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) ⇒ (a, b, c) })
           .run()(materializer)
@@ -342,7 +342,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       } else {
         val laneKillSwitch = KillSwitches.shared("laneKillSwitch")
         val laneSource: Source[InboundEnvelope, (ResourceLifecycle, InboundCompressionAccess)] =
-          aeronSource(ordinaryStreamId, envelopeBufferPool)
+          aeronSource(OrdinaryStreamId, envelopeBufferPool)
             .via(laneKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
             .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
@@ -371,19 +371,19 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
     setInboundCompressionAccess(inboundCompressionAccess)
 
-    updateStreamMatValues(ordinaryStreamId, resourceLife, completed)
+    updateStreamMatValues(OrdinaryStreamId, resourceLife, completed)
     attachInboundStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream())
   }
 
   private def runInboundLargeMessagesStream(): Unit = {
     if (isShutdown) throw ShuttingDown
 
-    val (resourceLife, completed) = aeronSource(largeStreamId, largeEnvelopeBufferPool)
+    val (resourceLife, completed) = aeronSource(LargeStreamId, largeEnvelopeBufferPool)
       .via(inboundLargeFlow(settings))
       .toMat(inboundSink(largeEnvelopeBufferPool))(Keep.both)
       .run()(materializer)
 
-    updateStreamMatValues(largeStreamId, resourceLife, completed)
+    updateStreamMatValues(LargeStreamId, resourceLife, completed)
     attachInboundStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
   }
 
@@ -403,7 +403,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         topLevelFREvents.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
       }
       if (aeron != null) aeron.close()
-      if (areonErrorLog != null) areonErrorLog.close()
+      if (aeronErrorLog != null) aeronErrorLog.close()
       if (mediaDriver.get.isDefined) stopMediaDriver()
 
       Done

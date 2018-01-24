@@ -87,7 +87,7 @@ class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.conf
   }
 
   "receive ActorIdentity(None) when identified node is unknown host" in {
-    // FIXME this is a difference between Aeron and TCP. AeronSink will throw exception
+    // TODO There is a timing difference between Aeron and TCP. AeronSink will throw exception
     // immediately in constructor from aeron.addPublication when UnknownHostException. That will trigger
     // this immediately. With TCP it will trigger after handshake timeout. Can we see the UnknownHostException
     // reason somehow and fail the stream immediately for that case?

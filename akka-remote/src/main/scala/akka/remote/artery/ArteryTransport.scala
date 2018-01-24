@@ -281,9 +281,7 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
  */
 private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
   extends RemoteTransport(_system, _provider) with InboundContext {
-  import ArteryTransport.AeronTerminated
-  import ArteryTransport.InboundStreamMatValues
-  import ArteryTransport.ShutdownSignal
+  import ArteryTransport._
   import FlightRecorderEvents._
 
   // these vars are initialized once in the start method
@@ -351,17 +349,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       .insert(Array("system", "cluster", "core", "daemon", "heartbeatSender"), NotUsed)
       .insert(Array("system", "cluster", "core", "daemon", "crossDcHeartbeatSender"), NotUsed)
       .insert(Array("system", "cluster", "heartbeatReceiver"), NotUsed)
-
-  protected val controlStreamId = 1
-  protected val ordinaryStreamId = 2
-  protected val largeStreamId = 3
-
-  protected def streamName(streamId: Int): String =
-    streamId match {
-      case `controlStreamId` ⇒ "control"
-      case `largeStreamId`   ⇒ "large message"
-      case _                 ⇒ "message"
-    }
 
   private val restartCounter = new RestartCounter(settings.Advanced.InboundMaxRestarts, settings.Advanced.InboundRestartTimeout)
 
@@ -716,11 +703,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   }
 
   def outboundLarge(outboundContext: OutboundContext): Sink[OutboundEnvelope, Future[Done]] =
-    createOutboundSink(largeStreamId, outboundContext, largeEnvelopeBufferPool)
+    createOutboundSink(LargeStreamId, outboundContext, largeEnvelopeBufferPool)
       .mapMaterializedValue { case (_, d) ⇒ d }
 
   def outbound(outboundContext: OutboundContext): Sink[OutboundEnvelope, (OutboundCompressionAccess, Future[Done])] =
-    createOutboundSink(ordinaryStreamId, outboundContext, envelopeBufferPool)
+    createOutboundSink(OrdinaryStreamId, outboundContext, envelopeBufferPool)
 
   private def createOutboundSink(streamId: Int, outboundContext: OutboundContext,
                                  bufferPool: EnvelopeBufferPool): Sink[OutboundEnvelope, (OutboundCompressionAccess, Future[Done])] = {
@@ -730,13 +717,13 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   }
 
   def outboundTransportSink(outboundContext: OutboundContext): Sink[EnvelopeBuffer, Future[Done]] =
-    outboundTransportSink(outboundContext, ordinaryStreamId, envelopeBufferPool)
+    outboundTransportSink(outboundContext, OrdinaryStreamId, envelopeBufferPool)
 
   protected def outboundTransportSink(outboundContext: OutboundContext, streamId: Int,
                                       bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]]
 
   def outboundLane(outboundContext: OutboundContext): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] =
-    outboundLane(outboundContext, envelopeBufferPool, ordinaryStreamId)
+    outboundLane(outboundContext, envelopeBufferPool, OrdinaryStreamId)
 
   private def outboundLane(
     outboundContext: OutboundContext,
@@ -758,8 +745,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       // note that System messages must not be dropped before the SystemMessageDelivery stage
       .via(outboundTestFlow(outboundContext))
       .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.right)
-      .via(createEncoder(envelopeBufferPool, controlStreamId))
-      .toMat(outboundTransportSink(outboundContext, controlStreamId, envelopeBufferPool))(Keep.both)
+      .via(createEncoder(envelopeBufferPool, ControlStreamId))
+      .toMat(outboundTransportSink(outboundContext, ControlStreamId, envelopeBufferPool))(Keep.both)
 
     // TODO we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
@@ -897,5 +884,16 @@ private[remote] object ArteryTransport {
       port
     }
   }
+
+  val ControlStreamId = 1
+  val OrdinaryStreamId = 2
+  val LargeStreamId = 3
+
+  def streamName(streamId: Int): String =
+    streamId match {
+      case ControlStreamId ⇒ "control"
+      case LargeStreamId   ⇒ "large message"
+      case _               ⇒ "message"
+    }
 
 }

@@ -235,6 +235,10 @@ private[remote] final class HeaderBuilderImpl(
   var _remoteInstruments: OptionVal[RemoteInstruments] = OptionVal.None
 
   override def resetMessageFields(): Unit = {
+    // some fields must not be reset because they are set only once from the Encoder,
+    // which owns the HeaderBuilder instance. Those are never changed.
+    // version, uid, streamId
+
     _frameLength = 0
     _flags = 0
     _senderActorRef = null
