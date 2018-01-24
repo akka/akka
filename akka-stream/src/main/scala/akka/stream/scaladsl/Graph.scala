@@ -633,21 +633,14 @@ object Partition {
 
   /**
    * Create a new `Partition` stage with the specified input type. This method sets `eagerCancel` to `false`.
+   * To specify a different value for the `eagerCancel` parameter, then instantiate Partition using the constructor.
+   *
+   * If `eagerCancel` is true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    *
    * @param outputPorts number of output ports
    * @param partitioner function deciding which output each element will be targeted
-   * @param eagerCancel if true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
-   */
+   */ // FIXME BC add `eagerCancel: Boolean = false` parameter
   def apply[T](outputPorts: Int, partitioner: T ⇒ Int): Partition[T] = new Partition(outputPorts, partitioner, false)
-
-  /**
-   * Create a new `Partition` stage with the specified input type.
-   *
-   * @param outputPorts number of output ports
-   * @param partitioner function deciding which output each element will be targeted
-   * @param eagerCancel if true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
-   */
-  def apply[T](outputPorts: Int, partitioner: T ⇒ Int, eagerCancel: Boolean): Partition[T] = new Partition(outputPorts, partitioner, eagerCancel)
 }
 
 /**
@@ -667,11 +660,12 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int, val e
 
   /**
    * Sets `eagerCancel` to `false`.
-   **/
-  def this (outputPorts: Int, partitioner: T => Int) = this(outputPorts, partitioner, false)
+   */
+  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter")
+  def this(outputPorts: Int, partitioner: T ⇒ Int) = this(outputPorts, partitioner, false)
 
   val in: Inlet[T] = Inlet[T]("Partition.in")
-  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i))
+  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i)) // FIXME BC make this immutable.IndexedSeq as type + Vector as concret impl
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {

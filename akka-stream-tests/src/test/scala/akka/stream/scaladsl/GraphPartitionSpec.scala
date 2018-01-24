@@ -95,7 +95,7 @@ class GraphPartitionSpec extends StreamSpec {
       val c2 = TestSubscriber.probe[Int]()
 
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val partition = b.add(Partition[Int](2, { case l if l < 6 ⇒ 0; case _ ⇒ 1 }, eagerCancel = false))
+        val partition = b.add(new Partition[Int](2, { case l if l < 6 ⇒ 0; case _ ⇒ 1 }, false))
         Source.fromPublisher(p1.getPublisher) ~> partition.in
         partition.out(0) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c1)
         partition.out(1) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c2)
@@ -126,7 +126,7 @@ class GraphPartitionSpec extends StreamSpec {
       val c2 = TestSubscriber.probe[Int]()
 
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val partition = b.add(Partition[Int](2, { case l if l < 6 ⇒ 0; case _ ⇒ 1 }, eagerCancel = true))
+        val partition = b.add(new Partition[Int](2, { case l if l < 6 ⇒ 0; case _ ⇒ 1 }, true))
         Source.fromPublisher(p1.getPublisher) ~> partition.in
         partition.out(0) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c1)
         partition.out(1) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(c2)

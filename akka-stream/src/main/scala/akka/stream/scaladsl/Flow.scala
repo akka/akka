@@ -2310,12 +2310,12 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' any of the downstreams cancel
    */
-  def divertTo(that: Graph[SinkShape[Out], _], when: Out ⇒ Boolean): Repr[Out] = via(divertToGraph(that, when, eagerCancel = true))
+  def divertTo(that: Graph[SinkShape[Out], _], when: Out ⇒ Boolean): Repr[Out] = via(divertToGraph(that, when))
 
-  protected def divertToGraph[M](that: Graph[SinkShape[Out], M], when: Out ⇒ Boolean, eagerCancel: Boolean): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
+  protected def divertToGraph[M](that: Graph[SinkShape[Out], M], when: Out ⇒ Boolean): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
     GraphDSL.create(that) { implicit b ⇒ r ⇒
       import GraphDSL.Implicits._
-      val partition = b.add(Partition[Out](2, out ⇒ if (when(out)) 1 else 0, eagerCancel))
+      val partition = b.add(new Partition[Out](2, out ⇒ if (when(out)) 1 else 0, true))
       partition.out(1) ~> r
       FlowShape(partition.in, partition.out(0))
     }
@@ -2335,7 +2335,6 @@ trait FlowOps[+Out, +Mat] {
    * asynchronously.
    */
   def async: Repr[Out]
-
 }
 
 /**
@@ -2570,8 +2569,8 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def divertToMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2], when: Out ⇒ Boolean, eagerCancel: Boolean = true)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[Out, Mat3] =
-    viaMat(divertToGraph(that, when, eagerCancel))(matF)
+  def divertToMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2], when: Out ⇒ Boolean)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[Out, Mat3] =
+    viaMat(divertToGraph(that, when))(matF)
 
   /**
    * Materializes to `Future[Done]` that completes on getting termination message.
