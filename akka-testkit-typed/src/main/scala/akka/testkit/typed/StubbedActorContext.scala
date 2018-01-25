@@ -11,6 +11,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import akka.annotation.InternalApi
 import akka.actor.typed.internal._
+import akka.actor.typed.internal.adapter.LoggerAdapterImpl
 import akka.event.Logging.{ Info, LogEvent, LogLevel }
 import akka.event.{ Logging, LoggingAdapter }
 
@@ -41,7 +42,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
  *
  * Captures log events for test inspection
  */
-@InternalApi private[akka] final class StubbedActorLogger extends ActorLoggerImpl(null, null, null, null) {
+@InternalApi private[akka] final class StubbedLogger extends LoggerAdapterImpl(null, null, null, null) {
 
   private var logBuffer: List[CapturedLogEvent] = Nil
 
@@ -91,7 +92,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
 
   private var _children = TreeMap.empty[String, TestInbox[_]]
   private val childName = Iterator from 0 map (Helpers.base64(_))
-  private val loggingAdapter = new StubbedActorLogger
+  private val loggingAdapter = new StubbedLogger
 
   override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ref)
   def childrenNames: Iterable[String] = _children.keys

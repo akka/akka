@@ -1,9 +1,9 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.actor.typed.internal
+package akka.actor.typed.internal.adapter
 
-import akka.actor.typed.{ Logger, LogMarker }
+import akka.actor.typed.{ LogMarker, Logger }
 import akka.annotation.InternalApi
 import akka.event.Logging.{ Debug, Error, Info, Warning }
 import akka.event.{ LoggingBus, LoggingFilter, LogMarker ⇒ UntypedLM }
@@ -13,7 +13,7 @@ import akka.util.OptionVal
  * INTERNAL API
  */
 @InternalApi
-private[akka] class ActorLoggerImpl(bus: LoggingBus, logClass: Class[_], logSource: String, loggingFilter: LoggingFilter) extends Logger {
+private[akka] class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_], logSource: String, loggingFilter: LoggingFilter) extends Logger {
 
   private[akka] var mdc: Map[String, Any] = Map.empty
 

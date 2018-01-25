@@ -8,7 +8,6 @@ package adapter
 import java.util.concurrent.CompletionStage
 
 import akka.actor.InvalidMessageException
-import akka.actor.typed.EventStream
 import akka.{ actor ⇒ a }
 
 import scala.concurrent.ExecutionContextExecutor
@@ -57,11 +56,9 @@ import scala.compat.java8.FutureConverters
     override def shutdown(): Unit = () // there was no shutdown in untyped Akka
   }
   override def dynamicAccess: a.DynamicAccess = untyped.dynamicAccess
-  override def eventStream: EventStream = new EventStreamAdapter(untyped.eventStream)
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untyped.dispatcher
-  override def log: akka.event.LoggingAdapter = untyped.log
+  override val log: Logger = new LoggerAdapterImpl(untyped.eventStream, getClass, name, untyped.logFilter)
   override def logConfiguration(): Unit = untyped.logConfiguration()
-  override def logFilter: akka.event.LoggingFilter = untyped.logFilter
   override def name: String = untyped.name
   override def scheduler: akka.actor.Scheduler = untyped.scheduler
   override def settings: Settings = new Settings(untyped.settings)

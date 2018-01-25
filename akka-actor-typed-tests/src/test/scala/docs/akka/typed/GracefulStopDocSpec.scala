@@ -4,14 +4,11 @@
 package docs.akka.typed
 
 //#imports
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ ActorSystem, Logger, PostStop }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.PostStop
-import akka.actor.typed.scaladsl.Behaviors
-import akka.event.LoggingAdapter
-
 //#imports
 
 import akka.actor.typed.TypedAkkaSpecWithShutdown
@@ -27,7 +24,7 @@ object GracefulStopDocSpec {
     final case object GracefulShutdown extends JobControlLanguage
 
     // Predefined cleanup operation
-    def cleanup(log: LoggingAdapter): Unit = log.info("Cleaning up!")
+    def cleanup(log: Logger): Unit = log.info("Cleaning up!")
 
     val mcpa = Behaviors.immutable[JobControlLanguage] { (ctx, msg) ⇒
       msg match {

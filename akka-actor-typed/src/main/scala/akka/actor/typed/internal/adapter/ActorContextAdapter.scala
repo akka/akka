@@ -79,7 +79,7 @@ import scala.concurrent.duration._
         val logSource = self.path.toString
         val logClass = classOf[Behavior[_]] // FIXME figure out a better class somehow
         val system = untyped.system.asInstanceOf[ExtendedActorSystem]
-        val logger = new ActorLoggerImpl(system.eventStream, logClass, logSource, system.logFilter)
+        val logger = new LoggerAdapterImpl(system.eventStream, logClass, logSource, system.logFilter)
         actorLogger = OptionVal.Some(logger)
         logger
     }

@@ -6,9 +6,9 @@ package internal
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
-import akka.actor.typed.internal.adapter.EventStreamAdapter
 import akka.annotation.InternalApi
 import akka.event.{ BusLogging, DefaultLoggingFilter, Logging }
+import akka.testkit.typed.StubbedLogger
 import akka.util.Timeout
 import akka.{ actor ⇒ a, event ⇒ e }
 import com.typesafe.config.ConfigFactory
@@ -43,16 +43,7 @@ import scala.concurrent._
   }
 
   override def dynamicAccess: a.DynamicAccess = new a.ReflectiveDynamicAccess(getClass.getClassLoader)
-  override def eventStream: EventStream = new EventStream {
-    override def subscribe[T](subscriber: ActorRef[T], to: Class[T]) = false
-    override def setLogLevel(loglevel: Logging.LogLevel): Unit = {}
-    override def logLevel = Logging.InfoLevel
-    override def unsubscribe[T](subscriber: ActorRef[T], from: Class[T]) = false
-    override def unsubscribe[T](subscriber: ActorRef[T]): Unit = {}
-    override def publish[T](event: T): Unit = {}
-  }
-  override def logFilter: e.LoggingFilter = new DefaultLoggingFilter(settings.untyped, eventStream.asInstanceOf[EventStreamAdapter].untyped)
-  override def log: e.LoggingAdapter = new BusLogging(eventStream.asInstanceOf[EventStreamAdapter].untyped, path.parent.toString, getClass, logFilter)
+
   override def logConfiguration(): Unit = log.info(settings.toString)
 
   override def scheduler: a.Scheduler = throw new UnsupportedOperationException("no scheduler")
@@ -84,4 +75,6 @@ import scala.concurrent._
 
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean =
     throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
+
+  def log: Logger = new StubbedLogger
 }

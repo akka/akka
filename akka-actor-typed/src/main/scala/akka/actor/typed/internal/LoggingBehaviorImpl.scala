@@ -3,7 +3,8 @@
  */
 package akka.actor.typed.internal
 
-import akka.actor.typed.{ Behavior }
+import akka.actor.typed.Behavior
+import akka.actor.typed.internal.adapter.LoggerAdapterImpl
 import akka.annotation.InternalApi
 
 import scala.reflect.ClassTag
@@ -26,12 +27,12 @@ import scala.reflect.ClassTag
   def withMdc[T: ClassTag](mdcForMessage: T ⇒ Map[String, Any], behavior: Behavior[T]): Behavior[T] =
     BehaviorImpl.intercept[T, T](
       beforeMessage = { (ctx, msg) ⇒
-        ctx.log.asInstanceOf[ActorLoggerImpl].mdc = mdcForMessage(msg)
+        ctx.log.asInstanceOf[LoggerAdapterImpl].mdc = mdcForMessage(msg)
         msg
       },
       beforeSignal = (_, _) ⇒ true,
       afterMessage = { (ctx, _, behavior) ⇒
-        ctx.log.asInstanceOf[ActorLoggerImpl].mdc = Map.empty
+        ctx.log.asInstanceOf[LoggerAdapterImpl].mdc = Map.empty
         behavior
       },
       afterSignal = (_, _, behavior) ⇒ behavior,
