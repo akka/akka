@@ -152,13 +152,14 @@ object BackoffSupervisor {
     maxBackoff:   FiniteDuration,
     randomFactor: Double): FiniteDuration = {
     val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
-    if (restartCount >= 30) // Duration overflow protection (> 100 years)
-      maxBackoff
-    else
-      maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd match {
-        case f: FiniteDuration ⇒ f
-        case _                 ⇒ maxBackoff
-      }
+    val calculatedDuration = try maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd catch {
+      // thrown when duration is being constructed with nanos > Long.MaxValue
+      case _: IllegalArgumentException ⇒ maxBackoff
+    }
+    calculatedDuration match {
+      case f: FiniteDuration ⇒ f
+      case _                 ⇒ maxBackoff
+    }
   }
 }
 
