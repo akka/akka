@@ -19,6 +19,15 @@ It is eventually consistent and geared toward providing high read and write avai
 (partition tolerance), with low latency. Note that in an eventually consistent system a read may return an
 out-of-date value.
 
+To enable distributed data, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-distributed-data_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+
 ## Using the Replicator
 
 The `akka.cluster.ddata.Replicator` actor provides the API for interacting with the data.
