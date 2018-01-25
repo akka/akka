@@ -36,6 +36,8 @@ class ArteryTcpSendConsistencyWithThreeLanesSpec extends AbstractRemoteSendConsi
       akka.remote.artery.advanced.inbound-lanes = 3
     """).withFallback(ArterySpecSupport.defaultConfig))
 
+/* FIXME enable TLS tests again, see config in TlsTcpSpec
+
 class ArteryTlsTcpSendConsistencyWithOneLaneSpec extends AbstractRemoteSendConsistencySpec(
   ConfigFactory.parseString("""
       akka.remote.artery.transport = tls-tcp
@@ -50,6 +52,7 @@ class ArteryTlsTcpSendConsistencyWithThreeLanesSpec extends AbstractRemoteSendCo
       akka.remote.artery.advanced.outbound-lanes = 1
       akka.remote.artery.advanced.inbound-lanes = 1
     """).withFallback(ArterySpecSupport.defaultConfig))
+*/
 
 abstract class AbstractRemoteSendConsistencySpec(config: Config) extends ArteryMultiNodeSpec(config) with ImplicitSender {
 

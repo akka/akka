@@ -6,9 +6,6 @@ package akka.remote.artery
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.security.KeyStore
-import java.security.SecureRandom
-import javax.net.ssl._
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -31,7 +28,6 @@ import akka.stream.Graph
 import akka.stream.KillSwitches
 import akka.stream.SharedKillSwitch
 import akka.stream.SinkShape
-import akka.stream.TLSProtocol.NegotiateNewSession
 import akka.stream.scaladsl.Broadcast
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Framing
@@ -45,6 +41,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Tcp
 import akka.stream.scaladsl.Tcp.ServerBinding
 import akka.util.ByteString
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -57,6 +54,11 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
   @volatile private var inboundKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundKillSwitch")
   private var serverBinding: Option[Future[ServerBinding]] = None
+
+  private val sslEngineProvider: OptionVal[SSLEngineProvider] =
+    // FIXME load from config
+    if (tlsEnabled) OptionVal.Some(new ConfigSSLEngineProvider(system))
+    else OptionVal.None
 
   override protected def startTransport(): Unit = {
     // FIXME new TCP events
@@ -76,10 +78,9 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     def connectionFlow: Flow[ByteString, ByteString, Future[Tcp.OutgoingConnection]] =
       if (tlsEnabled) {
-        Tcp().outgoingTlsConnection(
+        Tcp().outgoingTlsConnectionWithSSLEngine(
           remoteAddress,
-          sslContext = sslContext,
-          negotiateNewSession = cipherSuites,
+          createSSLEngine = () ⇒ sslEngineProvider.get.createClientSSLEngine(),
           connectTimeout = connectionTimeout)
       } else {
         Tcp()
@@ -185,12 +186,10 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     val connectionSource: Source[Tcp.IncomingConnection, Future[ServerBinding]] =
       if (tlsEnabled) {
-        Tcp().bindTls(
+        Tcp().bindTlsWithSSLEngine(
           interface = localAddress.address.host.get,
           port = localAddress.address.port.get,
-          sslContext = sslContext,
-          negotiateNewSession = cipherSuites
-        )
+          createSSLEngine = () ⇒ sslEngineProvider.get.createServerSSLEngine())
       } else {
         Tcp().bind(
           interface = localAddress.address.host.get,
@@ -349,32 +348,5 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         Future.successful(Done)
     }
   }
-
-  // FIXME proper SslConfig
-
-  def initWithTrust(trustPath: String) = {
-    val password = "changeme"
-
-    val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
-    keyStore.load(getClass.getResourceAsStream("/keystore"), password.toCharArray)
-
-    val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
-    trustStore.load(getClass.getResourceAsStream(trustPath), password.toCharArray)
-
-    val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-    keyManagerFactory.init(keyStore, password.toCharArray)
-
-    val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-    trustManagerFactory.init(trustStore)
-
-    val context = SSLContext.getInstance("TLS")
-    context.init(keyManagerFactory.getKeyManagers, trustManagerFactory.getTrustManagers, new SecureRandom)
-    context
-  }
-
-  def initSslContext(): SSLContext = initWithTrust("/truststore")
-
-  lazy val sslContext = initSslContext()
-  lazy val cipherSuites = NegotiateNewSession.withCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_128_CBC_SHA")
 
 }
