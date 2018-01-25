@@ -24,8 +24,6 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       // #fire-and-forget-definition
       case class PrintMe(message: String)
 
-      // two state behavior
-      // in this state messages are printed
       val printerBehavior: Behavior[PrintMe] = Behaviors.immutable {
         case (_, PrintMe(message)) ⇒
           println(message)
