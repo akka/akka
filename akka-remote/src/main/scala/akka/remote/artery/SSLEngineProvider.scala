@@ -69,10 +69,10 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
   private val SSLKeyStorePassword = config.getString("key-store-password")
   private val SSLKeyPassword = config.getString("key-password")
   private val SSLTrustStorePassword = config.getString("trust-store-password")
-  private val SSLEnabledAlgorithms = immutableSeq(config.getStringList("enabled-algorithms")).to[Set]
-  private val SSLProtocol = config.getString("protocol")
-  private val SSLRandomNumberGenerator = config.getString("random-number-generator")
-  private val SSLRequireMutualAuthentication = config.getBoolean("require-mutual-authentication")
+  val SSLEnabledAlgorithms = immutableSeq(config.getStringList("enabled-algorithms")).to[Set]
+  val SSLProtocol = config.getString("protocol")
+  val SSLRandomNumberGenerator = config.getString("random-number-generator")
+  val SSLRequireMutualAuthentication = config.getBoolean("require-mutual-authentication")
 
   private val log: MarkerLoggingAdapter = Logging.withMarker(system, getClass.getName)
 

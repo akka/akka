@@ -325,7 +325,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   override def addresses: Set[Address] = _addresses
   override def localAddressForRemote(remote: Address): Address = defaultAddress
 
-  private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
+  protected val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
 
   // keyed by the streamId
   protected val streamMatValues = new AtomicReference(Map.empty[Int, InboundStreamMatValues])

@@ -92,6 +92,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
       val flowFactory = () ⇒ connectionFlow.mapMaterializedValue(_ ⇒ NotUsed)
+        .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal ⇒ Source.empty })
         .log(name = s"outbound connection to [${outboundContext.remoteAddress}], ${streamName(streamId)} stream")
         .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = Logging.WarningLevel))
 
@@ -108,6 +109,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         // FIXME only restart on failures?, but missing in RestartFlow, see https://github.com/akka/akka/pull/23911
         RestartFlow.withBackoff[ByteString, ByteString](1.second, 5.seconds, 0.1, maxRestarts = 3)(flowFactory)
       }
+
     }
 
     Flow[EnvelopeBuffer]
@@ -116,7 +118,6 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         bufferPool.release(env)
         bytes
       }
-      .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal ⇒ Source.empty })
       .via(connectionFlowWithRestart)
       .map(_ ⇒ throw new IllegalStateException(s"Unexpected incoming bytes in outbound connection to [${outboundContext.remoteAddress}]"))
       .toMat(Sink.ignore)(Keep.right)
