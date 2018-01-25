@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.model;
 
+import akka.annotation.ApiMayChange;
 import akka.http.impl.util.Util;
 import akka.http.scaladsl.model.StatusCodes$;
 
@@ -19,6 +20,9 @@ public final class StatusCodes {
     public static final StatusCode CONTINUE = akka.http.scaladsl.model.StatusCodes.Continue();
     public static final StatusCode SWITCHING_PROTOCOLS = akka.http.scaladsl.model.StatusCodes.SwitchingProtocols();
     public static final StatusCode PROCESSING = akka.http.scaladsl.model.StatusCodes.Processing();
+
+    @ApiMayChange
+    public static final StatusCode EARLY_HINTS = akka.http.scaladsl.model.StatusCodes.EarlyHints();
 
     public static final StatusCode OK = akka.http.scaladsl.model.StatusCodes.OK();
     public static final StatusCode CREATED = akka.http.scaladsl.model.StatusCodes.Created();

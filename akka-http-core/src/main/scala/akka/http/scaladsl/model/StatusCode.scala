@@ -5,6 +5,7 @@
 package akka.http.scaladsl.model
 
 import language.implicitConversions
+import akka.annotation.ApiMayChange
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 
@@ -103,6 +104,9 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val Continue           = reg(i(100)("Continue", "The server has received the request headers, and the client should proceed to send the request body."))
   val SwitchingProtocols = reg(i(101)("Switching Protocols", "The server is switching protocols, because the client requested the switch."))
   val Processing         = reg(i(102)("Processing", "The server is processing the request, but no response is available yet."))
+
+  @ApiMayChange
+  val EarlyHints         = reg(i(103)("Early Hints", "The server is likely to send a final response with the header fields included in the response.")) // RFC 8297
 
   val OK                          = reg(s(200)("OK", "OK"))
   val Created                     = reg(s(201)("Created", "The request has been fulfilled and resulted in a new resource being created."))
