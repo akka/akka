@@ -65,14 +65,7 @@ import scala.util.{ Failure, Success }
       closeAndComplete(IOResult(bytesWritten, Failure(ex)))
       context.stop(self)
 
-    case ActorSubscriberMessage.OnComplete ⇒
-      try {
-        chan.force(true)
-      } catch {
-        case ex: Exception ⇒
-          closeAndComplete(IOResult(bytesWritten, Failure(ex)))
-      }
-      context.stop(self)
+    case ActorSubscriberMessage.OnComplete ⇒ context.stop(self)
   }
 
   override def postStop(): Unit = {
