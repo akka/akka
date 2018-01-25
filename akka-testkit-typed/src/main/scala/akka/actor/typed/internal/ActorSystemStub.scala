@@ -6,9 +6,9 @@ package internal
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
+import akka.actor.typed.internal.adapter.EventStreamAdapter
 import akka.annotation.InternalApi
-import akka.event.Logging
-import akka.event.typed.{ BusLogging, DefaultLoggingFilter, EventStream }
+import akka.event.{ BusLogging, DefaultLoggingFilter, Logging }
 import akka.util.Timeout
 import akka.{ actor ⇒ a, event ⇒ e }
 import com.typesafe.config.ConfigFactory
@@ -51,8 +51,8 @@ import scala.concurrent._
     override def unsubscribe[T](subscriber: ActorRef[T]): Unit = {}
     override def publish[T](event: T): Unit = {}
   }
-  override def logFilter: e.LoggingFilter = new DefaultLoggingFilter(settings, eventStream)
-  override def log: e.LoggingAdapter = new BusLogging(eventStream, path.parent.toString, getClass, logFilter)
+  override def logFilter: e.LoggingFilter = new DefaultLoggingFilter(settings.untyped, eventStream.asInstanceOf[EventStreamAdapter].untyped)
+  override def log: e.LoggingAdapter = new BusLogging(eventStream.asInstanceOf[EventStreamAdapter].untyped, path.parent.toString, getClass, logFilter)
   override def logConfiguration(): Unit = log.info(settings.toString)
 
   override def scheduler: a.Scheduler = throw new UnsupportedOperationException("no scheduler")

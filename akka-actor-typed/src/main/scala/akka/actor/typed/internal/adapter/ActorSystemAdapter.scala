@@ -8,6 +8,7 @@ package adapter
 import java.util.concurrent.CompletionStage
 
 import akka.actor.InvalidMessageException
+import akka.actor.typed.EventStream
 import akka.{ actor ⇒ a }
 
 import scala.concurrent.ExecutionContextExecutor
@@ -15,7 +16,6 @@ import akka.util.Timeout
 
 import scala.concurrent.Future
 import akka.annotation.InternalApi
-import akka.event.typed.EventStream
 
 import scala.compat.java8.FutureConverters
 

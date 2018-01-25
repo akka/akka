@@ -5,14 +5,14 @@ package akka.actor.typed
 package internal
 package adapter
 
+import akka.actor.typed.EventStream
 import akka.{ event ⇒ e }
 import akka.annotation.InternalApi
-import akka.event.typed.EventStream
 
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] class EventStreamAdapter(untyped: e.EventStream) extends EventStream {
+@InternalApi private[typed] class EventStreamAdapter(val untyped: e.EventStream) extends EventStream {
   def logLevel: e.Logging.LogLevel = untyped.logLevel
 
   def publish[T](event: T): Unit = untyped.publish(event.asInstanceOf[AnyRef])
