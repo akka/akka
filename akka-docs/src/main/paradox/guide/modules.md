@@ -12,6 +12,7 @@ The following capabilities are included with Akka OSS and are introduced later o
 * [Cluster Publish-Subscribe](#cluster-publish-subscribe)
 * [Persistence](#persistence)
 * [Distributed Data](#distributed-data)
+* [Streams](#streams)
 * [HTTP](#http)
 
 With a Lightbend subscription, you can use [Enterprise Suite](https://www.lightbend.com/platform/production) in production. Enterprise Suite includes the following extensions to Akka core functionality:
