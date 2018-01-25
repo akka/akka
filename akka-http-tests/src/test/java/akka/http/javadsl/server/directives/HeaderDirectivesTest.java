@@ -153,11 +153,11 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
 
   @Test
   public void testOptionalHeaderValueByType() {
-    TestRoute route = testRoute(optionalHeaderValueByType(Server.class,
-      (Optional<Server> s) -> complete(((Boolean)s.isPresent()).toString())));
+    TestRoute route = testRoute(optionalHeaderValueByType(UserAgent.class,
+      (Optional<UserAgent> ua) -> complete(((Boolean)ua.isPresent()).toString())));
 
     route
-      .run(HttpRequest.create().addHeader(Server.create(ProductVersion.create("such-service", "0.6"))))
+      .run(HttpRequest.create().addHeader(UserAgent.create("custom-server/1.2.3")))
       .assertStatusCode(StatusCodes.OK)
       .assertEntity("true");
 
