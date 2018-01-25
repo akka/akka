@@ -3,6 +3,7 @@
  */
 package jdocs.akka.typed;
 
+import akka.NotUsed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
@@ -453,6 +454,103 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
   // #standalone-ask
 
+
+  // hidden stuffs for the per-session-child sample
+  interface Keys {}
+  interface Wallet {}
+  static final Behavior<GetKeys> keyCabinetBehavior = null;
+  static final Behavior<GetWallet> drawerBehavior = null;
+  // #per-session-child
+
+  // messages for the two services we interact with
+  class GetKeys {
+    public final String whoseKeys;
+    public final ActorRef<Keys> respondTo;
+    public GetKeys(String whoseKeys, ActorRef<Keys> respondTo) {
+      this.whoseKeys = whoseKeys;
+      this.respondTo = respondTo;
+    }
+  }
+  class GetWallet {
+    public final String whoseWallet;
+    public final ActorRef<Wallet> respondTo;
+    public GetWallet(String whoseWallet, ActorRef<Wallet> respondTo) {
+      this.whoseWallet = whoseWallet;
+      this.respondTo = respondTo;
+    }
+  }
+
+  interface HomeCommand {}
+  class LeaveHome implements HomeCommand {
+    public final String who;
+    public final ActorRef<ReadyToLeaveHome> respondTo;
+    public LeaveHome(String who, ActorRef<ReadyToLeaveHome> respondTo) {
+      this.who = who;
+      this.respondTo = respondTo;
+    }
+  }
+
+  class ReadyToLeaveHome {
+    public final String who;
+    public final Keys keys;
+    public final Wallet wallet;
+    public ReadyToLeaveHome(String who, Keys keys, Wallet wallet) {
+      this.who = who;
+      this.keys = keys;
+      this.wallet = wallet;
+    }
+  }
+
+  public Behavior<HomeCommand> homeBehavior() {
+    return Behaviors.deferred((ctx) -> {
+      final ActorRef<GetKeys> keyCabinet = ctx.spawn(keyCabinetBehavior, "key-cabinet");
+      final ActorRef<GetWallet> drawer = ctx.spawn(drawerBehavior, "drawer");
+
+      return Behaviors.immutable(HomeCommand.class)
+        .onMessage(LeaveHome.class, (innerCtx, msg) -> {
+          ctx.spawn(new PrepareToLeaveHome(msg.who, msg.respondTo, keyCabinet, drawer), "leaving" + msg.who);
+          return Behavior.same();
+        }).build();
+    });
+  }
+
+  class PrepareToLeaveHome extends Behaviors.MutableBehavior<Object> {
+    private final String whoIsLeaving;
+    private final ActorRef<ReadyToLeaveHome> respondTo;
+    private final ActorRef<GetKeys> keyCabinet;
+    private final ActorRef<GetWallet> drawer;
+    private Optional<Wallet> wallet = Optional.empty();
+    private Optional<Keys> keys = Optional.empty();
+    public PrepareToLeaveHome(String whoIsLeaving, ActorRef<ReadyToLeaveHome> respondTo, ActorRef<GetKeys> keyCabinet, ActorRef<GetWallet> drawer) {
+      this.whoIsLeaving = whoIsLeaving;
+      this.respondTo = respondTo;
+      this.keyCabinet = keyCabinet;
+      this.drawer = drawer;
+    }
+
+    @Override
+    public Behaviors.Receive<Object> createReceive() {
+      return receiveBuilder()
+        .onMessage(Wallet.class, (wallet) -> {
+          this.wallet = Optional.of(wallet);
+          return completeOrContinue();
+        }).onMessage(Keys.class, (keys) -> {
+          this.keys = Optional.of(keys);
+          return completeOrContinue();
+        }).build();
+    }
+
+
+    private Behavior<Object> completeOrContinue() {
+      if (wallet.isPresent() && keys.isPresent()) {
+        respondTo.tell(new ReadyToLeaveHome(whoIsLeaving, keys.get(), wallet.get()));
+        return Behaviors.stopped();
+      } else {
+        return this;
+      }
+    }
+  }
+  // #per-session-child
 
 
 

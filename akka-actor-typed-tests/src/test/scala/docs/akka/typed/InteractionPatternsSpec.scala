@@ -5,6 +5,7 @@ package docs.akka.typed
 
 import java.net.URI
 
+import akka.NotUsed
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, TimerScheduler }
 import akka.testkit.typed.TestKit
@@ -75,7 +76,11 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
       object Backend {
         sealed trait Request
-        final case class StartTranslationJob(taskId: Int, site: URI, replyTo: ActorRef[Response]) extends Request
+        final case class StartTranslationJob(
+          taskId:  Int,
+          site:    URI,
+          replyTo: ActorRef[Response]
+        ) extends Request
 
         sealed trait Response
         final case class JobStarted(taskId: Int) extends Response
@@ -249,6 +254,66 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       }
     }
     // #actor-ask
+  }
+
+  "contain a sample for per session child" in {
+    trait Keys
+    trait Wallet
+    val keyCabinetBehavior: Behavior[GetKeys] = ???
+    val drawerBehavior: Behavior[GetWallet] = ???
+
+    // #per-session-child
+    trait HomeCommand
+    case class LeaveHome(who: String, respondTo: ActorRef[ReadyToLeaveHome]) extends HomeCommand
+    case class ReadyToLeaveHome(who: String, keys: Keys, wallet: Wallet)
+
+    case class GetKeys(whoseKeys: String, respondTo: ActorRef[Keys])
+    case class GetWallet(whoseWallet: String, respondTo: ActorRef[Wallet])
+
+    def homeBehavior = Behaviors.immutable[HomeCommand] { (ctx, msg) ⇒
+      val keyCabinet: ActorRef[GetKeys] = ctx.spawn(keyCabinetBehavior, "key-cabinet")
+      val drawer: ActorRef[GetWallet] = ctx.spawn(drawerBehavior, "drawer")
+
+      msg match {
+        case LeaveHome(who, respondTo) ⇒
+          ctx.spawn(prepareToLeaveHome(who, respondTo, keyCabinet, drawer), s"leaving-$who")
+          Behavior.same
+      }
+    }
+
+    def prepareToLeaveHome(
+      whoIsLeaving: String,
+      respondTo:    ActorRef[ReadyToLeaveHome],
+      keyCabinet:   ActorRef[GetKeys],
+      drawer:       ActorRef[GetWallet]): Behavior[NotUsed] =
+      // FIXME we don't _really_ care about the actor protocol here, adapting messages seems like a lot of
+      // boilerplate for a sample, is this fine enough? Couldn't think of a sample with the same protocol that makes sense
+      // but AnyRef + narrow is perhaps also not nice to put in a sample
+      Behaviors.deferred[AnyRef] { ctx ⇒
+        var wallet: Option[Wallet] = None
+        var keys: Option[Keys] = None
+
+        keyCabinet ! GetKeys(whoIsLeaving, ctx.self.narrow[Keys])
+        drawer ! GetWallet(whoIsLeaving, ctx.self.narrow[Wallet])
+
+        Behaviors.immutable[AnyRef]((ctx, msg) ⇒ {
+          msg match {
+            case w: Wallet ⇒ wallet = Some(w)
+            case k: Keys   ⇒ keys = Some(k)
+          }
+
+          (keys, wallet) match {
+            case (Some(w), Some(k)) ⇒
+              // we got both, "session" is completed!
+              respondTo ! ReadyToLeaveHome(whoIsLeaving, w, k)
+              Behavior.stopped
+
+            case _ ⇒
+              Behavior.same
+          }
+        })
+      }.narrow[NotUsed] // we don't let anyone else know we accept anything
+    // #per-session-child
   }
 
   "contain a sample for ask from outside the actor system" in {

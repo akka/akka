@@ -1,14 +1,14 @@
 # Interaction Patterns
 
-Interacting with an Actor in Akka Typed is done through an @scala[`ActorRef[T]`]@java[`ActorRef<T>`] where `T` is the type of messages the actor accepts, also known as the "protocol". This ensures that only the right kind of messages can be sent to an actor and also ensures no access to the Actor instance internals is available to anyone else but the Actor itself. 
+Interacting with an Actor in Akka Typed is done through an @scala[`ActorRef[T]`]@java[`ActorRef<T>`] where `T` is the type of messages the actor accepts, also known as the "protocol". This ensures that only the right kind of messages can be sent to an actor and also that no one else but the Actor itself can access the Actor instance internals.
 
 Message exchange with Actors follow a few common patterns, let's go through each one of them. 
 
 ## Fire and Forget
 
-The fundamental way to interact with an actor is through @scala["tell", which is so common that it has a special symbolic method name: `actorRef ! message`]@java[`actorRef.tell(message)`]. Sending a message to an actor like this can be done both from inside another actor and from any logic outside of the `ActorSystem`.
+The fundamental way to interact with an actor is through @scala["tell", which is so common that it has a special symbolic method name: `actorRef ! message`]@java[`actorRef.tell(message)`]. Sending a message with tell can safely be done from any thread.
 
-Tell is asynchronous which means that the method returns right away and that when execution of the statement after it in the code is executed there is no guarantee that the message has been processed by the recipient yet. It also means there is no way to way to know if the processing succeeded or failed without additional interaction with the actor in question.
+Tell is asynchronous which means that the method returns right away, when the statement after it is executed there is no guarantee that the message has been processed by the recipient yet. It also means there is no way to know if the message was received, the processing succeeded or failed.
 
 With the given protocol and actor behavior:
 
@@ -32,16 +32,18 @@ Java
 
  * It is not critical to be sure that the message was processed
  * There is no way to act on non successful delivery or processing
- * We want to minimize the number of messages created to get higher throughput
+ * We want to minimize the number of messages created to get higher throughput (sending a response would require creating twice the number of messages)
 
 **Problems:**
 
- * Consistently higher rates of fire and forget to an actor than it process will make the inbox fill up and can in the worst case cause the JVM crash with an `OutOfMemoryError`
- * If the message got lost, we will not notice
+ * If the inflow of messages is higher than the actor can process the inbox will fill up and can in the worst case cause the JVM crash with an `OutOfMemoryError`
+ * If the message gets lost, we will not notice
 
 ## Request-Response
 
-In many interactions between actors a message leads to a response message back being sent back from the other actor, it can be the result of a query or some form of acknowledgment that the message was received and processed. In Akka Typed the recipient of responses has to be encoded as a field in the message itself, which the recipient can then use to send a response back. 
+Many interactions between actors requires one or more response message being sent back from the receiving actor. A response message can be a result of a query, some form of acknowledgment that the message was received and processed or events that the request subscribed to. 
+
+In Akka Typed the recipient of responses has to be encoded as a field in the message itself, which the recipient can then use to send (tell) a response back.
 
 With the following protocol:
 
@@ -61,7 +63,7 @@ Java
 :  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #request-response-send }
 
 
-On the receiving side the `ActorRef` can then be used to send one or more responses back:
+On the receiving side the @scala[`ActorRef[response]`]@java[`ActorRef<Response>`] can then be used to send one or more responses back:
 
 Scala
 :  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #request-response-respond }
@@ -73,24 +75,19 @@ Java
 **Useful when:**
 
  * Subscribing to an actor that will send many response messages back
- * Translating between different actor message protocols
  
 **Problems:**
 
  * Actors seldom have a response message from another actor as a part of their protocol (see adapted response)
  * It is hard to detect that a message request was not delivered or processed (see ask)
- * Only one adaption can be made per response message type, if a new one is registered the old one is replaced,
-   for example different target actors can't have different adaption if they use the same response types, unless some
-   correlation is encoded in the messages
  * Unless the protocol already includes a way to provide context, for example a request id that is also sent in the
    response, it is not possible to tie an interaction to some specific context without introducing a new,
-   separate, actor
+   separate, actor (see ask or per session child actor)
 
 
 ## Adapted Response
 
-Most often the receiving actor does not, and should, know of the protocol of the sending actor, and
-will respond with one or more messages that the sending actor cannot receive.
+Most often the sending actor does not, and should not, support receiving the response messages of another actor. In such cases we need to provide an `ActorRef` of the right type and adapt the response message to a type that the sending actor can handle.
 
 Scala
 :  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #adapted-response }
@@ -113,12 +110,12 @@ the receiving actor. It's recommended to register the adapters in a top level
 `Behaviors.deferred` or constructor of `MutableBehavior` but it's possible to
 register them later also if needed.
 
-The function is running in the receiving actor and can safely access state of it.
+The adapter function is running in the receiving actor and can safely access state of it, but if it throws an exception the actor is stopped.
 
 **Useful when:**
 
- * Subscribing to an actor that will send many response messages back
  * Translating between different actor message protocols
+ * Subscribing to an actor that will send many response messages back
  
 **Problems:**
 
@@ -131,7 +128,7 @@ The function is running in the receiving actor and can safely access state of it
    separate, actor
 
  
-## 1:1 Request-Response with ask between two actors
+## Request-Response with ask between two actors
  
 In an interaction where there is a 1:1 mapping between a request and a response we can use `ask` on the `ActorContext` to interact with another actor.
 
@@ -144,24 +141,24 @@ Java
 :  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #actor-ask }
 
 
-The function is running in the receiving actor and can safely access state of it.
+The response adapting function is running in the receiving actor and can safely access state of it, but if it throws an exception the actor is stopped.
 
 **Useful when:**
 
  * Single response queries
- * When an actor needs to know that the message was processed before continuing 
+ * An actor needs to know that the message was processed before continuing 
  * To allow an actor to resend if a timely response is not produced
- * To keep track of outstanding requests and not overwhelm a recipient with messages (simple backpressure)
- * When some context should be attached to the interaction but the protocol does not support that (request id, what query the response was for)
+ * To keep track of outstanding requests and not overwhelm a recipient with messages ("backpressure")
+ * Context should be attached to the interaction but the protocol does not support that (request id, what query the response was for)
  
 **Problems:**
 
  * There can only be a single response to one `ask`
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
- * Finding a good value for the timeout, especially when `ask` is triggers chained `ask`s in the receiving actor. You want a short timeout to be responsive and answer back to the requestor, but at the same time you do not want to have many false positives 
+ * Finding a good value for the timeout, especially when `ask` is triggers chained `ask`s in the receiving actor. You want a short timeout to be responsive and answer back to the requester, but at the same time you do not want to have many false positives 
 
 
-## 1:1 Request-Response with ask from outside the ActorSystem
+## Request-Response with ask from outside the ActorSystem
 
 Some times you need to interact with actors from outside of the actor system, this can be done with fire-and-forget as described above or through another version of `ask` that returns a @scala[`Future[Response]`]@java[`CompletionStage<Response>`] that is either completed with a succesful response or failed with a `TimeoutException` if there was no response within the specified timeout. 
  
@@ -175,32 +172,43 @@ Java
 
 **Useful when:**
 
- * Querying an actor about something from outside of the actor system 
+ * Querying an actor from outside of the actor system 
 
 **Problems:**
 
- * It is easy to accidentally close over and unsafely mutable state with the callbacks on the returned @scala[`Future`]@java[`CompletionStage`]
+ * It is easy to accidentally close over and unsafely mutable state with the callbacks on the returned @scala[`Future`]@java[`CompletionStage`] as those will be executed on a different thread.
  * There can only be a single response to one `ask`
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
 
 
 ## Per session child Actor
 
-Keeping context for an interaction, or multiple interactions can be done by moving the work for one "session", into a child actor.
+In some cases a complete response to a request can only be created and sent back after collecting multiple answers from other actors. For these kinds of interaction it can be good to delegate the work to a per "session" child actor. The child could also contain arbitrary logic to implement retrying, failing on timeout, tail chopping, progress inspection etc.
 
-TODO
+Note that this in fact essentially how `ask` is implemented, if all you need is a single response with a timeout it is better to use `ask`.
+
+The child is created with the context it needs to do the work, including an `ActorRef` that it can respond to. When the complete result is there the child responds with the result and stops itself.
+
+As the protocol of the session actor is not a public API but rather an implementation detail of the parent actor, it may not always make sense to have an explicit protocol and adapt the messages of the actors that the session actor interacts with. For this use case it is possible to express that the actor can receive any 
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #per-session-child }
+
+Java
+:  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #per-session-child }
+
+In an actual session child you would likely want to include some form of timeout as well (see below for timed messages).
 
 **Useful when:**
 
  * A single incoming request should result in multiple interactions with other actors before a result can be built,
    for example aggregation of several results
- * Handle acknowledgement and retry messages for at-least-once delivery
- * ???
+ * You need to handle acknowledgement and retry messages for at-least-once delivery
 
 **Problems:**
 
- * Children have lifecycles that must be managed to not create a resource leak
- * ???
+ * Children have life cycles that must be managed to not create a resource leak, it can be easy to miss a scenario where the session actor is not stopped
+ * It increases complexity, since each such child can execute concurrently with other children and the parent
  
 ## Scheduling messages to self
 
