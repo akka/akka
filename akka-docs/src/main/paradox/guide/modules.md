@@ -72,7 +72,7 @@ Challenges the Cluster module solves include the following:
 * How to maintain a set of actor systems (a cluster) that can communicate with each other and consider each other as part of the cluster.
 * How to introduce a new system safely to the set of already existing members.
 * How to reliably detect systems that are temporarily unreachable.
-* How to remove failed hosts/systems (or scale down the system) so that all remaining members agree on the remaining subset of the cluster?
+* How to remove failed hosts/systems (or scale down the system) so that all remaining members agree on the remaining subset of the cluster.
 * How to distribute computations among the current set of members.
 * How do I designate members of the cluster to a certain role, in other words, to provide certain services and not others.
 
