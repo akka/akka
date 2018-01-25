@@ -47,28 +47,36 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       system.terminate().futureValue
     }
 
-    // #request-response-protocol
-    case class Request(query: String, respondTo: ActorRef[Response])
-    case class Response(result: String)
-    // #request-response-protocol
+    "contain a sample for request response" in {
 
-    def compileOnlyRequestResponse(): Unit = {
+      // #request-response-protocol
+      case class Request(query: String, respondTo: ActorRef[Response])
+      case class Response(result: String)
+      // #request-response-protocol
+
       // #request-response-respond
-      Behaviors.immutable[Request] { (ctx, msg) ⇒
+      val otherBehavior = Behaviors.immutable[Request] { (ctx, msg) ⇒
         msg match {
           case Request(query, respondTo) ⇒
             // ... process query ...
-            respondTo ! Response("Here's your response!")
+            respondTo ! Response("Here's your cookies!")
             Behaviors.same
         }
       }
       // #request-response-respond
 
-      val otherActor: ActorRef[Request] = ???
-      val ctx: ActorContext[Response] = ???
+      val otherActor: ActorRef[Request] = spawn(otherBehavior)
+      val probe = TestProbe[Response]()
+      // shhh, don't tell anyone
+      import scala.language.reflectiveCalls
+      val ctx = new {
+        def self = probe.ref
+      }
       // #request-response-send
       otherActor ! Request("give me cookies", ctx.self)
       // #request-response-send
+
+      probe.expectMsgType[Response]
     }
 
     "contain a sample for adapted response" in {
@@ -259,8 +267,8 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
   "contain a sample for per session child" in {
     trait Keys
     trait Wallet
-    val keyCabinetBehavior: Behavior[GetKeys] = ???
-    val drawerBehavior: Behavior[GetWallet] = ???
+    val keyCabinetBehavior: Behavior[GetKeys] = Behaviors.ignore
+    val drawerBehavior: Behavior[GetWallet] = Behaviors.ignore
 
     // #per-session-child
     trait HomeCommand
