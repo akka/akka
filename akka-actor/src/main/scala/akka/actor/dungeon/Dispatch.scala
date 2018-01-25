@@ -5,6 +5,8 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
+import scala.util.{ Failure, Success, Try }
+
 import akka.dispatch.{ Envelope, Mailbox }
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
@@ -147,10 +149,15 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     unwrappedMessage match {
       case _: NoSerializationVerificationNeeded ⇒ envelope
       case msg ⇒
-        val deserializedMsg = serializeAndDeserializePayload(msg)
-        envelope.message match {
-          case dl: DeadLetter ⇒ envelope.copy(message = dl.copy(message = deserializedMsg))
-          case _              ⇒ envelope.copy(message = deserializedMsg)
+        Try(serializeAndDeserializePayload(msg)) match {
+          case Success(deserializedMsg) ⇒
+            envelope.message match {
+              case dl: DeadLetter ⇒ envelope.copy(message = dl.copy(message = deserializedMsg))
+              case _              ⇒ envelope.copy(message = deserializedMsg)
+            }
+          case Failure(e) ⇒
+            throw new Exception(s"Failed to serialize and deserialize message of type ${msg.getClass.getName} for testing. " +
+              "To avoid this error, either disable 'akka.actor.serialize-messages', mark the message with 'akka.actor.NoSerializationVerificationNeeded', or configure serialization to support this message", e)
         }
     }
   }

@@ -308,7 +308,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
     val a = system.actorOf(Props[FooActor])
     Await.result(a ? "pigdog", timeout.duration) should ===("pigdog")
 
-    EventFilter[NotSerializableException](occurrences = 1) intercept {
+    EventFilter[Exception](start = "Failed to serialize and deserialize message of type java.lang.Object", occurrences = 1) intercept {
       a ! (new AnyRef)
     }
     system stop a

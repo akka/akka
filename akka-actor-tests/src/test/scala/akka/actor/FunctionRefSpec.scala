@@ -86,7 +86,7 @@ class FunctionRefSpec extends AkkaSpec with ImplicitSender {
       "not be found" in {
         val provider = system.asInstanceOf[ExtendedActorSystem].provider
         val ref = new FunctionRef(testActor.path / "blabla", provider, system.eventStream, (x, y) ⇒ ())
-        EventFilter[ClassCastException](occurrences = 1) intercept {
+        EventFilter[Exception](start = "Failed to serialize and deserialize message of type akka.actor.FunctionRefSpec", occurrences = 1) intercept {
           // needs to be something that fails when the deserialized form is not a FunctionRef
           // this relies upon serialize-messages during tests
           testActor ! DropForwarder(ref)
