@@ -11,11 +11,14 @@ import akka.event.{ EventStream, Logging, LoggingAdapter }
 import akka.event.Logging.Error
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.pattern.pipe
+
 import scala.util.control.NonFatal
 import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
+
 import scala.util.control.Exception.Catcher
 import scala.concurrent.Future
 import akka.ConfigurationException
+import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.remote.artery.ArteryTransport
 import akka.util.OptionVal
@@ -27,8 +30,9 @@ import akka.remote.serialization.ActorRefResolveThreadLocalCache
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] object RemoteActorRefProvider {
-  private final case class Internals(transport: RemoteTransport, serialization: Serialization, remoteDaemon: InternalActorRef)
+  private final case class Internals(transport: RemoteTransport, remoteDaemon: InternalActorRef)
     extends NoSerializationVerificationNeeded
 
   sealed trait TerminatorState
@@ -166,7 +170,6 @@ private[akka] class RemoteActorRefProvider(
   @volatile private var _internals: Internals = _
 
   def transport: RemoteTransport = _internals.transport
-  def serialization: Serialization = _internals.serialization
   def remoteDaemon: InternalActorRef = _internals.remoteDaemon
 
   // This actor ensures the ordering of shutdown between remoteDaemon and the transport
@@ -200,7 +203,6 @@ private[akka] class RemoteActorRefProvider(
         local.registerExtraNames(Map(("remote", d)))
         d
       },
-      serialization = SerializationExtension(system),
       transport = if (remoteSettings.Artery.Enabled) new ArteryTransport(system, this) else new Remoting(system, this))
 
     _internals = internals

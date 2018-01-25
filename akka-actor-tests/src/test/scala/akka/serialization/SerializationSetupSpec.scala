@@ -99,6 +99,21 @@ class SerializationSetupSpec extends AkkaSpec(
       serializer shouldBe theSameInstanceAs(programmaticDummySerializer)
     }
 
+    "fail during ActorSystem creation when misconfigured" in {
+      val config =
+        ConfigFactory.parseString(
+          """
+             akka.loglevel = OFF
+             akka.stdout-loglevel = OFF
+             akka.actor.serializers.doe = "john.is.not.here"
+          """).withFallback(ConfigFactory.load())
+
+      a[ClassNotFoundException] should be thrownBy {
+        val system = ActorSystem("SerializationSetupSpec-FailingSystem", config)
+        system.terminate()
+      }
+    }
+
   }
 
   // This is a weird edge case, someone creating a JavaSerializer manually and using it in a system means
