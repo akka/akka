@@ -797,7 +797,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
         }
       })
     }
-    
+
     "not have problems stopping already stopped child" in {
       sync(setup("ctx45", ignorePostStop = false) { (ctx, startWith) ⇒
         val self = ctx.self
