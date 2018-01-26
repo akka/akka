@@ -69,8 +69,11 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
   import ArteryTcpTransport._
   import FlightRecorderEvents._
 
+  // may change when inbound streams are restarted
   @volatile private var inboundKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundKillSwitch")
-  private var serverBinding: Option[Future[ServerBinding]] = None
+  // may change when inbound streams are restarted
+  @volatile private var inboundConnectionFlow: OptionVal[Flow[ByteString, ByteString, NotUsed]] = OptionVal.None
+  @volatile private var serverBinding: Option[Future[ServerBinding]] = None
 
   private val sslEngineProvider: OptionVal[SSLEngineProvider] =
     // FIXME load from config
@@ -219,7 +222,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     // If something in the inboundConnectionFlow fails, e.g. framing, the connection will be teared down,
     // but other parts of the inbound streams don't have to restarted.
-    val inboundConnectionFlow = Flow[ByteString]
+    inboundConnectionFlow = OptionVal.Some(Flow[ByteString]
       .via(inboundKillSwitch.flow)
       .via(Framing.lengthField(fieldLength = 4, fieldOffset = EnvelopeBuffer.FrameLengthOffset,
         maxFrameSize, byteOrder = ByteOrder.LITTLE_ENDIAN))
@@ -231,6 +234,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
       .via(alsoToEagerCancel(inboundStream))
       .filter(_ ⇒ false) // don't send back anything in this TCP socket
       .map(_ ⇒ ByteString.empty) // make it a Flow[ByteString] again
+    )
 
     val host = localAddress.address.host.get
     val port = localAddress.address.port.get
@@ -250,11 +254,11 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
           halfClose = false)
       }
 
-    serverBinding =
-      Some(
-        connectionSource
+    serverBinding = serverBinding match {
+      case None ⇒
+        val binding = connectionSource
           .to(Sink.foreach { connection ⇒
-            connection.handleWith(inboundConnectionFlow)
+            connection.handleWith(inboundConnectionFlow.get)
           })
           .run()
           .recoverWith {
@@ -262,9 +266,14 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
               s"Failed to bind TCP to [${localAddress.address.host.get}:${localAddress.address.port.get}] due to: " +
                 e.getMessage, e))
           }(ExecutionContexts.sameThreadExecutionContext)
-      )
 
-    Await.result(serverBinding.get, settings.Bind.BindTimeout)
+        // only on initial startup, when ActorSystem is starting
+        Await.result(binding, settings.Bind.BindTimeout)
+        Some(binding)
+      case s @ Some(_) ⇒
+        // already bound, when restarting
+        s
+    }
 
     // Failures in any of the inbound streams should be extremely rare, probably an unforeseen accident.
     // Tear down everything and start over again. Inbound streams are "stateless" so that should be fine.
@@ -281,8 +290,6 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         _ ← ordinaryMessagesStreamCompleted.recover { case _ ⇒ Done }
         _ ← if (largeMessageChannelEnabled)
           largeMessagesStreamCompleted.recover { case _ ⇒ Done } else Future.successful(Done)
-        // FIXME unbind is probably not needed, and might be more correct to not do that
-        _ ← unbind().recover { case _ ⇒ Done }
       } yield Done
       allStopped.foreach(_ ⇒ runInboundStreams())
     }
