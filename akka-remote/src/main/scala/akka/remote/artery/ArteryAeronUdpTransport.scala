@@ -287,8 +287,6 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
   override protected def outboundTransportSink(outboundContext: OutboundContext, streamId: Int,
                                                bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
-
-    // FIXME in previous impl giveUpAfter was Duration.Inf for the outboundControl ?
     val giveUpAfter =
       if (streamId == ControlStreamId) settings.Advanced.GiveUpSystemMessageAfter
       else settings.Advanced.GiveUpMessageAfter
