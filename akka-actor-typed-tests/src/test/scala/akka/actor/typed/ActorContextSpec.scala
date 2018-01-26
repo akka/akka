@@ -799,7 +799,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     }
 
     "throw on stopping non-child" in {
-      sync(setup("ctx40", ignorePostStop = false) { (ctx, startWith) ⇒
+      sync(setup("ctx43", ignorePostStop = false) { (ctx, startWith) ⇒
         startWith.keep { subj ⇒
           subj ! GetAdapter(ctx.self)
         }.expectMessage(expectTimeout) { (msg, subj) ⇒
@@ -811,6 +811,29 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
           case (msg, (subj, myChild, adapter)) ⇒
             msg should ===(NotKilled)
 
+        }
+      })
+    }
+
+    "not have problems stopping already stopped child" in {
+      sync(setup("ctx44", ignorePostStop = false) { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith.mkChild(Some("A"), ctx.spawnMessageAdapter(ChildEvent), self, inert = true) {
+          case (subj, child) ⇒
+            subj ! Kill(child, self)
+            (subj, child)
+        }.expectMessageKeep(expectTimeout) {
+          case (msg, (subj, child)) ⇒
+            msg should ===(Killed)
+            (subj, ctx.watch(child))
+        }.expectTermination(expectTimeout) {
+          case (t, (subj, child)) ⇒
+            t.ref should ===(child)
+            subj ! Kill(child, self)
+            child
+        }.expectMessage(expectTimeout) {
+          case (msg, _) ⇒
+            msg should ===(Killed)
         }
       })
     }
