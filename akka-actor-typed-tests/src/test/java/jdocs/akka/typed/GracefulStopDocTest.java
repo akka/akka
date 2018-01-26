@@ -5,14 +5,12 @@ package jdocs.akka.typed;
 
 //#imports
 
+import java.util.concurrent.TimeUnit;
+
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.PostStop;
 import akka.actor.typed.javadsl.Behaviors;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
-
-import java.util.concurrent.TimeUnit;
 
 //#imports
 
@@ -85,7 +83,7 @@ public class GracefulStopDocTest {
 
     system.tell(new JobControl.GracefulShutdown());
 
-    Await.result(system.whenTerminated(), Duration.create(3, TimeUnit.SECONDS));
+    system.getWhenTerminated().toCompletableFuture().get(3, TimeUnit.SECONDS);
     //#graceful-shutdown
   }
 

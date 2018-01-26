@@ -19,8 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
 
 public class IntroTest {
 
@@ -230,7 +228,7 @@ public class IntroTest {
     final ActorSystem<Void> system =
       ActorSystem.create(main, "ChatRoomDemo");
 
-    Await.result(system.whenTerminated(), Duration.create(3, TimeUnit.SECONDS));
+    system.getWhenTerminated().toCompletableFuture().get();
     //#chatroom-main
   }
 
