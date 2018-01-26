@@ -11,6 +11,9 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 import akka.Done
 import akka.NotUsed
@@ -46,10 +49,24 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
+private[remote] object ArteryTcpTransport {
+
+  private val successUnit = Success(())
+
+  def optionToTry(opt: Option[Throwable]): Try[Unit] = opt match {
+    case None    ⇒ successUnit
+    case Some(t) ⇒ Failure(t)
+  }
+}
+
+/**
+ * INTERNAL API
+ */
 private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider,
                                          tlsEnabled: Boolean)
   extends ArteryTransport(_system, _provider) {
   import ArteryTransport._
+  import ArteryTcpTransport._
   import FlightRecorderEvents._
 
   @volatile private var inboundKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundKillSwitch")
@@ -78,10 +95,12 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     def connectionFlow: Flow[ByteString, ByteString, Future[Tcp.OutgoingConnection]] =
       if (tlsEnabled) {
+        val sslProvider = sslEngineProvider.get
         Tcp().outgoingTlsConnectionWithSSLEngine(
           remoteAddress,
-          createSSLEngine = () ⇒ sslEngineProvider.get.createClientSSLEngine(),
-          connectTimeout = connectionTimeout)
+          createSSLEngine = () ⇒ sslProvider.createClientSSLEngine(host, port),
+          connectTimeout = connectionTimeout,
+          verifySession = session ⇒ optionToTry(sslProvider.verifyClientSession(host, session)))
       } else {
         Tcp()
           .outgoingConnection(
@@ -114,11 +133,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     Flow[EnvelopeBuffer]
       .map { env ⇒
-        // TODO Possible performance improvement. Perhaps we could reduce copying. In the end we
-        // have to copy it to a `Array[Byte]` for deserialization unless the serializer supports ByteBuffer.
-        // Would be nice if we could at least copy it to a ByteString backed by a single `Array[Byte]`
-        // instead of the `Vector` based ByteString. Then no further copies when deserializing.
-        // (not completely safe since arrays are mutable, but as internal api/usage we could have such ByteString).
+        // TODO Possible performance improvement, could we reduce the copying of bytes?
         val bytes = ByteString(env.byteBuffer)
         bufferPool.release(env)
         bytes
@@ -168,6 +183,9 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     // decide where to attach it based on that byte. Then the streamId wouldn't have to be sent in each
     // frame. That was not chosen because it is more complicated to implement and might have more runtime
     // overhead.
+    // TODO Perhaps possible performance/scalability idea for investigation is to use `recoverWith` instead
+    // of `Partition`. First attach it to the `ordinaryMessagesStream` and when a non matching streamId
+    // arrives throw a specific exception and recoverWith `controlStream` and then largeMessagesStream.
     val inboundStream: Sink[EnvelopeBuffer, NotUsed] =
       Sink.fromGraph(GraphDSL.create() { implicit b ⇒
         import GraphDSL.Implicits._
@@ -214,16 +232,21 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
       .filter(_ ⇒ false) // don't send back anything in this TCP socket
       .map(_ ⇒ ByteString.empty) // make it a Flow[ByteString] again
 
+    val host = localAddress.address.host.get
+    val port = localAddress.address.port.get
+
     val connectionSource: Source[Tcp.IncomingConnection, Future[ServerBinding]] =
       if (tlsEnabled) {
+        val sslProvider = sslEngineProvider.get
         Tcp().bindTlsWithSSLEngine(
-          interface = localAddress.address.host.get,
-          port = localAddress.address.port.get,
-          createSSLEngine = () ⇒ sslEngineProvider.get.createServerSSLEngine())
+          interface = host,
+          port = port,
+          createSSLEngine = () ⇒ sslProvider.createServerSSLEngine(host, port),
+          verifySession = session ⇒ optionToTry(sslProvider.verifyServerSession(host, session)))
       } else {
         Tcp().bind(
-          interface = localAddress.address.host.get,
-          port = localAddress.address.port.get,
+          interface = host,
+          port = port,
           halfClose = false)
       }
 

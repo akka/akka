@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import akka.actor.ActorRef
 import akka.actor.ActorPath
 import akka.actor.ActorIdentity
+import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.RootActorPath
 import akka.testkit.ImplicitSender
@@ -58,6 +59,7 @@ object TlsTcpSpec {
 
   lazy val config: Config = {
     ConfigFactory.parseString(s"""
+      akka.loglevel = DEBUG
       akka.remote.artery {
         transport = tls-tcp
         large-message-destinations = [ "/user/large" ]
@@ -84,7 +86,11 @@ abstract class TlsTcpSpec(config: Config)
       if (rng.getAlgorithm != sRng && sRng != "")
         throw new NoSuchAlgorithmException(sRng)
 
-      val engine = provider.createServerSSLEngine()
+      val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+      val host = address.host.get
+      val port = address.port.get
+
+      val engine = provider.createServerSSLEngine(host, port)
       val gotAllSupported = provider.SSLEnabledAlgorithms diff engine.getSupportedCipherSuites.toSet
       val gotAllEnabled = provider.SSLEnabledAlgorithms diff engine.getEnabledCipherSuites.toSet
       gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
@@ -129,6 +135,9 @@ abstract class TlsTcpSpec(config: Config)
         val echoRef = identify(rootB / "user" / "large")
         testDelivery(echoRef)
       }
+
+      // TODO test hostname verification, if possible
+
     } else {
       "not be run when the cipher is not supported by the platform this test is currently being executed on" in {
         pending

@@ -7,6 +7,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
 
 import akka.actor._
 import akka.annotation.{ ApiMayChange, InternalApi }
@@ -21,6 +22,7 @@ import akka.{ Done, NotUsed }
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.Try
 import scala.util.control.NoStackTrace
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
@@ -275,12 +277,11 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     options:         immutable.Traversable[SocketOption] = Nil,
     connectTimeout:  Duration                            = Duration.Inf,
     idleTimeout:     Duration                            = Duration.Inf,
+    verifySession:   SSLSession ⇒ Try[Unit],
     closing:         TLSClosing                          = IgnoreComplete): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
-    // FIXME add verifySession also?
-
     val connection = outgoingConnection(remoteAddress, localAddress, options, true, connectTimeout, idleTimeout)
-    val tls = TLS(createSSLEngine, closing)
+    val tls = TLS(createSSLEngine, verifySession, closing)
     connection.join(tlsWrapping.atop(tls).reversed)
   }
 
@@ -323,11 +324,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     backlog:         Int                                 = 100,
     options:         immutable.Traversable[SocketOption] = Nil,
     idleTimeout:     Duration                            = Duration.Inf,
+    verifySession:   SSLSession ⇒ Try[Unit],
     closing:         TLSClosing                          = IgnoreComplete): Source[IncomingConnection, Future[ServerBinding]] = {
 
-    // FIXME add verifySession also?
-
-    val tls = tlsWrapping.atop(TLS(createSSLEngine, closing)).reversed
+    val tls = tlsWrapping.atop(TLS(createSSLEngine, verifySession, closing)).reversed
 
     bind(interface, port, backlog, options, true, idleTimeout).map { incomingConnection ⇒
       incomingConnection.copy(
