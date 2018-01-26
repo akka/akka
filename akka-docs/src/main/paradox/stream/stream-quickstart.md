@@ -112,8 +112,10 @@ called a `Sink`. `IOResult` is a type that IO operations return in
 Akka Streams in order to tell you how many bytes or elements were consumed and
 whether the stream terminated normally or exceptionally.
 
+### Browser-embedded example
 
-#### Here is another example that you can edit and run in the browser:
+<a name="here-is-another-example-that-you-can-edit-and-run-in-the-browser-"></a>
+Here is another example that you can edit and run in the browser:
 
 @@fiddle [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75&passive cssStyle=width:100%; }
 
