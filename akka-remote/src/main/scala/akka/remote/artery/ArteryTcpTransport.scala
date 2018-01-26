@@ -114,6 +114,11 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     Flow[EnvelopeBuffer]
       .map { env ⇒
+        // TODO Possible performance improvement. Perhaps we could reduce copying. In the end we
+        // have to copy it to a `Array[Byte]` for deserialization unless the serializer supports ByteBuffer.
+        // Would be nice if we could at least copy it to a ByteString backed by a single `Array[Byte]`
+        // instead of the `Vector` based ByteString. Then no further copies when deserializing.
+        // (not completely safe since arrays are mutable, but as internal api/usage we could have such ByteString).
         val bytes = ByteString(env.byteBuffer)
         bufferPool.release(env)
         bytes
@@ -124,9 +129,26 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
   }
 
   override protected def runInboundStreams(): Unit = {
+
+    // Design note: The design of how to run the inbound streams are influenced by the original design
+    // for the Aeron streams, and there we can only have one single inbound since everything comes in
+    // via the single AeronSource.
+    //
+    // For TCP we could materialize the inbound streams for each inbound connection, i.e. running many
+    // completely separate inbound streams. Each would still have to include all 3 control, ordinary,
+    // large parts for each connection even though only one is used by a specific connection. Unless
+    // we can dynamically choose what to materialize based on the `streamId` (as a first byte, or
+    // in first frame of the connection), which is complicated.
+    //
+    // However, this would be make the design for Aeron and TCP more different and more things might
+    // have to be changed, such as compression advertisements and materialized values. Number of
+    // inbound streams would be dynamic, and so on.
+
     implicit val mat = materializer
     implicit val sys = system
 
+    // These streams are always running, on instance of each, and then the inbound connections
+    // are attached to these via a MergeHub.
     val (controlStream, controlStreamCompleted) = runInboundControlStream()
     val (ordinaryMessagesStream, ordinaryMessagesStreamCompleted) = runInboundOrdinaryMessagesStream()
     val (largeMessagesStream, largeMessagesStreamCompleted) = {
@@ -140,15 +162,22 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
           Promise[Done]().future) // never completed, not enabled
     }
 
+    // An inbound connection will only use one of the control, ordinary or large streams, but we have to
+    // attach it to all and select via Partition and the streamId in the frame header. Conceptually it
+    // would have been better to send the streamId as one single first byte for a new connection and
+    // decide where to attach it based on that byte. Then the streamId wouldn't have to be sent in each
+    // frame. That was not chosen because it is more complicated to implement and might have more runtime
+    // overhead.
     val inboundStream: Sink[EnvelopeBuffer, NotUsed] =
       Sink.fromGraph(GraphDSL.create() { implicit b ⇒
         import GraphDSL.Implicits._
         val partition = b.add(Partition[EnvelopeBuffer](3, env ⇒ {
-          val streamId: Int = env.byteBuffer.get(EnvelopeBuffer.StreamIdOffset).toInt
-          if (streamId == OrdinaryStreamId) 1
-          else if (streamId == ControlStreamId) 0
-          else if (streamId == LargeStreamId) 2
-          else throw new IllegalArgumentException(s"Unexpected streamId [$streamId]")
+          env.byteBuffer.get(EnvelopeBuffer.StreamIdOffset).toInt match {
+            case OrdinaryStreamId ⇒ 1
+            case ControlStreamId  ⇒ 0
+            case LargeStreamId    ⇒ 2
+            case other            ⇒ throw new IllegalArgumentException(s"Unexpected streamId [$other]")
+          }
         }))
         partition.out(0) ~> controlStream
         partition.out(1) ~> ordinaryMessagesStream

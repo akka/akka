@@ -335,7 +335,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   protected val inboundLanes = settings.Advanced.InboundLanes
 
-  // TODO use WildcardIndex.isEmpty when merged from master
   val largeMessageChannelEnabled: Boolean =
     !settings.LargeMessageDestinations.wildcardTree.isEmpty ||
       !settings.LargeMessageDestinations.doubleWildcardTree.isEmpty
@@ -353,7 +352,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   private val restartCounter = new RestartCounter(settings.Advanced.InboundMaxRestarts, settings.Advanced.InboundRestartTimeout)
 
   protected val envelopeBufferPool = new EnvelopeBufferPool(settings.Advanced.MaximumFrameSize, settings.Advanced.BufferPoolSize)
-  protected val largeEnvelopeBufferPool = new EnvelopeBufferPool(settings.Advanced.MaximumLargeFrameSize, settings.Advanced.LargeBufferPoolSize)
+  protected val largeEnvelopeBufferPool =
+    if (largeMessageChannelEnabled)
+      new EnvelopeBufferPool(settings.Advanced.MaximumLargeFrameSize, settings.Advanced.LargeBufferPoolSize)
+    else // not used
+      new EnvelopeBufferPool(0, 2)
 
   private val inboundEnvelopePool = ReusableInboundEnvelope.createObjectPool(capacity = 16)
   // The outboundEnvelopePool is shared among all outbound associations

@@ -126,7 +126,8 @@ private[remote] sealed trait HeaderBuilder {
   def setFlags(v: Byte): Unit
   def flags: Byte
   def flag(byteFlag: ByteFlag): Boolean
-  def setFlag(byteFlag: ByteFlag, value: Boolean): Unit
+  def setFlag(byteFlag: ByteFlag): Unit
+  def clearFlag(byteFlag: ByteFlag): Unit
 
   def inboundActorRefCompressionTableVersion: Byte
   def inboundClassManifestCompressionTableVersion: Byte
@@ -273,9 +274,10 @@ private[remote] final class HeaderBuilderImpl(
   override def setFlags(v: Byte) = _flags = v
   override def flags = _flags
   override def flag(byteFlag: ByteFlag): Boolean = (_flags.toInt & byteFlag.mask) != 0
-  override def setFlag(byteFlag: ByteFlag, value: Boolean): Unit =
-    if (value) _flags = (flags | byteFlag.mask).toByte
-    else _flags = (flags & ~byteFlag.mask).toByte
+  override def setFlag(byteFlag: ByteFlag): Unit =
+    _flags = (flags | byteFlag.mask).toByte
+  override def clearFlag(byteFlag: ByteFlag): Unit =
+    _flags = (flags & ~byteFlag.mask).toByte
 
   override def setUid(uid: Long) = _uid = uid
   override def uid: Long = _uid
@@ -426,7 +428,7 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
       header._remoteInstruments.get.serialize(OptionVal(oe), byteBuffer)
       if (byteBuffer.position() != MetadataContainerAndLiteralSectionOffset - adjust) {
         // we actually wrote some metadata so update the flag field to reflect that
-        header.setFlag(MetadataPresentFlag, true)
+        header.setFlag(MetadataPresentFlag)
         byteBuffer.put(FlagsOffset - adjust, header.flags)
       }
     }

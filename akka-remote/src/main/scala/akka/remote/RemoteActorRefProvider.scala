@@ -214,7 +214,7 @@ private[akka] class RemoteActorRefProvider(
           case ArterySettings.Tcp      ⇒ new ArteryTcpTransport(system, this, tlsEnabled = false)
           case ArterySettings.TlsTcp   ⇒ new ArteryTcpTransport(system, this, tlsEnabled = true)
         }
-        else new Remoting(system, this)) // FIXME config
+        else new Remoting(system, this))
 
     _internals = internals
     remotingTerminator ! internals
