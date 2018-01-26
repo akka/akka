@@ -81,9 +81,9 @@ private[akka] final class FunctionRef[-T](
    * Do not actually stop the child inbox, only simulate the liveness check.
    * Removal is asynchronous, explicit removeInbox is needed from outside afterwards.
    */
-  override def stop[U](child: ActorRef[U]): Boolean = {
+  override def stop[U](child: ActorRef[U]): Unit = {
     _children.get(child.path.name) match {
-      case None        ⇒ false
+      case None        ⇒
       case Some(inbox) ⇒ inbox.ref == child
     }
   }

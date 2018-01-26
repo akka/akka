@@ -28,7 +28,7 @@ import akka.actor.typed.Behavior.UntypedBehavior
     ActorContextAdapter.spawnAnonymous(untyped, behavior, props)
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty) =
     ActorContextAdapter.spawn(untyped, behavior, name, props)
-  override def stop[U](child: ActorRef[U]): Boolean =
+  override def stop[U](child: ActorRef[U]): Unit =
     toUntyped(child) match {
       case f: akka.actor.FunctionRef ⇒
         val cell = untyped.asInstanceOf[akka.actor.ActorCell]
@@ -37,9 +37,14 @@ import akka.actor.typed.Behavior.UntypedBehavior
         untyped.child(child.path.name) match {
           case Some(`c`) ⇒
             untyped.stop(c)
-            true
+          case _ if child.path.parent != self.path ⇒
+            // not a child
+            throw new IllegalArgumentException(
+              "Only direct children of an actor can be stopped through the actor context, " +
+                s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
+                "an explicit stop message that the actor accepts.")
           case _ ⇒
-            false // none of our business
+          // child that was already stopped
         }
     }
   override def watch[U](other: ActorRef[U]) = { untyped.watch(toUntyped(other)) }

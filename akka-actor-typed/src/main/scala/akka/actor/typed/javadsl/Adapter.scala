@@ -74,7 +74,7 @@ object Adapter {
   def unwatch[U](ctx: ActorContext[_], other: akka.actor.ActorRef): Unit =
     ctx.unwatch(other)
 
-  def stop(ctx: ActorContext[_], child: akka.actor.ActorRef): Boolean =
+  def stop(ctx: ActorContext[_], child: akka.actor.ActorRef): Unit =
     ctx.stop(child)
 
   def actorOf(ctx: ActorContext[_], props: akka.actor.Props): akka.actor.ActorRef =
