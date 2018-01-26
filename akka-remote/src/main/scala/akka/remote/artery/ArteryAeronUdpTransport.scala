@@ -70,7 +70,6 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   override protected def startTransport(): Unit = {
     startMediaDriver()
     startAeron()
-    topLevelFREvents.loFreq(Transport_AeronStarted, NoMetaData)
     startAeronErrorLog()
     topLevelFREvents.loFreq(Transport_AeronErrorLogStarted, NoMetaData)
     if (settings.LogAeronCounters) {
@@ -119,7 +118,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
       val driver = MediaDriver.launchEmbedded(driverContext)
       log.info("Started embedded media driver in directory [{}]", driver.aeronDirectoryName)
-      topLevelFREvents.loFreq(Transport_MediaDriverStarted, driver.aeronDirectoryName().getBytes("US-ASCII"))
+      topLevelFREvents.loFreq(Transport_MediaDriverStarted, driver.aeronDirectoryName())
       if (!mediaDriver.compareAndSet(None, Some(driver))) {
         throw new IllegalStateException("media driver started more than once")
       }

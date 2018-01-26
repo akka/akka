@@ -395,6 +395,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       Runtime.getRuntime.addShutdownHook(shutdownHook)
 
     startTransport()
+    topLevelFREvents.loFreq(Transport_Started, NoMetaData)
 
     val udp = settings.Transport == ArterySettings.AeronUpd
     val port =
@@ -418,7 +419,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       AddressUidExtension(system).longAddressUid)
 
     // TODO: This probably needs to be a global value instead of an event as events might rotate out of the log
-    topLevelFREvents.loFreq(Transport_UniqueAddressSet, _localAddress.toString().getBytes("US-ASCII"))
+    topLevelFREvents.loFreq(Transport_UniqueAddressSet, _localAddress.toString())
 
     materializer = ActorMaterializer.systemMaterializer(settings.Advanced.MaterializerSettings, "remote", system)
     controlMaterializer = ActorMaterializer.systemMaterializer(
