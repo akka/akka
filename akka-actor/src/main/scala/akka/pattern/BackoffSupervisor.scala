@@ -3,7 +3,6 @@
  */
 package akka.pattern
 
-import scala.concurrent.duration.{Duration, FiniteDuration}
 import java.util.concurrent.ThreadLocalRandom
 import java.util.Optional
 
@@ -17,6 +16,7 @@ import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy
 
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.Try
 
 object BackoffSupervisor {
