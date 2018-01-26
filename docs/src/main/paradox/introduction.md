@@ -63,7 +63,7 @@ Maven
 
 
 Mind that Akka HTTP comes in two main modules: `akka-http` and `akka-http-core`. Because `akka-http`
-depends on `akka-http-core` you don't need to bring the latter explicitly. Still you may need to this in case you rely
+depends on `akka-http-core` you don't need to bring the latter explicitly. Still you may need to do this in case you rely
 solely on the low-level API; make sure the Scala version is a recent release of version `2.11` or `2.12`.
 
 Alternatively, you can bootstrap a new sbt project with Akka HTTP already
