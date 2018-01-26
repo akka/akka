@@ -3,6 +3,7 @@
  */
 package akka.remote.artery
 
+import com.typesafe.config.Config
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.nio.file.Files
@@ -59,10 +60,13 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
 
 /**
  * INTERNAL API: only public via config
+ * Config in
  */
-@InternalApi private[akka] final class ConfigSSLEngineProvider(system: ActorSystem) extends SSLEngineProvider {
+@InternalApi private[akka] final class ConfigSSLEngineProvider(config: Config, log: MarkerLoggingAdapter) extends SSLEngineProvider {
 
-  private val config = system.settings.config.getConfig("akka.remote.artery.ssl")
+  def this(system: ActorSystem) = this(
+    system.settings.config.getConfig("akka.remote.artery.ssl.config-ssl-engine"),
+    Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName))
 
   private val SSLKeyStore = config.getString("key-store")
   private val SSLTrustStore = config.getString("trust-store")
@@ -74,21 +78,19 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
   val SSLRandomNumberGenerator = config.getString("random-number-generator")
   val SSLRequireMutualAuthentication = config.getBoolean("require-mutual-authentication")
 
-  private val log: MarkerLoggingAdapter = Logging.withMarker(system, getClass.getName)
-
   private val sslContext = new AtomicReference[SSLContext]()
 
   @tailrec final def getOrCreateContext(): SSLContext = {
     sslContext.get() match {
       case null ⇒
-        val newCtx = constructContext(log)
+        val newCtx = constructContext()
         if (sslContext.compareAndSet(null, newCtx)) newCtx
         else getOrCreateContext()
       case ctx ⇒ ctx
     }
   }
 
-  private def constructContext(log: MarkerLoggingAdapter): SSLContext = {
+  private def constructContext(): SSLContext = {
     try {
       def loadKeystore(filename: String, password: String): KeyStore = {
         val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
@@ -146,7 +148,7 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
   }
 
   private def createSSLEngine(role: TLSRole): SSLEngine = {
-    createSSLEngine(getOrCreateContext(), sslConfig = None, role)
+    createSSLEngine(getOrCreateContext(), role)
   }
 
   override def createServerSSLEngine(): SSLEngine =
@@ -157,50 +159,20 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
 
   private def createSSLEngine(
     sslContext: SSLContext,
-    sslConfig:  Option[AkkaSSLConfig],
     role:       TLSRole,
     closing:    TLSClosing            = IgnoreComplete,
     hostInfo:   Option[(String, Int)] = None): SSLEngine = {
-
-    /* FIXME this is what NettySSLSupport does
-    val sslEngine = settings.getOrCreateContext(log).createSSLEngine // TODO: pass host information to enable host verification
-    sslEngine.setUseClientMode(isClient)
-    sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray)
-    sslEngine.setEnabledProtocols(Array(settings.SSLProtocol))
-    */
-
-    // below is based on how stream.TLS creates SSLEngine from SSLContext
-
-    val firstSession = NegotiateNewSession.withCipherSuites(SSLEnabledAlgorithms.toSeq: _*)
-
-    def theSslConfig(system: ActorSystem): AkkaSSLConfig =
-      sslConfig.getOrElse(AkkaSSLConfig(system))
 
     val engine = hostInfo match {
       case Some((hostname, port)) ⇒ sslContext.createSSLEngine(hostname, port)
       case None                   ⇒ sslContext.createSSLEngine()
     }
-    val config = theSslConfig(system)
-    config.sslEngineConfigurator.configure(engine, sslContext)
-
     engine.setUseClientMode(role == akka.stream.Client)
+    engine.setEnabledCipherSuites(SSLEnabledAlgorithms.toArray)
+    engine.setEnabledProtocols(Array(SSLProtocol))
 
-    // FIXME took this from NettySSLSupport, still valid?
-    if ((role != akka.stream.Client) && SSLRequireMutualAuthentication) engine.setNeedClientAuth(true)
-
-    val finalSessionParameters =
-      if (firstSession.sslParameters.isDefined && hostInfo.isDefined && !config.config.loose.disableSNI) {
-        val newParams = TlsUtils.cloneParameters(firstSession.sslParameters.get)
-        // In Java 7, SNI was automatically enabled by enabling "jsse.enableSNIExtension" and using
-        // `createSSLEngine(hostname, port)`.
-        // In Java 8, SNI is only enabled if the server names are added to the parameters.
-        // See https://github.com/akka/akka/issues/19287.
-        newParams.setServerNames(Collections.singletonList(new SNIHostName(hostInfo.get._1)))
-        firstSession.copy(sslParameters = Some(newParams))
-      } else
-        firstSession
-
-    TlsUtils.applySessionParameters(engine, finalSessionParameters)
+    if ((role != akka.stream.Client) && SSLRequireMutualAuthentication)
+      engine.setNeedClientAuth(true)
 
     /* FIXME what about this, parameter to TlsModule?
     def verifySession: (ActorSystem, SSLSession) ⇒ Try[Unit] =

@@ -60,11 +60,9 @@ object ArterySpecSupport {
     val keyStore = getClass.getClassLoader.getResource("keystore").getPath
 
     ConfigFactory.parseString(s"""
-      akka.remote.artery {
-        ssl {
-          key-store = "$keyStore"
-          trust-store = "$trustStore"
-        }
+      akka.remote.artery.ssl.config-ssl-engine {
+        key-store = "$keyStore"
+        trust-store = "$trustStore"
       }
     """)
   }

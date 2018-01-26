@@ -20,47 +20,37 @@ import com.typesafe.config.ConfigFactory
 class TlsTcpWithDefaultConfigSpec extends TlsTcpSpec(ConfigFactory.empty())
 
 class TlsTcpWithSHA1PRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery {
-      ssl {
-        random-number-generator = "SHA1PRNG"
-        enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA"]
-      }
+    akka.remote.artery.ssl.config-ssl-engine {
+      random-number-generator = "SHA1PRNG"
+      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA"]
     }
     """))
 
 class TlsTcpWithAES128CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery {
-      ssl {
-        random-number-generator = "AES128CounterSecureRNG"
-        enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
-      }
+    akka.remote.artery.ssl.config-ssl-engine {
+      random-number-generator = "AES128CounterSecureRNG"
+      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
     }
     """))
 
 class TlsTcpWithAES256CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery {
-      ssl {
-        random-number-generator = "AES256CounterSecureRNG"
-        enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
-      }
+    akka.remote.artery.ssl.config-ssl-engine {
+      random-number-generator = "AES256CounterSecureRNG"
+      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
     }
     """))
 
 class TlsTcpWithDefaultRNGSecureSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery {
-      ssl {
-        random-number-generator = ""
-        enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA"]
-      }
+    akka.remote.artery.ssl.config-ssl-engine {
+      random-number-generator = ""
+      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA"]
     }
     """))
 
 class TlsTcpWithCrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery {
-      ssl {
-        random-number-generator = ""
-        enabled-algorithms = [""SSL_RSA_WITH_NULL_MD5""]
-      }
+    akka.remote.artery.ssl.config-ssl-engine {
+      random-number-generator = ""
+      enabled-algorithms = [""SSL_RSA_WITH_NULL_MD5""]
     }
     """))
 
