@@ -75,7 +75,7 @@ Challenges the Cluster module solves include the following:
 * How to reliably detect systems that are temporarily unreachable.
 * How to remove failed hosts/systems (or scale down the system) so that all remaining members agree on the remaining subset of the cluster.
 * How to distribute computations among the current set of members.
-* How do I designate members of the cluster to a certain role, in other words, to provide certain services and not others.
+* How to designate members of the cluster to a certain role, in other words, to provide certain services and not others.
 
 ### Cluster Sharding
 
@@ -88,7 +88,7 @@ Challenges that Sharding solves include the following:
 * How to model and scale out a large set of stateful entities on a set of systems.
 * How to ensure that entities in the cluster are distributed properly so that load is properly balanced across the machines.
 * How to ensure migrating entities from a crashed system without losing the state.
-* How to ensure that an entity does not exist on multiple systems at the same time and hence kept consistent.
+* How to ensure that an entity does not exist on multiple systems at the same time and hence keeps consistent.
 
 ### Cluster Singleton
 
@@ -102,7 +102,7 @@ where it is.
 The Singleton module can be used to solve these challenges:
 
 * How to ensure that only one instance of a service is running in the whole cluster.
-* How to ensure that the service is up even if the system hosting it currently crashes or shut down during the process of scaling down.
+* How to ensure that the service is up even if the system hosting it currently crashes or shuts down during the process of scaling down.
 * How to reach this instance from any member of the cluster assuming that it can migrate to other systems over time.
 
 ### Cluster Publish-Subscribe
@@ -131,7 +131,7 @@ Persistence tackles the following challenges:
 * How to implement a [CQRS system](https://msdn.microsoft.com/en-us/library/jj591573.aspx).
 * How to ensure reliable delivery of messages in face of network errors and system crashes.
 * How to introspect domain events that have lead an entity to its current state.
-* How to leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in my application to support long-running processes while the project continues to evolve.
+* How to leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in your application to support long-running processes while the project continues to evolve.
 
 ### Distributed Data
 
