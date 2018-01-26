@@ -87,9 +87,6 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
 
   override val self = selfInbox.ref
   override val system = new ActorSystemStub("StubbedActorContext")
-  // Not used for a stubbed actor context
-  override def mailboxCapacity = 1
-
   private var _children = TreeMap.empty[String, TestInbox[_]]
   private val childName = Iterator from 0 map (Helpers.base64(_))
   private val loggingAdapter = new StubbedLogger

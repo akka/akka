@@ -49,11 +49,6 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
   def self: ActorRef[T]
 
   /**
-   * Return the mailbox capacity that was configured by the parent for this actor.
-   */
-  def mailboxCapacity: Int
-
-  /**
    * The [[ActorSystem]] to which this Actor belongs.
    */
   def system: ActorSystem[Nothing]

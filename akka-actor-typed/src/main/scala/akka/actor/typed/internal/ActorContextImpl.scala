@@ -50,9 +50,6 @@ import akka.util.Timeout
   override def getExecutionContext: ExecutionContextExecutor =
     executionContext
 
-  override def getMailboxCapacity: Int =
-    mailboxCapacity
-
   override def getSelf: akka.actor.typed.ActorRef[T] =
     self
 

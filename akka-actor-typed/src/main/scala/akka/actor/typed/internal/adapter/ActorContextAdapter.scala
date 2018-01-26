@@ -26,7 +26,6 @@ import scala.concurrent.duration._
 
   override def self = ActorRefAdapter(untyped.self)
   override val system = ActorSystemAdapter(untyped.system)
-  override def mailboxCapacity = 1 << 29 // FIXME
   override def children = untyped.children.map(ActorRefAdapter(_))
   override def child(name: String) = untyped.child(name).map(ActorRefAdapter(_))
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty) =
