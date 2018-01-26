@@ -3,7 +3,7 @@
  */
 package akka.pattern
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import java.util.concurrent.ThreadLocalRandom
 import java.util.Optional
 
@@ -16,6 +16,8 @@ import akka.actor.SupervisorStrategy.Directive
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy
+
+import scala.util.Try
 
 object BackoffSupervisor {
 
@@ -152,10 +154,7 @@ object BackoffSupervisor {
     maxBackoff:   FiniteDuration,
     randomFactor: Double): FiniteDuration = {
     val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
-    val calculatedDuration = try maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd catch {
-      // thrown when duration is being constructed with nanos > Long.MaxValue
-      case _: IllegalArgumentException ⇒ maxBackoff
-    }
+    val calculatedDuration = Try(maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd).getOrElse(maxBackoff)
     calculatedDuration match {
       case f: FiniteDuration ⇒ f
       case _                 ⇒ maxBackoff
