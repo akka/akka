@@ -82,10 +82,11 @@ private[akka] final class FunctionRef[-T](
    * Removal is asynchronous, explicit removeInbox is needed from outside afterwards.
    */
   override def stop[U](child: ActorRef[U]): Unit = {
-    _children.get(child.path.name) match {
-      case None        ⇒
-      case Some(inbox) ⇒ inbox.ref == child
-    }
+    if (child.path.parent != self.path) throw new IllegalArgumentException(
+      "Only direct children of an actor can be stopped through the actor context, " +
+        s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
+        "an explicit stop message that the actor accepts.")
+    else ()
   }
   override def watch[U](other: ActorRef[U]): Unit = ()
   override def watchWith[U](other: ActorRef[U], msg: T): Unit = ()
