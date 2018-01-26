@@ -2,8 +2,11 @@
 
 @@@ note
 
-This page describes the @ref:[may change](common/may-change.md) remoting subsystem, codenamed *Artery* that will eventually replace the
-old remoting implementation. For the current stable remoting system please refer to @ref:[Remoting](remoting.md).
+This page describes the remoting subsystem, codenamed *Artery* that will eventually replace the
+@ref:[old remoting implementation](remoting.md). Artery with the Aeron transport is ready
+to use in production. The TCP based transport is not ready for use in production yet. The module is
+marked @ref:[may change](common/may-change.md) because some configuration will be changed when the API
+becomes stable.
 
 @@@
 
@@ -25,7 +28,7 @@ Artery is a reimplementation of the old remoting module aimed at improving perfo
 source compatible with the old implementation and it is a drop-in replacement in many cases. Main features
 of Artery compared to the previous implementation:
 
- * Based on [Aeron](https://github.com/real-logic/Aeron) (UDP) instead of TCP
+ * Based on [Aeron](https://github.com/real-logic/Aeron) (UDP) and Akka Streams TCP/TLS instead of Netty TCP
  * Focused on high-throughput, low-latency communication
  * Isolation of internal control messages from user messages improving stability and reducing false failure detection
 in case of heavy traffic by using a dedicated subchannel.
@@ -75,6 +78,7 @@ akka {
   remote {
     artery {
       enabled = on
+      transport = aeron-udp
       canonical.hostname = "127.0.0.1"
       canonical.port = 25520
     }
@@ -102,7 +106,27 @@ listening for connections and handling messages as not to interfere with other a
 @@@
 
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
-All settings are described in [Remote Configuration](#remote-configuration-artery).
+All settings are described in @ref:[Remote Configuration](#remote-configuration-artery).
+
+### Selecting transport
+
+There are three alternatives of which underlying transport to use. It is configured by property
+`akka.remote.artery.transport` with the possible values:
+
+* `aeron-udp` - Based on [Aeron (UDP)](https://github.com/real-logic/aeron)
+* `tcp` - Based on @ref:[Akka Streams TCP](stream/stream-io.md#streaming-tcp)
+* `tls-tcp` - Same as `tcp` with encryption using @ref:[Akka Streams TLS](stream/stream-io.md#tls)
+
+The Aeron (UDP) transport is a high performance transport and should be used for systems
+that require high throughput and low latency. It is using more CPU resources than TCP
+when the system is idle or at low message rates. There is no encryption for Aeron.
+
+The TCP and TLS transport is implemented using Akka Streams TCP/TLS. This is the choice
+when encryption is needed, but it can also be used with plain TCP without TLS.
+It has very good performance (high throughput and low latency) but not as good as the Aeron transport.
+It is using less CPU resources than Aeron when the system is idle or at low message rates.
+This has not been verified yet, but it might scale better for many connections than the Aereon
+transport, which can be of importance for large clusters with 100s or even 1000s of nodes.
 
 @@@ note
 
@@ -320,15 +344,92 @@ Actor classes not included in the whitelist will not be allowed to be remote dep
 
 ## Remote Security
 
-An `ActorSystem` should not be exposed via Akka Remote (Artery) over plain Aeron/UDP to an untrusted network (e.g. internet).
-It should be protected by network security, such as a firewall. There is currently no support for encryption with Artery
-so if network security is not considered as enough protection the classic remoting with
-@ref:[TLS and mutual authentication](remoting.md#remote-tls)  should be used.
+An `ActorSystem` should not be exposed via Akka Remote (Artery) over plain Aeron/UDP or TCP to an untrusted
+network (e.g. internet). It should be protected by network security, such as a firewall. If that is not considered
+as enough protection [TLS with mutual authentication](#remote-tls) should be enabled.
 
-Best practice is that Akka remoting nodes should only be accessible from the adjacent network.
+Best practice is that Akka remoting nodes should only be accessible from the adjacent network. Note that if TLS is
+enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by
+compromising any node with certificates issued by the same internal PKI tree.
 
-It is also security best practice to @ref:[disable the Java serializer](#disabling-the-java-serializer) because of
+It is also security best-practice to [disable the Java serializer](#disable-java-serializer) because of
 its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
+
+<a id="remote-tls"></a>
+### Configuring SSL/TLS for Akka Remoting
+
+SSL can be used as the remote transport by using the `tls-tcp` transport:
+
+```
+akka.remote.artery {
+  transport = tls-tcp
+}
+```
+
+Next the actual SSL/TLS parameters have to be configured:
+
+```
+akka.remote.artery {
+  transport = tls-tcp
+
+  ssl.config-ssl-engine {
+    key-store = "/example/path/to/mykeystore.jks"
+    trust-store = "/example/path/to/mytruststore.jks"
+
+    key-store-password = ${SSL_KEY_STORE_PASSWORD}
+    key-password = ${SSL_KEY_PASSWORD}
+    trust-store-password = ${SSL_TRUST_STORE_PASSWORD}
+
+    protocol = "TLSv1.2"
+
+    enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
+
+    random-number-generator = "AES128CounterSecureRNG"
+  }
+}
+```
+
+Always use [substitution from environment variables](https://github.com/lightbend/config#optional-system-or-env-variable-overrides)
+for passwords. Don't define real passwords in config files.
+
+According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
+
+ * TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
+ * TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+ * TLS_DHE_RSA_WITH_AES_256_GCM_SHA384
+ * TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+
+You should always check the latest information about security and algorithm recommendations though before you configure your system.
+
+Creating and working with keystores and certificates is well documented in the
+[Generating X.509 Certificates](http://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
+section of Lightbend's SSL-Config library.
+
+Since an Akka remoting is inherently @ref:[peer-to-peer](general/remoting.md#symmetric-communication) both the key-store as well as trust-store
+need to be configured on each remoting node participating in the cluster.
+
+The official [Java Secure Socket Extension documentation](http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html)
+as well as the [Oracle documentation on creating KeyStore and TrustStores](https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html)
+are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
+and configuring SSL.
+
+Mutual authentication between TLS peers is enabled by default. Mutual authentication means that the the passive side
+(the TLS server side) of a connection will also request and verify a certificate from the connecting peer.
+Without this mode only the client side is requesting and verifying certificates. While Akka is a peer-to-peer
+technology, each connection between nodes starts out from one side (the "client") towards the other (the "server").
+
+Note that if TLS is enabled with mutual authentication there is still a risk that an attacker can gain access to a
+valid certificate by compromising any node with certificates issued by the same internal PKI tree.
+
+See also a description of the settings in the @ref:[Remote Configuration](#remote-configuration-artery) section.
+
+@@@ note
+
+When using SHA1PRNG on Linux it's recommended specify `-Djava.security.egd=file:/dev/urandom` as argument
+to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
+
+@@@
+
 
 ### Untrusted Mode
 
@@ -478,7 +579,7 @@ phi = -log10(1 - F(timeSinceLastHeartbeat))
 where F is the cumulative distribution function of a normal distribution with mean
 and standard deviation estimated from historical heartbeat inter-arrival times.
 
-In the [Remote Configuration](#remote-configuration-artery) you can adjust the `akka.remote.watch-failure-detector.threshold`
+In the @ref:[Remote Configuration](#remote-configuration-artery) you can adjust the `akka.remote.watch-failure-detector.threshold`
 to define when a *phi* value is considered to be a failure.
 
 A low `threshold` is prone to generate many false positives but ensures
@@ -504,7 +605,7 @@ a standard deviation of 100 ms.
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
 `akka.remote.watch-failure-detector.acceptable-heartbeat-pause`. You may want to
-adjust the [Remote Configuration](#remote-configuration-artery) of this depending on you environment.
+adjust the @ref:[Remote Configuration](#remote-configuration-artery) of this depending on you environment.
 This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 3 seconds.
 
@@ -764,8 +865,8 @@ See Aeron documentation about [Performance Testing](https://github.com/real-logi
 ### Fine-tuning CPU usage latency tradeoff
 
 Artery has been designed for low latency and as a result it can be CPU hungry when the system is mostly idle.
-This is not always desirable. It is possible to tune the tradeoff between CPU usage and latency with
-the following configuration:
+This is not always desirable. When using the Aeron transport it is possible to tune the tradeoff between CPU
+usage and latency with the following configuration:
 
 ```
 # Values can be from 1 to 10, where 10 strongly prefers low latency

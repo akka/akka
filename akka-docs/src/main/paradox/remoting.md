@@ -550,9 +550,9 @@ akka {
         key-store = "/example/path/to/mykeystore.jks"
         trust-store = "/example/path/to/mytruststore.jks"
 
-        key-store-password = "changeme"
-        key-password = "changeme"
-        trust-store-password = "changeme"
+        key-store-password = ${SSL_KEY_STORE_PASSWORD}
+        key-password = ${SSL_KEY_PASSWORD}
+        trust-store-password = ${SSL_TRUST_STORE_PASSWORD}
 
         protocol = "TLSv1.2"
 
@@ -564,6 +564,9 @@ akka {
   }
 }
 ```
+
+Always use [substitution from environment variables](https://github.com/lightbend/config#optional-system-or-env-variable-overrides)
+for passwords. Don't define real passwords in config files.
 
 According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
 
