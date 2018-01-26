@@ -17,7 +17,9 @@ ProblemFilters.exclude[Problem]("akka.remote.artery.Encoder*")
 ProblemFilters.exclude[Problem]("akka.remote.artery.RemoteInstruments*")
 ProblemFilters.exclude[Problem]("akka.remote.artery.ReusableInboundEnvelope*")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.artery.ArterySettings#Bind.BindTimeout")
-
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.EventSink.loFreq")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.EventSink.alert")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.FlightRecorderEvents.Transport_AeronStarted")
 
 
 
