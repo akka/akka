@@ -78,8 +78,8 @@ Java
  
 **Problems:**
 
- * Actors seldom have a response message from another actor as a part of their protocol (see adapted response)
- * It is hard to detect that a message request was not delivered or processed (see ask)
+ * Actors seldom have a response message from another actor as a part of their protocol (see @ref:[adapted response](#adapted-response))
+ * It is hard to detect that a message request was not delivered or processed (see @ref:[ask](#request-response-with-ask-between-two-actors))
  * Unless the protocol already includes a way to provide context, for example a request id that is also sent in the
    response, it is not possible to tie an interaction to some specific context without introducing a new,
    separate, actor (see ask or per session child actor)
@@ -119,7 +119,7 @@ The adapter function is running in the receiving actor and can safely access sta
  
 **Problems:**
 
- * It is hard to detect that a message request was not delivered or processed (see ask)
+ * It is hard to detect that a message request was not delivered or processed (see @ref:[ask](#request-response-with-ask-between-two-actors))
  * Only one adaption can be made per response message type, if a new one is registered the old one is replaced,
    for example different target actors can't have different adaption if they use the same response types, unless some
    correlation is encoded in the messages
@@ -153,7 +153,7 @@ The response adapting function is running in the receiving actor and can safely 
  
 **Problems:**
 
- * There can only be a single response to one `ask`
+ * There can only be a single response to one `ask` (see @ref:[per session child Actor](#per-session-child-actor))
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
  * Finding a good value for the timeout, especially when `ask` is triggers chained `ask`s in the receiving actor. You want a short timeout to be responsive and answer back to the requester, but at the same time you do not want to have many false positives 
 
@@ -176,8 +176,8 @@ Java
 
 **Problems:**
 
- * It is easy to accidentally close over and unsafely mutable state with the callbacks on the returned @scala[`Future`]@java[`CompletionStage`] as those will be executed on a different thread.
- * There can only be a single response to one `ask`
+ * It is easy to accidentally close over and unsafely mutable state with the callbacks on the returned @scala[`Future`]@java[`CompletionStage`] as those will be executed on a different thread
+ * There can only be a single response to one `ask` (see @ref:[per session child Actor](#per-session-child-actor))
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
 
 
@@ -197,7 +197,7 @@ Scala
 Java
 :  @@snip [InteractionPatternsTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #per-session-child }
 
-In an actual session child you would likely want to include some form of timeout as well (see below for timed messages).
+In an actual session child you would likely want to include some form of timeout as well (see @ref:[scheduling messages to self](#scheduling-messages-to-self)).
 
 **Useful when:**
 

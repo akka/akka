@@ -260,13 +260,32 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       }
     }
     // #actor-ask
+
+    // somewhat modified behavior to let us know we saw the two requests
+    val monitor = TestProbe[HalCommand]()
+    val hal = spawn(Behaviors.monitor(monitor.ref, halBehavior))
+    spawn(daveBehavior(hal))
+    monitor.expectMsgType[OpenThePodBayDoorsPlease]
+    monitor.expectMsgType[OpenThePodBayDoorsPlease]
   }
 
   "contain a sample for per session child" in {
-    trait Keys
-    trait Wallet
-    val keyCabinetBehavior: Behavior[GetKeys] = Behaviors.ignore
-    val drawerBehavior: Behavior[GetWallet] = Behaviors.ignore
+    case class Keys()
+    case class Wallet()
+    val keyCabinetBehavior: Behavior[GetKeys] = Behaviors.immutable { (ctx, msg) ⇒
+      msg match {
+        case GetKeys(_, respondTo) ⇒
+          respondTo ! Keys()
+          Behaviors.same
+      }
+    }
+    val drawerBehavior: Behavior[GetWallet] = Behaviors.immutable { (ctx, msg) ⇒
+      msg match {
+        case GetWallet(_, respondTo) ⇒
+          respondTo ! Wallet()
+          Behaviors.same
+      }
+    }
 
     // #per-session-child
     trait HomeCommand
@@ -292,22 +311,18 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       respondTo:    ActorRef[ReadyToLeaveHome],
       keyCabinet:   ActorRef[GetKeys],
       drawer:       ActorRef[GetWallet]): Behavior[NotUsed] =
-      // FIXME we don't _really_ care about the actor protocol here, adapting messages seems like a lot of
-      // boilerplate for a sample, is this fine enough? Couldn't think of a sample with the same protocol that makes sense
-      // but AnyRef + narrow is perhaps also not nice to put in a sample
+      // we don't _really_ care about the actor protocol here as nobody will send us
+      // messages except for responses to our queries, so we just accept any kind of message
+      // but narrow that to more limited types then we interact
       Behaviors.deferred[AnyRef] { ctx ⇒
         var wallet: Option[Wallet] = None
         var keys: Option[Keys] = None
 
+        // we narrow the ActorRef type to any subtype of the actual type we accept
         keyCabinet ! GetKeys(whoIsLeaving, ctx.self.narrow[Keys])
         drawer ! GetWallet(whoIsLeaving, ctx.self.narrow[Wallet])
 
-        Behaviors.immutable[AnyRef]((ctx, msg) ⇒ {
-          msg match {
-            case w: Wallet ⇒ wallet = Some(w)
-            case k: Keys   ⇒ keys = Some(k)
-          }
-
+        def nextBehavior: Behavior[AnyRef] =
           (keys, wallet) match {
             case (Some(w), Some(k)) ⇒
               // we got both, "session" is completed!
@@ -317,9 +332,27 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
             case _ ⇒
               Behavior.same
           }
+
+        Behaviors.immutable((ctx, msg) ⇒ {
+          msg match {
+            case w: Wallet ⇒
+              wallet = Some(w)
+              nextBehavior
+            case k: Keys ⇒
+              keys = Some(k)
+              nextBehavior
+            case _ ⇒
+              Behaviors.unhandled
+          }
         })
       }.narrow[NotUsed] // we don't let anyone else know we accept anything
     // #per-session-child
+
+    val requestor = TestProbe[ReadyToLeaveHome]()
+
+    val home = spawn(homeBehavior, "home")
+    home ! LeaveHome("Bobby", requestor.ref)
+    requestor.expectMsg(ReadyToLeaveHome("Bobby", Keys(), Wallet()))
   }
 
   "contain a sample for ask from outside the actor system" in {
@@ -327,22 +360,32 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
     trait CookieCommand {}
     case class GiveMeCookies(replyTo: ActorRef[Cookies]) extends CookieCommand
     case class Cookies(count: Int)
+    // #standalone-ask
 
-    def askAndPrint(system: ActorSystem[AnyRef], cookieActorRef: ActorRef[CookieCommand]): Unit = {
-      import akka.actor.typed.scaladsl.AskPattern._
+    // keep this out of the sample as it uses the testkit spawn
+    val cookieActorRef = spawn(Behaviors.immutable[GiveMeCookies] { (ctx, msg) ⇒
+      msg.replyTo ! Cookies(5)
+      Behaviors.same
+    })
 
-      // asking someone requires a timeout, if the timeout hits without response
-      // the ask is failed with a TimeoutException
-      implicit val timeout: Timeout = 3.seconds
-      import system.executionContext
+    // #standalone-ask
 
-      val result: Future[Cookies] = cookieActorRef ? GiveMeCookies
+    import akka.actor.typed.scaladsl.AskPattern._
 
-      result.onComplete {
-        case Success(cookies) ⇒ println("Yay, cookies!")
-        case Failure(ex)      ⇒ println("Boo! didn't get cookies in time.")
-      }
+    // asking someone requires a timeout, if the timeout hits without response
+    // the ask is failed with a TimeoutException
+    implicit val timeout: Timeout = 3.seconds
+    // the response callback will be executed on this execution context
+    import system.executionContext
+
+    val result: Future[Cookies] = cookieActorRef ? GiveMeCookies
+
+    result.onComplete {
+      case Success(cookies) ⇒ println("Yay, cookies!")
+      case Failure(ex)      ⇒ println("Boo! didn't get cookies in time.")
     }
     // #standalone-ask
+
+    result.futureValue shouldEqual Cookies(5)
   }
 }
