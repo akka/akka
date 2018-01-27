@@ -1129,6 +1129,55 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
     new SubSource(delegate.expand(in ⇒ extrapolate(in).asScala))
 
   /**
+   * Allows a faster downstream to progress of a slower upstream.
+   *
+   * This is achieved by introducing "extrapolated" elements - based on those from upstream - whenever downstream
+   * signals demand.
+   *
+   * Pressurize does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
+   * Exceptions from the `extrapolate` function will complete the stream with failure.
+   *
+   * '''Emits when''' downstream stops backpressuring, AND EITHER upstream emits OR initial element is present OR
+   * `extrapolate` is non-empty and applicable
+   *
+   * '''Backpressures when''' downstream backpressures or current `extrapolate` runs empty
+   *
+   * '''Completes when''' upstream completes and current `extrapolate` runs empty
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param extrapolate takes the current upstream element and provides a sequence of "extrapolated" elements based
+   *                    on the original, to be emitted in case downstream signals demand
+   */
+  def pressurize[U >: Out](extrapolate: function.Function[U, java.util.Iterator[U]]): SubSource[U, Mat] =
+    new SubSource(delegate.pressurize[U](in ⇒ extrapolate(in).asScala.toStream))
+
+  /**
+   * Allows a faster downstream to progress of a slower upstream.
+   *
+   * This is achieved by introducing "extrapolated" elements - based on those from upstream - whenever downstream
+   * signals demand.
+   *
+   * Pressurize does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
+   * Exceptions from the `extrapolate` function will complete the stream with failure.
+   *
+   * '''Emits when''' downstream stops backpressuring, AND EITHER upstream emits OR initial element is present OR
+   * `extrapolate` is non-empty and applicable
+   *
+   * '''Backpressures when''' downstream backpressures or current `extrapolate` runs empty
+   *
+   * '''Completes when''' upstream completes and current `extrapolate` runs empty
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param extrapolate takes the current upstream element and provides a sequence of "extrapolated" elements based
+   *                    on the original, to be emitted in case downstream signals demand
+   * @param initial the initial element to be emitted, in case upstream is able to stall the entire stream
+   */
+  def pressurize[U >: Out](extrapolate: function.Function[U, java.util.Iterator[U]], initial: U): SubSource[U, Mat] =
+    new SubSource(delegate.pressurize[U](in ⇒ extrapolate(in).asScala.toStream, Some(initial)))
+
+  /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
    * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements or backpressure the upstream if
    * there is no space available
