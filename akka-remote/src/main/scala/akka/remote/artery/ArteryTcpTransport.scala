@@ -77,7 +77,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
   // may change when inbound streams are restarted
   @volatile private var inboundKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundKillSwitch")
   // may change when inbound streams are restarted
-  @volatile private var inboundConnectionFlow: OptionVal[Flow[ByteString, ByteString, NotUsed]] = OptionVal.None
+  @volatile private var inboundStream: OptionVal[Sink[EnvelopeBuffer, NotUsed]] = OptionVal.None
   @volatile private var serverBinding: Option[Future[ServerBinding]] = None
 
   private val sslEngineProvider: OptionVal[SSLEngineProvider] =
@@ -203,11 +203,8 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     // decide where to attach it based on that byte. Then the streamId wouldn't have to be sent in each
     // frame. That was not chosen because it is more complicated to implement and might have more runtime
     // overhead.
-    // TODO Perhaps possible performance/scalability idea for investigation is to use `recoverWith` instead
-    // of `Partition`. First attach it to the `ordinaryMessagesStream` and when a non matching streamId
-    // arrives throw a specific exception and recoverWith `controlStream` and then largeMessagesStream.
-    val inboundStream: Sink[EnvelopeBuffer, NotUsed] =
-      Sink.fromGraph(GraphDSL.create() { implicit b ⇒
+    inboundStream =
+      OptionVal.Some(Sink.fromGraph(GraphDSL.create() { implicit b ⇒
         import GraphDSL.Implicits._
         val partition = b.add(Partition[EnvelopeBuffer](3, env ⇒ {
           env.byteBuffer.get(EnvelopeBuffer.StreamIdOffset).toInt match {
@@ -221,7 +218,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         partition.out(1) ~> ordinaryMessagesStream
         partition.out(2) ~> largeMessagesStream
         SinkShape(partition.in)
-      })
+      }))
 
     val maxFrameSize =
       if (largeMessageChannelEnabled) settings.Advanced.MaximumLargeFrameSize
@@ -239,9 +236,10 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     // If something in the inboundConnectionFlow fails, e.g. framing, the connection will be teared down,
     // but other parts of the inbound streams don't have to restarted.
-    inboundConnectionFlow = {
+    def inboundConnectionFlow(): Flow[ByteString, ByteString, NotUsed] = {
+      // must create new Flow for each connection because of the FlightRecorder that can't be shared
       val afr = createFlightRecorderEventSink()
-      OptionVal.Some(Flow[ByteString]
+      Flow[ByteString]
         .via(inboundKillSwitch.flow)
         .via(Framing.lengthField(fieldLength = 4, fieldOffset = EnvelopeBuffer.FrameLengthOffset,
           maxFrameSize, byteOrder = ByteOrder.LITTLE_ENDIAN))
@@ -251,10 +249,9 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
           afr.hiFreq(TcpInbound_Received, buffer.limit)
           new EnvelopeBuffer(buffer)
         }
-        .via(alsoToEagerCancel(inboundStream))
+        .via(alsoToEagerCancel(inboundStream.get))
         .filter(_ ⇒ false) // don't send back anything in this TCP socket
         .map(_ ⇒ ByteString.empty) // make it a Flow[ByteString] again
-      )
     }
 
     val host = localAddress.address.host.get
@@ -283,7 +280,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
             afr.loFreq(
               TcpInbound_Connected,
               s"${connection.remoteAddress.getHostString}:${connection.remoteAddress.getPort}")
-            connection.handleWith(inboundConnectionFlow.get)
+            connection.handleWith(inboundConnectionFlow())
           })
           .run()
           .recoverWith {
