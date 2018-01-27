@@ -1,1 +1,0 @@
-../../scala/stream/stream-io.md

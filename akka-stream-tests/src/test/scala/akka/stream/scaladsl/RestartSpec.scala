@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, OverflowStrategy }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
@@ -17,7 +17,7 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-class RestartSpec extends StreamSpec with DefaultTimeout {
+class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "10s")) with DefaultTimeout {
 
   implicit val mat = ActorMaterializer()
   import system.dispatcher
@@ -175,6 +175,94 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
       Thread.sleep((minBackoff + 100.millis).toMillis)
       created.get() should ===(1)
     }
+
+    "stop on completion if it should only be restarted in failures" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val probe = RestartSource.onFailuresWithBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
+        created.incrementAndGet()
+        Source(List("a", "b", "c"))
+          .map {
+            case "c"   ⇒ if (created.get() == 1) throw TE("failed") else "c"
+            case other ⇒ other
+          }
+      }.runWith(TestSink.probe)
+
+      probe.requestNext("a")
+      probe.requestNext("b")
+      // will fail, and will restart
+      probe.requestNext("a")
+      probe.requestNext("b")
+      probe.requestNext("c")
+      probe.expectComplete()
+
+      created.get() should ===(2)
+
+      probe.cancel()
+    }
+
+    "restart on failure when only due to failures should be restarted" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val probe = RestartSource.onFailuresWithBackoff(shortMinBackoff, shortMaxBackoff, 0) { () ⇒
+        created.incrementAndGet()
+        Source(List("a", "b", "c"))
+          .map {
+            case "c"   ⇒ throw TE("failed")
+            case other ⇒ other
+          }
+      }.runWith(TestSink.probe)
+
+      probe.requestNext("a")
+      probe.requestNext("b")
+      probe.requestNext("a")
+      probe.requestNext("b")
+      probe.requestNext("a")
+
+      created.get() should ===(3)
+
+      probe.cancel()
+
+    }
+
+    "not restart the source when maxRestarts is reached" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val probe = RestartSource.withBackoff(shortMinBackoff, shortMaxBackoff, 0, maxRestarts = 1) { () ⇒
+        created.incrementAndGet()
+        Source.single("a")
+      }.runWith(TestSink.probe)
+
+      probe.requestNext("a")
+      probe.requestNext("a")
+      probe.expectComplete()
+
+      created.get() should ===(2)
+
+      probe.cancel()
+    }
+
+    "reset maxRestarts when source runs for at least minimum backoff without completing" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val probe = RestartSource.withBackoff(minBackoff, maxBackoff, 0, maxRestarts = 2) { () ⇒
+        created.incrementAndGet()
+        Source(List("a"))
+      }.runWith(TestSink.probe)
+
+      probe.requestNext("a")
+      // There should be minBackoff delay
+      probe.requestNext("a")
+      // The probe should now be backing off again with with increased backoff
+
+      // Now wait for the delay to pass, then it will start the new source, we also want to wait for the
+      // subsequent backoff to pass
+      Thread.sleep((minBackoff + (minBackoff * 2) + minBackoff + 500.millis).toMillis)
+
+      probe.requestNext("a")
+      // We now are able to trigger the third restart, since enough time has elapsed to reset the counter
+      probe.requestNext("a")
+
+      created.get() should ===(4)
+
+      probe.cancel()
+    }
   }
 
   "A restart with backoff sink" should {
@@ -306,18 +394,75 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
 
       sinkProbe.cancel()
     }
+
+    "not restart the sink when maxRestarts is reached" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
+      val probe = TestSource.probe[String].toMat(RestartSink.withBackoff(shortMinBackoff, shortMaxBackoff, 0, maxRestarts = 1) { () ⇒
+        created.incrementAndGet()
+        Flow[String].takeWhile(_ != "cancel", inclusive = true)
+          .to(Sink.foreach(queue.sendNext))
+      })(Keep.left).run()
+
+      probe.sendNext("cancel")
+      sinkProbe.requestNext("cancel")
+      probe.sendNext("cancel")
+      sinkProbe.requestNext("cancel")
+
+      probe.expectCancellation()
+
+      created.get() should ===(2)
+
+      sinkProbe.cancel()
+      probe.sendComplete()
+    }
+
+    "reset maxRestarts when sink runs for at least minimum backoff without completing" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
+      val probe = TestSource.probe[String].toMat(RestartSink.withBackoff(minBackoff, maxBackoff, 0, maxRestarts = 2) { () ⇒
+        created.incrementAndGet()
+        Flow[String].takeWhile(_ != "cancel", inclusive = true)
+          .to(Sink.foreach(queue.sendNext))
+      })(Keep.left).run()
+
+      probe.sendNext("cancel")
+      sinkProbe.requestNext("cancel")
+      // There should be a minBackoff delay
+      probe.sendNext("cancel")
+      sinkProbe.requestNext("cancel")
+      // The probe should now be backing off for 2 * minBackoff
+
+      // Now wait for the 2 * minBackoff delay to pass, then it will start the new source, we also want to wait for the
+      // subsequent minBackoff min backoff to pass, so it resets the restart count
+      Thread.sleep((minBackoff + (minBackoff * 2) + minBackoff + 500.millis).toMillis)
+
+      probe.sendNext("cancel")
+      sinkProbe.requestNext("cancel")
+
+      // We now are able to trigger the third restart, since enough time has elapsed to reset the counter
+      probe.sendNext("cancel")
+      sinkProbe.requestNext("cancel")
+
+      created.get() should ===(4)
+
+      sinkProbe.cancel()
+      probe.sendComplete()
+    }
   }
 
   "A restart with backoff flow" should {
 
-    def setupFlow(minBackoff: FiniteDuration, maxBackoff: FiniteDuration) = {
+    def setupFlow(minBackoff: FiniteDuration, maxBackoff: FiniteDuration, maxRestarts: Int = -1) = {
       val created = new AtomicInteger()
-      val (flowInSource, flowInProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
+      val (flowInSource, flowInProbe) = TestSource.probe[String]
+        .buffer(4, OverflowStrategy.backpressure)
+        .toMat(TestSink.probe)(Keep.both).run()
       val (flowOutProbe, flowOutSource) = TestSource.probe[String].toMat(BroadcastHub.sink)(Keep.both).run()
 
       // We can't just use ordinary probes here because we're expecting them to get started/restarted. Instead, we
       // simply use the probes as a message bus for feeding and capturing events.
-      val (source, sink) = TestSource.probe[String].viaMat(RestartFlow.withBackoff(minBackoff, maxBackoff, 0) { () ⇒
+      val (source, sink) = TestSource.probe[String].viaMat(RestartFlow.withBackoff(minBackoff, maxBackoff, 0, maxRestarts) { () ⇒
         created.incrementAndGet()
         Flow.fromSinkAndSource(
           Flow[String]
@@ -435,13 +580,17 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
       flowOutProbe.sendNext("b")
       sink.requestNext("b")
 
+      // we need to start counting time before we issue the cancel signal,
+      // as starting the counter anywhere after the cancel signal, might not
+      // capture all of the time, that has been spent for the backoff.
+      val deadline = minBackoff.fromNow
+
       source.sendNext("cancel")
       // This will complete the flow in probe and cancel the flow out probe
       flowInProbe.request(2)
       Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain only ("in complete", "out complete")
 
       source.sendNext("c")
-      val deadline = (minBackoff - 1.millis).fromNow
       flowInProbe.request(1)
       flowInProbe.expectNext("c")
       deadline.isOverdue() should be(true)
@@ -496,6 +645,28 @@ class RestartSpec extends StreamSpec with DefaultTimeout {
       created.get() should ===(1)
     }
 
+    "not restart on completion when maxRestarts is reached" in {
+      val (created, _, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff, maxRestarts = 1)
+
+      sink.request(1)
+      flowOutProbe.sendNext("complete")
+
+      // This will complete the flow in probe and cancel the flow out probe
+      flowInProbe.request(2)
+      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain only ("in complete", "out complete")
+
+      // and it should restart
+      sink.request(1)
+      flowOutProbe.sendNext("complete")
+
+      // This will complete the flow in probe and cancel the flow out probe
+      flowInProbe.request(2)
+      flowInProbe.expectNext("out complete")
+      flowInProbe.expectNoMessage(shortMinBackoff * 3)
+      sink.expectComplete()
+
+      created.get() should ===(2)
+    }
   }
 
 }

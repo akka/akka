@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.javadsl;
 
@@ -11,6 +11,8 @@ import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 import akka.stream.*;
+import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.TestSink;
 import akka.util.ConstantFun;
 import akka.stream.stage.*;
 import akka.testkit.AkkaSpec;
@@ -656,6 +658,28 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToCombineMat() throws Exception {
+    final TestKit probe = new TestKit(system);
+    final Source<Integer, SourceQueueWithComplete<Integer>> source1 = Source.queue(1, OverflowStrategy.dropNew());
+    final Source<Integer, NotUsed> source2 = Source.from(Arrays.asList(2, 3));
+
+    // compiler to check the correct materialized value of type = SourceQueueWithComplete<Integer> available
+    final Source<Integer, SourceQueueWithComplete<Integer>> combined = Source.combineMat(
+      source1, source2, width -> Concat.<Integer> create(width), Keep.left()); //Keep.left() (i.e. preserve queueSource's materialized value)
+
+    SourceQueueWithComplete<Integer> queue = combined
+        .toMat(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), Keep.left())
+        .run(materializer);
+
+    queue.offer(0);
+    queue.offer(1);
+    queue.complete(); //complete queueSource so that combined with `Concat` pulls elements from queueSource
+
+    // elements from source1 (i.e. first of combined source) come first, then source2 elements, due to `Concat`
+    probe.expectMsgAllOf(0, 1, 2, 3);
+  }
+
+  @Test
   public void mustBeAbleToZipN() throws Exception {
     final TestKit probe = new TestKit(system);
     final Source<Integer, NotUsed> source1 = Source.from(Arrays.asList(0, 1));
@@ -835,5 +859,17 @@ public class SourceTest extends StreamTest {
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     assertEquals((Object) 0, result);
+  }
+
+  @Test
+  public void mustBeAbleToUseAlsoTo() {
+    final Source<Integer, NotUsed> f = Source.<Integer>empty().alsoTo(Sink.ignore());
+    final Source<Integer, String> f2 = Source.<Integer>empty().alsoToMat(Sink.ignore(), (i, n) -> "foo");
+  }
+
+  @Test
+  public void mustBeAbleToUseDivertTo() {
+    final Source<Integer, NotUsed> f = Source.<Integer>empty().divertTo(Sink.ignore(), e -> true);
+    final Source<Integer, String> f2 = Source.<Integer>empty().divertToMat(Sink.ignore(), e -> true, (i, n) -> "foo");
   }
 }

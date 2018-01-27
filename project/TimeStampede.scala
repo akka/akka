@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka
 
@@ -16,12 +16,11 @@ object TimeStampede extends AutoPlugin {
   override def trigger = noTrigger
 
   override lazy val projectSettings = Seq(
-    commands += stampVersion
-  )
+    commands += stampVersion)
 
   final val Snapshot = "-SNAPSHOT"
 
-  def stampVersion = Command.command("stampVersion") { state =>
+  def stampVersion = Command.command("stampVersion") { state ⇒
     val extracted = Project.extract(state)
     extracted.append(List(version in ThisBuild ~= stamp), state)
   }

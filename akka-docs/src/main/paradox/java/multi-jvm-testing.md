@@ -1,1 +1,0 @@
-../scala/multi-jvm-testing.md

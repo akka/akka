@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -19,7 +19,7 @@ object AbstractActor {
   /**
    * Defines which messages the Actor can handle, along with the implementation of
    * how the messages should be processed. You can build such behavior with the
-   * [[akka.japi.pf.receivebuilder]] but it can be implemented in other ways than
+   * [[akka.japi.pf.ReceiveBuilder]] but it can be implemented in other ways than
    * using the `ReceiveBuilder` since it in the end is just a wrapper around a
    * Scala `PartialFunction`. In Java, you can implement `PartialFunction` by
    * extending `AbstractPartialFunction`.
@@ -108,23 +108,21 @@ object AbstractActor {
  * <p/>
  * Example:
  * <pre>
- * public class MyActor extends AbstractActor {
- *   int count = 0;
- *
- *   public MyActor() {
- *     receive(receiveBuilder()
- *       .match(Double.class, d -> {
- *         sender().tell(d.isNaN() ? 0 : d, self());
- *       })
- *       .match(Integer.class, i -> {
- *         sender().tell(i * 10, self());
- *       })
- *       .match(String.class, s -> s.startsWith("foo"), s -> {
- *         sender().tell(s.toUpperCase(), self());
- *       })
- *       .build();
- *     );
- *   }
+ * public class MyActorForJavaDoc extends AbstractActor{
+ *    @Override
+ *    public Receive createReceive() {
+ *        return receiveBuilder()
+ *                .match(Double.class, d -> {
+ *                    sender().tell(d.isNaN() ? 0 : d, self());
+ *                })
+ *                .match(Integer.class, i -> {
+ *                    sender().tell(i * 10, self());
+ *                })
+ *                .match(String.class, s -> s.startsWith("foo"), s -> {
+ *                    sender().tell(s.toUpperCase(), self());
+ *                })
+ *                .build();
+ *    }
  * }
  * </pre>
  *

@@ -1,16 +1,12 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
-
-import java.nio.file.{ FileSystems, Files, Path }
-import java.util.UUID
 
 import akka.actor.{ ActorSystem, RootActorPath }
 import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.Outcome
 
 /**
  * Base class for remoting tests what needs to test interaction between a "local" actor system
@@ -41,8 +37,8 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
       ArterySpecSupport.newFlightRecorderConfig.withFallback(extraConfig.fold(
         localSystem.settings.config
       )(
-        str ⇒ ConfigFactory.parseString(str).withFallback(localSystem.settings.config)
-      ))
+          str ⇒ ConfigFactory.parseString(str).withFallback(localSystem.settings.config)
+        ))
 
     val remoteSystem = ActorSystem(name.getOrElse(nextGeneratedSystemName), config)
     remoteSystems = remoteSystems :+ remoteSystem
@@ -56,5 +52,4 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
     remoteSystems = Vector.empty
     super.afterTermination()
   }
-
 }

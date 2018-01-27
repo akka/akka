@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl.io
 
@@ -49,8 +49,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
     val dataQueue = new LinkedBlockingQueue[ByteString](maxBuffer)
     val downstreamStatus = new AtomicReference[DownstreamStatus](Ok)
 
-    final class OutputStreamSourceLogic extends GraphStageLogic(shape)
-      with CallbackWrapper[(AdapterToStageMessage, Promise[Unit])] {
+    final class OutputStreamSourceLogic extends GraphStageLogic(shape) {
 
       var flush: Option[Promise[Unit]] = None
       var close: Option[Promise[Unit]] = None
@@ -69,7 +68,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 
       def wakeUp(msg: AdapterToStageMessage): Future[Unit] = {
         val p = Promise[Unit]()
-        this.invoke((msg, p))
+        upstreamCallback.invoke((msg, p))
         p.future
       }
 
@@ -112,7 +111,6 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
       override def preStart(): Unit = {
         dispatcher = ActorMaterializerHelper.downcast(materializer).system.dispatchers.lookup(dispatcherId)
         super.preStart()
-        initCallback(upstreamCallback.invoke)
       }
 
       setHandler(out, new OutHandler {

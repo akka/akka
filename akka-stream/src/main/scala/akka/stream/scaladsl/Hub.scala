@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -7,14 +7,13 @@ import java.util
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 
 import akka.NotUsed
-import akka.dispatch.AbstractNodeQueue
+import akka.dispatch.{ AbstractNodeQueue, ExecutionContexts }
 import akka.stream._
 import akka.stream.stage._
 
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
-import java.util.Arrays
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReferenceArray
@@ -424,12 +423,19 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
             val startFrom = head
             activeConsumers += 1
             addConsumer(consumer, startFrom)
-            consumer.callback.invoke(Initialize(startFrom))
+            // in case the consumer is already stopped we need to undo registration
+            implicit val ec = materializer.executionContext
+            consumer.callback.invokeWithFeedback(Initialize(startFrom)).onFailure {
+              case _: StreamDetachedException ⇒
+                callbackPromise.future.foreach(callback ⇒
+                  callback.invoke(UnRegister(consumer.id, startFrom, startFrom))
+                )
+            }
           }
 
         case UnRegister(id, previousOffset, finalOffset) ⇒
-          activeConsumers -= 1
-          val consumer = findAndRemoveConsumer(id, previousOffset)
+          if (findAndRemoveConsumer(id, previousOffset) != null)
+            activeConsumers -= 1
           if (activeConsumers == 0) {
             if (isClosed(in)) completeStage()
             else if (head != finalOffset) {
@@ -443,14 +449,15 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
               if (!hasBeenPulled(in)) pull(in)
             }
           } else checkUnblock(previousOffset)
+
         case Advance(id, previousOffset) ⇒
           val newOffset = previousOffset + DemandThreshold
-          // Move the consumer from its last known offest to its new one. Check if we are unblocked.
+          // Move the consumer from its last known offset to its new one. Check if we are unblocked.
           val consumer = findAndRemoveConsumer(id, previousOffset)
           addConsumer(consumer, newOffset)
           checkUnblock(previousOffset)
         case NeedWakeup(id, previousOffset, currentOffset) ⇒
-          // Move the consumer from its last known offest to its new one. Check if we are unblocked.
+          // Move the consumer from its last known offset to its new one. Check if we are unblocked.
           val consumer = findAndRemoveConsumer(id, previousOffset)
           addConsumer(consumer, currentOffset)
 
@@ -776,7 +783,8 @@ object PartitionHub {
    * @param partitioner Function that decides where to route an element. The function takes two parameters;
    *   the first is the number of active consumers and the second is the stream element. The function should
    *   return the index of the selected consumer for the given element, i.e. int greater than or equal to 0
-   *   and less than number of consumers. E.g. `(size, elem) => math.abs(elem.hashCode) % size`.
+   *   and less than number of consumers. E.g. `(size, elem) => math.abs(elem.hashCode) % size`. It's also
+   *   possible to use `-1` to drop the element.
    * @param startAfterNrOfConsumers Elements are buffered until this number of consumers have been connected.
    *   This is only used initially when the stage is starting up, i.e. it is not honored when consumers have
    *   been removed (canceled).
@@ -785,8 +793,14 @@ object PartitionHub {
    */
   @ApiMayChange
   def sink[T](partitioner: (Int, T) ⇒ Int, startAfterNrOfConsumers: Int,
-              bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
-    statefulSink(() ⇒ (info, elem) ⇒ info.consumerIdByIdx(partitioner(info.size, elem)), startAfterNrOfConsumers, bufferSize)
+              bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] = {
+    val fun: (ConsumerInfo, T) ⇒ Long = { (info, elem) ⇒
+      val idx = partitioner(info.size, elem)
+      if (idx < 0) -1L
+      else info.consumerIdByIdx(idx)
+    }
+    statefulSink(() ⇒ fun, startAfterNrOfConsumers, bufferSize)
+  }
 
   @DoNotInherit @ApiMayChange trait ConsumerInfo extends akka.stream.javadsl.PartitionHub.ConsumerInfo {
 
@@ -1051,8 +1065,10 @@ object PartitionHub {
         pending :+= elem
       } else {
         val id = materializedPartitioner(consumerInfo, elem)
-        queue.offer(id, elem)
-        wakeup(id)
+        if (id >= 0) { // negative id is a way to drop the element
+          queue.offer(id, elem)
+          wakeup(id)
+        }
       }
     }
 

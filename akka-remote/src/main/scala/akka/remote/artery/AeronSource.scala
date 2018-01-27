@@ -1,25 +1,19 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
 
-import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
-import scala.concurrent.duration._
 import akka.stream.Attributes
 import akka.stream.Outlet
 import akka.stream.SourceShape
 import akka.stream.stage.AsyncCallback
-import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.OutHandler
-import io.aeron.Aeron
-import io.aeron.FragmentAssembler
-import io.aeron.Subscription
+import io.aeron.{ Aeron, FragmentAssembler, Subscription }
 import io.aeron.logbuffer.FragmentHandler
 import io.aeron.logbuffer.Header
 import org.agrona.DirectBuffer
-import org.agrona.concurrent.BackoffIdleStrategy
 import org.agrona.hints.ThreadHints
 import akka.stream.stage.GraphStageWithMaterializedValue
 import scala.util.control.NonFatal

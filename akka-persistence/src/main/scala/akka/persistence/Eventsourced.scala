@@ -1,21 +1,21 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+
+import akka.actor.{ ActorCell, DeadLetter, StashOverflowException }
+import akka.annotation.InternalApi
+import akka.dispatch.Envelope
+import akka.event.{ Logging, LoggingAdapter }
+import akka.util.Helpers.ConfigOps
 
 import scala.collection.immutable
-import scala.util.control.NonFatal
-import akka.actor.{ DeadLetter, StashOverflowException }
-import akka.annotation.InternalApi
-import akka.util.Helpers.ConfigOps
-import akka.event.Logging
-import akka.event.LoggingAdapter
-
 import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -42,11 +42,19 @@ private[persistence] object Eventsourced {
  *
  * Scala API and implementation details of [[PersistentActor]] and [[AbstractPersistentActor]].
  */
-private[persistence] trait Eventsourced extends Snapshotter with PersistenceStash with PersistenceIdentity with PersistenceRecovery {
-  import JournalProtocol._
-  import SnapshotProtocol.LoadSnapshotResult
-  import SnapshotProtocol.LoadSnapshotFailed
+private[persistence] trait Eventsourced extends Snapshotter with PersistenceStash
+  with PersistenceIdentity with PersistenceRecovery {
   import Eventsourced._
+  import JournalProtocol._
+  import SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
+
+  {
+    val interfaces = getClass.getInterfaces
+    val i = interfaces.indexOf(classOf[PersistentActor])
+    val j = interfaces.indexOf(classOf[akka.actor.Timers])
+    if (i != -1 && j != -1 && i < j)
+      throw new IllegalStateException("use Timers with PersistentActor, instead of PersistentActor with Timers")
+  }
 
   private val extension = Persistence(context.system)
 
@@ -144,14 +152,15 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
   /**
    * Called when the journal rejected `persist` of an event. The event was not
-   * stored. By default this method logs the problem as a warning, and the actor continues.
+   * stored. By default this method logs the problem as an error, and the actor continues.
    * The callback handler that was passed to the `persist` method will not be invoked.
    *
    * @param cause failure cause
    * @param event the event that was to be persisted
    */
   protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
-    log.warning(
+    log.error(
+      cause,
       "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
       event.getClass.getName, seqNr, persistenceId, cause.getMessage)
   }
@@ -185,6 +194,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   /** INTERNAL API. */
   override protected[akka] def aroundPreStart(): Unit = {
     require(persistenceId ne null, s"persistenceId is [null] for PersistentActor [${self.path}]")
+    require(persistenceId.trim.nonEmpty, s"persistenceId cannot be empty for PersistentActor [${self.path}]")
 
     // Fail fast on missing plugins.
     val j = journal; val s = snapshotStore
@@ -389,6 +399,14 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    */
   def recoveryFinished: Boolean = !recoveryRunning
 
+  override def stash(): Unit = {
+    context.asInstanceOf[ActorCell].currentMessage match {
+      case Envelope(_: JournalProtocol.Response, _) ⇒
+        throw new IllegalStateException("Do not call stash inside of persist callback or during recovery.")
+      case _ ⇒ super.stash()
+    }
+  }
+
   override def unstashAll() {
     // Internally, all messages are processed by unstashing them from
     // the internal stash one-by-one. Hence, an unstashAll() from the
@@ -541,7 +559,9 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
           setLastSequenceNr(highestSeqNr)
           _recoveryRunning = false
           try Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
-          finally transitToProcessingState()
+          finally transitToProcessingState() // in finally in case exception and resume strategy
+          // if exception from RecoveryCompleted the permit is returned in below catch
+          returnRecoveryPermit()
         case ReplayMessagesFailure(cause) ⇒
           timeoutCancellable.cancel()
           try onRecoveryFailure(cause, event = None) finally context.stop(self)
@@ -567,8 +587,6 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         extension.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, self)
 
       private def transitToProcessingState(): Unit = {
-        returnRecoveryPermit()
-
         if (eventBatch.nonEmpty) flushBatch()
 
         if (pendingStashingPersistInvocations > 0) changeState(persistingEvents)

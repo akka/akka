@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.serialization
 
@@ -179,9 +179,9 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
 
     SystemMessageDelivery.SystemMessageEnvelope(
       serialization.deserialize(
-      protoEnv.getMessage.toByteArray,
-      protoEnv.getSerializerId,
-      if (protoEnv.hasMessageManifest) protoEnv.getMessageManifest.toStringUtf8 else "").get,
+        protoEnv.getMessage.toByteArray,
+        protoEnv.getSerializerId,
+        if (protoEnv.hasMessageManifest) protoEnv.getMessageManifest.toStringUtf8 else "").get,
       protoEnv.getSeqNo,
       deserializeUniqueAddress(protoEnv.getAckReplyTo))
   }

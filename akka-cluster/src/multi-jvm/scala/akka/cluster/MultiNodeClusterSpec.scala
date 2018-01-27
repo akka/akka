@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster
 
@@ -46,6 +46,8 @@ object MultiNodeClusterSpec {
       periodic-tasks-initial-delay        = 300 ms
       publish-stats-interval              = 0 s # always, when it happens
       failure-detector.heartbeat-interval = 500 ms
+
+      run-coordinated-shutdown-when-down = off
     }
     akka.loglevel = INFO
     akka.log-dead-letters = off
@@ -343,7 +345,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         case cause: Exception ⇒
           throw new AssertionError(s"Member ${toBeRemovedAddress} was not removed within ${timeout}!", cause)
       }
-      awaiter ! PoisonPill // you've done your job, now die 
+      awaiter ! PoisonPill // you've done your job, now die
 
       enterBarrier("member-shutdown")
       markNodeAsUnavailable(toBeRemovedAddress)

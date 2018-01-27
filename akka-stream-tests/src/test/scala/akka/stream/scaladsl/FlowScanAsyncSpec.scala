@@ -1,12 +1,13 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
-import akka.pattern
+import akka.{ NotUsed, pattern }
 import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit.TestSubscriber.Probe
+import akka.stream.testkit.Utils.TE
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 
@@ -31,6 +32,32 @@ class FlowScanAsyncSpec extends StreamSpec {
         .runWith(TestSink.probe[Int])
         .request(1)
         .expectNextOrComplete(0)
+    }
+
+    "complete after zero-element has been consumed" in {
+      val (pub, sub) =
+        TestSource.probe[Int]
+          .via(Flow[Int].scanAsync(0)((acc, in) ⇒ Future.successful(acc + in)))
+          .toMat(TestSink.probe)(Keep.both)
+          .run()
+
+      sub.request(10)
+      sub.expectNext(0)
+      pub.sendComplete()
+      sub.expectComplete()
+    }
+
+    "fail after zero-element has been consumed" in {
+      val (pub, sub) =
+        TestSource.probe[Int]
+          .via(Flow[Int].scanAsync(0)((acc, in) ⇒ Future.successful(acc + in)))
+          .toMat(TestSink.probe)(Keep.both)
+          .run()
+
+      sub.request(10)
+      sub.expectNext(0)
+      pub.sendError(TE("bang"))
+      sub.expectError(TE("bang"))
     }
 
     "work with a single source" in {

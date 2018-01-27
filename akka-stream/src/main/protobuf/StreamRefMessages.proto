@@ -1,0 +1,50 @@
+/**
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+
+option java_package = "akka.stream";
+option optimize_for = SPEED;
+
+/*************************************************
+  StreamRefs (SourceRef / SinkRef) related formats
+**************************************************/
+
+message SinkRef {
+    required ActorRef targetRef = 1;
+}
+
+message SourceRef {
+    required ActorRef originRef = 1;
+}
+
+message ActorRef {
+    required string path = 1;
+}
+
+message Payload {
+    required bytes enclosedMessage = 1;
+    required int32 serializerId = 2;
+    optional bytes messageManifest = 3;
+}
+
+// stream refs protocol
+
+message OnSubscribeHandshake {
+    required ActorRef targetRef = 1;
+}
+message CumulativeDemand {
+    required int64 seqNr = 1;
+}
+
+message SequencedOnNext {
+    required int64 seqNr = 1;
+    required Payload payload = 2;
+}
+
+message RemoteStreamFailure {
+    optional bytes cause = 1;
+}
+
+message RemoteStreamCompleted {
+    required int64 seqNr = 1;
+}

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.persistence.fsm
 
@@ -187,7 +187,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
   /**
    * Produce change descriptor to stop this FSM actor including specified reason.
    */
-  final def stop(reason: Reason, stateData: D): State = stay using stateData withStopReason (reason)
+  final def stop(reason: Reason, stateData: D): State = stay.copy(stopReason = Some(reason), stateData = stateData)
 
   final class TransformHelper(func: StateFunction) {
     def using(andThen: PartialFunction[State, State]): StateFunction =

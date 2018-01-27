@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -161,7 +161,9 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
         // InHandler
         override def onPush(): Unit = {
           state.getInboundFailureOnce match {
-            case Some(shouldFailEx) ⇒ failStage(shouldFailEx)
+            case Some(shouldFailEx) ⇒
+              log.info("Fail inbound stream from [{}]: {}", classOf[InboundTestStage].getName, shouldFailEx.getMessage)
+              failStage(shouldFailEx)
             case _ ⇒
               val env = grab(in)
               env.association match {

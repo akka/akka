@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -21,6 +21,8 @@ import akka.util.{ OptionVal, Unsafe }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
+import akka.remote.artery.OutboundHandshake.HandshakeReq
+import akka.serialization.SerializerWithStringManifest
 
 /**
  * INTERNAL API
@@ -482,7 +484,8 @@ private[remote] class Decoder(
             classManifest,
             headerBuilder.flags,
             envelope,
-            association)
+            association,
+            lane = 0)
 
           if (recipient.isEmpty && !headerBuilder.isNoRecipient) {
 
@@ -645,6 +648,67 @@ private[remote] class Deserializer(
       }
 
       override def onPull(): Unit = pull(in)
+
+      setHandlers(in, out, this)
+    }
+}
+
+/**
+ * INTERNAL API: The HandshakeReq message must be passed in each inbound lane to
+ * ensure that it arrives before any application message. Otherwise there is a risk
+ * that an application message arrives in the InboundHandshake stage before the
+ * handshake is completed and then it would be dropped.
+ */
+private[remote] class DuplicateHandshakeReq(
+  numberOfLanes:  Int,
+  inboundContext: InboundContext,
+  system:         ExtendedActorSystem,
+  bufferPool:     EnvelopeBufferPool) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+
+  val in: Inlet[InboundEnvelope] = Inlet("Artery.DuplicateHandshakeReq.in")
+  val out: Outlet[InboundEnvelope] = Outlet("Artery.DuplicateHandshakeReq.out")
+  val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      private val (serializerId, manifest) = {
+        val serialization = SerializationExtension(system)
+        val ser = serialization.serializerFor(classOf[HandshakeReq])
+        val m = ser match {
+          case s: SerializerWithStringManifest ⇒
+            s.manifest(HandshakeReq(inboundContext.localAddress, inboundContext.localAddress.address))
+          case _ ⇒ ""
+        }
+        (ser.identifier, m)
+      }
+      var currentIterator: Iterator[InboundEnvelope] = Iterator.empty
+
+      override def onPush(): Unit = {
+        val envelope = grab(in)
+        if (envelope.association.isEmpty && envelope.serializer == serializerId && envelope.classManifest == manifest) {
+          // only need to duplicate HandshakeReq before handshake is completed
+          try {
+            currentIterator = Vector.tabulate(numberOfLanes)(i ⇒ envelope.copyForLane(i)).iterator
+            push(out, currentIterator.next())
+          } finally {
+            val buf = envelope.envelopeBuffer
+            if (buf != null) {
+              envelope.releaseEnvelopeBuffer()
+              bufferPool.release(buf)
+            }
+          }
+        } else
+          push(out, envelope)
+      }
+
+      override def onPull(): Unit = {
+        if (currentIterator.isEmpty)
+          pull(in)
+        else {
+          push(out, currentIterator.next())
+          if (currentIterator.isEmpty) currentIterator = Iterator.empty // GC friendly
+        }
+      }
 
       setHandlers(in, out, this)
     }

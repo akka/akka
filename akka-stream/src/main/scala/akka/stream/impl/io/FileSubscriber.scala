@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl.io
 
@@ -65,14 +65,7 @@ import scala.util.{ Failure, Success }
       closeAndComplete(IOResult(bytesWritten, Failure(ex)))
       context.stop(self)
 
-    case ActorSubscriberMessage.OnComplete ⇒
-      try {
-        chan.force(true)
-      } catch {
-        case ex: Exception ⇒
-          closeAndComplete(IOResult(bytesWritten, Failure(ex)))
-      }
-      context.stop(self)
+    case ActorSubscriberMessage.OnComplete ⇒ context.stop(self)
   }
 
   override def postStop(): Unit = {

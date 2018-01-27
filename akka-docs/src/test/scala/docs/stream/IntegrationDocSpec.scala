@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package docs.stream
 
@@ -90,7 +90,7 @@ object IntegrationDocSpec {
 
   class DatabaseService(probe: ActorRef) extends Actor {
     override def receive = {
-      case Save(tweet: Tweet) =>
+      case Save(tweet: Tweet) ⇒
         probe ! tweet.author.handle
         sender() ! SaveDone
     }
@@ -121,7 +121,7 @@ object IntegrationDocSpec {
   //#ask-actor
   class Translator extends Actor {
     def receive = {
-      case word: String =>
+      case word: String ⇒
         // ... process message
         val reply = word.toUpperCase
         sender() ! reply // reply to the ask
@@ -202,7 +202,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
       Source(List("hello", "hi"))
 
     words
-      .mapAsync(parallelism = 5)(elem => (ref ? elem).mapTo[String])
+      .mapAsync(parallelism = 5)(elem ⇒ (ref ? elem).mapTo[String])
       // continue processing of the replies from the actor
       .map(_.toLowerCase)
       .runWith(Sink.ignore)
@@ -224,14 +224,14 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#email-addresses-mapAsync
     val emailAddresses: Source[String, NotUsed] =
       authors
-        .mapAsync(4)(author => addressSystem.lookupEmail(author.handle))
-        .collect { case Some(emailAddress) => emailAddress }
+        .mapAsync(4)(author ⇒ addressSystem.lookupEmail(author.handle))
+        .collect { case Some(emailAddress) ⇒ emailAddress }
     //#email-addresses-mapAsync
 
     //#send-emails
     val sendEmails: RunnableGraph[NotUsed] =
       emailAddresses
-        .mapAsync(4)(address => {
+        .mapAsync(4)(address ⇒ {
           emailServer.send(
             Email(to = address, title = "Akka", body = "I like your tweet"))
         })
@@ -260,7 +260,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     val emailAddresses: Source[String, NotUsed] =
       authors.via(
-        Flow[Author].mapAsync(4)(author => addressSystem.lookupEmail(author.handle))
+        Flow[Author].mapAsync(4)(author ⇒ addressSystem.lookupEmail(author.handle))
           .withAttributes(supervisionStrategy(resumingDecider)))
     //#email-addresses-mapAsync-supervision
   }
@@ -276,12 +276,12 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     val emailAddresses: Source[String, NotUsed] =
       authors
-        .mapAsyncUnordered(4)(author => addressSystem.lookupEmail(author.handle))
-        .collect { case Some(emailAddress) => emailAddress }
+        .mapAsyncUnordered(4)(author ⇒ addressSystem.lookupEmail(author.handle))
+        .collect { case Some(emailAddress) ⇒ emailAddress }
 
     val sendEmails: RunnableGraph[NotUsed] =
       emailAddresses
-        .mapAsyncUnordered(4)(address => {
+        .mapAsyncUnordered(4)(address ⇒ {
           emailServer.send(
             Email(to = address, title = "Akka", body = "I like your tweet"))
         })
@@ -308,15 +308,15 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val authors = tweets.filter(_.hashtags.contains(akkaTag)).map(_.author)
 
     val phoneNumbers =
-      authors.mapAsync(4)(author => addressSystem.lookupPhoneNumber(author.handle))
-        .collect { case Some(phoneNo) => phoneNo }
+      authors.mapAsync(4)(author ⇒ addressSystem.lookupPhoneNumber(author.handle))
+        .collect { case Some(phoneNo) ⇒ phoneNo }
 
     //#blocking-mapAsync
     val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
 
     val sendTextMessages: RunnableGraph[NotUsed] =
       phoneNumbers
-        .mapAsync(4)(phoneNo => {
+        .mapAsync(4)(phoneNo ⇒ {
           Future {
             smsServer.send(
               TextMessage(to = phoneNo, body = "I like your tweet"))
@@ -345,12 +345,12 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val authors = tweets.filter(_.hashtags.contains(akkaTag)).map(_.author)
 
     val phoneNumbers =
-      authors.mapAsync(4)(author => addressSystem.lookupPhoneNumber(author.handle))
-        .collect { case Some(phoneNo) => phoneNo }
+      authors.mapAsync(4)(author ⇒ addressSystem.lookupPhoneNumber(author.handle))
+        .collect { case Some(phoneNo) ⇒ phoneNo }
 
     //#blocking-map
     val send = Flow[String]
-      .map { phoneNo =>
+      .map { phoneNo ⇒
         smsServer.send(TextMessage(to = phoneNo, body = "I like your tweet"))
       }
       .withAttributes(ActorAttributes.dispatcher("blocking-dispatcher"))
@@ -381,7 +381,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val timeout = Timeout(3.seconds)
     val saveTweets: RunnableGraph[NotUsed] =
       akkaTweets
-        .mapAsync(4)(tweet => database ? Save(tweet))
+        .mapAsync(4)(tweet ⇒ database ? Save(tweet))
         .to(Sink.ignore)
     //#save-tweets
 
@@ -411,9 +411,9 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
       ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
-      .map(elem => { println(s"before: $elem"); elem })
+      .map(elem ⇒ { println(s"before: $elem"); elem })
       .mapAsync(4)(service.convert)
-      .runForeach(elem => println(s"after: $elem"))
+      .runForeach(elem ⇒ println(s"after: $elem"))
     //#sometimes-slow-mapAsync
 
     probe.expectMsg("after: A")
@@ -443,9 +443,9 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
       ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
-      .map(elem => { println(s"before: $elem"); elem })
+      .map(elem ⇒ { println(s"before: $elem"); elem })
       .mapAsyncUnordered(4)(service.convert)
-      .runForeach(elem => println(s"after: $elem"))
+      .runForeach(elem ⇒ println(s"after: $elem"))
     //#sometimes-slow-mapAsyncUnordered
 
     probe.receiveN(10).toSet should be(Set(

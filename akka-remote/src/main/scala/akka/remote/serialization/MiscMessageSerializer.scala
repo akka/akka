@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.serialization
 
@@ -8,10 +8,12 @@ import java.nio.charset.StandardCharsets
 import java.util.Optional
 import java.util.concurrent.TimeUnit
 
+import akka.Done
 import akka.actor._
 import akka.dispatch.Dispatchers
+import akka.remote.WireFormats.AddressData
 import akka.remote.routing.RemoteRouterConfig
-import akka.remote.{ ContainerFormats, RemoteScope, RemoteWatcher, WireFormats }
+import akka.remote._
 import akka.routing._
 import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
 import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
@@ -43,9 +45,12 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case PoisonPill                           ⇒ ParameterlessSerializedMessage
     case Kill                                 ⇒ ParameterlessSerializedMessage
     case RemoteWatcher.Heartbeat              ⇒ ParameterlessSerializedMessage
+    case Done                                 ⇒ ParameterlessSerializedMessage
     case hbrsp: RemoteWatcher.HeartbeatRsp    ⇒ serializeHeartbeatRsp(hbrsp)
     case rs: RemoteScope                      ⇒ serializeRemoteScope(rs)
     case LocalScope                           ⇒ ParameterlessSerializedMessage
+    case a: Address                           ⇒ serializeAddressData(a)
+    case u: UniqueAddress                     ⇒ serializeClassicUniqueAddress(u)
     case c: Config                            ⇒ serializeConfig(c)
     case dr: DefaultResizer                   ⇒ serializeDefaultResizer(dr)
     case fc: FromConfig                       ⇒ serializeFromConfig(fc)
@@ -132,6 +137,35 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private def serializeConfig(c: Config): Array[Byte] = {
     c.root.render(ConfigRenderOptions.concise()).getBytes(StandardCharsets.UTF_8)
   }
+
+  private def protoForAddressData(address: Address): AddressData.Builder =
+    address match {
+      case Address(protocol, actorSystem, Some(host), Some(port)) ⇒
+        WireFormats.AddressData.newBuilder()
+          .setSystem(actorSystem)
+          .setHostname(host)
+          .setPort(port)
+          .setProtocol(protocol)
+      case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
+    }
+  private def protoForAddress(address: Address): ArteryControlFormats.Address.Builder =
+    address match {
+      case Address(protocol, actorSystem, Some(host), Some(port)) ⇒
+        ArteryControlFormats.Address.newBuilder()
+          .setSystem(actorSystem)
+          .setHostname(host)
+          .setPort(port)
+          .setProtocol(protocol)
+      case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
+    }
+  private def serializeAddressData(address: Address): Array[Byte] =
+    protoForAddressData(address).build().toByteArray
+
+  private def serializeClassicUniqueAddress(uniqueAddress: UniqueAddress): Array[Byte] =
+    ArteryControlFormats.UniqueAddress.newBuilder()
+      .setUid(uniqueAddress.uid)
+      .setAddress(protoForAddress(uniqueAddress.address))
+      .build().toByteArray
 
   private def serializeDefaultResizer(dr: DefaultResizer): Array[Byte] = {
     val builder = WireFormats.DefaultResizer.newBuilder()
@@ -253,6 +287,9 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val PoisonPillManifest = "P"
   private val KillManifest = "K"
   private val RemoteWatcherHBManifest = "RWHB"
+  private val DoneManifest = "DONE"
+  private val AddressManifest = "AD"
+  private val UniqueAddressManifest = "UD"
   private val RemoteWatcherHBRespManifest = "RWHR"
   private val ActorInitializationExceptionManifest = "AIEX"
   private val LocalScopeManifest = "LS"
@@ -281,6 +318,9 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     PoisonPillManifest → ((_) ⇒ PoisonPill),
     KillManifest → ((_) ⇒ Kill),
     RemoteWatcherHBManifest → ((_) ⇒ RemoteWatcher.Heartbeat),
+    DoneManifest → ((_) ⇒ Done),
+    AddressManifest → deserializeAddressData,
+    UniqueAddressManifest → deserializeUniqueAddress,
     RemoteWatcherHBRespManifest → deserializeHeartbeatRsp,
     ActorInitializationExceptionManifest → deserializeActorInitializationException,
     LocalScopeManifest → ((_) ⇒ LocalScope),
@@ -311,6 +351,9 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       case PoisonPill                         ⇒ PoisonPillManifest
       case Kill                               ⇒ KillManifest
       case RemoteWatcher.Heartbeat            ⇒ RemoteWatcherHBManifest
+      case Done                               ⇒ DoneManifest
+      case _: Address                         ⇒ AddressManifest
+      case _: UniqueAddress                   ⇒ UniqueAddressManifest
       case _: RemoteWatcher.HeartbeatRsp      ⇒ RemoteWatcherHBRespManifest
       case LocalScope                         ⇒ LocalScopeManifest
       case _: RemoteScope                     ⇒ RemoteScopeManifest
@@ -382,6 +425,36 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private def deserializeStatusFailure(bytes: Array[Byte]): Status.Failure =
     Status.Failure(payloadSupport.deserializePayload(ContainerFormats.Payload.parseFrom(bytes)).asInstanceOf[Throwable])
 
+  private def deserializeAddressData(bytes: Array[Byte]): Address =
+    addressFromDataProto(WireFormats.AddressData.parseFrom(bytes))
+
+  private def addressFromDataProto(a: WireFormats.AddressData): Address = {
+    Address(
+      a.getProtocol,
+      a.getSystem,
+      // technicaly the presence of hostname and port are guaranteed, see our serializeAddressData
+      if (a.hasHostname) Some(a.getHostname) else None,
+      if (a.hasPort) Some(a.getPort) else None
+    )
+  }
+  private def addressFromProto(a: ArteryControlFormats.Address): Address = {
+    Address(
+      a.getProtocol,
+      a.getSystem,
+      // technicaly the presence of hostname and port are guaranteed, see our serializeAddressData
+      if (a.hasHostname) Some(a.getHostname) else None,
+      if (a.hasPort) Some(a.getPort) else None
+    )
+  }
+
+  private def deserializeUniqueAddress(bytes: Array[Byte]): UniqueAddress = {
+    val u = ArteryControlFormats.UniqueAddress.parseFrom(bytes)
+    UniqueAddress(
+      addressFromProto(u.getAddress),
+      u.getUid
+    )
+  }
+
   private def deserializeHeartbeatRsp(bytes: Array[Byte]): RemoteWatcher.HeartbeatRsp = {
     RemoteWatcher.HeartbeatRsp(ContainerFormats.WatcherHeartbeatResponse.parseFrom(bytes).getUid.toInt)
   }
@@ -436,8 +509,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     BroadcastPool(
       nrOfInstances = bp.getNrOfInstances,
       resizer =
-      if (bp.hasResizer) Some(payloadSupport.deserializePayload(bp.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (bp.hasResizer) Some(payloadSupport.deserializePayload(bp.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (bp.hasRouterDispatcher) bp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
       usePoolDispatcher = bp.getUsePoolDispatcher
     )
@@ -448,8 +521,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     RandomPool(
       nrOfInstances = rp.getNrOfInstances,
       resizer =
-      if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (rp.hasRouterDispatcher) rp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
       usePoolDispatcher = rp.getUsePoolDispatcher
     )
@@ -460,8 +533,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     RoundRobinPool(
       nrOfInstances = rp.getNrOfInstances,
       resizer =
-      if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (rp.hasRouterDispatcher) rp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
       usePoolDispatcher = rp.getUsePoolDispatcher
     )
@@ -472,8 +545,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     ScatterGatherFirstCompletedPool(
       nrOfInstances = sgp.getGeneric.getNrOfInstances,
       resizer =
-      if (sgp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(sgp.getGeneric.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (sgp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(sgp.getGeneric.getResizer).asInstanceOf[Resizer])
+        else None,
       within = deserializeFiniteDuration(sgp.getWithin),
       routerDispatcher =
         if (sgp.getGeneric.hasRouterDispatcher) sgp.getGeneric.getRouterDispatcher
@@ -486,8 +559,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     TailChoppingPool(
       nrOfInstances = tcp.getGeneric.getNrOfInstances,
       resizer =
-      if (tcp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(tcp.getGeneric.getResizer).asInstanceOf[Resizer])
-      else None,
+        if (tcp.getGeneric.hasResizer) Some(payloadSupport.deserializePayload(tcp.getGeneric.getResizer).asInstanceOf[Resizer])
+        else None,
       routerDispatcher = if (tcp.getGeneric.hasRouterDispatcher) tcp.getGeneric.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
       usePoolDispatcher = tcp.getGeneric.getUsePoolDispatcher,
       within = deserializeFiniteDuration(tcp.getWithin),

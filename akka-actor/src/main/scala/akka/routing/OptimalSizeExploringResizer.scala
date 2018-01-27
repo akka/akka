@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.routing
 
@@ -32,7 +32,7 @@ case object OptimalSizeExploringResizer {
   /**
    * INTERNAL API
    */
-  private[routing]type PoolSize = Int
+  private[routing] type PoolSize = Int
 
   /**
    * INTERNAL API
@@ -51,7 +51,7 @@ case object OptimalSizeExploringResizer {
   /**
    * INTERNAL API
    */
-  private[routing]type PerformanceLog = Map[PoolSize, Duration]
+  private[routing] type PerformanceLog = Map[PoolSize, Duration]
 
   def apply(resizerCfg: Config): OptimalSizeExploringResizer =
     DefaultOptimalSizeExploringResizer(

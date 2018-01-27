@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.actor
 
@@ -114,7 +114,7 @@ object TypedActorSpec {
 
     def pigdog = "Pigdog"
 
-    def futurePigdog(): Future[String] = Promise.successful(pigdog).future
+    def futurePigdog(): Future[String] = Future.successful(pigdog)
 
     def futurePigdog(delay: FiniteDuration): Future[String] = {
       Thread.sleep(delay.toMillis)
@@ -123,7 +123,7 @@ object TypedActorSpec {
 
     def futurePigdog(delay: FiniteDuration, numbered: Int): Future[String] = {
       Thread.sleep(delay.toMillis)
-      Promise.successful(pigdog + numbered).future
+      Future.successful(pigdog + numbered)
     }
 
     def futureComposePigdogFrom(foo: Foo): Future[String] = {

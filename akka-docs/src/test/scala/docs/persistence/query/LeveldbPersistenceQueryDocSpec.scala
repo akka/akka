@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package docs.persistence.query
 
@@ -23,13 +23,13 @@ object LeveldbPersistenceQueryDocSpec {
   class MyTaggingEventAdapter extends WriteEventAdapter {
     val colors = Set("green", "black", "blue")
     override def toJournal(event: Any): Any = event match {
-      case s: String =>
-        var tags = colors.foldLeft(Set.empty[String]) { (acc, c) =>
+      case s: String ⇒
+        var tags = colors.foldLeft(Set.empty[String]) { (acc, c) ⇒
           if (s.contains(c)) acc + c else acc
         }
         if (tags.isEmpty) event
         else Tagged(event, tags)
-      case _ => event
+      case _ ⇒ event
     }
 
     override def manifest(event: Any): String = ""

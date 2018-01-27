@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.persistence.journal.leveldb
 
@@ -28,7 +28,7 @@ class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
     if (cfg ne LeveldbStore.emptyConfig) cfg.getConfig("store")
     else context.system.settings.config.getConfig("akka.persistence.journal.leveldb-shared.store")
 
-  def receive = {
+  def receive = receiveCompactionInternal orElse {
     case WriteMessages(messages) ⇒
       // TODO it would be nice to DRY this with AsyncWriteJournal, but this is using
       //      AsyncWriteProxy message protocol

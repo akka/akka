@@ -1,14 +1,11 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster
 
-import scala.collection.immutable.SortedSet
-import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.duration._
 import akka.actor.Props
 import akka.actor.Actor
 import akka.cluster.MemberStatus._
@@ -62,7 +59,6 @@ abstract class NodeLeavingAndExitingSpec
 
         // Verify that 'second' node is set to EXITING
         exitingLatch.await
-
       }
 
       // node that is leaving

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package tutorial_3
 
@@ -24,12 +24,12 @@ class Device(groupId: String, deviceId: String) extends Actor with ActorLogging 
   override def postStop(): Unit = log.info("Device actor {}-{} stopped", groupId, deviceId)
 
   override def receive: Receive = {
-    case RecordTemperature(id, value) =>
+    case RecordTemperature(id, value) ⇒
       log.info("Recorded temperature reading {} with {}", value, id)
       lastTemperatureReading = Some(value)
       sender() ! TemperatureRecorded(id)
 
-    case ReadTemperature(id) =>
+    case ReadTemperature(id) ⇒
       sender() ! RespondTemperature(id, lastTemperatureReading)
   }
 }

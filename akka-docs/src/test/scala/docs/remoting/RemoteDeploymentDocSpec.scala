@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package docs.remoting
 
@@ -13,7 +13,7 @@ import akka.remote.RemoteScope
 object RemoteDeploymentDocSpec {
 
   class SampleActor extends Actor {
-    def receive = { case _ => sender() ! self }
+    def receive = { case _ ⇒ sender() ! self }
   }
 
 }

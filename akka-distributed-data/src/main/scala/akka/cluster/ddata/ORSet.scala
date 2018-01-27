@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster.ddata
 
@@ -36,7 +36,7 @@ object ORSet {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka]type Dot = VersionVector
+  @InternalApi private[akka] type Dot = VersionVector
 
   sealed trait DeltaOp extends ReplicatedDelta with RequiresCausalDeliveryOfDeltas with ReplicatedDataSerialization {
     type T = DeltaOp

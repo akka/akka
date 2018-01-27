@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.javadsl;
 
@@ -932,9 +932,22 @@ public class FlowTest extends StreamTest {
 
   }
 
+  @Test
   public void mustSuitablyOverrideAttributeHandlingMethods() {
     @SuppressWarnings("unused")
     final Flow<Integer, Integer, NotUsed> f =
         Flow.of(Integer.class).withAttributes(Attributes.name("")).addAttributes(Attributes.asyncBoundary()).named("");
+  }
+
+  @Test
+  public void mustBeAbleToUseAlsoTo() {
+    final Flow<Integer, Integer, NotUsed> f = Flow.of(Integer.class).alsoTo(Sink.ignore());
+    final Flow<Integer, Integer, String> f2 = Flow.of(Integer.class).alsoToMat(Sink.ignore(), (i, n) -> "foo");
+  }
+
+  @Test
+  public void mustBeAbleToUseDivertTo() {
+    final Flow<Integer, Integer, NotUsed> f = Flow.of(Integer.class).divertTo(Sink.ignore(), e -> true);
+    final Flow<Integer, Integer, String> f2 = Flow.of(Integer.class).divertToMat(Sink.ignore(), e -> true, (i, n) -> "foo");
   }
 }

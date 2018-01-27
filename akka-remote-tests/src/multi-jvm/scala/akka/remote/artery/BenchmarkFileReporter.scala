@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -19,6 +19,7 @@ import scala.util.Try
  * results can be understood later.
  */
 trait BenchmarkFileReporter {
+  def testName: String
   def reportResults(result: String): Unit
   def close(): Unit
 }
@@ -31,8 +32,10 @@ object BenchmarkFileReporter {
 
   val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss")
 
-  def apply(testName: String, system: ActorSystem): BenchmarkFileReporter =
+  def apply(test: String, system: ActorSystem): BenchmarkFileReporter =
     new BenchmarkFileReporter {
+      override val testName = test
+
       val gitCommit = {
         import sys.process._
         Try("git describe".!!.trim).getOrElse("[unknown]")

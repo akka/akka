@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -180,6 +180,10 @@ private[akka] class CachingConfig(_config: Config) extends Config {
   def getDuration(path: String): java.time.Duration = config.getDuration(path)
 
   def getDurationList(path: String) = config.getDurationList(path)
+
+  def getPeriod(path: String) = config.getPeriod(path)
+
+  def getTemporal(path: String) = config.getTemporal(path)
 
   def getIsNull(path: String): Boolean = config.getIsNull(path)
 

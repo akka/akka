@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -683,6 +683,20 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       filterEvents(EventFilter[ActorInitializationException]()) {
         EventFilter.error(message = "requirement failed: persistenceId is [null] for PersistentActor") intercept {
           val ref = system.actorOf(Props(new NamedPersistentActor(null) {
+            override def receiveRecover: Receive = Actor.emptyBehavior
+
+            override def receiveCommand: Receive = Actor.emptyBehavior
+          }))
+          watch(ref)
+          expectTerminated(ref)
+        }
+      }
+    }
+    "fail fast if persistenceId is an empty string" in {
+      import akka.testkit.filterEvents
+      filterEvents(EventFilter[ActorInitializationException]()) {
+        EventFilter.error(message = "persistenceId cannot be empty for PersistentActor") intercept {
+          val ref = system.actorOf(Props(new NamedPersistentActor("  ") {
             override def receiveRecover: Receive = Actor.emptyBehavior
 
             override def receiveCommand: Receive = Actor.emptyBehavior

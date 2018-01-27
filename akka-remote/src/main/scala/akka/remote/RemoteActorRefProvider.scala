@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -190,16 +190,16 @@ private[akka] class RemoteActorRefProvider(
 
     val internals = Internals(
       remoteDaemon = {
-      val d = new RemoteSystemDaemon(
-        system,
-        local.rootPath / "remote",
-        rootGuardian,
-        remotingTerminator,
-        _log,
-        untrustedMode = remoteSettings.UntrustedMode)
-      local.registerExtraNames(Map(("remote", d)))
-      d
-    },
+        val d = new RemoteSystemDaemon(
+          system,
+          local.rootPath / "remote",
+          rootGuardian,
+          remotingTerminator,
+          _log,
+          untrustedMode = remoteSettings.UntrustedMode)
+        local.registerExtraNames(Map(("remote", d)))
+        d
+      },
       serialization = SerializationExtension(system),
       transport = if (remoteSettings.Artery.Enabled) new ArteryTransport(system, this) else new Remoting(system, this))
 

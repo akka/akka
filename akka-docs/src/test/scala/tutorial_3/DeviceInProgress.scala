@@ -34,7 +34,7 @@ object DeviceInProgress2 {
     override def postStop(): Unit = log.info("Device actor {}-{} stopped", groupId, deviceId)
 
     override def receive: Receive = {
-      case ReadTemperature(id) =>
+      case ReadTemperature(id) ⇒
         sender() ! RespondTemperature(id, lastTemperatureReading)
     }
 

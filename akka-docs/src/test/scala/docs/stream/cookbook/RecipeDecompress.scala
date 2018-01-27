@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
  */
 package docs.stream.cookbook
 
@@ -17,19 +17,17 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class RecipeDecompress extends RecipeSpec {
-  def gzip(s: String): ByteString = {
-    val buf = new ByteArrayOutputStream()
-    val out = new GZIPOutputStream(buf)
-    try out.write(s.getBytes(StandardCharsets.UTF_8)) finally out.close()
-    ByteString(buf.toByteArray)
-  }
-
   "Recipe for decompressing a Gzip stream" must {
     "work" in {
-      val compressed = Source.single(gzip("Hello World"))
-
       //#decompress-gzip
       import akka.stream.scaladsl.Compression
+      //#decompress-gzip
+
+      val compressed =
+        Source.single(ByteString.fromString("Hello World"))
+          .via(Compression.gzip)
+
+      //#decompress-gzip
       val uncompressed = compressed.via(Compression.gunzip())
         .map(_.utf8String)
       //#decompress-gzip

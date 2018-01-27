@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -37,7 +37,8 @@ private[remote] class EnvelopeBufferPool(maximumPayload: Int, maximumBuffers: In
     }
   }
 
-  def release(buffer: EnvelopeBuffer) = if (!availableBuffers.offer(buffer)) buffer.tryCleanDirectByteBuffer()
+  def release(buffer: EnvelopeBuffer) =
+    if (buffer.byteBuffer.isDirect && !availableBuffers.offer(buffer)) buffer.tryCleanDirectByteBuffer()
 
 }
 
@@ -499,4 +500,16 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
   }
 
   def tryCleanDirectByteBuffer(): Unit = DirectByteBufferPool.tryCleanDirectByteBuffer(byteBuffer)
+
+  def copy(): EnvelopeBuffer = {
+    val p = byteBuffer.position()
+    byteBuffer.rewind()
+    val bytes = new Array[Byte](byteBuffer.remaining)
+    byteBuffer.get(bytes)
+    val newByteBuffer = ByteBuffer.wrap(bytes)
+    newByteBuffer.position(p)
+    byteBuffer.position(p)
+    new EnvelopeBuffer(newByteBuffer)
+  }
+
 }

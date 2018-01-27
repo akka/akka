@@ -1,9 +1,8 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster
 
-import java.util.{ ArrayList, Collections }
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
@@ -102,16 +101,24 @@ import scala.util.Random
   /**
    * @return Up to `crossDcConnections` oldest members for each DC
    */
-  lazy val ageSortedTopOldestMembersPerDc: Map[DataCenter, SortedSet[Member]] =
-    // TODO make this recursive and bail early when size reached to make it fast for large clusters
+  lazy val ageSortedTopOldestMembersPerDc: Map[DataCenter, SortedSet[Member]] = {
     latestGossip.members.foldLeft(Map.empty[DataCenter, SortedSet[Member]]) { (acc, member) ⇒
       acc.get(member.dataCenter) match {
         case Some(set) ⇒
-          if (set.size < crossDcConnections) acc + (member.dataCenter → (set + member))
-          else acc
-        case None ⇒ acc + (member.dataCenter → (SortedSet.empty(Member.ageOrdering) + member))
+          if (set.size < crossDcConnections) {
+            acc + (member.dataCenter → (set + member))
+          } else {
+            if (set.exists(member.isOlderThan)) {
+              acc + (member.dataCenter -> (set + member).take(crossDcConnections))
+            } else {
+              acc
+            }
+          }
+        case None ⇒
+          acc + (member.dataCenter → (SortedSet.empty(Member.ageOrdering) + member))
       }
     }
+  }
 
   /**
    * @return true if toAddress should be reachable from the fromDc in general, within a data center
@@ -255,12 +262,12 @@ import scala.util.Random
   }
 
   /**
-   * Choose cross-dc nodes if this one of the N oldest nodes, and if not fall back to gosip locally in the dc
+   * Choose cross-dc nodes if this one of the N oldest nodes, and if not fall back to gossip locally in the dc
    */
   protected def multiDcGossipTargets(state: MembershipState): Vector[UniqueAddress] = {
-    val latestGossip = state.latestGossip
     // only a fraction of the time across data centers
-    if (selectDcLocalNodes()) localDcGossipTargets(state)
+    if (selectDcLocalNodes(state))
+      localDcGossipTargets(state)
     else {
       val nodesPerDc = state.ageSortedTopOldestMembersPerDc
 
@@ -321,7 +328,22 @@ import scala.util.Random
     }
   }
 
-  protected def selectDcLocalNodes(): Boolean = ThreadLocalRandom.current.nextDouble() > crossDcGossipProbability
+  /**
+   * For small DCs prefer cross DC gossip. This speeds up the bootstrapping of
+   * new DCs as adding an initial node means it has no local peers.
+   * Once the DC is at 5 members use the configured crossDcGossipProbability, before
+   * that for a single node cluster use 1.0, two nodes use 0.75 etc
+   */
+  protected def selectDcLocalNodes(state: MembershipState): Boolean = {
+    val localMembers = state.dcMembers.size
+    val probability = if (localMembers > 4)
+      crossDcGossipProbability
+    else {
+      // don't go below the configured probability
+      math.max((5 - localMembers) * 0.25, crossDcGossipProbability)
+    }
+    ThreadLocalRandom.current.nextDouble() > probability
+  }
 
   protected def preferNodesWithDifferentView(state: MembershipState): Boolean =
     ThreadLocalRandom.current.nextDouble() < adjustedGossipDifferentViewProbability(state.latestGossip.members.size)

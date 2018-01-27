@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.actor
 
@@ -39,8 +39,8 @@ class AffinityPoolComparativeBenchmark {
     requireRightNumberOfCores(cores)
 
     val mailboxConf = mailbox match {
-      case "default" => ""
-      case "SingleConsumerOnlyUnboundedMailbox" =>
+      case "default" ⇒ ""
+      case "SingleConsumerOnlyUnboundedMailbox" ⇒
         s"""default-mailbox.mailbox-type = "${classOf[akka.dispatch.SingleConsumerOnlyUnboundedMailbox].getName}""""
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -303,5 +303,18 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       }
     }
 
+  }
+
+  "The ignore sink" should {
+
+    "fail its materialized value on abrupt materializer termination" in {
+      val mat = ActorMaterializer()
+
+      val matVal = Source.maybe[Int].runWith(Sink.ignore)(mat)
+
+      mat.shutdown()
+
+      matVal.failed.futureValue shouldBe a[AbruptStageTerminationException]
+    }
   }
 }

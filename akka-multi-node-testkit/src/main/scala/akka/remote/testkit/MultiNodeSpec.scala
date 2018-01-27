@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.testkit
 
@@ -8,12 +8,12 @@ import java.net.{ InetAddress, InetSocketAddress }
 
 import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
 
-import scala.concurrent.{ Await, Awaitable, Future }
+import scala.concurrent.{ Await, Awaitable }
 import scala.util.control.NonFatal
 import scala.collection.immutable
 import akka.actor._
 import akka.util.Timeout
-import akka.remote.testconductor.{ RoleName, TestConductor, TestConductorExt }
+import akka.remote.testconductor.{ TestConductor, TestConductorExt }
 import akka.testkit._
 import akka.testkit.TestKit
 import akka.testkit.TestEvent._
@@ -22,6 +22,8 @@ import scala.concurrent.duration._
 import akka.remote.testconductor.RoleName
 import akka.actor.RootActorPath
 import akka.event.{ Logging, LoggingAdapter }
+import akka.remote.RemoteTransportException
+import org.jboss.netty.channel.ChannelException
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -215,6 +217,7 @@ object MultiNodeSpec {
         loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
+        coordinated-shutdown.terminate-actor-system = off
         coordinated-shutdown.run-by-jvm-shutdown-hook = off
         actor {
           default-dispatcher {
@@ -267,7 +270,18 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     this(config.myself, actorSystemCreator(ConfigFactory.load(config.config)), config.roles, config.deployments)
 
   def this(config: MultiNodeConfig) =
-    this(config, config ⇒ ActorSystem(MultiNodeSpec.getCallerName(classOf[MultiNodeSpec]), config))
+    this(config, {
+      val name = MultiNodeSpec.getCallerName(classOf[MultiNodeSpec])
+      config ⇒
+        try {
+          ActorSystem(name, config)
+        } catch {
+          // Retry creating the system once as when using port = 0 two systems may try and use the same one.
+          // RTE is for aeron, CE for netty
+          case _: RemoteTransportException ⇒ ActorSystem(name, config)
+          case _: ChannelException         ⇒ ActorSystem(name, config)
+        }
+    })
 
   val log: LoggingAdapter = Logging(system, this.getClass)
 
@@ -275,7 +289,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost
    * enclosing `within` block or QueryTimeout.
    */
-  implicit def awaitHelper[T](w: Awaitable[T]) = new AwaitHelper(w)
+  implicit def awaitHelper[T](w: Awaitable[T]): AwaitHelper[T] = new AwaitHelper(w)
   class AwaitHelper[T](w: Awaitable[T]) {
     def await: T = Await.result(w, remainingOr(testConductor.Settings.QueryTimeout.duration))
   }
@@ -289,17 +303,17 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     if (selfIndex == 0) {
       testConductor.removeNode(myself)
       within(testConductor.Settings.BarrierTimeout.duration) {
-        awaitCond {
+        awaitCond({
           // Await.result(testConductor.getNodes, remaining).filterNot(_ == myself).isEmpty
-          testConductor.getNodes.await.filterNot(_ == myself).isEmpty
-        }
+          testConductor.getNodes.await.forall(_ == myself)
+        }, message = s"Nodes not shutdown: ${testConductor.getNodes.await}")
       }
     }
-    shutdown(system)
+    shutdown(system, duration = shutdownTimeout)
     afterTermination()
   }
 
-  def shutdownTimeout: FiniteDuration = 5.seconds.dilated
+  def shutdownTimeout: FiniteDuration = 15.seconds.dilated
 
   /**
    * Override this and return `true` to assert that the

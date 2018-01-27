@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.testkit
 
@@ -24,7 +24,7 @@ object TestActors {
    */
   class BlackholeActor extends Actor {
     override def receive = {
-      case _ ⇒ // ignore... 
+      case _ ⇒ // ignore...
     }
   }
 

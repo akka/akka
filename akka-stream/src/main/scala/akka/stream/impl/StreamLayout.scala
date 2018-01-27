@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl
 
@@ -302,7 +302,7 @@ import scala.util.control.NonFatal
  * defers to the upstream that is connected during materialization. This would
  * be trivial if it were not for materialized value computations that may even
  * spawn the code that does `pub.subscribe(sub)` in a Future, running concurrently
- * with the actual materialization. Therefore we implement a minimial shell here
+ * with the actual materialization. Therefore we implement a minimal shell here
  * that plugs the downstream and the upstream together as soon as both are known.
  * Using a VirtualProcessor would technically also work, but it would defeat the
  * purpose of subscription timeouts—the subscription would always already be
@@ -321,12 +321,16 @@ import scala.util.control.NonFatal
     requireNonNullSubscriber(subscriber)
     @tailrec def rec(): Unit = {
       get() match {
-        case null ⇒ if (!compareAndSet(null, subscriber)) rec()
+        case null ⇒
+          if (!compareAndSet(null, subscriber)) rec() // retry
+
         case pub: Publisher[_] ⇒
           if (compareAndSet(pub, Inert.subscriber)) {
             pub.asInstanceOf[Publisher[T]].subscribe(subscriber)
-          } else rec()
-        case _: Subscriber[_] ⇒ rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
+          } else rec() // retry
+
+        case _: Subscriber[_] ⇒
+          rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
       }
     }
     rec() // return value is boolean only to make the expressions above compile
@@ -334,14 +338,21 @@ import scala.util.control.NonFatal
 
   @tailrec final def registerPublisher(pub: Publisher[_]): Unit =
     get() match {
-      case null ⇒ if (!compareAndSet(null, pub)) registerPublisher(pub)
+      case null ⇒
+        if (!compareAndSet(null, pub)) registerPublisher(pub) // retry
+
       case sub: Subscriber[r] ⇒
         set(Inert.subscriber)
         pub.asInstanceOf[Publisher[r]].subscribe(sub)
-      case _ ⇒ throw new IllegalStateException("internal error")
+
+      case p: Publisher[_] ⇒
+        throw new IllegalStateException(s"internal error, already registered [$p], yet attempted to register 2nd publisher [$pub]!")
+
+      case unexpected ⇒
+        throw new IllegalStateException(s"internal error, unexpected state: $unexpected")
     }
 
-  override def toString: String = s"VirtualProcessor(state = ${get()})"
+  override def toString: String = s"VirtualPublisher(state = ${get()})"
 }
 
 /**

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -17,6 +17,8 @@ import akka.testkit.EventFilter
 import scala.collection.immutable
 import java.util
 import java.util.stream.BaseStream
+
+import akka.stream.testkit.scaladsl.TestSink
 
 class SourceSpec extends StreamSpec with DefaultTimeout {
 
@@ -141,6 +143,45 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       out.expectComplete()
     }
 
+    "combine from two inputs with combinedMat and take a materialized value" in {
+      val queueSource = Source.queue[Int](1, OverflowStrategy.dropBuffer)
+      val intSeqSource = Source(1 to 3)
+
+      // compiler to check the correct materialized value of type = SourceQueueWithComplete[Int] available
+      val combined1: Source[Int, SourceQueueWithComplete[Int]] =
+        Source.combineMat(queueSource, intSeqSource)(Concat(_))(Keep.left) //Keep.left (i.e. preserve queueSource's materialized value)
+
+      val (queue1, sinkProbe1) = combined1.toMat(TestSink.probe[Int])(Keep.both).run()
+      sinkProbe1.request(6)
+      queue1.offer(10)
+      queue1.offer(20)
+      queue1.offer(30)
+      queue1.complete() //complete queueSource so that combined1 with `Concat` then pulls elements from intSeqSource
+      sinkProbe1.expectNext(10)
+      sinkProbe1.expectNext(20)
+      sinkProbe1.expectNext(30)
+      sinkProbe1.expectNext(1)
+      sinkProbe1.expectNext(2)
+      sinkProbe1.expectNext(3)
+
+      // compiler to check the correct materialized value of type = SourceQueueWithComplete[Int] available
+      val combined2: Source[Int, SourceQueueWithComplete[Int]] =
+        //queueSource to be the second of combined source
+        Source.combineMat(intSeqSource, queueSource)(Concat(_))(Keep.right) //Keep.right (i.e. preserve queueSource's materialized value)
+
+      val (queue2, sinkProbe2) = combined2.toMat(TestSink.probe[Int])(Keep.both).run()
+      sinkProbe2.request(6)
+      queue2.offer(10)
+      queue2.offer(20)
+      queue2.offer(30)
+      queue2.complete() //complete queueSource so that combined1 with `Concat` then pulls elements from queueSource
+      sinkProbe2.expectNext(1) //as intSeqSource iss the first in combined source, elements from intSeqSource come first
+      sinkProbe2.expectNext(2)
+      sinkProbe2.expectNext(3)
+      sinkProbe2.expectNext(10) //after intSeqSource run out elements, queueSource elements come
+      sinkProbe2.expectNext(20)
+      sinkProbe2.expectNext(30)
+    }
   }
 
   "Repeat Source" must {
@@ -167,11 +208,11 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       EventFilter[RuntimeException](message = "expected", occurrences = 1) intercept
         whenReady(
           Source.unfold((0, 1)) {
-          case (a, _) if a > 10000000 ⇒ throw t
-          case (a, b)                 ⇒ Some((b, a + b) → a)
-        }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }.failed) {
-          _ should be theSameInstanceAs (t)
-        }
+            case (a, _) if a > 10000000 ⇒ throw t
+            case (a, b)                 ⇒ Some((b, a + b) → a)
+          }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }.failed) {
+            _ should be theSameInstanceAs (t)
+          }
     }
 
     "generate a finite fibonacci sequence asynchronously" in {

@@ -1,28 +1,31 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl
 
+import java.util.concurrent.CompletionStage
+
+import akka.Done
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.OverflowStrategies._
 import akka.stream._
 import akka.stream.stage._
 import akka.stream.scaladsl.SourceQueueWithComplete
-import akka.Done
-import java.util.concurrent.CompletionStage
-
-import akka.annotation.InternalApi
-
-import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] object QueueSource {
+
   sealed trait Input[+T]
   final case class Offer[+T](elem: T, promise: Promise[QueueOfferResult]) extends Input[T]
   case object Completion extends Input[Nothing]
   final case class Failure(ex: Throwable) extends Input[Nothing]
+
 }
 
 /**
@@ -36,22 +39,18 @@ import scala.compat.java8.FutureConverters._
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val completion = Promise[Done]
-    val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Input[T]] with OutHandler {
+
+    val stageLogic = new GraphStageLogic(shape) with OutHandler with SourceQueueWithComplete[T] {
       var buffer: Buffer[T] = _
       var pendingOffer: Option[Offer[T]] = None
       var terminating = false
 
       override def preStart(): Unit = {
         if (maxBuffer > 0) buffer = Buffer(maxBuffer, materializer)
-        initCallback(callback.invoke)
       }
       override def postStop(): Unit = {
         val exception = new StreamDetachedException()
         completion.tryFailure(exception)
-        stopCallback {
-          case Offer(elem, promise) ⇒ promise.failure(exception)
-          case _                    ⇒ // ignore
-        }
       }
 
       private def enqueueAndSuccess(offer: Offer[T]): Unit = {
@@ -75,7 +74,7 @@ import scala.compat.java8.FutureConverters._
           case DropNew ⇒
             offer.promise.success(QueueOfferResult.Dropped)
           case Fail ⇒
-            val bufferOverflowException = new BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
+            val bufferOverflowException = BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
             offer.promise.success(QueueOfferResult.Failure(bufferOverflowException))
             completion.failure(bufferOverflowException)
             failStage(bufferOverflowException)
@@ -89,8 +88,7 @@ import scala.compat.java8.FutureConverters._
         }
       }
 
-      private val callback: AsyncCallback[Input[T]] = getAsyncCallback {
-
+      private val callback = getAsyncCallback[Input[T]] {
         case offer @ Offer(elem, promise) ⇒
           if (maxBuffer != 0) {
             bufferElem(offer)
@@ -107,7 +105,7 @@ import scala.compat.java8.FutureConverters._
             case DropTail | DropNew ⇒
               promise.success(QueueOfferResult.Dropped)
             case Fail ⇒
-              val bufferOverflowException = new BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
+              val bufferOverflowException = BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
               promise.success(QueueOfferResult.Failure(bufferOverflowException))
               completion.failure(bufferOverflowException)
               failStage(bufferOverflowException)
@@ -131,7 +129,7 @@ import scala.compat.java8.FutureConverters._
 
       override def onDownstreamFinish(): Unit = {
         pendingOffer match {
-          case Some(Offer(elem, promise)) ⇒
+          case Some(Offer(_, promise)) ⇒
             promise.success(QueueOfferResult.QueueClosed)
             pendingOffer = None
           case None ⇒ // do nothing
@@ -167,22 +165,22 @@ import scala.compat.java8.FutureConverters._
           }
         }
       }
-    }
 
-    (stageLogic, new SourceQueueWithComplete[T] {
+      // SourceQueueWithComplete impl
       override def watchCompletion() = completion.future
       override def offer(element: T): Future[QueueOfferResult] = {
         val p = Promise[QueueOfferResult]
-        stageLogic.invoke(Offer(element, p))
+        callback.invokeWithFeedback(Offer(element, p))
+          .onFailure { case NonFatal(e) ⇒ p.tryFailure(e) }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }
-      override def complete(): Unit = {
-        stageLogic.invoke(Completion)
-      }
-      override def fail(ex: Throwable): Unit = {
-        stageLogic.invoke(Failure(ex))
-      }
-    })
+      override def complete(): Unit = callback.invoke(Completion)
+
+      override def fail(ex: Throwable): Unit = callback.invoke(Failure(ex))
+
+    }
+
+    (stageLogic, stageLogic)
   }
 }
 

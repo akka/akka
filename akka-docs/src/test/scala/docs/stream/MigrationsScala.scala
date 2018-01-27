@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package docs.stream
 
@@ -15,7 +15,7 @@ class MigrationsScala extends AkkaSpec {
         Flow[Int].expand(Iterator.continually(_))
         //#expand-continually
         //#expand-state
-        Flow[Int].expand(i => {
+        Flow[Int].expand(i ⇒ {
           var state = 0
           Iterator.continually({
             state += 1

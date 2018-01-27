@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -17,8 +17,10 @@ import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
+import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
+
 import akka.Done
 import akka.NotUsed
 import akka.actor._
@@ -27,12 +29,7 @@ import akka.actor.Cancellable
 import akka.actor.Props
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.remote.AddressUidExtension
-import akka.remote.RemoteActorRef
-import akka.remote.RemoteActorRefProvider
-import akka.remote.RemoteTransport
-import akka.remote.ThisActorSystemQuarantinedEvent
-import akka.remote.UniqueAddress
+import akka.remote._
 import akka.remote.artery.AeronSource.ResourceLifecycle
 import akka.remote.artery.ArteryTransport.ShuttingDown
 import akka.remote.artery.Encoder.OutboundCompressionAccess
@@ -60,10 +57,12 @@ import io.aeron.driver.MediaDriver
 import io.aeron.driver.ThreadingMode
 import io.aeron.exceptions.ConductorServiceTimeoutException
 import io.aeron.exceptions.DriverTimeoutException
-import org.agrona.ErrorHandler
-import org.agrona.IoUtil
+import org.agrona.{ DirectBuffer, ErrorHandler, IoUtil }
 import org.agrona.concurrent.BackoffIdleStrategy
 import akka.remote.artery.Decoder.InboundCompressionAccess
+import io.aeron.status.ChannelEndpointStatus
+import org.agrona.collections.IntObjConsumer
+import org.agrona.concurrent.status.CountersReader.MetaData
 
 /**
  * INTERNAL API
@@ -304,6 +303,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private[this] val mediaDriver = new AtomicReference[Option[MediaDriver]](None)
   @volatile private[this] var aeron: Aeron = _
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
+  @volatile private[this] var aeronCounterTask: Cancellable = _
   @volatile private[this] var areonErrorLog: AeronErrorLog = _
 
   override val log: LoggingAdapter = Logging(system, getClass.getName)
@@ -358,6 +358,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .insert(Array("system", "remote-watcher"), NotUsed)
       // these belongs to cluster and should come from there
       .insert(Array("system", "cluster", "core", "daemon", "heartbeatSender"), NotUsed)
+      .insert(Array("system", "cluster", "core", "daemon", "crossDcHeartbeatSender"), NotUsed)
       .insert(Array("system", "cluster", "heartbeatReceiver"), NotUsed)
 
   private def inboundChannel = s"aeron:udp?endpoint=${_bindAddress.address.host.get}:${_bindAddress.address.port.get}"
@@ -404,15 +405,20 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       priorityMessageDestinations,
       outboundEnvelopePool))
 
-  override def settings = provider.remoteSettings.Artery
+  override def settings: ArterySettings = provider.remoteSettings.Artery
 
   override def start(): Unit = {
-    Runtime.getRuntime.addShutdownHook(shutdownHook)
+    if (system.settings.JvmShutdownHooks)
+      Runtime.getRuntime.addShutdownHook(shutdownHook)
+
     startMediaDriver()
     startAeron()
     topLevelFREvents.loFreq(Transport_AeronStarted, NoMetaData)
     startAeronErrorLog()
     topLevelFREvents.loFreq(Transport_AeronErrorLogStarted, NoMetaData)
+    if (settings.LogAeronCounters) {
+      startAeronCounterLog()
+    }
     taskRunner.start()
     topLevelFREvents.loFreq(Transport_TaskRunnerStarted, NoMetaData)
 
@@ -448,6 +454,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     topLevelFREvents.loFreq(Transport_MaterializerStarted, NoMetaData)
 
     runInboundStreams()
+    blockUntilChannelActive()
     topLevelFREvents.loFreq(Transport_StartupFinished, NoMetaData)
 
     log.info("Remoting started; listening on address: [{}] with UID [{}]", localAddress.address, localAddress.uid)
@@ -528,7 +535,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     val maybeDriver = mediaDriver.getAndSet(None)
     maybeDriver.foreach { driver ⇒
       // this is only for embedded media driver
-      driver.close()
+      try driver.close() catch {
+        case NonFatal(e) ⇒
+          // don't think driver.close will ever throw, but just in case
+          log.warning("Couldn't close Aeron embedded media driver due to [{}]", e.getMessage)
+      }
 
       try {
         if (settings.Advanced.DeleteAeronDirectory) {
@@ -592,6 +603,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
               cause.getMessage)
             taskRunner.stop()
             aeronErrorLogTask.cancel()
+            if (settings.LogAeronCounters) aeronCounterTask.cancel()
             system.terminate()
             throw new AeronTerminated(cause)
           }
@@ -604,6 +616,46 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     aeron = Aeron.connect(ctx)
   }
 
+  private def blockUntilChannelActive(): Unit = {
+    val counterIdForInboundChannel = findCounterId(s"rcv-channel: $inboundChannel")
+    val waitInterval = 200
+    val retries = math.max(1, settings.Bind.BindTimeout.toMillis / waitInterval)
+    retry(retries)
+
+    @tailrec def retry(retries: Long): Unit = {
+      val status = aeron.countersReader().getCounterValue(counterIdForInboundChannel)
+      if (status == ChannelEndpointStatus.ACTIVE) {
+        log.debug("Inbound channel is now active")
+      } else if (status == ChannelEndpointStatus.ERRORED) {
+        areonErrorLog.logErrors(log, 0L)
+        stopMediaDriver()
+        throw new RemoteTransportException("Inbound Aeron channel is in errored state. See Aeron logs for details.")
+      } else if (status == ChannelEndpointStatus.INITIALIZING && retries > 0) {
+        Thread.sleep(waitInterval)
+        retry(retries - 1)
+      } else {
+        areonErrorLog.logErrors(log, 0L)
+        stopMediaDriver()
+        throw new RemoteTransportException("Timed out waiting for Aeron transport to bind. See Aeoron logs.")
+      }
+    }
+  }
+
+  private def findCounterId(label: String): Int = {
+    var counterId = -1
+    aeron.countersReader().forEach(new IntObjConsumer[String] {
+      def accept(i: Int, l: String): Unit = {
+        if (label == l)
+          counterId = i
+      }
+    })
+    if (counterId == -1) {
+      throw new RuntimeException(s"Unable to found counterId for label: $label")
+    } else {
+      counterId
+    }
+  }
+
   // TODO Add FR Events
   private def startAeronErrorLog(): Unit = {
     areonErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE), log)
@@ -613,6 +665,20 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       if (!isShutdown) {
         val newLastTimestamp = areonErrorLog.logErrors(log, lastTimestamp.get)
         lastTimestamp.set(newLastTimestamp + 1)
+      }
+    }
+  }
+
+  private def startAeronCounterLog(): Unit = {
+    import system.dispatcher
+    aeronCounterTask = system.scheduler.schedule(5.seconds, 5.seconds) {
+      if (!isShutdown && log.isDebugEnabled) {
+        aeron.countersReader.forEach(new MetaData() {
+          def accept(counterId: Int, typeId: Int, keyBuffer: DirectBuffer, label: String): Unit = {
+            val value = aeron.countersReader().getCounterValue(counterId)
+            log.debug("Aeron Counter {}: {} {}]", counterId, value, label)
+          }
+        })
       }
     }
   }
@@ -730,6 +796,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           aeronSource(ordinaryStreamId, envelopeBufferPool)
             .via(hubKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
+            .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
 
         // Select lane based on destination to preserve message order,
         // Also include the uid of the sending system in the hash to spread
@@ -742,7 +809,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
               val hashA = 23 + a
               val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
               math.abs(hash) % inboundLanes
-            case OptionVal.None ⇒ 0
+            case OptionVal.None ⇒
+              // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
+              env.lane
           }
         }
 
@@ -759,13 +828,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           }(collection.breakOut)
 
         import system.dispatcher
-        val completed = Future.sequence(completedValues).map(_ ⇒ Done)
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
-        completed.failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
+        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
 
-        (resourceLife, compressionAccess, completed)
+        val allCompleted = Future.sequence(completedValues).map(_ ⇒ Done)
+
+        (resourceLife, compressionAccess, allCompleted)
       }
 
     _inboundCompressionAccess = OptionVal(inboundCompressionAccesses)
@@ -810,6 +880,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def shutdown(): Future[Done] = {
     if (hasBeenShutdown.compareAndSet(false, true)) {
       log.debug("Shutting down [{}]", localAddress)
+      if (system.settings.JvmShutdownHooks)
+        Try(Runtime.getRuntime.removeShutdownHook(shutdownHook)) // may throw if shutdown already in progress
       val allAssociations = associationRegistry.allAssociations
       val flushing: Future[Done] =
         if (allAssociations.isEmpty) Future.successful(Done)

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -81,18 +81,25 @@ class FutureFlattenSourceSpec extends StreamSpec {
     "handle downstream cancelling before the underlying Future completes" in assertAllStagesStopped {
       val sourcePromise = Promise[Source[Int, String]]()
 
-      val (sourceMatVal, termination) =
+      val probe = TestSubscriber.probe[Int]()
+      val sourceMatVal =
         Source.fromFutureSource(sourcePromise.future)
-          .watchTermination()(Keep.both)
-          .to(Sink.cancelled)
+          .toMat(Sink.fromSubscriber(probe))(Keep.left)
           .run()
 
       // wait for cancellation to occur
-      termination.futureValue should ===(Done)
+      probe.ensureSubscription()
+      probe.request(1)
+      probe.cancel()
+
+      // try to avoid a race between probe cancel and completing the promise
+      Thread.sleep(100)
 
       // even though canceled the underlying matval should arrive
       sourcePromise.success(underlying)
-      sourceMatVal.futureValue should ===("foo")
+      val failure = sourceMatVal.failed.futureValue
+      failure shouldBe a[StreamDetachedException]
+      failure.getMessage should ===("Stream cancelled before Source Future completed")
     }
 
     "fail if the underlying Future is failed" in assertAllStagesStopped {

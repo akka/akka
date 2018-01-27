@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl
 
@@ -73,6 +73,9 @@ private[akka] object Buffer {
     def used: Int = (writeIdx - readIdx).toInt
 
     def isFull: Boolean = used == capacity
+    def nonFull: Boolean = used < capacity
+    def remainingCapacity: Int = capacity - used
+
     def isEmpty: Boolean = used == 0
     def nonEmpty: Boolean = used != 0
 

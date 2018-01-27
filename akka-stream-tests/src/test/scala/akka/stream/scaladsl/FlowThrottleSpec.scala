@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -29,7 +29,7 @@ class FlowThrottleSpec extends StreamSpec {
     }
 
     "accept very high rates" in Utils.assertAllStagesStopped {
-      Source(1 to 5).throttle(1, 1.nanos, 0, ThrottleMode.Shaping)
+      Source(1 to 5).throttle(1, 1.nanos, 0, Shaping)
         .runWith(TestSink.probe[Int])
         .request(5)
         .expectNext(1, 2, 3, 4, 5)
@@ -37,7 +37,7 @@ class FlowThrottleSpec extends StreamSpec {
     }
 
     "accept very low rates" in Utils.assertAllStagesStopped {
-      Source(1 to 5).throttle(1, 100.days, 1, ThrottleMode.Shaping)
+      Source(1 to 5).throttle(1, 100.days, 1, Shaping)
         .runWith(TestSink.probe[Int])
         .request(5)
         .expectNext(1)
@@ -124,10 +124,6 @@ class FlowThrottleSpec extends StreamSpec {
       (1 to 5) foreach upstream.sendNext
       downstream.receiveWithin(300.millis, 5) should be(1 to 5)
 
-      downstream.request(1)
-      upstream.sendNext(6)
-      downstream.expectNoMsg(100.millis)
-      downstream.expectNext(6)
       downstream.request(5)
       downstream.expectNoMsg(1200.millis)
       for (i ← 7 to 11) upstream.sendNext(i)

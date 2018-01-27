@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.annotation.InternalApi
 import akka.routing._
 import akka.util.WildcardIndex
 import com.typesafe.config._

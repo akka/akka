@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster.protobuf
 
@@ -35,9 +35,9 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
   import MemberStatus._
 
-  val a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Joining, Set.empty)
+  val a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Joining, Set.empty[String])
   val b1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, Set("r1"))
-  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, Set.empty, "foo")
+  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, Set.empty[String], "foo")
   val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Exiting, Set("r1"), "foo")
   val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Down, Set("r3"))
   val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("r3"), "foo")
@@ -49,7 +49,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       val uniqueAddress = UniqueAddress(address, 17L)
       val address2 = Address("akka.tcp", "system", "other.host.org", 4711)
       val uniqueAddress2 = UniqueAddress(address2, 18L)
-      checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("foo", "bar")))
+      checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A")))
       checkSerialization(ClusterUserAction.Leave(address))
       checkSerialization(ClusterUserAction.Down(address))
       checkSerialization(InternalClusterAction.InitJoin)
@@ -115,10 +115,15 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
     }
 
-    "add a default data center role if none is present" in {
+    "add a default data center role to gossip if none is present" in {
       val env = roundtrip(GossipEnvelope(a1.uniqueAddress, d1.uniqueAddress, Gossip(SortedSet(a1, d1))))
       env.gossip.members.head.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
       env.gossip.members.tail.head.roles should be(Set("r1", ClusterSettings.DcRolePrefix + "foo"))
+    }
+
+    "add a default data center role to internal join action if none is present" in {
+      val join = roundtrip(InternalClusterAction.Join(a1.uniqueAddress, Set()))
+      join.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
     }
   }
   "Cluster router pool" must {

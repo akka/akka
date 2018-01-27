@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -188,3 +188,10 @@ trait Cancellable {
   def isCancelled: Boolean
 }
 //#cancellable
+
+object Cancellable {
+  val alreadyCancelled: Cancellable = new Cancellable {
+    def cancel(): Boolean = false
+    def isCancelled: Boolean = true
+  }
+}

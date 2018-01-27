@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -51,7 +51,7 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
   "pattern.after" must {
     "be completed successfully eventually" in {
       // TODO after is unfortunately shadowed by ScalaTest, fix as part of #3759
-      val f = akka.pattern.after(1 second, using = system.scheduler)(Promise.successful(5).future)
+      val f = akka.pattern.after(1 second, using = system.scheduler)(Future.successful(5))
 
       val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
       Await.result(r, remainingOrDefault) should ===(5)
@@ -59,7 +59,7 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
 
     "be completed abnormally eventually" in {
       // TODO after is unfortunately shadowed by ScalaTest, fix as part of #3759
-      val f = akka.pattern.after(1 second, using = system.scheduler)(Promise.failed(new IllegalStateException("Mexico")).future)
+      val f = akka.pattern.after(1 second, using = system.scheduler)(Future.failed(new IllegalStateException("Mexico")))
 
       val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
       intercept[IllegalStateException] { Await.result(r, remainingOrDefault) }.getMessage should ===("Mexico")

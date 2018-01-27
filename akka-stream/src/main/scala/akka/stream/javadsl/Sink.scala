@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.javadsl
 
@@ -9,7 +9,7 @@ import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
-import akka.stream.impl.{ LinearTraversalBuilder, SinkQueueAdapter, StreamLayout }
+import akka.stream.impl.{ LinearTraversalBuilder, SinkQueueAdapter }
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -322,20 +322,18 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
     new Sink(delegate.mapMaterializedValue(f.apply _))
 
   /**
-   * Change the attributes of this [[Sink]] to the given ones and seal the list
-   * of attributes. This means that further calls will not be able to remove these
-   * attributes, but instead add new ones. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Replace the attributes of this [[Sink]] with the given ones. If this Sink is a composite
+   * of multiple graphs, new attributes on the composite will be less specific than attributes
+   * set directly on the individual graphs of the composite.
    */
   override def withAttributes(attr: Attributes): javadsl.Sink[In, Mat] =
     new Sink(delegate.withAttributes(attr))
 
   /**
-   * Add the given attributes to this Sink. Further calls to `withAttributes`
-   * will not remove these attributes. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Add the given attributes to this [[Sink]]. If the specific attribute was already present
+   * on this graph this means the added attribute will be more specific than the existing one.
+   * If this Sink is a composite of multiple graphs, new attributes on the composite will be
+   * less specific than attributes set directly on the individual graphs of the composite.
    */
   override def addAttributes(attr: Attributes): javadsl.Sink[In, Mat] =
     new Sink(delegate.addAttributes(attr))
@@ -351,5 +349,22 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
    */
   override def async: javadsl.Sink[In, Mat] =
     new Sink(delegate.async)
+
+  /**
+   * Put an asynchronous boundary around this `Sink`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): javadsl.Sink[In, Mat] =
+    new Sink(delegate.async(dispatcher))
+
+  /**
+   * Put an asynchronous boundary around this `Sink`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): javadsl.Sink[In, Mat] =
+    new Sink(delegate.async(dispatcher, inputBufferSize))
 
 }

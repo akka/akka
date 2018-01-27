@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -11,7 +11,10 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
 import akka.actor.ActorSelection
 
-class RemoteSendConsistencySpec extends AbstractRemoteSendConsistencySpec(ArterySpecSupport.defaultConfig)
+class RemoteSendConsistencyWithOneLaneSpec extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
+      akka.remote.artery.advanced.outbound-lanes = 1
+      akka.remote.artery.advanced.inbound-lanes = 1
+    """).withFallback(ArterySpecSupport.defaultConfig))
 
 class RemoteSendConsistencyWithThreeLanesSpec extends AbstractRemoteSendConsistencySpec(
   ConfigFactory.parseString("""

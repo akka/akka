@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster.ddata
 
@@ -9,7 +9,7 @@ object Key {
    */
   def unapply(k: Key[_]): Option[String] = Some(k.id)
 
-  private[akka]type KeyR = Key[ReplicatedData]
+  private[akka] type KeyR = Key[ReplicatedData]
 
   type KeyId = String
 

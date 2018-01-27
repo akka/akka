@@ -1,8 +1,9 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster
 
+import akka.actor.ActorSystem
 import akka.cluster.ClusterEvent._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
@@ -10,13 +11,8 @@ import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
-import akka.actor.ActorSystem
-import akka.actor.Props
-import akka.actor.Actor
-import akka.actor.Deploy
-import akka.actor.RootActorPath
 import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -29,6 +25,7 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
     """
       akka.loglevel = DEBUG
       akka.cluster.debug.verbose-heartbeat-logging = on
+      akka.cluster.debug.verbose-gossip-logging = on
       akka.remote.netty.tcp.connection-timeout = 5 s # speedup in case of connection issue
       akka.remote.retry-gate-closed-for = 1 s
       akka.cluster.multi-data-center {
@@ -38,7 +35,7 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
         }
       }
       akka.cluster {
-        gossip-interval                     = 1s
+        gossip-interval                     = 500ms
         leader-actions-interval             = 1s
         auto-down-unreachable-after = 1s
       }
@@ -73,8 +70,8 @@ abstract class MultiDcSplitBrainSpec
   val dc2 = List(third, fourth, fifth)
   var barrierCounter = 0
 
-  def splitDataCenters(notMembers: Set[RoleName]): Unit = {
-    val memberNodes = (dc1 ++ dc2).filterNot(notMembers)
+  def splitDataCenters(doNotVerify: Set[RoleName]): Unit = {
+    val memberNodes = (dc1 ++ dc2).filterNot(doNotVerify)
     val probe = TestProbe()
     runOn(memberNodes: _*) {
       cluster.subscribe(probe.ref, classOf[DataCenterReachabilityEvent])
@@ -149,7 +146,7 @@ abstract class MultiDcSplitBrainSpec
 
     "be able to have a data center member join while there is inter data center split" in within(20.seconds) {
       // introduce a split between data centers
-      splitDataCenters(notMembers = Set(fourth, fifth))
+      splitDataCenters(doNotVerify = Set(fourth, fifth))
 
       runOn(fourth) {
         cluster.join(third)
@@ -176,8 +173,10 @@ abstract class MultiDcSplitBrainSpec
       enterBarrier("inter-data-center-split-1-done")
     }
 
+    // fifth is still not a member of the cluster
+
     "be able to have data center member leave while there is inter data center split" in within(20.seconds) {
-      splitDataCenters(notMembers = Set(fifth))
+      splitDataCenters(doNotVerify = Set(fifth))
 
       runOn(fourth) {
         cluster.leave(fourth)
@@ -196,13 +195,16 @@ abstract class MultiDcSplitBrainSpec
       enterBarrier("inter-data-center-split-2-done")
     }
 
-    "be able to have data center member restart (same host:port) while there is inter data center split" in within(40.seconds) {
+    // forth has left the cluster, fifth is still not a member
+
+    "be able to have data center member restart (same host:port) while there is inter data center split" in within(60.seconds) {
       val subscribeProbe = TestProbe()
       runOn(first, second, third, fifth) {
         Cluster(system).subscribe(subscribeProbe.ref, InitialStateAsSnapshot, classOf[MemberUp], classOf[MemberRemoved])
         subscribeProbe.expectMsgType[CurrentClusterState]
       }
       enterBarrier("subscribed")
+
       runOn(fifth) {
         Cluster(system).join(third)
       }
@@ -215,16 +217,18 @@ abstract class MultiDcSplitBrainSpec
       }
       enterBarrier("fifth-joined")
 
-      splitDataCenters(notMembers = Set(fourth))
+      splitDataCenters(doNotVerify = Set(fourth))
 
       runOn(fifth) {
         Cluster(system).shutdown()
       }
+
       runOn(third) {
         awaitAssert(clusterView.members.collect {
           case m if m.dataCenter == "dc2" ⇒ m.address
         } should ===(Set(address(third))))
       }
+
       enterBarrier("fifth-removed")
 
       runOn(fifth) {
@@ -234,11 +238,13 @@ abstract class MultiDcSplitBrainSpec
         enterBarrier("fifth-waiting-for-termination")
         Await.ready(system.whenTerminated, remaining)
 
+        val port = Cluster(system).selfAddress.port.get
         val restartedSystem = ActorSystem(
           system.name,
-          ConfigFactory.parseString(s"""
-            akka.remote.netty.tcp.port = ${Cluster(system).selfAddress.port.get}
-            akka.remote.artery.canonical.port = ${Cluster(system).selfAddress.port.get}
+          ConfigFactory.parseString(
+            s"""
+            akka.remote.netty.tcp.port = $port
+            akka.remote.artery.canonical.port = $port
             akka.coordinated-shutdown.terminate-actor-system = on
             """).withFallback(system.settings.config))
         Cluster(restartedSystem).join(thirdAddress)
@@ -258,6 +264,7 @@ abstract class MultiDcSplitBrainSpec
         }
         testConductor.shutdown(fifth)
       }
+
       runOn(remainingRoles: _*) {
         enterBarrier("fifth-restarted")
       }
@@ -265,27 +272,30 @@ abstract class MultiDcSplitBrainSpec
       runOn(first, second, third) {
         awaitAssert(clusterView.members.collectFirst {
           case m if m.dataCenter == "dc2" && m.address == fifthOriginalUniqueAddress.get.address ⇒ m.uniqueAddress
-        } should not be (fifthOriginalUniqueAddress)) // different uid
+        } should not be fifthOriginalUniqueAddress) // different uid
+
         subscribeProbe.expectMsgType[MemberUp].member.uniqueAddress should ===(fifthOriginalUniqueAddress.get)
         subscribeProbe.expectMsgType[MemberRemoved].member.uniqueAddress should ===(fifthOriginalUniqueAddress.get)
         subscribeProbe.expectMsgType[MemberUp].member.address should ===(fifthOriginalUniqueAddress.get.address)
       }
+
       runOn(remainingRoles: _*) {
         enterBarrier("fifth-re-joined")
       }
+
       runOn(first) {
         // to shutdown the restartedSystem on fifth
         Cluster(system).leave(fifthOriginalUniqueAddress.get.address)
       }
+
       runOn(first, second, third) {
-        awaitAssert(clusterView.members.map(_.address) should ===(Set(address(first), address(second), address(third))))
+        awaitAssert({
+          clusterView.members.map(_.address) should ===(Set(address(first), address(second), address(third)))
+        })
       }
       runOn(remainingRoles: _*) {
-        Thread.sleep(5000) // FIXME remove
         enterBarrier("restarted-fifth-removed")
       }
-
     }
-
   }
 }

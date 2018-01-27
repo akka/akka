@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -117,8 +117,8 @@ class HeavyHittersSpec extends WordSpecLike with Matchers {
       val hitters = new TopHeavyHitters[String](2)
       hitters.update("A", 1) should ===(true)
       hitters.update("B", 2) should ===(true)
-      hitters.update("C", 3) should ===(true) // A was dropped now  
-      hitters.update("A", 10) should ===(true) // TODO this is technically unexpected, we have already compressed A...  
+      hitters.update("C", 3) should ===(true) // A was dropped now
+      hitters.update("A", 10) should ===(true) // TODO this is technically unexpected, we have already compressed A...
     }
 
     "allow updating entries that have lower weight than the least known weight if there is capacity anyway" in {

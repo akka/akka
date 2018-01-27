@@ -1,17 +1,19 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.util.ConstantFun
-import akka.{ Done, NotUsed }
+import java.util.concurrent.CompletionStage
+
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages._
-import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, PublisherSource, _ }
+import akka.stream.impl.{ PublisherSource, _ }
 import akka.stream.{ Outlet, SourceShape, _ }
+import akka.util.ConstantFun
+import akka.{ Done, NotUsed }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
@@ -19,7 +21,7 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
-import java.util.concurrent.CompletionStage
+import akka.stream.stage.GraphStageWithMaterializedValue
 
 import scala.compat.java8.FutureConverters._
 
@@ -45,15 +47,23 @@ final class Source[+Out, +Mat](
   override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
 
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
-    val toAppend =
-      if (flow.traversalBuilder eq Flow.identityTraversalBuilder)
-        LinearTraversalBuilder.empty()
+    if (flow.traversalBuilder eq Flow.identityTraversalBuilder)
+      if (combine == Keep.left)
+        //optimization by returning this
+        this.asInstanceOf[Source[T, Mat3]] //Mat == Mat3, due to Keep.left
+      else if (combine == Keep.right || combine == Keep.none) // Mat3 = NotUsed
+        //optimization with LinearTraversalBuilder.empty()
+        new Source[T, Mat3](
+          traversalBuilder.append(LinearTraversalBuilder.empty(), flow.shape, combine),
+          SourceShape(shape.out).asInstanceOf[SourceShape[T]])
       else
-        flow.traversalBuilder
-
-    new Source[T, Mat3](
-      traversalBuilder.append(toAppend, flow.shape, combine),
-      SourceShape(flow.shape.out))
+        new Source[T, Mat3](
+          traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
+          SourceShape(flow.shape.out))
+    else
+      new Source[T, Mat3](
+        traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
+        SourceShape(flow.shape.out))
   }
 
   /**
@@ -129,20 +139,18 @@ final class Source[+Out, +Mat](
   def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Done] = runWith(Sink.foreach(f))
 
   /**
-   * Change the attributes of this [[Source]] to the given ones and seal the list
-   * of attributes. This means that further calls will not be able to remove these
-   * attributes, but instead add new ones. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Replace the attributes of this [[Source]] with the given ones. If this Source is a composite
+   * of multiple graphs, new attributes on the composite will be less specific than attributes
+   * set directly on the individual graphs of the composite.
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
     new Source(traversalBuilder.setAttributes(attr), shape)
 
   /**
-   * Add the given attributes to this Source. Further calls to `withAttributes`
-   * will not remove these attributes. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Add the given attributes to this Source. If the specific attribute was already on this source
+   * it will replace the previous value. If this Source is a composite
+   * of multiple graphs, the added attributes will be on the composite and therefore less specific than attributes
+   * set directly on the individual graphs of the composite.
    */
   override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(traversalBuilder.attributes and attr)
 
@@ -154,7 +162,24 @@ final class Source[+Out, +Mat](
   /**
    * Put an asynchronous boundary around this `Source`
    */
-  override def async: Repr[Out] = addAttributes(Attributes.asyncBoundary)
+  override def async: Repr[Out] = super.async.asInstanceOf[Repr[Out]]
+
+  /**
+   * Put an asynchronous boundary around this `Graph`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): Repr[Out] =
+    super.async(dispatcher).asInstanceOf[Repr[Out]]
+
+  /**
+   * Put an asynchronous boundary around this `Graph`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): Repr[Out] =
+    super.async(dispatcher, inputBufferSize).asInstanceOf[Repr[Out]]
 
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.
@@ -231,9 +256,20 @@ object Source {
   def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
     case s: Source[T, M]         ⇒ s
     case s: javadsl.Source[T, M] ⇒ s.asScala
-    case other ⇒ new Source(
-      LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
-      other.shape)
+    case g: GraphStageWithMaterializedValue[SourceShape[T], M] ⇒
+      // move these from the stage itself to make the returned source
+      // behave as it is the stage with regards to attributes
+      val attrs = g.traversalBuilder.attributes
+      val noAttrStage = g.withAttributes(Attributes.none)
+      new Source(
+        LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
+        noAttrStage.shape
+      ).withAttributes(attrs)
+    case other ⇒
+      // composite source shaped graph
+      new Source(
+        LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
+        other.shape)
   }
 
   /**
@@ -268,13 +304,16 @@ object Source {
 
   /**
    * Streams the elements of the given future source once it successfully completes.
-   * If the future fails the stream is failed.
+   * If the [[Future]] fails the stream is failed with the exception from the future. If downstream cancels before the
+   * stream completes the materialized `Future` will be failed with a [[StreamDetachedException]]
    */
   def fromFutureSource[T, M](future: Future[Graph[SourceShape[T], M]]): Source[T, Future[M]] = fromGraph(new FutureFlattenSource(future))
 
   /**
    * Streams the elements of an asynchronous source once its given `completion` stage completes.
-   * If the `completion` fails the stream is failed with that exception.
+   * If the [[CompletionStage]] fails the stream is failed with the exception from the future.
+   * If downstream cancels before the stream completes the materialized `Future` will be failed
+   * with a [[StreamDetachedException]]
    */
   def fromSourceCompletionStage[T, M](completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
 
@@ -449,6 +488,19 @@ object Source {
     })
 
   /**
+   * Combines two sources with fan-in strategy like `Merge` or `Concat` and returns `Source` with a materialized value.
+   */
+  def combineMat[T, U, M1, M2, M](first: Source[T, M1], second: Source[T, M2])(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed])(matF: (M1, M2) ⇒ M): Source[U, M] = {
+    val secondPartiallyCombined = GraphDSL.create(second) { implicit b ⇒ secondShape ⇒
+      import GraphDSL.Implicits._
+      val c = b.add(strategy(2))
+      secondShape ~> c.in(1)
+      FlowShape(c.in(0), c.out)
+    }
+    first.viaMat(secondPartiallyCombined)(matF)
+  }
+
+  /**
    * Combine the elements of multiple streams into a stream of sequences.
    */
   def zipN[T](sources: immutable.Seq[Source[T, _]]): Source[immutable.Seq[T], NotUsed] = zipWithN(ConstantFun.scalaIdentityFunction[immutable.Seq[T]])(sources).addAttributes(DefaultAttributes.zipN)
@@ -550,4 +602,5 @@ object Source {
    */
   def unfoldResourceAsync[T, S](create: () ⇒ Future[S], read: (S) ⇒ Future[Option[T]], close: (S) ⇒ Future[Done]): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
+
 }

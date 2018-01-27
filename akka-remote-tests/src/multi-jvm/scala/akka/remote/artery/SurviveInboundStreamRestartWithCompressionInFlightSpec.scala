@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -32,7 +32,8 @@ object SurviveInboundStreamRestartWithCompressionInFlightSpec extends MultiNodeC
         akka.loglevel = INFO
         akka.remote.artery {
           enabled = on
-          advanced { 
+          advanced {
+            inbound-lanes = 4
             give-up-system-message-after = 4s
             compression.actor-refs.advertisement-interval = 300ms
             compression.manifests.advertisement-interval = 1 minute
@@ -118,15 +119,20 @@ abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec extends Re
       }
       enterBarrier("inbound-failure-restart-first")
 
-      // we poke the remote system, awaiting its inbound stream recovery, when it should reply
-      awaitAssert(
-        {
-          sendToB ! "alive-again"
-          expectMsg(300.millis, s"${sendToB.path.name}-alive-again")
-        },
-        max = 5.seconds, interval = 500.millis)
-
       runOn(second) {
+        sendToB.tell("trigger", ActorRef.noSender)
+        // when using inbound-lanes > 1 we can't be sure when it's done, another message (e.g. HandshakeReq)
+        // might have triggered the restart
+        Thread.sleep(2000)
+
+        // we poke the remote system, awaiting its inbound stream recovery, then it should reply
+        awaitAssert(
+          {
+            sendToB ! "alive-again"
+            expectMsg(300.millis, s"${sendToB.path.name}-alive-again")
+          },
+          max = 5.seconds, interval = 500.millis)
+
         // we continue sending messages using the "old table".
         // if a new table was being built, it would cause the b to be compressed as 1 causing a wrong reply to come back
         1 to 100 foreach { i ⇒ pingPong(sendToB, s"b$i") }

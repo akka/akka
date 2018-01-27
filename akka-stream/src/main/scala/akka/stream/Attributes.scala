@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream
 
@@ -10,13 +10,16 @@ import akka.event.Logging
 import scala.annotation.tailrec
 import scala.reflect.{ ClassTag, classTag }
 import akka.japi.function
-import akka.stream.impl.StreamLayout._
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
+import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
 
 import scala.compat.java8.OptionConverters._
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -26,12 +29,17 @@ import akka.util.ByteString
  *
  * The ``attributeList`` is ordered with the most specific attribute first, least specific last.
  * Note that the order was the opposite in Akka 2.4.x.
+ *
+ * Stages should in general not access the `attributeList` but instead use `get` to get the expected
+ * value of an attribute.
  */
 final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 
   import Attributes._
 
   /**
+   * Note that this must only be used during traversal building and not during materialization
+   * as it will then always return true because of the defaults from the ActorMaterializerSettings
    * INTERNAL API
    */
   private[stream] def isAsync: Boolean = {
@@ -43,74 +51,36 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   }
 
   /**
-   * Java API
+   * Java API: Get the most specific attribute value for a given Attribute type or subclass thereof.
+   * If no such attribute exists, return a `default` value.
    *
-   * The list is ordered with the most specific attribute first, least specific last.
-   * Note that the order was the opposite in Akka 2.4.x.
-   */
-  def getAttributeList(): java.util.List[Attribute] = {
-    import scala.collection.JavaConverters._
-    attributeList.asJava
-  }
-
-  /**
-   * Java API: Get all attributes of a given `Class` or
-   * subclass thereof.
+   * The most specific value is the value that was added closest to the graph or stage itself or if
+   * the same attribute was added multiple times to the same graph, the last to be added.
    *
-   * The list is ordered with the most specific attribute first, least specific last.
-   * Note that the order was the opposite in Akka 2.4.x.
-   */
-  def getAttributeList[T <: Attribute](c: Class[T]): java.util.List[T] =
-    if (attributeList.isEmpty) java.util.Collections.emptyList()
-    else {
-      val result = new java.util.ArrayList[T]
-      attributeList.foreach { a ⇒
-        if (c.isInstance(a))
-          result.add(c.cast(a))
-      }
-      result
-    }
-
-  /**
-   * Java API: Get the most specific attribute (added last) of a given `Class` or subclass thereof.
-   * If no such attribute exists the `default` value is returned.
+   * This is the expected way for stages to access attributes.
    */
   def getAttribute[T <: Attribute](c: Class[T], default: T): T =
     getAttribute(c).orElse(default)
 
   /**
-   * Java API: Get the least specific attribute (added first) of a given `Class` or subclass thereof.
-   * If no such attribute exists the `default` value is returned.
-   */
-  def getFirstAttribute[T <: Attribute](c: Class[T], default: T): T =
-    getFirstAttribute(c).orElse(default)
-
-  /**
-   * Java API: Get the most specific attribute (added last) of a given `Class` or subclass thereof.
+   * Java API: Get the most specific attribute value for a given Attribute type or subclass thereof.
+   *
+   * The most specific value is the value that was added closest to the graph or stage itself or if
+   * the same attribute was added multiple times to the same graph, the last to be added.
+   *
+   * This is the expected way for stages to access attributes.
    */
   def getAttribute[T <: Attribute](c: Class[T]): Optional[T] =
     (attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }).asJava
 
   /**
-   * Java API: Get the least specific attribute (added first) of a given `Class` or subclass thereof.
-   */
-  def getFirstAttribute[T <: Attribute](c: Class[T]): Optional[T] =
-    attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) ⇒ c cast attr }.asJava
-
-  /**
-   * Scala API: get all attributes of a given type (or subtypes thereof).
+   * Scala API: Get the most specific attribute value for a given Attribute type or subclass thereof or
+   * if no such attribute exists, return a default value.
    *
-   * The list is ordered with the most specific attribute first, least specific last.
-   * Note that the order was the opposite in Akka 2.4.x.
-   */
-  def filtered[T <: Attribute: ClassTag]: List[T] = {
-    val c = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.collect { case attr if c.isAssignableFrom(attr.getClass) ⇒ c.cast(attr) }
-  }
-
-  /**
-   * Scala API: Get the most specific attribute (added last) of a given type parameter T `Class` or subclass thereof.
-   * If no such attribute exists the `default` value is returned.
+   * The most specific value is the value that was added closest to the graph or stage itself or if
+   * the same attribute was added multiple times to the same graph, the last to be added.
+   *
+   * This is the expected way for stages to access attributes.
    */
   def get[T <: Attribute: ClassTag](default: T): T =
     get[T] match {
@@ -119,18 +89,14 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     }
 
   /**
-   * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
-   * If no such attribute exists the `default` value is returned.
-   */
-  def getFirst[T <: Attribute: ClassTag](default: T): T = {
-    getFirst[T] match {
-      case Some(a) ⇒ a
-      case None    ⇒ default
-    }
-  }
-
-  /**
-   * Scala API: Get the most specific attribute (added last) of a given type parameter T `Class` or subclass thereof.
+   * Scala API: Get the most specific attribute value for a given Attribute type or subclass thereof.
+   *
+   * The most specific value is the value that was added closest to the graph or stage itself or if
+   * the same attribute was added multiple times to the same graph, the last to be added.
+   *
+   * This is the expected way for stages to access attributes.
+   *
+   * @see [[Attributes#get()]] For providing a default value if the attribute was not set
    */
   def get[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
@@ -138,17 +104,34 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   }
 
   /**
-   * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
+   * Scala API: Get the most specific of one of the mandatory attributes. Mandatory attributes are guaranteed
+   * to always be among the attributes when the attributes are coming from a materialization.
    */
-  def getFirst[T <: Attribute: ClassTag]: Option[T] = {
+  def mandatoryAttribute[T <: MandatoryAttribute: ClassTag]: T = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
+    getMandatoryAttribute(c)
   }
 
   /**
-   * Test whether the given attribute is contained within this attributes list.
+   * Java API: Get the most specific of one of the mandatory attributes. Mandatory attributes are guaranteed
+   * to always be among the attributes when the attributes are coming from a materialization.
+   *
+   * @param c A class that is a subtype of [[MandatoryAttribute]]
    */
-  def contains(attr: Attribute): Boolean = attributeList.contains(attr)
+  def getMandatoryAttribute[T <: MandatoryAttribute](c: Class[T]): T = {
+    @tailrec
+    def find(list: List[Attribute]): OptionVal[Attribute] = list match {
+      case Nil ⇒ OptionVal.None
+      case head :: tail ⇒
+        if (c.isInstance(head)) OptionVal.Some(head)
+        else find(tail)
+    }
+
+    find(attributeList) match {
+      case OptionVal.Some(t) ⇒ t.asInstanceOf[T]
+      case OptionVal.None    ⇒ throw new IllegalStateException(s"Mandatory attribute ${c} not found")
+    }
+  }
 
   /**
    * Adds given attributes. Added attributes are considered more specific than
@@ -192,13 +175,106 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * INTERNAL API
    */
-  def nameOrDefault(default: String = "unnamed"): String = {
+  @InternalApi def nameOrDefault(default: String = "unnamed"): String = {
     @tailrec def find(attrs: List[Attribute]): String = attrs match {
       case Attributes.Name(name) :: _ ⇒ name
       case _ :: tail                  ⇒ find(tail)
       case Nil                        ⇒ default
     }
     find(attributeList)
+  }
+
+  /**
+   * Test whether the given attribute is contained within this attributes list.
+   *
+   * Note that stages in general should not inspect the whole hierarchy but instead use
+   * `get` to get the most specific attribute value.
+   */
+  def contains(attr: Attribute): Boolean = attributeList.contains(attr)
+
+  /**
+   * Java API
+   *
+   * The list is ordered with the most specific attribute first, least specific last.
+   * Note that the order was the opposite in Akka 2.4.x.
+   *
+   * Note that stages in general should not inspect the whole hierarchy but instead use
+   * `get` to get the most specific attribute value.
+   */
+  def getAttributeList(): java.util.List[Attribute] = {
+    import scala.collection.JavaConverters._
+    attributeList.asJava
+  }
+
+  /**
+   * Java API: Get all attributes of a given `Class` or
+   * subclass thereof.
+   *
+   * The list is ordered with the most specific attribute first, least specific last.
+   * Note that the order was the opposite in Akka 2.4.x.
+   *
+   * Note that stages in general should not inspect the whole hierarchy but instead use
+   * `get` to get the most specific attribute value.
+   */
+  def getAttributeList[T <: Attribute](c: Class[T]): java.util.List[T] =
+    if (attributeList.isEmpty) java.util.Collections.emptyList()
+    else {
+      val result = new java.util.ArrayList[T]
+      attributeList.foreach { a ⇒
+        if (c.isInstance(a))
+          result.add(c.cast(a))
+      }
+      result
+    }
+
+  /**
+   * Scala API: Get all attributes of a given type (or subtypes thereof).
+   *
+   * Note that stages in general should not inspect the whole hierarchy but instead use
+   * `get` to get the most specific attribute value.
+   *
+   * The list is ordered with the most specific attribute first, least specific last.
+   * Note that the order was the opposite in Akka 2.4.x.
+   */
+  def filtered[T <: Attribute: ClassTag]: List[T] = {
+    val c = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+    attributeList.collect { case attr if c.isAssignableFrom(attr.getClass) ⇒ c.cast(attr) }
+  }
+
+  /**
+   * Java API: Get the least specific attribute (added first) of a given `Class` or subclass thereof.
+   * If no such attribute exists the `default` value is returned.
+   */
+  @deprecated("Attributes should always be most specific, use getAttribute[T]", "2.5.7")
+  def getFirstAttribute[T <: Attribute](c: Class[T], default: T): T =
+    getFirstAttribute(c).orElse(default)
+
+  /**
+   * Java API: Get the least specific attribute (added first) of a given `Class` or subclass thereof.
+   */
+  @deprecated("Attributes should always be most specific, use get[T]", "2.5.7")
+  def getFirstAttribute[T <: Attribute](c: Class[T]): Optional[T] =
+    attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) ⇒ c cast attr }.asJava
+
+  /**
+   * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
+   * If no such attribute exists the `default` value is returned.
+   */
+  @deprecated("Attributes should always be most specific, use get[T]", "2.5.7")
+  def getFirst[T <: Attribute: ClassTag](default: T): T = {
+    getFirst[T] match {
+      case Some(a) ⇒ a
+      case None    ⇒ default
+    }
+  }
+
+  /**
+   * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
+   */
+  @deprecated("Attributes should always be most specific, use get[T]", "2.5.7")
+  def getFirst[T <: Attribute: ClassTag]: Option[T] = {
+    val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
+    attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
   }
 
 }
@@ -209,8 +285,11 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 object Attributes {
 
   trait Attribute
+
+  sealed trait MandatoryAttribute extends Attribute
+
   final case class Name(n: String) extends Attribute
-  final case class InputBuffer(initial: Int, max: Int) extends Attribute
+  final case class InputBuffer(initial: Int, max: Int) extends MandatoryAttribute
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) extends Attribute
   final case object AsyncBoundary extends Attribute
 
@@ -285,8 +364,8 @@ object Attributes {
  */
 object ActorAttributes {
   import Attributes._
-  final case class Dispatcher(dispatcher: String) extends Attribute
-  final case class SupervisionStrategy(decider: Supervision.Decider) extends Attribute
+  final case class Dispatcher(dispatcher: String) extends MandatoryAttribute
+  final case class SupervisionStrategy(decider: Supervision.Decider) extends MandatoryAttribute
 
   val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
 
@@ -336,5 +415,24 @@ object ActorAttributes {
    */
   def logLevels(onElement: Logging.LogLevel = Logging.DebugLevel, onFinish: Logging.LogLevel = Logging.DebugLevel, onFailure: Logging.LogLevel = Logging.ErrorLevel) =
     Attributes(LogLevels(onElement, onFinish, onFailure))
+
+}
+
+/**
+ * Attributes for stream refs ([[akka.stream.SourceRef]] and [[akka.stream.SinkRef]]).
+ * Note that more attributes defined in [[Attributes]] and [[ActorAttributes]].
+ */
+object StreamRefAttributes {
+  import Attributes._
+
+  /** Attributes specific to stream refs. */
+  sealed trait StreamRefAttribute extends Attribute
+
+  final case class SubscriptionTimeout(timeout: FiniteDuration) extends StreamRefAttribute
+
+  /**
+   * Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference.
+   */
+  def subscriptionTimeout(timeout: FiniteDuration): Attributes = Attributes(SubscriptionTimeout(timeout))
 
 }

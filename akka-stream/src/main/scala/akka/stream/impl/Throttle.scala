@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl
 
@@ -71,8 +71,7 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
         override def onPull(): Unit = pull(in)
       }
 
-      setHandler(in, handler)
-      setHandler(out, handler)
+      setHandlers(in, out, handler)
       // After this point, we no longer need the `handler` so it can just fall out of scope.
     }
 

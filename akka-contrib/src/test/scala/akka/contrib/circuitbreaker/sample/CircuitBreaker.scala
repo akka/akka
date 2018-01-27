@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.contrib.circuitbreaker.sample
 
@@ -64,11 +64,11 @@ class CircuitBreaker(potentiallyFailingService: ActorRef) extends Actor with Act
       CircuitBreakerPropsBuilder(maxFailures = 3, callTimeout = 2.seconds, resetTimeout = 30.seconds)
         .copy(
           failureDetector = {
-          _ match {
-            case Response(Left(_)) ⇒ true
-            case _                 ⇒ false
-          }
-        })
+            _ match {
+              case Response(Left(_)) ⇒ true
+              case _                 ⇒ false
+            }
+          })
         .props(potentiallyFailingService),
       "serviceCircuitBreaker")
 
@@ -106,15 +106,15 @@ class CircuitBreakerAsk(potentiallyFailingService: ActorRef) extends Actor with 
       CircuitBreakerPropsBuilder(maxFailures = 3, callTimeout = askTimeout, resetTimeout = 30.seconds)
         .copy(
           failureDetector = {
-          _ match {
-            case Response(Left(_)) ⇒ true
-            case _                 ⇒ false
-          }
-        })
+            _ match {
+              case Response(Left(_)) ⇒ true
+              case _                 ⇒ false
+            }
+          })
         .copy(
           openCircuitFailureConverter = { failure ⇒
-          Left(s"Circuit open when processing ${failure.failedMsg}")
-        })
+            Left(s"Circuit open when processing ${failure.failedMsg}")
+          })
         .props(potentiallyFailingService),
       "serviceCircuitBreaker")
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package docs.stream
 
@@ -37,8 +37,9 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
       val restartSource = RestartSource.withBackoff(
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
-        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
-      ) { () =>
+        randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
+        maxRestarts = 20 // limits the amount of restarts to 20
+      ) { () ⇒
         // Create a source from a future of a source
         Source.fromFutureSource {
           // Make a single request with akka-http
@@ -54,7 +55,7 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
       //#with-kill-switch
       val killSwitch = restartSource
         .viaMat(KillSwitches.single)(Keep.right)
-        .toMat(Sink.foreach(event => println(s"Got event: $event")))(Keep.left)
+        .toMat(Sink.foreach(event ⇒ println(s"Got event: $event")))(Keep.left)
         .run()
 
       doSomethingElse()

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster.sharding
 
@@ -27,7 +27,6 @@ import akka.cluster.ClusterSettings.DataCenter
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 object ShardRegion {
-
   /**
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardRegion]] actor.
@@ -407,8 +406,12 @@ private[akka] class ShardRegion(
   CoordinatedShutdown(context.system).addTask(
     CoordinatedShutdown.PhaseClusterShardingShutdownRegion,
     "region-shutdown") { () ⇒
-      self ! GracefulShutdown
-      gracefulShutdownProgress.future
+      if (cluster.isTerminated || cluster.selfMember.status == MemberStatus.Down) {
+        Future.successful(Done)
+      } else {
+        self ! GracefulShutdown
+        gracefulShutdownProgress.future
+      }
     }
 
   // subscribe to MemberEvent, re-subscribe when restart

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.persistence
@@ -47,6 +47,18 @@ object PersistencePluginDocSpec {
       //#native-config
       akka.persistence.journal.leveldb.native = off
       //#native-config
+
+      //#compaction-intervals-config
+      # Number of deleted messages per persistence id that will trigger journal compaction
+      akka.persistence.journal.leveldb.compaction-intervals {
+        persistence-id-1 = 100
+        persistence-id-2 = 200
+        # ...
+        persistence-id-N = 1000
+        # use wildcards to match unspecified persistence ids, if any
+        "*" = 250
+      }
+      //#compaction-intervals-config
     """
 }
 
@@ -117,7 +129,7 @@ object SharedLeveldbPluginDocSpec {
     }
 
     def receive = {
-      case ActorIdentity(1, Some(store)) =>
+      case ActorIdentity(1, Some(store)) ⇒
         SharedLeveldbJournal.setStore(store, context.system)
     }
   }
@@ -149,7 +161,7 @@ class MyJournal extends AsyncWriteJournal {
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = ???
   def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long,
                           toSequenceNr: Long, max: Long)(
-    replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
+    replayCallback: (PersistentRepr) ⇒ Unit): Future[Unit] = ???
   def asyncReadHighestSequenceNr(
     persistenceId:  String,
     fromSequenceNr: Long): Future[Long] = ???

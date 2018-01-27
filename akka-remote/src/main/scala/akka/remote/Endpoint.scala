@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote
 
@@ -811,7 +811,7 @@ private[remote] class EndpointWriter(
     }
   } catch {
     case e: NotSerializableException ⇒
-      log.error(e, "Serializer not defined for message type []. Transient association error (association remains live)", s.message.getClass)
+      log.error(e, "Serializer not defined for message type [{}]. Transient association error (association remains live)", s.message.getClass)
       true
     case e: MessageSerializer.SerializationException ⇒
       log.error(e, "{} Transient association error (association remains live)", e.getMessage)

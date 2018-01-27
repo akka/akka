@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.cluster.singleton
 
@@ -28,7 +28,9 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
     }
   }
 
-  override def afterAll() = testSystems.foreach(_.system.terminate())
+  override def afterAll(): Unit = testSystems.foreach { sys ⇒
+    TestKit.shutdownActorSystem(sys.system)
+  }
 }
 
 object ClusterSingletonProxySpec {

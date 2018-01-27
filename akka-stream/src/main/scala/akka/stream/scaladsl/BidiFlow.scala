@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -179,8 +179,29 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   override def named(name: String): BidiFlow[I1, O1, I2, O2, Mat] =
     addAttributes(Attributes.name(name))
 
+  /**
+   * Put an asynchronous boundary around this `BidiFlow`
+   */
   override def async: BidiFlow[I1, O1, I2, O2, Mat] =
-    addAttributes(Attributes.asyncBoundary)
+    super.async.asInstanceOf[BidiFlow[I1, O1, I2, O2, Mat]]
+
+  /**
+   * Put an asynchronous boundary around this `BidiFlow`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): BidiFlow[I1, O1, I2, O2, Mat] =
+    super.async(dispatcher).asInstanceOf[BidiFlow[I1, O1, I2, O2, Mat]]
+
+  /**
+   * Put an asynchronous boundary around this `BidiFlow`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): BidiFlow[I1, O1, I2, O2, Mat] =
+    super.async(dispatcher, inputBufferSize).asInstanceOf[BidiFlow[I1, O1, I2, O2, Mat]]
+
 }
 
 object BidiFlow {

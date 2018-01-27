@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -753,8 +753,8 @@ import scala.collection.immutable.Map.Map1
               applyIslandAndAttributes(
                 beforeBuilder.concat(
                   composite
-                  .assign(out, inOffset - composite.offsetOfModule(out))
-                  .traversal).concat(traversalSoFar)),
+                    .assign(out, inOffset - composite.offsetOfModule(out))
+                    .traversal).concat(traversalSoFar)),
             pendingBuilder = OptionVal.None, beforeBuilder = EmptyTraversal)
         case OptionVal.None ⇒
           copy(
@@ -801,7 +801,6 @@ import scala.collection.immutable.Map.Map1
             pendingBuilder = OptionVal.None,
             beforeBuilder = EmptyTraversal)
         case OptionVal.None ⇒
-          copy(outPort = OptionVal.None, traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
           copy(
             outPort = OptionVal.None,
             traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))

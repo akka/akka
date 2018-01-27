@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -91,11 +91,11 @@ class CodecBenchmark {
     """
     )
     val config = configType match {
-      case RemoteInstrument =>
+      case RemoteInstrument ⇒
         ConfigFactory.parseString(
           s"""akka.remote.artery.advanced.instruments = [ "${classOf[DummyRemoteInstrument].getName}" ]"""
         ).withFallback(commonConfig)
-      case _ =>
+      case _ ⇒
         commonConfig
     }
 
@@ -148,7 +148,7 @@ class CodecBenchmark {
     val deserializer: Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Deserializer(inboundContext, system.asInstanceOf[ExtendedActorSystem], envelopePool))
     val decoderInput: Flow[String, EnvelopeBuffer, NotUsed] = Flow[String]
-      .map { _ =>
+      .map { _ ⇒
         val envelope = envelopePool.acquire()
         envelopeTemplateBuffer.rewind()
         envelope.byteBuffer.put(envelopeTemplateBuffer)
@@ -158,14 +158,14 @@ class CodecBenchmark {
 
     encodeGraph = encoderInput
       .via(encoder)
-      .map(envelope => envelopePool.release(envelope))
+      .map(envelope ⇒ envelopePool.release(envelope))
 
     decodeGraph = decoderInput
       .via(decoder)
       .via(deserializer)
       .map {
-        case env: ReusableInboundEnvelope => inboundEnvelopePool.release(env)
-        case _ =>
+        case env: ReusableInboundEnvelope ⇒ inboundEnvelopePool.release(env)
+        case _                            ⇒
       }
 
     encodeDecodeGraph = encoderInput
@@ -173,8 +173,8 @@ class CodecBenchmark {
       .via(decoder)
       .via(deserializer)
       .map {
-        case env: ReusableInboundEnvelope => inboundEnvelopePool.release(env)
-        case _ =>
+        case env: ReusableInboundEnvelope ⇒ inboundEnvelopePool.release(env)
+        case _                            ⇒
       }
   }
 

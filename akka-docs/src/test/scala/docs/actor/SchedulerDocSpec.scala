@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package docs.actor
 
@@ -43,7 +43,7 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       val Tick = "tick"
       class TickActor extends Actor {
         def receive = {
-          case Tick => //Do something
+          case Tick ⇒ //Do something
         }
       }
       val tickActor = system.actorOf(Props(classOf[TickActor], this))

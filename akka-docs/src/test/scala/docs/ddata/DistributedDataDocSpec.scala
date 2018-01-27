@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package docs.ddata
 
@@ -72,7 +72,7 @@ object DistributedDataDocSpec {
     replicator ! Subscribe(DataKey, self)
 
     def receive = {
-      case Tick =>
+      case Tick ⇒
         val s = ThreadLocalRandom.current().nextInt(97, 123).toChar.toString
         if (ThreadLocalRandom.current().nextBoolean()) {
           // add
@@ -84,9 +84,9 @@ object DistributedDataDocSpec {
           replicator ! Update(DataKey, ORSet.empty[String], WriteLocal)(_ - s)
         }
 
-      case _: UpdateResponse[_] => // ignore
+      case _: UpdateResponse[_] ⇒ // ignore
 
-      case c @ Changed(DataKey) =>
+      case c @ Changed(DataKey) ⇒
         val data = c.get(DataKey)
         log.info("Current elements: {}", data.elements)
     }
@@ -123,24 +123,24 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     replicator ! Update(Set2Key, ORSet.empty[String], writeMajority)(_ + "hello")
 
     val writeAll = WriteAll(timeout = 5.seconds)
-    replicator ! Update(ActiveFlagKey, Flag.empty, writeAll)(_.switchOn)
+    replicator ! Update(ActiveFlagKey, Flag.Disabled, writeAll)(_.switchOn)
     //#update
 
     probe.expectMsgType[UpdateResponse[_]] match {
       //#update-response1
-      case UpdateSuccess(Counter1Key, req) => // ok
+      case UpdateSuccess(Counter1Key, req) ⇒ // ok
       //#update-response1
-      case unexpected                      => fail("Unexpected response: " + unexpected)
+      case unexpected                      ⇒ fail("Unexpected response: " + unexpected)
     }
 
     probe.expectMsgType[UpdateResponse[_]] match {
       //#update-response2
-      case UpdateSuccess(Set1Key, req)  => // ok
-      case UpdateTimeout(Set1Key, req)  =>
+      case UpdateSuccess(Set1Key, req)  ⇒ // ok
+      case UpdateTimeout(Set1Key, req)  ⇒
       // write to 3 nodes failed within 1.second
       //#update-response2
-      case UpdateSuccess(Set2Key, None) =>
-      case unexpected                   => fail("Unexpected response: " + unexpected)
+      case UpdateSuccess(Set2Key, None) ⇒
+      case unexpected                   ⇒ fail("Unexpected response: " + unexpected)
     }
   }
 
@@ -157,14 +157,14 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     val Counter1Key = PNCounterKey("counter1")
 
     def receive: Receive = {
-      case "increment" =>
+      case "increment" ⇒
         // incoming command to increase the counter
         val upd = Update(Counter1Key, PNCounter(), writeTwo, request = Some(sender()))(_ + 1)
         replicator ! upd
 
-      case UpdateSuccess(Counter1Key, Some(replyTo: ActorRef)) =>
+      case UpdateSuccess(Counter1Key, Some(replyTo: ActorRef)) ⇒
         replyTo ! "ack"
-      case UpdateTimeout(Counter1Key, Some(replyTo: ActorRef)) =>
+      case UpdateTimeout(Counter1Key, Some(replyTo: ActorRef)) ⇒
         replyTo ! "nack"
     }
     //#update-request-context
@@ -195,24 +195,24 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
 
     probe.expectMsgType[GetResponse[_]] match {
       //#get-response1
-      case g @ GetSuccess(Counter1Key, req) =>
+      case g @ GetSuccess(Counter1Key, req) ⇒
         val value = g.get(Counter1Key).value
-      case NotFound(Counter1Key, req) => // key counter1 does not exist
+      case NotFound(Counter1Key, req) ⇒ // key counter1 does not exist
       //#get-response1
-      case unexpected                 => fail("Unexpected response: " + unexpected)
+      case unexpected                 ⇒ fail("Unexpected response: " + unexpected)
     }
 
     probe.expectMsgType[GetResponse[_]] match {
       //#get-response2
-      case g @ GetSuccess(Set1Key, req) =>
+      case g @ GetSuccess(Set1Key, req) ⇒
         val elements = g.get(Set1Key).elements
-      case GetFailure(Set1Key, req) =>
+      case GetFailure(Set1Key, req) ⇒
       // read from 3 nodes failed within 1.second
-      case NotFound(Set1Key, req)   => // key set1 does not exist
+      case NotFound(Set1Key, req)   ⇒ // key set1 does not exist
       //#get-response2
-      case g @ GetSuccess(Set2Key, None) =>
+      case g @ GetSuccess(Set2Key, None) ⇒
         val elements = g.get(Set2Key).elements
-      case unexpected => fail("Unexpected response: " + unexpected)
+      case unexpected ⇒ fail("Unexpected response: " + unexpected)
     }
   }
 
@@ -229,16 +229,16 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     val Counter1Key = PNCounterKey("counter1")
 
     def receive: Receive = {
-      case "get-count" =>
+      case "get-count" ⇒
         // incoming request to retrieve current value of the counter
         replicator ! Get(Counter1Key, readTwo, request = Some(sender()))
 
-      case g @ GetSuccess(Counter1Key, Some(replyTo: ActorRef)) =>
+      case g @ GetSuccess(Counter1Key, Some(replyTo: ActorRef)) ⇒
         val value = g.get(Counter1Key).value.longValue
         replyTo ! value
-      case GetFailure(Counter1Key, Some(replyTo: ActorRef)) =>
+      case GetFailure(Counter1Key, Some(replyTo: ActorRef)) ⇒
         replyTo ! -1L
-      case NotFound(Counter1Key, Some(replyTo: ActorRef)) =>
+      case NotFound(Counter1Key, Some(replyTo: ActorRef)) ⇒
         replyTo ! 0L
     }
     //#get-request-context
@@ -258,9 +258,9 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     var currentValue = BigInt(0)
 
     def receive: Receive = {
-      case c @ Changed(Counter1Key) =>
+      case c @ Changed(Counter1Key) ⇒
         currentValue = c.get(Counter1Key).value
-      case "get-count" =>
+      case "get-count" ⇒
         // incoming request to retrieve current value of the counter
         sender() ! currentValue
     }
@@ -304,7 +304,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     val m2 = m1.decrement("a", 2)
     val m3 = m2.increment("b", 1)
     println(m3.get("a")) // 5
-    m3.entries.foreach { case (key, value) => println(s"$key -> $value") }
+    m3.entries.foreach { case (key, value) ⇒ println(s"$key -> $value") }
     //#pncountermap
   }
 
@@ -347,7 +347,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
   "demonstrate Flag" in {
     def println(o: Any): Unit = ()
     //#flag
-    val f0 = Flag.empty
+    val f0 = Flag.Disabled
     val f1 = f0.switchOn
     println(f1.enabled)
     //#flag

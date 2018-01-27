@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.dispatch
 
@@ -41,8 +41,8 @@ mailbox {
   implicit val sys = ActorSystem("ANQ", config)
   val ref = sys.actorOf(Props(new Actor {
     def receive = {
-      case Stop => sender() ! Stop
-      case _ =>
+      case Stop ⇒ sender() ! Stop
+      case _    ⇒
     }
   }).withDispatcher("dispatcher").withMailbox("mailbox"), "receiver")
 

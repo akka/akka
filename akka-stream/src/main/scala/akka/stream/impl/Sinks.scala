@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.impl
 
@@ -39,6 +39,8 @@ import java.util.Optional
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.event.Logging
 import akka.util.OptionVal
+
+import scala.collection.generic.CanBuildFrom
 
 /**
  * INTERNAL API
@@ -111,7 +113,7 @@ import akka.util.OptionVal
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
     val impl = actorMaterializer.actorOf(
       context,
-      FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(context.effectiveAttributes)))
+      FanoutProcessorImpl.props(context.effectiveAttributes, actorMaterializer.settings))
     val fanoutProcessor = new ActorProcessor[In, In](impl)
     impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
     // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
@@ -172,10 +174,10 @@ import akka.util.OptionVal
 
   override def create(context: MaterializationContext) = {
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val effectiveSettings = actorMaterializer.effectiveSettings(context.effectiveAttributes)
+    val maxInputBufferSize = context.effectiveAttributes.mandatoryAttribute[Attributes.InputBuffer].max
     val subscriberRef = actorMaterializer.actorOf(
       context,
-      ActorRefSinkActor.props(ref, effectiveSettings.maxInputBufferSize, onCompleteMessage))
+      ActorRefSinkActor.props(ref, maxInputBufferSize, onCompleteMessage))
     (akka.stream.actor.ActorSubscriber[In](subscriberRef), NotUsed)
   }
 
@@ -269,7 +271,7 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
+@InternalApi private[akka] final class SeqStage[T, That](implicit cbf: CanBuildFrom[Nothing, T, That with immutable.Traversable[_]]) extends GraphStageWithMaterializedValue[SinkShape[T], Future[That]] {
   val in = Inlet[T]("seq.in")
 
   override def toString: String = "SeqStage"
@@ -279,9 +281,9 @@ import akka.util.OptionVal
   override protected def initialAttributes: Attributes = DefaultAttributes.seqSink
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val p: Promise[immutable.Seq[T]] = Promise()
+    val p: Promise[That] = Promise()
     val logic = new GraphStageLogic(shape) with InHandler {
-      val buf = Vector.newBuilder[T]
+      val buf = cbf()
 
       override def preStart(): Unit = pull(in)
 
@@ -334,7 +336,7 @@ import akka.util.OptionVal
   override def toString: String = "QueueSink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Output[T]] with InHandler {
+    val stageLogic = new GraphStageLogic(shape) with InHandler with SinkQueueWithCancel[T] {
       type Received[E] = Try[Option[E]]
 
       val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
@@ -348,29 +350,22 @@ import akka.util.OptionVal
         // closed/failure indicators
         buffer = Buffer(maxBuffer + 1, materializer)
         setKeepGoing(true)
-        initCallback(callback.invoke)
         pull(in)
       }
 
-      override def postStop(): Unit = stopCallback {
-        case Pull(promise) ⇒ promise.failure(new StreamDetachedException())
-        case _             ⇒ //do nothing
-      }
-
-      private val callback: AsyncCallback[Output[T]] =
-        getAsyncCallback {
-          case QueueSink.Pull(pullPromise) ⇒ currentRequest match {
-            case Some(_) ⇒
-              pullPromise.failure(new IllegalStateException("You have to wait for previous future to be resolved to send another request"))
-            case None ⇒
-              if (buffer.isEmpty) currentRequest = Some(pullPromise)
-              else {
-                if (buffer.used == maxBuffer) tryPull(in)
-                sendDownstream(pullPromise)
-              }
-          }
-          case QueueSink.Cancel ⇒ completeStage()
+      private val callback = getAsyncCallback[Output[T]] {
+        case QueueSink.Pull(pullPromise) ⇒ currentRequest match {
+          case Some(_) ⇒
+            pullPromise.failure(new IllegalStateException("You have to wait for previous future to be resolved to send another request"))
+          case None ⇒
+            if (buffer.isEmpty) currentRequest = Some(pullPromise)
+            else {
+              if (buffer.used == maxBuffer) tryPull(in)
+              sendDownstream(pullPromise)
+            }
         }
+        case QueueSink.Cancel ⇒ completeStage()
+      }
 
       def sendDownstream(promise: Requested[T]): Unit = {
         val e = buffer.dequeue()
@@ -401,18 +396,20 @@ import akka.util.OptionVal
       override def onUpstreamFailure(ex: Throwable): Unit = enqueueAndNotify(Failure(ex))
 
       setHandler(in, this)
-    }
 
-    (stageLogic, new SinkQueueWithCancel[T] {
+      // SinkQueueWithCancel impl
       override def pull(): Future[Option[T]] = {
         val p = Promise[Option[T]]
-        stageLogic.invoke(Pull(p))
+        callback.invokeWithFeedback(Pull(p))
+          .onFailure { case NonFatal(e) ⇒ p.tryFailure(e) }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }
       override def cancel(): Unit = {
-        stageLogic.invoke(QueueSink.Cancel)
+        callback.invoke(QueueSink.Cancel)
       }
-    })
+    }
+
+    (stageLogic, stageLogic)
   }
 }
 
@@ -472,7 +469,7 @@ import akka.util.OptionVal
   override def toString: String = "LazySink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(stoppingDecider)
+    lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
     var completed = false
     val promise = Promise[M]()

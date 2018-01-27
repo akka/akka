@@ -1,19 +1,22 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
+import javax.net.ssl.SSLContext
 
-import akka.NotUsed
 import akka.actor._
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.io.Inet.SocketOption
 import akka.io.{ IO, Tcp ⇒ IoTcp }
+import akka.stream.TLSProtocol.NegotiateNewSession
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.detacher
 import akka.stream.impl.io.{ ConnectionSourceStage, OutgoingConnectionStage, TcpIdleTimeout }
 import akka.util.ByteString
+import akka.{ Done, NotUsed }
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -23,9 +26,18 @@ import scala.util.control.NoStackTrace
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
   /**
-   * * Represents a successful TCP server binding.
+   * Represents a successful TCP server binding.
+   *
+   * Not indented for user construction
+   *
+   * @param localAddress The address the server was bound to
+   * @param unbindAction a function that will trigger unbind of the server
+   * @param whenUnbound A future that is completed when the server is unbound, or failed if the server binding fails
    */
-  final case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
+  final case class ServerBinding @InternalApi private[akka] (localAddress: InetSocketAddress)(
+    private val unbindAction: () ⇒ Future[Unit],
+    val whenUnbound:          Future[Done]
+  ) {
     def unbind(): Future[Unit] = unbindAction()
   }
 
@@ -60,13 +72,24 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   def lookup() = Tcp
 
   def createExtension(system: ExtendedActorSystem): Tcp = new Tcp(system)
+
+  // just wraps/unwraps the TLS byte events to provide ByteString, ByteString flows
+  private val tlsWrapping: BidiFlow[ByteString, TLSProtocol.SendBytes, TLSProtocol.SslTlsInbound, ByteString, NotUsed] = BidiFlow.fromFlows(
+    Flow[ByteString].map(TLSProtocol.SendBytes),
+    Flow[TLSProtocol.SslTlsInbound].collect {
+      case sb: TLSProtocol.SessionBytes ⇒ sb.bytes
+      // ignore other kinds of inbounds (currently only Truncated)
+    }
+  )
 }
 
 final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import Tcp._
 
+  private val settings = ActorMaterializerSettings(system)
+
   // TODO maybe this should be a new setting, like `akka.stream.tcp.bind.timeout` / `shutdown-timeout` instead?
-  val bindShutdownTimeout = ActorMaterializer()(system).settings.subscriptionTimeoutSettings.timeout
+  val bindShutdownTimeout = settings.subscriptionTimeoutSettings.timeout
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
@@ -103,7 +126,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       options,
       halfClose,
       idleTimeout,
-      bindShutdownTimeout))
+      bindShutdownTimeout,
+      settings.ioSettings))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
@@ -175,7 +199,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       localAddress,
       options,
       halfClose,
-      connectTimeout)).via(detacher[ByteString]) // must read ahead for proper completions
+      connectTimeout,
+      settings.ioSettings)).via(detacher[ByteString]) // must read ahead for proper completions
 
     idleTimeout match {
       case d: FiniteDuration ⇒ tcpFlow.join(TcpIdleTimeout(d, Some(remoteAddress)))
@@ -194,6 +219,107 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
     outgoingConnection(InetSocketAddress.createUnresolved(host, port))
+
+  /**
+   * Creates an [[Tcp.OutgoingConnection]] with TLS.
+   * The returned flow represents a TCP client connection to the given endpoint where all bytes in and
+   * out go through TLS.
+   *
+   * For more advanced use cases you can manually combine [[Tcp.outgoingConnection()]] and [[TLS]]
+   *
+   * @param negotiateNewSession Details about what to require when negotiating the connection with the server
+   * @param sslContext Context containing details such as the trust and keystore
+   *
+   * @see [[Tcp.outgoingConnection()]]
+   */
+  def outgoingTlsConnection(
+    host:                String,
+    port:                Int,
+    sslContext:          SSLContext,
+    negotiateNewSession: NegotiateNewSession): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+    outgoingTlsConnection(InetSocketAddress.createUnresolved(host, port), sslContext, negotiateNewSession)
+
+  /**
+   * Creates an [[Tcp.OutgoingConnection]] with TLS.
+   * The returned flow represents a TCP client connection to the given endpoint where all bytes in and
+   * out go through TLS.
+   *
+   * @see [[Tcp.outgoingConnection()]]
+   * @param negotiateNewSession Details about what to require when negotiating the connection with the server
+   * @param sslContext Context containing details such as the trust and keystore
+   *
+   * Marked API-may-change to leave room for an improvement around the very long parameter list.
+   */
+  @ApiMayChange
+  def outgoingTlsConnection(
+    remoteAddress:       InetSocketAddress,
+    sslContext:          SSLContext,
+    negotiateNewSession: NegotiateNewSession,
+    localAddress:        Option[InetSocketAddress]           = None,
+    options:             immutable.Traversable[SocketOption] = Nil,
+    connectTimeout:      Duration                            = Duration.Inf,
+    idleTimeout:         Duration                            = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+
+    val connection = outgoingConnection(remoteAddress, localAddress, options, true, connectTimeout, idleTimeout)
+    val tls = TLS(sslContext, negotiateNewSession, TLSRole.client)
+    connection.join(tlsWrapping.atop(tls).reversed)
+  }
+
+  /**
+   * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
+   * where all incoming and outgoing bytes are passed through TLS.
+   *
+   * @param negotiateNewSession Details about what to require when negotiating the connection with the server
+   * @param sslContext Context containing details such as the trust and keystore
+   * @see [[Tcp.bind]]
+   *
+   * Marked API-may-change to leave room for an improvement around the very long parameter list.
+   */
+  @ApiMayChange
+  def bindTls(
+    interface:           String,
+    port:                Int,
+    sslContext:          SSLContext,
+    negotiateNewSession: NegotiateNewSession,
+    backlog:             Int                                 = 100,
+    options:             immutable.Traversable[SocketOption] = Nil,
+    idleTimeout:         Duration                            = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
+
+    val tls = tlsWrapping.atop(TLS(sslContext, negotiateNewSession, TLSRole.server)).reversed
+
+    bind(interface, port, backlog, options, true, idleTimeout).map { incomingConnection ⇒
+      incomingConnection.copy(
+        flow = incomingConnection.flow.join(tls)
+      )
+    }
+  }
+
+  /**
+   * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
+   * handling the incoming connections through TLS and then run using the provided Flow.
+   *
+   * @param negotiateNewSession Details about what to require when negotiating the connection with the server
+   * @param sslContext Context containing details such as the trust and keystore
+   * @see [[Tcp.bindAndHandle()]]
+   *
+   * Marked API-may-change to leave room for an improvement around the very long parameter list.
+   */
+  @ApiMayChange
+  def bindAndHandleTls(
+    handler:             Flow[ByteString, ByteString, _],
+    interface:           String,
+    port:                Int,
+    sslContext:          SSLContext,
+    negotiateNewSession: NegotiateNewSession,
+    backlog:             Int                                 = 100,
+    options:             immutable.Traversable[SocketOption] = Nil,
+    idleTimeout:         Duration                            = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {
+    bindTls(interface, port, sslContext, negotiateNewSession, backlog, options, idleTimeout)
+      .to(Sink.foreach { conn: IncomingConnection ⇒
+        conn.handleWith(handler)
+      }).run()
+  }
+
 }
 
 final class TcpIdleTimeoutException(msg: String, timeout: Duration)

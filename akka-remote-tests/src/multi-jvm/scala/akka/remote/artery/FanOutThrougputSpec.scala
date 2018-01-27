@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -95,7 +95,8 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
     else ActorRefTarget(ref)
   }
 
-  val burstSize = 2000 / senderReceiverPairs
+  // each sender may have 3 bursts in flight
+  val burstSize = 3000 / senderReceiverPairs / 3
   val scenarios = List(
     TestSettings(
       testName = "warmup",
@@ -175,7 +176,6 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
   }
 
   "Max throughput of fan-out" must {
-    pending
     val reporter = BenchmarkFileReporter("FanOutThroughputSpec", system)
     for (s ← scenarios) {
       s"be great for ${s.testName}, burstSize = ${s.burstSize}, payloadSize = ${s.payloadSize}" in test(s, reporter)
