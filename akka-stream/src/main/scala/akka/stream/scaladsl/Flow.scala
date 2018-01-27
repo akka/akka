@@ -1632,7 +1632,7 @@ trait FlowOps[+Out, +Mat] {
     via(Batch(max, costFn, seed, aggregate).withAttributes(DefaultAttributes.batchWeighted))
 
   /**
-   * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older
+   * Allows a faster downstream to progress independently of a slower upstream by extrapolating elements from an older
    * element until new element comes from the upstream. For example an expand step might repeat the last element for
    * the subscriber until it receives an update from upstream.
    *
@@ -1651,7 +1651,6 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    *
-   * @param seed Provides the first state for extrapolation using the first unconsumed element
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
