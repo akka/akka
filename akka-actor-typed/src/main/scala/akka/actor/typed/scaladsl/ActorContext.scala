@@ -71,16 +71,16 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * The list of child Actors created by this Actor during its lifetime that
    * are still alive, in no particular order.
    *
-   * This field is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
+   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def children: Iterable[ActorRef[Nothing]]
 
   /**
    * The named child Actor if it is alive.
    *
-   * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
+   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def child(name: String): Option[ActorRef[Nothing]]
 

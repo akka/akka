@@ -147,16 +147,16 @@ trait ActorContext extends ActorRefFactory {
    * val goodLookup = context.child("kid")
    * }}}
    *
-   * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    */
   def children: immutable.Iterable[ActorRef]
 
   /**
    * Get the child with the given name if it exists.
    *
-   * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    */
   def child(name: String): Option[ActorRef]
 

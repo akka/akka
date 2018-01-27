@@ -73,16 +73,16 @@ trait ActorContext[T] {
    * The list of child Actors created by this Actor during its lifetime that
    * are still alive, in no particular order.
    *
-   * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
+   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getChildren: java.util.List[ActorRef[Void]]
 
   /**
    * The named child Actor if it is alive.
    *
-   * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
+   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getChild(name: String): Optional[ActorRef[Void]]
 

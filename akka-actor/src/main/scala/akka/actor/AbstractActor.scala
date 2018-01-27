@@ -47,8 +47,10 @@ object AbstractActor {
   trait ActorContext extends akka.actor.ActorContext {
 
     /**
-     * Returns an unmodifiable Java Collection containing the linked actors,
-     * please note that the backing map is thread-safe but not immutable
+     * Returns an unmodifiable Java Collection containing the linked actors
+     *
+     * *Warning*: This method is not thread-safe and must not be accessed from other threads
+     * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def getChildren(): java.lang.Iterable[ActorRef]
 
@@ -61,6 +63,9 @@ object AbstractActor {
 
     /**
      * Returns a reference to the named child if it exists.
+     *
+     * *Warning*: This method is not thread-safe and must not be accessed from other threads
+     * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def findChild(name: String): Optional[ActorRef]
 
@@ -68,6 +73,9 @@ object AbstractActor {
      * Returns the supervisor of this actor.
      *
      * Same as `parent()`.
+     *
+     * This method is thread-safe and can be called from other threads than the ordinary
+     * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def getParent(): ActorRef
 
@@ -75,12 +83,18 @@ object AbstractActor {
      * Returns the system this actor is running in.
      *
      * Same as `system()`
+     *
+     * This method is thread-safe and can be called from other threads than the ordinary
+     * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def getSystem(): ActorSystem
 
     /**
      * Changes the Actor's behavior to become the new 'Receive' handler.
      * Replaces the current behavior on the top of the behavior stack.
+     *
+     * *Warning*: This method is not thread-safe and must not be accessed from other threads
+     * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def become(behavior: Receive): Unit =
       become(behavior, discardOld = true)
@@ -95,6 +109,9 @@ object AbstractActor {
      * The default of replacing the current behavior on the stack has been chosen to avoid memory
      * leaks in case client code is written without consulting this documentation first (i.e.
      * always pushing new behaviors and never issuing an `unbecome()`)
+     *
+     * *Warning*: This method is not thread-safe and must not be accessed from other threads
+     * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def become(behavior: Receive, discardOld: Boolean): Unit =
       become(behavior.onMessage.asInstanceOf[PartialFunction[Any, Unit]], discardOld)
