@@ -42,7 +42,7 @@ trait ActorContext[T] {
    * Get the `scaladsl` of this `ActorContext`.
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as CompletionStage callbacks.
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def asScala: akka.actor.typed.scaladsl.ActorContext[T]
 
@@ -52,7 +52,7 @@ trait ActorContext[T] {
    * have a different [[ActorRef]].
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as CompletionStage callbacks.
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getSelf: ActorRef[T]
 
@@ -60,7 +60,7 @@ trait ActorContext[T] {
    * The [[ActorSystem]] to which this Actor belongs.
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as CompletionStage callbacks.
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getSystem: ActorSystem[Void]
 
@@ -74,7 +74,7 @@ trait ActorContext[T] {
    * are still alive, in no particular order.
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as CompletionStage callbacks.
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getChildren: java.util.List[ActorRef[Void]]
 
@@ -82,7 +82,7 @@ trait ActorContext[T] {
    * The named child Actor if it is alive.
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as CompletionStage callbacks.
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getChild(name: String): Optional[ActorRef[Void]]
 
@@ -91,7 +91,7 @@ trait ActorContext[T] {
    * It is good practice to name Actors wherever practical.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as CompletionStage callbacks.
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawnAnonymous[U](behavior: Behavior[U]): ActorRef[U]
 
@@ -100,7 +100,7 @@ trait ActorContext[T] {
    * It is good practice to name Actors wherever practical.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as CompletionStage callbacks.
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawnAnonymous[U](behavior: Behavior[U], props: Props): ActorRef[U]
 
@@ -108,7 +108,7 @@ trait ActorContext[T] {
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] and with the given name.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as CompletionStage callbacks.
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawn[U](behavior: Behavior[U], name: String): ActorRef[U]
 
@@ -116,7 +116,7 @@ trait ActorContext[T] {
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] and with the given name.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as CompletionStage callbacks.
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawn[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U]
 
@@ -125,7 +125,7 @@ trait ActorContext[T] {
    * processing its current message. Nothing happens if the ActorRef is a child that is already stopped.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as CompletionStage callbacks.
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    *
    * @throws IllegalArgumentException if the given actor ref is not a direct child of this actor
    */
@@ -143,7 +143,7 @@ trait ActorContext[T] {
    * To clear the termination message, unwatch first.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as CompletionStage callbacks.
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def watch[U](other: ActorRef[U]): Unit
 
@@ -159,7 +159,7 @@ trait ActorContext[T] {
    * another termination message. To change the termination message, unwatch first.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as CompletionStage callbacks.
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def watchWith[U](other: ActorRef[U], msg: T): Unit
 
@@ -168,7 +168,7 @@ trait ActorContext[T] {
    * notification will not subsequently be received for the referenced Actor.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as CompletionStage callbacks.
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def unwatch[U](other: ActorRef[U]): Unit
 
@@ -179,7 +179,7 @@ trait ActorContext[T] {
    * mechanism.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as CompletionStage callbacks.
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def setReceiveTimeout(d: FiniteDuration, msg: T): Unit
 
@@ -187,7 +187,7 @@ trait ActorContext[T] {
    * Cancel the sending of receive timeout notifications.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as CompletionStage callbacks.
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def cancelReceiveTimeout(): Unit
 
@@ -200,7 +200,7 @@ trait ActorContext[T] {
    * For scheduling messages to the actor itself, use [[Behaviors.withTimers]]
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as CompletionStage callbacks.
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): akka.actor.Cancellable
 
@@ -209,7 +209,7 @@ trait ActorContext[T] {
    * like [[scala.concurrent.Future]] combinators.
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as CompletionStage callbacks.
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getExecutionContext: ExecutionContextExecutor
 
@@ -237,7 +237,7 @@ trait ActorContext[T] {
    * The function is running in this actor and can safely access state of it.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as CompletionStage callbacks.
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def messageAdapter[U](messageClass: Class[U], f: JFunction[U, T]): ActorRef[U]
 
@@ -251,7 +251,7 @@ trait ActorContext[T] {
    * For other messaging patterns with other actors, see [[ActorContext#messageAdapter]].
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as CompletionStage callbacks.
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    *
    * @param createRequest A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
    *                      the other actor can send a message back through.

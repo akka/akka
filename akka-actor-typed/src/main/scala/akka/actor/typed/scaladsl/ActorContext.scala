@@ -40,7 +40,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * Get the `javadsl` of this `ActorContext`.
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as Future callbacks.
+   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def asJava: akka.actor.typed.javadsl.ActorContext[T]
 
@@ -49,16 +49,16 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * An Actor with the same name that lives before or after this instance will
    * have a different [[ActorRef]].
    *
-   * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as Future callbacks.
+   * This field is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def self: ActorRef[T]
 
   /**
    * The [[ActorSystem]] to which this Actor belongs.
    *
-   * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as Future callbacks.
+   * This field is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def system: ActorSystem[Nothing]
 
@@ -71,8 +71,8 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * The list of child Actors created by this Actor during its lifetime that
    * are still alive, in no particular order.
    *
-   * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as Future callbacks.
+   * This field is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def children: Iterable[ActorRef[Nothing]]
 
@@ -80,7 +80,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * The named child Actor if it is alive.
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as Future callbacks.
+   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def child(name: String): Option[ActorRef[Nothing]]
 
@@ -89,7 +89,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * It is good practice to name Actors wherever practical.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as Future callbacks.
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U]
 
@@ -97,7 +97,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] and with the given name.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as Future callbacks.
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U]
 
@@ -109,7 +109,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * @throws IllegalArgumentException if the given actor ref is not a direct child of this actor
 =======
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as Future callbacks.
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    *
    * @return whether the passed-in [[ActorRef]] points to a current child Actor
 >>>>>>> Docs for scaladsl and untyped context
@@ -128,7 +128,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * To clear the termination message, unwatch first.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as Future callbacks.
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def watch[U](other: ActorRef[U]): Unit
 
@@ -144,7 +144,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * another termination message. To change the termination message, unwatch first.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as Future callbacks.
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def watchWith[U](other: ActorRef[U], msg: T): Unit
 
@@ -153,7 +153,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * notification will not subsequently be received for the referenced Actor.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as Future callbacks.
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def unwatch[U](other: ActorRef[U]): Unit
 
@@ -164,7 +164,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * mechanism.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as Future callbacks.
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def setReceiveTimeout(d: FiniteDuration, msg: T): Unit
 
@@ -172,7 +172,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * Cancel the sending of receive timeout notifications.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as Future callbacks.
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def cancelReceiveTimeout(): Unit
 
@@ -183,7 +183,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * handle.
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as Future callbacks.
+   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): akka.actor.Cancellable
 
@@ -191,8 +191,8 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * This Actor’s execution context. It can be used to run asynchronous tasks
    * like [[scala.concurrent.Future]] combinators.
    *
-   * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as Future callbacks.
+   * This field is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   implicit def executionContext: ExecutionContextExecutor
 
@@ -245,7 +245,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * The function is running in this actor and can safely access state of it.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from other threads
-   * than the ordinary actor message processing thread, such as Future callbacks.
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def messageAdapter[U: ClassTag](f: U ⇒ T): ActorRef[U]
 
@@ -260,7 +260,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * For other messaging patterns with other actors, see [[ActorContext#messageAdapter]].
    *
    * This method is thread-safe and can be called from other threads than the ordinary
-   * actor message processing thread, such as Future callbacks.
+   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    *
    * @param createRequest A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
    *                      the other actor can send a message back through.
