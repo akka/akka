@@ -55,9 +55,11 @@ order of the emitted downstream elements (the replies).
 
 ### Sink.actorRefWithAck
 
-The sink sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
-First element is always *onInitMessage*, then stream is waiting for the given acknowledgement message
-from the given actor which means that it is ready to process elements. It also requires the given acknowledgement
+The `MessageProcessorActor` processes messages and keeps the state of `tototalMessageProcessed`.
+`MessageProcessorActor` processes each elements of the stream and sends back the back-pressure signal `Ack`.
+
+First element is always *Init*, then stream is waiting for the given acknowledgement message
+from the actor which means that it is ready to process elements. It also requires the given acknowledgement
 message after each stream element to make back-pressure work.
 
 Scala
@@ -66,20 +68,23 @@ Scala
 Java
 :   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #actorref-with-ack }
 
-actorRefWithAck Sends the elements of the stream to the given `ActorWithBackPressure` that sends back back-pressure signal.
-
-First element is always `onInitMessage`, then stream is waiting for acknowledgement message, `ackMessage` from the
-given actor which means that it is ready to process elements. It also requires `ackMessage` message after each stream
-element to make backpressure work.
+actorRefWithAck Sends the elements of the stream to the given `MessageProcessorActor` that sends back back-pressure signal `Ack`.
 
 The output may look like this:
 
 ```
-start
-processing 1
-processing 2
-processing 3
-done!
+received message: 0
+received message: 1
+received message: 2
+received message: 3
+received message: 4
+received message: 5
+received message: 6
+received message: 7
+received message: 8
+received message: 9
+received message: 10
+Stream processing completed
 ```
 
 If the target actor terminates the stream will be cancelled. When the stream is completed successfully the 
@@ -103,6 +108,12 @@ the stream). The elements will be buffered until the stream can process them. Yo
 the queue and they will be emitted to the stream if there is demand from downstream, otherwise they will 
 be buffered until request for demand is received. 
 
+There are two means for sending messages to an Akka Stream. The first is to use Source.actorRef.
+Messages sent to the actor materialized from this source will be emitted downstream, when there is demand. Otherwise, they will be buffered, up to the specified maximum, in conjunction with the overflow strategy.
+The drawback of this approach is that there is no feedback to the producer of the events.
+
+`Source.queue` is an improvement over actorRef, since it can provide backpressure. The offer method returns a Future, which completes with the result of the enqueue operation.
+
 Use overflow strategy `akka.stream.OverflowStrategy.backpressure` to avoid dropping of elements if the 
 buffer is full.
 
@@ -116,16 +127,14 @@ Using `Source.queue` you can push elements to the queue and they will be emitted
 demand from downstream, otherwise they will be buffered until request for demand is received. Elements in the buffer
 will be discarded if downstream is terminated.
 
-`groupedWithin` Chunk up this stream into groups of elements received within a time window, or limited by the given number of elements,
-whatever happens first. Empty groups will not be emitted if no elements are received from upstream. The last group
-before end-of-stream will contain the buffered elements since the previously emitted group.
+`throttle` combinator is used to slow down the stream to `5 element` per `3 second`.
 
 `SourceQueue.offer` returns @scala[`Future[QueueOfferResult]`]@java[`CompletionStage<QueueOfferResult>`] which completes with `QueueOfferResult.Enqueued`
 if element was added to buffer or sent downstream. It completes with `QueueOfferResult.Dropped` if element 
 was dropped. Can also complete  with `QueueOfferResult.Failure` - when stream failed or 
 `QueueOfferResult.QueueClosed` when downstream is completed.
 
-Method `offer` offers next element to a stream and returns future that fails when stream is completed or you cannot call
+Method `offer` offers next element to a stream and returns future that fails when stream is already completed or you cannot call
 offer in this moment because of implementation rules (like for backpressure mode and full buffer you need to wait for
 last offer call Future completion)
 

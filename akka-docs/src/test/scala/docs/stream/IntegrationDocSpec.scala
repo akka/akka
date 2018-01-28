@@ -3,30 +3,27 @@
  */
 package docs.stream
 
-import akka.NotUsed
-
-import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
-import akka.stream.scaladsl._
-import akka.stream._
-
-import scala.concurrent.{ Await, ExecutionContext, Future }
-import akka.testkit.TestProbe
-import akka.actor.{ ActorRef, ActorSystem }
-import com.typesafe.config.ConfigFactory
-import akka.actor.Actor
-import akka.actor.Props
-import akka.util.Timeout
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.stream.scaladsl.Flow
+import akka.NotUsed
+import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
 import akka.stream.QueueOfferResult.{ Dropped, Enqueued, Failure, QueueClosed }
+import akka.stream._
+import akka.stream.scaladsl.{ Flow, _ }
+import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
+import docs.stream.IntegrationDocSpec.MessageProcessor._
+
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{ ExecutionContext, Future }
 
 object IntegrationDocSpec {
   import TwitterStreamQuickstartDocSpec._
 
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory.parseString(
+    """
     #//#blocking-dispatcher-config
     blocking-dispatcher {
       executor = "thread-pool-executor"
@@ -128,68 +125,39 @@ object IntegrationDocSpec {
     }
   }
   //#ask-actor
-  class ActorRefWithBackPressure {
-    //#actorref-with-ack
-    val initMessage = "start"
-    val onCompleteMessage = "done"
-    val ackMessage = "ack"
 
-    implicit val system = ActorSystem("ActorWithBackPressure")
-    implicit val mat = ActorMaterializer()
-
-    class ActorWithBackPressure() extends Actor {
-      def receive = {
-        case `initMessage` ⇒ {
-          sender() ! ackMessage
-          println(initMessage)
-        }
-        case msg: Int ⇒ {
-          sender() ! ackMessage
-          println(s"processing $msg")
-        }
-        case `onCompleteMessage` ⇒ {
-          sender() ! onCompleteMessage
-          println(onCompleteMessage)
-        }
-      }
-    }
-
-    val actor = system.actorOf(Props[ActorWithBackPressure])
-
-    Source(List(1, 2, 3))
-      .runWith(
-        Sink.actorRefWithAck(actor, initMessage, ackMessage, onCompleteMessage))
-
-    //#actorref-with-ack
-
+  //#actorref-with-ack
+  object MessageProcessor {
+    case object Ack
+    case object Init
+    case object GetTotalProcessedMessage
+    case class ProcessMessage(msg: Int)
+    case class TotalProcessedMessage(count: Long)
+    case object Completed
   }
-
-  //#source-queue
-  class SourceQueueActor extends Actor {
-    implicit val system = ActorSystem("SourceQueue")
-    implicit val materializer = ActorMaterializer()
-    private val bufferSize = 10
-    private val overFlowStrategy = OverflowStrategy.dropHead
-
-    private val sourceQueue = Source.queue[Int](bufferSize, overFlowStrategy).to(Sink.head).run()
-
+  class MessageProcessorActor extends Actor {
+    var totalMessageProcessed = 0
     override def receive: Receive = {
-      case number: Int => {
-        sourceQueue.offer(number).collect {
-          case Enqueued     => sender() ! s"$number Enqueued"
-          case Dropped      => sender() ! s"$number Dropped"
-          case Failure(err) => sender() ! s"$number Failed with ${err.getMessage}"
-          case QueueClosed  => sender() ! s"$number Failed QueueClosed"
-        }
+      case Init ⇒ sender ! Ack
+      case ProcessMessage(msg) ⇒ {
+        totalMessageProcessed += 1
+        println(s"received message: $msg")
+        sender ! Ack
+      }
+      case GetTotalProcessedMessage ⇒ {
+        sender ! TotalProcessedMessage(totalMessageProcessed)
+      }
+      case Completed ⇒ {
+        println(s"Stream processing completed ")
       }
     }
   }
-  //#source-queue
+  //#actorref-with-ack
 }
 
 class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
-  import TwitterStreamQuickstartDocSpec._
   import IntegrationDocSpec._
+  import TwitterStreamQuickstartDocSpec._
 
   implicit val materializer = ActorMaterializer()
   val ref: ActorRef = system.actorOf(Props[Translator])
@@ -459,6 +427,48 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
       "after: H",
       "after: I",
       "after: J"))
+  }
+
+  "illustrate use of actorRefWithAck along with stream" in {
+    //#actorref-with-ack
+    val messageProcessorActor =
+      system.actorOf(Props[MessageProcessorActor], "messageProcessor")
+
+    val source: Source[Int, NotUsed] =
+      Source.fromIterator(() ⇒ (0 to 10).toIterator)
+
+    val flow = Flow[Int].map(ProcessMessage)
+
+    val sink =
+      Sink.actorRefWithAck(messageProcessorActor, Init, Ack, Completed)
+
+    source.via(flow).to(sink).run()
+    //#actorref-with-ack
+  }
+
+  "illustrate use of source queue" in {
+    //#source-queue
+    val bufferSize = 5
+    val elementsToProcess = 3
+
+    val queue = Source
+      .queue[Int](bufferSize, OverflowStrategy.backpressure)
+      .throttle(elementsToProcess, 3.second, elementsToProcess, ThrottleMode.Shaping)
+      .map(x ⇒ x * x)
+      .toMat(Sink.foreach(x ⇒ println(s"completed $x")))(Keep.left)
+      .run()
+
+    val source = Source(1 to 10)
+
+    source.mapAsync(1)(x ⇒ {
+      queue.offer(x).map {
+        case Enqueued    ⇒ println(s"enqueued $x")
+        case Dropped     ⇒ println(s"dropped $x")
+        case Failure(ex) ⇒ println(s"Offer failed ${ex.getMessage}")
+        case QueueClosed ⇒ println("Source Queue closed")
+      }
+    }).runWith(Sink.ignore)
+    //#source-queue
   }
 
 }

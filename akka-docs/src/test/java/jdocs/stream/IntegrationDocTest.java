@@ -15,12 +15,14 @@ import akka.util.Timeout;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import docs.stream.IntegrationDocSpec;
 import jdocs.AbstractJavaTest;
 import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -310,65 +312,58 @@ public class IntegrationDocTest extends AbstractJavaTest {
   }
   //#ask-actor
 
-  class ActorWithBackPressureExample {
-      //#actorref-with-ack
-      String initMessage = "start";
-      String onCompleteMessage = "done";
-      String ackMessage = "ack";
+  //#actorref-with-ack
+    static public class Ack{}
+    static public class Init{}
+    static public class GetTotalProcessedMessage{}
+    static public class Completed{}
+    static public class ProcessMessage{
+      private final Integer msg;
 
-      class ActorWithBackPressure extends AbstractActor{
-          @Override
-          public Receive createReceive() {
-              return receiveBuilder().matchEquals(initMessage,s -> {
-                  getSender().tell(ackMessage,getSelf());
-                  System.out.println(initMessage);
-              }).matchEquals(Integer.class,number -> {
-                  getSender().tell(ackMessage,getSelf());
-                  System.out.println("processing "+number);
-              }).matchEquals(onCompleteMessage,s -> {
-                  getSender().tell(onCompleteMessage,getSelf());
-                  System.out.println(onCompleteMessage);
-              }).build();
-          }
+      public ProcessMessage(Integer msg) {
+        this.msg = msg;
       }
 
-      public void start(){
-          Function<Throwable, Object> onFailure = Throwable::getMessage;
-          ActorRef actor = system.actorOf(Props.create(ActorWithBackPressure.class));
-          Sink<Integer,NotUsed> sink = Sink.actorRefWithAck(actor,initMessage,ackMessage,onCompleteMessage,onFailure);
-
-          Source.from(Arrays.asList(1, 2, 3)).toMat(sink, Keep.right());
+      public Integer getMessage(){
+        return msg;
       }
-      //#actorref-with-ack
+    }
+    static public class TotalProcessedMessage{
+      private final Long count;
+
+      public TotalProcessedMessage(Long count) {
+        this.count = count;
+      }
+      public Long getCount(){
+        return count;
+      }
+    }
+
+
+public static class MessageProcessorActor extends AbstractActor{
+
+    Long totalMessageProcessed= 0L;
+
+    public MessageProcessorActor() {
+
+    }
+  @Override
+  public Receive createReceive() {
+    return receiveBuilder().match(Ack.class, msg ->{
+      getSender().tell(new Ack(),getSelf());
+    }).match(ProcessMessage.class, msg ->{
+      totalMessageProcessed +=1;
+      System.out.println("received message: "+msg.getMessage());
+      getSender().tell(new Ack(),getSelf());
+    }).match(GetTotalProcessedMessage.class, msg ->{
+      getSender().tell(new TotalProcessedMessage(totalMessageProcessed),getSelf());
+    }).match(Completed.class, msg ->{
+      System.out.println("stream processing completed");
+    })
+   .build();
   }
-
-  //#source-queue
-  static class SourceQueueActor extends AbstractActor{
-      int bufferSize = 10;
-      OverflowStrategy overflowStrategy = OverflowStrategy.dropHead();
-      final Materializer mat = ActorMaterializer.create(system);
-      SourceQueueWithComplete<Object> sourceQueue = Source.queue(bufferSize,overflowStrategy).to(Sink.head()).run(mat);
-
-      @Override
-      public Receive createReceive() {
-          return receiveBuilder().matchEquals(Integer.class,number -> {
-              sourceQueue.offer(number).whenComplete((result,e)-> {
-                  try {
-                      if (result == QueueOfferResult.enqueued()) {
-                          getSender().tell(number+" Enqueued",getSelf());
-                      }
-                      if (result == QueueOfferResult.dropped()) {
-                          getSender().tell(number+" Dropped",getSelf());
-                      }
-                  } catch(Exception ex) {
-                      getSender().tell(number+" Failed with ${err.getMessage}",getSelf());
-
-                  }
-              });
-          }).build();
-      }
-  }
-  //#source-queue
+}
+  //#actorref-with-ack
 
   @SuppressWarnings("unchecked")
   @Test
@@ -696,5 +691,52 @@ public class IntegrationDocTest extends AbstractJavaTest {
     };
   }
 
+  @Test
+  public void illustrateActorRefWithAckWorking() throws Exception{
+    new TestKit(system){
+      {
+        //#actorref-with-ack
+        ActorRef messageProcessorActor = system.actorOf(Props.create(MessageProcessorActor.class), "messageProcessor");
+
+        Source<Integer, NotUsed> source
+                = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+
+        Flow<Integer, ProcessMessage, NotUsed> flow = Flow.of(Integer.class).map(ProcessMessage::new);
+
+        Function<Throwable, Object> onFailure = x -> x;
+
+        Sink<ProcessMessage, NotUsed> sink =
+                Sink.actorRefWithAck(messageProcessorActor, new Init(), new Ack(), new Completed(), onFailure);
+
+        final RunnableGraph<?> runnableGraph = source.via(flow).to(sink);
+
+        runnableGraph.run(mat);
+        //#actorref-with-ack
+      }
+    };
+  }
+  @Test
+  public void illustrateSourceQueue() throws Exception{
+    new TestKit(system){
+      {
+        //#source-queue
+        int bufferSize = 5;
+        int elementsToProcess = 3;
+
+        SourceQueueWithComplete<Integer> sourceQueue = Source.<Integer>queue(bufferSize,OverflowStrategy.backpressure())
+          .throttle(elementsToProcess, FiniteDuration.apply(3, TimeUnit.SECONDS), elementsToProcess, ThrottleMode.shaping())
+          .map(x -> x * x)
+          .to(Sink.foreach(x -> System.out.println("completed "+x)))
+          .run(mat);
+
+        Source<Integer, NotUsed> source
+                = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+
+        source.map(x -> sourceQueue.offer(x)).runWith(Sink.ignore(),mat);
+
+        //#source-queue
+      }
+    };
+  }
 
 }
