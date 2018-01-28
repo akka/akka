@@ -460,6 +460,46 @@ class FlowGroupBySpec extends StreamSpec {
       upstream.sendComplete()
     }
 
+    "cancel if downstream has cancelled & all substreams cancel" in assertAllStagesStopped {
+      val upstream = TestPublisher.probe[Int]()
+      val downstreamMaster = TestSubscriber.probe[Source[Int, NotUsed]]()
+
+      Source
+        .fromPublisher(upstream)
+        .via(new GroupBy[Int, Int](10, elem ⇒ elem))
+        .runWith(Sink.fromSubscriber(downstreamMaster))
+
+      val substream1 = TestSubscriber.probe[Int]()
+      downstreamMaster.request(1)
+      upstream.sendNext(1)
+      downstreamMaster.expectNext().runWith(Sink.fromSubscriber(substream1))
+
+      val substream2 = TestSubscriber.probe[Int]()
+      downstreamMaster.request(1)
+      upstream.sendNext(2)
+      downstreamMaster.expectNext().runWith(Sink.fromSubscriber(substream2))
+
+      // Cancel downstream
+      downstreamMaster.cancel()
+
+      // Both substreams still work
+      substream1.request(1)
+      substream1.expectNext(1)
+      substream2.request(1)
+      substream2.expectNext(2)
+
+      // New keys are ignored
+      upstream.sendNext(3)
+      upstream.sendNext(4)
+
+      // Cancel all substreams
+      substream1.cancel()
+      substream2.cancel()
+
+      // Upstream gets cancelled
+      upstream.expectCancellation()
+    }
+
     "work with random demand" in assertAllStagesStopped {
       val mat = ActorMaterializer(ActorMaterializerSettings(system)
         .withInputBuffer(initialSize = 1, maxSize = 1))
