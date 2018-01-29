@@ -122,8 +122,9 @@ class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestar
 
         within(20.seconds) {
           awaitAssert {
-            system.actorSelection(RootActorPath(thirdAddress) / "user" / "shutdown") ! Identify(None)
-            expectMsgType[ActorIdentity](1.second).ref.get
+            val p = TestProbe()
+            system.actorSelection(RootActorPath(thirdAddress) / "user" / "shutdown").tell(Identify(None), p.ref)
+            p.expectMsgType[ActorIdentity](1.second).ref.get
           }
         }
 
@@ -163,7 +164,7 @@ class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestar
           probe.expectMsg(0L)
 
           newSystem.actorOf(Props[Shutdown], "shutdown")
-          Await.ready(newSystem.whenTerminated, 10.seconds)
+          Await.ready(newSystem.whenTerminated, 20.seconds)
         } finally newSystem.terminate()
       }
 
