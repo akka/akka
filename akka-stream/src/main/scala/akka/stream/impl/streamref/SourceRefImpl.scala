@@ -119,7 +119,7 @@ private[stream] final class SourceRefStageImpl[Out](
         }
       }
 
-      def scheduleDemandRedelivery() =
+      def scheduleDemandRedelivery(): Unit =
         scheduleOnce(DemandRedeliveryTimerKey, settings.demandRedeliveryInterval)
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
@@ -183,17 +183,20 @@ private[stream] final class SourceRefStageImpl[Out](
       }
 
       def tryPush(): Unit =
-        if (receiveBuffer.nonEmpty) push(out, receiveBuffer.dequeue())
-        else if ( /* buffer is empty && */ completed) completeStage()
+        if (receiveBuffer.nonEmpty && isAvailable(out)) push(out, receiveBuffer.dequeue())
+        else if (receiveBuffer.isEmpty && completed) completeStage()
 
       private def onReceiveElement(payload: Out): Unit = {
         localRemainingRequested -= 1
-        if (receiveBuffer.isEmpty && isAvailable(out))
+        if (receiveBuffer.isEmpty && isAvailable(out)) {
           push(out, payload)
-        else if (receiveBuffer.isFull)
-          throw new IllegalStateException(s"Attempted to overflow buffer! Capacity: ${receiveBuffer.capacity}, incoming element: $payload, localRemainingRequested: ${localRemainingRequested}, localCumulativeDemand: ${localCumulativeDemand}")
-        else
+        } else if (receiveBuffer.isFull) {
+          throw new IllegalStateException(s"Attempted to overflow buffer! " +
+            s"Capacity: ${receiveBuffer.capacity}, incoming element: $payload, " +
+            s"localRemainingRequested: $localRemainingRequested, localCumulativeDemand: $localCumulativeDemand")
+        } else {
           receiveBuffer.enqueue(payload)
+        }
       }
 
       /** @throws InvalidPartnerActorException when partner ref is invalid */
