@@ -74,8 +74,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
     val serverBidiFlow =
       settings.idleTimeout match {
-        case t: FiniteDuration ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
-        case _                 ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage
+        case t: FiniteDuration ⇒ httpLayer atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
+        case _                 ⇒ httpLayer atop tlsStage
       }
 
     serverBidiFlow
@@ -289,7 +289,9 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     remoteAddress:      Option[InetSocketAddress] = None,
     log:                LoggingAdapter            = system.log,
     isSecureConnection: Boolean                   = false): ServerLayer =
-    HttpServerBluePrint(settings, log, isSecureConnection).addAttributes(HttpAttributes.remoteAddress(remoteAddress))
+    HttpServerBluePrint(settings, log, isSecureConnection)
+      .addAttributes(HttpAttributes.remoteAddress(remoteAddress))
+      .atop(delayCancellationStage(settings))
 
   @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
   private[http] def serverLayer()(implicit mat: Materializer): ServerLayer =
