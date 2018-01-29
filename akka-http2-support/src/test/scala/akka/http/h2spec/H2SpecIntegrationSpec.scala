@@ -7,7 +7,7 @@ package akka.http.h2spec
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.http.impl.util.ExampleHttpContexts
+import akka.http.impl.util.{ ExampleHttpContexts, WithLogCapturing }
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.Http2
@@ -22,7 +22,8 @@ import scala.sys.process._
 class H2SpecIntegrationSpec extends AkkaSpec(
   """
      akka {
-       loglevel = INFO
+       loglevel = DEBUG
+       loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
        http.server.log-unencrypted-network-bytes = off
         
        actor.serialize-creators = off
@@ -30,7 +31,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
        
        stream.materializer.debug.fuzzing-mode = off
      }
-  """) with Directives with ScalaFutures {
+  """) with Directives with ScalaFutures with WithLogCapturing {
 
   import system.dispatcher
   implicit val mat = ActorMaterializer()

@@ -5,17 +5,20 @@
 package akka.http.impl.engine.client
 
 import javax.net.ssl.SSLContext
+
+import akka.http.impl.util.WithLogCapturing
 import akka.http.scaladsl.{ ConnectionContext, Http }
-import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
-import akka.stream.testkit.{ TestSubscriber, TestPublisher, Utils }
+import akka.stream.testkit.{ TestPublisher, TestSubscriber, Utils }
 import akka.http.scaladsl.model.headers
 import akka.testkit.{ AkkaSpec, SocketUtil }
 
 class ClientCancellationSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
-    akka.io.tcp.trace-logging = off""") {
+    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
+    akka.io.tcp.trace-logging = off""") with WithLogCapturing {
 
   implicit val materializer = ActorMaterializer()
   val noncheckedMaterializer = ActorMaterializer()
