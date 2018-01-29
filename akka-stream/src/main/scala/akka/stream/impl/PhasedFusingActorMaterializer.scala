@@ -736,8 +736,14 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
         fuseIntoExistingInterperter(shell)
 
       case _ ⇒
+
+        val dispatcher =
+          effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher] match {
+            case ActorAttributes.IODispatcher           ⇒ settings.blockingIoDispatcher
+            case ActorAttributes.Dispatcher(dispatcher) ⇒ dispatcher
+          }
         val props = ActorGraphInterpreter.props(shell)
-          .withDispatcher(effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+          .withDispatcher(dispatcher)
         val actorName = fullIslandName match {
           case OptionVal.Some(n) ⇒ n
           case OptionVal.None    ⇒ islandName
