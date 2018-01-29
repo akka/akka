@@ -56,11 +56,11 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
   public void testOnSuccess() {
     //#onSuccess
     final Route route = path("success", () ->
-      onSuccess(() -> CompletableFuture.supplyAsync(() -> "Ok"),
+      onSuccess(CompletableFuture.supplyAsync(() -> "Ok"),
         extraction -> complete(extraction)
       )
     ).orElse(path("failure", () ->
-      onSuccess(() -> CompletableFuture.supplyAsync(() -> {
+      onSuccess(CompletableFuture.supplyAsync(() -> {
           throw new RuntimeException();
         }),
         extraction -> complete("never reaches here"))

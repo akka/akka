@@ -73,7 +73,7 @@ public class JUnitRouteTestTest extends JUnitRouteTest {
       testRoute(
         respondWithHeader(pinkHeader, () ->
           onSuccess(
-            () -> promise,
+            promise,
             result -> complete(result)
           )
         )

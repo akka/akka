@@ -146,7 +146,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
             .mapConcat(bs -> Arrays.asList(bs.utf8String().split(",")))
             .map(s -> Integer.parseInt(s))
             .runFold(0, (acc, n) -> acc + n, ctx.getMaterializer());
-        return onSuccess(() -> sumF, sum -> complete("Sum: " + sum));
+        return onSuccess(sumF, sum -> complete("Sum: " + sum));
       });
     });
 
@@ -186,7 +186,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
             return accF.thenCombine(intF, (a, b) -> a + b);
           });
 
-        return onSuccess(() -> sumF, sum -> complete("Sum: " + sum));
+        return onSuccess(sumF, sum -> complete("Sum: " + sum));
       });
     });
 
@@ -225,7 +225,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
             .mapConcat(bs -> Arrays.asList(bs.utf8String().split(",")))
             .map(s -> Integer.parseInt(s))
             .runFold(0, (acc, n) -> acc + n, ctx.getMaterializer());
-          return onSuccess(() -> sumF, sum -> complete("Sum: " + sum));
+          return onSuccess(sumF, sum -> complete("Sum: " + sum));
         };
       return fileUpload("csv", processUploadedFile);
     });

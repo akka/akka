@@ -175,7 +175,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
         extractExecutionContext(ctx ->
           path("multiply", () ->
             paramXY((x, y) ->
-              onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
+              onSuccess(multiplyAsync(ctx, x, y), Function.identity())
             )
           )
         );
@@ -186,7 +186,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       public Route addAsync(int x, int y) {
         CompletionStage<Integer> result = calculatorService.add(x, y);
 
-        return onSuccess(() -> result, sum -> complete("x + y = " + sum));
+        return onSuccess(result, sum -> complete("x + y = " + sum));
       }
 
       Route addAsyncRoute =
