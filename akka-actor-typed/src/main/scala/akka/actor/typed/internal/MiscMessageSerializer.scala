@@ -14,7 +14,8 @@ import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 @InternalApi
 class MiscMessageSerializer(val system: akka.actor.ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
 
-  private val resolver = ActorRefResolver(system.toTyped)
+  // Serializers are initialized early on. `toTyped` might then try to initialize the untyped ActorSystemAdapter extension.
+  private lazy val resolver = ActorRefResolver(system.toTyped)
   private val ActorRefManifest = "a"
 
   def manifest(o: AnyRef): String = o match {
