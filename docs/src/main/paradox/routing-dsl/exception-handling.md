@@ -78,3 +78,14 @@ reaching the exception handler.
 To understand the performance implications of (mis-)using exceptions,
 have a read at this excellent post by A. Shipilёv: [The Exceptional Performance of Lil' Exception](https://shipilev.net/blog/2014/exceptional-performance).
 @@@
+
+## Respond with headers and Exception Handler
+
+If you wrap an ExceptionHandler inside a different directive, then that directive will still apply. Example below shows
+that wrapping an ExceptionHandler inside a respondWithHeader directive will still add the header to the response.   
+
+Scala
+:   @@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #respond-with-header-exceptionhandler-example }
+
+Java
+:   @@snip [ExceptionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/RespondWithHeaderHandlerExampleTest.java) { #respond-with-header-exceptionhandler-example  }
