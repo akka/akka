@@ -495,12 +495,14 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
       case LoadSnapshotFailed(cause) ⇒
         timeoutCancellable.cancel()
         try onRecoveryFailure(cause, event = None) finally context.stop(self)
+        returnRecoveryPermit()
 
       case RecoveryTick(true) ⇒
         try onRecoveryFailure(
           new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within $timeout"),
           event = None)
         finally context.stop(self)
+        returnRecoveryPermit()
 
       case other ⇒
         stashInternally(other)
@@ -565,12 +567,14 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         case ReplayMessagesFailure(cause) ⇒
           timeoutCancellable.cancel()
           try onRecoveryFailure(cause, event = None) finally context.stop(self)
+          returnRecoveryPermit()
         case RecoveryTick(false) if !eventSeenInInterval ⇒
           timeoutCancellable.cancel()
           try onRecoveryFailure(
             new RecoveryTimedOut(s"Recovery timed out, didn't get event within $timeout, highest sequence number seen $lastSequenceNr"),
             event = None)
           finally context.stop(self)
+          returnRecoveryPermit()
         case RecoveryTick(false) ⇒
           eventSeenInInterval = false
         case RecoveryTick(true) ⇒
