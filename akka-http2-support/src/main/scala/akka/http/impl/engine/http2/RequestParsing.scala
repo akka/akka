@@ -11,7 +11,7 @@ import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.model
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.`Remote-Address`
+import akka.http.scaladsl.model.headers.{ `Remote-Address`, `Tls-Session-Info` }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
@@ -33,6 +33,12 @@ private[http2] object RequestParsing {
         attributes.get[HttpAttributes.RemoteAddress].map(remote ⇒ model.headers.`Remote-Address`(RemoteAddress(remote.address)))
         // in order to avoid searching all the time for the attribute, we need to guard it with the setting condition
       } else None // no need to emit the remote address header
+
+    val tlsSessionInfoHeader: Option[`Tls-Session-Info`] =
+      if (serverSettings.parserSettings.includeTlsSessionInfoHeader) {
+        attributes.get[HttpAttributes.TLSSessionInfo].map(sslSessionInfo ⇒
+          model.headers.`Tls-Session-Info`(sslSessionInfo.session))
+      } else None
 
     { subStream ⇒
       @tailrec
@@ -60,6 +66,8 @@ private[http2] object RequestParsing {
             headers += parseHeaderPair(httpHeaderParser, "cookie", cookies.toString)
           }
           if (remoteAddressHeader.isDefined) headers += remoteAddressHeader.get
+
+          if (tlsSessionInfoHeader.isDefined) headers += tlsSessionInfoHeader.get
 
           val entity =
             if (subStream.data == Source.empty || contentLength == 0) HttpEntity.Empty

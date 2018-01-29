@@ -5,6 +5,7 @@
 package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
+import javax.net.ssl.SSLSession
 
 import akka.annotation.InternalApi
 import akka.stream.Attributes
@@ -28,6 +29,16 @@ private[akka] object HttpAttributes {
 
   private[akka] def remoteAddress(address: InetSocketAddress): Attributes =
     Attributes(RemoteAddress(address))
+
+  /**
+   * INTERNAL API
+   * Internally used TLS session info in the HTTP pipeline.
+   */
+  @InternalApi
+  private[akka] final case class TLSSessionInfo(session: SSLSession) extends Attribute
+
+  private[akka] def tlsSessionInfo(session: SSLSession): Attributes =
+    Attributes(TLSSessionInfo(session))
 
   private[akka] val empty: Attributes =
     Attributes()

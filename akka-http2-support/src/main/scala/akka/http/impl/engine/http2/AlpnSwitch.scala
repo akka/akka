@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2
 import javax.net.ssl.SSLException
 
 import akka.NotUsed
+import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.TLSProtocol.{ SessionBytes, SessionTruncated, SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ BidiFlow, Flow }
@@ -52,7 +53,7 @@ object AlpnSwitch {
                 case first @ SessionBytes(session, bytes) ⇒
                   val chosen = chosenProtocolAccessor()
                   chosen match {
-                    case "h2" ⇒ install(http2Stack, first)
+                    case "h2" ⇒ install(http2Stack.addAttributes(HttpAttributes.tlsSessionInfo(session)), first)
                     case _    ⇒ install(http1Stack, first)
                   }
                 case SessionTruncated ⇒ failStage(new SSLException("TLS session was truncated (probably missing a close_notify packet)."))
