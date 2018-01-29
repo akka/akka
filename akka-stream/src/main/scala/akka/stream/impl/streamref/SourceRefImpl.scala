@@ -184,7 +184,7 @@ private[stream] final class SourceRefStageImpl[Out](
 
       def tryPush(): Unit =
         if (receiveBuffer.nonEmpty && isAvailable(out)) push(out, receiveBuffer.dequeue())
-        else if ( /* buffer is empty && */ completed) completeStage()
+        else if (receiveBuffer.isEmpty && completed) completeStage()
 
       private def onReceiveElement(payload: Out): Unit = {
         localRemainingRequested -= 1

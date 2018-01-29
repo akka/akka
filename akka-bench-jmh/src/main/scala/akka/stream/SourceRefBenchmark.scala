@@ -33,16 +33,6 @@ class SourceRefBenchmark {
         log-config-on-start = off
         log-dead-letters-during-shutdown = off
         loglevel = "WARNING"
-
-        test {
-          timefactor =  1.0
-          filter-leeway = 3s
-          single-expect-default = 3s
-          default-timeout = 5s
-          calling-thread-dispatcher {
-            type = akka.testkit.CallingThreadDispatcherConfigurator
-          }
-        }
       }""".stripMargin
   ).withFallback(ConfigFactory.load())
 
