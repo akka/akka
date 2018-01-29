@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.scaladsl
 
 import akka.http.scaladsl.server.Directives

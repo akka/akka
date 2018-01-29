@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.impl.engine.http2
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }

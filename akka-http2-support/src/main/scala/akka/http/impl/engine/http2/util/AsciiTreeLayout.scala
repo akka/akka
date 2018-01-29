@@ -3,6 +3,7 @@
  *
  * Copied from sbt 0.12 source code
  */
+
 package akka.http.impl.engine.http2.util
 
 private[http2] object AsciiTreeLayout {

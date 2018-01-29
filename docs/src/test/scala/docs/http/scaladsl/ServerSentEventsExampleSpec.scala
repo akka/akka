@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.scaladsl
 
 import akka.http.scaladsl.server.{ Directives, Route, RoutingSpec }
