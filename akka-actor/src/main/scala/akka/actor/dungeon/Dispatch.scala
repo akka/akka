@@ -7,6 +7,7 @@ package akka.actor.dungeon
 import scala.annotation.tailrec
 import scala.util.{ Failure, Success, Try }
 
+import akka.AkkaException
 import akka.dispatch.{ Envelope, Mailbox }
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
@@ -21,6 +22,11 @@ import akka.dispatch.ProducesMessageQueue
 import akka.serialization.SerializerWithStringManifest
 import akka.dispatch.UnboundedMailbox
 import akka.serialization.DisabledJavaSerializer
+
+@SerialVersionUID(1L)
+final case class SerializationCheckFailedException private (msg: Object, cause: Throwable)
+  extends AkkaException(s"Failed to serialize and deserialize message of type ${msg.getClass.getName} for testing. " +
+    "To avoid this error, either disable 'akka.actor.serialize-messages', mark the message with 'akka.actor.NoSerializationVerificationNeeded', or configure serialization to support this message", cause)
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -156,8 +162,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
               case _              ⇒ envelope.copy(message = deserializedMsg)
             }
           case Failure(e) ⇒
-            throw new Exception(s"Failed to serialize and deserialize message of type ${msg.getClass.getName} for testing. " +
-              "To avoid this error, either disable 'akka.actor.serialize-messages', mark the message with 'akka.actor.NoSerializationVerificationNeeded', or configure serialization to support this message", e)
+            throw SerializationCheckFailedException(msg, e)
         }
     }
   }

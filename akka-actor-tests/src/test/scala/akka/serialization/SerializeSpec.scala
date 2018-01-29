@@ -17,6 +17,7 @@ import akka.pattern.ask
 import org.apache.commons.codec.binary.Hex.decodeHex
 import java.nio.ByteOrder
 import java.nio.ByteBuffer
+import akka.actor.dungeon.SerializationCheckFailedException
 import test.akka.serialization.NoVerification
 
 object SerializationTests {
@@ -308,7 +309,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
     val a = system.actorOf(Props[FooActor])
     Await.result(a ? "pigdog", timeout.duration) should ===("pigdog")
 
-    EventFilter[Exception](start = "Failed to serialize and deserialize message of type java.lang.Object", occurrences = 1) intercept {
+    EventFilter[SerializationCheckFailedException](start = "Failed to serialize and deserialize message of type java.lang.Object", occurrences = 1) intercept {
       a ! (new AnyRef)
     }
     system stop a
