@@ -256,6 +256,10 @@ class UriSpec extends WordSpec with Matchers {
       Path("/abc/def").endsWithSlash shouldBe false
       Path("/abc/def/").endsWithSlash shouldBe true
     }
+    "support the `?/` operator" in {
+      Path("abc") ?/ "def" shouldEqual Path("abc/def")
+      Path("abc/") ?/ "def" shouldEqual Path("abc/def")
+    }
     "support the `dropChars` modifier" in {
       Path./.dropChars(0) shouldEqual Path./
       Path./.dropChars(1) shouldEqual Empty
