@@ -250,6 +250,12 @@ import scala.collection.JavaConverters._
         true
       } else false
 
+    private def tryCancel(): Boolean =
+      if (activeSubstreamsMap.isEmpty || (activeSubstreamsMap.size == substreamWaitingToBePushed.size)) {
+        completeStage()
+        true
+      } else false
+
     private def fail(ex: Throwable): Unit = {
       for (value ← activeSubstreamsMap.values().asScala) value.fail(ex)
       failStage(ex)
@@ -280,8 +286,9 @@ import scala.collection.JavaConverters._
 
     override def onUpstreamFailure(ex: Throwable): Unit = fail(ex)
 
-    override def onDownstreamFinish(): Unit =
-      if (activeSubstreamsMap.isEmpty) completeStage() else setKeepGoing(true)
+    override def onUpstreamFinish(): Unit = if (!tryCompleteAll()) setKeepGoing(true)
+
+    override def onDownstreamFinish(): Unit = if (!tryCancel()) setKeepGoing(true)
 
     override def onPush(): Unit = try {
       val elem = grab(in)
@@ -297,6 +304,8 @@ import scala.collection.JavaConverters._
       } else {
         if (activeSubstreamsMap.size == maxSubstreams)
           fail(new IllegalStateException(s"Cannot open substream for key '$key': too many substreams open"))
+        else if (isClosed(out))
+          fail(new IllegalStateException(s"Cannot open new substream: downstream finished"))
         else if (closedSubstreams.contains(key) && !hasBeenPulled(in))
           pull(in)
         else runSubstream(key, elem)
@@ -307,10 +316,6 @@ import scala.collection.JavaConverters._
           case Supervision.Stop                         ⇒ fail(ex)
           case Supervision.Resume | Supervision.Restart ⇒ if (!hasBeenPulled(in)) pull(in)
         }
-    }
-
-    override def onUpstreamFinish(): Unit = {
-      if (!tryCompleteAll()) setKeepGoing(true)
     }
 
     private def runSubstream(key: K, value: T): Unit = {
@@ -376,6 +381,7 @@ import scala.collection.JavaConverters._
         if (hasNextElement && nextElementKey == key) clearNextElement()
         if (firstPush()) firstPushCounter -= 1
         completeSubStream()
+        if (parent.isClosed(out)) tryCancel()
         if (parent.isClosed(in)) tryCompleteAll() else if (needToPull) pull(in)
       }
 
