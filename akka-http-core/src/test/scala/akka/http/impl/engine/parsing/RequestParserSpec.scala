@@ -255,6 +255,16 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
+      "with incorrect but harmless whitespace after chunk size" in new Test {
+        Seq(
+          start,
+          """|0\u0020\u0020
+             |
+             |""") should generalMultiParseTo(
+            Right(baseRequest.withEntity(Chunked(`application/pdf`, source(LastChunk)))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
       "message end with extension and trailer" in new Test {
         Seq(
           start,
@@ -331,10 +341,10 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
       "an illegal char after chunk size" in new Test {
         Seq(
           start,
-          """15 ;
+          """15_;
             |""") should generalMultiParseTo(
             Right(baseRequest),
-            Left(EntityStreamError(ErrorInfo("Illegal character ' ' in chunk start"))))
+            Left(EntityStreamError(ErrorInfo("Illegal character '_' in chunk start"))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
