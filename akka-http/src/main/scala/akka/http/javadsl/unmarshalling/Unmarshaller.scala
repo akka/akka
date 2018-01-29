@@ -11,8 +11,7 @@ import akka.http.impl.model.JavaQuery
 import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model._
-import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, FormData ⇒ SFormData }
-import akka.http.scaladsl.model.{ Multipart ⇒ SMultipart }
+import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes }
 import akka.http.scaladsl.unmarshalling
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, UnsupportedContentTypeException }

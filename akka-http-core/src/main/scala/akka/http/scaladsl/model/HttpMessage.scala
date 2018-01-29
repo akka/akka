@@ -10,7 +10,7 @@ import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
-import java.util.concurrent.{ CompletionStage, Executor, TimeUnit }
+import java.util.concurrent.{ CompletionStage, Executor }
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.duration.FiniteDuration

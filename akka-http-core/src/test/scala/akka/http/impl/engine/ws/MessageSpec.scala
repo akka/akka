@@ -16,7 +16,7 @@ import akka.http.scaladsl.model.ws._
 import Protocol.Opcode
 import akka.testkit._
 import akka.stream.OverflowStrategy
-import org.scalatest.concurrent.{ Eventually, PatienceConfiguration }
+import org.scalatest.concurrent.Eventually
 
 class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with Eventually {
   import WSTestUtils._

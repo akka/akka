@@ -15,7 +15,7 @@ import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success, Try }
 import akka.event.LoggingAdapter
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 import akka.stream.Materializer
 import akka.stream.javadsl.{ Source ⇒ JSource }
 import akka.stream.scaladsl._

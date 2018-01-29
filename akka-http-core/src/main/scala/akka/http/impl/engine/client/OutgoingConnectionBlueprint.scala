@@ -7,7 +7,7 @@ package akka.http.impl.engine.client
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ParserSettings }
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise

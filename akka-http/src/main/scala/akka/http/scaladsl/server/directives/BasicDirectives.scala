@@ -14,7 +14,7 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.collection.immutable
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model.Uri.Path
-import akka.stream.impl.ConstantFun.scalaIdentityFunction
+import akka.util.ConstantFun.scalaIdentityFunction
 import akka.stream.{ ActorMaterializerHelper, Materializer }
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.server.util.Tuple

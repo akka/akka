@@ -5,12 +5,11 @@
 package akka.http.impl.util
 
 import java.io.{ OutputStream, PrintStream }
-import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.event.Logging._
-import akka.testkit.{ AkkaSpec, EventFilter, TestEventListener }
+import akka.testkit.{ EventFilter, TestEventListener }
 import org.scalatest.{ Outcome, SuiteMixin, TestSuite }
 
 /**

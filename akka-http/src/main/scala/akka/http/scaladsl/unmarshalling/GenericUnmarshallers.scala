@@ -6,7 +6,7 @@ package akka.http.scaladsl.unmarshalling
 
 import akka.http.scaladsl.unmarshalling.Unmarshaller.EitherUnmarshallingException
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 
 import scala.concurrent.Future
 import scala.reflect.ClassTag

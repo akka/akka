@@ -9,7 +9,7 @@ import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 

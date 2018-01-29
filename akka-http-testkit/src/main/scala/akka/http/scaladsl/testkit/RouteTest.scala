@@ -5,7 +5,7 @@
 package akka.http.scaladsl.testkit
 
 import akka.http.scaladsl.settings.RoutingSettings
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.collection.immutable
