@@ -54,7 +54,6 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     // see issue #24172
     "shutdown if guardian shuts down immediately" in {
-      pending
       withSystem("shutdown", Behaviors.stopped[String], doTerminate = false) { sys: ActorSystem[String] ⇒
         sys.whenTerminated.futureValue
       }

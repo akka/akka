@@ -3,23 +3,21 @@
  */
 package akka.actor.typed
 
-import scala.concurrent.ExecutionContext
-import akka.{ actor ⇒ a, event ⇒ e }
+import java.util.Optional
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
+import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
+import akka.actor.typed.internal.DelayedStart
+import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, PropsAdapter }
+import akka.actor.typed.receptionist.Receptionist
+import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.event.typed.EventStream
+import akka.util.Timeout
+import akka.{ actor ⇒ a, event ⇒ e }
 import com.typesafe.config.{ Config, ConfigFactory }
 
-import scala.concurrent.{ ExecutionContextExecutor, Future }
-import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, PropsAdapter }
-import akka.util.Timeout
-import akka.annotation.DoNotInherit
-import akka.annotation.ApiMayChange
-import java.util.Optional
-
-import akka.actor.BootstrapSetup
-import akka.actor.typed.receptionist.Receptionist
-import akka.event.typed.EventStream
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future }
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -227,10 +225,11 @@ object ActorSystem {
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
     val setup = ActorSystemSetup(BootstrapSetup(classLoader, config, executionContext))
     val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext,
-      Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps)), setup)
+      Some(PropsAdapter(() ⇒ DelayedStart.delayStart(guardianBehavior), guardianProps)), setup)
     untyped.start()
 
     val adapter: ActorSystemAdapter.AdapterExtension = ActorSystemAdapter.AdapterExtension(untyped)
+    untyped.guardian ! DelayedStart.Start
     adapter.adapter
   }
 
