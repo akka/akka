@@ -75,6 +75,20 @@ abstract class FutureDirectives extends FormFieldDirectives {
   }
 
   /**
+   * "Unwraps" a `CompletionStage<T>` and runs the inner route after stage
+   * completion with the stage's value as an extraction of type `T`.
+   * If the stage fails its failure Throwable is bubbled up to the nearest
+   * ExceptionHandler.
+   *
+   * @group future
+   */
+  def onSuccess[T](cs: CompletionStage[T], inner: JFunction[T, Route]) = RouteAdapter {
+    D.onSuccess(cs.toScala.recover(unwrapCompletionException)) { value ⇒
+      inner(value).delegate
+    }
+  }
+
+  /**
    * "Unwraps" a `CompletionStage<T>` and runs the inner route when the stage has failed
    * with the stage's failure exception as an extraction of type `Throwable`.
    * If the completion stage succeeds the request is completed using the values marshaller

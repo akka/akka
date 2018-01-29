@@ -87,7 +87,7 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
         ),
         path(PathMatchers.segment("multiplyAsync").slash(integerSegment()).slash(integerSegment()), (x, y) ->
           extractExecutionContext(ctx ->
-            onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
+            onSuccess(multiplyAsync(ctx, x, y), Function.identity())
           )
         ),
         post(() ->

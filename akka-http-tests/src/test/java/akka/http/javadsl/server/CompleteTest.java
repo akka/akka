@@ -60,7 +60,7 @@ public class CompleteTest extends JUnitRouteTest {
         Route route = 
             parameter(INTEGER, "x", x ->
                 parameter(INTEGER, "y", y ->
-                    onSuccess(() -> doSlowCalculation(x, y), Directives::complete)
+                    onSuccess(doSlowCalculation(x, y), Directives::complete)
                 )
             );
 

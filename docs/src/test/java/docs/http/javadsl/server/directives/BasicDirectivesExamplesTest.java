@@ -165,7 +165,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     //#extractExecutionContext
     final Route route = path("sample", () ->
       extractExecutionContext(executor ->
-        onSuccess(() ->
+        onSuccess(
           CompletableFuture.supplyAsync(
             // uses the `executor` ExecutionContext
             () -> "Run on " + executor.hashCode() + "!", executor
@@ -835,7 +835,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     final Route route = extractDataBytes(data -> {
       final CompletionStage<Integer> sum = data.runFold(0, (acc, i) ->
         acc + Integer.valueOf(i.utf8String()), materializer());
-      return onSuccess(() -> sum, s ->
+      return onSuccess(sum, s ->
         complete(HttpResponse.create().withEntity(HttpEntities.create(s.toString()))));
     });
 

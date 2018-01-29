@@ -76,7 +76,7 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
           ));
 
         // when processing have finished create a response for the user
-        return onSuccess(() -> allParts, x -> complete("ok!"));
+        return onSuccess(allParts, x -> complete("ok!"));
       })
     );
     //#simple-upload

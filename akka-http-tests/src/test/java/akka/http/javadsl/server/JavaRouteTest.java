@@ -289,7 +289,7 @@ public class JavaRouteTest extends JUnitRouteTest {
       ),
       path("shouldnotfail", () ->
         handleExceptions(xHandler, () ->
-          onSuccess(() -> throwExceptionInFuture(), value ->
+          onSuccess(throwExceptionInFuture(), value ->
             complete("never reaches here")
           )
         )
