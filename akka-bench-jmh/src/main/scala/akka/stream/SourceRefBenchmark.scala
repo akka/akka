@@ -20,7 +20,7 @@ import scala.util.Success
 
 /*
    Just a brief reference run (3.1 GHz Intel Core i7, MacBook Pro late 2017):
-   [info] SourceRefBenchmark.flow_map_100k_elements  thrpt   10  724650.336 ± 233643.256  ops/s
+   [info] SourceRefBenchmark.source_ref_100k_elements  thrpt   10  724650.336 ± 233643.256  ops/s
  */
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -86,7 +86,7 @@ class SourceRefBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(100000)
-  def flow_map_100k_elements(): Unit = {
+  def source_ref_100k_elements(): Unit = {
     val lock = new Semaphore(1) // todo rethink what is the most lightweight way to await for a streams completion
     lock.acquire()
 
