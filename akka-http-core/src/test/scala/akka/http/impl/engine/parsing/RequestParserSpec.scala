@@ -22,6 +22,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.HttpProtocols._
+import akka.http.scaladsl.model.MediaType.WithFixedCharset
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model.StatusCodes._
@@ -325,6 +326,50 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
             `Raw-Request-URI`("/f%6f%6fbar?q=b%61z"),
             Host("ping")),
           HttpEntity.empty(`application/pdf`)))
+    }
+
+    "support custom media type parsing" in new Test {
+      val `application/custom`: WithFixedCharset =
+        MediaType.customWithFixedCharset("application", "custom", HttpCharsets.`UTF-8`)
+
+      override protected def parserSettings: ParserSettings =
+        super.parserSettings.withCustomMediaTypes(`application/custom`)
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: application/custom
+        |Content-Length: 0
+        |
+        |""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity.empty(`application/custom`)))
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: application/json
+        |Content-Length: 3
+        |
+        |123""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity(ContentTypes.`application/json`, "123")))
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: text/plain; charset=UTF-8
+        |Content-Length: 8
+        |
+        |abcdefgh""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abcdefgh")))
     }
 
     "reject a message chunk with" - {

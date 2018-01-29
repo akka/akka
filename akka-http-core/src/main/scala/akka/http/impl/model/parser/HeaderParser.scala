@@ -9,7 +9,7 @@ import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
 import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
 import akka.http.scaladsl.model.headers.HttpCookiePair
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 
 import scala.util.control.NonFatal
 import akka.http.impl.util.SingletonException
@@ -42,6 +42,7 @@ private[http] class HeaderParser(
   import CharacterClasses._
 
   override def customMediaTypes = settings.customMediaTypes
+  override def areNoCustomMediaTypesDefined: Boolean = settings.areNoCustomMediaTypesDefined
 
   // http://www.rfc-editor.org/errata_search.php?rfc=7230 errata id 4189
   def `header-field-value`: Rule1[String] = rule {
@@ -189,6 +190,7 @@ private[http] object HeaderParser {
     def uriParsingMode: Uri.ParsingMode
     def cookieParsingMode: ParserSettings.CookieParsingMode
     def customMediaTypes: MediaTypes.FindCustom
+    def areNoCustomMediaTypesDefined: Boolean
     def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
   }
   def Settings(
@@ -206,6 +208,8 @@ private[http] object HeaderParser {
       def uriParsingMode: Uri.ParsingMode = _uriParsingMode
       def cookieParsingMode: CookieParsingMode = _cookieParsingMode
       def customMediaTypes: MediaTypes.FindCustom = _customMediaTypes
+      def areNoCustomMediaTypesDefined: Boolean = _customMediaTypes eq ConstantFun.scalaAnyToNone
+
       def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode =
         _illegalResponseHeaderValueProcessingMode
     }
