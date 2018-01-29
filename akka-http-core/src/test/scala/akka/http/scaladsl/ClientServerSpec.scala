@@ -488,7 +488,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         private val HttpRequest(POST, uri, List(Accept(Seq(MediaRanges.`*/*`)), Host(_, _), `User-Agent`(_)),
           Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext() mapHeaders (_.filterNot(_.is("timeout-access")))
         uri shouldEqual Uri(s"http://$hostname:$port/chunked")
-        Await.result(chunkStream.limit(5).runWith(Sink.seq), 100.millis.dilated) shouldEqual chunks
+        Await.result(chunkStream.limit(5).runWith(Sink.seq), 1000.millis.dilated) shouldEqual chunks
 
         val serverOutSub = serverOut.expectSubscription()
         serverOutSub.expectRequest()
@@ -498,7 +498,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         clientInSub.request(1)
         val HttpResponse(StatusCodes.PartialContent, List(Age(42), Server(_), Date(_)),
           Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`) = clientIn.expectNext()
-        Await.result(chunkStream2.limit(1000).runWith(Sink.seq), 100.millis.dilated) shouldEqual chunks
+        Await.result(chunkStream2.limit(1000).runWith(Sink.seq), 1000.millis.dilated) shouldEqual chunks
 
         clientOutSub.sendComplete()
         serverInSub.request(1)
