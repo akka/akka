@@ -642,12 +642,15 @@ class HostConnectionPoolSpec extends AkkaSpec(
     protected def clientConnectionFlow(connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]
 
     val connectionProbe = TestProbe()
+
+    system.log.debug("Binding server for test ...")
     val serverBinding: ServerBinding =
       bindServerSource
         .to(Sink.foreach { serverConnection ⇒
           connectionProbe.ref ! serverConnection
         })
         .run().awaitResult(3.seconds)
+    system.log.debug(s"Server bound to [${serverBinding.localAddress}]")
 
     override def get(connectionKillSwitch: SharedKillSwitch): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Future[Http.OutgoingConnection]] =
       // needs to be an involved two step process:

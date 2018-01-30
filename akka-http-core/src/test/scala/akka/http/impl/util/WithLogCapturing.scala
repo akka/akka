@@ -30,7 +30,13 @@ trait WithLogCapturing extends SuiteMixin { this: TestSuite ⇒
       }
     }
 
-    val res = LogEventCollector.intercept { test() }
+    val myLogger = Logging(system, classOf[WithLogCapturing])
+    val res = LogEventCollector.intercept {
+      myLogger.debug(s"Logging started for test [${test.name}]")
+      val r = test()
+      myLogger.debug(s"Logging finished for test [${test.name}]")
+      r
+    }
 
     if (!(res.isSucceeded || res.isPending)) {
       println(s"--> [${Console.BLUE}${test.name}${Console.RESET}] Start of log messages of test that [$res]")
