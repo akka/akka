@@ -54,7 +54,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
   override protected def notifyError(message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker]): Unit =
     logBuffer = CapturedLogEvent(Logging.ErrorLevel, message, cause, marker) :: logBuffer
 
-  override protected def notifyWarning(message: String, marker: OptionVal[LogMarker]): Unit =
+  override protected def notifyWarning(message: String, marker: OptionVal[LogMarker], cause: OptionVal[Throwable]): Unit =
     logBuffer = CapturedLogEvent(Logging.WarningLevel, message, OptionVal.None, marker) :: logBuffer
 
   override protected def notifyInfo(message: String, marker: OptionVal[LogMarker]): Unit =

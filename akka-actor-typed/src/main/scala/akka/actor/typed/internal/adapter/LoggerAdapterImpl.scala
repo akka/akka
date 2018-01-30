@@ -103,43 +103,83 @@ private[akka] class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_], logSo
   }
 
   override def warning(message: String): Unit = {
-    if (isWarningEnabled) notifyWarning(message, OptionVal.None)
+    if (isWarningEnabled) notifyWarning(message, OptionVal.None, OptionVal.None)
   }
 
   override def warning(template: String, arg1: Any): Unit = {
-    if (isWarningEnabled) notifyWarning(format(template, arg1), OptionVal.None)
+    if (isWarningEnabled) notifyWarning(format(template, arg1), OptionVal.None, OptionVal.None)
   }
 
   override def warning(template: String, arg1: Any, arg2: Any): Unit = {
-    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2), OptionVal.None)
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2), OptionVal.None, OptionVal.None)
   }
 
   override def warning(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
-    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3), OptionVal.None)
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3), OptionVal.None, OptionVal.None)
   }
 
   override def warning(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
-    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4), OptionVal.None)
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4), OptionVal.None, OptionVal.None)
+  }
+
+  override def warning(cause: Throwable, message: String): Unit = {
+    if (isWarningEnabled) notifyWarning(message, OptionVal.None, OptionVal.Some(cause))
+  }
+
+  override def warning(cause: Throwable, template: String, arg1: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1), OptionVal.None, OptionVal.Some(cause))
+  }
+
+  override def warning(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2), OptionVal.None, OptionVal.Some(cause))
+  }
+
+  override def warning(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3), OptionVal.None, OptionVal.Some(cause))
+  }
+
+  override def warning(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4), OptionVal.None, OptionVal.Some(cause))
+  }
+
+  override def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1), OptionVal.Some(marker), OptionVal.Some(cause))
+  }
+
+  override def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2), OptionVal.Some(marker), OptionVal.Some(cause))
+  }
+
+  override def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3), OptionVal.Some(marker), OptionVal.Some(cause))
+  }
+
+  override def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4), OptionVal.Some(marker), OptionVal.Some(cause))
+  }
+
+  override def warning(marker: LogMarker, cause: Throwable, message: String): Unit = {
+    if (isWarningEnabled) notifyWarning(message, OptionVal.Some(marker), OptionVal.Some(cause))
   }
 
   override def warning(marker: LogMarker, message: String): Unit = {
-    if (isWarningEnabled) notifyWarning(message, OptionVal.Some(marker))
+    if (isWarningEnabled) notifyWarning(message, OptionVal.Some(marker), OptionVal.None)
   }
 
   override def warning(marker: LogMarker, template: String, arg1: Any): Unit = {
-    if (isWarningEnabled) notifyWarning(format(template, arg1), OptionVal.Some(marker))
+    if (isWarningEnabled) notifyWarning(format(template, arg1), OptionVal.Some(marker), OptionVal.None)
   }
 
   override def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit = {
-    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2), OptionVal.Some(marker))
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2), OptionVal.Some(marker), OptionVal.None)
   }
 
   override def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
-    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3), OptionVal.Some(marker))
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3), OptionVal.Some(marker), OptionVal.None)
   }
 
   override def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
-    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4), OptionVal.Some(marker))
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4), OptionVal.Some(marker), OptionVal.None)
   }
 
   override def info(message: String): Unit = {
@@ -238,11 +278,18 @@ private[akka] class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_], logSo
     bus.publish(error)
   }
 
-  protected def notifyWarning(message: String, marker: OptionVal[LogMarker]): Unit = {
-    val warning = marker match {
-      case OptionVal.Some(m) ⇒ Warning(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
-      case OptionVal.None    ⇒ Warning(logSource, logClass, message, mdc)
-    }
+  @Deprecated
+  @deprecated("Use the 3 argument version instead", since = "2.5.10")
+  protected def notifyWarning(message: String, marker: OptionVal[LogMarker]): Unit =
+    notifyWarning(message, marker, OptionVal.None)
+
+  protected def notifyWarning(message: String, marker: OptionVal[LogMarker], cause: OptionVal[Throwable]): Unit = {
+    val warning =
+      if (cause.isDefined) Warning(cause.get, logSource, logClass, message, mdc, marker.orNull.asInstanceOf[UntypedLM])
+      else marker match {
+        case OptionVal.Some(m) ⇒ Warning(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+        case OptionVal.None    ⇒ Warning(logSource, logClass, message, mdc)
+      }
     bus.publish(warning)
   }
 
