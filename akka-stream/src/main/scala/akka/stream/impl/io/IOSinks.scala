@@ -8,7 +8,7 @@ import java.nio.file.{ OpenOption, Path }
 
 import akka.annotation.InternalApi
 import akka.stream._
-import akka.stream.impl.{ PhasedFusingActorMaterializer, SinkModule }
+import akka.stream.impl.SinkModule
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.ActorAttributes.Dispatcher
 import akka.util.ByteString

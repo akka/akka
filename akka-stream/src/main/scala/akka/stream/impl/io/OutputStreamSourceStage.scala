@@ -7,26 +7,17 @@ import java.io.{ IOException, OutputStream }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingQueue }
 
-import akka.dispatch.Dispatchers
-import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.OutputStreamSourceStage._
 import akka.stream.stage._
+import akka.stream.{ ActorMaterializerHelper, Attributes, Outlet, SourceShape }
 import akka.util.ByteString
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
-import akka.stream.ActorAttributes
-import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
-import akka.stream.ActorAttributes.Dispatcher
-
-import scala.concurrent.ExecutionContext
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerHelper
-import akka.stream.impl.PhasedFusingActorMaterializer
 
 private[stream] object OutputStreamSourceStage {
   sealed trait AdapterToStageMessage
