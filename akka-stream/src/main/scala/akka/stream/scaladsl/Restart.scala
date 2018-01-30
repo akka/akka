@@ -286,7 +286,7 @@ object RestartFlow {
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
   def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
-    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, Int.MaxValue))
+    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, Int.MaxValue))
   }
 
   /**
@@ -315,23 +315,55 @@ object RestartFlow {
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
   def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
-    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, maxRestarts))
+    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, maxRestarts))
   }
+
+  /**
+   * Wrap the given [[Flow]] with a [[Flow]] that will restart it when it fails using an exponential
+   * backoff. Notice that this [[Flow]] will not restart on completion of the wrapped flow.
+   *
+   * This [[Flow]] will not emit any failure
+   * The failures by the wrapped [[Flow]] will be handled by
+   * restarting the wrapping [[Flow]] as long as maxRestarts is not reached.
+   * Any termination signals sent to this [[Flow]] however will terminate the wrapped [[Flow]], if it's
+   * running, and then the [[Flow]] will be allowed to terminate without being restarted.
+   *
+   * The restart process is inherently lossy, since there is no coordination between cancelling and the sending of
+   * messages. A termination signal from either end of the wrapped [[Flow]] will cause the other end to be terminated,
+   * and any in transit messages will be lost. During backoff, this [[Flow]] will backpressure.
+   *
+   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   *
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
+   * @param maxBackoff the exponential back-off is capped to this duration
+   * @param randomFactor after calculation of the exponential back-off an additional
+   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
+   *   In order to skip this additional delay pass in `0`.
+   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of minBackoff.
+   *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
+   * @param flowFactory A factory for producing the [[Flow]] to wrap.
+   */
+  def onFailuresWithBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = true, maxRestarts))
+  }
+
 }
 
 private final class RestartWithBackoffFlow[In, Out](
-  flowFactory:  () ⇒ Flow[In, Out, _],
-  minBackoff:   FiniteDuration,
-  maxBackoff:   FiniteDuration,
-  randomFactor: Double,
-  maxRestarts:  Int) extends GraphStage[FlowShape[In, Out]] { self ⇒
+  flowFactory:    () ⇒ Flow[In, Out, _],
+  minBackoff:     FiniteDuration,
+  maxBackoff:     FiniteDuration,
+  randomFactor:   Double,
+  onlyOnFailures: Boolean,
+  maxRestarts:    Int) extends GraphStage[FlowShape[In, Out]] { self ⇒
 
   val in = Inlet[In]("RestartWithBackoffFlow.in")
   val out = Outlet[Out]("RestartWithBackoffFlow.out")
 
   override def shape = FlowShape(in, out)
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Flow", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, maxRestarts) {
+    "Flow", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures, maxRestarts) {
 
     var activeOutIn: Option[(SubSourceOutlet[In], SubSinkInlet[Out])] = None
 
@@ -439,7 +471,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         }
       }
       override def onDownstreamFinish() = {
-        if (finishing || maxRestartsReached()) {
+        if (finishing || maxRestartsReached() || onlyOnFailures) {
           cancel(in)
         } else {
           log.debug("Graph in finished")
