@@ -122,15 +122,24 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
 
         val addressC = RARP(systemC).provider.getDefaultAddress
         val rootC = RootActorPath(addressC)
+        system.log.debug(s"root: $rootC")
 
         val remoteRef = {
           system.actorSelection(rootC / "user" / "echo") ! Identify(None)
           expectMsgType[ActorIdentity].ref.get
         }
+        system.log.debug(s"remoteRef $remoteRef")
+        system.log.debug(s"path: ${remoteRef.path}")
 
-        watch(remoteRef)
         remoteRef ! "hello"
         expectMsg("hello")
+
+        // Very weird this watch fails to work (recipient not found) yet normal message to the actor works
+        watch(remoteRef)
+
+        remoteRef ! "goodbye"
+        expectMsg("goodbye")
+
         Await.ready(systemC.terminate(), 10.seconds)
         system.log.debug("systemC terminated")
         // DeathWatchNotification is sent from systemC, failure detection takes longer than 3 seconds

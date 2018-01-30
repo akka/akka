@@ -233,7 +233,7 @@ private[remote] object FlushOnShutdown {
  * INTERNAL API
  */
 private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDuration,
-                                      inboundContext: InboundContext, associations: Set[Association]) extends Actor {
+                                      inboundContext: InboundContext, associations: Set[Association]) extends Actor with ActorLogging {
 
   var remaining = Map.empty[UniqueAddress, Int]
 
@@ -278,6 +278,7 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
       if (remaining.isEmpty)
         context.stop(self)
     case FlushOnShutdown.Timeout ⇒
+      log.debug("Timed out waiting for remote systems to ack termination. Remaining systems {}", remaining)
       context.stop(self)
   }
 }

@@ -393,6 +393,7 @@ private[remote] class Decoder(
       override def onPush(): Unit = {
         messageCount += 1
         val envelope = grab(in)
+        log.debug("Decoding: {}", envelope)
         headerBuilder.resetMessageFields()
         envelope.parseHeader(headerBuilder)
 
@@ -412,6 +413,8 @@ private[remote] class Decoder(
             log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e.getMessage)
             OptionVal.None
         }
+
+        log.debug("Recipient: {}", recipient)
 
         val sender: OptionVal[InternalActorRef] = try headerBuilder.senderActorRef(originUid) match {
           case OptionVal.Some(ref) ⇒

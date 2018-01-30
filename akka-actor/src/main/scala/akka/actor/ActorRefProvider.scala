@@ -712,7 +712,9 @@ private[akka] class LocalActorRefProvider private[akka] (
       case Nobody ⇒
         log.debug("resolve of path sequence [/{}] failed", pathElements.mkString("/"))
         new EmptyLocalActorRef(system.provider, ref.path / pathElements, eventStream)
-      case x ⇒ x
+      case x ⇒
+        log.debug("resolve of path sequence [/{}] worked. ref: {}", pathElements.mkString("/"), ref)
+        x
     }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,

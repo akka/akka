@@ -396,10 +396,10 @@ private[akka] class RemoteActorRefProvider(
   }
 
   def resolveActorRef(path: String): ActorRef = {
-    // using thread local LRU cache, which will call internalRresolveActorRef
+    // using thread local LRU cache, which will call internalResolveActorRef
     // if the value is not cached
     actorRefResolveThreadLocalCache match {
-      case null ⇒ internalResolveActorRef(path) // not initalized yet
+      case null ⇒ internalResolveActorRef(path) // not initialized yet
       case c    ⇒ c.threadLocalCache(this).getOrCompute(path)
     }
   }
