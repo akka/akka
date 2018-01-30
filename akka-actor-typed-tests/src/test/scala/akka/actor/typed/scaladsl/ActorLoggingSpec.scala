@@ -9,7 +9,9 @@ import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.Logging
-import akka.event.Logging.LogEventWithMarker
+import akka.event.Logging.{ LogEventWithCause, LogEventWithMarker }
+
+import scala.util.control.NoStackTrace
 
 class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
   """
@@ -56,13 +58,25 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
       )
     }
 
+    "pass cause with warning" in {
+      EventFilter.custom({
+        case event: LogEventWithCause if event.cause == cause ⇒ true
+      }, occurrences = 2).intercept(
+        spawn(Behaviors.deferred[Any] { ctx ⇒
+          ctx.log.warning(cause, "whatever")
+          ctx.log.warning(marker, cause, "whatever")
+          Behaviors.stopped
+        })
+      )
+    }
+
     "provide a whole bunch of logging overloads" in {
 
       // Not the best test but at least it exercises every log overload ;)
 
       EventFilter.custom({
         case _ ⇒ true // any is fine, we're just after the right count of statements reaching the listener
-      }, occurrences = 60).intercept {
+      }, occurrences = 72).intercept {
         spawn(Behaviors.deferred[String] { ctx ⇒
           ctx.log.debug("message")
           ctx.log.debug("{}", "arg1")
@@ -102,6 +116,19 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
           ctx.log.warning(marker, "{} {} {}", "arg1", "arg2", "arg3")
           ctx.log.warning(marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
           ctx.log.warning(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+
+          ctx.log.warning(cause, "message")
+          ctx.log.warning(cause, "{}", "arg1")
+          ctx.log.warning(cause, "{} {}", "arg1", "arg2")
+          ctx.log.warning(cause, "{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.warning(cause, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.warning(cause, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+          ctx.log.warning(marker, cause, "message")
+          ctx.log.warning(marker, cause, "{}", "arg1")
+          ctx.log.warning(marker, cause, "{} {}", "arg1", "arg2")
+          ctx.log.warning(marker, cause, "{} {} {}", "arg1", "arg2", "arg3")
+          ctx.log.warning(marker, cause, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+          ctx.log.warning(marker, cause, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
 
           ctx.log.error("message")
           ctx.log.error("{}", "arg1")

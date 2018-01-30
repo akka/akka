@@ -9,7 +9,7 @@ import akka.annotation.{ DoNotInherit, InternalApi }
  * A log marker is an additional metadata tag supported by some logging backends to identify "special" log events.
  * In the Akka internal actors for example the "SECURITY" marker is used for warnings related to security.
  *
- * Not for user extension
+ * Not for user extension, create instances using factory methods
  */
 @DoNotInherit
 sealed trait LogMarker {
@@ -57,10 +57,9 @@ object LogMarker {
  * Provided rather than a specific logging library logging API to not enforce a specific logging library on users but
  * still providing a convenient, performant, asynchronous and testable logging solution. Additionally it allows unified
  * logging for both user implemented actors and built in Akka actors where the actual logging backend can be selected
- * by the user.
+ * by the user. This logging facade is also used by Akka internally, without having to depend on specific logging frameworks.
  *
- * The [[Logger]] of an actor is tied to the actor path and should not be shared with other threads outside of
- * the actor.
+ * The [[Logger]] of an actor is tied to the actor path and should not be shared with other threads outside of the actor.
  *
  * Not for user extension
  */
@@ -280,8 +279,6 @@ abstract class Logger private[akka] () {
    */
   def warning(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 
-  /* FIXME these would be nice but cannot see how to pull it off while keeping binary comp in the old logging infra
-  // exception warning logging
   /**
    * Log message at warning level.
    */
@@ -292,25 +289,24 @@ abstract class Logger private[akka] () {
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
    *
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def warning(cause: Throwable, template: String, arg1: Any): Unit
   /**
    * Message template with 2 replacement arguments.
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def warning(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit
   /**
    * Message template with 3 replacement arguments.
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def warning(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
-   * @see [[ActorLogger]]
+   * @see [[Logger]]
    */
   def warning(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
-  */
 
   // marker warning logging
   /**
@@ -353,49 +349,48 @@ abstract class Logger private[akka] () {
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 
-  /* FIXME these would be nice but cannot see how to pull it off while keeping binary comp in the old logging infra
   /**
-  * Log message at warning level.
-  *
-  * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
-  */
+   * Log message at warning level.
+   *
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   * @see [[Logger]]
+   */
   def warning(marker: LogMarker, cause: Throwable, message: String): Unit
   /**
-  * Message template with 1 replacement argument.
-  *
-  * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
-  *
-  * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
-  * there are more than four arguments.
-  *
-  * @see [[ActorLogger]]
-  */
+   * Message template with 1 replacement argument.
+   *
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
+   *
+   * @see [[Logger]]
+   */
   def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit
   /**
-  * Message template with 2 replacement arguments.
-  *
-  * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
-  *
-  * @see [[ActorLogger]]
-  */
+   * Message template with 2 replacement arguments.
+   *
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * @see [[Logger]]
+   */
   def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit
   /**
-  * Message template with 3 replacement arguments.
-  *
-  * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
-  *
-  * @see [[ActorLogger]]
-  */
+   * Message template with 3 replacement arguments.
+   *
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * @see [[Logger]]
+   */
   def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
   /**
-  * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
-  *
-  * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
-  *
-  * @see [[ActorLogger]]
-  */
+   * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
+   *
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * @see [[Logger]]
+   */
   def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
-  */
 
   // message only info logging
 
