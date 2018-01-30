@@ -628,16 +628,19 @@ final class Broadcast[T](val outputPorts: Int, val eagerCancel: Boolean) extends
 }
 
 object Partition {
-
+  // FIXME make `PartitionOutOfBoundsException` a `final` class when possible
   case class PartitionOutOfBoundsException(msg: String) extends IndexOutOfBoundsException(msg) with NoStackTrace
 
   /**
-   * Create a new `Partition` stage with the specified input type.
+   * Create a new `Partition` stage with the specified input type. This method sets `eagerCancel` to `false`.
+   * To specify a different value for the `eagerCancel` parameter, then instantiate Partition using the constructor.
+   *
+   * If `eagerCancel` is true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    *
    * @param outputPorts number of output ports
    * @param partitioner function deciding which output each element will be targeted
-   */
-  def apply[T](outputPorts: Int, partitioner: T ⇒ Int): Partition[T] = new Partition(outputPorts, partitioner)
+   */ // FIXME BC add `eagerCancel: Boolean = false` parameter
+  def apply[T](outputPorts: Int, partitioner: T ⇒ Int): Partition[T] = new Partition(outputPorts, partitioner, false)
 }
 
 /**
@@ -650,14 +653,19 @@ object Partition {
  *
  * '''Completes when''' upstream completes and no output is pending
  *
- * '''Cancels when'''
- *   when all downstreams cancel
+ * '''Cancels when''' all downstreams have cancelled (eagerCancel=false) or one downstream cancels (eagerCancel=true)
  */
 
-final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int) extends GraphStage[UniformFanOutShape[T, T]] {
+final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int, val eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
+
+  /**
+   * Sets `eagerCancel` to `false`.
+   */
+  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter")
+  def this(outputPorts: Int, partitioner: T ⇒ Int) = this(outputPorts, partitioner, false)
 
   val in: Inlet[T] = Inlet[T]("Partition.in")
-  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i))
+  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i)) // FIXME BC make this immutable.IndexedSeq as type + Vector as concret impl
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {
@@ -690,11 +698,10 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int) exten
 
     setHandler(in, this)
 
-    out.zipWithIndex.foreach {
+    out.iterator.zipWithIndex.foreach {
       case (o, idx) ⇒
         setHandler(o, new OutHandler {
           override def onPull() = {
-
             if (outPendingElem != null) {
               val elem = outPendingElem.asInstanceOf[T]
               if (idx == outPendingIdx) {
@@ -711,24 +718,25 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int) exten
               pull(in)
           }
 
-          override def onDownstreamFinish(): Unit = {
-            downstreamRunning -= 1
-            if (downstreamRunning == 0)
-              completeStage()
-            else if (outPendingElem != null) {
-              if (idx == outPendingIdx) {
-                outPendingElem = null
-                if (!hasBeenPulled(in))
-                  pull(in)
+          override def onDownstreamFinish(): Unit =
+            if (eagerCancel) completeStage()
+            else {
+              downstreamRunning -= 1
+              if (downstreamRunning == 0)
+                completeStage()
+              else if (outPendingElem != null) {
+                if (idx == outPendingIdx) {
+                  outPendingElem = null
+                  if (!hasBeenPulled(in))
+                    pull(in)
+                }
               }
             }
-          }
         })
     }
   }
 
   override def toString = s"Partition($outputPorts)"
-
 }
 
 object Balance {

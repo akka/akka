@@ -761,7 +761,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Completes when''' upstream completes and no output is pending
    *
-   * '''Cancels when''' when all downstreams cancel
+   * '''Cancels when''' any of the downstreams cancel
    */
   def divertTo(that: Graph[SinkShape[Out], _], when: function.Predicate[Out]): javadsl.Source[Out, Mat] =
     new Source(delegate.divertTo(that, when.test))

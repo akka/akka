@@ -2308,14 +2308,14 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Completes when''' upstream completes and no output is pending
    *
-   * '''Cancels when''' when all downstreams cancel
+   * '''Cancels when''' any of the downstreams cancel
    */
   def divertTo(that: Graph[SinkShape[Out], _], when: Out ⇒ Boolean): Repr[Out] = via(divertToGraph(that, when))
 
   protected def divertToGraph[M](that: Graph[SinkShape[Out], M], when: Out ⇒ Boolean): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
     GraphDSL.create(that) { implicit b ⇒ r ⇒
       import GraphDSL.Implicits._
-      val partition = b.add(Partition[Out](2, out ⇒ if (when(out)) 1 else 0))
+      val partition = b.add(new Partition[Out](2, out ⇒ if (when(out)) 1 else 0, true))
       partition.out(1) ~> r
       FlowShape(partition.in, partition.out(0))
     }
@@ -2335,7 +2335,6 @@ trait FlowOps[+Out, +Mat] {
    * asynchronously.
    */
   def async: Repr[Out]
-
 }
 
 /**

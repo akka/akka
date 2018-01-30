@@ -1152,7 +1152,7 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    *
    * '''Completes when''' upstream completes and no output is pending
    *
-   * '''Cancels when''' when all downstreams cancel
+   * '''Cancels when''' any of the downstreams cancel
    */
   def divertTo(that: Graph[SinkShape[Out], _], when: function.Predicate[Out]): SubSource[Out, Mat] =
     new SubSource(delegate.divertTo(that, when.test))
