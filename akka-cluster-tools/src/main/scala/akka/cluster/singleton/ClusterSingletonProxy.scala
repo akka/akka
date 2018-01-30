@@ -123,7 +123,7 @@ object ClusterSingletonProxy {
   def props(singletonManagerPath: String, settings: ClusterSingletonProxySettings): Props =
     Props(new ClusterSingletonProxy(singletonManagerPath, settings)).withDeploy(Deploy.local)
 
-  private case object TryToIdentifySingleton
+  private case object TryToIdentifySingleton extends NoSerializationVerificationNeeded
 
 }
 
@@ -172,7 +172,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     cluster.unsubscribe(self)
   }
 
-  def cancelTimer() = {
+  def cancelTimer(): Unit = {
     identifyTimer.foreach(_.cancel())
     identifyTimer = None
   }
@@ -261,15 +261,19 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
       cancelTimer()
       sendBuffered()
     case _: ActorIdentity ⇒ // do nothing
-    case ClusterSingletonProxy.TryToIdentifySingleton if identifyTimer.isDefined ⇒
-      membersByAge.headOption.foreach {
-        oldest ⇒
-          val singletonAddress = RootActorPath(oldest.address) / singletonPath
-          log.debug("Trying to identify singleton at [{}]", singletonAddress)
-          context.actorSelection(singletonAddress) ! Identify(identifyId)
+    case ClusterSingletonProxy.TryToIdentifySingleton ⇒
+      identifyTimer match {
+        case Some(_) ⇒
+          membersByAge.headOption foreach { oldest ⇒
+            val singletonAddress = RootActorPath(oldest.address) / singletonPath
+            log.debug("Trying to identify singleton at [{}]", singletonAddress)
+            context.actorSelection(singletonAddress) ! Identify(identifyId)
+          }
+        case _ ⇒
+        // ignore, if the timer is not present it means we have successfully identified
       }
     case Terminated(ref) ⇒
-      if (singleton.exists(_ == ref)) {
+      if (singleton.contains(ref)) {
         // buffering mode, identification of new will start when old node is removed
         singleton = None
       }
