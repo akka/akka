@@ -133,6 +133,10 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       val (Success(response1), 42) = responseOut.expectNext()
       connNr(response1) shouldEqual 1
 
+      // prone to race conditions: that the response was delivered does not necessarily mean that the pool infrastructure
+      // has actually seen that the response is completely done, especially in the legacy implementation
+      Thread.sleep(100)
+
       requestIn.sendNext(HttpRequest(uri = "/b") → 43)
       responseOutSub.request(1)
       val (Success(response2), 43) = responseOut.expectNext()
