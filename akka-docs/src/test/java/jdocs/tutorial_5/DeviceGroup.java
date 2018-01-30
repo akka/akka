@@ -143,10 +143,10 @@ public class DeviceGroup extends AbstractActor {
     // modifying the same mutable data-structure is not safe), and perform a defensive copy of the mutable map:
     //
     // Feel free to use your favourite immutable data-structures library with Akka in Java applications!
-    HashMap<ActorRef, String> copyActorToDeviceId = new HashMap<>(this.actorToDeviceId);
+    HashMap<ActorRef, String> actorToDeviceIdCopy = new HashMap<>(this.actorToDeviceId);
 
     getContext().actorOf(DeviceGroupQuery.props(
-        copyActorToDeviceId, r.requestId, getSender(), new FiniteDuration(3, TimeUnit.SECONDS)));
+        actorToDeviceIdCopy, r.requestId, getSender(), new FiniteDuration(3, TimeUnit.SECONDS)));
   }
 
   @Override
