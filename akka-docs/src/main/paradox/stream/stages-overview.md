@@ -1085,6 +1085,8 @@ Each upstream element will either be diverted to the given sink, or the downstre
 
 **completes** when upstream completes and no output is pending
 
+**cancels** when any of the downstreams cancel
+
 ---------------------------------------------------------------
 
 <br/>

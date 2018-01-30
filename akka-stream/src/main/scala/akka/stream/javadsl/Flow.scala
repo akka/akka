@@ -1705,7 +1705,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Completes when''' upstream completes and no output is pending
    *
-   * '''Cancels when''' when all downstreams cancel
+   * '''Cancels when''' any of the downstreams cancel
    */
   def divertTo(that: Graph[SinkShape[Out], _], when: function.Predicate[Out]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.divertTo(that, when.test))
