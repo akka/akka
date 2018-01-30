@@ -596,9 +596,6 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   }
 
   def publishDiff(oldState: MembershipState, newState: MembershipState, pub: AnyRef ⇒ Unit): Unit = {
-    def inSameDc(reachabilityEvent: ReachabilityEvent): Boolean =
-      reachabilityEvent.member.dataCenter == selfDc
-
     diffMemberEvents(oldState, newState) foreach pub
     diffUnreachable(oldState, newState) foreach pub
     diffReachable(oldState, newState) foreach pub
