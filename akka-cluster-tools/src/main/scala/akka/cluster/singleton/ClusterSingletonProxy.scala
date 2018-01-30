@@ -123,7 +123,7 @@ object ClusterSingletonProxy {
   def props(singletonManagerPath: String, settings: ClusterSingletonProxySettings): Props =
     Props(new ClusterSingletonProxy(singletonManagerPath, settings)).withDeploy(Deploy.local)
 
-  private case object TryToIdentifySingleton
+  private case object TryToIdentifySingleton extends NoSerializationVerificationNeeded
 
 }
 
