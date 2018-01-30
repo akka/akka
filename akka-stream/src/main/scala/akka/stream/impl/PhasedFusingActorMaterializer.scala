@@ -12,8 +12,10 @@ import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancel
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
+import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.fusing.ActorGraphInterpreter.{ ActorOutputBoundary, BatchingActorInputBoundary }
 import akka.stream.impl.fusing.GraphInterpreter.Connection
@@ -376,7 +378,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
    * Default attributes for the materializer, based on the [[ActorMaterializerSettings]] and
    * are always seen as least specific, so any attribute specified in the graph "wins" over these.
    * In addition to that this also guarantees that the attributes `InputBuffer`, `SupervisionStrategy`,
-   * and `Dispatcher` is _always_ present in the attributes.
+   * and `Dispatcher` is _always_ present in the attributes and can be accessed through `Attributes.mandatoryAttribute`
    *
    * When these attributes are needed later in the materialization process it is important that the
    * they are gotten through the attributes and not through the [[ActorMaterializerSettings]]
@@ -885,7 +887,10 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (NotUsed, Any) = {
     val tls = mod.asInstanceOf[TlsModule]
 
-    val dispatcher = attributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher
+    val dispatcher = attributes.mandatoryAttribute[Dispatcher] match {
+      case IODispatcher     ⇒ materializer.settings.blockingIoDispatcher
+      case Dispatcher(name) ⇒ name
+    }
     val maxInputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer].max
 
     val props =
