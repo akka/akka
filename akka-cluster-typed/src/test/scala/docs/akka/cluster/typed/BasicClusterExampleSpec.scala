@@ -47,7 +47,7 @@ akka {
   ).withFallback(configSystem1)
 }
 
-class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually {
+class BasicClusterConfigSpec extends TypedAkkaSpec {
 
   import BasicClusterExampleSpec._
 
