@@ -409,7 +409,7 @@ final class CoordinatedShutdown private[akka] (
           case phase :: remaining if !phases(phase).enabled ⇒
             tasks.get(phase) match {
               case null  ⇒ // This pretty much is ok as there are no tasks
-              case tasks ⇒ log.warning("Phase [{}] disabled through configuration, skipping [{}] tasks", phase, tasks.size)
+              case tasks ⇒ log.info("Phase [{}] disabled through configuration, skipping [{}] tasks", phase, tasks.size)
             }
             loop(remaining)
           case phase :: remaining ⇒

@@ -20,6 +20,7 @@ import java.util.concurrent.TimeoutException
 
 class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
   """
+    akka.loglevel=INFO
     akka.loggers = ["akka.testkit.TestEventListener"]
   """)) {
 
@@ -278,7 +279,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
         testActor ! "C"
         Future.successful(Done)
       }
-      EventFilter.warning(start = "Phase [b] disabled through configuration", occurrences = 1).intercept {
+      EventFilter.info(start = "Phase [b] disabled through configuration", occurrences = 1).intercept {
         val result = co.run(UnknownReason)
         expectMsg("C")
         result.futureValue should ===(Done)
