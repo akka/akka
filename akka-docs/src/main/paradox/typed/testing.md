@@ -183,3 +183,16 @@ Scala
 Java
 :  @@snip [BasicAsyncTestingTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/testing/async/BasicAsyncTestingTest.java) { #test-spawn-anonymous } 
 
+### Controlling the scheduler
+
+It can be hard to reliably unit test specific scenario's when your actor relies on timing:
+especially when running many tests in parallel it can be hard to get the timing just right.
+Making such tests more reliable by using generous timeouts make the tests take a long time to run.
+
+For such situations, we provide a scheduler where you can manually, explicitly advance the clock.
+
+Scala
+:   @@snip [ManualTimerSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/akka/actor/typed/ManualTimerSpec.scala) { #manual-scheduling-simple }
+
+Java
+:   @@snip [ManualTimerTest.scala]($akka$/akka-actor-typed-tests/src/test/java/akka/actor/typed/ManualTimerTest.java) { #manual-scheduling-simple }
