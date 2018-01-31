@@ -13,6 +13,7 @@
 * [cluster](typed/cluster.md)
 * [cluster-singleton](cluster-singleton.md)
 * [cluster-sharding](typed/cluster-sharding.md)
+* [stream](typed/stream.md)
 * [persistence](typed/persistence.md)
 * [testing](typed/testing.md)
 
