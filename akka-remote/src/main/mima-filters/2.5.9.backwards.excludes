@@ -1,0 +1,9 @@
+# change to private[akka] class
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefProvider.serialization")
+ProblemFilters.exclude[MissingTypesProblem]("akka.remote.RemoteActorRefProvider$Internals$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefProvider#Internals.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.RemoteActorRefProvider#Internals.copy$default$2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefProvider#Internals.serialization")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefProvider#Internals.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefProvider#Internals.copy$default$3")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefProvider#Internals.this")
