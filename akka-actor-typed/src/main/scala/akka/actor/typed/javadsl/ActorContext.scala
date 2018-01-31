@@ -66,6 +66,9 @@ trait ActorContext[T] {
 
   /**
    * An actor specific logger
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getLog: Logger
 
