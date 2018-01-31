@@ -15,6 +15,9 @@ import scala.util.control.NoStackTrace
 import akka.testkit.typed.scaladsl._
 import org.scalatest.{ Matchers, WordSpec, fixture }
 
+import scala.util.Failure
+import scala.util.Success
+
 object SupervisionSpec {
 
   sealed trait Command
@@ -372,6 +375,46 @@ class SupervisionSpec extends TestKit with TypedAkkaSpecWithShutdown {
       // stop
       ref ! Throw(new Exc1)
       probe.expectMsg(GotSignal(PostStop))
+    }
+
+    "support failures in ask responder" in {
+      case class Question(reply: ActorRef[Long])
+
+      val probe = TestProbe[AnyRef]("probe")
+      val behv = Behaviors.supervise(
+        Behaviors.immutable[String] {
+          case (ctx, "start-ask") ⇒
+            ctx.ask[Question, Long](probe.ref)(Question(_)) {
+              case Success(0L) ⇒ "test"
+              case Success(42L) ⇒
+                throw new RuntimeException("Unsupported number")
+              case Failure(_) ⇒ "test"
+            }
+            Behavior.same
+          case (ctx, "test") ⇒
+            probe.ref ! "got-test"
+            Behavior.same
+          case (ctx, "get-state") ⇒
+            probe.ref ! "running"
+            Behavior.same
+        }
+      ).onFailure(SupervisorStrategy.resume)
+
+      val ref = spawn(behv)
+      ref ! "test"
+      probe.expectMsg("got-test")
+
+      ref ! "start-ask"
+      val Question(replyRef) = probe.expectMsgType[Question]
+      replyRef ! 0L
+      probe.expectMsg("got-test")
+
+      ref ! "start-ask"
+      val Question(replyRef2) = probe.expectMsgType[Question]
+      replyRef2 ! 42L
+
+      ref ! "get-state"
+      probe.expectMsg("running")
     }
 
     "restart after exponential backoff" in {

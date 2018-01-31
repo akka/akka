@@ -34,6 +34,12 @@ final case class DeadLetter(msg: Any)
 trait Signal
 
 /**
+ * A message that needs to be created first before it can be handled. Is used
+ * by the infrastructure to allow injecting processing into the Behavior interpreter.
+ */
+final case class DeferredMessage(messageCons: () ⇒ Any) extends Signal
+
+/**
  * Lifecycle signal that is fired upon restart of the Actor before replacing
  * the behavior with the fresh one (i.e. this signal is received within the
  * behavior that failed). The replacement behavior will receive PreStart as its
