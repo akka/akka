@@ -90,10 +90,8 @@ import akka.{ actor ⇒ a }
   }
 
   private def applyEffects(msg: Any, effect: Effect[E, S], sideEffects: Seq[ChainableEffect[_, S]] = Nil): Unit = effect match {
-    case CompositeEffect(Some(persist), currentSideEffects) ⇒
+    case CompositeEffect(persist, currentSideEffects) ⇒
       applyEffects(msg, persist, currentSideEffects ++ sideEffects)
-    case CompositeEffect(_, currentSideEffects) ⇒
-      (currentSideEffects ++ sideEffects).foreach(applySideEffect)
     case Persist(event) ⇒
       // apply the event before persist so that validation exception is handled before persisting
       // the invalid event, in case such validation is implemented in the event handler.
@@ -136,15 +134,19 @@ import akka.{ actor ⇒ a }
         sideEffects.foreach(applySideEffect)
       }
     case _: PersistNothing.type @unchecked ⇒
+      // FIXME: Why don't we do the side effects here??
+      sideEffects.foreach(applySideEffect)
     case _: Unhandled.type @unchecked ⇒
+      // FIXME: Why don't we do the side effects here?? We do allow users to add them
       super.unhandled(msg)
     case c: ChainableEffect[_, S] ⇒
       applySideEffect(c)
   }
 
   def applySideEffect(effect: ChainableEffect[_, S]): Unit = effect match {
-    case _: Stop.type @unchecked ⇒ context.stop(self)
-    case SideEffect(callbacks)   ⇒ callbacks.apply(state)
+    case _: Stop.type @unchecked ⇒
+      context.stop(self)
+    case SideEffect(callbacks) ⇒ callbacks.apply(state)
   }
 
   private def shouldSnapshot(state: S, event: E, sequenceNr: Long): Boolean = {

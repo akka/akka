@@ -49,7 +49,7 @@ object PersistentBehaviors {
       PersistAll(events)
 
     def persist[Event, State](events: im.Seq[Event], sideEffects: im.Seq[ChainableEffect[Event, State]]): Effect[Event, State] =
-      new CompositeEffect[Event, State](Some(new PersistAll[Event, State](events)), sideEffects)
+      new CompositeEffect[Event, State](PersistAll[Event, State](events), sideEffects)
 
     /**
      * Do not persist anything
@@ -73,7 +73,8 @@ object PersistentBehaviors {
    * Not for user extension.
    */
   @DoNotInherit
-  sealed trait Effect[+Event, State] { self: EffectImpl[Event, State] ⇒
+  sealed trait Effect[+Event, State] {
+    self: EffectImpl[Event, State] ⇒
     /* All events that will be persisted in this effect */
     def events: im.Seq[Event]
 
@@ -92,11 +93,12 @@ object PersistentBehaviors {
       CompositeEffect(this, Effect.stop[Event, State])
   }
 
+  // FIXME move to internal package?
   /**
    * INTERNAL API
    */
   @InternalApi
-  private[akka] class EffectImpl[+Event, State] extends j.Effect[Event, State] with Effect[Event, State] {
+  private[akka] sealed abstract class EffectImpl[+Event, State] extends j.Effect[Event, State] with Effect[Event, State] {
     /* All events that will be persisted in this effect */
     override def events: im.Seq[Event] = Nil
 
@@ -109,26 +111,20 @@ object PersistentBehaviors {
    */
   @InternalApi
   private[akka] object CompositeEffect {
-    def apply[Event, State](effect: EffectImpl[Event, State], sideEffects: ChainableEffect[Event, State]): EffectImpl[Event, State] =
-      if (effect.events.isEmpty) {
-        CompositeEffect[Event, State](
-          None,
-          effect.sideEffects ++ (sideEffects :: Nil)
-        )
-      } else {
-        CompositeEffect[Event, State](
-          Some(effect),
-          sideEffects :: Nil
-        )
-      }
+    def apply[Event, State](effect: EffectImpl[Event, State], sideEffects: ChainableEffect[Event, State]): EffectImpl[Event, State] = {
+      CompositeEffect[Event, State](
+        effect,
+        sideEffects :: Nil
+      )
+    }
   }
 
   @InternalApi
   private[akka] final case class CompositeEffect[Event, State](
-    persistingEffect: Option[EffectImpl[Event, State]],
+    persistingEffect: EffectImpl[Event, State],
     _sideEffects:     im.Seq[ChainableEffect[Event, State]]) extends EffectImpl[Event, State] {
 
-    override val events = persistingEffect.map(_.events).getOrElse(Nil)
+    override val events = persistingEffect.events
 
     override def sideEffects[E >: Event]: im.Seq[ChainableEffect[E, State]] = _sideEffects.asInstanceOf[im.Seq[ChainableEffect[E, State]]]
 
@@ -205,6 +201,7 @@ class PersistentBehavior[Command, Event, State](
   val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit,
   val tagger:                                                Event ⇒ Set[String],
   val snapshotOn:                                            (State, Event, Long) ⇒ Boolean) extends UntypedBehavior[Command] {
+
   import PersistentBehaviors._
 
   /** INTERNAL API */

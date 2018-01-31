@@ -45,7 +45,7 @@ public class PersistentActorCompileOnlyTest {
   //#command-handler
 
   //#event-handler
-  public static EventHandler<SimpleState, SimpleEvent> eventHandler =
+  public static EventHandler<SimpleEvent, SimpleState> eventHandler =
     (state, event) -> state.addEvent(event);
   //#event-handler
 
