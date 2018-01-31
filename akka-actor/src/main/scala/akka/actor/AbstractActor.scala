@@ -49,7 +49,7 @@ object AbstractActor {
     /**
      * Returns an unmodifiable Java Collection containing the linked actors
      *
-     * *Warning*: This method is not thread-safe and must not be accessed from other threads
+     * *Warning*: This method is not thread-safe and must not be accessed from threads other
      * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def getChildren(): java.lang.Iterable[ActorRef]
@@ -64,7 +64,7 @@ object AbstractActor {
     /**
      * Returns a reference to the named child if it exists.
      *
-     * *Warning*: This method is not thread-safe and must not be accessed from other threads
+     * *Warning*: This method is not thread-safe and must not be accessed from threads other
      * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def findChild(name: String): Optional[ActorRef]
@@ -93,7 +93,7 @@ object AbstractActor {
      * Changes the Actor's behavior to become the new 'Receive' handler.
      * Replaces the current behavior on the top of the behavior stack.
      *
-     * *Warning*: This method is not thread-safe and must not be accessed from other threads
+     * *Warning*: This method is not thread-safe and must not be accessed from threads other
      * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def become(behavior: Receive): Unit =
@@ -110,7 +110,7 @@ object AbstractActor {
      * leaks in case client code is written without consulting this documentation first (i.e.
      * always pushing new behaviors and never issuing an `unbecome()`)
      *
-     * *Warning*: This method is not thread-safe and must not be accessed from other threads
+     * *Warning*: This method is not thread-safe and must not be accessed from threads other
      * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def become(behavior: Receive, discardOld: Boolean): Unit =

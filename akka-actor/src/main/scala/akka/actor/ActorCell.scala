@@ -69,7 +69,7 @@ trait ActorContext extends ActorRefFactory {
    * Gets the current receive timeout.
    * When specified, the receive method should be able to handle a [[akka.actor.ReceiveTimeout]] message.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    */
   def receiveTimeout: Duration
@@ -90,7 +90,7 @@ trait ActorContext extends ActorRefFactory {
    * `ReceiveTimeout` should be fired by external inactivity but not influenced by internal activity,
    * e.g. scheduled tick messages.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    */
   def setReceiveTimeout(timeout: Duration): Unit
@@ -99,7 +99,7 @@ trait ActorContext extends ActorRefFactory {
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Replaces the current behavior on the top of the behavior stack.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    */
   def become(behavior: Actor.Receive): Unit = become(behavior, discardOld = true)
@@ -115,7 +115,7 @@ trait ActorContext extends ActorRefFactory {
    * leaks in case client code is written without consulting this documentation first (i.e.
    * always pushing new behaviors and never issuing an `unbecome()`)
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    */
   def become(behavior: Actor.Receive, discardOld: Boolean): Unit
@@ -123,7 +123,7 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Reverts the Actor behavior to the previous one on the behavior stack.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    */
   def unbecome(): Unit
@@ -131,7 +131,7 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Returns the sender 'ActorRef' of the current message.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    */
   def sender(): ActorRef
@@ -147,7 +147,7 @@ trait ActorContext extends ActorRefFactory {
    * val goodLookup = context.child("kid")
    * }}}
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    */
   def children: immutable.Iterable[ActorRef]
@@ -155,7 +155,7 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Get the child with the given name if it exists.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    */
   def child(name: String): Option[ActorRef]
@@ -196,7 +196,7 @@ trait ActorContext extends ActorRefFactory {
    * It will fail with an [[IllegalStateException]] if the same subject was watched before using `watchWith`.
    * To clear the termination message, unwatch first.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    *
    * @return the provided ActorRef
@@ -213,7 +213,7 @@ trait ActorContext extends ActorRefFactory {
    * It will fail with an [[IllegalStateException]] if the same subject was watched before using `watch` or `watchWith` with
    * another termination message. To change the termination message, unwatch first.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    *
    * @return the provided ActorRef
@@ -224,7 +224,7 @@ trait ActorContext extends ActorRefFactory {
    * Unregisters this actor as Monitor for the provided ActorRef.
    * @return the provided ActorRef
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
    */
   def unwatch(subject: ActorRef): ActorRef

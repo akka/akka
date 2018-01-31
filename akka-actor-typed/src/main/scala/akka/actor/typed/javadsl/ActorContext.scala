@@ -73,7 +73,7 @@ trait ActorContext[T] {
    * The list of child Actors created by this Actor during its lifetime that
    * are still alive, in no particular order.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getChildren: java.util.List[ActorRef[Void]]
@@ -81,7 +81,7 @@ trait ActorContext[T] {
   /**
    * The named child Actor if it is alive.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getChild(name: String): Optional[ActorRef[Void]]
@@ -90,7 +90,7 @@ trait ActorContext[T] {
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] under a randomly chosen name.
    * It is good practice to name Actors wherever practical.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawnAnonymous[U](behavior: Behavior[U]): ActorRef[U]
@@ -99,7 +99,7 @@ trait ActorContext[T] {
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] under a randomly chosen name.
    * It is good practice to name Actors wherever practical.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawnAnonymous[U](behavior: Behavior[U], props: Props): ActorRef[U]
@@ -107,7 +107,7 @@ trait ActorContext[T] {
   /**
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] and with the given name.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawn[U](behavior: Behavior[U], name: String): ActorRef[U]
@@ -115,7 +115,7 @@ trait ActorContext[T] {
   /**
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] and with the given name.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawn[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U]
@@ -124,7 +124,7 @@ trait ActorContext[T] {
    * Force the child Actor under the given name to terminate after it finishes
    * processing its current message. Nothing happens if the ActorRef is a child that is already stopped.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    *
    * @throws IllegalArgumentException if the given actor ref is not a direct child of this actor
@@ -142,7 +142,7 @@ trait ActorContext[T] {
    * It will fail with an [[IllegalStateException]] if the same subject was watched before using `watchWith`.
    * To clear the termination message, unwatch first.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def watch[U](other: ActorRef[U]): Unit
@@ -158,7 +158,7 @@ trait ActorContext[T] {
    * It will fail with an [[IllegalStateException]] if the same subject was watched before using `watch` or `watchWith` with
    * another termination message. To change the termination message, unwatch first.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def watchWith[U](other: ActorRef[U], msg: T): Unit
@@ -167,7 +167,7 @@ trait ActorContext[T] {
    * Revoke the registration established by `watch`. A [[Terminated]]
    * notification will not subsequently be received for the referenced Actor.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def unwatch[U](other: ActorRef[U]): Unit
@@ -178,7 +178,7 @@ trait ActorContext[T] {
    * with each received message. Provide `Duration.Undefined` to switch off this
    * mechanism.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def setReceiveTimeout(d: FiniteDuration, msg: T): Unit
@@ -186,7 +186,7 @@ trait ActorContext[T] {
   /**
    * Cancel the sending of receive timeout notifications.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def cancelReceiveTimeout(): Unit
@@ -236,7 +236,7 @@ trait ActorContext[T] {
    *
    * The function is running in this actor and can safely access state of it.
    *
-   * *Warning*: This method is not thread-safe and must not be accessed from other threads
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def messageAdapter[U](messageClass: Class[U], f: JFunction[U, T]): ActorRef[U]
