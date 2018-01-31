@@ -7,7 +7,7 @@ perform tests.
 
 Akka comes with a dedicated module `akka-testkit` for supporting tests.
 
-## Dependencies 
+## Dependency
 
 Be sure to add the module `akka-testkit` to your dependencies.
 

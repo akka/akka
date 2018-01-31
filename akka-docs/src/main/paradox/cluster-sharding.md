@@ -31,7 +31,7 @@ See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing).
 
 @@@
 
-## An Example
+## Dependency
 
 To use cluster sharding, add the module to your project:
 
@@ -40,6 +40,8 @@ To use cluster sharding, add the module to your project:
   artifact="akka-cluster-sharding_$scala.binary_version$"
   version="$akka.version$"
 }
+
+## An Example
 
 This is how an entity actor may look like:
 

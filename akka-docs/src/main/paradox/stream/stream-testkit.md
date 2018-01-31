@@ -93,6 +93,8 @@ provides tools specifically for writing stream tests. This module comes with
 two main components that are `TestSource` and `TestSink` which
 provide sources and sinks that materialize to probes that allow fluent API.
 
+### Dependency
+
 First, add the module `akka-stream-testkit` to your dependencies:
 
 @@dependency[sbt,Maven,Gradle] {
@@ -101,6 +103,8 @@ First, add the module `akka-stream-testkit` to your dependencies:
   version="$akka.version$"
   scope="test"
 }
+
+### Using the TestKit
 
 A sink returned by `TestSink.probe` allows manual control over demand and
 assertions over elements coming downstream.

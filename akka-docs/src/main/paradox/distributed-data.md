@@ -19,6 +19,8 @@ It is eventually consistent and geared toward providing high read and write avai
 (partition tolerance), with low latency. Note that in an eventually consistent system a read may return an
 out-of-date value.
 
+## Dependency
+
 To enable distributed data, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
@@ -71,7 +73,7 @@ function that only uses the data parameter and stable fields from enclosing scop
 for example not access the sender (@scala[`sender()`]@java[`getSender()`]) reference of an enclosing actor.
 
 `Update`
- is intended to only be sent from an actor running in same local 
+ is intended to only be sent from an actor running in same local
 `ActorSystem`
  as
 : the `Replicator`, because the `modify` function is typically not serializable.
@@ -89,9 +91,9 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
  * `WriteAll` the value will immediately be written to all nodes in the cluster
 (or all nodes in the cluster role group)
 
-When you specify to write to `n` out of `x`  nodes, the update will first replicate to `n` nodes. 
-If there are not enough Acks after 1/5th of the timeout, the update will be replicated to `n` other 
-nodes. If there are less than n nodes left all of the remaining nodes are used. Reachable nodes 
+When you specify to write to `n` out of `x`  nodes, the update will first replicate to `n` nodes.
+If there are not enough Acks after 1/5th of the timeout, the update will be replicated to `n` other
+nodes. If there are less than n nodes left all of the remaining nodes are used. Reachable nodes
 are preferred over unreachable nodes.
 
 Note that `WriteMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
