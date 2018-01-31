@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 import akka.{ Done, NotUsed }
 import akka.dispatch.ExecutionContexts
 import akka.actor.{ ActorRef, Props, Status }
+import akka.annotation.InternalApi
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl._
@@ -369,6 +370,27 @@ object Sink {
   }
 
   /**
+   * INTERNAL API
+   *
+   * Sends the elements of the stream to the given `ActorRef`.
+   * If the target actor terminates the stream will be canceled.
+   * When the stream is completed successfully the given `onCompleteMessage`
+   * will be sent to the destination actor.
+   * When the stream is completed with failure the `onFailureMessage` will be invoked
+   * and its result will be sent to the destination actor.
+   *
+   * It will request at most `maxInputBufferSize` number of elements from
+   * upstream, but there is no back-pressure signal from the destination actor,
+   * i.e. if the actor is not consuming the messages fast enough the mailbox
+   * of the actor will grow. For potentially slow consumer actors it is recommended
+   * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
+   * limiting stage in front of this `Sink`.
+   */
+  @InternalApi private[akka] def actorRef[T](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any): Sink[T, NotUsed] =
+    fromGraph(new ActorRefSink(ref, onCompleteMessage, onFailureMessage,
+      DefaultAttributes.actorRefSink, shape("ActorRefSink")))
+
+  /**
    * Sends the elements of the stream to the given `ActorRef`.
    * If the target actor terminates the stream will be canceled.
    * When the stream is completed successfully the given `onCompleteMessage`
@@ -384,7 +406,33 @@ object Sink {
    * limiting stage in front of this `Sink`.
    */
   def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
-    fromGraph(new ActorRefSink(ref, onCompleteMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
+    fromGraph(new ActorRefSink(ref, onCompleteMessage, t ⇒ Status.Failure(t),
+      DefaultAttributes.actorRefSink, shape("ActorRefSink")))
+
+  /**
+   * INTERNAL API
+   *
+   * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
+   * First element is created by calling `onInitMessage` with an `ActorRef` of the actor that
+   * expects acknowledgements. Then stream is waiting for acknowledgement message
+   * `ackMessage` from the given actor which means that it is ready to process
+   * elements. It also requires `ackMessage` message after each stream element
+   * to make backpressure work.
+   *
+   * Every message that is sent to the actor is first transformed using `messageAdapter`.
+   * This can be used to capture the ActorRef of the actor that expects acknowledgments as
+   * well as transforming messages from the stream to the ones that actor under `ref` handles.
+   *
+   * If the target actor terminates the stream will be canceled.
+   * When the stream is completed successfully the given `onCompleteMessage`
+   * will be sent to the destination actor.
+   * When the stream is completed with failure - result of `onFailureMessage(throwable)`
+   * function will be sent to the destination actor.
+   */
+  @InternalApi private[akka] def actorRefWithAck[T](ref: ActorRef, messageAdapter: ActorRef ⇒ T ⇒ Any,
+                                                    onInitMessage: ActorRef ⇒ Any, ackMessage: Any, onCompleteMessage: Any,
+                                                    onFailureMessage: (Throwable) ⇒ Any): Sink[T, NotUsed] =
+    Sink.fromGraph(new ActorRefBackpressureSinkStage(ref, messageAdapter, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage))
 
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
@@ -398,10 +446,11 @@ object Sink {
    * will be sent to the destination actor.
    * When the stream is completed with failure - result of `onFailureMessage(throwable)`
    * function will be sent to the destination actor.
+   *
    */
   def actorRefWithAck[T](ref: ActorRef, onInitMessage: Any, ackMessage: Any, onCompleteMessage: Any,
                          onFailureMessage: (Throwable) ⇒ Any = Status.Failure): Sink[T, NotUsed] =
-    Sink.fromGraph(new ActorRefBackpressureSinkStage(ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage))
+    actorRefWithAck(ref, _ ⇒ identity, _ ⇒ onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
 
   /**
    * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
