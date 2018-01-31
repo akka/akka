@@ -409,7 +409,7 @@ which means `scala-java8-compat` implementation is not used after the first mapp
 @@@ note { .group-java }
 
 After adding any additional computation stage to `CompletionStage` returned by `scala-java8-compat`
-(e.g. `CompletionStage` instances returned by Akka) it falls back to standard behaviour of Java `CompletableFuture`.
+(e.g. `CompletionStage` instances returned by Akka) it falls back to standard behavior of Java `CompletableFuture`.
 
 @@@
 

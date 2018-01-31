@@ -274,22 +274,22 @@ class AdapterSpec extends AkkaSpec {
       probe.expectMsg("terminated")
     }
 
-    "spawn untyped behaviour anonymously" in {
+    "spawn untyped behavior anonymously" in {
       val probe = TestProbe()
-      val untypedBehaviour: Behavior[String] = new UntypedBehavior[String] {
+      val untypedBehavior: Behavior[String] = new UntypedBehavior[String] {
         override private[akka] def untypedProps: Props = untypedForwarder(probe.ref)
       }
-      val ref = system.spawnAnonymous(untypedBehaviour)
+      val ref = system.spawnAnonymous(untypedBehavior)
       ref ! "hello"
       probe.expectMsg("hello")
     }
 
-    "spawn untyped behaviour" in {
+    "spawn untyped behavior" in {
       val probe = TestProbe()
-      val untypedBehaviour: Behavior[String] = new UntypedBehavior[String] {
+      val untypedBehavior: Behavior[String] = new UntypedBehavior[String] {
         override private[akka] def untypedProps: Props = untypedForwarder(probe.ref)
       }
-      val ref = system.spawn(untypedBehaviour, "test")
+      val ref = system.spawn(untypedBehavior, "test")
       ref ! "hello"
       probe.expectMsg("hello")
     }
