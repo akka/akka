@@ -31,7 +31,7 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)
 
-  "Deferred behaviour" must {
+  "Deferred behavior" must {
     "must create underlying" in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.deferred[Command] { _ ⇒

@@ -138,7 +138,7 @@ Ie. this function should return `true` if the call should increase failure count
 
 ### Low level API
 
-The low-level API allows you to describe the behaviour of the CircuitBreaker in detail, including deciding what to return to the calling `Actor` in case of success or failure. This is especially useful when expecting the remote call to send a reply. CircuitBreaker doesn't support `Tell Protection` (protecting against calls that expect a reply) natively at the moment, so you need to use the low-level power-user APIs, `succeed`  and  `fail` methods, as well as `isClose`, `isOpen`, `isHalfOpen` to implement it. 
+The low-level API allows you to describe the behavior of the CircuitBreaker in detail, including deciding what to return to the calling `Actor` in case of success or failure. This is especially useful when expecting the remote call to send a reply. CircuitBreaker doesn't support `Tell Protection` (protecting against calls that expect a reply) natively at the moment, so you need to use the low-level power-user APIs, `succeed`  and  `fail` methods, as well as `isClose`, `isOpen`, `isHalfOpen` to implement it.
 
 As can be seen in the examples below, a `Tell Protection` pattern could be implemented by using the `succeed` and `fail` methods, which would count towards the `CircuitBreaker` counts. In the example, a call is made to the remote service if the `breaker.isClosed`, and once a response is received, the `succeed` method is invoked, which tells the `CircuitBreaker` to keep the breaker closed. If on the other hand an error or timeout is received, we trigger a `fail` and the breaker accrues this failure towards its count for opening the breaker.
 

@@ -86,7 +86,7 @@ final case class InvalidSequenceNumberException(expectedSeqNr: Long, gotSeqNr: L
  * the initial partner can send demand/messages to the other side accidentally.
  *
  * This exception is thrown when a message is recived from a non-partner actor,
- * which could mean a bug or some actively malicient behaviour from the other side.
+ * which could mean a bug or some actively malicient behavior from the other side.
  *
  * This is not meant as a security feature, but rather as plain sanity-check.
  */

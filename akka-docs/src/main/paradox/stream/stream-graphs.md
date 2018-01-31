@@ -15,7 +15,7 @@ streams, such that the second one is consumed after the first one has completed)
 ## Constructing Graphs
 
 Graphs are built from simple Flows which serve as the linear connections within the graphs as well as junctions
-which serve as fan-in and fan-out points for Flows. Thanks to the junctions having meaningful types based on their behaviour
+which serve as fan-in and fan-out points for Flows. Thanks to the junctions having meaningful types based on their behavior
 and making them explicit elements these elements should be rather straightforward to use.
 
 Akka Streams currently provide these junctions (for a detailed list see @ref[stages overview](stages-overview.md)):

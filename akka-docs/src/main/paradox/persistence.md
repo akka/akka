@@ -373,7 +373,7 @@ retain both the thread safety (including the right value of @scala[`sender()`]@j
 
 In general it is encouraged to create command handlers which do not need to resort to nested event persisting,
 however there are situations where it may be useful. It is important to understand the ordering of callback execution in
-those situations, as well as their implication on the stashing behaviour (that `persist()` enforces). In the following
+those situations, as well as their implication on the stashing behavior (that `persist()` enforces). In the following
 example two persist calls are issued, and each of them issues another persist inside its callback:
 
 Scala
@@ -554,7 +554,7 @@ Consider using explicit shut-down messages instead of `PoisonPill` when working 
 @@@
 
 The example below highlights how messages arrive in the Actor's mailbox and how they interact with its internal stashing
-mechanism when `persist()` is used. Notice the early stop behaviour that occurs when `PoisonPill` is used:
+mechanism when `persist()` is used. Notice the early stop behavior that occurs when `PoisonPill` is used:
 
 Scala
 :  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #safe-shutdown }
