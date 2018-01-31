@@ -8,7 +8,7 @@
 * [guide/index](guide/index.md)
 * [general/index](general/index.md)
 * [index-actors](index-actors.md)
-* [index-typed](index-typed.md)
+* [index-typed](typed/index.md)
 * [index-cluster](index-cluster.md)
 * [stream/index](stream/index.md)
 * [index-network](index-network.md)

@@ -26,6 +26,8 @@ import akka.actor.typed.receptionist.Receptionist
  * Actor of this hierarchy and which will create all other Actors beneath it.
  * A system also implements the [[ActorRef]] type, and sending a message to
  * the system directs that message to the root Actor.
+ *
+ * Not for user extension.
  */
 @DoNotInherit
 @ApiMayChange

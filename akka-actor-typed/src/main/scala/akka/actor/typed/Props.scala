@@ -29,6 +29,7 @@ object Props {
  * Deliberately not sealed in order to emphasize future extensibility by the
  * framework—this is not intended to be extended by user code.
  *
+ * Not for user extension.
  */
 @DoNotInherit
 @ApiMayChange
@@ -135,7 +136,7 @@ private[akka] case object EmptyProps extends Props {
 }
 
 /**
- * Not intended for user extension.
+ * Not for user extension.
  */
 @DoNotInherit
 sealed abstract class DispatcherSelector extends Props
@@ -171,9 +172,9 @@ object DispatcherSelector {
 }
 
 /**
- * Use the [[ActorSystem]] default executor to run the actor.
- *
  * INTERNAL API
+ *
+ * Use the [[ActorSystem]] default executor to run the actor.
  */
 @DoNotInherit
 @InternalApi
