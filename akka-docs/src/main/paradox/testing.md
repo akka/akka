@@ -7,9 +7,9 @@ perform tests.
 
 Akka comes with a dedicated module `akka-testkit` for supporting tests.
 
-## Dependencies 
+## Dependency
 
-Be sure to add the module `akka-testkit` to your dependencies.
+To use Akka Testkit, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

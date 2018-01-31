@@ -1,7 +1,16 @@
 # Streams Quickstart Guide
 
-Create a project and add the akka-streams dependency to the build tool of your
-choice.
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## First steps
 
 A stream usually begins at a source, so this is also how we start an Akka
 Stream. Before we create one, we import the full complement of streaming tools:

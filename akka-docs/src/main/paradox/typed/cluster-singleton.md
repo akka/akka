@@ -1,22 +1,5 @@
 # Cluster Singleton
 
-@@@ warning
-
-This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of active research. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet—you have been warned.
-  
-@@@
-
-To use the cluster singletons add the following dependency:
-
-@@dependency [sbt,Maven,Gradle] {
-  group=com.typesafe.akka
-  artifact=akka-cluster-typed_2.12
-  version=$akka.version$
-}
-
 For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
 
@@ -33,7 +16,26 @@ such as single-point of bottleneck. Single-point of failure is also a relevant c
 but for some cases this feature takes care of that by making sure that another singleton
 instance will eventually be started.
 
-# Example
+@@@ warning
+
+This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
+  of being the subject of active research. This means that API or semantics can
+  change without warning or deprecation period and it is not recommended to use
+  this module in production just yet—you have been warned.
+
+@@@
+
+## Dependency
+
+To use Akka Cluster Singleton, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-typed_2.12
+  version=$akka.version$
+}
+
+## Example
 
 Any `Behavior` can be run as a singleton. E.g. a basic counter:
 

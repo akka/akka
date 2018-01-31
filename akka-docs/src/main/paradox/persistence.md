@@ -13,64 +13,26 @@ Akka persistence is inspired by and the official replacement of the [eventsource
 concepts and architecture of [eventsourced](https://github.com/eligosource/eventsourced) but significantly differs on API and implementation level. See also
 @ref:[migration-eventsourced-2.3](project/migration-guide-eventsourced-2.3.x.md)
 
-## Dependencies
+## Dependency
 
-Akka persistence is a separate jar file. Make sure that you have the following dependency in your project:
+To use Akka Persistence, add the module to your project:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-persistence" % "$akka.version$"
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence_$scala.binary_version$"
+  version="$akka.version$"
+}
 
-Gradle
-:   @@@vars
-    ``` 
-    compile group: 'com.typesafe.akka', name: 'akka-persistence_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-persistence_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
-
-The Akka persistence extension comes with few built-in persistence plugins, including
+The Akka Persistence extension comes with few built-in persistence plugins, including
 in-memory heap based journal, local file-system based snapshot-store and LevelDB based journal.
 
-LevelDB based plugins will require the following additional dependency declaration:
+LevelDB-based plugins will require the following additional dependency:
 
-sbt
-:   @@@vars
-    ```
-    "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>org.fusesource.leveldbjni</groupId>
-      <artifactId>leveldbjni-all</artifactId>
-      <version>1.8</version>
-    </dependency>
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="org.fusesource.leveldbjni"
+  artifact="leveldbjni-all"
+  version="1.8"
+}
 
 ## Architecture
 
@@ -103,8 +65,8 @@ needs to be recovered, only the persisted events are replayed of which we know t
 In other words, events cannot fail when being replayed to a persistent actor, in contrast to commands. Event sourced
 actors may of course also process commands that do not change application state such as query commands for example.
 
-Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493) by Randy Shoup. It is a short and recommended read if you're starting 
-developing Events based applications. 
+Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493) by Randy Shoup. It is a short and recommended read if you're starting
+developing Events based applications.
 
 Akka persistence supports event sourcing with the @scala[`PersistentActor` trait]@java[`AbstractPersistentActor` abstract class]. An actor that extends this @scala[trait]@java[class] uses the
 `persist` method to persist and handle events. The behavior of @scala[a `PersistentActor`]@java[an `AbstractPersistentActor`]
@@ -188,8 +150,8 @@ By default, a persistent actor is automatically recovered on start and on restar
 New messages sent to a persistent actor during recovery do not interfere with replayed messages.
 They are stashed and received by a persistent actor after recovery phase completes.
 
-The number of concurrent recoveries that can be in progress at the same time is limited 
-to not overload the system and the backend data store. When exceeding the limit the actors will wait 
+The number of concurrent recoveries that can be in progress at the same time is limited
+to not overload the system and the backend data store. When exceeding the limit the actors will wait
 until other recoveries have been completed. This is configured by:
 
 ```
@@ -316,7 +278,7 @@ Java
     Persistence.get(getContext().getSystem()).defaultInternalStashOverflowStrategy();
     ```
     @@@
-    
+
 @@@ note
 
 The bounded mailbox should be avoided in the persistent actor, by which the messages come from storage backends may
@@ -649,7 +611,7 @@ akka.persistence.journal.leveldb.replay-filter {
 <a id="snapshots"></a>
 ## Snapshots
 
-As you model your domain using actors, you may notice that some actors may be prone to accumulating extremely long event logs and experiencing long recovery times. Sometimes, the right approach may be to split out into a set of shorter lived actors. However, when this is not an option, you can use snapshots to reduce recovery times drastically. 
+As you model your domain using actors, you may notice that some actors may be prone to accumulating extremely long event logs and experiencing long recovery times. Sometimes, the right approach may be to split out into a set of shorter lived actors. However, when this is not an option, you can use snapshots to reduce recovery times drastically.
 
 Persistent actors can save snapshots of internal state by calling the  `saveSnapshot` method. If saving of a snapshot
 succeeds, the persistent actor receives a `SaveSnapshotSuccess` message, otherwise a `SaveSnapshotFailure` message
@@ -1057,7 +1019,7 @@ akka {
       plugin = "akka.persistence.snapshot-store.local"
       auto-start-snapshot-stores = ["akka.persistence.snapshot-store.local"]
     }
-  
+
   }
 
 }
@@ -1238,7 +1200,7 @@ sbt
 Gradle
 :   @@@vars
     ```
-    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8' 
+    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8'
     ```
     @@@
 
@@ -1252,7 +1214,7 @@ Maven
     </dependency>
     ```
     @@@
-  
+
 The default location of LevelDB files is a directory named `journal` in the current working
 directory. This location can be changed by configuration where the specified path can be relative or absolute:
 
@@ -1260,11 +1222,11 @@ directory. This location can be changed by configuration where the specified pat
 
 With this plugin, each actor system runs its own private LevelDB instance.
 
-One peculiarity of LevelDB is that the deletion operation does not remove messages from the journal, but adds 
-a "tombstone" for each deleted message instead. In the case of heavy journal usage, especially one including frequent 
-deletes, this may be an issue as users may find themselves dealing with continuously increasing journal sizes. To 
+One peculiarity of LevelDB is that the deletion operation does not remove messages from the journal, but adds
+a "tombstone" for each deleted message instead. In the case of heavy journal usage, especially one including frequent
+deletes, this may be an issue as users may find themselves dealing with continuously increasing journal sizes. To
 this end, LevelDB offers a special journal compaction function that is exposed via the following configuration:
-   
+
 @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #compaction-intervals-config }
 
 <a id="shared-leveldb-journal"></a>

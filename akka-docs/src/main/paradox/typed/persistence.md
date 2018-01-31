@@ -1,4 +1,8 @@
-# Persistence 
+# Persistence
+
+Akka Persistence is a library for building event sourced actors. For background about how it works
+see the @ref:[untyped Akka Persistence section](../persistence.md). This documentation shows how the typed API for persistence
+works and assumes you know what is meant by `Command`, `Event` and `State`.
 
 @@@ warning
 
@@ -6,36 +10,34 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
   of being the subject of active research. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
   this module in production just yet—you have been warned.
-  
+
 @@@
 
 @@@ warning
 
-This module only has a Scala DSL. See [#24193](https://github.com/akka/akka/issues/24193) 
+This module only has a Scala DSL. See [#24193](https://github.com/akka/akka/issues/24193)
 to track progress and to contribute to the Java DSL.
-  
+
 @@@
 
-To use typed persistence add the following dependency:
+## Dependency
 
-@@dependency [sbt,Maven,Gradle] {
+To use Akka Persistence Typed, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-persistence-typed_2.11
   version=$akka.version$
 }
 
-
-
-Akka Persistence is a library for building event sourced actors. For background about how it works
-see the @ref:[untyped Akka Persistence section](../persistence.md). This documentation shows how the typed API for persistence
-works and assumes you know what is meant by `Command`, `Event` and `State`.
+## Example
 
 Let's start with a simple example. The minimum required for a `PersistentBehavior` is:
 
 Scala
 :  @@snip [BasicPersistentBehaviorsSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #structure }
 
-The first important thing to notice is the `Behavior` of a persistent actor is typed to the type of the `Command` 
+The first important thing to notice is the `Behavior` of a persistent actor is typed to the type of the `Command`
 because this type of message a persistent actor should receive. In Akka Typed this is now enforced by the type system.
 The event and state are only used internally.
 
@@ -59,19 +61,19 @@ A command handler returns an `Effect` directive that defines what event or event
 * `Effect.none` no events are to be persisted, for example a read-only command
 * `Effect.unhandled` the command is unhandled (not supported) in current state
 
-External side effects can be performed after successful persist with the `andThen` function e.g `Effect.persist(..).andThen`. 
-In the example below a reply is sent to the `replyTo` ActorRef. Note that the new state after applying 
+External side effects can be performed after successful persist with the `andThen` function e.g `Effect.persist(..).andThen`.
+In the example below a reply is sent to the `replyTo` ActorRef. Note that the new state after applying
 the event is passed as parameter to the `andThen` function.
 
 ### Event handler
 
-When an event has been persisted successfully the current state is updated by applying the 
-event to the current state with the `eventHandler` function. 
+When an event has been persisted successfully the current state is updated by applying the
+event to the current state with the `eventHandler` function.
 
-The event handler returns the new state, which must be immutable so you return a new instance of the state. 
+The event handler returns the new state, which must be immutable so you return a new instance of the state.
 The same event handler is also used when the entity is started up to recover its state from the stored events.
 
-It is not recommended to perform side effects 
+It is not recommended to perform side effects
 in the event handler, as those are also executed during recovery of an persistent actor
 
 ## Basic example
@@ -106,18 +108,18 @@ The behavior can then be run as with any normal typed actor as described in [typ
 
 ## Larger example
 
-After processing a message plain typed actors are able to return the `Behavior` that is used 
-for next message. 
+After processing a message plain typed actors are able to return the `Behavior` that is used
+for next message.
 
-As you can see in the above examples this is not supported by typed persistent actors. Instead, the state is 
-returned by `eventHandler`. The reason a new behavior can't be returned is that behavior is part of the actor's 
-state and must also carefully be reconstructed during recovery. If it would have been supported it would mean 
-that the behavior must be restored when replaying events and also encoded in the state anyway when snapshots are used. 
+As you can see in the above examples this is not supported by typed persistent actors. Instead, the state is
+returned by `eventHandler`. The reason a new behavior can't be returned is that behavior is part of the actor's
+state and must also carefully be reconstructed during recovery. If it would have been supported it would mean
+that the behavior must be restored when replaying events and also encoded in the state anyway when snapshots are used.
 That would be very prone to mistakes and thus not allowed in Typed Persistence.
 
-For simple actors you can use the same set of command handlers independent of what state the entity is in, 
-as shown in above example. For more complex actors it's useful to be able to change the behavior in the sense 
-that different functions for processing commands may be defined depending on what state the actor is in. This is useful when implementing finite state machine (FSM) like entities. 
+For simple actors you can use the same set of command handlers independent of what state the entity is in,
+as shown in above example. For more complex actors it's useful to be able to change the behavior in the sense
+that different functions for processing commands may be defined depending on what state the actor is in. This is useful when implementing finite state machine (FSM) like entities.
 
 The next example shows how to define different behavior based on the current `State`. It is an actor that
 represents the state of a blog post. Before a post is started the only command it can process is to `AddPost`. Once it is started
@@ -133,7 +135,7 @@ The commands (only a subset are valid depending on state):
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #commands }
 
-The command handler to process each command is decided by a `CommandHandler.byState` command handler, 
+The command handler to process each command is decided by a `CommandHandler.byState` command handler,
 which is a function from `State => CommandHandler`:
 
 Scala
@@ -149,8 +151,8 @@ And a different `CommandHandler` for after the post has been added:
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #post-added-command-handler }
 
-The event handler is always the same independent of state. The main reason for not making the event handler 
-part of the `CommandHandler` is that all events must be handled and that is typically independent of what the 
+The event handler is always the same independent of state. The main reason for not making the event handler
+part of the `CommandHandler` is that all events must be handled and that is typically independent of what the
 current state is. The event handler can of course still decide what to do based on the state if that is needed.
 
 Scala
@@ -163,14 +165,14 @@ Scala
 
 ## Serialization
 
-The same @ref:[serialization](../serialization.md) mechanism as for untyped 
-actors is also used in Akka Typed, also for persistent actors. When picking serialization solution for the events 
-you should also consider that it must be possible read old events when the application has evolved. 
+The same @ref:[serialization](../serialization.md) mechanism as for untyped
+actors is also used in Akka Typed, also for persistent actors. When picking serialization solution for the events
+you should also consider that it must be possible read old events when the application has evolved.
 Strategies for that can be found in the @ref:[schema evolution](../persistence-schema-evolution.md).
 
 ## Recovery
 
-Since it is strongly discouraged to perform side effects in applyEvent , 
+Since it is strongly discouraged to perform side effects in applyEvent ,
 side effects should be performed once recovery has completed in the `onRecoveryCompleted` callback
 
 Scala
