@@ -118,11 +118,12 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
    * Do not actually stop the child inbox, only simulate the liveness check.
    * Removal is asynchronous, explicit removeInbox is needed from outside afterwards.
    */
-  override def stop[U](child: ActorRef[U]): Boolean = {
-    _children.get(child.path.name) match {
-      case None        ⇒ false
-      case Some(inbox) ⇒ inbox.ref == child
-    }
+  override def stop[U](child: ActorRef[U]): Unit = {
+    if (child.path.parent != self.path) throw new IllegalArgumentException(
+      "Only direct children of an actor can be stopped through the actor context, " +
+        s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
+        "an explicit stop message that the actor accepts.")
+    else ()
   }
   override def watch[U](other: ActorRef[U]): Unit = ()
   override def watchWith[U](other: ActorRef[U], msg: T): Unit = ()

@@ -122,8 +122,12 @@ object ActorContextSpec {
           case Stop ⇒
             Behaviors.stopped
           case Kill(ref, replyTo) ⇒
-            if (ctx.stop(ref)) replyTo ! Killed
-            else replyTo ! NotKilled
+            try {
+              ctx.stop(ref)
+              replyTo ! Killed
+            } catch {
+              case ex: IllegalArgumentException ⇒ replyTo ! NotKilled
+            }
             Behaviors.same
           case Watch(ref, replyTo) ⇒
             ctx.watch(ref)
@@ -210,8 +214,12 @@ object ActorContextSpec {
         case Stop ⇒
           Behaviors.stopped
         case Kill(ref, replyTo) ⇒
-          if (ctx.stop(ref)) replyTo ! Killed
-          else replyTo ! NotKilled
+          try {
+            ctx.stop(ref)
+            replyTo ! Killed
+          } catch {
+            case ex: IllegalArgumentException ⇒ replyTo ! NotKilled
+          }
           Behaviors.same
         case Watch(ref, replyTo) ⇒
           ctx.watch(ref)
@@ -791,6 +799,30 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
         }
       })
     }
+
+    "not have problems stopping already stopped child" in {
+      sync(setup("ctx45", ignorePostStop = false) { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith.mkChild(Some("A"), ctx.spawnMessageAdapter(ChildEvent), self, inert = true) {
+          case (subj, child) ⇒
+            subj ! Kill(child, self)
+            (subj, child)
+        }.expectMessageKeep(expectTimeout) {
+          case (msg, (subj, child)) ⇒
+            msg should ===(Killed)
+            (subj, ctx.watch(child))
+        }.expectTermination(expectTimeout) {
+          case (t, (subj, child)) ⇒
+            t.ref should ===(child)
+            subj ! Kill(child, self)
+            child
+        }.expectMessage(expectTimeout) {
+          case (msg, _) ⇒
+            msg should ===(Killed)
+        }
+      })
+    }
+
   }
 }
 
