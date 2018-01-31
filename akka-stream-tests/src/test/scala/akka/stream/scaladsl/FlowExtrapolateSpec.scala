@@ -12,7 +12,7 @@ import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class FlowPressurizeSpec extends StreamSpec {
+class FlowExtrapolateSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
@@ -29,7 +29,7 @@ class FlowPressurizeSpec extends StreamSpec {
       val subscriber = TestSubscriber.probe[Int]()
 
       // Provide an empty stream
-      Source.fromPublisher(publisher).pressurize(_ ⇒ Stream.empty[Int]).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).extrapolate(_ ⇒ Iterator.empty).to(Sink.fromSubscriber(subscriber)).run()
 
       for (i ← 1 to 100) {
         // Order is important here: If the request comes first it will be extrapolated!
@@ -45,7 +45,7 @@ class FlowPressurizeSpec extends StreamSpec {
       val subscriber = TestSubscriber.probe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Source.fromPublisher(publisher).pressurize(e ⇒ Stream.continually(e + 1)).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).extrapolate(e ⇒ Iterator.continually(e + 1)).to(Sink.fromSubscriber(subscriber)).run()
 
       publisher.sendNext(42)
       subscriber.requestNext(42)
@@ -70,7 +70,7 @@ class FlowPressurizeSpec extends StreamSpec {
       val testInit = 44
 
       // Simply repeat the last element as an extrapolation step
-      Source.fromPublisher(publisher).pressurize(Stream.continually(_), initial = Some(testInit)).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).extrapolate(Iterator.continually(_), initial = Some(testInit)).to(Sink.fromSubscriber(subscriber)).run()
 
       publisher.sendNext(42)
       subscriber.requestNext(testInit)
@@ -84,7 +84,7 @@ class FlowPressurizeSpec extends StreamSpec {
       val subscriber = TestSubscriber.probe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Source.fromPublisher(publisher).pressurize(_ ⇒ Stream.empty[Int]).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).extrapolate(_ ⇒ Iterator.empty).to(Sink.fromSubscriber(subscriber)).run()
 
       publisher.sendNext(1)
       subscriber.requestNext(1)
@@ -102,7 +102,7 @@ class FlowPressurizeSpec extends StreamSpec {
     "work on a variable rate chain" in {
       val future = Source(1 to 100)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
-        .pressurize(Stream.continually(_))
+        .extrapolate(Iterator.continually(_))
         .runFold(Set.empty[Int])(_ + _)
 
       Await.result(future, 10.seconds) should contain theSameElementsAs (1 to 100).toSet
@@ -112,7 +112,7 @@ class FlowPressurizeSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(publisher).pressurize(Stream.continually(_)).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).extrapolate(Iterator.continually(_)).to(Sink.fromSubscriber(subscriber)).run()
 
       publisher.sendNext(1)
       subscriber.requestNext(1)

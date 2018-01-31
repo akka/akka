@@ -1112,7 +1112,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    * subscriber.
    *
    * Expand does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
-   * Exceptions from the `seed` or `extrapolate` functions will complete the stream with failure.
+   * Exceptions from the `seed` function will complete the stream with failure.
    *
    * '''Emits when''' downstream stops backpressuring
    *
@@ -1122,14 +1122,16 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    *
    * '''Cancels when''' downstream cancels
    *
-   * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
-   *                    state.
+   * @param expander       Takes the current extrapolation state to produce an output element and the next extrapolation
+   *                       state.
+   * @see [[#extrapolate]] for a version that always preserves the original element and allows for an initial "startup"
+   *                       element.
    */
-  def expand[U](extrapolate: function.Function[Out, java.util.Iterator[U]]): SubSource[U, Mat] =
-    new SubSource(delegate.expand(in ⇒ extrapolate(in).asScala))
+  def expand[U](expander: function.Function[Out, java.util.Iterator[U]]): SubSource[U, Mat] =
+    new SubSource(delegate.expand(in ⇒ expander(in).asScala))
 
   /**
-   * Allows a faster downstream to progress of a slower upstream.
+   * Allows a faster downstream to progress independent of a slower upstream.
    *
    * This is achieved by introducing "extrapolated" elements - based on those from upstream - whenever downstream
    * signals demand.
@@ -1146,14 +1148,15 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    *
    * '''Cancels when''' downstream cancels
    *
-   * @param extrapolate takes the current upstream element and provides a sequence of "extrapolated" elements based
-   *                    on the original, to be emitted in case downstream signals demand
+   * @param extrapolator takes the current upstream element and provides a sequence of "extrapolated" elements based
+   *                    on the original, to be emitted in case downstream signals demand.
+   * @see [[#expand]]    for a version that can overwrite the original element.
    */
-  def pressurize[U >: Out](extrapolate: function.Function[U, java.util.Iterator[U]]): SubSource[U, Mat] =
-    new SubSource(delegate.pressurize[U](in ⇒ extrapolate(in).asScala.toStream))
+  def extrapolate[U >: Out](extrapolator: function.Function[U, java.util.Iterator[U]]): SubSource[U, Mat] =
+    new SubSource(delegate.extrapolate[U](in ⇒ extrapolator(in).asScala))
 
   /**
-   * Allows a faster downstream to progress of a slower upstream.
+   * Allows a faster downstream to progress independent of a slower upstream.
    *
    * This is achieved by introducing "extrapolated" elements - based on those from upstream - whenever downstream
    * signals demand.
@@ -1170,12 +1173,13 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    *
    * '''Cancels when''' downstream cancels
    *
-   * @param extrapolate takes the current upstream element and provides a sequence of "extrapolated" elements based
-   *                    on the original, to be emitted in case downstream signals demand
-   * @param initial the initial element to be emitted, in case upstream is able to stall the entire stream
+   * @param extrapolator takes the current upstream element and provides a sequence of "extrapolated" elements based
+   *                    on the original, to be emitted in case downstream signals demand.
+   * @param initial the initial element to be emitted, in case upstream is able to stall the entire stream.
+   * @see [[#expand]]    for a version that can overwrite the original element.
    */
-  def pressurize[U >: Out](extrapolate: function.Function[U, java.util.Iterator[U]], initial: U): SubSource[U, Mat] =
-    new SubSource(delegate.pressurize[U](in ⇒ extrapolate(in).asScala.toStream, Some(initial)))
+  def extrapolate[U >: Out](extrapolator: function.Function[U, java.util.Iterator[U]], initial: U): SubSource[U, Mat] =
+    new SubSource(delegate.extrapolate[U](in ⇒ extrapolator(in).asScala, Some(initial)))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.

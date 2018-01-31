@@ -1641,7 +1641,7 @@ trait FlowOps[+Out, +Mat] {
    * subscriber.
    *
    * Expand does not support [[akka.stream.Supervision.Restart]] and [[akka.stream.Supervision.Resume]].
-   * Exceptions from the `seed` or `extrapolate` functions will complete the stream with failure.
+   * Exceptions from the `seed` function will complete the stream with failure.
    *
    * '''Emits when''' downstream stops backpressuring
    *
@@ -1651,13 +1651,15 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    *
-   * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
-   *                    state.
+   * @param expander       Takes the current extrapolation state to produce an output element and the next extrapolation
+   *                       state.
+   * @see [[#extrapolate]] for a version that always preserves the original element and allows for an initial "startup"
+   *                       element.
    */
-  def expand[U](extrapolate: Out ⇒ Iterator[U]): Repr[U] = via(new Expand(extrapolate))
+  def expand[U](expander: Out ⇒ Iterator[U]): Repr[U] = via(new Expand(expander))
 
   /**
-   * Allows a faster downstream to progress of a slower upstream.
+   * Allows a faster downstream to progress independent of a slower upstream.
    *
    * This is achieved by introducing "extrapolated" elements - based on those from upstream - whenever downstream
    * signals demand.
@@ -1674,12 +1676,13 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    *
-   * @param extrapolate takes the current upstream element and provides a sequence of "extrapolated" elements based
-   *                    on the original, to be emitted in case downstream signals demand
-   * @param initial the initial element to be emitted, in case upstream is able to stall the entire stream
+   * @param extrapolator takes the current upstream element and provides a sequence of "extrapolated" elements based
+   *                    on the original, to be emitted in case downstream signals demand.
+   * @param initial the initial element to be emitted, in case upstream is able to stall the entire stream.
+   * @see [[#expand]]    for a version that can overwrite the original element.
    */
-  def pressurize[U >: Out](extrapolate: U ⇒ Stream[U], initial: Option[U] = None): Repr[U] = {
-    val expandArg = (u: U) ⇒ (u #:: extrapolate(u)).toIterator
+  def extrapolate[U >: Out](extrapolator: U ⇒ Iterator[U], initial: Option[U] = None): Repr[U] = {
+    val expandArg = (u: U) ⇒ Iterator.single(u) ++ extrapolator(u)
 
     val expandStep = new Expand[U, U](expandArg)
 

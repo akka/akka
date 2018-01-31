@@ -163,7 +163,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set(OnError(TE), Cancel))
     }
 
-    "fail when Expand `extrapolate` throws" in new OneBoundedSetup[Int](
+    "fail when Expand `expander` throws" in new OneBoundedSetup[Int](
       new Expand((in: Int) ⇒ if (in == 2) Iterator.continually(throw TE) else Iterator(in) ++ Iterator.continually(-math.abs(in)))) {
 
       lastEvents() should be(Set(RequestOne))
