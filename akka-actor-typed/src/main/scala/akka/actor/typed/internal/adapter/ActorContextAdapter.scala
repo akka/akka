@@ -5,19 +5,24 @@ package akka.actor.typed
 package internal
 package adapter
 
+import akka.actor.ExtendedActorSystem
+import akka.actor.typed.Behavior.UntypedBehavior
+import akka.annotation.InternalApi
+import akka.util.OptionVal
 import akka.{ ConfigurationException, actor ⇒ a }
 
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContextExecutor
-import akka.annotation.InternalApi
-import akka.actor.typed.Behavior.UntypedBehavior
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[ActorContext]].
  */
-@InternalApi private[akka] class ActorContextAdapter[T](val untyped: a.ActorContext) extends ActorContextImpl[T] {
+@InternalApi private[akka] final class ActorContextAdapter[T](val untyped: a.ActorContext) extends ActorContextImpl[T] {
 
   import ActorRefAdapter.toUntyped
+
+  // lazily initialized
+  private var actorLogger: OptionVal[Logger] = OptionVal.None
 
   override def self = ActorRefAdapter(untyped.self)
   override val system = ActorSystemAdapter(untyped.system)
@@ -64,6 +69,20 @@ import akka.actor.typed.Behavior.UntypedBehavior
     // apply the function inside the actor by wrapping the msg and f, handled by ActorAdapter
     val ref = cell.addFunctionRef((_, msg) ⇒ untyped.self ! AdaptMessage[U, T](msg.asInstanceOf[U], f), _name)
     ActorRefAdapter[U](ref)
+  }
+
+  override def log: Logger = {
+    actorLogger match {
+      case OptionVal.Some(logger) ⇒ logger
+      case OptionVal.None ⇒
+        import scala.language.existentials
+        val logSource = self.path.toString
+        val logClass = classOf[Behavior[_]] // FIXME figure out a better class somehow
+        val system = untyped.system.asInstanceOf[ExtendedActorSystem]
+        val logger = new LoggerAdapterImpl(system.eventStream, logClass, logSource, system.logFilter)
+        actorLogger = OptionVal.Some(logger)
+        logger
+    }
   }
 }
 

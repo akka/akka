@@ -16,9 +16,9 @@ import akka.actor.typed.Signal
 import akka.actor.typed.ActorRef
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
-import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl }
+import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
 import akka.annotation.ApiMayChange
-
+import scala.collection.JavaConverters._
 /**
  * Factories for [[akka.actor.typed.Behavior]].
  */
@@ -316,4 +316,19 @@ object Behaviors {
     def receiveMessage(msg: T): Behavior[T]
     def receiveSignal(msg: Signal): Behavior[T]
   }
+
+  /**
+   * Provide a MDC ("Mapped Diagnostic Context") for logging from the actor.
+   *
+   * @param mdcForMessage Is invoked before each message to setup MDC which is then attachd to each logging statement
+   *                      done for that message through the [[ActorContext.getLog]]. After the message has been processed
+   *                      the MDC is cleared.
+   * @param behavior The behavior that this should be applied to.
+   */
+  def withMdc[T](
+    `type`:        Class[T],
+    mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Object]],
+    behavior:      Behavior[T]): Behavior[T] =
+    LoggingBehaviorImpl.withMdc[T](message ⇒ mdcForMessage.apply(message).asScala.toMap, behavior)(ClassTag(`type`))
+
 }

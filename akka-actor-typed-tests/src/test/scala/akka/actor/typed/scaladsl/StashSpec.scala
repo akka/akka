@@ -19,9 +19,6 @@ object StashSpec {
   final case class GetProcessed(replyTo: ActorRef[Vector[String]]) extends Command
   final case class GetStashSize(replyTo: ActorRef[Int]) extends Command
 
-  // FIXME replace when we get the logging in place, #23326
-  def log(ctx: ActorContext[_]): LoggingAdapter = ctx.system.log
-
   def active(processed: Vector[String]): Behavior[Command] =
     Behaviors.immutable { (ctx, cmd) ⇒
       cmd match {
@@ -57,13 +54,13 @@ object StashSpec {
         case UnstashAll ⇒
           buffer.unstashAll(ctx, active(processed))
         case Unstash ⇒
-          log(ctx).debug(s"Unstash ${buffer.size}")
+          ctx.log.debug(s"Unstash ${buffer.size}")
           if (buffer.isEmpty)
             active(processed)
           else {
             ctx.self ! Unstash // continue unstashing until buffer is empty
             val numberOfMessages = 2
-            log(ctx).debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
+            ctx.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
             buffer.unstash(ctx, unstashing(buffer.drop(numberOfMessages), processed), numberOfMessages, Unstashed)
           }
         case Stash ⇒
@@ -77,28 +74,28 @@ object StashSpec {
     Behaviors.immutable { (ctx, cmd) ⇒
       cmd match {
         case Unstashed(msg: Msg) ⇒
-          log(ctx).debug(s"unstashed $msg")
+          ctx.log.debug(s"unstashed $msg")
           unstashing(buffer, processed :+ msg.s)
         case Unstashed(GetProcessed(replyTo)) ⇒
-          log(ctx).debug(s"unstashed GetProcessed")
+          ctx.log.debug(s"unstashed GetProcessed")
           replyTo ! processed
           Behaviors.same
         case msg: Msg ⇒
-          log(ctx).debug(s"got $msg in unstashing")
+          ctx.log.debug(s"got $msg in unstashing")
           unstashing(buffer :+ msg, processed)
         case get: GetProcessed ⇒
-          log(ctx).debug(s"got GetProcessed in unstashing")
+          ctx.log.debug(s"got GetProcessed in unstashing")
           unstashing(buffer :+ get, processed)
         case Stash ⇒
           stashing(buffer, processed)
         case Unstash ⇒
           if (buffer.isEmpty) {
-            log(ctx).debug(s"unstashing done")
+            ctx.log.debug(s"unstashing done")
             active(processed)
           } else {
             ctx.self ! Unstash // continue unstashing until buffer is empty
             val numberOfMessages = 2
-            log(ctx).debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
+            ctx.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
             buffer.unstash(ctx, unstashing(buffer.drop(numberOfMessages), processed), numberOfMessages, Unstashed)
           }
         case GetStashSize(replyTo) ⇒
@@ -147,15 +144,15 @@ object StashSpec {
           } else {
             ctx.self ! Unstash // continue unstashing until buffer is empty
             val numberOfMessages = 2
-            log(ctx).debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
+            ctx.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
             buffer.unstash(ctx, this, numberOfMessages, Unstashed)
           }
         case Unstashed(msg: Msg) ⇒
-          log(ctx).debug(s"unstashed $msg")
+          ctx.log.debug(s"unstashed $msg")
           processed :+= msg.s
           this
         case Unstashed(GetProcessed(replyTo)) ⇒
-          log(ctx).debug(s"unstashed GetProcessed")
+          ctx.log.debug(s"unstashed GetProcessed")
           replyTo ! processed
           Behaviors.same
         case _: Unstashed ⇒

@@ -5,7 +5,7 @@ package akka.actor.typed
 package scaladsl
 
 import akka.annotation.{ ApiMayChange, InternalApi }
-import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl }
+import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
 
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
@@ -266,6 +266,19 @@ object Behaviors {
    */
   def withTimers[T](factory: TimerScheduler[T] ⇒ Behavior[T]): Behavior[T] =
     TimerSchedulerImpl.withTimers(factory)
+
+  /**
+   * Provide a MDC ("Mapped Diagnostic Context") for logging from the actor.
+   *
+   * @param mdcForMessage Is invoked before each message to setup MDC which is then attachd to each logging statement
+   *                      done for that message through the [[ActorContext.log]]. After the message has been processed
+   *                      the MDC is cleared.
+   * @param behavior The behavior that this should be applied to.
+   */
+  def withMdc[T: ClassTag](
+    mdcForMessage: T ⇒ Map[String, Any],
+    behavior:      Behavior[T]): Behavior[T] =
+    LoggingBehaviorImpl.withMdc(mdcForMessage, behavior)
 
   // TODO
   // final case class Selective[T](timeout: FiniteDuration, selector: PartialFunction[T, Behavior[T]], onTimeout: () ⇒ Behavior[T])
