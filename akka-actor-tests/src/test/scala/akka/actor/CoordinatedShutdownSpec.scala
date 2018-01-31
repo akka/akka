@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Future
 import akka.Done
-import akka.testkit.{ AkkaSpec, TestKit }
+import akka.testkit.{ AkkaSpec, EventFilter, TestKit }
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.CoordinatedShutdown.Phase
 import akka.actor.CoordinatedShutdown.UnknownReason
@@ -18,20 +18,23 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Promise
 import java.util.concurrent.TimeoutException
 
-class CoordinatedShutdownSpec extends AkkaSpec {
+class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
+  """
+    akka.loggers = ["akka.testkit.TestEventListener"]
+  """)) {
 
   def extSys = system.asInstanceOf[ExtendedActorSystem]
 
   // some convenience to make the test readable
-  def phase(dependsOn: String*): Phase = Phase(dependsOn.toSet, timeout = 10.seconds, recover = true)
-  val emptyPhase: Phase = Phase(Set.empty, timeout = 10.seconds, recover = true)
+  def phase(dependsOn: String*): Phase = Phase(dependsOn.toSet, timeout = 10.seconds, recover = true, enabled = true)
+  val emptyPhase: Phase = Phase(Set.empty, timeout = 10.seconds, recover = true, enabled = true)
 
   private def checkTopologicalSort(phases: Map[String, Phase]): List[String] = {
     val result = CoordinatedShutdown.topologicalSort(phases)
     result.zipWithIndex.foreach {
       case (phase, i) ⇒
         phases.get(phase) match {
-          case Some(Phase(dependsOn, _, _)) ⇒
+          case Some(Phase(dependsOn, _, _, _)) ⇒
             dependsOn.foreach { depPhase ⇒
               withClue(s"phase [$phase] depends on [$depPhase] but was ordered before it in topological sort result $result") {
                 i should be > result.indexOf(depPhase)
@@ -47,7 +50,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
 
   "CoordinatedShutdown" must {
 
-    "sort phases in topolgical order" in {
+    "sort phases in topological order" in {
       checkTopologicalSort(Map.empty) should ===(Nil)
 
       checkTopologicalSort(Map(
@@ -204,7 +207,7 @@ class CoordinatedShutdownSpec extends AkkaSpec {
       import system.dispatcher
       val phases = Map(
         "a" → emptyPhase,
-        "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = true),
+        "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = true, enabled = true),
         "c" → phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
       co.addTask("a", "a1") { () ⇒
@@ -227,7 +230,11 @@ class CoordinatedShutdownSpec extends AkkaSpec {
         testActor ! "C"
         Future.successful(Done)
       }
-      Await.result(co.run(UnknownReason), remainingOrDefault)
+      EventFilter.warning(message = "Task [a1] failed in phase [a]: boom", occurrences = 1).intercept {
+        EventFilter.warning(message = "Coordinated shutdown phase [b] timed out after 100 milliseconds", occurrences = 1).intercept {
+          Await.result(co.run(UnknownReason), remainingOrDefault)
+        }
+      }
       expectMsg("A")
       expectMsg("A")
       expectMsg("B")
@@ -237,7 +244,8 @@ class CoordinatedShutdownSpec extends AkkaSpec {
     "abort if recover=off" in {
       import system.dispatcher
       val phases = Map(
-        "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false),
+        "a" → emptyPhase,
+        "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = true),
         "c" → phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
       co.addTask("b", "b1") { () ⇒
@@ -254,6 +262,27 @@ class CoordinatedShutdownSpec extends AkkaSpec {
         Await.result(result, remainingOrDefault)
       }
       expectNoMsg(200.millis) // C not run
+    }
+
+    "skip tasks in disabled phase" in {
+      val phases = Map(
+        "a" → emptyPhase,
+        "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = false),
+        "c" → phase("b", "a"))
+      val co = new CoordinatedShutdown(extSys, phases)
+      co.addTask("b", "b1") { () ⇒
+        testActor ! "B"
+        Future.failed(new RuntimeException("Was expected to not be executed"))
+      }
+      co.addTask("c", "c1") { () ⇒
+        testActor ! "C"
+        Future.successful(Done)
+      }
+      EventFilter.warning(start = "Phase [b] disabled through configuration", occurrences = 1).intercept {
+        val result = co.run(UnknownReason)
+        expectMsg("C")
+        result.futureValue should ===(Done)
+      }
     }
 
     "be possible to add tasks in later phase from task in earlier phase" in {
@@ -291,9 +320,9 @@ class CoordinatedShutdownSpec extends AkkaSpec {
           }
         }
         """)) should ===(Map(
-        "a" → Phase(dependsOn = Set.empty, timeout = 10.seconds, recover = true),
-        "b" → Phase(dependsOn = Set("a"), timeout = 15.seconds, recover = true),
-        "c" → Phase(dependsOn = Set("a", "b"), timeout = 10.seconds, recover = false)))
+        "a" → Phase(dependsOn = Set.empty, timeout = 10.seconds, recover = true, enabled = true),
+        "b" → Phase(dependsOn = Set("a"), timeout = 15.seconds, recover = true, enabled = true),
+        "c" → Phase(dependsOn = Set("a", "b"), timeout = 10.seconds, recover = false, enabled = true)))
     }
 
     // this must be the last test, since it terminates the ActorSystem

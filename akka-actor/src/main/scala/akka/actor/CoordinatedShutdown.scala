@@ -230,7 +230,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   /**
    * INTERNAL API
    */
-  private[akka] final case class Phase(dependsOn: Set[String], timeout: FiniteDuration, recover: Boolean)
+  private[akka] final case class Phase(dependsOn: Set[String], timeout: FiniteDuration, recover: Boolean, enabled: Boolean)
 
   /**
    * INTERNAL API
@@ -242,6 +242,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     val defaultPhaseConfig = ConfigFactory.parseString(s"""
       timeout = $defaultPhaseTimeout
       recover = true
+      enabled = true
       depends-on = []
     """)
     phasesConf.root.unwrapped.asScala.toMap.map {
@@ -250,7 +251,8 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
         val dependsOn = c.getStringList("depends-on").asScala.toSet
         val timeout = c.getDuration("timeout", MILLISECONDS).millis
         val recover = c.getBoolean("recover")
-        k → Phase(dependsOn, timeout, recover)
+        val enabled = c.getBoolean("enabled")
+        k → Phase(dependsOn, timeout, recover, enabled)
       case (k, v) ⇒
         throw new IllegalArgumentException(s"Expected object value for [$k], got [$v]")
     }
@@ -275,8 +277,8 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
       if (unmarked(u)) {
         tempMark += u
         phases.get(u) match {
-          case Some(Phase(dependsOn, _, _)) ⇒ dependsOn.foreach(depthFirstSearch)
-          case None                         ⇒
+          case Some(p) ⇒ p.dependsOn.foreach(depthFirstSearch)
+          case None    ⇒
         }
         unmarked -= u // permanent mark
         tempMark -= u
@@ -292,10 +294,8 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
 final class CoordinatedShutdown private[akka] (
   system: ExtendedActorSystem,
   phases: Map[String, CoordinatedShutdown.Phase]) extends Extension {
-  import CoordinatedShutdown.Phase
   import CoordinatedShutdown.Reason
   import CoordinatedShutdown.UnknownReason
-  import CoordinatedShutdown.JvmExitReason
 
   /** INTERNAL API */
   private[akka] val log = Logging(system, getClass)
@@ -406,6 +406,12 @@ final class CoordinatedShutdown private[akka] (
       def loop(remainingPhases: List[String]): Future[Done] = {
         remainingPhases match {
           case Nil ⇒ Future.successful(Done)
+          case phase :: remaining if !phases(phase).enabled ⇒
+            tasks.get(phase) match {
+              case null  ⇒ // This pretty much is ok as there are no tasks
+              case tasks ⇒ log.warning("Phase [{}] disabled through configuration, skipping [{}] tasks", phase, tasks.size)
+            }
+            loop(remaining)
           case phase :: remaining ⇒
             val phaseResult = tasks.get(phase) match {
               case null ⇒
@@ -502,7 +508,7 @@ final class CoordinatedShutdown private[akka] (
    */
   def timeout(phase: String): FiniteDuration =
     phases.get(phase) match {
-      case Some(Phase(_, timeout, _)) ⇒ timeout
+      case Some(p) ⇒ p.timeout
       case None ⇒
         throw new IllegalArgumentException(s"Unknown phase [$phase]. All phases must be defined in configuration")
     }
