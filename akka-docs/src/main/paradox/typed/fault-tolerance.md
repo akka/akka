@@ -45,20 +45,22 @@ Java
 For a full list of strategies see the public methods on `SupervisorStrategy`
 
 
-## Bubbling exceptions up
+## Bubble failures up through the hierarchy
 
 In some scenarios it may be useful to push the decision about what to do on a failure upwards in the Actor hierarchy
-(in untyped Akka Actors this is how it works by default) and let the parent actor handle what should happen on failures.
+ and let the parent actor handle what should happen on failures (in untyped Akka Actors this is how it works by default).
 
-// FIXME is it useful that we should introduce something for it perhaps?
+For a parent to be notified when a child is terminated it has to `watch` the child. If the child was stopped because of
+a failure this will be included in the `Terminated` signal in the `failed` field.
 
-// IDEA 1: parent will have to use watch, and act on children terminating
-// problems: no idea what exception happened (maybe that is good, to not tightly couple parent and children)
+If the parent in turn does not handle the `Terminated` message it will itself fail with an `akka.actor.typed.DeathPactException`.
+This means that a hierarchy of actors can have a child failure bubble up making each actor on the way stop but informing the
+top-most parent that there was a failure and how to deal with it, however, the original exception that caused the failure
+will only be available to the immediate parent.
 
-// IDEA 2: provide a special supervision strategy that queries the parent, 
-// put's the actor in limbo state until the parent has decided
-// problems: maybe this is just complicating things and not actually so useful? 
-
-// IDEA 3: recommend explicit protocol between parent and child about this
-// IJustFailed(ex, childRef) and that the parent acts on that 
  
+Scala
+:  @@snip [FaultToleranceDocSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/FaultToleranceDocSpec.scala) { #bubbling-example }
+
+Java
+:  @@snip [SupervisionCompileOnlyTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FaultToleranceDocTest.java) { #bubbling-example }

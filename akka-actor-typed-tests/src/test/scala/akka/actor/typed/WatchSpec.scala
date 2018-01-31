@@ -38,33 +38,103 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
 
   import WatchSpec._
 
-  "Actor monitoring" must {
-    class WatchSetup {
-      val terminator = systemActor(terminatorBehavior)
-      val receivedTerminationSignal: Promise[ActorRef[Nothing]] = Promise()
-      val watchProbe = TestProbe[Done]()
+  class WatchSetup {
+    val terminator = systemActor(terminatorBehavior)
+    val receivedTerminationSignal: Promise[Terminated] = Promise()
+    val watchProbe = TestProbe[Done]()
 
-      val watcher = systemActor(
-        Behaviors.supervise(
-          Behaviors.immutable[StartWatching] {
-            case (ctx, StartWatching(watchee)) ⇒
-              ctx.watch(watchee)
-              watchProbe.ref ! Done
-              Behaviors.same
-          }.onSignal {
-            case (_, Terminated(stopped)) ⇒
-              receivedTerminationSignal.success(stopped)
-              Behaviors.stopped
-          }
-        ).onFailure[Throwable](SupervisorStrategy.stop))
-    }
-    "get notified of actor termination" in new WatchSetup {
+    val watcher = systemActor(
+      Behaviors.supervise(
+        Behaviors.immutable[StartWatching] {
+          case (ctx, StartWatching(watchee)) ⇒
+            ctx.watch(watchee)
+            watchProbe.ref ! Done
+            Behaviors.same
+        }.onSignal {
+          case (_, t: Terminated) ⇒
+            receivedTerminationSignal.success(t)
+            Behaviors.stopped
+        }
+      ).onFailure[Throwable](SupervisorStrategy.stop))
+  }
+
+  "Actor monitoring" must {
+
+    "get notified of graceful actor termination" in new WatchSetup {
       watcher ! StartWatching(terminator)
       watchProbe.expectMessage(Done)
       terminator ! Stop
 
-      receivedTerminationSignal.future.futureValue shouldEqual terminator
+      val termination = receivedTerminationSignal.future.futureValue
+      termination.ref shouldEqual terminator
+      termination.failure shouldBe empty
     }
+    "notify a parent of child termination because of failure" in {
+      case class Failed(t: Terminated) // we need to wrap it as it is handled specially
+      val probe = TestProbe[Any]()
+      val ex = new TestException("boom")
+      val parent = spawn(Behaviors.deferred[Any] { ctx ⇒
+        val child = ctx.spawn(Behaviors.immutable[Any]((ctx, msg) ⇒
+          throw ex
+        ), "child")
+        ctx.watch(child)
+
+        Behaviors.immutable[Any] { (ctx, msg) ⇒
+          child ! msg
+          Behaviors.same
+        }.onSignal {
+          case (_, t: Terminated) ⇒
+            probe.ref ! Failed(t)
+            Behaviors.same
+        }
+      }, "parent")
+
+      EventFilter[TestException](occurrences = 1).intercept {
+        parent ! "boom"
+      }
+      val terminated = probe.expectMsgType[Failed].t
+      terminated.failure should ===(Some(ex)) // here we get the exception from the child
+    }
+    "fail the actor itself with DeathPact if it does not accept Terminated" in {
+      case class Failed(t: Terminated) // we need to wrap it as it is handled specially
+      val probe = TestProbe[Any]()
+      val ex = new TestException("boom")
+      val grossoBosso = spawn(Behaviors.deferred[Any] { ctx ⇒
+        val middleManagement = ctx.spawn(Behaviors.deferred[Any] { ctx ⇒
+          val sixPackJoe = ctx.spawn(Behaviors.immutable[Any]((ctx, msg) ⇒
+            throw ex
+          ), "joe")
+          ctx.watch(sixPackJoe)
+
+          Behaviors.immutable[Any] { (ctx, msg) ⇒
+            sixPackJoe ! msg
+            Behaviors.same
+          } // no handling of terminated, even though we watched!!!
+        }, "middle-management")
+
+        ctx.watch(middleManagement)
+
+        Behaviors.immutable[Any] { (ctx, msg) ⇒
+          middleManagement ! msg
+          Behaviors.same
+        }.onSignal {
+          case (_, t: Terminated) ⇒
+            probe.ref ! Failed(t)
+            Behaviors.stopped
+        }
+
+      }, "grosso-bosso")
+
+      EventFilter[TestException](occurrences = 1).intercept {
+        EventFilter[DeathPactException](occurrences = 1).intercept {
+          grossoBosso ! "boom"
+        }
+      }
+      val terminated = probe.expectMsgType[Failed].t
+      terminated.failure.isDefined should ===(true)
+      terminated.failure.get shouldBe a[DeathPactException]
+    }
+
     "allow idempotent invocations of watch" in new WatchSetup {
       watcher ! StartWatching(terminator)
       watchProbe.expectMessage(Done)
@@ -72,8 +142,7 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
       watcher ! StartWatching(terminator)
       watchProbe.expectMessage(Done)
       terminator ! Stop
-
-      receivedTerminationSignal.future.futureValue shouldEqual terminator
+      receivedTerminationSignal.future.futureValue.ref shouldEqual terminator
     }
 
     class WatchWithSetup {
