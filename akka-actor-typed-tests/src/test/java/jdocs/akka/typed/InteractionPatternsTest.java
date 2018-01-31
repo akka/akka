@@ -34,7 +34,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
   static final Behavior<PrintMe> printerBehavior = Behaviors.immutable(PrintMe.class)
     .onMessage(PrintMe.class, (ctx, printMe) -> {
-      System.out.println(printMe.message);
+      ctx.getLog().info(printMe.message);
       return Behaviors.same();
     }).build();
   // #fire-and-forget-definition
@@ -204,16 +204,16 @@ public class InteractionPatternsTest extends JUnitSuite {
             return this;
           })
           .onMessage(WrappedJobStarted.class, wrapped -> {
-            System.out.println("Started " + wrapped.response.taskId);
+            ctx.getLog().info("Started {}", wrapped.response.taskId);
             return this;
           })
           .onMessage(WrappedJobProgress.class, wrapped -> {
-            System.out.println("Progress " + wrapped.response.taskId + ": " +
+            ctx.getLog().info("Progress {}: {}", wrapped.response.taskId,
               wrapped.response.progress);
             return this;
           })
           .onMessage(WrappedJobCompleted.class, wrapped -> {
-            System.out.println("Completed " + wrapped.response.taskId + ": " +
+            ctx.getLog().info("Completed {}: {}", wrapped.response.taskId,
               wrapped.response.result);
             return this;
           })
@@ -421,7 +421,7 @@ public class InteractionPatternsTest extends JUnitSuite {
         // the adapted message ends up being processed like any other
         // message sent to the actor
         .onMessage(AdaptedResponse.class, (innerCtx, response) -> {
-          System.out.println("Got response from HAL: " + response.message);
+          innerCtx.getLog().info("Got response from HAL: {}", response.message);
           return Behaviors.same();
         }).build();
     });

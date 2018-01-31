@@ -25,8 +25,8 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       case class PrintMe(message: String)
 
       val printerBehavior: Behavior[PrintMe] = Behaviors.immutable {
-        case (_, PrintMe(message)) ⇒
-          println(message)
+        case (ctx, PrintMe(message)) ⇒
+          ctx.log.info(message)
           Behaviors.same
       }
       // #fire-and-forget-definition
@@ -117,13 +117,13 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
                   case wrapped: WrappedBackendResponse ⇒ wrapped.response match {
                     case Backend.JobStarted(taskId) ⇒
-                      println(s"Started $taskId")
+                      ctx.log.info("Started {}", taskId)
                       Behaviors.same
                     case Backend.JobProgress(taskId, progress) ⇒
-                      println(s"Progress $taskId: $progress")
+                      ctx.log.info("Progress {}: {}", taskId, progress)
                       Behaviors.same
                     case Backend.JobCompleted(taskId, result) ⇒
-                      println(s"Completed $taskId: $result")
+                      ctx.log.info("Completed {}: {}", taskId, result)
                       inProgress(taskId) ! result
                       active(inProgress - taskId, count)
                   }
@@ -249,12 +249,12 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
         case Failure(ex)                   ⇒ AdaptedResponse(s"$requestId: Request failed")
       }
 
-      Behaviors.immutable { (_, msg) ⇒
+      Behaviors.immutable { (ctx, msg) ⇒
         msg match {
           // the adapted message ends up being processed like any other
           // message sent to the actor
           case AdaptedResponse(msg) ⇒
-            println(s"Got response from hal: $msg")
+            ctx.log.info("Got response from hal: {}", msg)
             Behaviors.same
         }
       }
