@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.persistence
@@ -280,24 +280,16 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     pluginHolderFor(configPath, SnapshotStoreFallbackConfigPath).actor
   }
 
-  @tailrec private def pluginHolderFor(configPath: String, fallbackPath: String, initPluginActor: Option[() ⇒ ActorRef] = None): PluginHolder = {
+  @tailrec private def pluginHolderFor(configPath: String, fallbackPath: String): PluginHolder = {
     val extensionIdMap = pluginExtensionId.get
     extensionIdMap.get(configPath) match {
       case Some(extensionId) ⇒
         extensionId(system)
       case None ⇒
-        val extensionId = new PluginHolderExtensionId(configPath, fallbackPath, initPluginActor.map(_()))
+        val extensionId = new PluginHolderExtensionId(configPath, fallbackPath)
         pluginExtensionId.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
-        pluginHolderFor(configPath, fallbackPath, initPluginActor) // Recursive invocation.
+        pluginHolderFor(configPath, fallbackPath) // Recursive invocation.
     }
-  }
-
-  /**
-   * Only for tests
-   */
-  private[persistence] def addNewJournal(initPluginActor: () ⇒ ActorRef, journalPluginId: String) = {
-    val configPath = if (isEmpty(journalPluginId)) defaultJournalPluginId else journalPluginId
-    pluginHolderFor(configPath, journalFallbackConfigPath, Some(initPluginActor))
   }
 
   private def createPlugin(configPath: String, pluginConfig: Config): ActorRef = {
@@ -334,14 +326,14 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   private def id(ref: ActorRef) = ref.path.toStringWithoutAddress
 
-  private class PluginHolderExtensionId(configPath: String, fallbackPath: String, upPlugin: Option[ActorRef] = None) extends ExtensionId[PluginHolder] {
+  private class PluginHolderExtensionId(configPath: String, fallbackPath: String) extends ExtensionId[PluginHolder] {
     override def createExtension(system: ExtendedActorSystem): PluginHolder = {
       require(
         !isEmpty(configPath) && system.settings.config.hasPath(configPath),
         s"'reference.conf' is missing persistence plugin config path: '$configPath'")
       val config: Config = system.settings.config.getConfig(configPath)
         .withFallback(system.settings.config.getConfig(fallbackPath))
-      val plugin: ActorRef = upPlugin.getOrElse(createPlugin(configPath, config))
+      val plugin: ActorRef = createPlugin(configPath, config)
       val adapters: EventAdapters = createAdapters(configPath)
 
       PluginHolder(plugin, adapters, config)

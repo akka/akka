@@ -25,11 +25,9 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
   }
 
-  private final lazy val storage = InMemStorageExtension(system)
-
   implicit val ec = system.dispatcher
 
-  val journal = Persistence(system).addNewJournal(() ⇒ system.actorOf(Props(classOf[PersistenceTestKitPlugin])), PersistenceTestKitPlugin.PluginId)
+  private final lazy val storage = system.extension(InMemStorageExtension)
 
   override def expectNextPersisted(persistenceId: String, msg: Any): Unit = {
     val actual = storage.receiveOnePersisted(persistenceId)
