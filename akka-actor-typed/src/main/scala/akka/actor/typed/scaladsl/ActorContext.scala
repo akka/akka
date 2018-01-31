@@ -87,12 +87,11 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
 
   /**
    * Force the child Actor under the given name to terminate after it finishes
-   * processing its current message. Nothing happens if the ActorRef does not
-   * refer to a current child actor.
+   * processing its current message. Nothing happens if the ActorRef is a child that is already stopped.
    *
-   * @return whether the passed-in [[ActorRef]] points to a current child Actor
+   * @throws IllegalArgumentException if the given actor ref is not a direct child of this actor
    */
-  def stop[U](child: ActorRef[U]): Boolean
+  def stop[U](child: ActorRef[U]): Unit
 
   /**
    * Register for [[akka.actor.typed.Terminated]] notification once the Actor identified by the

@@ -33,20 +33,27 @@ import scala.concurrent.duration._
     ActorContextAdapter.spawnAnonymous(untyped, behavior, props)
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty) =
     ActorContextAdapter.spawn(untyped, behavior, name, props)
-  override def stop[U](child: ActorRef[U]): Boolean =
-    toUntyped(child) match {
-      case f: akka.actor.FunctionRef ⇒
-        val cell = untyped.asInstanceOf[akka.actor.ActorCell]
-        cell.removeFunctionRef(f)
-      case c ⇒
-        untyped.child(child.path.name) match {
-          case Some(`c`) ⇒
-            untyped.stop(c)
-            true
-          case _ ⇒
-            false // none of our business
-        }
+  override def stop[U](child: ActorRef[U]): Unit =
+    if (child.path.parent == self.path) { // only if a direct child
+      toUntyped(child) match {
+        case f: akka.actor.FunctionRef ⇒
+          val cell = untyped.asInstanceOf[akka.actor.ActorCell]
+          cell.removeFunctionRef(f)
+        case c ⇒
+          untyped.child(child.path.name) match {
+            case Some(`c`) ⇒
+              untyped.stop(c)
+            case _ ⇒
+            // child that was already stopped
+          }
+      }
+    } else {
+      throw new IllegalArgumentException(
+        "Only direct children of an actor can be stopped through the actor context, " +
+          s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
+          "an explicit stop message that the actor accepts.")
     }
+
   override def watch[U](other: ActorRef[U]) = { untyped.watch(toUntyped(other)) }
   override def watchWith[U](other: ActorRef[U], msg: T) = { untyped.watchWith(toUntyped(other), msg) }
   override def unwatch[U](other: ActorRef[U]) = { untyped.unwatch(toUntyped(other)) }

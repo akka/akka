@@ -72,7 +72,7 @@ object Effect {
     effectQueue.offer(Spawned(behavior, name, props))
     super.spawn(behavior, name, props)
   }
-  override def stop[U](child: ActorRef[U]): Boolean = {
+  override def stop[U](child: ActorRef[U]): Unit = {
     effectQueue.offer(Stopped(child.path.name))
     super.stop(child)
   }
