@@ -118,7 +118,7 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
     immutable[AllCommands] { (ctx, msg) ⇒
       msg match {
         case Register(key, serviceInstance, replyTo) ⇒
-          ctx.system.log.debug("[{}] Actor was registered: {} {}", ctx.self, key, serviceInstance)
+          ctx.log.debug("Actor was registered: {} {}", key, serviceInstance)
           watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
           replyTo ! Registered(key, serviceInstance)
           externalInterface.onRegister(key, serviceInstance)
@@ -132,7 +132,7 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
 
         case externalInterface.RegistrationsChangedExternally(changes, state) ⇒
 
-          ctx.system.log.debug("[{}] Registration changed: {}", ctx.self, changes)
+          ctx.log.debug("Registration changed: {}", changes)
 
           // FIXME: get rid of casts
           def makeChanges(registry: LocalServiceRegistry): LocalServiceRegistry =
@@ -144,7 +144,7 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
           updateRegistry(changes.keySet, makeChanges) // overwrite all changed keys
 
         case RegisteredActorTerminated(key, serviceInstance) ⇒
-          ctx.system.log.debug("[{}] Registered actor terminated: {} {}", ctx.self, key, serviceInstance)
+          ctx.log.debug("Registered actor terminated: {} {}", key, serviceInstance)
           externalInterface.onUnregister(key, serviceInstance)
           updateRegistry(Set(key), _.removed(key)(serviceInstance))
 

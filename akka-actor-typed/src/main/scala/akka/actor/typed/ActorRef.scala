@@ -4,7 +4,6 @@
 package akka.actor.typed
 
 import akka.annotation.InternalApi
-import akka.event.typed.EventStream
 import akka.{ actor ⇒ a }
 
 import scala.annotation.unchecked.uncheckedVariance

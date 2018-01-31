@@ -3,16 +3,16 @@
  */
 package akka.actor.typed.scaladsl
 
+import akka.actor.typed._
+import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.event.LoggingAdapter
+import akka.util.Timeout
+
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
-
-import akka.actor.typed._
-import akka.annotation.ApiMayChange
-import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-import akka.util.Timeout
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -57,6 +57,11 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
    * The [[ActorSystem]] to which this Actor belongs.
    */
   def system: ActorSystem[Nothing]
+
+  /**
+   * An actor specific logger
+   */
+  def log: Logger
 
   /**
    * The list of child Actors created by this Actor during its lifetime that

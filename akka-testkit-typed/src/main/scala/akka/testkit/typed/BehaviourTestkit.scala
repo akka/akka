@@ -7,13 +7,13 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 import akka.actor.typed.{ ActorRef, Behavior, PostStop, Props, Signal }
 import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.event.LoggingAdapter
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-
 import scala.language.existentials
 
 /**

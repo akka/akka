@@ -3,14 +3,17 @@ package akka.testkit.typed
 import akka.actor.InvalidMessageException
 import akka.{ actor ⇒ untyped }
 import akka.actor.typed._
-import akka.util.Helpers
+import akka.util.{ Helpers, OptionVal }
 import akka.{ actor ⇒ a }
 
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import akka.annotation.InternalApi
-import akka.actor.typed.internal.{ ActorContextImpl, ActorRefImpl, ActorSystemStub, SystemMessage }
+import akka.actor.typed.internal._
+import akka.actor.typed.internal.adapter.LoggerAdapterImpl
+import akka.event.Logging.{ Info, LogEvent, LogLevel }
+import akka.event.{ Logging, LoggingAdapter }
 
 /**
  * A local synchronous ActorRef that invokes the given function for every message send.
@@ -30,6 +33,39 @@ private[akka] final class FunctionRef[-T](
   override def path = _path
   override def sendSystem(signal: SystemMessage): Unit = {}
   override def isLocal = true
+}
+
+final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker])
+
+/**
+ * INTERNAL API
+ *
+ * Captures log events for test inspection
+ */
+@InternalApi private[akka] final class StubbedLogger extends LoggerAdapterImpl(null, null, null, null) {
+
+  private var logBuffer: List[CapturedLogEvent] = Nil
+
+  override def isErrorEnabled: Boolean = true
+  override def isWarningEnabled: Boolean = true
+  override def isInfoEnabled: Boolean = true
+  override def isDebugEnabled: Boolean = true
+
+  override protected def notifyError(message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker]): Unit =
+    logBuffer = CapturedLogEvent(Logging.ErrorLevel, message, cause, marker) :: logBuffer
+
+  override protected def notifyWarning(message: String, marker: OptionVal[LogMarker], cause: OptionVal[Throwable]): Unit =
+    logBuffer = CapturedLogEvent(Logging.WarningLevel, message, OptionVal.None, marker) :: logBuffer
+
+  override protected def notifyInfo(message: String, marker: OptionVal[LogMarker]): Unit =
+    logBuffer = CapturedLogEvent(Logging.InfoLevel, message, OptionVal.None, marker) :: logBuffer
+
+  override protected def notifyDebug(message: String, marker: OptionVal[LogMarker]): Unit =
+    logBuffer = CapturedLogEvent(Logging.DebugLevel, message, OptionVal.None, marker) :: logBuffer
+
+  def logEntries: List[CapturedLogEvent] = logBuffer.reverse
+  def clearLog(): Unit = logBuffer = Nil
+
 }
 
 /**
@@ -56,6 +92,7 @@ private[akka] final class FunctionRef[-T](
 
   private var _children = TreeMap.empty[String, TestInbox[_]]
   private val childName = Iterator from 0 map (Helpers.base64(_))
+  private val loggingAdapter = new StubbedLogger
 
   override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ref)
   def childrenNames: Iterable[String] = _children.keys
@@ -138,4 +175,17 @@ private[akka] final class FunctionRef[-T](
   def removeChildInbox(child: ActorRef[Nothing]): Unit = _children -= child.path.name
 
   override def toString: String = s"Inbox($self)"
+
+  override def log: Logger = loggingAdapter
+
+  /**
+   * The log entries logged through ctx.log.{debug, info, warn, error} are captured and can be inspected through
+   * this method.
+   */
+  def logEntries: List[CapturedLogEvent] = loggingAdapter.logEntries
+
+  /**
+   * Clear the log entries
+   */
+  def clearLog(): Unit = loggingAdapter.clearLog()
 }

@@ -70,8 +70,7 @@ import akka.actor.typed.scaladsl.Behaviors
 
   protected def restart(ctx: ActorContext[T], initialBehavior: Behavior[T], startedBehavior: Behavior[T]): Supervisor[T, Thr] = {
     try Behavior.interpretSignal(startedBehavior, ctx, PreRestart) catch {
-      case NonFatal(ex) ⇒ publish(ctx, Logging.Error(ex, ctx.asScala.self.path.toString, behavior.getClass,
-        "failure during PreRestart"))
+      case NonFatal(ex) ⇒ ctx.asScala.log.error(ex, "failure during PreRestart")
     }
     // no need to canonicalize, it's done in the calling methods
     wrap(Supervisor.initialUndefer(ctx, initialBehavior), afterException = true)
@@ -96,11 +95,8 @@ import akka.actor.typed.scaladsl.Behaviors
 
   protected def log(ctx: ActorContext[T], ex: Thr): Unit = {
     if (loggingEnabled)
-      publish(ctx, Logging.Error(ex, ctx.asScala.self.toString, behavior.getClass, ex.getMessage))
+      ctx.asScala.log.error(ex, ex.getMessage)
   }
-
-  protected final def publish(ctx: ActorContext[T], e: Logging.LogEvent): Unit =
-    try ctx.asScala.system.eventStream.publish(e) catch { case NonFatal(_) ⇒ }
 }
 
 /**
@@ -228,7 +224,8 @@ import akka.actor.typed.scaladsl.Behaviors
 
   override def receiveSignal(ctx: ActorContext[Any], signal: Signal): Behavior[Any] = {
     if (blackhole) {
-      ctx.asScala.system.eventStream.publish(Dropped(signal, ctx.asScala.self))
+      import scaladsl.adapter._
+      ctx.asScala.system.toUntyped.eventStream.publish(Dropped(signal, ctx.asScala.self))
       Behavior.same
     } else
       super.receiveSignal(ctx, signal)
@@ -249,7 +246,8 @@ import akka.actor.typed.scaladsl.Behaviors
           Behavior.same
       case _ ⇒
         if (blackhole) {
-          ctx.asScala.system.eventStream.publish(Dropped(msg, ctx.asScala.self))
+          import scaladsl.adapter._
+          ctx.asScala.system.toUntyped.eventStream.publish(Dropped(msg, ctx.asScala.self))
           Behavior.same
         } else
           super.receiveMessage(ctx, msg)
@@ -261,8 +259,7 @@ import akka.actor.typed.scaladsl.Behaviors
       log(ctx, ex)
       // actual restart happens after the scheduled backoff delay
       try Behavior.interpretSignal(behavior, ctx, PreRestart) catch {
-        case NonFatal(ex2) ⇒ publish(ctx, Logging.Error(ex2, ctx.asScala.self.path.toString, behavior.getClass,
-          "failure during PreRestart"))
+        case NonFatal(ex2) ⇒ ctx.asScala.log.error(ex2, "failure during PreRestart")
       }
       val restartDelay = calculateDelay(restartCount, strategy.minBackoff, strategy.maxBackoff, strategy.randomFactor)
       ctx.asScala.schedule(restartDelay, ctx.asScala.self, ScheduledRestart)

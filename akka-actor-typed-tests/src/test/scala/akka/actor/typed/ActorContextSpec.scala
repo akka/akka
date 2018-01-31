@@ -308,14 +308,15 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
   import ActorContextSpec._
 
   val config = ConfigFactory.parseString(
-    """|akka {
-     |  loglevel = WARNING
-     |  actor.debug {
-     |    lifecycle = off
-     |    autoreceive = off
-     |  }
-     |  typed.loggers = ["akka.testkit.typed.TestEventListener"]
-     |}""".stripMargin)
+    """
+     akka {
+       loglevel = WARNING
+       loggers = ["akka.testkit.TestEventListener"]
+       actor.debug {
+         lifecycle = off
+         autoreceive = off
+       }
+     }""")
 
   implicit lazy val system: ActorSystem[GuardianCommand] =
     ActorSystem(guardian(), AkkaSpec.getCallerName(classOf[ActorContextSpec]), config = Some(config withFallback AkkaSpec.testConf))
@@ -379,7 +380,8 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     pattern:     String = null,
     occurrences: Int    = Int.MaxValue)(implicit system: ActorSystem[GuardianCommand]): EventFilter = {
     val filter = EventFilter(message, source, start, pattern, occurrences)
-    system.eventStream.publish(Mute(filter))
+    import scaladsl.adapter._
+    system.toUntyped.eventStream.publish(Mute(filter))
     filter
   }
 

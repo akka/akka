@@ -19,7 +19,6 @@ import java.util.Optional
 
 import akka.actor.BootstrapSetup
 import akka.actor.typed.receptionist.Receptionist
-import akka.event.typed.EventStream
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -48,20 +47,12 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
   def logConfiguration(): Unit
 
   /**
-   * A reference to this system’s logFilter, which filters usage of the [[log]]
-   * [[akka.event.LoggingAdapter]] such that only permissible messages are sent
-   * via the [[eventStream]]. The default implementation will just test that
-   * the message is suitable for the current log level.
-   */
-  def logFilter: e.LoggingFilter
-
-  /**
-   * A [[akka.event.LoggingAdapter]] that can be used to emit log messages
+   * A [[akka.actor.typed.Logger]] that can be used to emit log messages
    * without specifying a more detailed source. Typically it is desirable to
-   * construct a dedicated LoggingAdapter within each Actor from that Actor’s
-   * [[ActorRef]] in order to identify the log messages.
+   * use the dedicated `Logger` available from each Actor’s [[ActorContext]]
+   * as that ties the log entries to the actor.
    */
-  def log: e.LoggingAdapter
+  def log: Logger
 
   /**
    * Start-up time in milliseconds since the epoch.
@@ -93,11 +84,6 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
    * messages to actors instead of registering a Runnable for execution using this facility.
    */
   def scheduler: a.Scheduler
-
-  /**
-   * Main event bus of this actor system, used for example for logging.
-   */
-  def eventStream: EventStream
 
   /**
    * Facilities for lookup up thread-pools from configuration.
