@@ -31,6 +31,16 @@ See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing).
 
 @@@
 
+## Dependency
+
+To use Akka Cluster Sharding, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-cluster-sharding_$scala.binary_version$"
+  version="$akka.version$"
+}
+
 ## An Example
 
 This is how an entity actor may look like:

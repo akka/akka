@@ -1,24 +1,26 @@
 # Cluster Sharding
 
+For an introduction to Sharding concepts see @ref:[Cluster Sharding](../cluster-sharding.md). This documentation shows how to use the typed
+Cluster Sharding API.
+
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
   of being the subject of active research. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
   this module in production just yet—you have been warned.
-  
+
 @@@
 
-To use cluster sharding add the following dependency:
+## Dependency
 
-@@dependency [sbt,Maven,Gradle] {
+To use Akka Cluster Sharding, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-cluster-sharding-typed_2.12
   version=$akka.version$
 }
-
-For an introduction to Sharding concepts see @ref:[Cluster Sharding](../cluster-sharding.md). This documentation shows how to use the typed
-Cluster Sharding API.
 
 ## Basic example
 
@@ -38,7 +40,7 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java]($akka$/akka-cluster-sharding-typed/src/test/java/jdoc/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter }
 
-Each Entity type has a key that is then used to retrieve an EntityRef for a given entity identifier. 
+Each Entity type has a key that is then used to retrieve an EntityRef for a given entity identifier.
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala]($akka$/akka-cluster-sharding-typed/src/test/scala/doc/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #spawn }
@@ -46,7 +48,7 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java]($akka$/akka-cluster-sharding-typed/src/test/java/jdoc/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #spawn }
 
-Messages to a specific entity are then sent via an EntityRef. 
+Messages to a specific entity are then sent via an EntityRef.
 It is also possible to wrap methods in a `ShardingEnvelop` or define extractor functions and send messages directly to the shard region.
 
 Scala
@@ -57,7 +59,7 @@ Java
 
 ## Persistence example
 
-When using sharding entities can be moved to different nodes in the cluster. Persistence can be used to recover the state of 
+When using sharding entities can be moved to different nodes in the cluster. Persistence can be used to recover the state of
 an actor after it has moved. Currently Akka typed only has a Scala API for persistence, you can track the progress of the
 Java API [here](https://github.com/akka/akka/issues/24193).
 
@@ -72,5 +74,5 @@ To create the entity:
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala]($akka$/akka-cluster-sharding-typed/src/test/scala/doc/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #persistence }
 
-Sending messages to entities is the same as the example above. The only difference is ow when an entity is moved the state will be restored. 
+Sending messages to entities is the same as the example above. The only difference is ow when an entity is moved the state will be restored.
 See @ref:[persistence](persistence.md) for more details.

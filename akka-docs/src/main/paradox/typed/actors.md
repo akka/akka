@@ -1,4 +1,4 @@
-# Actors 
+# Actors
 
 @@@ warning
 
@@ -9,15 +9,11 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 
 @@@
 
-### Migrating to 2.5.9
-
-* `EffectfulActorContext` has been renamed to `BehaviourTestKit`
-* `Inbox` has been renamed to `TestInbox` to allign with `TestProbe`
-* Separated into modules e.g. `akka-actor-typed` `akka-persistence-typed` along with matching package names
+## Dependency
 
 To use Akka Typed add the following dependency:
 
-@@dependency [sbt,Maven,Gradle] {
+@@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-actor-typed_2.12
   version=$akka.version$
@@ -27,7 +23,7 @@ To use Akka Typed add the following dependency:
 
 As discussed in @ref:[Actor Systems](../general/actor-systems.md) Actors are about
 sending messages between independent units of computation, but how does that
-look like? 
+look like?
 
 In all of the following these imports are assumed:
 
@@ -258,7 +254,7 @@ or the `onMessage` function for user messages.
 
 This particular `main` Actor is created using `Behaviors.deferred`, which is like a factory for a behavior.
 Creation of the behavior instance is deferred until the actor is started, as opposed to `Behaviors.immutable`
-that creates the behavior instance immediately before the actor is running. The factory function in 
+that creates the behavior instance immediately before the actor is running. The factory function in
 `deferred` pass the `ActorContext` as parameter and that can for example be used for spawning child actors.
 This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
 gabbler is finished we will receive the `Terminated` event due to having
@@ -358,3 +354,10 @@ address. While we cannot statically express the “current” state of an Actor,
 can express the current state of a protocol between two Actors, since that is
 just given by the last message type that was received or sent.
 
+## Migrating
+
+### Migrating to 2.5.9
+
+* `EffectfulActorContext` has been renamed to `BehaviourTestKit`
+* `Inbox` has been renamed to `TestInbox` to allign with `TestProbe`
+* Separated into modules e.g. `akka-actor-typed` `akka-persistence-typed` along with matching package names

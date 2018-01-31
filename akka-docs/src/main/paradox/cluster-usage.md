@@ -2,34 +2,15 @@
 
 For introduction to the Akka Cluster concepts please see @ref:[Cluster Specification](common/cluster.md).
 
-## Preparing Your Project for Clustering
+## Dependency
 
-The Akka cluster is a separate jar file. Make sure that you have the following dependency in your project:
+To use Akka Cluster, add the module to your project:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-cluster" % "$akka.version$"
-    ```
-    @@@
-   
-Gradle
-:   @@@vars
-    ```
-     compile group: 'com.typesafe.akka', name: 'akka-cluster_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-cluster_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-cluster_$scala.binary_version$"
+  version="$akka.version$"
+}
 
 ## A Simple Cluster Example
 
@@ -99,10 +80,10 @@ The actor registers itself as subscriber of certain cluster events. It receives 
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
 The easiest way to run this example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)] 
+@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
 @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
 together with the tutorial. It contains instructions on how to run the `SimpleClusterApp`.
-The source code of this sample can be found in the 
+The source code of this sample can be found in the
 @scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
 
 ## Joining to Seed Nodes
@@ -152,7 +133,7 @@ seed nodes in the existing cluster. Note that if you stop all seed nodes at the 
 and restart them with the same `seed-nodes` configuration they will join themselves and
 form a new cluster instead of joining remaining nodes of the existing cluster. That is
 likely not desired and should be avoided by listing several nodes as seed nodes for redundancy
-and don't stop all of them at the same time. 
+and don't stop all of them at the same time.
 
 You may also use @scala[`Cluster(system).joinSeedNodes`]@java[`Cluster.get(system).joinSeedNodes`] to join programmatically,
 which is attractive when dynamically discovering other nodes at startup by using some external tool or API.
@@ -402,7 +383,7 @@ The easiest way to run **Worker Dial-in Example** example yourself is to downloa
 @scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
 @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
 together with the tutorial. It contains instructions on how to run the **Worker Dial-in Example** sample.
-The source code of this sample can be found in the 
+The source code of this sample can be found in the
 @scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
 
 ## Node Roles
@@ -723,7 +704,7 @@ The easiest way to run **Router Example with Group of Routees** example yourself
 @scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
 @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
 together with the tutorial. It contains instructions on how to run the **Router Example with Group of Routees** sample.
-The source code of this sample can be found in the 
+The source code of this sample can be found in the
 @scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
 
 ### Router with Pool of Remote Deployed Routees
@@ -770,7 +751,7 @@ and deploys workers. To keep track of a single master we use the @ref:[Cluster S
 in the cluster-tools module. The `ClusterSingletonManager` is started on each node:
 
 Scala
-:   @@@vars 
+:   @@@vars
     ```
     system.actorOf(
       ClusterSingletonManager.props(
@@ -797,7 +778,7 @@ Scala
       name = "statsServiceProxy")
     ```
     @@@
-    
+
 Java
 :  @@snip [StatsSampleOneMasterMain.java]($code$/java/jdocs/cluster/StatsSampleOneMasterMain.java) { #singleton-proxy }
 
@@ -824,7 +805,7 @@ The easiest way to run **Router Example with Pool of Remote Deployed Routees** e
 @scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
 @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
 together with the tutorial. It contains instructions on how to run the **Router Example with Pool of Remote Deployed Routees** sample.
-The source code of this sample can be found in the 
+The source code of this sample can be found in the
 @scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
 
 ## Cluster Metrics
@@ -886,16 +867,16 @@ the actor system for a specific role. This can also be used to grab the `akka.ac
 
 @@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #addresses }
 
-@@@ 
+@@@
 
 @@@ div { .group-java }
 
 ## How to Test
 
-Currently testing with the `sbt-multi-jvm` plugin is only documented for Scala. 
+Currently testing with the `sbt-multi-jvm` plugin is only documented for Scala.
 Go to the corresponding Scala version of this page for details.
 
-@@@ 
+@@@
 
 ## Management
 

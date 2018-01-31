@@ -1,24 +1,30 @@
 # Cluster
 
+For an introduction to Akka Cluster concepts see @ref:[Cluster Specification](../common/cluster.md). This documentation shows how to use the typed
+Cluster API.
+
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
   of being the subject of active research. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
   this module in production just yet—you have been warned.
-  
+
 @@@
 
-To use the testkit add the following dependency:
+## Dependency
 
-@@dependency [sbt,Maven,Gradle] {
+To use Akka Cluster Typed, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-cluster-typed_2.12
   version=$akka.version$
 }
 
-For an introduction to Akka Cluster concepts see @ref:[Cluster Specification](../common/cluster.md). This documentation shows how to use the typed
-Cluster API. All of the examples below assume the following imports:
+## Examples
+
+All of the examples below assume the following imports:
 
 Scala
 :  @@snip [BasicClusterExampleSpec.scala]($akka$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-imports }
@@ -26,7 +32,7 @@ Scala
 Java
 :  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-imports }
 
-And the minimum configuration required is to set a host/port for remoting and the `cluster` 
+And the minimum configuration required is to set a host/port for remoting and the `cluster`
 
 Scala
 :  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-imports }
@@ -34,11 +40,11 @@ Scala
 Java
 :  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-imports }
 
-## Cluster API extension 
+## Cluster API extension
 
-The typed Cluster extension gives access to management tasks (Joining, Leaving, Downing, …) and subscription of 
-cluster membership events (MemberUp, MemberRemoved, UnreachableMember, etc). Those are exposed as two different actor 
-references, i.e. it’s a message based API. 
+The typed Cluster extension gives access to management tasks (Joining, Leaving, Downing, …) and subscription of
+cluster membership events (MemberUp, MemberRemoved, UnreachableMember, etc). Those are exposed as two different actor
+references, i.e. it’s a message based API.
 
 The references are on the `Cluster` extension:
 
@@ -55,7 +61,7 @@ The Cluster extensions gives you access to:
 * state: The current `CurrentClusterState`
 
 
-### Cluster Management 
+### Cluster Management
 
 If not using configuration to specify seeds joining the cluster can be done programmatically via the `manager`.
 
@@ -97,10 +103,10 @@ Java
 
 ## Serialization
 
-See [serialization](https://doc.akka.io/docs/akka/current/scala/serialization.html) for how messages are sent between 
-ActorSystems. Actor references are typically included in the messages, 
+See [serialization](https://doc.akka.io/docs/akka/current/scala/serialization.html) for how messages are sent between
+ActorSystems. Actor references are typically included in the messages,
 since there is no `sender`. To serialize actor references to/from string representation you will use the `ActorRefResolver`.
-For example here's how a serializer could look for the `Ping` and `Pong` messages above: 
+For example here's how a serializer could look for the `Ping` and `Pong` messages above:
 
 Scala
 :  @@snip [PingSerializer.scala]($akka$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/PingSerializer.scala) { #serializer }
