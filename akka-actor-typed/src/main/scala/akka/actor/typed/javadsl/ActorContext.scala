@@ -10,7 +10,6 @@ import akka.annotation.ApiMayChange
 import akka.actor.typed._
 import java.util.Optional
 
-import akka.event.LoggingAdapter
 import akka.util.Timeout
 
 import scala.concurrent.duration.FiniteDuration
@@ -41,6 +40,9 @@ trait ActorContext[T] {
 
   /**
    * Get the `scaladsl` of this `ActorContext`.
+   *
+   * This method is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def asScala: akka.actor.typed.scaladsl.ActorContext[T]
 
@@ -48,60 +50,85 @@ trait ActorContext[T] {
    * The identity of this Actor, bound to the lifecycle of this Actor instance.
    * An Actor with the same name that lives before or after this instance will
    * have a different [[ActorRef]].
+   *
+   * This method is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getSelf: ActorRef[T]
 
   /**
-   * Return the mailbox capacity that was configured by the parent for this actor.
-   */
-  def getMailboxCapacity: Int
-
-  /**
    * The [[ActorSystem]] to which this Actor belongs.
+   *
+   * This method is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getSystem: ActorSystem[Void]
 
   /**
    * An actor specific logger
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getLog: Logger
 
   /**
    * The list of child Actors created by this Actor during its lifetime that
    * are still alive, in no particular order.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getChildren: java.util.List[ActorRef[Void]]
 
   /**
    * The named child Actor if it is alive.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getChild(name: String): Optional[ActorRef[Void]]
 
   /**
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] under a randomly chosen name.
    * It is good practice to name Actors wherever practical.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawnAnonymous[U](behavior: Behavior[U]): ActorRef[U]
 
   /**
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] under a randomly chosen name.
    * It is good practice to name Actors wherever practical.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawnAnonymous[U](behavior: Behavior[U], props: Props): ActorRef[U]
 
   /**
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] and with the given name.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawn[U](behavior: Behavior[U], name: String): ActorRef[U]
 
   /**
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] and with the given name.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def spawn[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U]
 
   /**
    * Force the child Actor under the given name to terminate after it finishes
    * processing its current message. Nothing happens if the ActorRef is a child that is already stopped.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    *
    * @throws IllegalArgumentException if the given actor ref is not a direct child of this actor
    */
@@ -117,6 +144,9 @@ trait ActorContext[T] {
    *
    * It will fail with an [[IllegalStateException]] if the same subject was watched before using `watchWith`.
    * To clear the termination message, unwatch first.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def watch[U](other: ActorRef[U]): Unit
 
@@ -130,12 +160,18 @@ trait ActorContext[T] {
    *
    * It will fail with an [[IllegalStateException]] if the same subject was watched before using `watch` or `watchWith` with
    * another termination message. To change the termination message, unwatch first.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def watchWith[U](other: ActorRef[U], msg: T): Unit
 
   /**
    * Revoke the registration established by `watch`. A [[Terminated]]
    * notification will not subsequently be received for the referenced Actor.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def unwatch[U](other: ActorRef[U]): Unit
 
@@ -144,11 +180,17 @@ trait ActorContext[T] {
    * message is received during the given period of time. The timeout starts anew
    * with each received message. Provide `Duration.Undefined` to switch off this
    * mechanism.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def setReceiveTimeout(d: FiniteDuration, msg: T): Unit
 
   /**
    * Cancel the sending of receive timeout notifications.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def cancelReceiveTimeout(): Unit
 
@@ -157,12 +199,20 @@ trait ActorContext[T] {
    * the given time period has elapsed. The scheduled action can be cancelled
    * by invoking [[akka.actor.Cancellable#cancel]] on the returned
    * handle.
+   *
+   * For scheduling messages to the actor itself, use [[Behaviors.withTimers]]
+   *
+   * This method is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): akka.actor.Cancellable
 
   /**
    * This Actor’s execution context. It can be used to run asynchronous tasks
    * like [[scala.concurrent.Future]] combinators.
+   *
+   * This method is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getExecutionContext: ExecutionContextExecutor
 
@@ -186,8 +236,11 @@ trait ActorContext[T] {
    * register them later also if needed. Message adapters don't have to be stopped since
    * they consume no resources other than an entry in an internal `Map` and the number
    * of adapters are bounded since it's only possible to have one per message class.
-   * *
+   *
    * The function is running in this actor and can safely access state of it.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def messageAdapter[U](messageClass: Class[U], f: JFunction[U, T]): ActorRef[U]
 
@@ -199,6 +252,9 @@ trait ActorContext[T] {
    * will be passed as an [[java.util.concurrent.TimeoutException]] to the `applyToResponse` function.
    *
    * For other messaging patterns with other actors, see [[ActorContext#messageAdapter]].
+   *
+   * This method is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    *
    * @param createRequest A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
    *                      the other actor can send a message back through.
