@@ -13,7 +13,7 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 
 To use Akka Typed add the following dependency:
 
-@@dependency [sbt,Maven,Gradle] {
+@@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-actor-typed_2.12
   version=$akka.version$

@@ -21,14 +21,13 @@ out-of-date value.
 
 ## Dependency
 
-To enable distributed data, add the module to your project:
+To use Akka Distributed Data, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
   artifact="akka-distributed-data_$scala.binary_version$"
   version="$akka.version$"
 }
-
 
 ## Using the Replicator
 

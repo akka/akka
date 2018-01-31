@@ -2,7 +2,7 @@
 
 ## Dependency
 
-Create a project and add the akka-streams dependency to the build tool of your choice:
+To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

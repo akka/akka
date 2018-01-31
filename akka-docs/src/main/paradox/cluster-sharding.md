@@ -33,7 +33,7 @@ See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing).
 
 ## Dependency
 
-To use cluster sharding, add the module to your project:
+To use Akka Cluster Sharding, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

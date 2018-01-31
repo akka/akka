@@ -4,7 +4,7 @@ For introduction to the Akka Cluster concepts please see @ref:[Cluster Specifica
 
 ## Dependency
 
-The Akka cluster is a separate jar file. Make sure that you have the following dependency in your project:
+To use Akka Cluster, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

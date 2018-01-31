@@ -14,9 +14,9 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 
 ## Dependency
 
-To use cluster sharding add the following dependency:
+To use Akka Cluster Sharding, add the module to your project:
 
-@@dependency [sbt,Maven,Gradle] {
+@@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-cluster-sharding-typed_2.12
   version=$akka.version$

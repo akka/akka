@@ -95,7 +95,7 @@ provide sources and sinks that materialize to probes that allow fluent API.
 
 ### Dependency
 
-First, add the module `akka-stream-testkit` to your dependencies:
+To use Akka Stream TestKit, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

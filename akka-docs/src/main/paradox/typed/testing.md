@@ -20,9 +20,9 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 
 ## Dependency
 
-To use the testkit add the following dependency:
+To use Akka TestKit Type, add the module to your project:
 
-@@dependency [sbt,Maven,Gradle] {
+@@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-testkit-typed_2.12
   version=$akka.version$

@@ -22,9 +22,9 @@ to track progress and to contribute to the Java DSL.
 
 ## Dependency
 
-To use typed persistence add the following dependency:
+To use Akka Persistence Typed, add the module to your project:
 
-@@dependency [sbt,Maven,Gradle] {
+@@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-persistence-typed_2.11
   version=$akka.version$

@@ -15,7 +15,7 @@ concepts and architecture of [eventsourced](https://github.com/eligosource/event
 
 ## Dependency
 
-Akka persistence is a separate jar file. Make sure that you have the following dependency in your project:
+To use Akka Persistence, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -23,10 +23,10 @@ Akka persistence is a separate jar file. Make sure that you have the following d
   version="$akka.version$"
 }
 
-The Akka persistence extension comes with few built-in persistence plugins, including
+The Akka Persistence extension comes with few built-in persistence plugins, including
 in-memory heap based journal, local file-system based snapshot-store and LevelDB based journal.
 
-LevelDB based plugins will require the following additional dependency declaration:
+LevelDB-based plugins will require the following additional dependency:
 
 @@dependency[sbt,Maven,Gradle] {
   group="org.fusesource.leveldbjni"
