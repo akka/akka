@@ -249,26 +249,45 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
   private val log: LoggingAdapter = Logging(untypedSystem, classOf[ClusterSharding])
 
   override def spawn[A](
-    behavior:           Behavior[A],
+    behavior:           String ⇒ Behavior[A],
     entityProps:        Props,
     typeKey:            EntityTypeKey[A],
     settings:           ClusterShardingSettings,
     maxNumberOfShards:  Int,
     handOffStopMessage: A): ActorRef[ShardingEnvelope[A]] = {
     val extractor = new HashCodeMessageExtractor[A](maxNumberOfShards, handOffStopMessage)
-    spawn(behavior, entityProps, typeKey, settings, extractor, defaultShardAllocationStrategy(settings))
+    spawn2(behavior, entityProps, typeKey, settings, extractor, defaultShardAllocationStrategy(settings))
   }
 
-  override def spawn[E, A](
-    behavior:         Behavior[A],
+  override def spawnJavadsl[A](
+    behavior:           EntityIdToBehavior[A],
+    entityProps:        Props,
+    typeKey:            EntityTypeKey[A],
+    settings:           ClusterShardingSettings,
+    maxNumberOfShards:  Int,
+    handOffStopMessage: A): ActorRef[ShardingEnvelope[A]] = {
+    val extractor = new HashCodeMessageExtractor[A](maxNumberOfShards, handOffStopMessage)
+    spawnJavadsl(behavior, entityProps, typeKey, settings, extractor, defaultShardAllocationStrategy(settings))
+  }
+
+  override def spawn3[E, A](
+    behavior:         String ⇒ Behavior[A],
     entityProps:      Props,
     typeKey:          EntityTypeKey[A],
     settings:         ClusterShardingSettings,
     messageExtractor: ShardingMessageExtractor[E, A]): ActorRef[E] =
-    spawn(behavior, entityProps, typeKey, settings, messageExtractor, defaultShardAllocationStrategy(settings))
+    spawn2(behavior, entityProps, typeKey, settings, messageExtractor, defaultShardAllocationStrategy(settings))
 
-  override def spawn[E, A](
-    behavior:           Behavior[A],
+  override def spawnJavadsl[E, A](
+    behavior:         EntityIdToBehavior[A],
+    entityProps:      Props,
+    typeKey:          EntityTypeKey[A],
+    settings:         ClusterShardingSettings,
+    messageExtractor: ShardingMessageExtractor[E, A]): ActorRef[E] =
+    spawnJavadsl(behavior, entityProps, typeKey, settings, messageExtractor, defaultShardAllocationStrategy(settings))
+
+  override def spawn2[E, A](
+    behavior:           String ⇒ Behavior[A],
     entityProps:        Props,
     typeKey:            EntityTypeKey[A],
     settings:           ClusterShardingSettings,
@@ -294,14 +313,16 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
       if (settings.shouldHostShard(cluster)) {
         log.info("Starting Shard Region [{}]...", typeKey.name)
 
-        val untypedProps = behavior match {
-          case u: UntypedBehavior[_] ⇒ u.untypedProps // PersistentBehavior
-          case _                     ⇒ PropsAdapter(behavior, entityProps)
+        val untypedEntityPropsFactory: String ⇒ akka.actor.Props = { entityId ⇒
+          behavior(entityId) match {
+            case u: UntypedBehavior[_] ⇒ u.untypedProps // PersistentBehavior
+            case b                     ⇒ PropsAdapter(b, entityProps)
+          }
         }
 
-        untypedSharding.start(
+        untypedSharding.internalStart(
           typeKey.name,
-          untypedProps,
+          untypedEntityPropsFactory,
           untypedSettings,
           extractEntityId,
           extractShardId,
@@ -321,6 +342,16 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
     ActorRefAdapter(ref)
   }
 
+  override def spawnJavadsl[E, A](
+    behavior:           EntityIdToBehavior[A],
+    entityProps:        Props,
+    typeKey:            EntityTypeKey[A],
+    settings:           ClusterShardingSettings,
+    extractor:          ShardingMessageExtractor[E, A],
+    allocationStrategy: ShardAllocationStrategy): ActorRef[E] = {
+    spawn2(entityId ⇒ behavior.apply(entityId), entityProps, typeKey, settings, extractor, allocationStrategy)
+  }
+
   override def entityRefFor[A](typeKey: EntityTypeKey[A], entityId: String): EntityRef[A] = {
     new AdaptedEntityRefImpl[A](untypedSharding.shardRegion(typeKey.name), entityId)
   }
@@ -333,24 +364,30 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
 
 }
 
+@FunctionalInterface
+trait EntityIdToBehavior[A] {
+  def apply(entityId: String): Behavior[A]
+}
+
 @DoNotInherit
 sealed abstract class ClusterSharding extends Extension {
 
   /**
-   * Spawn a shard region or a proxy depending on if the settings require role and if this node has such a role.
+   * Scala API: Spawn a shard region or a proxy depending on if the settings require role and if this node has
+   * such a role.
    *
    * Messages are sent to the entities by wrapping the messages in a [[ShardingEnvelope]] with the entityId of the
    * recipient actor.
    * A [[HashCodeMessageExtractor]] will be used for extracting entityId and shardId
    * [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] will be used for shard allocation strategy.
    *
-   * @param behavior The behavior for entities
+   * @param behavior Create the behavior for an entity given a entityId
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param handOffStopMessage Message sent to an entity to tell it to stop, e.g. when rebalanced.
    * @tparam A The type of command the entity accepts
    */
   def spawn[A](
-    behavior:           Behavior[A],
+    behavior:           String ⇒ Behavior[A],
     props:              Props,
     typeKey:            EntityTypeKey[A],
     settings:           ClusterShardingSettings,
@@ -358,9 +395,32 @@ sealed abstract class ClusterSharding extends Extension {
     handOffStopMessage: A): ActorRef[ShardingEnvelope[A]]
 
   /**
-   * Spawn a shard region or a proxy depending on if the settings require role and if this node has such a role.
+   * Java API: Spawn a shard region or a proxy depending on if the settings require role and if this node has
+   * such a role.
    *
-   * @param behavior The behavior for entities
+   * Messages are sent to the entities by wrapping the messages in a [[ShardingEnvelope]] with the entityId of the
+   * recipient actor.
+   * A [[HashCodeMessageExtractor]] will be used for extracting entityId and shardId
+   * [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] will be used for shard allocation strategy.
+   *
+   * @param behavior Create the behavior for an entity given a entityId
+   * @param typeKey A key that uniquely identifies the type of entity in this cluster
+   * @param handOffStopMessage Message sent to an entity to tell it to stop, e.g. when rebalanced.
+   * @tparam A The type of command the entity accepts
+   */
+  def spawnJavadsl[A]( // FIXME javadsl package
+    behavior:           EntityIdToBehavior[A],
+    props:              Props,
+    typeKey:            EntityTypeKey[A],
+    settings:           ClusterShardingSettings,
+    maxNumberOfShards:  Int,
+    handOffStopMessage: A): ActorRef[ShardingEnvelope[A]]
+
+  /**
+   * Scala API: Spawn a shard region or a proxy depending on if the settings require role and if this node
+   * has such a role.
+   *
+   * @param behavior Create the behavior for an entity given a entityId
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param entityProps Props to apply when starting an entity
    * @param messageExtractor Extract entityId, shardId, and unwrap messages.
@@ -368,8 +428,8 @@ sealed abstract class ClusterSharding extends Extension {
    * @tparam E A possible envelope around the message the entity accepts
    * @tparam A The type of command the entity accepts
    */
-  def spawn[E, A](
-    behavior:           Behavior[A],
+  def spawn2[E, A](
+    behavior:           String ⇒ Behavior[A],
     entityProps:        Props,
     typeKey:            EntityTypeKey[A],
     settings:           ClusterShardingSettings,
@@ -377,17 +437,56 @@ sealed abstract class ClusterSharding extends Extension {
     allocationStrategy: ShardAllocationStrategy): ActorRef[E]
 
   /**
-   * Spawn a shard region or a proxy depending on if the settings require role and if this node has such a role.
+   * Java API: Spawn a shard region or a proxy depending on if the settings require role and if this node
+   * has such a role.
    *
-   * @param behavior The behavior for entities
+   * @param behavior Create the behavior for an entity given a entityId
+   * @param typeKey A key that uniquely identifies the type of entity in this cluster
+   * @param entityProps Props to apply when starting an entity
+   * @param messageExtractor Extract entityId, shardId, and unwrap messages.
+   * @param allocationStrategy Allocation strategy which decides on which nodes to allocate new shards
+   * @tparam E A possible envelope around the message the entity accepts
+   * @tparam A The type of command the entity accepts
+   */
+  def spawnJavadsl[E, A]( // FIXME javadsl package
+    behavior:           EntityIdToBehavior[A],
+    entityProps:        Props,
+    typeKey:            EntityTypeKey[A],
+    settings:           ClusterShardingSettings,
+    messageExtractor:   ShardingMessageExtractor[E, A],
+    allocationStrategy: ShardAllocationStrategy): ActorRef[E]
+
+  /**
+   * Scala API: Spawn a shard region or a proxy depending on if the settings require role and if this node
+   * has such a role.
+   *
+   * @param behavior Create the behavior for an entity given a entityId
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param entityProps Props to apply when starting an entity
    * @param messageExtractor Extract entityId, shardId, and unwrap messages.
    * @tparam E A possible envelope around the message the entity accepts
    * @tparam A The type of command the entity accepts
    */
-  def spawn[E, A](
-    behavior:         Behavior[A],
+  def spawn3[E, A](
+    behavior:         String ⇒ Behavior[A],
+    entityProps:      Props,
+    typeKey:          EntityTypeKey[A],
+    settings:         ClusterShardingSettings,
+    messageExtractor: ShardingMessageExtractor[E, A]): ActorRef[E]
+
+  /**
+   * Java API: Spawn a shard region or a proxy depending on if the settings require role and if this node
+   * has such a role.
+   *
+   * @param behavior Create the behavior for an entity given a entityId
+   * @param typeKey A key that uniquely identifies the type of entity in this cluster
+   * @param entityProps Props to apply when starting an entity
+   * @param messageExtractor Extract entityId, shardId, and unwrap messages.
+   * @tparam E A possible envelope around the message the entity accepts
+   * @tparam A The type of command the entity accepts
+   */
+  def spawnJavadsl[E, A]( // FIXME javadsl package
+    behavior:         EntityIdToBehavior[A],
     entityProps:      Props,
     typeKey:          EntityTypeKey[A],
     settings:         ClusterShardingSettings,

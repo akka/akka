@@ -107,7 +107,7 @@ private[akka] object Shard {
   def props(
     typeName:           String,
     shardId:            ShardRegion.ShardId,
-    entityProps:        Props,
+    entityProps:        String ⇒ Props,
     settings:           ClusterShardingSettings,
     extractEntityId:    ShardRegion.ExtractEntityId,
     extractShardId:     ShardRegion.ExtractShardId,
@@ -137,7 +137,7 @@ private[akka] object Shard {
 private[akka] class Shard(
   typeName:           String,
   shardId:            ShardRegion.ShardId,
-  entityProps:        Props,
+  entityProps:        String ⇒ Props,
   settings:           ClusterShardingSettings,
   extractEntityId:    ShardRegion.ExtractEntityId,
   extractShardId:     ShardRegion.ExtractShardId,
@@ -335,7 +335,7 @@ private[akka] class Shard(
     context.child(name).getOrElse {
       log.debug("Starting entity [{}] in shard [{}]", id, shardId)
 
-      val a = context.watch(context.actorOf(entityProps, name))
+      val a = context.watch(context.actorOf(entityProps(id), name))
       idByRef = idByRef.updated(a, id)
       refById = refById.updated(id, a)
       state = state.copy(state.entities + id)
@@ -478,7 +478,7 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
 private[akka] class PersistentShard(
   typeName:              String,
   shardId:               ShardRegion.ShardId,
-  entityProps:           Props,
+  entityProps:           String ⇒ Props,
   override val settings: ClusterShardingSettings,
   extractEntityId:       ShardRegion.ExtractEntityId,
   extractShardId:        ShardRegion.ExtractShardId,
@@ -572,7 +572,7 @@ private[akka] class PersistentShard(
 private[akka] class DDataShard(
   typeName:              String,
   shardId:               ShardRegion.ShardId,
-  entityProps:           Props,
+  entityProps:           String ⇒ Props,
   override val settings: ClusterShardingSettings,
   extractEntityId:       ShardRegion.ExtractEntityId,
   extractShardId:        ShardRegion.ExtractShardId,

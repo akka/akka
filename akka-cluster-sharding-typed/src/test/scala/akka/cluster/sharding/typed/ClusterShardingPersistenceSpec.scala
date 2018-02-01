@@ -4,6 +4,8 @@
 package akka.cluster.sharding.typed
 
 import akka.actor.typed.{ ActorRef, Behavior, Props, TypedAkkaSpecWithShutdown }
+import akka.cluster.typed.Cluster
+import akka.cluster.typed.Join
 import akka.persistence.typed.scaladsl.PersistentBehaviors
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
@@ -58,20 +60,15 @@ object ClusterShardingPersistenceSpec {
 class ClusterShardingPersistenceSpec extends TestKit("ClusterShardingPersistenceSPec", ClusterShardingPersistenceSpec.config)
   with TypedAkkaSpecWithShutdown {
   import ClusterShardingPersistenceSpec._
-  import akka.actor.typed.scaladsl.adapter._
 
-  implicit val s = system
   val sharding = ClusterSharding(system)
-
-  implicit val untypedSystem = system.toUntyped
-  private val untypedCluster = akka.cluster.Cluster(untypedSystem)
 
   "Typed cluster sharding with persistent actor" must {
 
-    untypedCluster.join(untypedCluster.selfAddress)
+    Cluster(system).manager ! Join(Cluster(system).selfMember.address)
 
     "start persistent actor" in {
-      ClusterSharding(system).spawn(persistentActor, Props.empty, typeKey,
+      ClusterSharding(system).spawn[Command](_ ⇒ persistentActor, Props.empty, typeKey,
         ClusterShardingSettings(system), maxNumberOfShards = 100, handOffStopMessage = StopPlz)
 
       val p = TestProbe[String]()
