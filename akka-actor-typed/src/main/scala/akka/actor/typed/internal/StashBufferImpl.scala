@@ -6,6 +6,8 @@ package akka.actor.typed.internal
 import java.util.function.Consumer
 import java.util.function.{ Function ⇒ JFunction }
 
+import scala.collection.{ immutable ⇒ im }
+
 import akka.actor.typed.ActorContext
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl
@@ -94,11 +96,11 @@ import akka.util.ConstantFun
   override def unstashAll(ctx: javadsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
     unstashAll(ctx.asScala, behavior)
 
-  override def unstashAll(): Seq[T] =
+  override private[akka] def unstashAll(): im.Seq[T] =
     new Iterator[T] {
       override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
       override def next(): T = StashBufferImpl.this.dropHead()
-    }.toSeq
+    }.to[im.Seq]
 
   override def unstash(scaladslCtx: scaladsl.ActorContext[T], behavior: Behavior[T],
                        numberOfMessages: Int, wrap: T ⇒ T): Behavior[T] = {

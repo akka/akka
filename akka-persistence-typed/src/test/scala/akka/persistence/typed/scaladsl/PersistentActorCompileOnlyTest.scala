@@ -315,7 +315,7 @@ object PersistentActorCompileOnlyTest {
                 case GotMetaData(data) ⇒
                   basket = basket.updatedWith(data)
                   if (isFullyHydrated(basket, state)) {
-                    Effect.unstash(buffer.unstashAll())
+                    Effect.unstash(buffer)
                   } else {
                     Effect.none
                   }

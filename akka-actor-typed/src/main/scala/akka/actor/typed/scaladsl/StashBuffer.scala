@@ -3,7 +3,7 @@
  */
 package akka.actor.typed.scaladsl
 
-import java.util.function.{ Function ⇒ JFunction }
+import scala.collection.{ immutable ⇒ im }
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.StashBufferImpl
@@ -100,7 +100,7 @@ object StashBuffer {
   /**
    * Removes all messages from the buffer
    */
-  def unstashAll(): Seq[T]
+  private[akka] def unstashAll(): im.Seq[T]
 
   /**
    * Process `numberOfMessages` of the stashed messages with the `behavior`

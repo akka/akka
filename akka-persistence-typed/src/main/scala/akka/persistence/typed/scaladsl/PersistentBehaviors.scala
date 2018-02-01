@@ -4,6 +4,9 @@
 package akka.persistence.typed.scaladsl
 
 import akka.actor.typed.Behavior.UntypedBehavior
+import akka.actor.typed.internal.StashBufferImpl
+import akka.actor.typed.javadsl.{ StashBuffer ⇒ JStashBuffer }
+import akka.actor.typed.scaladsl.StashBuffer
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.persistence.typed.internal.PersistentActorImpl
@@ -71,7 +74,13 @@ object PersistentBehaviors {
      * Unstash these commands: after successfully persisting any events, process these commands before
      * returning to the mailbox.
      */
-    def unstash[Command, Event, State](commands: Seq[Command]): Effect[Event, State] = Unstash(commands)
+    def unstash[Command, Event, State](buffer: StashBuffer[Command]): ChainableEffect[Event, State] = Unstash(buffer.unstashAll())
+
+    /**
+     * Unstash these commands: after successfully persisting any events, process these commands before
+     * returning to the mailbox.
+     */
+    def unstash[Command, Event, State](buffer: JStashBuffer[Command]): ChainableEffect[Event, State] = unstash(buffer.asInstanceOf[StashBuffer[Command]])
 
     /**
      * This command is not handled, but it is not an error that it isn't.

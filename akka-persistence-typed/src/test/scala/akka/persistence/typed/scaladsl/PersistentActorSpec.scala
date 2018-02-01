@@ -3,18 +3,21 @@
  */
 package akka.persistence.typed.scaladsl
 
-import akka.actor.typed.scaladsl.Behaviors
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.collection.{ immutable ⇒ im }
+
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.typed.scaladsl.{ Behaviors, StashBuffer }
 import akka.actor.typed.{ ActorRef, ActorSystem, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.typed.scaladsl.PersistentBehaviors._
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.testkit.typed.{ TestKit, TestKitSettings }
 import akka.testkit.typed.scaladsl._
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.Eventually
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
+import org.scalatest.concurrent.Eventually
 
 object PersistentActorSpec {
 
@@ -247,6 +250,45 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       c ! GetValue(probe.ref)
       probe.expectMessage(State(0, Vector.empty))
       loggingProbe.expectMessage(firstLogging)
+    }
+
+    "stash and unstash messages" in {
+      val probe = TestProbe[String]
+
+      sealed trait Command
+      case object Ping extends Command
+      case object Enable extends Command
+
+      case object Enabled
+
+      var buffer = StashBuffer[Command](capacity = 100)
+      val behavior = PersistentBehaviors.immutable[Command, Enabled.type, Boolean](
+        persistenceId = "asdf",
+        initialState = false,
+        commandHandler = (ctx, state, cmd) ⇒ (state, cmd) match {
+          case (_, Enable) ⇒
+            Effect
+              .persist(im.Seq(Enabled), im.Seq[ChainableEffect[Enabled.type, Boolean]](Effect.unstash(buffer)))
+          case (false, cmd) ⇒
+            buffer.stash(cmd)
+            Effect.none
+          case (true, Ping) ⇒
+            probe.ref ! "Pong"
+            Effect.none
+        },
+        eventHandler = (_, Enabled) ⇒ true
+      )
+      val actor = spawn(behavior)
+      actor ! Ping
+      actor ! Ping
+      probe.expectNoMessage()
+
+      actor ! Enable
+      probe.expectMessage("Pong")
+      probe.expectMessage("Pong")
+
+      actor ! Ping
+      probe.expectMessage("Pong")
     }
 
     "work when wrapped in other behavior" in {
