@@ -267,8 +267,7 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
         initialState = false,
         commandHandler = (ctx, state, cmd) ⇒ (state, cmd) match {
           case (_, Enable) ⇒
-            Effect
-              .persist(im.Seq(Enabled), im.Seq[ChainableEffect[Enabled.type, Boolean]](Effect.unstash(buffer)))
+            Effect.persist(Enabled, Effect.unstash[Command, Enabled.type, Boolean](buffer))
           case (false, cmd) ⇒
             buffer.stash(cmd)
             Effect.none

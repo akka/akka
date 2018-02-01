@@ -62,6 +62,9 @@ object PersistentBehaviors {
     def persist[Event, State](events: im.Seq[Event]): Effect[Event, State] =
       PersistAll(events)
 
+    def persist[Event, State](event: Event, sideEffect: ChainableEffect[Event, State]): Effect[Event, State] =
+      new CompositeEffect[Event, State](Some(Persist(event)), im.Seq(sideEffect))
+
     def persist[Event, State](events: im.Seq[Event], sideEffects: im.Seq[ChainableEffect[Event, State]]): Effect[Event, State] =
       new CompositeEffect[Event, State](Some(new PersistAll[Event, State](events)), sideEffects)
 
