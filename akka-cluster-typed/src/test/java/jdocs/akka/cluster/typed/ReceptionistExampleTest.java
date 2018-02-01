@@ -6,12 +6,14 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
+import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
 
-public class ReceptionistExampleTest {
+public class ReceptionistExampleTest extends JUnitSuite {
 
   public static class PingPongExample {
     //#ping-service
@@ -68,6 +70,7 @@ public class ReceptionistExampleTest {
     //#pinger-guardian
   }
 
+  @Test
   public void workPlease() throws Exception {
     ActorSystem<Receptionist.Listing<PingPongExample.Ping>> system =
       ActorSystem.create(PingPongExample.guardian(), "ReceptionistExample");

@@ -6,7 +6,6 @@ package internal
 package adapter
 
 import scala.annotation.tailrec
-
 import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
@@ -20,13 +19,16 @@ import akka.util.OptionVal
 
   var behavior: Behavior[T] = _initialBehavior
 
-  if (!isAlive(behavior)) context.stop(self)
-
-  val ctx = new ActorContextAdapter[T](context)
+  var _ctx: ActorContextAdapter[T] = _
+  def ctx: ActorContextAdapter[T] =
+    if (_ctx ne null) _ctx
+    else throw new IllegalStateException("Context was accessed before typed actor was started.")
 
   var failures: Map[a.ActorRef, Throwable] = Map.empty
 
-  def receive = {
+  def receive = running
+
+  def running: Receive = {
     case a.Terminated(ref) ⇒
       val msg =
         if (failures contains ref) {
@@ -109,7 +111,15 @@ import akka.util.OptionVal
       a.SupervisorStrategy.Stop
   }
 
-  override def preStart(): Unit = {
+  override def preStart(): Unit =
+    if (!isAlive(behavior))
+      context.stop(self)
+    else
+      start()
+
+  protected def start(): Unit = {
+    context.become(running)
+    initializeContext()
     behavior = validateAsInitial(undefer(behavior, ctx))
     if (!isAlive(behavior)) context.stop(self)
   }
@@ -120,6 +130,7 @@ import akka.util.OptionVal
   }
 
   override def postRestart(reason: Throwable): Unit = {
+    initializeContext()
     behavior = validateAsInitial(undefer(behavior, ctx))
     if (!isAlive(behavior)) context.stop(self)
   }
@@ -135,6 +146,57 @@ import akka.util.OptionVal
       }
       case b ⇒ Behavior.interpretSignal(b, ctx, PostStop)
     }
+
     behavior = Behavior.stopped
   }
+
+  protected def initializeContext(): Unit = {
+    _ctx = new ActorContextAdapter[T](context)
+  }
+}
+
+/**
+ * INTERNAL API
+ *
+ * A special adapter for the guardian which will defer processing until a special `Start` signal has been received.
+ * That will allow to defer typed processing until the untyped ActorSystem has completely started up.
+ */
+@InternalApi
+private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) extends ActorAdapter[T](_initialBehavior) {
+  import Behavior._
+
+  override def preStart(): Unit =
+    if (!isAlive(behavior))
+      context.stop(self)
+    else
+      context.become(waitingForStart(Nil))
+
+  def waitingForStart(stashed: List[Any]): Receive = {
+    case GuardianActorAdapter.Start ⇒
+      start()
+
+      stashed.reverse.foreach(receive)
+    case other ⇒
+      // unlikely to happen but not impossible
+      context.become(waitingForStart(other :: stashed))
+  }
+
+  override def postRestart(reason: Throwable): Unit = {
+    initializeContext()
+
+    super.postRestart(reason)
+  }
+
+  override def postStop(): Unit = {
+    initializeContext()
+
+    super.postStop()
+  }
+}
+/**
+ * INTERNAL API
+ */
+@InternalApi private[typed] object GuardianActorAdapter {
+  case object Start
+
 }

@@ -1,25 +1,34 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
  */
-package akka.actor.typed
-package internal
+package akka.cluster.typed
 
-import akka.Done
 import akka.actor.InvalidMessageException
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.{ PostStop, Terminated }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.typed.TestInbox
+import com.typesafe.config.ConfigFactory
 import org.scalatest._
-import org.scalatest.concurrent.{ Eventually, ScalaFutures }
+import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.util.control.NonFatal
 
 class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
   with ScalaFutures with Eventually {
 
   override implicit val patienceConfig = PatienceConfig(1.second)
-  def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name)
+  val config = ConfigFactory.parseString(
+    """
+      akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    """).withFallback(ConfigFactory.load())
+  def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name, config)
   def suite = "adapter"
 
   case class Probe(msg: String, replyTo: ActorRef[String])
@@ -55,12 +64,8 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     // see issue #24172
     "shutdown if guardian shuts down immediately" in {
-      val stoppable =
-        Behaviors.immutable[Done] {
-          case (ctx, Done) ⇒ Behaviors.stopped
-        }
-      withSystem("shutdown", stoppable, doTerminate = false) { sys: ActorSystem[Done] ⇒
-        sys ! Done
+      pending
+      withSystem("shutdown", Behaviors.stopped[String], doTerminate = false) { sys: ActorSystem[String] ⇒
         sys.whenTerminated.futureValue
       }
     }
@@ -93,7 +98,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "report its uptime" in {
       withSystem("uptime", Behaviors.empty[String]) { sys ⇒
         sys.uptime should be < 1L
-        Thread.sleep(1000)
+        Thread.sleep(2000)
         sys.uptime should be >= 1L
       }
     }

@@ -7,16 +7,14 @@ package docs.akka.typed
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Behavior
-import akka.actor.typed.Terminated
+import akka.NotUsed
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
 import akka.testkit.typed.TestKit
-import scala.concurrent.Await
-import scala.concurrent.Future
+
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future }
 //#imports
 
 import akka.actor.typed.TypedAkkaSpecWithShutdown
@@ -107,7 +105,7 @@ class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
   import IntroSpec._
 
   "Hello world" must {
-    "must say hello" in {
+    "say hello" in {
       // TODO Implicits.global is not something we would like to encourage in docs
       //#hello-world
       import HelloWorld._
@@ -128,7 +126,7 @@ class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
       //#hello-world
     }
 
-    "must chat" in {
+    "chat" in {
       //#chatroom-gabbler
       import ChatRoom._
 
@@ -152,24 +150,20 @@ class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
       //#chatroom-gabbler
 
       //#chatroom-main
-      val main: Behavior[String] =
+      val main: Behavior[NotUsed] =
         Behaviors.deferred { ctx ⇒
           val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
           val gabblerRef = ctx.spawn(gabbler, "gabbler")
           ctx.watch(gabblerRef)
+          chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-          Behaviors.immutablePartial[String] {
-            case (_, "go") ⇒
-              chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
-              Behaviors.same
-          } onSignal {
+          Behaviors.onSignal {
             case (_, Terminated(ref)) ⇒
               Behaviors.stopped
           }
         }
 
       val system = ActorSystem(main, "ChatRoomDemo")
-      system ! "go"
       Await.result(system.whenTerminated, 3.seconds)
       //#chatroom-main
     }
