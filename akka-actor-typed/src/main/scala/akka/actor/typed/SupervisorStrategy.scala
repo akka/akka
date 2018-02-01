@@ -12,11 +12,17 @@ object SupervisorStrategy {
   /**
    * Resume means keeping the same state as before the exception was
    * thrown and is thus less safe than `restart`.
+   *
+   * If the actor behavior is deferred and throws an exception on startup the actor is stopped
+   * (restarting would be dangerous as it could lead to an infinite restart-loop)
    */
   val resume: SupervisorStrategy = Resume(loggingEnabled = true)
 
   /**
    * Restart immediately without any limit on number of restart retries.
+   *
+   * If the actor behavior is deferred and throws an exception on startup the actor is stopped
+   * (restarting would be dangerous as it could lead to an infinite restart-loop)
    */
   val restart: SupervisorStrategy = Restart(-1, Duration.Zero, loggingEnabled = true)
 
@@ -30,6 +36,9 @@ object SupervisorStrategy {
    * The number of restarts are limited to a number of restart attempts (`maxNrOfRetries`)
    * within a time range (`withinTimeRange`). When the time window has elapsed without reaching
    * `maxNrOfRetries` the restart count is reset.
+   *
+   * The strategy is applied also if the actor behavior is deferred and throws an exception during
+   * startup.
    *
    * @param maxNrOfRetries the number of times a child actor is allowed to be restarted,
    *   if the limit is exceeded the child actor is stopped
@@ -54,6 +63,9 @@ object SupervisorStrategy {
    *
    * If no new exception occurs within the `minBackoff` duration the exponentially
    * increased back-off timeout is reset.
+   *
+   * The strategy is applied also if the actor behavior is deferred and throws an exception during
+   * startup.
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
