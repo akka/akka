@@ -68,6 +68,12 @@ object PersistentBehaviors {
     def none[Event, State]: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
 
     /**
+     * Unstash these commands: after successfully persisting any events, process these commands before
+     * returning to the mailbox.
+     */
+    def unstash[Command, Event, State](commands: Seq[Command]): Effect[Event, State] = Unstash(commands)
+
+    /**
      * This command is not handled, but it is not an error that it isn't.
      */
     def unhandled[Event, State]: Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
@@ -145,6 +151,8 @@ object PersistentBehaviors {
    */
   @DoNotInherit
   sealed abstract class ChainableEffect[Event, State] extends Effect[Event, State]
+  @InternalApi
+  private[akka] case class Unstash[Command, Event, State](commands: Seq[Command]) extends ChainableEffect[Event, State]
   @InternalApi
   private[akka] case class SideEffect[Event, State](effect: State ⇒ Unit) extends ChainableEffect[Event, State]
   @InternalApi

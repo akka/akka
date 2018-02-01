@@ -94,6 +94,12 @@ import akka.util.ConstantFun
   override def unstashAll(ctx: javadsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
     unstashAll(ctx.asScala, behavior)
 
+  override def unstashAll(): Seq[T] =
+    new Iterator[T] {
+      override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
+      override def next(): T = StashBufferImpl.this.dropHead()
+    }.toSeq
+
   override def unstash(scaladslCtx: scaladsl.ActorContext[T], behavior: Behavior[T],
                        numberOfMessages: Int, wrap: T ⇒ T): Behavior[T] = {
     val iter = new Iterator[T] {

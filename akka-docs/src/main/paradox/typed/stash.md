@@ -3,12 +3,12 @@
 Stashing enables an actor to temporarily buffer all or some messages that cannot or should not
 be handled using the actor's current behavior.
 
-A typical example when this is useful is if the actor has too load some initial state or initialize
+A typical example when this is useful is if the actor has to load some initial state or initialize
 some resources before it can accept the first real message. Another example is when the actor
-is waiting for something to complete before processing next message.
+is waiting for something to complete before processing the next message.
 
 Let's illustrate these two with an example. It's an actor that is used like a single access point
-to a value stored in a database. When it's started it loads current state from the database, and
+to a value stored in a database. When it starts it loads the current state from the database, and
 while waiting for that initial value all incoming messages are stashed.
 
 When a new state is saved in the database it also stashes incoming messages to make the

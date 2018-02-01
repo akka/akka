@@ -98,6 +98,11 @@ object StashBuffer {
   def unstashAll(ctx: ActorContext[T], behavior: Behavior[T]): Behavior[T]
 
   /**
+   * Removes all messages from the buffer
+   */
+  def unstashAll(): Seq[T]
+
+  /**
    * Process `numberOfMessages` of the stashed messages with the `behavior`
    * and the returned [[Behavior]] from each processed message.
    *

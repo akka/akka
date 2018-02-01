@@ -28,7 +28,7 @@ object PersistentActorSpec {
 
     def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
       log.debug("saveAsync: {} {}", metadata, snapshot)
-      state += (metadata.persistenceId -> (snapshot, metadata))
+      state += metadata.persistenceId -> ((snapshot, metadata))
       Future.successful(())
     }
 
@@ -139,7 +139,7 @@ object PersistentActorSpec {
       },
       eventHandler = (state, evt) ⇒ evt match {
         case Incremented(delta) ⇒
-          probe ! (state, evt)
+          probe ! ((state, evt))
           State(state.value + delta, state.history :+ state.value)
       })
   }

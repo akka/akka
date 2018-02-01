@@ -236,7 +236,21 @@ object PersistentActorCompileOnlyTest {
       })
   }
 
+  /**
+   * This example demonstrates combining persistent state with some
+   * non-persistent state that is reconstructed at recovery.
+   *
+   * The actor is a shopping basket, and only persists the identifiers of the
+   * items in the basket. The actor also closes over additional metadata about
+   * the items, such as price, which is collected from a metadata registry.
+   *
+   * While waiting for metadata from the metadata registry, some commands
+   * are accepted as normal, but requests to determine the total basket price will
+   * be stashed until the metadata has arrived.
+   */
   object Rehydrating {
+    import akka.actor.typed.scaladsl.StashBuffer
+
     type Id = String
 
     sealed trait Command
@@ -269,10 +283,8 @@ object PersistentActorCompileOnlyTest {
     def isFullyHydrated(basket: Basket, ids: List[Id]) = basket.items.map(_.id) == ids
 
     Behaviors.deferred { ctx: ActorContext[Command] ⇒
-      // FIXME this doesn't work, wrapping not supported
-
       var basket = Basket(Nil)
-      var stash: Seq[Command] = Nil
+      var buffer = StashBuffer[Command](capacity = 100)
       val adapt = ctx.messageAdapter((m: MetaData) ⇒ GotMetaData(m))
 
       def addItem(id: Id, self: ActorRef[Command]) =
@@ -303,12 +315,12 @@ object PersistentActorCompileOnlyTest {
                 case GotMetaData(data) ⇒
                   basket = basket.updatedWith(data)
                   if (isFullyHydrated(basket, state)) {
-                    stash.foreach(ctx.self ! _)
-                    stash = Nil
+                    Effect.unstash(buffer.unstashAll())
+                  } else {
+                    Effect.none
                   }
-                  Effect.none
                 case cmd: GetTotalPrice ⇒
-                  stash :+= cmd
+                  buffer.stash(cmd)
                   Effect.none
               }
           ),

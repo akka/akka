@@ -143,8 +143,15 @@ import akka.{ actor ⇒ a }
   }
 
   def applySideEffect(effect: ChainableEffect[_, S]): Unit = effect match {
-    case _: Stop.type @unchecked ⇒ context.stop(self)
-    case SideEffect(callbacks)   ⇒ callbacks.apply(state)
+    case _: Stop.type @unchecked ⇒
+      context.stop(self)
+    case Unstash(commands) ⇒
+      // Process unstashed commands before taking new commands from the mailbox.
+      // TODO: this does not correctly deal with the situation that people unstash while
+      // processing a stashed command, but let's write a test before building that.
+      commands.foreach(receiveCommand)
+    case SideEffect(callbacks) ⇒
+      callbacks.apply(state)
   }
 
   private def shouldSnapshot(state: S, event: E, sequenceNr: Long): Boolean = {
