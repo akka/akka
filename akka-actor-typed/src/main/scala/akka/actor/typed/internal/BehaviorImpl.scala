@@ -59,8 +59,11 @@ import scala.reflect.ClassTag
     onSignal:      PartialFunction[(SAC[T], Signal), Behavior[T]] = Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
     extends ExtensibleBehavior[T] {
 
-    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
-      onSignal.applyOrElse((ctx.asScala, msg), Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = msg match {
+      // FIXME: ugh, now we have to make sure that every implementation of ExtensibleBehavior handles this signal. Is that realistic?
+      case DeferredMessage(cons) ⇒ receiveMessage(ctx, cons().asInstanceOf[T])
+      case _                     ⇒ onSignal.applyOrElse((ctx.asScala, msg), Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+    }
     override def receiveMessage(ctx: AC[T], msg: T) = onMessage(ctx.asScala, msg)
     override def toString = s"Immutable(${LineNumbers(onMessage)})"
   }

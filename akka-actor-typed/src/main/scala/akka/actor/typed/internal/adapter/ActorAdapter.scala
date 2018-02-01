@@ -38,7 +38,8 @@ import akka.util.OptionVal
     case a.ReceiveTimeout ⇒
       next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
     case wrapped: AskResponse[Any, T] @unchecked ⇒
-      handleMessage(wrapped.adapted)
+      handleSignal(DeferredMessage(() ⇒ wrapped.adapted))
+
     case wrapped: AdaptMessage[Any, T] @unchecked ⇒
       wrapped.adapted match {
         case AdaptWithRegisteredMessageAdapter(msg) ⇒
@@ -55,6 +56,9 @@ import akka.util.OptionVal
   private def handleMessage(msg: T): Unit = {
     next(Behavior.interpretMessage(behavior, ctx, msg), msg)
   }
+
+  private def handleSignal(msg: Signal): Unit =
+    next(Behavior.interpretSignal(behavior, ctx, msg), msg)
 
   private def next(b: Behavior[T], msg: Any): Unit = {
     if (Behavior.isUnhandled(b)) unhandled(msg)
