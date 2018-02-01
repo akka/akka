@@ -305,8 +305,10 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       val behv = Behaviors.supervise(targetBehavior(probe.ref))
         .onFailure[Throwable](SupervisorStrategy.stop)
       val ref = spawn(behv)
-      ref ! Throw(new Exc3)
-      probe.expectMessage(GotSignal(PostStop))
+      EventFilter[Exc3](occurrences = 1).intercept {
+        ref ! Throw(new Exc3)
+        probe.expectMessage(GotSignal(PostStop))
+      }
     }
 
     "support nesting exceptions with different strategies" in {
@@ -319,19 +321,25 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
 
       val ref = spawn(behv)
 
-      ref ! Throw(new IOException())
-      probe.expectMessage(GotSignal(PreRestart))
+      EventFilter[IOException](occurrences = 1).intercept {
+        ref ! Throw(new IOException())
+        probe.expectMessage(GotSignal(PreRestart))
+      }
 
-      ref ! Throw(new IllegalArgumentException("cat"))
-      probe.expectMessage(GotSignal(PostStop))
+      EventFilter[IllegalArgumentException](occurrences = 1).intercept {
+        ref ! Throw(new IllegalArgumentException("cat"))
+        probe.expectMessage(GotSignal(PostStop))
+      }
     }
 
     "stop when not supervised" in {
       val probe = TestProbe[Event]("evt")
       val behv = targetBehavior(probe.ref)
       val ref = spawn(behv)
-      ref ! Throw(new Exc3)
-      probe.expectMessage(GotSignal(PostStop))
+      EventFilter[Exc3](occurrences = 1).intercept {
+        ref ! Throw(new Exc3)
+        probe.expectMessage(GotSignal(PostStop))
+      }
     }
 
     "stop when unhandled exception" in {
@@ -339,8 +347,10 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       val behv = Behaviors.supervise(targetBehavior(probe.ref))
         .onFailure[Exc1](SupervisorStrategy.restart)
       val ref = spawn(behv)
-      ref ! Throw(new Exc3)
-      probe.expectMessage(GotSignal(PostStop))
+      EventFilter[Exc3](occurrences = 1).intercept {
+        ref ! Throw(new Exc3)
+        probe.expectMessage(GotSignal(PostStop))
+      }
     }
 
     "restart when handled exception" in {
@@ -352,8 +362,10 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       ref ! GetState
       probe.expectMessage(State(1, Map.empty))
 
-      ref ! Throw(new Exc2)
-      probe.expectMessage(GotSignal(PreRestart))
+      EventFilter[Exc2](occurrences = 1).intercept {
+        ref ! Throw(new Exc2)
+        probe.expectMessage(GotSignal(PreRestart))
+      }
       ref ! GetState
       probe.expectMessage(State(0, Map.empty))
     }
@@ -370,9 +382,11 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       ref ! GetState
       parentProbe.expectMessageType[State].children.keySet should contain(childName)
 
-      ref ! Throw(new Exc1)
-      parentProbe.expectMessage(GotSignal(PreRestart))
-      ref ! GetState
+      EventFilter[Exc1](occurrences = 1).intercept {
+        ref ! Throw(new Exc1)
+        parentProbe.expectMessage(GotSignal(PreRestart))
+        ref ! GetState
+      }
       // TODO document this difference compared to classic actors, and that
       //      children can be stopped if needed in PreRestart
       parentProbe.expectMessageType[State].children.keySet should contain(childName)
@@ -387,9 +401,11 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       ref ! GetState
       probe.expectMessage(State(1, Map.empty))
 
-      ref ! Throw(new Exc2)
-      ref ! GetState
-      probe.expectMessage(State(1, Map.empty))
+      EventFilter[Exc2](occurrences = 1).intercept {
+        ref ! Throw(new Exc2)
+        ref ! GetState
+        probe.expectMessage(State(1, Map.empty))
+      }
     }
 
     "support nesting to handle different exceptions" in {
@@ -404,20 +420,26 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       probe.expectMessage(State(1, Map.empty))
 
       // resume
-      ref ! Throw(new Exc2)
-      probe.expectNoMessage()
-      ref ! GetState
-      probe.expectMessage(State(1, Map.empty))
+      EventFilter[Exc2](occurrences = 1).intercept {
+        ref ! Throw(new Exc2)
+        probe.expectNoMessage()
+        ref ! GetState
+        probe.expectMessage(State(1, Map.empty))
+      }
 
       // restart
-      ref ! Throw(new Exc3)
-      probe.expectMessage(GotSignal(PreRestart))
-      ref ! GetState
-      probe.expectMessage(State(0, Map.empty))
+      EventFilter[Exc3](occurrences = 1).intercept {
+        ref ! Throw(new Exc3)
+        probe.expectMessage(GotSignal(PreRestart))
+        ref ! GetState
+        probe.expectMessage(State(0, Map.empty))
+      }
 
       // stop
-      ref ! Throw(new Exc1)
-      probe.expectMessage(GotSignal(PostStop))
+      EventFilter[Exc1](occurrences = 1).intercept {
+        ref ! Throw(new Exc1)
+        probe.expectMessage(GotSignal(PostStop))
+      }
     }
 
     "restart after exponential backoff" in {
@@ -433,11 +455,13 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       }).onFailure[Exception](strategy)
       val ref = spawn(behv)
 
-      startedProbe.expectMessage(Started)
-      ref ! IncrementState
-      ref ! Throw(new Exc1)
-      probe.expectMessage(GotSignal(PreRestart))
-      ref ! Ping // dropped due to backoff
+      EventFilter[Exc1](occurrences = 1).intercept {
+        startedProbe.expectMessage(Started)
+        ref ! IncrementState
+        ref ! Throw(new Exc1)
+        probe.expectMessage(GotSignal(PreRestart))
+        ref ! Ping // dropped due to backoff
+      }
 
       startedProbe.expectNoMessage(minBackoff - 100.millis)
       probe.expectNoMessage(minBackoff + 100.millis)
@@ -446,10 +470,12 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       probe.expectMessage(State(0, Map.empty))
 
       // one more time
-      ref ! IncrementState
-      ref ! Throw(new Exc1)
-      probe.expectMessage(GotSignal(PreRestart))
-      ref ! Ping // dropped due to backoff
+      EventFilter[Exc1](occurrences = 1).intercept {
+        ref ! IncrementState
+        ref ! Throw(new Exc1)
+        probe.expectMessage(GotSignal(PreRestart))
+        ref ! Ping // dropped due to backoff
+      }
 
       startedProbe.expectNoMessage((minBackoff * 2) - 100.millis)
       probe.expectNoMessage((minBackoff * 2) + 100.millis)
@@ -466,21 +492,25 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       val behv = supervise(targetBehavior(probe.ref)).onFailure[Exc1](strategy)
       val ref = spawn(behv)
 
-      ref ! IncrementState
-      ref ! Throw(new Exc1)
-      probe.expectMessage(GotSignal(PreRestart))
-      ref ! Ping // dropped due to backoff
+      EventFilter[Exc1](occurrences = 1).intercept {
+        ref ! IncrementState
+        ref ! Throw(new Exc1)
+        probe.expectMessage(GotSignal(PreRestart))
+        ref ! Ping // dropped due to backoff
+      }
 
       probe.expectNoMessage(minBackoff + 100.millis.dilated)
       ref ! GetState
       probe.expectMessage(State(0, Map.empty))
 
       // one more time after the reset timeout
-      probe.expectNoMessage(strategy.resetBackoffAfter + 100.millis.dilated)
-      ref ! IncrementState
-      ref ! Throw(new Exc1)
-      probe.expectMessage(GotSignal(PreRestart))
-      ref ! Ping // dropped due to backoff
+      EventFilter[Exc1](occurrences = 1).intercept {
+        probe.expectNoMessage(strategy.resetBackoffAfter + 100.millis.dilated)
+        ref ! IncrementState
+        ref ! Throw(new Exc1)
+        probe.expectMessage(GotSignal(PreRestart))
+        ref ! Ping // dropped due to backoff
+      }
 
       // backoff was reset, so restarted after the minBackoff
       probe.expectNoMessage(minBackoff + 100.millis.dilated)
@@ -533,10 +563,10 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       EventFilter[TE](occurrences = 1).intercept {
         spawn(behv)
 
-        probe.expectMsg(StartFailed)
+        probe.expectMessage(StartFailed)
         // restarted after a delay when first start failed
         probe.expectNoMessage(100.millis)
-        probe.expectMsg(Started)
+        probe.expectMessage(Started)
       }
     }
 
@@ -545,7 +575,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
         spawn(behv)
-        probe.expectMsg(StartFailed)
+        probe.expectMessage(StartFailed)
       }
     }
 
@@ -557,8 +587,8 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       EventFilter[TE](occurrences = 1).intercept {
         spawn(behv)
 
-        probe.expectMsg(StartFailed)
-        probe.expectMsg(Started)
+        probe.expectMessage(StartFailed)
+        probe.expectMessage(Started)
       }
     }
 
@@ -572,8 +602,8 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
           spawn(behv)
 
           // restarted 2 times before it gave up
-          probe.expectMsg(StartFailed)
-          probe.expectMsg(StartFailed)
+          probe.expectMessage(StartFailed)
+          probe.expectMessage(StartFailed)
           probe.expectNoMessage(100.millis)
         }
       }
@@ -584,7 +614,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
         spawn(behv)
-        probe.expectMsg(StartFailed)
+        probe.expectMessage(StartFailed)
       }
     }
 
@@ -592,14 +622,10 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       val probe = TestProbe[Event]("evt")
       val behv = supervise(mutable[Command](_ ⇒ new FailingConstructor(probe.ref)))
         .onFailure[Exception](SupervisorStrategy.restart)
-      val ref = spawn(behv)
-      probe.expectMessage(Started)
-      ref ! Ping
-      probe.expectNoMessage()
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
         val ref = spawn(behv)
-        probe.expectMsg(Started) // first one before failure
+        probe.expectMessage(Started) // first one before failure
       }
     }
 
@@ -614,7 +640,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       )).onFailure[Exception](strategy)
 
       spawn(beh)
-      probe.expectMsg(Started)
+      probe.expectMessage(Started)
     }
 
   }
