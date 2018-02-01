@@ -10,10 +10,12 @@ import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
+import scala.util.control.NonFatal
+
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor {
+@InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor with a.ActorLogging {
   import Behavior._
   import ActorRefAdapter.toUntyped
 
@@ -40,9 +42,9 @@ import akka.util.OptionVal
     case a.ReceiveTimeout ⇒
       next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
     case wrapped: AskResponse[Any, T] @unchecked ⇒
-      handleMessage(wrapped.adapted)
+      withSafelyAdapted(() ⇒ wrapped.adapt())(handleMessage)
     case wrapped: AdaptMessage[Any, T] @unchecked ⇒
-      wrapped.adapted match {
+      withSafelyAdapted(() ⇒ wrapped.adapt()) {
         case AdaptWithRegisteredMessageAdapter(msg) ⇒
           adaptAndHandle(msg)
         case msg: T @unchecked ⇒
@@ -89,14 +91,21 @@ import akka.util.OptionVal
           unhandled(msg)
         case (clazz, f) :: tail ⇒
           if (clazz.isAssignableFrom(msg.getClass)) {
-            val adaptedMsg = f(msg)
-            handleMessage(adaptedMsg)
+            withSafelyAdapted(() ⇒ f(msg))(handleMessage)
           } else
             handle(tail) // recursive
       }
     }
     handle(ctx.messageAdapters)
   }
+
+  private def withSafelyAdapted[U, V](adapt: () ⇒ U)(body: U ⇒ V): Unit =
+    try body(adapt())
+    catch {
+      case NonFatal(ex) ⇒
+        log.error(ex, "Exception thrown out of adapter. Stopping myself.")
+        context.stop(self)
+    }
 
   override def unhandled(msg: Any): Unit = msg match {
     case Terminated(ref) ⇒ throw a.DeathPactException(toUntyped(ref))

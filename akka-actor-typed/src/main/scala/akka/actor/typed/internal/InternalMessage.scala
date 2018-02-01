@@ -16,8 +16,8 @@ import akka.annotation.InternalApi
  * function. Used by `ActorContext.spawnMessageAdapter` so that the function is
  * applied in the "parent" actor (for better thread safetey)..
  */
-@InternalApi private[akka] final case class AdaptMessage[U, T](msg: U, adapt: U ⇒ T) {
-  def adapted: T = adapt(msg)
+@InternalApi private[akka] final case class AdaptMessage[U, T](msg: U, adapter: U ⇒ T) {
+  def adapt(): T = adapter(msg)
 }
 
 // FIXME move AskResponse in other PR
