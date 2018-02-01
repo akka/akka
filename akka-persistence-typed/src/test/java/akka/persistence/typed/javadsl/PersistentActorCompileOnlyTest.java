@@ -195,7 +195,7 @@ public class PersistentActorCompileOnlyTest {
       what.toCompletableFuture().thenApply(r -> new AcknowledgeSideEffect(r.correlationId))
         .thenAccept(sender::tell);
     }
-
+/*
     static PersistentBehavior<Command, Event, EventsInFlight> pb = PersistentBehaviors.<Command, Event, EventsInFlight>immutable(
       "pid",
       new EventsInFlight(0, Collections.emptyMap()),
@@ -223,5 +223,34 @@ public class PersistentActorCompileOnlyTest {
         performSideEffect(ctx.getSelf().narrow(), cId, data)
       );
     });
+
+  */
+
+    class MyPersistentBehavior extends PersistentBehavior<Command, Event, RecoveryComplete.EventsInFlight> {
+      public MyPersistentBehavior(String persistenceId) {
+        super(persistenceId);
+      }
+
+      @Override
+      public EventsInFlight initialState() {
+        return new EventsInFlight(0, Collections.emptyMap());
+      }
+
+      @Override
+      public CommandHandler<Command, Event, EventsInFlight> commandHandler() {
+        return commandHandlerBuilder()
+          .matchCommand(DoSideEffect.class,
+            (ctx, state, cmd) -> Effects().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
+              .andThen(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data)))
+          .matchCommand(AcknowledgeSideEffect.class, (ctx, state, command) -> Effect.persist(new SideEffectAcknowledged(command.correlationId)))
+          .build();
+      }
+
+      @Override
+      public EventHandler<Event, EventsInFlight> eventHandler() {
+        return null;
+      }
+    }
+
   }
 }

@@ -3,43 +3,40 @@
  */
 package akka.persistence.typed.javadsl
 
+import java.util.Collections
 import java.util.function.BiConsumer
 
 import akka.actor.typed.Behavior.UntypedBehavior
 import akka.actor.typed.javadsl.ActorContext
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.japi.{ function ⇒ japi }
+import akka.annotation.{ApiMayChange, DoNotInherit, InternalApi}
+import akka.japi.{function => japi}
 import akka.persistence.typed._
 import akka.persistence.typed.scaladsl.PersistentBehaviors._
 
 import scala.collection.JavaConverters._
-import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
+import akka.actor.typed.scaladsl.{ActorContext => SAC}
 
-class PersistentBehavior[Command, Event, State](
-  @InternalApi private[akka] val persistenceId: String ⇒ String,
-  initialState:                                 State,
-  commandHandler:                               CommandHandler[Command, Event, State],
-  eventHandler:                                 EventHandler[Event, State],
-  recoveryCompleted:                            (SAC[Command], State) ⇒ Unit,
-  tagger:                                       Event ⇒ Set[String],
-  snapshotOn:                                   (State, Event, Long) ⇒ Boolean) extends UntypedBehavior[Command] {
+@ApiMayChange abstract class PersistentBehavior[Command, Event, State](val persistenceId: String) extends UntypedBehavior[Command] {
 
-  private val pa = new scaladsl.PersistentBehavior[Command, Event, State](
-    name ⇒ persistenceId(name),
-    initialState,
-    (ctx, s, e) ⇒ commandHandler.apply(ctx.asJava, s, e).asInstanceOf[EffectImpl[Event, State]],
-    (s: State, e: Event) ⇒ eventHandler.apply(s, e),
-    recoveryCompleted,
-    tagger,
-    snapshotOn
-  )
+  def Effects: EffectFactories[Command, Event, State] = EffectFactory.asInstanceOf[EffectFactories[Command, Event, State]]
+
+  val initialState: State
+
+  def commandHandler(): CommandHandler[Command, Event, State]
+
+  def eventHandler(): EventHandler[Event, State]
+
+  /**
+   * @return A new, mutable, builder
+   */
+  final def commandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] =
+    new CommandHandlerBuilder[Command, Event, State]()
 
   /**
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: BiConsumer[ActorContext[Command], State]): PersistentBehavior[Command, Event, State] =
-    copy(recoveryCompleted = (ctx, s) ⇒ callback.accept(ctx.asJava, s))
+  def onRecoveryCompleted(ctx: ActorContext[Command], state: State): Unit = { }
 
   /**
    * Initiates a snapshot if the given function returns true.
@@ -48,39 +45,26 @@ class PersistentBehavior[Command, Event, State](
    *
    * `predicate` receives the State, Event and the sequenceNr used for the Event
    */
-  def snapshotOn(predicate: japi.Function3[State, Event, java.lang.Long, java.lang.Boolean]): PersistentBehavior[Command, Event, State] =
-    copy(snapshotOn = (s, e, seqNr) ⇒ predicate.apply(s, e, seqNr))
-
-  /**
-   * Snapshot every N events
-   *
-   * `numberOfEvents` should be greater than 0
-   */
-  def snapshotEvery(numberOfEvents: Long): PersistentBehavior[Command, Event, State] = {
-    require(numberOfEvents > 0, s"numberOfEvents should be positive: Was $numberOfEvents")
-    copy(snapshotOn = (_, _, seqNr) ⇒ seqNr % numberOfEvents == 0)
-  }
-
+  def snapshotOn(state: State, event: Event, sequenceNr: Long): Boolean = false
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
    */
-  def withTagger(tagger: japi.Function[Event, java.util.Set[String]]): PersistentBehavior[Command, Event, State] =
-    copy(tagger = (e) ⇒ tagger.apply(e).asScala.toSet)
-
-  private def copy(
-    persistenceIdFromActorName: String ⇒ String                       = persistenceId,
-    initialState:               State                                 = initialState,
-    commandHandler:             CommandHandler[Command, Event, State] = commandHandler,
-    eventHandler:               EventHandler[Event, State]            = eventHandler,
-    recoveryCompleted:          (SAC[Command], State) ⇒ Unit          = recoveryCompleted,
-    tagger:                     Event ⇒ Set[String]                   = tagger,
-    snapshotOn:                 (State, Event, Long) ⇒ Boolean        = snapshotOn): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, tagger, snapshotOn)
+  def tagsFor(event: Event): java.util.Set[String] = Collections.emptySet()
 
   /**
    * INTERNAL API
    */
-  override private[akka] def untypedProps = pa.untypedProps
+  override private[akka] def untypedProps = {
+    new scaladsl.PersistentBehavior[Command, Event, State](
+      _ ⇒ persistenceId,
+      initialState,
+      (ctx, s, e) ⇒ commandHandler.apply(ctx.asJava, s, e).asInstanceOf[EffectImpl[Event, State]],
+      (s: State, e: Event) ⇒ eventHandler().apply(s, e),
+      (ctx, s) => onRecoveryCompleted(ctx.asJava, s),
+      e => tagsFor(e).asScala.toSet,
+      snapshotOn
+    ).untypedProps
+  }
 }
 
 object PersistentBehaviors {
@@ -105,14 +89,7 @@ object PersistentBehaviors {
     persistenceIdFromActorName: String ⇒ String,
     initialState:               State,
     commandHandler:             CommandHandler[Command, Event, State],
-    eventHandler:               EventHandler[Event, State]): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior[Command, Event, State](
-      persistenceIdFromActorName,
-      initialState,
-      commandHandler,
-      eventHandler,
-      (_, _) ⇒ (),
-      _ ⇒ Set.empty,
-      (_, _, _) ⇒ false)
+    eventHandler:               EventHandler[Event, State]): PersistentBehavior[Command, Event, State] = ???
+
 
 }
