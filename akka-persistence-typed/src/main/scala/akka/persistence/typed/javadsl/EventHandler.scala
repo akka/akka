@@ -7,6 +7,11 @@ import java.util.function.BiFunction
 
 import akka.util.OptionVal
 
+/**
+ * SAM for reacting on events having been persisted
+ *
+ * Used with [[EventHandlerBuilder]] to setup the behavior of a [[PersistentBehavior]]
+ */
 @FunctionalInterface
 trait EventHandler[Event, State] {
   def apply(state: State, event: Event): State

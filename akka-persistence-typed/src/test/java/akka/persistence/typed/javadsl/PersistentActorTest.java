@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
 package akka.persistence.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
@@ -54,12 +57,10 @@ public class PersistentActorTest extends TestKit {
   }
 
   static class StopThenLog implements Command {
-
   }
 
   public static class Timeout implements Command {
   }
-
 
   public static class GetValue implements Command {
     private final ActorRef<State> replyTo;
@@ -140,9 +141,8 @@ public class PersistentActorTest extends TestKit {
 
   private static String loggingOne = "one";
 
-  // FIXME factory method for the builder
   private static CommandHandler<Command, Incremented, State> commandHandler(ActorRef<String> loggingProbe) {
-    return new CommandHandlerBuilder<Command, Incremented, State>(Command.class)
+    return CommandHandlerBuilder.<Command, Incremented, State>builder(Command.class)
       .matchCommand(Increment.class, (ctx, state, command) -> Effect.persist(new Incremented(1)))
       .matchCommand(GetValue.class, (ctx, state, command) -> {
         command.replyTo.tell(state);
@@ -184,9 +184,8 @@ public class PersistentActorTest extends TestKit {
       .build();
   }
 
-  // FIXME factory method
   private static EventHandler<Incremented, State> eventHandler(ActorRef<Pair<State, Incremented>> probe) {
-    return new EventHandlerBuilder<Incremented, State>(Incremented.class)
+    return EventHandlerBuilder.<Incremented, State>builder(Incremented.class)
       .matchEvent(Incremented.class, (state, event) -> {
         List<Integer> newHistory = new ArrayList<>(state.history);
         newHistory.add(state.value);

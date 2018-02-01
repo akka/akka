@@ -22,7 +22,6 @@ import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
-// FIXME don't use a mix of Msg and Message in the API
 object TestProbe {
   private val testActorId = new AtomicInteger(0)
 

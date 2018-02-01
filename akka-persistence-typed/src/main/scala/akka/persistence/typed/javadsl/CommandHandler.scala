@@ -9,13 +9,20 @@ import akka.japi.pf.FI
 import akka.persistence.typed.scaladsl.PersistentBehaviors.EffectImpl
 import akka.util.OptionVal
 
-// Went for this over a Function3 otherwise the type is terribly long
-//FIXME docs
+/**
+ * SAM for reacting on commands
+ *
+ * Used with [[CommandHandlerBuilder]] to setup the behavior of a [[PersistentBehavior]]
+ */
 @FunctionalInterface
 trait CommandHandler[Command, Event, State] {
   def apply(ctx: ActorContext[Command], state: State, command: Command): Effect[Event, State]
 }
-
+/**
+ * SAM for reacting on signals
+ *
+ * Used with [[CommandHandlerBuilder]] to setup the behavior of a [[PersistentBehavior]]
+ */
 @FunctionalInterface
 trait CommandToEffect[Command, MsgCommand <: Command, Event, State] {
   /**
@@ -24,7 +31,6 @@ trait CommandToEffect[Command, MsgCommand <: Command, Event, State] {
   def apply(ctx: ActorContext[Command], state: State, command: MsgCommand): Effect[Event, State]
 }
 
-//FIXME docs
 object CommandHandlerBuilder {
   def builder[Command, Event, State](rootCommandClass: Class[Command]): CommandHandlerBuilder[Command, Event, State] =
     new CommandHandlerBuilder[Command, Event, State](rootCommandClass)

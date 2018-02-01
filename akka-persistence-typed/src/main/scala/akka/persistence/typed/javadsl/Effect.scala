@@ -9,6 +9,9 @@ import akka.japi.{ function ⇒ japi }
 
 import scala.collection.JavaConverters._
 
+/**
+ * Factory to create effects such as persisting events.
+ */
 object Effect {
   /**
    * Persist a single event
@@ -37,7 +40,15 @@ object Effect {
    */
   def unhandled[Event, State]: Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
 }
-
+/**
+ * A command handler returns an `Effect` directive that defines what event or events to persist.
+ *
+ * Additional side effects can be performed in the callback `andThen`
+ *
+ * Instances of `Effect` are available through factories in the respective Java and Scala DSL packages.
+ *
+ * Not intended for user extension.
+ */
 @DoNotInherit abstract class Effect[+Event, State] {
   self: EffectImpl[Event, State] ⇒
   /** Convenience method to register a side effect with just a callback function */
