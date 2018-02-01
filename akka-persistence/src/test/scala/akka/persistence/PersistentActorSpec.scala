@@ -666,14 +666,7 @@ object PersistentActorSpec {
 
   class ExceptionActor(name: String) extends ExamplePersistentActor(name) {
     override def receiveCommand = commonBehavior
-    override def receiveRecover = {
-      case _ ⇒ throw new Exception("boom")
-    }
-  }
-
-  class ExceptionActor2(name: String) extends ExamplePersistentActor(name) {
-    override def receiveCommand = commonBehavior
-    override def receiveRecover = throw new Exception("boom")
+    override def receiveRecover = throw new TestException("boom")
   }
 }
 
@@ -1189,14 +1182,8 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectTerminated(persistentActor)
     }
 
-    "stop actor when exception from receiveRecover" in {
-      val persistentActor = namedPersistentActor[ExceptionActor]
-      watch(persistentActor)
-      expectTerminated(persistentActor)
-    }
-
     "stop actor when direct exception from receiveRecover" in {
-      val persistentActor = namedPersistentActor[ExceptionActor2]
+      val persistentActor = namedPersistentActor[ExceptionActor]
       watch(persistentActor)
       expectTerminated(persistentActor)
     }

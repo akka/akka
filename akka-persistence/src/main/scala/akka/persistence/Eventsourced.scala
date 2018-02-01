@@ -463,6 +463,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         case NonFatal(e) ⇒
           try onRecoveryFailure(e, Some(e))
           finally context.stop(self)
+          returnRecoveryPermit()
           Actor.emptyBehavior
       }
 
