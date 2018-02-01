@@ -6,19 +6,25 @@ package akka.cluster.sharding.typed
 
 import java.nio.charset.StandardCharsets
 
+import scala.concurrent.duration._
+
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorRefResolver
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Props
+import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.cluster.MemberStatus
-import akka.cluster.typed.{ Cluster, Join }
+import akka.cluster.typed.Cluster
+import akka.cluster.typed.Join
+import akka.cluster.typed.Leave
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.{ Eventually, ScalaFutures }
-
-import scala.concurrent.duration._
+import org.scalatest.time.Span
 
 object ClusterShardingSpec {
   val config = ConfigFactory.parseString(
@@ -55,12 +61,10 @@ object ClusterShardingSpec {
   final case class WhoAreYou(replyTo: ActorRef[String]) extends TestProtocol
   final case class StopPlz() extends TestProtocol
 
-  sealed trait IdTestProtocol extends java.io.Serializable {
-    def id: String
-  }
+  sealed trait IdTestProtocol extends java.io.Serializable
   final case class IdReplyPlz(id: String, toMe: ActorRef[String]) extends IdTestProtocol
   final case class IdWhoAreYou(id: String, replyTo: ActorRef[String]) extends IdTestProtocol
-  final case class IdStopPlz(id: String) extends IdTestProtocol
+  final case class IdStopPlz() extends IdTestProtocol
 
   class Serializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
     def identifier: Int = 48
@@ -89,7 +93,7 @@ object ClusterShardingSpec {
       case _: StopPlz           ⇒ Array.emptyByteArray
       case IdReplyPlz(id, ref)  ⇒ idAndRefToBinary(id, ref)
       case IdWhoAreYou(id, ref) ⇒ idAndRefToBinary(id, ref)
-      case IdStopPlz(id)        ⇒ id.getBytes(StandardCharsets.UTF_8)
+      case _: IdStopPlz         ⇒ Array.emptyByteArray
     }
 
     private def actorRefFromBinary[T](bytes: Array[Byte]): ActorRef[T] =
@@ -108,29 +112,22 @@ object ClusterShardingSpec {
       case "c" ⇒ StopPlz()
       case "A" ⇒ IdReplyPlz.tupled(idAndRefFromBinary(bytes))
       case "B" ⇒ IdWhoAreYou.tupled(idAndRefFromBinary(bytes))
-      case "C" ⇒ IdStopPlz(new String(bytes, StandardCharsets.UTF_8))
+      case "C" ⇒ IdStopPlz()
     }
   }
 
 }
 
-class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterShardingSpec.config)
-  with TypedAkkaSpecWithShutdown with ScalaFutures with Eventually {
-
+class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterShardingSpec.config) with TypedAkkaSpecWithShutdown {
   import ClusterShardingSpec._
-  import akka.actor.typed.scaladsl.adapter._
 
-  implicit val s = system
   val sharding = ClusterSharding(system)
 
-  implicit val untypedSystem = system.toUntyped
-
-  val untypedSystem2 = akka.actor.ActorSystem(system.name, system.settings.config)
-  val system2 = untypedSystem2.toTyped
+  val system2 = ActorSystem(Behaviors.ignore[Any], name = system.name, config = system.settings.config)
   val sharding2 = ClusterSharding(system2)
 
   override def afterAll(): Unit = {
-    system2.terminate().futureValue
+    TestKit.shutdown(system2, 5.seconds)
     super.afterAll()
   }
 
@@ -140,7 +137,8 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       Behaviors.stopped
 
     case (ctx, WhoAreYou(replyTo)) ⇒
-      replyTo ! s"I'm ${ctx.self.path.name}"
+      val address = Cluster(ctx.system).selfMember.address
+      replyTo ! s"I'm ${ctx.self.path.name} at ${address.host.get}:${address.port.get}"
       Behaviors.same
 
     case (_, ReplyPlz(toMe)) ⇒
@@ -150,17 +148,56 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
 
   val typeKey2 = EntityTypeKey[IdTestProtocol]("no-envelope-shard")
   val behaviorWithId = Behaviors.immutable[IdTestProtocol] {
-    case (_, IdStopPlz(_)) ⇒
+    case (_, IdStopPlz()) ⇒
       Behaviors.stopped
 
     case (ctx, IdWhoAreYou(_, replyTo)) ⇒
-      replyTo ! s"I'm ${ctx.self.path.name}"
+      val address = Cluster(ctx.system).selfMember.address
+      replyTo ! s"I'm ${ctx.self.path.name} at ${address.host.get}:${address.port.get}"
       Behaviors.same
 
     case (_, IdReplyPlz(_, toMe)) ⇒
       toMe ! "Hello!"
       Behaviors.same
   }
+
+  val shardingRef1 = sharding.spawn(
+    behavior,
+    Props.empty,
+    typeKey,
+    ClusterShardingSettings(system),
+    10,
+    StopPlz())
+
+  val shardingRef2 = sharding2.spawn(
+    behavior,
+    Props.empty,
+    typeKey,
+    ClusterShardingSettings(system2),
+    10,
+    StopPlz())
+
+  val shardingRef3 = sharding.spawn(
+    behaviorWithId,
+    Props.empty,
+    typeKey2,
+    ClusterShardingSettings(system),
+    ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
+      case IdReplyPlz(id, _)  ⇒ id
+      case IdWhoAreYou(id, _) ⇒ id
+      case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
+    })
+
+  val shardingRef4 = sharding2.spawn(
+    behaviorWithId,
+    Props.empty,
+    typeKey2,
+    ClusterShardingSettings(system2),
+    ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
+      case IdReplyPlz(id, _)  ⇒ id
+      case IdWhoAreYou(id, _) ⇒ id
+      case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
+    })
 
   "Typed cluster sharding" must {
 
@@ -180,50 +217,18 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
     }
 
     "send messages via cluster sharding, using envelopes" in {
-      val ref = sharding.spawn(
-        behavior,
-        Props.empty,
-        typeKey,
-        ClusterShardingSettings(system),
-        10,
-        StopPlz())
-      sharding2.spawn(
-        behavior,
-        Props.empty,
-        typeKey,
-        ClusterShardingSettings(system2),
-        10,
-        StopPlz())
-
       (1 to 10).foreach { n ⇒
         val p = TestProbe[String]()
-        ref ! ShardingEnvelope(s"test$n", ReplyPlz(p.ref))
-        p.expectMessage(3.seconds, "Hello!")
-        ref ! ShardingEnvelope(s"test$n", StopPlz())
+        shardingRef1 ! ShardingEnvelope(s"test$n", ReplyPlz(p.ref))
+        p.expectMessage("Hello!")
       }
     }
 
     "send messages via cluster sharding, without envelopes" in {
-      val ref = sharding.spawn(
-        behaviorWithId,
-        Props.empty,
-        typeKey2,
-        ClusterShardingSettings(system),
-        ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, _.id),
-        IdStopPlz("THE_ID_HERE"))
-      sharding2.spawn(
-        behaviorWithId,
-        Props.empty,
-        typeKey2,
-        ClusterShardingSettings(system2),
-        ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, _.id),
-        IdStopPlz("THE_ID_HERE"))
-
       (1 to 10).foreach { n ⇒
         val p = TestProbe[String]()
-        ref ! IdReplyPlz(s"test$n", p.ref)
-        p.expectMessage(3.seconds, "Hello!")
-        ref ! IdStopPlz(s"test$n")
+        shardingRef3 ! IdReplyPlz(s"test$n", p.ref)
+        p.expectMessage("Hello!")
       }
     }
 
@@ -248,10 +253,10 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       val p = TestProbe[String]()
 
       charlieRef ! WhoAreYou(p.ref)
-      p.expectMessage(3.seconds, "I'm charlie")
+      p.expectMessageType[String] should startWith("I'm charlie")
 
       charlieRef tell WhoAreYou(p.ref)
-      p.expectMessage(3.seconds, "I'm charlie")
+      p.expectMessageType[String] should startWith("I'm charlie")
 
       charlieRef ! StopPlz()
     }
@@ -261,12 +266,39 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       val charlieRef = sharding.entityRefFor(typeKey, "charlie")
 
       val reply1 = bobRef ? WhoAreYou // TODO document that WhoAreYou(_) would not work
-      reply1.futureValue should ===("I'm bob")
+      reply1.futureValue should startWith("I'm bob")
 
       val reply2 = charlieRef ask WhoAreYou
-      reply2.futureValue should ===("I'm charlie")
+      reply2.futureValue should startWith("I'm charlie")
 
       bobRef ! StopPlz()
+    }
+
+    "use the handOffStopMessage for leaving/rebalance" in {
+      var replies1 = Set.empty[String]
+      (1 to 10).foreach { n ⇒
+        val p = TestProbe[String]()
+        shardingRef1 ! ShardingEnvelope(s"test$n", WhoAreYou(p.ref))
+        replies1 += p.expectMessageType[String]
+      }
+      replies1.size should ===(10)
+
+      Cluster(system2).manager ! Leave(Cluster(system2).selfMember.address)
+
+      implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, Span(100, org.scalatest.time.Millis))
+      eventually {
+        // if it wouldn't receive the StopPlz and stop the leaving would take longer and this would fail
+        Cluster(system2).isTerminated should ===(true)
+      }
+
+      var replies2 = Set.empty[String]
+      (1 to 10).foreach { n ⇒
+        val p = TestProbe[String]()
+        shardingRef1 ! ShardingEnvelope(s"test$n", WhoAreYou(p.ref))
+        replies2 += p.expectMessageType[String](10.seconds)
+      }
+      replies2.size should ===(10)
+      replies2 should !==(replies1) // different addresses
     }
   }
 }
