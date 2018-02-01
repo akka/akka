@@ -24,8 +24,6 @@ class ServiceKeySerializer(val system: akka.actor.ExtendedActorSystem) extends S
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
 
-  def fromBinary(bytes: Array[Byte], manifest: String): ServiceKey[Any] = {
-    println(s"manifest = $manifest")
+  def fromBinary(bytes: Array[Byte], manifest: String): ServiceKey[Any] =
     DefaultServiceKey[Any](new String(bytes, StandardCharsets.UTF_8), manifest)
-  }
 }
