@@ -304,6 +304,9 @@ private[akka] class Shard(
     if (id == null || id == "") {
       log.warning("Id must not be empty, dropping message [{}]", msg.getClass.getName)
       context.system.deadLetters ! msg
+    } else if (payload.isInstanceOf[ShardRegion.StartEntity]) {
+      // in case it was wrapped, used in Typed
+      receiveStartEntity(payload.asInstanceOf[ShardRegion.StartEntity])
     } else {
       messageBuffers.contains(id) match {
         case false ⇒ deliverTo(id, msg, payload, snd)

@@ -23,6 +23,7 @@ import akka.cluster.typed.Leave
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl.TestProbe
+import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.time.Span
 
@@ -44,7 +45,8 @@ object ClusterShardingSpec {
 
       akka.actor {
         serialize-messages = off
-        allow-java-serialization = off
+        # issue #24465 missing serializer for GetShardRegionStats
+        #allow-java-serialization = off
 
        serializers {
           test = "akka.cluster.sharding.typed.ClusterShardingSpec$$Serializer"
@@ -199,6 +201,15 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
     })
 
+  def totalEntityCount1(): Int = {
+    import akka.pattern.ask
+    implicit val timeout = Timeout(6.seconds)
+    val statsBefore = (shardingRef1.toUntyped ? akka.cluster.sharding.ShardRegion.GetClusterShardingStats(5.seconds))
+      .mapTo[akka.cluster.sharding.ShardRegion.ClusterShardingStats]
+    val totalCount = statsBefore.futureValue.regions.values.flatMap(_.stats.values).sum
+    totalCount
+  }
+
   "Typed cluster sharding" must {
 
     "join cluster" in {
@@ -272,6 +283,33 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       reply2.futureValue should startWith("I'm charlie")
 
       bobRef ! StopPlz()
+    }
+
+    "handle untyped StartEntity message" in {
+      // it is normally using envolopes, but the untyped StartEntity message can be sent internally,
+      // e.g. for remember entities
+
+      val totalCountBefore = totalEntityCount1()
+
+      val p = TestProbe[Any]()
+      shardingRef1.toUntyped.tell(akka.cluster.sharding.ShardRegion.StartEntity("startEntity-1"), p.ref.toUntyped)
+      p.expectMessageType[akka.cluster.sharding.ShardRegion.StartEntityAck]
+
+      eventually {
+        val totalCountAfter = totalEntityCount1()
+        totalCountAfter should ===(totalCountBefore + 1)
+      }
+    }
+
+    "handle typed StartEntity message" in {
+      val totalCountBefore = totalEntityCount1()
+
+      shardingRef1 ! StartEntity("startEntity-2")
+
+      eventually {
+        val totalCountAfter = totalEntityCount1()
+        totalCountAfter should ===(totalCountBefore + 1)
+      }
     }
 
     "use the handOffStopMessage for leaving/rebalance" in {
