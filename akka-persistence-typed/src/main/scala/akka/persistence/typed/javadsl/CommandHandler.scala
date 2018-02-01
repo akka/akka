@@ -54,8 +54,6 @@ final class CommandHandlerBuilder[Command, Event, State] @InternalApi private[pe
   }
 
   def matchCommand[C <: Command](commandClass: Class[C], commandToEffect: CommandToEffect[Command, C, Event, State]): CommandHandlerBuilder[Command, Event, State] = {
-    if (!rootCommandClass.isAssignableFrom(commandClass))
-      throw new IllegalArgumentException(s"Class ${commandClass.getName} is not a subtype of ${rootCommandClass.getName}")
     addCase(cmd ⇒ commandClass.isAssignableFrom(cmd.getClass), commandToEffect.asInstanceOf[CommandToEffect[Command, Command, Event, State]])
     this
   }

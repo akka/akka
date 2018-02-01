@@ -34,12 +34,8 @@ final class EventHandlerBuilder[Event, State >: Null](rootEventClass: Class[Even
 
   /**
    * Match any event which is an instance of `E` or a subtype of `E`
-   *
-   * Throws `java.lang.IllegalArgumentException` if `eventClass` is not a subtype of the root `Event` this builder was created with
    */
   def matchEvent[E <: Event](eventClass: Class[E], biFunction: BiFunction[State, E, State]): EventHandlerBuilder[Event, State] = {
-    if (!rootEventClass.isAssignableFrom(eventClass))
-      throw new IllegalArgumentException(s"Class ${eventClass.getName} is not a subtype of ${rootEventClass.getName}")
     addCase(e ⇒ eventClass.isAssignableFrom(e.getClass), biFunction.asInstanceOf[BiFunction[State, Event, State]])
     this
   }

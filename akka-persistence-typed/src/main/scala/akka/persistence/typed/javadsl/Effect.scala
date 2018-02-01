@@ -9,7 +9,6 @@ import akka.japi.{ function ⇒ japi }
 
 import scala.collection.JavaConverters._
 
-//FIXME roll into Effect if we decide on an abstract class for java dsl
 object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
 
 @DoNotInherit sealed class EffectFactories[Command, Event, State] {
@@ -41,39 +40,6 @@ object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
   def unhandled: Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
 }
 
-/**
- * Factory to create effects such as persisting events.
- */
-
-// FIXME, remove if we go with abstract class
-object Effect {
-  /**
-   * Persist a single event
-   */
-  final def persist[Event, State](event: Event): Effect[Event, State] = Persist(event)
-
-  /**
-   * Persist all of a the given events. Each event will be applied through `applyEffect` separately but not until
-   * all events has been persisted. If an `afterCallBack` is added through [[Effect#andThen]] that will invoked
-   * after all the events has been persisted.
-   */
-  final def persist[Event, State](events: java.util.List[Event]): Effect[Event, State] = PersistAll(events.asScala.toVector)
-
-  /**
-   * Do not persist anything
-   */
-  def none[Event, State]: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
-
-  /**
-   * Stop this persistent actor
-   */
-  def stop[Event, State]: Effect[Event, State] = Stop.asInstanceOf[ChainableEffect[Event, State]]
-
-  /**
-   * This command is not handled, but it is not an error that it isn't.
-   */
-  def unhandled[Event, State]: Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
-}
 /**
  * A command handler returns an `Effect` directive that defines what event or events to persist.
  *

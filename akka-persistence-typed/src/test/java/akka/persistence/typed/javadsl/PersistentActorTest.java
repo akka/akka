@@ -6,6 +6,7 @@ package akka.persistence.typed.javadsl;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.Pair;
+import akka.japi.function.Function3;
 import akka.persistence.typed.scaladsl.PersistentActorSpec;
 import akka.testkit.typed.TestKit;
 import akka.testkit.typed.javadsl.TestProbe;
@@ -141,82 +142,111 @@ public class PersistentActorTest extends TestKit {
 
   private static String loggingOne = "one";
 
-  private static CommandHandler<Command, Incremented, State> commandHandler(ActorRef<String> loggingProbe) {
-    return CommandHandlerBuilder.<Command, Incremented, State>builder(Command.class)
-      .matchCommand(Increment.class, (ctx, state, command) -> Effect.persist(new Incremented(1)))
-      .matchCommand(GetValue.class, (ctx, state, command) -> {
-        command.replyTo.tell(state);
-        return Effect.none();
-      })
-      .matchCommand(IncrementLater.class, (ctx, state, command) -> {
-        ActorRef<Object> delay = ctx.spawnAnonymous(Behaviors.withTimers(timers -> {
-          timers.startSingleTimer(Tick.instance, Tick.instance, FiniteDuration.create(10, TimeUnit.MILLISECONDS));
-          return Behaviors.immutable((context, o) -> Behaviors.stopped());
-        }));
-        ctx.watchWith(delay, new DelayFinished());
-        return Effect.none();
-      })
-      .matchCommand(DelayFinished.class, (ctx, state, finished) -> {
-        return Effect.persist(new Incremented(10));
-      })
-      .matchCommand(Increment100OnTimeout.class, (ctx, state, msg) -> {
-        ctx.setReceiveTimeout(FiniteDuration.create(10, TimeUnit.MILLISECONDS), new Timeout());
-        return Effect.none();
-      })
-      .matchCommand(Timeout.class,
-        (ctx, state, msg) -> Effect.persist(timeoutEvent))
-      .matchCommand(EmptyEventsListAndThenLog.class, (ctx, state, msg) -> {
-        // FIXME we don't get the type inference we want here
-        // we could pass in an effects factory that could be typed
-        // based on the command handler?
-        return Effect.<Incremented, State>persist(Collections.emptyList())
-          .andThen(s -> loggingProbe.tell(loggingOne));
-      })
-      .matchCommand(StopThenLog.class,
-        (ctx, state, msg) -> {
-          return Effect.<Incremented, State>stop()
-            .andThen(s -> loggingProbe.tell(loggingOne));
-        })
-      .matchCommand(IncrementTwiceAndLog.class,
-        (ctx, state, msg) -> Effect.<Incremented, State>persist(
-          Arrays.asList(new Incremented(1), new Incremented(1)))
-          .andThen(s -> loggingProbe.tell(loggingOne)))
-      .build();
-  }
-
-  private static EventHandler<Incremented, State> eventHandler(ActorRef<Pair<State, Incremented>> probe) {
-    return EventHandlerBuilder.<Incremented, State>builder(Incremented.class)
-      .matchEvent(Incremented.class, (state, event) -> {
-        List<Integer> newHistory = new ArrayList<>(state.history);
-        newHistory.add(state.value);
-        probe.tell(Pair.create(state, event));
-        return new State(state.value + event.delta, newHistory);
-      })
-      .build();
-  }
 
   private PersistentBehavior<Command, Incremented, State> counter(String persistenceId, ActorRef<Pair<State, Incremented>> probe) {
     ActorRef<String> loggingProbe = new TestProbe<String>(system()).ref();
-    return counter(persistenceId, probe, loggingProbe);
+    return counter(persistenceId, probe, loggingProbe, (s, i, l) -> false);
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(String persistenceId) {
     return counter(persistenceId,
       new TestProbe<Pair<State, Incremented>>(system()).ref(),
-      new TestProbe<String>(system()).ref());
+      new TestProbe<String>(system()).ref(),
+      (s, i, l) -> false);
+  }
+
+  private PersistentBehavior<Command, Incremented, State> counter(
+    String persistenceId,
+    Function3<State, Incremented, Long, Boolean> snapshot
+  ) {
+    return counter(persistenceId,
+      new TestProbe<Pair<State, Incremented>>(system()).ref(),
+      new TestProbe<String>(system()).ref(), snapshot);
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(
     String persistentId,
     ActorRef<Pair<State, Incremented>> eventProbe,
-    ActorRef<String> loggingProbe
-  ) {
-    return PersistentBehaviors.immutable(
-      persistentId,
-      emptyState,
-      commandHandler(loggingProbe),
-      eventHandler(eventProbe)
-    );
+    ActorRef<String> loggingProbe) {
+    return counter(persistentId, eventProbe, loggingProbe, (s, i, l) -> false);
+  }
+
+  private PersistentBehavior<Command, Incremented, State> counter(
+    String persistentId,
+    ActorRef<Pair<State, Incremented>> eventProbe,
+    Function3<State, Incremented, Long, Boolean> snapshot) {
+    return counter(persistentId, eventProbe, new TestProbe<String>(system()).ref(), snapshot);
+  }
+
+  private PersistentBehavior<Command, Incremented, State> counter(
+    String persistentId,
+    ActorRef<Pair<State, Incremented>> eventProbe,
+    ActorRef<String> loggingProbe,
+    Function3<State, Incremented, Long, Boolean> snapshot) {
+    return new PersistentBehavior<Command, Incremented, State>(persistentId) {
+      @Override
+      public CommandHandler<Command, Incremented, State> commandHandler() {
+        return commandHandlerBuilder(Command.class)
+          .matchCommand(Increment.class, (ctx, state, command) -> Effect().persist(new Incremented(1)))
+          .matchCommand(GetValue.class, (ctx, state, command) -> {
+            command.replyTo.tell(state);
+            return Effect().none();
+          })
+          .matchCommand(IncrementLater.class, (ctx, state, command) -> {
+            ActorRef<Object> delay = ctx.spawnAnonymous(Behaviors.withTimers(timers -> {
+              timers.startSingleTimer(Tick.instance, Tick.instance, FiniteDuration.create(10, TimeUnit.MILLISECONDS));
+              return Behaviors.immutable((context, o) -> Behaviors.stopped());
+            }));
+            ctx.watchWith(delay, new DelayFinished());
+            return Effect().none();
+          })
+          .matchCommand(DelayFinished.class, (ctx, state, finished) -> Effect().persist(new Incremented(10)))
+          .matchCommand(Increment100OnTimeout.class, (ctx, state, msg) -> {
+            ctx.setReceiveTimeout(FiniteDuration.create(10, TimeUnit.MILLISECONDS), new Timeout());
+            return Effect().none();
+          })
+          .matchCommand(Timeout.class,
+            (ctx, state, msg) -> Effect().persist(timeoutEvent))
+          .matchCommand(EmptyEventsListAndThenLog.class, (ctx, state, msg) -> Effect().persist(Collections.emptyList())
+            .andThen(s -> loggingProbe.tell(loggingOne)))
+          .matchCommand(StopThenLog.class,
+            (ctx, state, msg) -> Effect().stop()
+              .andThen(s -> loggingProbe.tell(loggingOne)))
+          .matchCommand(IncrementTwiceAndLog.class,
+            (ctx, state, msg) -> Effect().persist(
+              Arrays.asList(new Incremented(1), new Incremented(1)))
+              .andThen(s -> loggingProbe.tell(loggingOne)))
+          .build();
+
+      }
+
+      @Override
+      public EventHandler<Incremented, State> eventHandler() {
+        return eventHandlerBuilder(Incremented.class)
+          .matchEvent(Incremented.class, (state, event) -> {
+            List<Integer> newHistory = new ArrayList<>(state.history);
+            newHistory.add(state.value);
+            eventProbe.tell(Pair.create(state, event));
+            return new State(state.value + event.delta, newHistory);
+          })
+          .build();
+
+      }
+
+      @Override
+      public State initialState() {
+        return emptyState;
+      }
+
+      @Override
+      public boolean shouldSnapshot(State state, Incremented event, long sequenceNr) {
+        try {
+          return snapshot.apply(state, event, sequenceNr);
+        } catch (Exception e) {
+          return false;
+        }
+      }
+    };
   }
 
   @Test
@@ -225,7 +255,7 @@ public class PersistentActorTest extends TestKit {
     TestProbe<State> probe = new TestProbe<>(system());
     c.tell(Increment.instance);
     c.tell(new GetValue(probe.ref()));
-    probe.expectMsg(new State(1, singletonList(0)));
+    probe.expectMessage(new State(1, singletonList(0)));
   }
 
   @Test
@@ -236,14 +266,14 @@ public class PersistentActorTest extends TestKit {
     c.tell(Increment.instance);
     c.tell(Increment.instance);
     c.tell(new GetValue(probe.ref()));
-    probe.expectMsg(new State(3, Arrays.asList(0, 1, 2)));
+    probe.expectMessage(new State(3, Arrays.asList(0, 1, 2)));
 
     ActorRef<Command> c2 = spawn(counter("c2"));
     c2.tell(new GetValue(probe.ref()));
-    probe.expectMsg(new State(3, Arrays.asList(0, 1, 2)));
+    probe.expectMessage(new State(3, Arrays.asList(0, 1, 2)));
     c2.tell(Increment.instance);
     c2.tell(new GetValue(probe.ref()));
-    probe.expectMsg(new State(4, Arrays.asList(0, 1, 2, 3)));
+    probe.expectMessage(new State(4, Arrays.asList(0, 1, 2, 3)));
   }
 
   @Test
@@ -252,8 +282,8 @@ public class PersistentActorTest extends TestKit {
     ActorRef<Command> c = spawn(counter("c2", eventHandlerProbe.ref()));
     c.tell(Increment.instance);
     c.tell(new IncrementLater());
-    eventHandlerProbe.expectMsg(Pair.create(emptyState, new Incremented(1)));
-    eventHandlerProbe.expectMsg(Pair.create(new State(1, Collections.singletonList(0)), terminatedEvent));
+    eventHandlerProbe.expectMessage(Pair.create(emptyState, new Incremented(1)));
+    eventHandlerProbe.expectMessage(Pair.create(new State(1, Collections.singletonList(0)), terminatedEvent));
   }
 
   @Test
@@ -261,7 +291,7 @@ public class PersistentActorTest extends TestKit {
     TestProbe<Pair<State, Incremented>> eventHandlerProbe = new TestProbe<>(system());
     ActorRef<Command> c = spawn(counter("c1", eventHandlerProbe.ref()));
     c.tell(new Increment100OnTimeout());
-    eventHandlerProbe.expectMsg(Pair.create(emptyState, timeoutEvent));
+    eventHandlerProbe.expectMessage(Pair.create(emptyState, timeoutEvent));
   }
 
   @Test
@@ -270,27 +300,27 @@ public class PersistentActorTest extends TestKit {
     TestProbe<String> loggingProbe = new TestProbe<>(system());
     ActorRef<Command> c = spawn(counter("c1", eventHandlerProbe.ref(), loggingProbe.ref()));
     c.tell(new EmptyEventsListAndThenLog());
-    loggingProbe.expectMsg(loggingOne);
+    loggingProbe.expectMessage(loggingOne);
   }
 
   @Test
   public void snapshot() {
-    PersistentBehavior<Command, Incremented, State> snapshoter = counter("c11").snapshotOn((s, e, l) -> s.value % 2 == 0);
+    PersistentBehavior<Command, Incremented, State> snapshoter = counter("c11", (s, e, l) -> s.value % 2 == 0);
     ActorRef<Command> c = spawn(snapshoter);
     c.tell(Increment.instance);
     c.tell(Increment.instance);
     c.tell(Increment.instance);
     TestProbe<State> probe = new TestProbe<>(system());
     c.tell(new GetValue(probe.ref()));
-    probe.expectMsg(new State(3, Arrays.asList(0, 1, 2)));
+    probe.expectMessage(new State(3, Arrays.asList(0, 1, 2)));
 
     TestProbe<Pair<State, Incremented>> eventProbe = new TestProbe<>(system());
-    snapshoter = counter("c11", eventProbe.ref()).snapshotOn((s, e, l) -> s.value % 2 == 0);
+    snapshoter = counter("c11", eventProbe.ref(), (s, e, l) -> s.value % 2 == 0);
     ActorRef<Command> c2 = spawn(snapshoter);
     // First 2 are snapshot
-    eventProbe.expectMsg(Pair.create(new State(2, Arrays.asList(0, 1)), new Incremented(1)));
+    eventProbe.expectMessage(Pair.create(new State(2, Arrays.asList(0, 1)), new Incremented(1)));
     c2.tell(new GetValue(probe.ref()));
-    probe.expectMsg(new State(3, Arrays.asList(0, 1, 2)));
+    probe.expectMessage(new State(3, Arrays.asList(0, 1, 2)));
   }
 
   @Test
