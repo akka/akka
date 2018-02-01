@@ -7,15 +7,17 @@ This means it is ready to be evaluated, but the APIs and behavior are likely to 
 
 @@@
 
-## Enable HTTP/2 support
+## Dependency
 
-To enabled HTTP/2 support `akka-http2-support` must be added as a dependency:
+To use Akka HTTP2 Support, add the module to your project:
 
 @@dependency [sbt,Gradle,Maven] {
   group="com.typesafe.akka"
   artifact="akka-http2-support_$scala.binary.version$"
   version="$project.version$"
 }
+
+## Enable HTTP/2 support
 
 HTTP/2 can then be enabled through configuration:
 
