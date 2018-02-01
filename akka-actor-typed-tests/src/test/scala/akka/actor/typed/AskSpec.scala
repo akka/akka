@@ -8,12 +8,16 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.actor.typed.scaladsl.adapter._
+import akka.testkit.EventFilter
 import akka.testkit.typed.TestKit
+import akka.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, TimeoutException }
+import scala.util.Success
 
 object AskSpec {
   sealed trait Msg
@@ -21,7 +25,9 @@ object AskSpec {
   final case class Stop(replyTo: ActorRef[Unit]) extends Msg
 }
 
-class AskSpec extends TestKit("AskSpec") with TypedAkkaSpec with ScalaFutures {
+class AskSpec
+  extends TestKit("AskSpec", ConfigFactory.parseString("akka.loggers = [ akka.testkit.TestEventListener ]"))
+  with TypedAkkaSpec with ScalaFutures {
 
   import AskSpec._
 
@@ -41,6 +47,8 @@ class AskSpec extends TestKit("AskSpec") with TypedAkkaSpec with ScalaFutures {
     "must fail the future if the actor is already terminated" in {
       val ref = spawn(behavior)
       (ref ? Stop).futureValue
+      val probe = TestProbe()
+      probe.expectTerminated(ref, probe.remainingOrDefault)
       val answer = ref ? Foo("bar")
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
@@ -103,6 +111,47 @@ class AskSpec extends TestKit("AskSpec") with TypedAkkaSpec with ScalaFutures {
       } finally {
         akka.testkit.TestKit.shutdownActorSystem(untypedSystem)
       }
+    }
+
+    "fail asking actor if responder function throws" in {
+      case class Question(reply: ActorRef[Long])
+
+      val probe = TestProbe[AnyRef]("probe")
+      val behv =
+        Behaviors.immutable[String] {
+          case (ctx, "start-ask") ⇒
+            ctx.ask[Question, Long](probe.ref)(Question(_)) {
+              case Success(42L) ⇒
+                throw new RuntimeException("Unsupported number")
+              case _ ⇒ "test"
+            }
+            Behavior.same
+          case (ctx, "test") ⇒
+            probe.ref ! "got-test"
+            Behavior.same
+          case (ctx, "get-state") ⇒
+            probe.ref ! "running"
+            Behavior.same
+        }
+
+      val ref = spawn(behv)
+
+      ref ! "test"
+      probe.expectMessage("got-test")
+
+      ref ! "start-ask"
+      val Question(replyRef) = probe.expectMessageType[Question]
+      replyRef ! 0L
+      probe.expectMessage("got-test")
+
+      ref ! "start-ask"
+      val Question(replyRef2) = probe.expectMessageType[Question]
+
+      EventFilter[RuntimeException](message = "Exception thrown out of adapter. Stopping myself.", occurrences = 1).intercept {
+        replyRef2 ! 42L
+      }(system.toUntyped)
+
+      probe.expectTerminated(ref, probe.remainingOrDefault)
     }
   }
 }
