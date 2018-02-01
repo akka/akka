@@ -157,12 +157,12 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
         eventually {
           cluster1.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up)
         }
-        probe1.expectMsg(MemberUp(cluster1.selfMember))
+        probe1.expectMessage(MemberUp(cluster1.selfMember))
 
         cluster2.manager ! Join(cluster1.selfMember.address)
         probe1.within(10.seconds) {
-          probe1.expectMsgType[MemberJoined].member.address shouldEqual cluster2.selfMember.address
-          probe1.expectMsgType[MemberUp].member.address shouldEqual cluster2.selfMember.address
+          probe1.expectMessageType[MemberJoined].member.address shouldEqual cluster2.selfMember.address
+          probe1.expectMessageType[MemberUp].member.address shouldEqual cluster2.selfMember.address
         }
         eventually {
           cluster1.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up)
@@ -171,8 +171,8 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
 
         cluster3.manager ! Join(cluster1.selfMember.address)
         probe1.within(10.seconds) {
-          probe1.expectMsgType[MemberJoined].member.address shouldEqual cluster3.selfMember.address
-          probe1.expectMsgType[MemberUp].member.address shouldEqual cluster3.selfMember.address
+          probe1.expectMessageType[MemberJoined].member.address shouldEqual cluster3.selfMember.address
+          probe1.expectMessageType[MemberUp].member.address shouldEqual cluster3.selfMember.address
         }
         eventually {
           cluster1.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
@@ -183,9 +183,9 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
         //#cluster-leave-example
         cluster1.manager ! Leave(cluster2.selfMember.address)
         probe1.within(10.seconds) {
-          probe1.expectMsgType[MemberLeft].member.address shouldEqual cluster2.selfMember.address
-          probe1.expectMsgType[MemberExited].member.address shouldEqual cluster2.selfMember.address
-          probe1.expectMsgType[MemberRemoved].member.address shouldEqual cluster2.selfMember.address
+          probe1.expectMessageType[MemberLeft].member.address shouldEqual cluster2.selfMember.address
+          probe1.expectMessageType[MemberExited].member.address shouldEqual cluster2.selfMember.address
+          probe1.expectMessageType[MemberRemoved].member.address shouldEqual cluster2.selfMember.address
         }
         //#cluster-leave-example
 
@@ -202,7 +202,7 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
 
         system1.log.info("Downing node 3")
         cluster1.manager ! Down(cluster3.selfMember.address)
-        probe1.expectMsgType[MemberRemoved](10.seconds).member.address shouldEqual cluster3.selfMember.address
+        probe1.expectMessageType[MemberRemoved](10.seconds).member.address shouldEqual cluster3.selfMember.address
 
         probe1.expectNoMessage()
 

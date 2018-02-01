@@ -50,9 +50,9 @@ public class BasicClusterExampleTest {
 
       //#cluster-leave-example
       cluster.manager().tell(Leave.create(cluster2.selfMember().address()));
-      testProbe.expectMsgType(ClusterEvent.MemberLeft.class);
-      testProbe.expectMsgType(ClusterEvent.MemberExited.class);
-      testProbe.expectMsgType(ClusterEvent.MemberRemoved.class);
+      testProbe.expectMessageType(ClusterEvent.MemberLeft.class);
+      testProbe.expectMessageType(ClusterEvent.MemberExited.class);
+      testProbe.expectMessageType(ClusterEvent.MemberRemoved.class);
       //#cluster-leave-example
 
     } finally {

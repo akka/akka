@@ -86,11 +86,11 @@ class TimerSpec extends TestKit("TimerSpec")
       }
 
       val ref = spawn(behv)
-      probe.expectMsg(Tock(1))
+      probe.expectMessage(Tock(1))
       probe.expectNoMessage()
 
       ref ! End
-      probe.expectMsg(GotPostStop(false))
+      probe.expectMessage(GotPostStop(false))
     }
 
     "schedule repeated ticks" in {
@@ -102,13 +102,13 @@ class TimerSpec extends TestKit("TimerSpec")
 
       val ref = spawn(behv)
       probe.within((interval * 4) - 100.millis) {
-        probe.expectMsg(Tock(1))
-        probe.expectMsg(Tock(1))
-        probe.expectMsg(Tock(1))
+        probe.expectMessage(Tock(1))
+        probe.expectMessage(Tock(1))
+        probe.expectMessage(Tock(1))
       }
 
       ref ! End
-      probe.expectMsg(GotPostStop(false))
+      probe.expectMessage(GotPostStop(false))
     }
 
     "replace timer" in {
@@ -119,16 +119,16 @@ class TimerSpec extends TestKit("TimerSpec")
       }
 
       val ref = spawn(behv)
-      probe.expectMsg(Tock(1))
+      probe.expectMessage(Tock(1))
       val latch = new CountDownLatch(1)
       // next Tock(1) enqueued in mailboxed, but should be discarded because of new timer
       ref ! SlowThenBump(latch)
       probe.expectNoMessage(interval + 100.millis.dilated)
       latch.countDown()
-      probe.expectMsg(Tock(2))
+      probe.expectMessage(Tock(2))
 
       ref ! End
-      probe.expectMsg(GotPostStop(false))
+      probe.expectMessage(GotPostStop(false))
     }
 
     "cancel timer" in {
@@ -139,12 +139,12 @@ class TimerSpec extends TestKit("TimerSpec")
       }
 
       val ref = spawn(behv)
-      probe.expectMsg(Tock(1))
+      probe.expectMessage(Tock(1))
       ref ! Cancel
       probe.expectNoMessage(interval + 100.millis.dilated)
 
       ref ! End
-      probe.expectMsg(GotPostStop(false))
+      probe.expectMessage(GotPostStop(false))
     }
 
     "discard timers from old incarnation after restart, alt 1" in {
@@ -156,19 +156,19 @@ class TimerSpec extends TestKit("TimerSpec")
       }).onFailure[Exception](SupervisorStrategy.restart)
 
       val ref = spawn(behv)
-      probe.expectMsg(Tock(1))
+      probe.expectMessage(Tock(1))
 
       val latch = new CountDownLatch(1)
       // next Tock(1) is enqueued in mailbox, but should be discarded by new incarnation
       ref ! SlowThenThrow(latch, new Exc)
       probe.expectNoMessage(interval + 100.millis.dilated)
       latch.countDown()
-      probe.expectMsg(GotPreRestart(false))
+      probe.expectMessage(GotPreRestart(false))
       probe.expectNoMessage(interval / 2)
-      probe.expectMsg(Tock(2))
+      probe.expectMessage(Tock(2))
 
       ref ! End
-      probe.expectMsg(GotPostStop(false))
+      probe.expectMessage(GotPostStop(false))
     }
 
     "discard timers from old incarnation after restart, alt 2" in {
@@ -179,22 +179,22 @@ class TimerSpec extends TestKit("TimerSpec")
       }).onFailure[Exception](SupervisorStrategy.restart)
 
       val ref = spawn(behv)
-      probe.expectMsg(Tock(1))
+      probe.expectMessage(Tock(1))
       // change state so that we see that the restart starts over again
       ref ! Bump
 
-      probe.expectMsg(Tock(2))
+      probe.expectMessage(Tock(2))
 
       val latch = new CountDownLatch(1)
       // next Tock(2) is enqueued in mailbox, but should be discarded by new incarnation
       ref ! SlowThenThrow(latch, new Exc)
       probe.expectNoMessage(interval + 100.millis.dilated)
       latch.countDown()
-      probe.expectMsg(GotPreRestart(false))
-      probe.expectMsg(Tock(1))
+      probe.expectMessage(GotPreRestart(false))
+      probe.expectMessage(Tock(1))
 
       ref ! End
-      probe.expectMsg(GotPostStop(false))
+      probe.expectMessage(GotPostStop(false))
     }
 
     "cancel timers when stopped from exception" in {
@@ -205,7 +205,7 @@ class TimerSpec extends TestKit("TimerSpec")
       }
       val ref = spawn(behv)
       ref ! Throw(new Exc)
-      probe.expectMsg(GotPostStop(false))
+      probe.expectMessage(GotPostStop(false))
     }
 
     "cancel timers when stopped voluntarily" in {
@@ -216,7 +216,7 @@ class TimerSpec extends TestKit("TimerSpec")
       }
       val ref = spawn(behv)
       ref ! End
-      probe.expectMsg(GotPostStop(false))
+      probe.expectMessage(GotPostStop(false))
     }
   }
 }

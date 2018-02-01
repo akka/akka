@@ -62,7 +62,7 @@ public class ActorContextAskTest extends JUnitSuite {
 
     Adapter.spawnAnonymous(system, snitch);
 
-    probe.expectMsgType(Pong.class);
+    probe.expectMessageType(Pong.class);
   }
 
 

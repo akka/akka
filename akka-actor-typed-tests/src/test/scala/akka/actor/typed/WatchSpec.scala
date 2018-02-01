@@ -60,17 +60,17 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
     }
     "get notified of actor termination" in new WatchSetup {
       watcher ! StartWatching(terminator)
-      watchProbe.expectMsg(Done)
+      watchProbe.expectMessage(Done)
       terminator ! Stop
 
       receivedTerminationSignal.future.futureValue shouldEqual terminator
     }
     "allow idempotent invocations of watch" in new WatchSetup {
       watcher ! StartWatching(terminator)
-      watchProbe.expectMsg(Done)
+      watchProbe.expectMessage(Done)
       // shouldn't fail when watched twice
       watcher ! StartWatching(terminator)
-      watchProbe.expectMsg(Done)
+      watchProbe.expectMessage(Done)
       terminator ! Stop
 
       receivedTerminationSignal.future.futureValue shouldEqual terminator
@@ -96,17 +96,17 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
     }
     "get notified of actor termination with a custom message" in new WatchWithSetup {
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
-      watchProbe.expectMsg(Done)
+      watchProbe.expectMessage(Done)
       terminator ! Stop
 
       receivedTerminationSignal.future.futureValue shouldEqual CustomTerminationMessage
     }
     "allow idempotent invocations of watchWith with matching msgs" in new WatchWithSetup {
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
-      watchProbe.expectMsg(Done)
+      watchProbe.expectMessage(Done)
       // shouldn't fail when watchWith'd twice
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
-      watchProbe.expectMsg(Done)
+      watchProbe.expectMessage(Done)
       terminator ! Stop
 
       receivedTerminationSignal.future.futureValue shouldEqual CustomTerminationMessage
@@ -136,7 +136,7 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
 
       watcher ! StartWatching(terminator)
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
-      watchProbe.expectMsg(Done)
+      watchProbe.expectMessage(Done)
       terminator ! Stop
 
       receivedTerminationSignal.future.futureValue shouldEqual CustomTerminationMessage
@@ -163,7 +163,7 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
 
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage2)
-      watchProbe.expectMsg(Done)
+      watchProbe.expectMessage(Done)
       terminator ! Stop
 
       receivedTerminationSignal.future.futureValue shouldEqual CustomTerminationMessage2

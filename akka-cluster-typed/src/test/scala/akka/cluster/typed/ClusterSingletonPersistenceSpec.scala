@@ -78,7 +78,7 @@ class ClusterSingletonPersistenceSpec extends TestKit(ClusterSingletonPersistenc
       ref ! Add("b")
       ref ! Add("c")
       ref ! Get(p.ref)
-      p.expectMsg("a|b|c")
+      p.expectMessage("a|b|c")
     }
   }
 }
