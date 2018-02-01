@@ -81,7 +81,7 @@ class ClusterShardingPersistenceSpec extends TestKit("ClusterShardingPersistence
       ref ! Add("b")
       ref ! Add("c")
       ref ! Get(p.ref)
-      p.expectMsg("a|b|c")
+      p.expectMessage("a|b|c")
     }
   }
 }

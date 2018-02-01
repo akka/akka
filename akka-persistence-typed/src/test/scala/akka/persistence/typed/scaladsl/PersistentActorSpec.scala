@@ -160,7 +160,7 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       val probe = TestProbe[State]
       c ! Increment
       c ! GetValue(probe.ref)
-      probe.expectMsg(State(1, Vector(0)))
+      probe.expectMessage(State(1, Vector(0)))
     }
 
     "replay stored events" in {
@@ -171,14 +171,14 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       c ! Increment
       c ! Increment
       c ! GetValue(probe.ref)
-      probe.expectMsg(State(3, Vector(0, 1, 2)))
+      probe.expectMessage(State(3, Vector(0, 1, 2)))
 
       val c2 = spawn(counter("c2"))
       c2 ! GetValue(probe.ref)
-      probe.expectMsg(State(3, Vector(0, 1, 2)))
+      probe.expectMessage(State(3, Vector(0, 1, 2)))
       c2 ! Increment
       c2 ! GetValue(probe.ref)
-      probe.expectMsg(State(4, Vector(0, 1, 2, 3)))
+      probe.expectMessage(State(4, Vector(0, 1, 2, 3)))
     }
 
     "handle Terminated signal" in {
@@ -189,7 +189,7 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       c ! IncrementLater
       eventually {
         c ! GetValue(probe.ref)
-        probe.expectMsg(State(11, Vector(0, 1)))
+        probe.expectMessage(State(11, Vector(0, 1)))
       }
     }
 
@@ -203,7 +203,7 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       Thread.sleep(500)
       eventually {
         c ! GetValue(probe.ref)
-        probe.expectMsg(State(101, Vector(0, 1)))
+        probe.expectMessage(State(101, Vector(0, 1)))
       }
     }
 
@@ -219,10 +219,10 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
 
       c ! IncrementTwiceAndThenLog
       c ! GetValue(probe.ref)
-      probe.expectMsg(State(2, Vector(0, 1)))
+      probe.expectMessage(State(2, Vector(0, 1)))
 
-      loggingProbe.expectMsg(firstLogging)
-      loggingProbe.expectMsg(secondLogging)
+      loggingProbe.expectMessage(firstLogging)
+      loggingProbe.expectMessage(secondLogging)
     }
 
     /** Proves that side-effects are called when emitting an empty list of events */
@@ -233,8 +233,8 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       val probe = TestProbe[State]
       c ! EmptyEventsListAndThenLog
       c ! GetValue(probe.ref)
-      probe.expectMsg(State(0, Vector.empty))
-      loggingProbe.expectMsg(firstLogging)
+      probe.expectMessage(State(0, Vector.empty))
+      loggingProbe.expectMessage(firstLogging)
     }
 
     /** Proves that side-effects are called when explicitly calling Effect.none */
@@ -245,8 +245,8 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       val probe = TestProbe[State]
       c ! DoNothingAndThenLog
       c ! GetValue(probe.ref)
-      probe.expectMsg(State(0, Vector.empty))
-      loggingProbe.expectMsg(firstLogging)
+      probe.expectMessage(State(0, Vector.empty))
+      loggingProbe.expectMessage(firstLogging)
     }
 
     "work when wrapped in other behavior" in {
@@ -260,7 +260,7 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       val c = spawn(behavior)
       c ! Increment
       c ! GetValue(probe.ref)
-      probe.expectMsg(State(1, Vector(0)))
+      probe.expectMessage(State(1, Vector(0)))
     }
 
     "stop after persisting" in {
@@ -268,8 +268,8 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       val c: ActorRef[Command] = spawn(counter("c8", loggingProbe.ref))
       val watchProbe = watcher(c)
       c ! LogThenStop
-      loggingProbe.expectMsg(firstLogging)
-      watchProbe.expectMsg("Terminated")
+      loggingProbe.expectMessage(firstLogging)
+      watchProbe.expectMessage("Terminated")
     }
 
     "snapshot via predicate" in {
@@ -280,9 +280,9 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
 
       c ! Increment
       c ! GetValue(replyProbe.ref)
-      replyProbe.expectMsg(State(1, Vector(0)))
+      replyProbe.expectMessage(State(1, Vector(0)))
       c ! LogThenStop
-      watchProbe.expectMsg("Terminated")
+      watchProbe.expectMessage("Terminated")
 
       val probe = TestProbe[(State, Event)]()
       val c2 = spawn(counterWithProbe("c9", probe.ref))
@@ -290,7 +290,7 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       probe.expectNoMessage()
       c2 ! Increment
       c2 ! GetValue(replyProbe.ref)
-      replyProbe.expectMsg(State(2, Vector(0, 1)))
+      replyProbe.expectMessage(State(2, Vector(0, 1)))
     }
 
     "check all events for snapshot in PersistAll" in {
@@ -303,16 +303,16 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
 
       c ! IncrementWithPersistAll(3)
       c ! GetValue(replyProbe.ref)
-      replyProbe.expectMsg(State(3, Vector(0, 1, 2)))
+      replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
       c ! LogThenStop
-      watchProbe.expectMsg("Terminated")
+      watchProbe.expectMessage("Terminated")
 
       val probeC2 = TestProbe[(State, Event)]()
       val c2 = spawn(counterWithProbe("c11", probeC2.ref))
       // middle event triggered all to be snapshot
       probeC2.expectNoMessage()
       c2 ! GetValue(replyProbe.ref)
-      replyProbe.expectMsg(State(3, Vector(0, 1, 2)))
+      replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
     }
 
     "snapshot every N sequence nrs" in {
@@ -322,25 +322,25 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
 
       c ! Increment
       c ! GetValue(replyProbe.ref)
-      replyProbe.expectMsg(State(1, Vector(0)))
+      replyProbe.expectMessage(State(1, Vector(0)))
       c ! LogThenStop
-      watchProbe.expectMsg("Terminated")
+      watchProbe.expectMessage("Terminated")
 
       // no shapshot should have happened
       val probeC2 = TestProbe[(State, Event)]()
       val c2 = spawn(counterWithProbe("c10", probeC2.ref).snapshotEvery(2))
-      probeC2.expectMsg[(State, Event)]((State(0, Vector()), Incremented(1)))
+      probeC2.expectMessage[(State, Event)]((State(0, Vector()), Incremented(1)))
       val watchProbeC2 = watcher(c2)
       c2 ! Increment
       c2 ! LogThenStop
-      watchProbeC2.expectMsg("Terminated")
+      watchProbeC2.expectMessage("Terminated")
 
       val probeC3 = TestProbe[(State, Event)]()
       val c3 = spawn(counterWithProbe("c10", probeC3.ref).snapshotEvery(2))
       // this time it should have been snapshotted so no events to replay
       probeC3.expectNoMessage()
       c3 ! GetValue(replyProbe.ref)
-      replyProbe.expectMsg(State(2, Vector(0, 1)))
+      replyProbe.expectMessage(State(2, Vector(0, 1)))
     }
 
     "snapshot every N sequence nrs when persisting multiple events" in {
@@ -350,15 +350,15 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
 
       c ! IncrementWithPersistAll(3)
       c ! GetValue(replyProbe.ref)
-      replyProbe.expectMsg(State(3, Vector(0, 1, 2)))
+      replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
       c ! LogThenStop
-      watchProbe.expectMsg("Terminated")
+      watchProbe.expectMessage("Terminated")
 
       val probeC2 = TestProbe[(State, Event)]()
       val c2 = spawn(counterWithProbe("c12", probeC2.ref).snapshotEvery(2))
       probeC2.expectNoMessage()
       c2 ! GetValue(replyProbe.ref)
-      replyProbe.expectMsg(State(3, Vector(0, 1, 2)))
+      replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
     }
 
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {

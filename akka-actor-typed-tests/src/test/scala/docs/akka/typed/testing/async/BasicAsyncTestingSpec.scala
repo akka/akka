@@ -34,7 +34,7 @@ class BasicAsyncTestingSpec extends TestKit("BasicTestingSpec")
       val probe = TestProbe[Pong]()
       val pinger = spawn(echoActor, "ping")
       pinger ! Ping("hello", probe.ref)
-      probe.expectMsg(Pong("hello"))
+      probe.expectMessage(Pong("hello"))
       //#test-spawn
     }
 
@@ -43,7 +43,7 @@ class BasicAsyncTestingSpec extends TestKit("BasicTestingSpec")
       val probe = TestProbe[Pong]()
       val pinger = spawn(echoActor)
       pinger ! Ping("hello", probe.ref)
-      probe.expectMsg(Pong("hello"))
+      probe.expectMessage(Pong("hello"))
       //#test-spawn-anonymous
     }
   }

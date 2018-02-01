@@ -44,7 +44,7 @@ public class ManualTimerTest extends TestKit {
     scheduler.expectNoMessageFor(Duration.create(9, TimeUnit.MILLISECONDS), probe);
 
     scheduler.timePasses(Duration.create(2, TimeUnit.MILLISECONDS));
-    probe.expectMsgType(Tock.class);
+    probe.expectMessageType(Tock.class);
 
     scheduler.expectNoMessageFor(Duration.create(10, TimeUnit.SECONDS), probe);
   }

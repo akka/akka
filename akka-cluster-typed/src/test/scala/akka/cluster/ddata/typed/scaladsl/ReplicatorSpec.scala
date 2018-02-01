@@ -133,7 +133,7 @@ class ReplicatorSpec extends TestKit(ReplicatorSpec.config) with TypedAkkaSpecWi
       val probe = TestProbe[Int]
       c ! Increment
       c ! GetValue(probe.ref)
-      probe.expectMsg(1)
+      probe.expectMessage(1)
     }
 
     "have API for Subscribe" in {
@@ -145,12 +145,12 @@ class ReplicatorSpec extends TestKit(ReplicatorSpec.config) with TypedAkkaSpecWi
       c ! Increment
       eventually {
         c ! GetCachedValue(probe.ref)
-        probe.expectMsg(2)
+        probe.expectMessage(2)
       }
       c ! Increment
       eventually {
         c ! GetCachedValue(probe.ref)
-        probe.expectMsg(3)
+        probe.expectMessage(3)
       }
     }
 
@@ -161,7 +161,7 @@ class ReplicatorSpec extends TestKit(ReplicatorSpec.config) with TypedAkkaSpecWi
       val probe = TestProbe[Int]
       c ! Increment
       c ! GetValue(probe.ref)
-      probe.expectMsg(1)
+      probe.expectMessage(1)
     }
   }
 }

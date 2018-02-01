@@ -41,7 +41,7 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
       probe.expectNoMessage() // not yet
       spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
-      probe.expectMsg(Started)
+      probe.expectMessage(Started)
     }
 
     "must stop when exception from factory" in {
@@ -59,8 +59,8 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
         }
       }
       spawn(behv)
-      probe.expectMsg(Started)
-      probe.expectMsg(Pong)
+      probe.expectMessage(Started)
+      probe.expectMessage(Pong)
     }
 
     "must stop when deferred result it Stopped" in {
@@ -75,7 +75,7 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
         }
       }
       spawn(behv)
-      probe.expectMsg(Pong)
+      probe.expectMessage(Pong)
     }
 
     "must create underlying when nested" in {
@@ -87,7 +87,7 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
         }
       }
       spawn(behv)
-      probe.expectMsg(Started)
+      probe.expectMessage(Started)
     }
 
     "must un-defer underlying when wrapped by widen" in {
@@ -101,9 +101,9 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
       probe.expectNoMessage() // not yet
       val ref = spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
-      probe.expectMsg(Started)
+      probe.expectMessage(Started)
       ref ! Ping
-      probe.expectMsg(Pong)
+      probe.expectMessage(Pong)
     }
 
     "must un-defer underlying when wrapped by monitor" in {
@@ -117,10 +117,10 @@ class DeferredSpec extends TestKit with TypedAkkaSpec {
       probe.expectNoMessage() // not yet
       val ref = spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
-      probe.expectMsg(Started)
+      probe.expectMessage(Started)
       ref ! Ping
-      monitorProbe.expectMsg(Ping)
-      probe.expectMsg(Pong)
+      monitorProbe.expectMessage(Ping)
+      probe.expectMessage(Pong)
     }
   }
 }

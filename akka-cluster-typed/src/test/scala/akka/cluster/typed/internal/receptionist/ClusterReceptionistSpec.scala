@@ -112,19 +112,19 @@ class ClusterReceptionistSpec extends TestKit("ClusterReceptionistSpec", Cluster
       val regProbe2 = TestProbe[Any]()(adaptedSystem2)
 
       adaptedSystem2.receptionist ! Subscribe(PingKey, regProbe2.ref)
-      regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+      regProbe2.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
 
       val service = spawn(pingPongBehavior)
       system.receptionist ! Register(PingKey, service, regProbe.ref)
-      regProbe.expectMsg(Registered(PingKey, service))
+      regProbe.expectMessage(Registered(PingKey, service))
 
-      val Listing(PingKey, remoteServiceRefs) = regProbe2.expectMsgType[Listing[PingProtocol]]
+      val Listing(PingKey, remoteServiceRefs) = regProbe2.expectMessageType[Listing[PingProtocol]]
       val theRef = remoteServiceRefs.head
       theRef ! Ping(regProbe2.ref)
-      regProbe2.expectMsg(Pong)
+      regProbe2.expectMessage(Pong)
 
       service ! Perish
-      regProbe2.expectMsg(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+      regProbe2.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
     }
   }
 

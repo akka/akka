@@ -88,10 +88,10 @@ class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.conf
         node2.manager ! Join(node1.selfMember.address)
 
         system2 ! SpawnChild("remoteDeployed")
-        probe.expectMsgType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
+        probe.expectMessageType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
 
         system2 ! SpawnAnonymous
-        probe.expectMsgType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
+        probe.expectMessageType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
       } finally {
         TestKit.shutdown(system2, 5.seconds)
       }

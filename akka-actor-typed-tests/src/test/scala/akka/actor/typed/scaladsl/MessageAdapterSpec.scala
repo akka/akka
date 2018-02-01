@@ -76,12 +76,12 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       spawn(snitch, "snitch", Props.empty.withDispatcherFromConfig("snitch-dispatcher"))
 
-      val response1 = probe.expectMsgType[AnotherPong]
+      val response1 = probe.expectMessageType[AnotherPong]
       response1.selfName should ===("snitch")
       response1.threadName should startWith("MessageAdapterSpec-snitch-dispatcher")
 
       // and from the spawnMessageAdapter
-      val response2 = probe.expectMsgType[AnotherPong]
+      val response2 = probe.expectMessageType[AnotherPong]
       response2.selfName should ===("snitch")
       response2.threadName should startWith("MessageAdapterSpec-snitch-dispatcher")
     }
@@ -126,8 +126,8 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       spawn(snitch)
 
-      probe.expectMsg(Wrapped("1", Pong1("hello-1")))
-      probe.expectMsg(Wrapped("2", Pong2("hello-2")))
+      probe.expectMessage(Wrapped("1", Pong1("hello-1")))
+      probe.expectMessage(Wrapped("2", Pong2("hello-2")))
     }
 
     "not break if wrong/unknown response type" in {
@@ -174,9 +174,9 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
         spawn(snitch)
       }
 
-      probe.expectMsg(Wrapped("1", Pong1("hello-1")))
+      probe.expectMessage(Wrapped("1", Pong1("hello-1")))
       // hello-2 discarded because it was wrong type
-      probe.expectMsg(Wrapped("1", Pong1("hello-1")))
+      probe.expectMessage(Wrapped("1", Pong1("hello-1")))
     }
 
     "stop when exception from adapter" in {
@@ -220,14 +220,14 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
         }
       }
 
-      probe.expectMsg(Wrapped(1, Pong("hello")))
-      probe.expectMsg(Wrapped(2, Pong("hello")))
+      probe.expectMessage(Wrapped(1, Pong("hello")))
+      probe.expectMessage(Wrapped(2, Pong("hello")))
       // exception was thrown for  3
 
       // FIXME One thing to be aware of is that the supervision strategy of the Behavior is not
       // used for exceptions from adapters. Should we instead catch, log, unhandled, and resume?
       // It's kind of "before" the message arrives.
-      probe.expectMsg("stopped")
+      probe.expectMessage("stopped")
     }
 
   }

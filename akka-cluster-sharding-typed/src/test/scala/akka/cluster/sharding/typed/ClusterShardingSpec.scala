@@ -198,7 +198,7 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       (1 to 10).foreach { n ⇒
         val p = TestProbe[String]()
         ref ! ShardingEnvelope(s"test$n", ReplyPlz(p.ref))
-        p.expectMsg(3.seconds, "Hello!")
+        p.expectMessage(3.seconds, "Hello!")
         ref ! ShardingEnvelope(s"test$n", StopPlz())
       }
     }
@@ -222,7 +222,7 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       (1 to 10).foreach { n ⇒
         val p = TestProbe[String]()
         ref ! IdReplyPlz(s"test$n", p.ref)
-        p.expectMsg(3.seconds, "Hello!")
+        p.expectMessage(3.seconds, "Hello!")
         ref ! IdStopPlz(s"test$n")
       }
     }
@@ -248,10 +248,10 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       val p = TestProbe[String]()
 
       charlieRef ! WhoAreYou(p.ref)
-      p.expectMsg(3.seconds, "I'm charlie")
+      p.expectMessage(3.seconds, "I'm charlie")
 
       charlieRef tell WhoAreYou(p.ref)
-      p.expectMsg(3.seconds, "I'm charlie")
+      p.expectMessage(3.seconds, "I'm charlie")
 
       charlieRef ! StopPlz()
     }

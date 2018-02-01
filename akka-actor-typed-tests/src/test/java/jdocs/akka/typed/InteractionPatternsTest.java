@@ -308,7 +308,7 @@ public class InteractionPatternsTest extends JUnitSuite {
     bufferer.tell(msgOne);
     bufferer.tell(msgTwo);
     probe.expectNoMessage(new FiniteDuration(1, TimeUnit.MILLISECONDS));
-    probe.expectMsg(new FiniteDuration(2, TimeUnit.SECONDS),
+    probe.expectMessage(new FiniteDuration(2, TimeUnit.SECONDS),
       new Batch(Arrays.asList(msgOne, msgTwo)));
 
     Await.ready(system.terminate(), Duration.create(3, TimeUnit.SECONDS));
