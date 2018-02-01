@@ -11,7 +11,7 @@ class LeveldbJournalNoAtomicPersistMultipleEventsSpec extends JournalSpec(
   with PluginCleanup {
 
   /**
-   * Setting to false to test the single message atomic write behaviour of JournalSpec
+   * Setting to false to test the single message atomic write behavior of JournalSpec
    */
   override def supportsAtomicPersistAllOfSeveralEvents = false
 

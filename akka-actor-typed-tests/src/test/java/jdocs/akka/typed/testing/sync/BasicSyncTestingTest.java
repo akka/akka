@@ -38,7 +38,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
     }
   }
 
-  public static Behavior<Command> myBehaviour = Behaviors.immutable(Command.class)
+  public static Behavior<Command> myBehavior = Behaviors.immutable(Command.class)
     .onMessage(CreateAChild.class, (ctx, msg) -> {
       ctx.spawn(childActor, msg.childName);
       return Behaviors.same();
@@ -66,7 +66,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
   @Test
   public void testSpawning() {
     //#test-child
-    BehaviorTestkit<Command> test = BehaviorTestkit.create(myBehaviour);
+    BehaviorTestkit<Command> test = BehaviorTestkit.create(myBehavior);
     test.run(new CreateAChild("child"));
     test.expectEffect(new Effect.Spawned(childActor, "child", Props.empty()));
     //#test-child
@@ -75,7 +75,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
   @Test
   public void testSpawningAnonymous() {
     //#test-anonymous-child
-    BehaviorTestkit<Command> test = BehaviorTestkit.create(myBehaviour);
+    BehaviorTestkit<Command> test = BehaviorTestkit.create(myBehavior);
     test.run(new CreateAnAnonymousChild());
     test.expectEffect(new Effect.SpawnedAnonymous(childActor, Props.empty()));
     //#test-anonymous-child
@@ -84,7 +84,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
   @Test
   public void testRecodingMessageSend() {
     //#test-message
-    BehaviorTestkit<Command> test = BehaviorTestkit.create(myBehaviour);
+    BehaviorTestkit<Command> test = BehaviorTestkit.create(myBehavior);
     TestInbox<String> inbox = new TestInbox<String>();
     test.run(new SayHello(inbox.ref()));
     inbox.expectMsg("hello");
@@ -94,7 +94,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
   @Test
   public void testMessageToChild() {
      //#test-child-message
-     BehaviorTestkit<Command> testKit = BehaviorTestkit.create(myBehaviour);
+     BehaviorTestkit<Command> testKit = BehaviorTestkit.create(myBehavior);
      testKit.run(new SayHelloToChild("child"));
      TestInbox<String> childInbox = testKit.childInbox("child");
      childInbox.expectMsg("hello");
@@ -104,7 +104,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
   @Test
   public void testMessageToAnonymousChild() {
      //#test-child-message-anonymous
-     BehaviorTestkit<Command> testKit = BehaviorTestkit.create(myBehaviour);
+     BehaviorTestkit<Command> testKit = BehaviorTestkit.create(myBehavior);
      testKit.run(new SayHelloToAnonymousChild());
      // Anonymous actors are created as: $a $b etc
      TestInbox<String> childInbox = testKit.childInbox("$a");

@@ -1,6 +1,6 @@
 # Testing streams
 
-Verifying behaviour of Akka Stream sources, flows and sinks can be done using
+Verifying behavior of Akka Stream sources, flows and sinks can be done using
 various code patterns and libraries. Here we will discuss testing these
 elements using:
 
@@ -124,7 +124,7 @@ Scala
 Java
 :   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #test-source-probe }
 
-You can also inject exceptions and test sink behaviour on error conditions.
+You can also inject exceptions and test sink behavior on error conditions.
 
 Scala
 :   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #injecting-failure }

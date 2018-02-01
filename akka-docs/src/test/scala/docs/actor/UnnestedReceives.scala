@@ -40,7 +40,7 @@ class UnnestedReceives extends Actor {
         case 'GoAhead ⇒ //When we get the GoAhead signal we process all our buffered messages/events
           queue foreach process
           queue.clear
-          become { //Then we change behaviour to process incoming messages/events as they arrive
+          become { //Then we change behavior to process incoming messages/events as they arrive
             case msg ⇒ process(msg)
           }
         case msg ⇒ //While we haven't gotten the GoAhead signal, buffer all incoming messages

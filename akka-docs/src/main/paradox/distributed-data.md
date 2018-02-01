@@ -498,7 +498,7 @@ There is a special version of `ORMultiMap`, created by using separate constructo
 This means that the `ORMultiMap` initiated with `ORMultiMap.emptyWithValueDeltas` propagates its updates as pairs
 consisting of delta of the key and delta of the value. It is much more efficient in terms of network bandwith consumed.
 
-However, this behaviour has not been made default for `ORMultiMap` and if you wish to use it in your code, you
+However, this behavior has not been made default for `ORMultiMap` and if you wish to use it in your code, you
 need to replace invocations of `ORMultiMap.empty[A, B]` (or `ORMultiMap()`) with `ORMultiMap.emptyWithValueDeltas[A, B]`
 where `A` and `B` are types respectively of keys and values in the map.
 

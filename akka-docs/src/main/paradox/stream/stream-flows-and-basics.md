@@ -185,7 +185,7 @@ specification, which Akka is a founding member of.
 
 The user of the library does not have to write any explicit back-pressure handling code — it is built in
 and dealt with automatically by all of the provided Akka Streams processing stages. It is possible however to add
-explicit buffer stages with overflow strategies that can influence the behaviour of the stream. This is especially important
+explicit buffer stages with overflow strategies that can influence the behavior of the stream. This is especially important
 in complex processing graphs which may even contain loops (which *must* be treated with very special
 care, as explained in @ref:[Graph cycles, liveness and deadlocks](stream-graphs.md#graph-cycles)).
 

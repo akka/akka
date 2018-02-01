@@ -111,9 +111,9 @@ trait TestKitBase {
   def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
     Await.result(system ? (SpawnActor(name, behavior, _, props)), timeoutDuration)
 
-  def systemActor[T](behaviour: Behavior[T], name: String): ActorRef[T] =
-    Await.result(system.systemActorOf(behaviour, name), timeoutDuration)
+  def systemActor[T](behavior: Behavior[T], name: String): ActorRef[T] =
+    Await.result(system.systemActorOf(behavior, name), timeoutDuration)
 
-  def systemActor[T](behaviour: Behavior[T]): ActorRef[T] =
-    Await.result(system.systemActorOf(behaviour, childName.next()), timeoutDuration)
+  def systemActor[T](behavior: Behavior[T]): ActorRef[T] =
+    Await.result(system.systemActorOf(behavior, childName.next()), timeoutDuration)
 }
