@@ -6,13 +6,17 @@ future accesses for the same key (as long as the respective entry has not expire
 See @ref[caching](../../../common/caching.md) for an introduction to how the
 caching support works.
 
-To enable caching support add a library dependency onto:
+## Dependency
 
-@@dependency [sbt,Gradle,Maven] {
+To use Akka HTTP Caching, add the module to your project:
+
+@@dependency[sbt,Gradle,Maven] {
   group="com.typesafe.akka"
   artifact="akka-http-caching_$scala.binary.version$"
   version="$project.version$"
 }
+
+## Imports
 
 Directives are available by importing:
 

@@ -13,7 +13,9 @@ time-based entry expiration.
 
  [Caffeine]: https://github.com/ben-manes/caffeine/
 
-To enable caching support add a library dependency onto:
+## Dependency
+
+To use Akka HTTP Caching, add the module to your project:
 
 @@dependency [sbt,Gradle,Maven] {
   group="com.typesafe.akka"
