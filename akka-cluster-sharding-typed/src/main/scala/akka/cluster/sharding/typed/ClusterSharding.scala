@@ -3,24 +3,23 @@
  */
 package akka.cluster.sharding.typed
 
-import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-import akka.actor.typed.Behavior.UntypedBehavior
-import akka.actor.typed.internal.adapter.ActorRefAdapter
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.actor.typed.Behavior.UntypedBehavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.actor.typed.Props
+import akka.actor.typed.internal.adapter.ActorRefAdapter
+import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
-import akka.cluster.sharding.{ ClusterSharding ⇒ UntypedClusterSharding }
-import akka.cluster.sharding.{ ShardRegion ⇒ UntypedShardRegion }
+import akka.cluster.sharding.ShardRegion
+import akka.cluster.sharding.ShardRegion.{ StartEntity ⇒ UntypedStartEntity }
 import akka.cluster.typed.Cluster
 import akka.event.Logging
 import akka.event.LoggingAdapter
@@ -44,8 +43,10 @@ object StartEntity {
    * Returns [[ShardingEnvelope]] which can be sent via Cluster Sharding in order to wake up the
    * specified (by `entityId`) Sharded Entity, ''without'' delivering a real message to it.
    */
-  def apply[A](entityId: String): ShardingEnvelope[A] =
-    new ShardingEnvelope[A](entityId, null.asInstanceOf[A]) // TODO should we instead sub-class here somehow?
+  def apply[A](entityId: String): ShardingEnvelope[A] = {
+    // StartEntity isn't really of type A, but erased and StartEntity is only handled internally, not delivered to the entity
+    new ShardingEnvelope[A](entityId, UntypedStartEntity(entityId).asInstanceOf[A])
+  }
 
   /**
    * Java API
@@ -91,7 +92,7 @@ object ShardingMessageExtractor {
  *           envelope.
  * @tparam A The type of message accepted by the entity actor
  */
-trait ShardingMessageExtractor[E, A] {
+abstract class ShardingMessageExtractor[E, A] {
 
   /**
    * Extract the entity id from an incoming `message`. If `null` is returned
@@ -100,19 +101,16 @@ trait ShardingMessageExtractor[E, A] {
   def entityId(message: E): String
 
   /**
-   * Extract the entity id from an incoming `message`. Only messages that passed the [[entityId]]
+   * The shard identifier for a given entity id. Only messages that passed the [[ShardingMessageExtractor#entityId]]
    * function will be used as input to this function.
    */
-  def shardId(message: E): String
+  def shardId(entityId: String): String
 
   /**
    * Extract the message to send to the entity from an incoming `message`.
    * Note that the extracted message does not have to be the same as the incoming
    * message to support wrapping in message envelope that is unwrapped before
    * sending to the entity actor.
-   *
-   * If the returned value is `null`, and the entity isn't running yet the entity will be started
-   * but no message will be delivered to it.
    */
   def unwrapMessage(message: E): A
 
@@ -136,9 +134,9 @@ final class HashCodeMessageExtractor[A](
   override val handOffStopMessage: A)
   extends ShardingMessageExtractor[ShardingEnvelope[A], A] {
 
-  def entityId(envelope: ShardingEnvelope[A]): String = envelope.entityId
-  def unwrapMessage(envelope: ShardingEnvelope[A]): A = envelope.message
-  def shardId(envelope: ShardingEnvelope[A]): String = (math.abs(envelope.entityId.hashCode) % maxNumberOfShards).toString
+  override def entityId(envelope: ShardingEnvelope[A]): String = envelope.entityId
+  override def shardId(entityId: String): String = (math.abs(entityId.hashCode) % maxNumberOfShards).toString
+  override def unwrapMessage(envelope: ShardingEnvelope[A]): A = envelope.message
 }
 
 /**
@@ -153,14 +151,46 @@ abstract class HashCodeNoEnvelopeMessageExtractor[A](
   val maxNumberOfShards:           Int,
   override val handOffStopMessage: A)
   extends ShardingMessageExtractor[A, A] {
-  final def unwrapMessage(message: A): A = message
-  def shardId(message: A): String = {
-    val id = entityId(message)
-    if (id != null) (math.abs(id.hashCode) % maxNumberOfShards).toString
-    else null
-  }
+
+  override def shardId(entityId: String): String = (math.abs(entityId.hashCode) % maxNumberOfShards).toString
+  override final def unwrapMessage(message: A): A = message
 
   override def toString = s"HashCodeNoEnvelopeMessageExtractor($maxNumberOfShards)"
+}
+
+/**
+ * INTERNAL API
+ * Extracts entityId and unwraps ShardingEnvelope and StartEntity messages.
+ * Other messages are delegated to the given `ShardingMessageExtractor`.
+ */
+@InternalApi private[akka] class ExtractorAdapter[E, A](delegate: ShardingMessageExtractor[E, A])
+  extends ShardingMessageExtractor[Any, A] {
+  override def entityId(message: Any): String = {
+    message match {
+      case ShardingEnvelope(entityId, _) ⇒ entityId //also covers UntypedStartEntity in ShardingEnvelope
+      case UntypedStartEntity(entityId)  ⇒ entityId
+      case msg: E @unchecked             ⇒ delegate.entityId(msg)
+    }
+  }
+
+  override def shardId(entityId: String): String = delegate.shardId(entityId)
+
+  override def unwrapMessage(message: Any): A = {
+    message match {
+      case ShardingEnvelope(_, msg: A @unchecked) ⇒
+        //also covers UntypedStartEntity in ShardingEnvelope
+        msg
+      case msg: UntypedStartEntity ⇒
+        // not really of type A, but erased and StartEntity is only handled internally, not delivered to the entity
+        msg.asInstanceOf[A]
+      case msg: E @unchecked ⇒
+        delegate.unwrapMessage(msg)
+    }
+  }
+
+  override def handOffStopMessage: A = delegate.handOffStopMessage
+
+  override def toString: String = delegate.toString
 }
 
 /**
@@ -247,6 +277,19 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
 
     val untypedSettings = ClusterShardingSettings.toUntypedSettings(settings)
 
+    val extractorAdapter = new ExtractorAdapter(extractor)
+    val extractEntityId: ShardRegion.ExtractEntityId = {
+      // TODO is it possible to avoid the double evaluation of entityId
+      case message if extractorAdapter.entityId(message) != null ⇒
+        (extractorAdapter.entityId(message), extractorAdapter.unwrapMessage(message))
+    }
+    val extractShardId: ShardRegion.ExtractShardId = { message ⇒
+      extractorAdapter.entityId(message) match {
+        case null ⇒ null
+        case eid  ⇒ extractorAdapter.shardId(eid)
+      }
+    }
+
     val ref =
       if (settings.shouldHostShard(cluster)) {
         log.info("Starting Shard Region [{}]...", typeKey.name)
@@ -260,7 +303,8 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
           typeKey.name,
           untypedProps,
           untypedSettings,
-          extractor, extractor,
+          extractEntityId,
+          extractShardId,
           defaultShardAllocationStrategy(settings),
           extractor.handOffStopMessage)
       } else {
@@ -269,9 +313,9 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
         untypedSharding.startProxy(
           typeKey.name,
           settings.role,
-          dataCenter = None, // TODO what about the multi-dc value here?
-          extractShardId = extractor,
-          extractEntityId = extractor)
+          dataCenter = None, // TODO what about the multi-dc value here? issue #23689
+          extractEntityId,
+          extractShardId)
       }
 
     ActorRefAdapter(ref)
@@ -287,19 +331,6 @@ final class AdaptedClusterShardingImpl(system: ActorSystem[_]) extends ClusterSh
     new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
   }
 
-  // --- extractor conversions ---
-  @InternalApi
-  private implicit def convertExtractEntityId[E, A](extractor: ShardingMessageExtractor[E, A]): UntypedShardRegion.ExtractEntityId = {
-    // TODO what if msg was null
-    case msg: E @unchecked if extractor.entityId(msg) ne null ⇒
-      // we're evaluating entityId twice, I wonder if we could do it just once (same was in old sharding's Java DSL)
-
-      (extractor.entityId(msg), extractor.unwrapMessage(msg))
-  }
-  @InternalApi
-  private implicit def convertExtractShardId[E, A](extractor: ShardingMessageExtractor[E, A]): UntypedShardRegion.ExtractShardId = {
-    case msg: E @unchecked ⇒ extractor.shardId(msg)
-  }
 }
 
 @DoNotInherit
