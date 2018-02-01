@@ -111,8 +111,8 @@ class ClusterSingletonApiSpec extends TestKit("ClusterSingletonApiSpec", Cluster
       clusterNode1.manager ! Join(clusterNode1.selfMember.address)
       clusterNode2.manager ! Join(clusterNode1.selfMember.address)
 
-      node1UpProbe.expectMsgType[SelfUp]
-      node2UpProbe.expectMsgType[SelfUp]
+      node1UpProbe.expectMessageType[SelfUp]
+      node2UpProbe.expectMessageType[SelfUp]
 
       val cs1: ClusterSingleton = ClusterSingleton(system)
       val cs2 = ClusterSingleton(adaptedSystem2)
@@ -130,12 +130,12 @@ class ClusterSingletonApiSpec extends TestKit("ClusterSingletonApiSpec", Cluster
 
       node1PongProbe.awaitAssert({
         node1ref ! Ping(node1PongProbe.ref)
-        node1PongProbe.expectMsg(Pong)
+        node1PongProbe.expectMessage(Pong)
       }, 3.seconds)
 
       node2PongProbe.awaitAssert({
         node2ref ! Ping(node2PongProbe.ref)
-        node2PongProbe.expectMsg(Pong)
+        node2PongProbe.expectMessage(Pong)
       }, 3.seconds)
 
     }

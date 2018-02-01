@@ -134,7 +134,7 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       val frontend = spawn(Frontend.translator(backend))
       val probe = TestProbe[URI]()
       frontend ! Frontend.Translate(new URI("https://akka.io/docs/"), probe.ref)
-      probe.expectMsg(new URI("https://akka.io/docs/sv/"))
+      probe.expectMessage(new URI("https://akka.io/docs/sv/"))
 
     }
 
@@ -187,6 +187,6 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
     bufferer ! ExcitingMessage("one")
     bufferer ! ExcitingMessage("two")
     probe.expectNoMessage(1.millisecond)
-    probe.expectMsg(2.seconds, Batch(Vector[Msg](ExcitingMessage("one"), ExcitingMessage("two"))))
+    probe.expectMessage(2.seconds, Batch(Vector[Msg](ExcitingMessage("one"), ExcitingMessage("two"))))
   }
 }

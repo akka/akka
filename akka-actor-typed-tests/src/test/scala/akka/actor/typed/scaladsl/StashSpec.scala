@@ -208,11 +208,11 @@ abstract class StashSpec extends TestKit with TypedAkkaSpecWithShutdown {
       actor ! Msg("e")
       actor ! Msg("f")
       actor ! GetStashSize(sizeProbe.ref)
-      sizeProbe.expectMsg(3)
+      sizeProbe.expectMessage(3)
 
       actor ! UnstashAll
       actor ! GetProcessed(probe.ref)
-      probe.expectMsg(Vector("a", "b", "c", "d", "e", "f"))
+      probe.expectMessage(Vector("a", "b", "c", "d", "e", "f"))
     }
 
     "support unstash a few at a time" in {
@@ -229,12 +229,12 @@ abstract class StashSpec extends TestKit with TypedAkkaSpecWithShutdown {
       actor ! Msg("e")
       actor ! Msg("f")
       actor ! GetStashSize(sizeProbe.ref)
-      sizeProbe.expectMsg(3)
+      sizeProbe.expectMessage(3)
 
       actor ! Unstash
       actor ! Msg("g") // might arrive in the middle of the unstashing
       actor ! GetProcessed(probe.ref) // this is also stashed until all unstashed
-      probe.expectMsg(Vector("a", "b", "c", "d", "e", "f", "g"))
+      probe.expectMessage(Vector("a", "b", "c", "d", "e", "f", "g"))
     }
 
   }

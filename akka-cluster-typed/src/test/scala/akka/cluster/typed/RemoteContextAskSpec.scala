@@ -95,7 +95,7 @@ class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with Typ
       node1.manager ! Join(node1.selfMember.address)
 
       Receptionist(system).ref ! Receptionist.Subscribe(pingPongKey, node1Probe.ref)
-      node1Probe.expectMsgType[Receptionist.Listing[_]]
+      node1Probe.expectMessageType[Receptionist.Listing[_]]
 
       val system2 = ActorSystem(pingPong, system.name, system.settings.config)
       val node2 = Cluster(system2)
@@ -103,10 +103,10 @@ class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with Typ
 
       val node2Probe = TestProbe[AnyRef]()(system2)
       Receptionist(system2).ref ! Receptionist.Register(pingPongKey, system2, node2Probe.ref)
-      node2Probe.expectMsgType[Registered[_]]
+      node2Probe.expectMessageType[Registered[_]]
 
       // wait until the service is seen on the first node
-      val remoteRef = node1Probe.expectMsgType[Receptionist.Listing[Ping]].serviceInstances.head
+      val remoteRef = node1Probe.expectMessageType[Receptionist.Listing[Ping]].serviceInstances.head
 
       spawn(Behaviors.deferred[AnyRef] { (ctx) ⇒
         implicit val timeout: Timeout = 3.seconds
@@ -122,7 +122,7 @@ class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with Typ
         }
       })
 
-      node1Probe.expectMsgType[Pong.type]
+      node1Probe.expectMessageType[Pong.type]
 
     }
 

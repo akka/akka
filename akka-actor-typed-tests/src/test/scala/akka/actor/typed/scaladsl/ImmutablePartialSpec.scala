@@ -25,7 +25,7 @@ class ImmutablePartialSpec extends TestKit with TypedAkkaSpecWithShutdown {
       probe.expectNoMessage()
 
       actor ! Command2
-      probe.expectMsg(Command2)
+      probe.expectMessage(Command2)
     }
   }
 

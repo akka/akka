@@ -24,7 +24,7 @@ final class OnSignalSpec extends TestKit with TypedAkkaSpecWithShutdown {
           }
         }
       spawn[Nothing](behavior)
-      probe.expectMsg(Done)
+      probe.expectMessage(Done)
     }
   }
 }

@@ -95,30 +95,30 @@ class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with 
 
         val serviceA = spawn(stoppableBehavior.narrow[ServiceA])
         receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
-        regProbe.expectMsg(Registered(ServiceKeyA, serviceA))
+        regProbe.expectMessage(Registered(ServiceKeyA, serviceA))
 
         val serviceB = spawn(stoppableBehavior.narrow[ServiceB])
         receptionist ! Register(ServiceKeyB, serviceB, regProbe.ref)
-        regProbe.expectMsg(Registered(ServiceKeyB, serviceB))
+        regProbe.expectMessage(Registered(ServiceKeyB, serviceB))
 
         val serviceC = spawn(stoppableBehavior)
         receptionist ! Register(ServiceKeyA, serviceC, regProbe.ref)
         receptionist ! Register(ServiceKeyB, serviceC, regProbe.ref)
-        regProbe.expectMsg(Registered(ServiceKeyA, serviceC))
-        regProbe.expectMsg(Registered(ServiceKeyB, serviceC))
+        regProbe.expectMessage(Registered(ServiceKeyA, serviceC))
+        regProbe.expectMessage(Registered(ServiceKeyB, serviceC))
 
         receptionist ! Find(ServiceKeyA, regProbe.ref)
-        regProbe.expectMsg(Listing(ServiceKeyA, Set(serviceA, serviceC)))
+        regProbe.expectMessage(Listing(ServiceKeyA, Set(serviceA, serviceC)))
         receptionist ! Find(ServiceKeyB, regProbe.ref)
-        regProbe.expectMsg(Listing(ServiceKeyB, Set(serviceB, serviceC)))
+        regProbe.expectMessage(Listing(ServiceKeyB, Set(serviceB, serviceC)))
 
         serviceC ! Stop
 
         eventually {
           receptionist ! Find(ServiceKeyA, regProbe.ref)
-          regProbe.expectMsg(Listing(ServiceKeyA, Set(serviceA)))
+          regProbe.expectMessage(Listing(ServiceKeyA, Set(serviceA)))
           receptionist ! Find(ServiceKeyB, regProbe.ref)
-          regProbe.expectMsg(Listing(ServiceKeyB, Set(serviceB)))
+          regProbe.expectMessage(Listing(ServiceKeyB, Set(serviceB)))
         }
       }
     }
@@ -130,24 +130,24 @@ class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with 
         val aSubscriber = TestProbe[Listing[ServiceA]]("aUser")
         receptionist ! Subscribe(ServiceKeyA, aSubscriber.ref)
 
-        aSubscriber.expectMsg(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+        aSubscriber.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
 
         val serviceA: ActorRef[ServiceA] = spawn(stoppableBehavior)
         receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
-        regProbe.expectMsg(Registered(ServiceKeyA, serviceA))
+        regProbe.expectMessage(Registered(ServiceKeyA, serviceA))
 
-        aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA)))
+        aSubscriber.expectMessage(Listing(ServiceKeyA, Set(serviceA)))
 
         val serviceA2: ActorRef[ServiceA] = spawn(stoppableBehavior)
         receptionist ! Register(ServiceKeyA, serviceA2, regProbe.ref)
-        regProbe.expectMsg(Registered(ServiceKeyA, serviceA2))
+        regProbe.expectMessage(Registered(ServiceKeyA, serviceA2))
 
-        aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA, serviceA2)))
+        aSubscriber.expectMessage(Listing(ServiceKeyA, Set(serviceA, serviceA2)))
 
         serviceA ! Stop
-        aSubscriber.expectMsg(Listing(ServiceKeyA, Set(serviceA2)))
+        aSubscriber.expectMessage(Listing(ServiceKeyA, Set(serviceA2)))
         serviceA2 ! Stop
-        aSubscriber.expectMsg(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+        aSubscriber.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
       }
     }
 
@@ -161,7 +161,7 @@ class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with 
     "be present in the system" in {
       val probe = TestProbe[Receptionist.Listing[_]]()
       system.receptionist ! Find(ServiceKeyA)(probe.ref)
-      val listing: Listing[_] = probe.expectMsgType[Listing[_]]
+      val listing: Listing[_] = probe.expectMessageType[Listing[_]]
       listing.serviceInstances should be(Set())
     }
   }

@@ -41,9 +41,9 @@ final class GracefulStopSpec extends TestKit with TypedAkkaSpecWithShutdown {
         }
 
       spawn(behavior)
-      probe.expectMsg("child-done")
-      probe.expectMsg("child-done")
-      probe.expectMsg("parent-done")
+      probe.expectMessage("child-done")
+      probe.expectMessage("child-done")
+      probe.expectMessage("parent-done")
     }
 
     "properly perform the cleanup and stop itself for no children case" in {
@@ -63,7 +63,7 @@ final class GracefulStopSpec extends TestKit with TypedAkkaSpecWithShutdown {
         }
 
       spawn(behavior)
-      probe.expectMsg(Done)
+      probe.expectMessage(Done)
     }
   }
 

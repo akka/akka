@@ -31,7 +31,7 @@ class ManualTimerSpec extends TestKit(ManualTime.config) with ManualTime with Wo
       scheduler.expectNoMessageFor(9.millis, probe)
 
       scheduler.timePasses(2.millis)
-      probe.expectMsg(Tock)
+      probe.expectMessage(Tock)
 
       scheduler.expectNoMessageFor(10.seconds, probe)
     }
@@ -56,7 +56,7 @@ class ManualTimerSpec extends TestKit(ManualTime.config) with ManualTime with Wo
         scheduler.expectNoMessageFor(9.millis, probe)
 
         scheduler.timePasses(1.milli)
-        probe.expectMsg(Tock)
+        probe.expectMessage(Tock)
       }
     }
 
@@ -88,14 +88,14 @@ class ManualTimerSpec extends TestKit(ManualTime.config) with ManualTime with Wo
       val ref = spawn(behavior)
 
       scheduler.timePasses(11.millis)
-      probe.expectMsg(Tock(1))
+      probe.expectMessage(Tock(1))
 
       // next Tock(1) enqueued in mailboxed, but should be discarded because of new timer
       ref ! SlowThenBump(2)
       scheduler.expectNoMessageFor(interval, probe)
 
       scheduler.timePasses(interval)
-      probe.expectMsg(Tock(2))
+      probe.expectMessage(Tock(2))
     }
 
     //#manual-scheduling-simple

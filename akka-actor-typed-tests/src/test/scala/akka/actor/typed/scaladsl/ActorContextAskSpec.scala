@@ -65,7 +65,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
 
       spawn(snitch, "snitch", Props.empty.withDispatcherFromConfig("snitch-dispatcher"))
 
-      val pong = probe.expectMsgType[Pong]
+      val pong = probe.expectMessageType[Pong]
 
       pong.selfName should ===("snitch1")
       pong.threadName should startWith("ActorContextAskSpec-snitch-dispatcher")
@@ -109,7 +109,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
       }
 
       // the exception should cause a failure which should stop the actor
-      probe.expectMsg("stopped")
+      probe.expectMessage("stopped")
     }
 
     "deal with timeouts in ask" in {
@@ -134,7 +134,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
         }
       }
 
-      probe.expectMsgType[TimeoutException]
+      probe.expectMessageType[TimeoutException]
 
     }
 

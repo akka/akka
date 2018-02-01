@@ -42,7 +42,7 @@ class ActorSourceSinkSpec extends TestKit with TypedAkkaSpecWithShutdown {
       val msg = "Zug zug"
 
       in.offer(msg)
-      p.expectMsg(msg + "!")
+      p.expectMessage(msg + "!")
     }
 
     "obey protocol" in {
@@ -72,16 +72,16 @@ class ActorSourceSinkSpec extends TestKit with TypedAkkaSpecWithShutdown {
           .to(ActorSink.actorRefWithAck(pilotRef, Msg.apply, Init.apply, "ACK", Complete, _ ⇒ Failed))
           .run()
 
-      p.expectMsgType[Init]
+      p.expectMessageType[Init]
 
       in.offer("Dabu!")
-      p.expectMsgType[Msg].msg shouldBe "Dabu!"
+      p.expectMessageType[Msg].msg shouldBe "Dabu!"
 
       in.offer("Lok'tar!")
-      p.expectMsgType[Msg].msg shouldBe "Lok'tar!"
+      p.expectMessageType[Msg].msg shouldBe "Lok'tar!"
 
       in.offer("Swobu!")
-      p.expectMsgType[Msg].msg shouldBe "Swobu!"
+      p.expectMessageType[Msg].msg shouldBe "Swobu!"
     }
   }
 
