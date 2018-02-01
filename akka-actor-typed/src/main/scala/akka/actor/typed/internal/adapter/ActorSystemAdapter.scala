@@ -29,6 +29,7 @@ import scala.compat.java8.FutureConverters
  */
 @InternalApi private[akka] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
   extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] with ExtensionsImpl {
+  untyped.assertInitialized()
 
   import ActorRefAdapter.sendSystemMessage
 
