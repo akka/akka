@@ -9,6 +9,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.typed.TestKit
+import akka.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
 import org.scalatest.concurrent.ScalaFutures
 
@@ -41,6 +42,8 @@ class AskSpec extends TestKit("AskSpec") with TypedAkkaSpec with ScalaFutures {
     "must fail the future if the actor is already terminated" in {
       val ref = spawn(behavior)
       (ref ? Stop).futureValue
+      val probe = TestProbe()
+      probe.expectTerminated(ref, probe.remainingOrDefault)
       val answer = ref ? Foo("bar")
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
