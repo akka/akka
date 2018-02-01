@@ -21,9 +21,9 @@ object ShardingCompileOnlySpec {
   final case class GetValue(replyTo: ActorRef[Int]) extends CounterCommand
   case object GoodByeCounter extends CounterCommand
 
-  def counter(value: Int): Behavior[CounterCommand] = Behaviors.immutable[CounterCommand] {
+  def counter(entityId: String, value: Int): Behavior[CounterCommand] = Behaviors.immutable[CounterCommand] {
     case (ctx, Increment) ⇒
-      counter(value + 1)
+      counter(entityId, value + 1)
     case (ctx, GetValue(replyTo)) ⇒
       replyTo ! value
       Behaviors.same
@@ -34,7 +34,7 @@ object ShardingCompileOnlySpec {
   val TypeKey = EntityTypeKey[CounterCommand]("Counter")
   // if a extractor is defined then the type would be ActorRef[BasicCommand]
   val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] = sharding.spawn[CounterCommand](
-    behavior = counter(0),
+    behavior = entityId ⇒ counter(entityId, 0),
     props = Props.empty,
     typeKey = TypeKey,
     settings = ClusterShardingSettings(system),
@@ -54,7 +54,7 @@ object ShardingCompileOnlySpec {
   //#persistence
   val ShardingTypeName = EntityTypeKey[BlogCommand]("BlogPost")
   ClusterSharding(system).spawn[BlogCommand](
-    behavior = InDepthPersistentBehaviorSpec.behavior,
+    behavior = _ ⇒ InDepthPersistentBehaviorSpec.behavior,
     props = Props.empty,
     typeKey = ShardingTypeName,
     settings = ClusterShardingSettings(system),
@@ -68,7 +68,7 @@ object ShardingCompileOnlySpec {
   val singletonManager = ClusterSingleton(system)
   // Start if needed and provide a proxy to a named singleton
   val proxy: ActorRef[CounterCommand] = singletonManager.spawn(
-    behavior = counter(0),
+    behavior = counter("TheCounter", 0),
     "GlobalCounter",
     Props.empty,
     ClusterSingletonSettings(system),

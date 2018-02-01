@@ -163,24 +163,24 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       Behaviors.same
   }
 
-  val shardingRef1 = sharding.spawn(
-    behavior,
+  val shardingRef1: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.spawn[TestProtocol](
+    _ ⇒ behavior,
     Props.empty,
     typeKey,
     ClusterShardingSettings(system),
     10,
     StopPlz())
 
-  val shardingRef2 = sharding2.spawn(
-    behavior,
+  val shardingRef2 = sharding2.spawn[TestProtocol](
+    _ ⇒ behavior,
     Props.empty,
     typeKey,
     ClusterShardingSettings(system2),
     10,
     StopPlz())
 
-  val shardingRef3 = sharding.spawn(
-    behaviorWithId,
+  val shardingRef3: ActorRef[IdTestProtocol] = sharding.spawn3[IdTestProtocol, IdTestProtocol](
+    _ ⇒ behaviorWithId,
     Props.empty,
     typeKey2,
     ClusterShardingSettings(system),
@@ -190,8 +190,8 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
     })
 
-  val shardingRef4 = sharding2.spawn(
-    behaviorWithId,
+  val shardingRef4 = sharding2.spawn3[IdTestProtocol, IdTestProtocol](
+    _ ⇒ behaviorWithId,
     Props.empty,
     typeKey2,
     ClusterShardingSettings(system2),
