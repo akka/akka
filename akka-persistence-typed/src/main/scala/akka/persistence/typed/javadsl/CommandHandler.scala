@@ -26,7 +26,7 @@ trait CommandToEffect[Command, MsgCommand <: Command, Event, State] {
 
 //FIXME docs
 object CommandHandlerBuilder {
-  def commandHandlerBuilder[Command, Event, State](rootCommandClass: Class[Command]): CommandHandlerBuilder[Command, Event, State] =
+  def builder[Command, Event, State](rootCommandClass: Class[Command]): CommandHandlerBuilder[Command, Event, State] =
     new CommandHandlerBuilder[Command, Event, State](rootCommandClass)
 }
 

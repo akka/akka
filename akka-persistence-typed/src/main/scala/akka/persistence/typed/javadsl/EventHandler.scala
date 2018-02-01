@@ -12,6 +12,11 @@ trait EventHandler[Event, State] {
   def apply(state: State, event: Event): State
 }
 
+object EventHandlerBuilder {
+  def builder[Event, State >: Null](rootEventClass: Class[Event]): EventHandlerBuilder[Event, State] =
+    new EventHandlerBuilder[Event, State](rootEventClass)
+}
+
 final class EventHandlerBuilder[Event, State >: Null](rootEventClass: Class[Event]) {
 
   private final case class EventHandlerCase(predicate: Event ⇒ Boolean, handler: BiFunction[State, Event, State])

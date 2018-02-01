@@ -43,4 +43,8 @@ object Effect {
   /** Convenience method to register a side effect with just a callback function */
   final def andThen(callback: japi.Procedure[State]): Effect[Event, State] =
     CompositeEffect(this, SideEffect[Event, State](s ⇒ callback.apply(s)))
+
+  /** Convenience method to register a side effect that doesn't need access to state */
+  final def andThen(callback: japi.Effect): Effect[Event, State] =
+    CompositeEffect(this, SideEffect[Event, State]((_: State) ⇒ callback.apply()))
 }

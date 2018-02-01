@@ -3,6 +3,8 @@
  */
 package akka.persistence.typed.javadsl
 
+import java.util.function.BiConsumer
+
 import akka.actor.typed.Behavior.UntypedBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.{ DoNotInherit, InternalApi }
@@ -36,8 +38,8 @@ class PersistentBehavior[Command, Event, State](
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: japi.Function2[ActorContext[Command], State, Unit]): PersistentBehavior[Command, Event, State] =
-    copy(recoveryCompleted = (ctx, s) ⇒ callback.apply(ctx.asJava, s))
+  def onRecoveryCompleted(callback: BiConsumer[ActorContext[Command], State]): PersistentBehavior[Command, Event, State] =
+    copy(recoveryCompleted = (ctx, s) ⇒ callback.accept(ctx.asJava, s))
 
   /**
    * Initiates a snapshot if the given function returns true.

@@ -17,7 +17,7 @@ import scala.util.Success
  * Actor instance. Sending a message to an Actor that has terminated before
  * receiving the message will lead to that message being discarded; such
  * messages are delivered to the [[DeadLetter]] channel of the
- * [[EventStream]] on a best effort basis
+ * [[akka.event.EventStream]] on a best effort basis
  * (i.e. this delivery is not reliable).
  */
 trait ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] with java.io.Serializable {
