@@ -660,6 +660,11 @@ trait TestKitBase {
     expectNoMsg_internal(max)
   }
 
+  /**
+   * Same as `expectNoMessage(remainingOrDefault)`, but correctly treating the timeFactor.
+   */
+  def expectNoMessage() { expectNoMsg_internal(remainingOrDefault) }
+
   private def expectNoMsg_internal(max: FiniteDuration) {
     val finish = System.nanoTime() + max.toNanos
     val pollInterval = 100.millis
