@@ -286,8 +286,8 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
     val probe = TestProbe[AnyRef]("evt")
     def behv = supervise(deferred[Command] { _ ⇒
       probe.ref ! StartFailed
-      throw new RuntimeException("construction failed")
-    }).onFailure[TE](strategy)
+      throw new TE("construction failed")
+    }).onFailure[IllegalArgumentException](strategy)
   }
 
   "A supervised actor" must {

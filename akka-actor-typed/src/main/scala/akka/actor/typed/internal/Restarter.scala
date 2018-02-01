@@ -58,8 +58,6 @@ import scala.util.control.NonFatal
    * Invoked when the actor is created (or re-created on restart) this is where a restarter implementation
    * can provide logic for dealing with exceptions thrown when running any actor initialization logic (undeferring).
    *
-   * FIXME: there is something with nested supervisors and init/undefer that I'm missing here, figure out what
-   *
    * @return The initial behavior of the actor after undeferring if needed
    */
   def init(ctx: ActorContext[T]): Supervisor[T, Thr]
