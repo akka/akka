@@ -175,7 +175,7 @@ object ActorSystem {
 
   /**
    * Java API: Shortcut for creating an actor system with custom bootstrap settings.
-   * Same behaviour as calling `ActorSystem.create(name, ActorSystemSetup.create(bootstrapSettings))`
+   * Same behavior as calling `ActorSystem.create(name, ActorSystemSetup.create(bootstrapSettings))`
    */
   def create(name: String, bootstrapSetup: BootstrapSetup): ActorSystem =
     create(name, ActorSystemSetup.create(bootstrapSetup))
@@ -247,7 +247,7 @@ object ActorSystem {
 
   /**
    * Scala API: Shortcut for creating an actor system with custom bootstrap settings.
-   * Same behaviour as calling `ActorSystem(name, ActorSystemSetup(bootstrapSetup))`
+   * Same behavior as calling `ActorSystem(name, ActorSystemSetup(bootstrapSetup))`
    */
   def apply(name: String, bootstrapSetup: BootstrapSetup): ActorSystem =
     create(name, ActorSystemSetup.create(bootstrapSetup))

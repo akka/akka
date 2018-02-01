@@ -1,6 +1,6 @@
 # Testing
 
-Testing can either be done asynchronously using a real `ActorSystem` or synchronously on the testing thread using the `BehaviousTestKit`.  
+Testing can either be done asynchronously using a real `ActorSystem` or synchronously on the testing thread using the `BehaviousTestKit`.
 
 For testing logic in a `Behavior` in isolation synchronous testing is preferred. For testing interactions between multiple
 actors a more realistic asynchronous test is preferred.
@@ -29,7 +29,7 @@ To use Akka TestKit Type, add the module to your project:
   scope=test
 }
 
-## Synchronous behaviour testing
+## Synchronous behavior testing
 
 The following demonstrates how to test:
 

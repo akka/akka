@@ -35,7 +35,7 @@ object Effect {
   abstract class SpawnedEffect extends Effect
 
   @SerialVersionUID(1L) final case class Spawned(behavior: Behavior[_], childName: String, props: Props = Props.empty) extends SpawnedEffect
-  @SerialVersionUID(1L) final case class SpawnedAnonymous(behaviour: Behavior[_], props: Props = Props.empty) extends SpawnedEffect
+  @SerialVersionUID(1L) final case class SpawnedAnonymous(behavior: Behavior[_], props: Props = Props.empty) extends SpawnedEffect
   @SerialVersionUID(1L) final case object SpawnedAdapter extends SpawnedEffect
   @SerialVersionUID(1L) final case class Stopped(childName: String) extends Effect
   @SerialVersionUID(1L) final case class Watched[T](other: ActorRef[T]) extends Effect

@@ -306,11 +306,11 @@ that you have not configured an explicit dispatcher for).
 
 ### Solution: Dedicated dispatcher for blocking operations
 
-One of the most efficient methods of isolating the blocking behaviour such that it does not impact the rest of the system
+One of the most efficient methods of isolating the blocking behavior such that it does not impact the rest of the system
 is to prepare and use a dedicated dispatcher for all those blocking operations.
 This technique is often referred to as as "bulk-heading" or simply "isolating blocking".
 
-In `application.conf`, the dispatcher dedicated to blocking behaviour should
+In `application.conf`, the dispatcher dedicated to blocking behavior should
 be configured as follows:
 
 <!--same config text for Scala & Java-->
@@ -332,7 +332,7 @@ Scala
 Java
 :   @@snip [BlockingDispatcherSample.java]($akka$/akka-docs/src/test/java/jdocs/actor/SeparateDispatcherFutureActor.java) { #separate-dispatcher }
 
-The thread pool behaviour is shown in the below diagram.
+The thread pool behavior is shown in the below diagram.
 
 ![dispatcher-behaviour-on-good-code.png](./images/dispatcher-behaviour-on-good-code.png)
 
