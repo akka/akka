@@ -68,17 +68,18 @@ abstract class MultiDcSplitBrainSpec
 
   val dc1 = List(first, second)
   val dc2 = List(third, fourth, fifth)
-  var barrierCounter = 0
+  var splits = 0
+  var unsplits = 0
 
   def splitDataCenters(doNotVerify: Set[RoleName]): Unit = {
+    splits += 1
     val memberNodes = (dc1 ++ dc2).filterNot(doNotVerify)
     val probe = TestProbe()
     runOn(memberNodes: _*) {
-      cluster.subscribe(probe.ref, classOf[DataCenterReachabilityEvent])
+      cluster.subscribe(probe.ref, classOf[UnreachableDataCenter])
       probe.expectMsgType[CurrentClusterState]
     }
-    enterBarrier(s"split-$barrierCounter")
-    barrierCounter += 1
+    enterBarrier(s"split-$splits")
 
     runOn(first) {
       for (dc1Node ← dc1; dc2Node ← dc2) {
@@ -86,8 +87,7 @@ abstract class MultiDcSplitBrainSpec
       }
     }
 
-    enterBarrier(s"after-split-$barrierCounter")
-    barrierCounter += 1
+    enterBarrier(s"after-split-$splits")
 
     runOn(memberNodes: _*) {
       probe.expectMsgType[UnreachableDataCenter](15.seconds)
@@ -104,19 +104,18 @@ abstract class MultiDcSplitBrainSpec
       }
       cluster.state.unreachable should ===(Set.empty)
     }
-    enterBarrier(s"after-split-verified-$barrierCounter")
-    barrierCounter += 1
+    enterBarrier(s"after-split-verified-$splits")
   }
 
   def unsplitDataCenters(notMembers: Set[RoleName]): Unit = {
+    unsplits += 1
     val memberNodes = (dc1 ++ dc2).filterNot(notMembers)
     val probe = TestProbe()
     runOn(memberNodes: _*) {
       cluster.subscribe(probe.ref, classOf[ReachableDataCenter])
       probe.expectMsgType[CurrentClusterState]
     }
-    enterBarrier(s"unsplit-$barrierCounter")
-    barrierCounter += 1
+    enterBarrier(s"unsplit-$unsplits")
 
     runOn(first) {
       for (dc1Node ← dc1; dc2Node ← dc2) {
@@ -124,19 +123,18 @@ abstract class MultiDcSplitBrainSpec
       }
     }
 
-    enterBarrier(s"after-unsplit-$barrierCounter")
-    barrierCounter += 1
+    enterBarrier(s"after-unsplit-$unsplits")
 
     runOn(memberNodes: _*) {
       probe.expectMsgType[ReachableDataCenter](25.seconds)
+      system.log.debug("Reachable data center received")
       cluster.unsubscribe(probe.ref)
       awaitAssert {
         cluster.state.unreachableDataCenters should ===(Set.empty)
+        system.log.debug("Cluster state: {}", cluster.state)
       }
     }
-    enterBarrier(s"after-unsplit-verified-$barrierCounter")
-    barrierCounter += 1
-
+    enterBarrier(s"after-unsplit-verified-$unsplits")
   }
 
   "A cluster with multiple data centers" must {
