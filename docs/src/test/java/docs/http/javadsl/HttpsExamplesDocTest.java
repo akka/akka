@@ -4,26 +4,12 @@
 
 package docs.http.javadsl;
 
-import akka.actor.AbstractActor;
 import akka.actor.ActorSystem;
-import akka.http.javadsl.*;
-import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.HttpResponse;
-import akka.japi.Pair;
-import akka.japi.pf.ReceiveBuilder;
+import akka.http.javadsl.ConnectHttp;
+import akka.http.javadsl.Http;
+import akka.http.javadsl.HttpsConnectionContext;
 import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
 import com.typesafe.sslconfig.akka.AkkaSSLConfig;
-import scala.concurrent.ExecutionContextExecutor;
-import scala.util.Try;
-
-import java.util.concurrent.CompletionStage;
-
-import static akka.http.javadsl.ConnectHttp.toHost;
-import static akka.pattern.PatternsCS.pipe;
 
 @SuppressWarnings("unused")
 public class HttpsExamplesDocTest {
