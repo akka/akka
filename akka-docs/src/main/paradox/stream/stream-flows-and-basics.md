@@ -333,6 +333,20 @@ In Graphs it is possible to access the materialized value from inside the stream
 
 @@@
 
+### Source pre-materialization
+
+There are situations in which you require a `Source` materialized value **before** the `Source` gets hooked up to the rest of the graph.
+This is particularly useful in the case of "materialized value powered" `Source`s, like `Source.queue`, `Source.actorRef` or `Source.maybe`.
+
+By using the `preMaterialize` operator on a `Source`, you can obtain its materialized value and another `Source`. The latter can be used
+to consume messages from the original `Source`. Note that this can be materialized multiple times.
+
+Scala
+:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #source-prematerialization }
+
+Java
+:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #source-prematerialization }
+
 ## Stream ordering
 
 In Akka Streams almost all computation stages *preserve input order* of elements. This means that if inputs `{IA1,IA2,...,IAn}`
@@ -352,7 +366,7 @@ If you find yourself in need of fine grained control over order of emitted eleme
 scenarios consider using `MergePreferred`, `MergePrioritized` or `GraphStage` – which gives you full control over how the
 merge is performed.
 
-# Actor Materializer Lifecycle
+## Actor Materializer Lifecycle
 
 An important aspect of working with streams and actors is understanding an `ActorMaterializer`'s life-cycle.
 The materializer is bound to the lifecycle of the `ActorRefFactory` it is created from, which in practice will
