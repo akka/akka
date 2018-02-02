@@ -74,7 +74,7 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       otherActor ! Request("give me cookies", ctx.self)
       // #request-response-send
 
-      probe.expectMsgType[Response]
+      probe.expectMessageType[Response]
     }
 
     "contain a sample for adapted response" in {
@@ -265,8 +265,8 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
     val monitor = TestProbe[HalCommand]()
     val hal = spawn(Behaviors.monitor(monitor.ref, halBehavior))
     spawn(daveBehavior(hal))
-    monitor.expectMsgType[OpenThePodBayDoorsPlease]
-    monitor.expectMsgType[OpenThePodBayDoorsPlease]
+    monitor.expectMessageType[OpenThePodBayDoorsPlease]
+    monitor.expectMessageType[OpenThePodBayDoorsPlease]
   }
 
   "contain a sample for per session child" in {
