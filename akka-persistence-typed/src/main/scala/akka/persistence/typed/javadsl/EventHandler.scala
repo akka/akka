@@ -18,11 +18,11 @@ trait EventHandler[Event, State] {
 }
 
 object EventHandlerBuilder {
-  def builder[Event, State >: Null](rootEventClass: Class[Event]): EventHandlerBuilder[Event, State] =
-    new EventHandlerBuilder[Event, State](rootEventClass)
+  def builder[Event, State >: Null](): EventHandlerBuilder[Event, State] =
+    new EventHandlerBuilder[Event, State]()
 }
 
-final class EventHandlerBuilder[Event, State >: Null](rootEventClass: Class[Event]) {
+final class EventHandlerBuilder[Event, State >: Null]() {
 
   private final case class EventHandlerCase(predicate: Event ⇒ Boolean, handler: BiFunction[State, Event, State])
 

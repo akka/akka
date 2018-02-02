@@ -24,16 +24,22 @@ import scala.collection.JavaConverters._
   def eventHandler(): EventHandler[Event, State]
 
   /**
-   * @return A new, mutable, builder
+   * @return A new, mutable, by state command handler builder
    */
-  protected def commandHandlerBuilder(commandClass: Class[Command]): CommandHandlerBuilder[Command, Event, State] =
+  protected final def commandHandlerBuilder(commandClass: Class[Command]): CommandHandlerBuilder[Command, Event, State] =
     new CommandHandlerBuilder[Command, Event, State](commandClass)
+
+  /**
+   * @return A new, mutable, by state command handler builder
+   */
+  protected final def byStateCommandHandlerBuilder(): ByStateCommandHandlerBuilder[Command, Event, State] =
+    new ByStateCommandHandlerBuilder[Command, Event, State]()
 
   /**
    * @return A new, mutable, builder
    */
-  protected final def eventHandlerBuilder(eventClass: Class[Event]): EventHandlerBuilder[Event, State] =
-    new EventHandlerBuilder[Event, State](eventClass)
+  protected final def eventHandlerBuilder(): EventHandlerBuilder[Event, State] =
+    new EventHandlerBuilder[Event, State]()
 
   /**
    * The `callback` function is called to notify the actor that the recovery process

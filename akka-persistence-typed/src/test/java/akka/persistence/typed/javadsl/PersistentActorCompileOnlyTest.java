@@ -120,7 +120,7 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public EventHandler<MyEvent, ExampleState> eventHandler() {
-        return eventHandlerBuilder(MyEvent.class)
+        return eventHandlerBuilder()
           .matchEvent(Evt.class, (state, event) -> {
             state.events.add(event.data);
             return state;
@@ -206,7 +206,7 @@ public class PersistentActorCompileOnlyTest {
 
     private static void performSideEffect(ActorRef<AcknowledgeSideEffect> sender, int correlationId, String data) {
       CompletionStage<Response> what = ask(sideEffectProcessor, (ActorRef<Response> ar) -> new Request(correlationId, data, ar), timeout, scheduler);
-      what.toCompletableFuture().thenApply(r -> new AcknowledgeSideEffect(r.correlationId))
+      what.thenApply(r -> new AcknowledgeSideEffect(r.correlationId))
         .thenAccept(sender::tell);
     }
 
@@ -232,7 +232,7 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public EventHandler<Event, EventsInFlight> eventHandler() {
-        return eventHandlerBuilder(Event.class)
+        return eventHandlerBuilder()
           .matchEvent(IntentRecord.class, (state, event) -> {
             int nextCorrelationId = event.correlationId;
             Map<Integer, String> newOutstanding = new HashMap<>(state.dataByCorrelationId);

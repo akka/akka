@@ -222,7 +222,7 @@ public class PersistentActorTest extends TestKit {
 
       @Override
       public EventHandler<Incremented, State> eventHandler() {
-        return eventHandlerBuilder(Incremented.class)
+        return eventHandlerBuilder()
           .matchEvent(Incremented.class, (state, event) -> {
             List<Integer> newHistory = new ArrayList<>(state.history);
             newHistory.add(state.value);
@@ -330,4 +330,6 @@ public class PersistentActorTest extends TestKit {
     c.tell(new StopThenLog());
     probe.expectTerminated(c, FiniteDuration.create(1, TimeUnit.SECONDS));
   }
+
+  // FIXME test with by state command handler
 }
