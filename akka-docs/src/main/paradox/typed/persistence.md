@@ -208,21 +208,26 @@ Strategies for that can be found in the @ref:[schema evolution](../persistence-s
 
 ## Recovery
 
-Since it is strongly discouraged to perform side effects in applyEvent ,
-side effects should be performed once recovery has completed in the `onRecoveryCompleted` callback
+Since it is strongly discouraged to perform side effects in applyEvent,
+side effects should be performed once recovery has completed @scala[in the `onRecoveryCompleted` callback.] @java[by overriding `onRecoveryCompleted`]
 
 Scala
 :  @@snip [BasicPersistentBehaviorsSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #recovery }
+
+Java
+:  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #recovery }
 
 The `onRecoveryCompleted` takes on an `ActorContext` and the current `State`.
 
 ## Tagging
 
-Persistence typed allows you to use event tags with the following `withTagging` method,
-without using @ref[`EventAdapter`](../persistence.md#event-adapters).
+Persistence typed allows you to use event tags without using @ref[`EventAdapter`](../persistence.md#event-adapters):
 
 Scala
 :  @@snip [BasicPersistentActorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #tagging }
+
+Java
+:  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #tagging }
 
 ## Current limitations
 
