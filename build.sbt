@@ -58,8 +58,19 @@ lazy val root = Project(
     // Unidoc doesn't like macros
     unidocProjectExcludes := Seq(parsing),
     unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
-    deployRsyncArtifact :=
-      (unidoc in Compile).value zip Seq(s"www/api/akka-http/${version.value}", s"www/japi/akka-http/${version.value}")
+    deployRsyncArtifact := {
+      val unidocArtifacts = (unidoc in Compile).value
+      // unidoc returns a Seq[File] which contains directories of generated API docs, one for
+      // Java, one for Scala. It's not specified which is which, though.
+      // We currently expect the java documentation at akka-http/target/javaunidoc, so
+      // the following heuristic is hopefully good enough to determine which one is the Java and
+      // which one the Scala version.
+      val (Seq(java), Seq(scala)) = unidocArtifacts.partition(_.getName contains "java")
+
+      Seq(
+        scala -> s"www/api/akka-http/${version.value}",
+        java -> s"www/japi/akka-http/${version.value}")
+    }
   )
   .aggregate(
     parsing,
