@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ */
 package jdoc.akka.cluster.sharding.typed;
 
 import akka.actor.typed.ActorRef;
@@ -5,10 +8,17 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.cluster.sharding.typed.ClusterSharding;
-import akka.cluster.sharding.typed.*;
 import akka.cluster.typed.ClusterSingleton;
 import akka.cluster.typed.ClusterSingletonSettings;
+
+//#import
+import akka.cluster.sharding.typed.ClusterShardingSettings;
+import akka.cluster.sharding.typed.ShardingEnvelope;
+import akka.cluster.sharding.typed.javadsl.ClusterSharding;
+import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
+import akka.cluster.sharding.typed.javadsl.EntityRef;
+
+//#import
 
 public class ShardingCompileOnlyTest {
 
@@ -49,7 +59,7 @@ public class ShardingCompileOnlyTest {
 
     //#spawn
     EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
-    ActorRef<ShardingEnvelope<CounterCommand>> shardRegion = sharding.spawnJavadsl(
+    ActorRef<ShardingEnvelope<CounterCommand>> shardRegion = sharding.spawn(
       entityId -> counter(entityId,0),
       Props.empty(),
       typeKey,
