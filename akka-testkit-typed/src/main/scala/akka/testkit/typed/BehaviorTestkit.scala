@@ -172,17 +172,16 @@ class BehaviorTestkit[T] private (_name: String, _initialBehavior: Behavior[T]) 
   }
 
   private var current = Behavior.validateAsInitial(Behavior.start(_initialBehavior, ctx))
-  private var currentUncanonical = current
+  private var currentUncanonical = _initialBehavior
 
-  /**
-   * Returns the current canonical behavior
-   */
   def currentBehavior: Behavior[T] = current
 
   /**
-   * Returns the current behavior before being converted to the canonical one
+   * Returns the current behavior as it was returned from processing the previous message.
+   * For example if [[Behavior.unhandled]] is returned it will be kept here, but not in
+   * [[currentBehavior]].
    */
-  def currentUncanonicalBehavior: Behavior[T] = currentUncanonical
+  def returnedBehavior: Behavior[T] = currentUncanonical
   def isAlive: Boolean = Behavior.isAlive(current)
 
   private def handleException: Catcher[Unit] = {

@@ -136,7 +136,7 @@ class BehaviorTestkitSpec extends WordSpec with Matchers {
       val testkit = BehaviorTestkit[Father.Command](Father.init())
       testkit.run(SpawnAdapterWithName("adapter"))
       testkit.currentBehavior should not be Behavior.same
-      testkit.currentUncanonicalBehavior shouldBe Behavior.same
+      testkit.returnedBehavior shouldBe Behavior.same
     }
   }
 }
