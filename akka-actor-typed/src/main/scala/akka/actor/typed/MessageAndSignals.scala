@@ -3,6 +3,8 @@
  */
 package akka.actor.typed
 
+import java.util.Optional
+
 /**
  * Envelope that is published on the eventStream for every message that is
  * dropped due to overfull queues.
@@ -57,20 +59,30 @@ case object PostStop extends PostStop {
 /**
  * Lifecycle signal that is fired when an Actor that was watched has terminated.
  * Watching is performed by invoking the
- * [[akka.actor.typed.scaladsl.ActorContext.watch]] . The DeathWatch service is
+ * [[akka.actor.typed.scaladsl.ActorContext.watch]]. The DeathWatch service is
  * idempotent, meaning that registering twice has the same effect as registering
  * once. Registration does not need to happen before the Actor terminates, a
  * notification is guaranteed to arrive after both registration and termination
  * have occurred. This message is also sent when the watched actor is on a node
  * that has been removed from the cluster when using akka-cluster or has been
  * marked unreachable when using akka-remote directly.
+ *
+ * @param ref Scala API: the `ActorRef` for the terminated actor
  */
 final case class Terminated(ref: ActorRef[Nothing])(failed: Throwable) extends Signal {
-  def wasFailed: Boolean = failed ne null
-  def failure: Throwable = failed
-  def failureOption: Option[Throwable] = Option(failed)
+  /**
+   * Scala API: If the watched actor is a direct child, and was stopped because it failed, this will contain the
+   * Exception it failed with, for all other cases it will be `None`.
+   */
+  def failure: Option[Throwable] = Option(failed)
 
-  /** Java API */
+  /** Java API: The actor that was watched and got terminated */
   def getRef(): ActorRef[Void] = ref.asInstanceOf[ActorRef[Void]]
+
+  /**
+   * Java API: If the watched actor is a direct child, and was stopped because it failed, this will contain the
+   * Exception it failed with, for all other cases it will be an empty `Optional`.
+   */
+  def getFailure: Optional[Throwable] = Optional.ofNullable(failed)
 
 }

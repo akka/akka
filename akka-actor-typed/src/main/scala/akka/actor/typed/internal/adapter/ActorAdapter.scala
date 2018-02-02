@@ -19,14 +19,18 @@ import scala.util.control.NonFatal
   import Behavior._
   import ActorRefAdapter.toUntyped
 
-  var behavior: Behavior[T] = _initialBehavior
+  protected var behavior: Behavior[T] = _initialBehavior
 
-  var _ctx: ActorContextAdapter[T] = _
+  private var _ctx: ActorContextAdapter[T] = _
   def ctx: ActorContextAdapter[T] =
     if (_ctx ne null) _ctx
     else throw new IllegalStateException("Context was accessed before typed actor was started.")
 
-  var failures: Map[a.ActorRef, Throwable] = Map.empty
+  /**
+   * Failures from failed children, that were stopped through untyped supervision, this is what allows us to pass
+   * child exception in Terminated for direct children.
+   */
+  private var failures: Map[a.ActorRef, Throwable] = Map.empty
 
   def receive = running
 
@@ -108,9 +112,9 @@ import scala.util.control.NonFatal
     }
 
   override def unhandled(msg: Any): Unit = msg match {
-    case Terminated(ref) ⇒ throw a.DeathPactException(toUntyped(ref))
-    case msg: Signal     ⇒ // that's ok
-    case other           ⇒ super.unhandled(other)
+    case t @ Terminated(ref) ⇒ throw DeathPactException(ref)
+    case msg: Signal         ⇒ // that's ok
+    case other               ⇒ super.unhandled(other)
   }
 
   override val supervisorStrategy = a.OneForOneStrategy() {
