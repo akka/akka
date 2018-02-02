@@ -87,11 +87,6 @@ import akka.annotation.InternalApi
  * the oldest member among all cluster nodes or a group of nodes tagged with a specific
  * role. The oldest member can be determined by [[akka.cluster.Member#isOlderThan]].
  *
- * The logic that decides where a shard is to be located is defined in a pluggable shard
- * allocation strategy. The default implementation [[ShardCoordinator.LeastShardAllocationStrategy]]
- * allocates new shards to the `ShardRegion` with least number of previously allocated shards.
- * This strategy can be replaced by an application specific implementation.
- *
  * To be able to use newly added members in the cluster the coordinator facilitates rebalancing
  * of shards, i.e. migrate entities from one node to another. In the rebalance process the
  * coordinator first notifies all `ShardRegion` actors that a handoff for a shard has started.
@@ -116,9 +111,8 @@ import akka.annotation.InternalApi
  * must be to begin the rebalancing. This strategy can be replaced by an application specific
  * implementation.
  *
- * The state of shard locations in the `ShardCoordinator` is persistent (durable) with
- * `akka-persistence` to survive failures. Since it is running in a cluster `akka-persistence`
- * must be configured with a distributed journal. When a crashed or unreachable coordinator
+ * The state of shard locations in the `ShardCoordinator` is stored with `akka-distributed-data` or
+ * `akka-persistence` to survive failures. When a crashed or unreachable coordinator
  * node has been removed (via down) from the cluster a new `ShardCoordinator` singleton
  * actor will take over and the state is recovered. During such a failure period shards
  * with known location are still available, while messages for new (unknown) shards

@@ -1,9 +1,13 @@
 /*
  * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
  */
-package akka.cluster.sharding.typed
+package akka.cluster.sharding.typed.scaladsl
 
-import akka.actor.typed.{ ActorRef, Behavior, Props, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
+import akka.actor.typed.Props
+import akka.actor.typed.TypedAkkaSpecWithShutdown
+import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.persistence.typed.scaladsl.PersistentBehaviors

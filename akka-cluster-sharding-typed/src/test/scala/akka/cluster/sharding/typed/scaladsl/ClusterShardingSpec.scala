@@ -2,21 +2,24 @@
  * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
  */
 
-package akka.cluster.sharding.typed
+package akka.cluster.sharding.typed.scaladsl
 
 import java.nio.charset.StandardCharsets
 
 import scala.concurrent.duration._
 
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Props
 import akka.actor.typed.TypedAkkaSpecWithShutdown
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.MemberStatus
+import akka.cluster.sharding.typed.ClusterShardingSettings
+import akka.cluster.sharding.typed.ShardingEnvelope
+import akka.cluster.sharding.typed.ShardingMessageExtractor
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.cluster.typed.Leave
@@ -49,11 +52,11 @@ object ClusterShardingSpec {
         #allow-java-serialization = off
 
        serializers {
-          test = "akka.cluster.sharding.typed.ClusterShardingSpec$$Serializer"
+          test = "akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec$$Serializer"
         }
         serialization-bindings {
-          "akka.cluster.sharding.typed.ClusterShardingSpec$$TestProtocol" = test
-          "akka.cluster.sharding.typed.ClusterShardingSpec$$IdTestProtocol" = test
+          "akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec$$TestProtocol" = test
+          "akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec$$IdTestProtocol" = test
         }
       }
     """.stripMargin)
@@ -133,8 +136,8 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
     super.afterAll()
   }
 
-  val typeKey = EntityTypeKey[TestProtocol]("envelope-shard")
-  val behavior = Behaviors.immutable[TestProtocol] {
+  private val typeKey = EntityTypeKey[TestProtocol]("envelope-shard")
+  private val behavior = Behaviors.immutable[TestProtocol] {
     case (_, StopPlz()) ⇒
       Behaviors.stopped
 
@@ -148,8 +151,8 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       Behaviors.same
   }
 
-  val typeKey2 = EntityTypeKey[IdTestProtocol]("no-envelope-shard")
-  val behaviorWithId = Behaviors.immutable[IdTestProtocol] {
+  private val typeKey2 = EntityTypeKey[IdTestProtocol]("no-envelope-shard")
+  private val behaviorWithId = Behaviors.immutable[IdTestProtocol] {
     case (_, IdStopPlz()) ⇒
       Behaviors.stopped
 
@@ -163,7 +166,7 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       Behaviors.same
   }
 
-  val shardingRef1: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.spawn[TestProtocol](
+  private val shardingRef1: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.spawn(
     _ ⇒ behavior,
     Props.empty,
     typeKey,
@@ -171,7 +174,7 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
     10,
     StopPlz())
 
-  val shardingRef2 = sharding2.spawn[TestProtocol](
+  private val shardingRef2 = sharding2.spawn(
     _ ⇒ behavior,
     Props.empty,
     typeKey,
@@ -179,7 +182,7 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
     10,
     StopPlz())
 
-  val shardingRef3: ActorRef[IdTestProtocol] = sharding.spawn3[IdTestProtocol, IdTestProtocol](
+  private val shardingRef3: ActorRef[IdTestProtocol] = sharding.spawnWithMessageExtractor(
     _ ⇒ behaviorWithId,
     Props.empty,
     typeKey2,
@@ -188,9 +191,10 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       case IdReplyPlz(id, _)  ⇒ id
       case IdWhoAreYou(id, _) ⇒ id
       case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
-    })
+    },
+    None)
 
-  val shardingRef4 = sharding2.spawn3[IdTestProtocol, IdTestProtocol](
+  private val shardingRef4 = sharding2.spawnWithMessageExtractor(
     _ ⇒ behaviorWithId,
     Props.empty,
     typeKey2,
@@ -199,11 +203,12 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       case IdReplyPlz(id, _)  ⇒ id
       case IdWhoAreYou(id, _) ⇒ id
       case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
-    })
+    },
+    None)
 
   def totalEntityCount1(): Int = {
     import akka.pattern.ask
-    implicit val timeout = Timeout(6.seconds)
+    implicit val timeout: Timeout = Timeout(6.seconds)
     val statsBefore = (shardingRef1.toUntyped ? akka.cluster.sharding.ShardRegion.GetClusterShardingStats(5.seconds))
       .mapTo[akka.cluster.sharding.ShardRegion.ClusterShardingStats]
     val totalCount = statsBefore.futureValue.regions.values.flatMap(_.stats.values).sum

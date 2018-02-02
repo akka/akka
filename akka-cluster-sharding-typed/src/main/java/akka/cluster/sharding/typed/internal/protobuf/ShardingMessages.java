@@ -26,17 +26,17 @@ public final class ShardingMessages {
     akka.protobuf.ByteString
         getEntityIdBytes();
 
-    // optional .Payload message = 2;
+    // required .Payload message = 2;
     /**
-     * <code>optional .Payload message = 2;</code>
+     * <code>required .Payload message = 2;</code>
      */
     boolean hasMessage();
     /**
-     * <code>optional .Payload message = 2;</code>
+     * <code>required .Payload message = 2;</code>
      */
     akka.remote.ContainerFormats.Payload getMessage();
     /**
-     * <code>optional .Payload message = 2;</code>
+     * <code>required .Payload message = 2;</code>
      */
     akka.remote.ContainerFormats.PayloadOrBuilder getMessageOrBuilder();
   }
@@ -192,23 +192,23 @@ public final class ShardingMessages {
       }
     }
 
-    // optional .Payload message = 2;
+    // required .Payload message = 2;
     public static final int MESSAGE_FIELD_NUMBER = 2;
     private akka.remote.ContainerFormats.Payload message_;
     /**
-     * <code>optional .Payload message = 2;</code>
+     * <code>required .Payload message = 2;</code>
      */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>optional .Payload message = 2;</code>
+     * <code>required .Payload message = 2;</code>
      */
     public akka.remote.ContainerFormats.Payload getMessage() {
       return message_;
     }
     /**
-     * <code>optional .Payload message = 2;</code>
+     * <code>required .Payload message = 2;</code>
      */
     public akka.remote.ContainerFormats.PayloadOrBuilder getMessageOrBuilder() {
       return message_;
@@ -227,11 +227,13 @@ public final class ShardingMessages {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (hasMessage()) {
-        if (!getMessage().isInitialized()) {
-          memoizedIsInitialized = 0;
-          return false;
-        }
+      if (!hasMessage()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!getMessage().isInitialized()) {
+        memoizedIsInitialized = 0;
+        return false;
       }
       memoizedIsInitialized = 1;
       return true;
@@ -461,11 +463,13 @@ public final class ShardingMessages {
           
           return false;
         }
-        if (hasMessage()) {
-          if (!getMessage().isInitialized()) {
-            
-            return false;
-          }
+        if (!hasMessage()) {
+          
+          return false;
+        }
+        if (!getMessage().isInitialized()) {
+          
+          return false;
         }
         return true;
       }
@@ -563,18 +567,18 @@ public final class ShardingMessages {
         return this;
       }
 
-      // optional .Payload message = 2;
+      // required .Payload message = 2;
       private akka.remote.ContainerFormats.Payload message_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> messageBuilder_;
       /**
-       * <code>optional .Payload message = 2;</code>
+       * <code>required .Payload message = 2;</code>
        */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>optional .Payload message = 2;</code>
+       * <code>required .Payload message = 2;</code>
        */
       public akka.remote.ContainerFormats.Payload getMessage() {
         if (messageBuilder_ == null) {
@@ -584,7 +588,7 @@ public final class ShardingMessages {
         }
       }
       /**
-       * <code>optional .Payload message = 2;</code>
+       * <code>required .Payload message = 2;</code>
        */
       public Builder setMessage(akka.remote.ContainerFormats.Payload value) {
         if (messageBuilder_ == null) {
@@ -600,7 +604,7 @@ public final class ShardingMessages {
         return this;
       }
       /**
-       * <code>optional .Payload message = 2;</code>
+       * <code>required .Payload message = 2;</code>
        */
       public Builder setMessage(
           akka.remote.ContainerFormats.Payload.Builder builderForValue) {
@@ -614,7 +618,7 @@ public final class ShardingMessages {
         return this;
       }
       /**
-       * <code>optional .Payload message = 2;</code>
+       * <code>required .Payload message = 2;</code>
        */
       public Builder mergeMessage(akka.remote.ContainerFormats.Payload value) {
         if (messageBuilder_ == null) {
@@ -633,7 +637,7 @@ public final class ShardingMessages {
         return this;
       }
       /**
-       * <code>optional .Payload message = 2;</code>
+       * <code>required .Payload message = 2;</code>
        */
       public Builder clearMessage() {
         if (messageBuilder_ == null) {
@@ -646,7 +650,7 @@ public final class ShardingMessages {
         return this;
       }
       /**
-       * <code>optional .Payload message = 2;</code>
+       * <code>required .Payload message = 2;</code>
        */
       public akka.remote.ContainerFormats.Payload.Builder getMessageBuilder() {
         bitField0_ |= 0x00000002;
@@ -654,7 +658,7 @@ public final class ShardingMessages {
         return getMessageFieldBuilder().getBuilder();
       }
       /**
-       * <code>optional .Payload message = 2;</code>
+       * <code>required .Payload message = 2;</code>
        */
       public akka.remote.ContainerFormats.PayloadOrBuilder getMessageOrBuilder() {
         if (messageBuilder_ != null) {
@@ -664,7 +668,7 @@ public final class ShardingMessages {
         }
       }
       /**
-       * <code>optional .Payload message = 2;</code>
+       * <code>required .Payload message = 2;</code>
        */
       private akka.protobuf.SingleFieldBuilder<
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> 
@@ -708,7 +712,7 @@ public final class ShardingMessages {
       "\n\026ShardingMessages.proto\022\033akka.cluster.s" +
       "harding.typed\032\026ContainerFormats.proto\"?\n" +
       "\020ShardingEnvelope\022\020\n\010entityId\030\001 \002(\t\022\031\n\007m" +
-      "essage\030\002 \001(\0132\010.PayloadB1\n-akka.cluster.s" +
+      "essage\030\002 \002(\0132\010.PayloadB1\n-akka.cluster.s" +
       "harding.typed.internal.protobufH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =

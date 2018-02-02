@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ */
 package doc.akka.cluster.sharding.typed
 
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
@@ -11,7 +14,12 @@ object ShardingCompileOnlySpec {
   val system = ActorSystem(Behaviors.empty, "Sharding")
 
   //#sharding-extension
-  import akka.cluster.sharding.typed._
+  import akka.cluster.sharding.typed.ClusterShardingSettings
+  import akka.cluster.sharding.typed.ShardingEnvelope
+  import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+  import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+  import akka.cluster.sharding.typed.scaladsl.EntityRef
+
   val sharding = ClusterSharding(system)
   //#sharding-extension
 
@@ -33,7 +41,7 @@ object ShardingCompileOnlySpec {
   //#spawn
   val TypeKey = EntityTypeKey[CounterCommand]("Counter")
   // if a extractor is defined then the type would be ActorRef[BasicCommand]
-  val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] = sharding.spawn[CounterCommand](
+  val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] = sharding.spawn(
     behavior = entityId ⇒ counter(entityId, 0),
     props = Props.empty,
     typeKey = TypeKey,
