@@ -32,7 +32,7 @@ Scala
 Java
 :  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-imports }
 
-And the minimum configuration required is to set a host/port for remoting and the `cluster`
+And the minimum configuration required is to set a host/port for remoting and the `akka.actor.provider = "cluster"`.
 
 Scala
 :  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-imports }

@@ -13,6 +13,7 @@
 * [stash](stash.md)
 * [stream](stream.md)
 * [cluster](cluster.md)
+* [distributed-data](distributed-data.md)
 * [cluster-singleton](cluster-singleton.md)
 * [cluster-sharding](cluster-sharding.md)
 * [persistence](persistence.md)

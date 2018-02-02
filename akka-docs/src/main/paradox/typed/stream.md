@@ -1,27 +1,29 @@
 # Streams
 
+@ref:[Akka Streams](../stream/index.md) make it easy to model type-safe message processing pipelines. With typed actors it is possible to connect streams to actors without loosing the type information.
+
+This module contains typed alternatives to the @ref:[already existing `ActorRef` sources and sinks](../stream/stream-integrations.md) together with a factory methods for @scala[@scaladoc[`ActorMaterializer`](akka.stream.typed.ActorMaterializer)]@java[@javadoc[`ActorMaterializer`](akka.stream.typed.ActorMaterializer)] which takes a typed `ActorSystem`.
+
+The materializer created from these factory methods and sources together with sinks contained in this module can be mixed and matched with the original Akka Streams building blocks from the original module.
+
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
   of being the subject of active research. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
   this module in production just yet—you have been warned.
-  
+
 @@@
 
-@ref:[Akka Streams](../stream/index.md) make it easy to model type-safe message processing pipelines. With typed actors it is possible to connect streams to actors without loosing the type information.
+## Dependency
 
-To use the typed stream source and sink factories add the following dependency:
+To use Akka Streams Typed, add the module to your project:
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-stream-typed_2.12
   version=$akka.version$
 }
-
-This dependency contains typed alternatives to the @ref:[already existing `ActorRef` sources and sinks](../stream/stream-integrations.md) together with a factory methods for @scala[@scaladoc[`ActorMaterializer`](akka.stream.typed.ActorMaterializer)]@java[@javadoc[`ActorMaterializer`](akka.stream.typed.ActorMaterializer)] which take a typed `ActorSystem`.
-
-The materializer created from these factory methods and sources together with sinks contained in this module can be mixed and matched with the original Akka Streams building blocks from the original module.
 
 ## Actor Source
 
