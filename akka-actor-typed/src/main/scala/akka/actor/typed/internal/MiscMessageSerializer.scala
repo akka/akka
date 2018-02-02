@@ -19,7 +19,7 @@ class MiscMessageSerializer(val system: akka.actor.ExtendedActorSystem) extends 
   private val ActorRefManifest = "a"
 
   def manifest(o: AnyRef): String = o match {
-    case ref: ActorRef[_] ⇒ ActorRefManifest
+    case _: ActorRef[_] ⇒ ActorRefManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
