@@ -27,7 +27,7 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 
 ## Dependency
 
-To use Akka Cluster Singleton, add the module to your project:
+To use Akka Cluster Singleton Typed, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
