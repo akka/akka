@@ -303,8 +303,10 @@ object ActorContextSpec {
       case (ctx, t @ Terminated(test)) ⇒
         outstanding get test match {
           case Some(reply) ⇒
-            if (t.failure eq null) reply ! Success
-            else reply ! Failed(t.failure)
+            t.failure match {
+              case None     ⇒ reply ! Success
+              case Some(ex) ⇒ reply ! Failed(ex)
+            }
             guardian(outstanding - test)
           case None ⇒ same
         }
