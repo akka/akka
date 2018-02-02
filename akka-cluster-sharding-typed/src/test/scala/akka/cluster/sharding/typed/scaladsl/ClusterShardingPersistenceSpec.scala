@@ -44,14 +44,14 @@ object ClusterShardingPersistenceSpec {
 
   import PersistentBehaviors._
 
-  val persistentActor: Behavior[Command] =
-    PersistentBehaviors.persistentEntity[Command, String, String](
-      persistenceIdFromActorName = name ⇒ "Test-" + name,
+  def persistentActor(entityId: String): Behavior[Command] =
+    PersistentBehaviors.immutable[Command, String, String](
+      entityId,
       initialState = "",
       commandHandler = (_, state, cmd) ⇒ cmd match {
         case Add(s) ⇒ Effect.persist(s)
         case Get(replyTo) ⇒
-          replyTo ! state
+          replyTo ! s"$entityId:$state"
           Effect.none
         case StopPlz ⇒ Effect.stop
       },
@@ -72,7 +72,7 @@ class ClusterShardingPersistenceSpec extends TestKit("ClusterShardingPersistence
     Cluster(system).manager ! Join(Cluster(system).selfMember.address)
 
     "start persistent actor" in {
-      ClusterSharding(system).spawn[Command](_ ⇒ persistentActor, Props.empty, typeKey,
+      ClusterSharding(system).spawn[Command](persistentActor, Props.empty, typeKey,
         ClusterShardingSettings(system), maxNumberOfShards = 100, handOffStopMessage = StopPlz)
 
       val p = TestProbe[String]()
@@ -82,7 +82,7 @@ class ClusterShardingPersistenceSpec extends TestKit("ClusterShardingPersistence
       ref ! Add("b")
       ref ! Add("c")
       ref ! Get(p.ref)
-      p.expectMessage("a|b|c")
+      p.expectMessage("123:a|b|c")
     }
   }
 }
