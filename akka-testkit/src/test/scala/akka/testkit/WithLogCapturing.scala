@@ -9,7 +9,6 @@ import java.io.{ OutputStream, PrintStream }
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.event.Logging._
-import akka.testkit.{ EventFilter, TestEventListener }
 import org.scalatest.{ Outcome, SuiteMixin, TestSuite }
 
 /**

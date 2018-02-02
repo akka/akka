@@ -183,7 +183,6 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
 
     "handle Terminated signal" in {
       val c = spawn(counter("c3"))
-
       val probe = TestProbe[State]
       c ! Increment
       c ! IncrementLater
@@ -376,5 +375,4 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
       probe
     }
   }
-
 }

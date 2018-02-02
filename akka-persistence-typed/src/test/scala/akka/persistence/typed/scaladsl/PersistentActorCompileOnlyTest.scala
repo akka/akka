@@ -91,17 +91,17 @@ object PersistentActorCompileOnlyTest {
 
     case class EventsInFlight(nextCorrelationId: Int, dataByCorrelationId: Map[Int, String])
 
-    case class Request(correlationId: Int, data: String, sender: ActorRef[Response])
+    case class Request(correlationId: Int, data: String)(sender: ActorRef[Response])
     case class Response(correlationId: Int)
     val sideEffectProcessor: ActorRef[Request] = ???
 
-    def performSideEffect(sender: ActorRef[AcknowledgeSideEffect], correlationId: Int, data: String) = {
+    def performSideEffect(sender: ActorRef[AcknowledgeSideEffect], correlationId: Int, data: String): Unit = {
       import akka.actor.typed.scaladsl.AskPattern._
       implicit val timeout: akka.util.Timeout = 1.second
       implicit val scheduler: akka.actor.Scheduler = ???
       implicit val ec: ExecutionContext = ???
 
-      (sideEffectProcessor ? (Request(correlationId, data, _: ActorRef[Response])))
+      (sideEffectProcessor ? Request(correlationId, data))
         .map(response ⇒ AcknowledgeSideEffect(response.correlationId))
         .foreach(sender ! _)
     }
@@ -111,7 +111,7 @@ object PersistentActorCompileOnlyTest {
 
       initialState = EventsInFlight(0, Map.empty),
 
-      commandHandler = (ctx, state, cmd) ⇒ cmd match {
+      commandHandler = (ctx: ActorContext[Command], state, cmd) ⇒ cmd match {
         case DoSideEffect(data) ⇒
           Effect.persist(IntentRecorded(state.nextCorrelationId, data)).andThen {
             performSideEffect(ctx.self, state.nextCorrelationId, data)
@@ -128,11 +128,10 @@ object PersistentActorCompileOnlyTest {
         case SideEffectAcknowledged(correlationId) ⇒
           state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
       }).onRecoveryCompleted {
-        case (ctx, state) ⇒ {
+        case (ctx, state) ⇒
           state.dataByCorrelationId.foreach {
             case (correlationId, data) ⇒ performSideEffect(ctx.self, correlationId, data)
           }
-        }
       }
 
   }
@@ -357,7 +356,7 @@ object PersistentActorCompileOnlyTest {
           case Remember(memory) ⇒
             // A more elaborate example to show we still have full control over the effects
             // if needed (e.g. when some logic is factored out but you want to add more effects)
-            val commonEffects = changeMoodIfNeeded(state, Happy)
+            val commonEffects: Effect[Event, Mood] = changeMoodIfNeeded(state, Happy)
             Effect.persist(commonEffects.events :+ Remembered(memory), commonEffects.sideEffects)
 
         },
