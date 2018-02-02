@@ -37,7 +37,7 @@ Java
 **Problems:**
 
  * If the inflow of messages is higher than the actor can process the inbox will fill up and can in the worst case cause the JVM crash with an `OutOfMemoryError`
- * If the message gets lost, we will not notice
+ * If the message gets lost, the sender will not know
 
 ## Request-Response
 

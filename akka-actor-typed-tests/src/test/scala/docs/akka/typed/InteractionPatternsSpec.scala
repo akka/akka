@@ -270,8 +270,13 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
   }
 
   "contain a sample for per session child" in {
+    // #per-session-child
+    // dummy data types just for this sample
     case class Keys()
     case class Wallet()
+
+    // #per-session-child
+
     val keyCabinetBehavior: Behavior[GetKeys] = Behaviors.immutable { (ctx, msg) ⇒
       msg match {
         case GetKeys(_, respondTo) ⇒
@@ -288,6 +293,7 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
     }
 
     // #per-session-child
+    // messages for the two services we interact with
     trait HomeCommand
     case class LeaveHome(who: String, respondTo: ActorRef[ReadyToLeaveHome]) extends HomeCommand
     case class ReadyToLeaveHome(who: String, keys: Keys, wallet: Wallet)
@@ -306,6 +312,7 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       }
     }
 
+    // per session actor behavior
     def prepareToLeaveHome(
       whoIsLeaving: String,
       respondTo:    ActorRef[ReadyToLeaveHome],
@@ -378,7 +385,7 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
     // the response callback will be executed on this execution context
     import system.executionContext
 
-    val result: Future[Cookies] = cookieActorRef ? GiveMeCookies
+    val result: Future[Cookies] = cookieActorRef ? (ref ⇒ GiveMeCookies(ref))
 
     result.onComplete {
       case Success(cookies) ⇒ println("Yay, cookies!")

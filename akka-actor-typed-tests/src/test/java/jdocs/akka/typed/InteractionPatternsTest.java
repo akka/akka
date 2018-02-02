@@ -455,13 +455,15 @@ public class InteractionPatternsTest extends JUnitSuite {
   // #standalone-ask
 
 
-  // hidden stuffs for the per-session-child sample
+  // #per-session-child
+  // dummy data types just for this sample
   interface Keys {}
   interface Wallet {}
+  // #per-session-child
+
   static final Behavior<GetKeys> keyCabinetBehavior = null;
   static final Behavior<GetWallet> drawerBehavior = null;
   // #per-session-child
-
   // messages for the two services we interact with
   class GetKeys {
     public final String whoseKeys;
@@ -501,6 +503,7 @@ public class InteractionPatternsTest extends JUnitSuite {
     }
   }
 
+  // actor behavior
   public Behavior<HomeCommand> homeBehavior() {
     return Behaviors.deferred((ctx) -> {
       final ActorRef<GetKeys> keyCabinet = ctx.spawn(keyCabinetBehavior, "key-cabinet");
@@ -514,6 +517,7 @@ public class InteractionPatternsTest extends JUnitSuite {
     });
   }
 
+  // per session actor behavior
   class PrepareToLeaveHome extends Behaviors.MutableBehavior<Object> {
     private final String whoIsLeaving;
     private final ActorRef<ReadyToLeaveHome> respondTo;
