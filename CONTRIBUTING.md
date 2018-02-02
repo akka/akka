@@ -334,6 +334,9 @@ Note, that `OK TO TEST` will only be picked up when the user asking for it is co
 
 ## Source style
 
+Sometimes it is convenient to place 'internal' classes in their own package.
+In such situations we prefer 'internal' over 'impl' as a package name.
+
 ### Scala style 
 
 Akka uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
