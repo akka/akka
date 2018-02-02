@@ -241,6 +241,7 @@ final class ClusterShardingSettings(
       s"valid values are '${StateStoreModeDData.name}' or '${StateStoreModePersistence.name}'")
 
   /**
+   * INTERNAL API
    * If true, this node should run the shard region, otherwise just a shard proxy should started on this node.
    * It's checking if the `role` and `dataCenter` are matching.
    */
