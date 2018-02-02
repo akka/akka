@@ -330,6 +330,8 @@ object DistributedPubSubMediator {
           remove(ref)
           context.parent ! Unsubscribed(UnsubscribeAck(msg), sender())
         case Terminated(ref) ⇒
+          //this doesn't seem to be called anymore since Topic business logic overrides it
+          //causing actors to leave in subscribers map after they have died
           remove(ref)
         case Prune ⇒
           for (d ← pruneDeadline if d.isOverdue) {
@@ -388,6 +390,7 @@ object DistributedPubSubMediator {
           val key = mkKey(sender())
           forwardMessages(key, sender())
         case Terminated(ref) ⇒
+          remove(ref)   //we need to remove the ref from the subscribers set as well since the TopicLike handling won't be called
           val key = mkKey(ref)
           recreateAndForwardMessagesIfNeeded(key, newGroupActor(ref.path.name))
       }
