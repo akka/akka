@@ -5,22 +5,16 @@ package akka.testkit.typed
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
+import akka.actor.typed.{ ActorRef, Behavior, PostStop, Props, Signal }
+import akka.actor.typed.internal.ControlledExecutor
+import akka.annotation.{ ApiMayChange, InternalApi }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.language.existentials
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-
-import akka.actor.typed.internal.ControlledExecutor
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.PostStop
-import akka.actor.typed.Props
-import akka.actor.typed.Signal
-import akka.annotation.ApiMayChange
-import akka.annotation.InternalApi
 
 /**
  * All tracked effects must extend implement this type. It is deliberately
@@ -195,8 +189,20 @@ class BehaviorTestkit[T] private (_name: String, _initialBehavior: Behavior[T]) 
    * Send the msg to the behavior and record any [[Effect]]s
    */
   def run(msg: T): Unit = {
+    run(msg, canonicalize = true)
+  }
+
+  /**
+   * Send the msg to the behavior and record any [[Effect]]s
+   * Doesn't canonicalize the behavior
+   */
+  def runUncanonical(msg: T): Unit = {
+    run(msg, canonicalize = false)
+  }
+
+  private def run(msg: T, canonicalize: Boolean): Unit = {
     try {
-      current = Behavior.canonicalize(Behavior.interpretMessage(current, ctx, msg), current, ctx)
+      current = if (canonicalize) Behavior.canonicalize(Behavior.interpretMessage(current, ctx, msg), current, ctx) else Behavior.interpretMessage(current, ctx, msg)
       ctx.executionContext match {
         case controlled: ControlledExecutor ⇒ controlled.runAll()
         case _                              ⇒
