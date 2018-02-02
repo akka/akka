@@ -10,8 +10,6 @@ import akka.http.caching.scaladsl.{ CachingSettingsImpl, LfuCacheSettingsImpl }
 import akka.http.javadsl.settings.SettingsCompanion
 import scala.concurrent.duration.Duration
 import com.typesafe.config.Config
-import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.caching.CacheJavaMapping.Implicits._
 
 /**
  * Public API but not intended for subclassing
@@ -20,8 +18,12 @@ import akka.http.caching.CacheJavaMapping.Implicits._
 abstract class CachingSettings private[http] () { self: CachingSettingsImpl ⇒
   def lfuCacheSettings: LfuCacheSettings
 
-  def withLfuCacheSettings(newSettings: LfuCacheSettings): CachingSettings =
+  def withLfuCacheSettings(newSettings: LfuCacheSettings): CachingSettings = {
+    import akka.http.impl.util.JavaMapping.Implicits._
+    import akka.http.caching.CacheJavaMapping.Implicits._
+
     self.copy(lfuCacheSettings = newSettings.asScala)
+  }
 }
 
 /**
