@@ -584,7 +584,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       serverBinding.unbind()
     }
 
-    "complete a request/response over https when server closes connection without close_notify" in Utils.assertAllStagesStopped {
+    class CloseDelimitedTLSSetup {
       val source = TestPublisher.probe[ByteString]()
 
       def handler(req: HttpRequest): HttpResponse =
@@ -594,7 +594,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" → 8080))
 
       val server: Flow[ByteString, ByteString, Any] =
-        Http().serverLayer()
+        Http().serverLayerImpl()
           .atop(serverSideTls)
           .reversed
           .join(Flow[HttpRequest].map(handler))
@@ -624,11 +624,22 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       source.sendNext(ByteString("ghij"))
       sinkProbe.expectUtf8EncodedString("ghij")
+    }
 
-      killSwitch.shutdown() // simulate FIN in server -> client direction
-      // akka-http is currently lenient wrt TLS truncation which is *not* reported to the user
-      // FIXME: if https://github.com/akka/akka-http/issues/235 is ever fixed, expect an error here
-      sinkProbe.expectComplete()
+    "complete a request/response with CloseDelimited entity over TLS" in Utils.assertAllStagesStopped {
+      new CloseDelimitedTLSSetup {
+        source.sendComplete()
+        sinkProbe.expectComplete()
+      }
+    }
+
+    "complete a request/response over https when server closes connection without close_notify" in Utils.assertAllStagesStopped {
+      new CloseDelimitedTLSSetup {
+        killSwitch.shutdown() // simulate FIN in server -> client direction
+        // akka-http is currently lenient wrt TLS truncation which is *not* reported to the user
+        // FIXME: if https://github.com/akka/akka-http/issues/235 is ever fixed, expect an error here
+        sinkProbe.expectComplete()
+      }
     }
 
     "properly complete a simple request/response cycle when `modeled-header-parsing = off`" in Utils.assertAllStagesStopped {
