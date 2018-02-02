@@ -134,8 +134,9 @@ class BehaviorTestkitSpec extends WordSpec with Matchers {
   "BehaviorTestkit's run" can {
     "run behaviors with messages without canonicalization" in {
       val testkit = BehaviorTestkit[Father.Command](Father.init())
-      testkit.runUncanonical(SpawnAdapterWithName("adapter"))
-      testkit.currentBehavior shouldBe Behavior.same
+      testkit.run(SpawnAdapterWithName("adapter"))
+      testkit.currentBehavior should not be Behavior.same
+      testkit.currentUncanonicalBehavior shouldBe Behavior.same
     }
   }
 }

@@ -5,8 +5,8 @@ package akka.testkit.typed
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
-import akka.actor.typed.{ ActorRef, Behavior, PostStop, Props, Signal }
 import akka.actor.typed.internal.ControlledExecutor
+import akka.actor.typed.{ ActorRef, Behavior, PostStop, Props, Signal }
 import akka.annotation.{ ApiMayChange, InternalApi }
 
 import scala.annotation.tailrec
@@ -172,8 +172,17 @@ class BehaviorTestkit[T] private (_name: String, _initialBehavior: Behavior[T]) 
   }
 
   private var current = Behavior.validateAsInitial(Behavior.start(_initialBehavior, ctx))
+  private var currentUncanonical = current
 
+  /**
+   * Returns the current canonical behavior
+   */
   def currentBehavior: Behavior[T] = current
+
+  /**
+   * Returns the current behavior before being converted to the canonical one
+   */
+  def currentUncanonicalBehavior: Behavior[T] = currentUncanonical
   def isAlive: Boolean = Behavior.isAlive(current)
 
   private def handleException: Catcher[Unit] = {
@@ -189,20 +198,9 @@ class BehaviorTestkit[T] private (_name: String, _initialBehavior: Behavior[T]) 
    * Send the msg to the behavior and record any [[Effect]]s
    */
   def run(msg: T): Unit = {
-    run(msg, canonicalize = true)
-  }
-
-  /**
-   * Send the msg to the behavior and record any [[Effect]]s
-   * Doesn't canonicalize the behavior
-   */
-  def runUncanonical(msg: T): Unit = {
-    run(msg, canonicalize = false)
-  }
-
-  private def run(msg: T, canonicalize: Boolean): Unit = {
     try {
-      current = if (canonicalize) Behavior.canonicalize(Behavior.interpretMessage(current, ctx, msg), current, ctx) else Behavior.interpretMessage(current, ctx, msg)
+      currentUncanonical = Behavior.interpretMessage(current, ctx, msg)
+      current = Behavior.canonicalize(currentUncanonical, current, ctx)
       ctx.executionContext match {
         case controlled: ControlledExecutor ⇒ controlled.runAll()
         case _                              ⇒
@@ -215,7 +213,8 @@ class BehaviorTestkit[T] private (_name: String, _initialBehavior: Behavior[T]) 
    */
   def signal(signal: Signal): Unit = {
     try {
-      current = Behavior.canonicalize(Behavior.interpretSignal(current, ctx, signal), current, ctx)
+      currentUncanonical = Behavior.interpretSignal(current, ctx, signal)
+      current = Behavior.canonicalize(currentUncanonical, current, ctx)
     } catch handleException
   }
 
