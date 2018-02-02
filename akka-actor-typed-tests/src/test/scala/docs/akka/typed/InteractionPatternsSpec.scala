@@ -359,7 +359,7 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
     val home = spawn(homeBehavior, "home")
     home ! LeaveHome("Bobby", requestor.ref)
-    requestor.expectMsg(ReadyToLeaveHome("Bobby", Keys(), Wallet()))
+    requestor.expectMessage(ReadyToLeaveHome("Bobby", Keys(), Wallet()))
   }
 
   "contain a sample for ask from outside the actor system" in {
