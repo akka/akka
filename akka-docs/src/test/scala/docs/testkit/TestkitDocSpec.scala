@@ -6,11 +6,9 @@ package docs.testkit
 import language.postfixOps
 import scala.util.Success
 import akka.testkit._
-import org.junit.Assert.{ assertArrayEquals, assertEquals }
 
 //#imports-test-probe
 import scala.concurrent.duration._
-import scala.concurrent.Future
 import akka.actor._
 import akka.testkit.TestProbe
 
@@ -56,8 +54,6 @@ object TestKitDocSpec {
 
   //#my-double-echo
 
-  import akka.testkit.TestProbe
-
   //#test-probe-forward-actors
   class Source(target: ActorRef) extends Actor {
     def receive = {
@@ -99,7 +95,6 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   }
 
   "demonstrate built-in expect methods" in {
-    import akka.testkit.TestActorRef
 
     testActor.tell("hello", ActorRef.noSender)
     testActor.tell("hello", ActorRef.noSender)
@@ -111,7 +106,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val any: String = expectMsgAnyOf("hello", "world")
     val all: immutable.Seq[String] = expectMsgAllOf("hello", "world")
     val i: Int = expectMsgType[Int]
-    expectNoMsg(200.millis)
+    expectNoMessage(200.millis)
     //#test-expect
     testActor.tell("receveN-1", ActorRef.noSender)
     testActor.tell("receveN-2", ActorRef.noSender)
@@ -126,7 +121,6 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   "demonstrate usage of TestFSMRef" in {
     //#test-fsm-ref
     import akka.testkit.TestFSMRef
-    import akka.actor.FSM
     import scala.concurrent.duration._
 
     val fsm = TestFSMRef(new TestFsmActor)
@@ -154,8 +148,6 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
     //#test-behavior
     import akka.testkit.TestActorRef
-    import scala.concurrent.duration._
-    import scala.concurrent.Await
     import akka.pattern.ask
 
     val actorRef = TestActorRef(new MyActor)
@@ -199,7 +191,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     within(200 millis) {
       worker ! "some work"
       expectMsg("some result")
-      expectNoMsg // will block for the rest of the 200ms
+      expectNoMessage // will block for the rest of the 200ms
       Thread.sleep(300) // will NOT make this block fail
     }
     //#test-within
@@ -268,7 +260,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val future = probe.ref ? "hello"
     probe.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
     probe.reply("world")
-    assert(future.isCompleted && future.value == Some(Success("world")))
+    assert(future.isCompleted && future.value.contains(Success("world")))
     //#test-probe-reply
   }
 
