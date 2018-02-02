@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertEquals;
 
 public class PersistentActorTest extends TestKit {
 
@@ -330,6 +331,5 @@ public class PersistentActorTest extends TestKit {
     c.tell(new StopThenLog());
     probe.expectTerminated(c, FiniteDuration.create(1, TimeUnit.SECONDS));
   }
-
   // FIXME test with by state command handler
 }

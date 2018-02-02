@@ -6,11 +6,11 @@ package akka.persistence.typed.javadsl
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.InternalApi
 import akka.japi.pf.FI
-import akka.persistence.typed.scaladsl.PersistentBehaviors.EffectImpl
+import akka.persistence.typed.internal._
 import akka.util.OptionVal
 
 /**
- * SAM for reacting on commands
+ * FunctionalInterface for reacting on commands
  *
  * Used with [[CommandHandlerBuilder]] to setup the behavior of a [[PersistentBehavior]]
  */
@@ -19,7 +19,7 @@ trait CommandHandler[Command, Event, State] {
   def apply(ctx: ActorContext[Command], state: State, command: Command): Effect[Event, State]
 }
 /**
- * SAM for reacting on signals
+ * FunctionalInterface for reacting on signals
  *
  * Used with [[CommandHandlerBuilder]] to setup the behavior of a [[PersistentBehavior]]
  */

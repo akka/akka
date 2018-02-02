@@ -19,7 +19,7 @@ public class PersistentActorCompileOnlyTest {
   public static abstract class Simple {
     //#command
     public static class SimpleCommand {
-      private final String data;
+      public final String data;
 
       public SimpleCommand(String data) {
         this.data = data;
@@ -39,15 +39,23 @@ public class PersistentActorCompileOnlyTest {
 
     //#state
     static class SimpleState {
-      private final List<String> events = new ArrayList<>();
+      private final List<String> events;
+
+      SimpleState(List<String> events) {
+        this.events = events;
+      }
+      SimpleState() {
+        this.events = new ArrayList<>();
+      }
+
 
       SimpleState addEvent(SimpleEvent event) {
-        events.add(event.data);
-        return this;
+        List<String> newEvents = new ArrayList<>(events);
+        newEvents.add(event.data);
+        return new SimpleState(newEvents);
       }
     }
     //#state
-
 
 
     //#behavior
@@ -202,9 +210,8 @@ public class PersistentActorCompileOnlyTest {
 
     static ActorRef<Request> sideEffectProcessor = new TestInbox<Request>().ref();
     static Timeout timeout = new Timeout(1, TimeUnit.SECONDS);
-    static Scheduler scheduler = null;
 
-    private static void performSideEffect(ActorRef<AcknowledgeSideEffect> sender, int correlationId, String data) {
+    private static void performSideEffect(ActorRef<AcknowledgeSideEffect> sender, int correlationId, String data, Scheduler scheduler) {
       CompletionStage<Response> what = ask(sideEffectProcessor, (ActorRef<Response> ar) -> new Request(correlationId, data, ar), timeout, scheduler);
       what.thenApply(r -> new AcknowledgeSideEffect(r.correlationId))
         .thenAccept(sender::tell);
@@ -225,7 +232,7 @@ public class PersistentActorCompileOnlyTest {
         return commandHandlerBuilder()
           .matchCommand(DoSideEffect.class,
             (ctx, state, cmd) -> Effect().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
-              .andThen(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data)))
+              .andThen(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data, ctx.getSystem().scheduler())))
           .matchCommand(AcknowledgeSideEffect.class, (ctx, state, command) -> Effect().persist(new SideEffectAcknowledged(command.correlationId)))
           .build();
       }

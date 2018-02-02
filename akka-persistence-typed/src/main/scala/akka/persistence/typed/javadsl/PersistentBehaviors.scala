@@ -9,7 +9,7 @@ import akka.actor.typed.Behavior.UntypedBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.ApiMayChange
 import akka.persistence.typed._
-import akka.persistence.typed.scaladsl.PersistentBehaviors._
+import akka.persistence.typed.internal._
 
 import scala.collection.JavaConverters._
 
