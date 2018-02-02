@@ -39,6 +39,22 @@ import java.util.stream.StreamSupport;
 import akka.http.javadsl.model.headers.SetCookie;
 //#collecting-headers-example
 
+
+//#single-request-in-actor-example
+import akka.actor.AbstractActor;
+import akka.http.javadsl.Http;
+import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.model.HttpResponse;
+import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
+import scala.concurrent.ExecutionContextExecutor;
+
+import java.util.concurrent.CompletionStage;
+
+import static akka.pattern.PatternsCS.pipe;
+
+//#single-request-in-actor-example
+
 @SuppressWarnings("unused")
 public class HttpClientExampleDocTest {
 
@@ -168,6 +184,28 @@ public class HttpClientExampleDocTest {
       Http.get(system)
           .singleRequest(HttpRequest.create("http://akka.io"));
     //#single-request-example
+  }
+
+  // compile only test
+  public void singleRequestInActorExample1() {
+    //#single-request-in-actor-example
+    class SingleRequestInActorExample extends AbstractActor {
+      final Http http = Http.get(context().system());
+      final ExecutionContextExecutor dispatcher = context().dispatcher();
+      final Materializer materializer = ActorMaterializer.create(context());
+
+      @Override
+      public Receive createReceive() {
+        return receiveBuilder()
+          .match(String.class, url -> pipe(fetch(url), dispatcher).to(self()))
+          .build();
+      }
+
+      CompletionStage<HttpResponse> fetch(String url) {
+        return http.singleRequest(HttpRequest.create(url));
+      }
+    }
+    //#single-request-in-actor-example
   }
 
   // compile only test

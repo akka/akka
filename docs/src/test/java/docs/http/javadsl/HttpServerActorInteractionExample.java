@@ -22,7 +22,6 @@ import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
-import akka.japi.pf.ReceiveBuilder;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.util.Timeout;
@@ -34,7 +33,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static akka.pattern.PatternsCS.ask;
-
 
 public class HttpServerActorInteractionExample extends AllDirectives {
 
@@ -107,10 +105,6 @@ public class HttpServerActorInteractionExample extends AllDirectives {
     }
   }
 
-  //#actor-interaction
-  /* TODO: replace with code that works for both 2.4 and 2.5, see #821
-  //#actor-interaction
-  // compiles only against Akka 2.4, see migration guide for how to rewrite for Akka 2.5
   static class Auction extends AbstractActor {
 
     private final LoggingAdapter log = Logging.getLogger(context().system(), this);
@@ -121,26 +115,19 @@ public class HttpServerActorInteractionExample extends AllDirectives {
       return Props.create(Auction.class);
     }
 
-    public Auction() {
-      receive(ReceiveBuilder.
-        match(HttpServerActorInteractionExample.Bid.class, bid -> {
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(HttpServerActorInteractionExample.Bid.class, bid -> {
           bids.add(bid);
           log.info("Bid complete: {}, {}", bid.userId, bid.offer);
-        }).
-        match(HttpServerActorInteractionExample.GetBids.class, m -> {
+        })
+        .match(HttpServerActorInteractionExample.GetBids.class, m -> {
           sender().tell(new HttpServerActorInteractionExample.Bids(bids), self());
-        }).
-        matchAny(o -> log.info("Invalid message")).
-        build()
-      );
+        })
+        .matchAny(o -> log.info("Invalid message"))
+        .build();
     }
   }
-  //#actor-interaction
-  */
-
-  static class Auction {
-    static Props props() { return null; }
-  }
-  //#actor-interaction
 }
 //#actor-interaction
