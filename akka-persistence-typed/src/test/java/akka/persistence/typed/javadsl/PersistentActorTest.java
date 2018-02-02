@@ -186,7 +186,7 @@ public class PersistentActorTest extends TestKit {
     return new PersistentBehavior<Command, Incremented, State>(persistentId) {
       @Override
       public CommandHandler<Command, Incremented, State> commandHandler() {
-        return commandHandlerBuilder(Command.class)
+        return commandHandlerBuilder()
           .matchCommand(Increment.class, (ctx, state, command) -> Effect().persist(new Incremented(1)))
           .matchCommand(GetValue.class, (ctx, state, command) -> {
             command.replyTo.tell(state);

@@ -48,4 +48,6 @@ public class BasicPersistentBehaviorsTest {
 
   static Behavior<Command> persistentBehavior = new MyPersistentBehavior("pid");
   //#structure
+
+  // FIXME, do recovery and tagging
 }

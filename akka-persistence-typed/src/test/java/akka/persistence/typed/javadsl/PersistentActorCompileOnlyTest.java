@@ -112,7 +112,7 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler() {
-        return commandHandlerBuilder(MyCommand.class)
+        return commandHandlerBuilder()
           .matchCommand(Cmd.class, (ctx, state, cmd) -> Effect().persist(new Evt(cmd.data))
             .andThen(() -> cmd.sender.tell(new Ack())))
           .build();
@@ -222,7 +222,7 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public CommandHandler<Command, Event, EventsInFlight> commandHandler() {
-        return commandHandlerBuilder(Command.class)
+        return commandHandlerBuilder()
           .matchCommand(DoSideEffect.class,
             (ctx, state, cmd) -> Effect().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
               .andThen(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data)))

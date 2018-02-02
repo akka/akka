@@ -26,8 +26,8 @@ import scala.collection.JavaConverters._
   /**
    * @return A new, mutable, by state command handler builder
    */
-  protected final def commandHandlerBuilder(commandClass: Class[Command]): CommandHandlerBuilder[Command, Event, State] =
-    new CommandHandlerBuilder[Command, Event, State](commandClass)
+  protected final def commandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] =
+    new CommandHandlerBuilder[Command, Event, State]()
 
   /**
    * @return A new, mutable, by state command handler builder
@@ -76,28 +76,3 @@ import scala.collection.JavaConverters._
   }
 }
 
-object PersistentBehaviors {
-  /**
-   * Create a `Behavior` for a persistent actor.
-   */
-  def immutable[Command, Event, State >: Null](
-    persistenceId:  String,
-    initialState:   State,
-    commandHandler: CommandHandler[Command, Event, State],
-    eventHandler:   EventHandler[Event, State]): PersistentBehavior[Command, Event, State] =
-    persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, eventHandler)
-
-  /**
-   * Create a `Behavior` for a persistent actor in Cluster Sharding, when the persistenceId is not known
-   * until the actor is started and typically based on the entityId, which
-   * is the actor name.
-   *
-   * TODO This will not be needed when it can be wrapped in `Behaviors.deferred`.
-   */
-  def persistentEntity[Command, Event, State >: Null](
-    persistenceIdFromActorName: String ⇒ String,
-    initialState:               State,
-    commandHandler:             CommandHandler[Command, Event, State],
-    eventHandler:               EventHandler[Event, State]): PersistentBehavior[Command, Event, State] = ???
-
-}

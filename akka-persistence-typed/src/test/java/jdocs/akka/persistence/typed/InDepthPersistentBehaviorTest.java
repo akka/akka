@@ -126,10 +126,11 @@ public class InDepthPersistentBehaviorTest {
   }
   //#commands
 
+  //#behavior
   public static class BlogBehavior extends PersistentBehavior<BlogCommand, BlogEvent, BlogState> {
 
     //#initial-command-handler
-    private CommandHandler<BlogCommand, BlogEvent, BlogState> initialCommandHandler = commandHandlerBuilder(BlogCommand.class)
+    private CommandHandler<BlogCommand, BlogEvent, BlogState> initialCommandHandler = commandHandlerBuilder()
       .matchCommand(AddPost.class, (ctx, state, cmd) -> {
         PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
         return Effect().persist(event)
@@ -139,8 +140,8 @@ public class InDepthPersistentBehaviorTest {
       .build();
     //#initial-command-handler
 
-    //#post-command-handler
-    private CommandHandler<BlogCommand, BlogEvent, BlogState> postCommandHandler = commandHandlerBuilder(BlogCommand.class)
+    //#post-added-command-handler
+    private CommandHandler<BlogCommand, BlogEvent, BlogState> postCommandHandler = commandHandlerBuilder()
       .matchCommand(ChangeBody.class, (ctx, state, cmd) -> {
         BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
         return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
@@ -157,7 +158,7 @@ public class InDepthPersistentBehaviorTest {
       .matchCommand(AddPost.class, (ctx, state, cmd) -> Effect().unhandled())
       .matchCommand(PassivatePost.class, (ctx, state, cmd) -> Effect().stop())
       .build();
-    //#post-command-handler
+    //#post-added-command-handler
 
 
     public BlogBehavior(String persistenceId) {
@@ -191,4 +192,5 @@ public class InDepthPersistentBehaviorTest {
     }
     //#event-handler
   }
+  //#behavior
 }

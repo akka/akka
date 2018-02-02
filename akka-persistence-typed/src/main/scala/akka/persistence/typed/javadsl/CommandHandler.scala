@@ -31,12 +31,7 @@ trait CommandToEffect[Command, MsgCommand <: Command, Event, State] {
   def apply(ctx: ActorContext[Command], state: State, command: MsgCommand): Effect[Event, State]
 }
 
-object CommandHandlerBuilder {
-  def builder[Command, Event, State](rootCommandClass: Class[Command]): CommandHandlerBuilder[Command, Event, State] =
-    new CommandHandlerBuilder[Command, Event, State](rootCommandClass)
-}
-
-final class CommandHandlerBuilder[Command, Event, State] @InternalApi private[persistence] (rootCommandClass: Class[Command]) {
+final class CommandHandlerBuilder[Command, Event, State] @InternalApi private[persistence] () {
 
   private final case class CommandHandlerCase(predicate: Command ⇒ Boolean, handler: CommandToEffect[Command, Command, Event, State])
 

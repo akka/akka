@@ -34,7 +34,7 @@ Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #structure }
 
 The first important thing to notice is the `Behavior` of a persistent actor is typed to the type of the `Command`
-because this type of message a persistent actor should receive. In Akka Typed this is now enforced by the type system.
+because this is the type of message a persistent actor should receive. In Akka Typed this is now enforced by the type system.
 The event and state are only used internally.
 
 The components that make up a PersistentBehavior are:
@@ -153,21 +153,33 @@ The commands (only a subset are valid depending on state):
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #commands }
 
+Java
+:  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #commands }
+
 The command handler to process each command is decided by a `CommandHandler.byState` command handler,
 which is a function from `State => CommandHandler`:
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #by-state-command-handler }
 
+Java
+:  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #by-state-command-handler }
+
 This can refer to many other `CommandHandler`s e.g one for a post that hasn't been started:
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #initial-command-handler }
 
+Java
+:  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #initial-command-handler }
+
 And a different `CommandHandler` for after the post has been added:
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #post-added-command-handler }
+
+Java
+:  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #post-added-command-handler }
 
 The event handler is always the same independent of state. The main reason for not making the event handler
 part of the `CommandHandler` is that all events must be handled and that is typically independent of what the
@@ -176,10 +188,16 @@ current state is. The event handler can of course still decide what to do based 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #event-handler }
 
+Java
+:  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #event-handler }
+
 And finally the behavior is created from the `byState` command handler:
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #behavior }
+
+Java
+:  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #behavior }
 
 ## Serialization
 
@@ -209,8 +227,5 @@ Scala
 ## Current limitations
 
 * The `PersistentBehavior` can't be wrapped in other behaviors, such as `Behaviors.deferred`. See [#23694](https://github.com/akka/akka/issues/23694)
-* Can only tag events with event adapters. See [#23817](https://github.com/akka/akka/issues/23817)
-* Missing Java DSL. See [#24193](https://github.com/akka/akka/issues/24193)
-* Snapshot support. See [#24196](https://github.com/akka/akka/issues/24196)
 
 
