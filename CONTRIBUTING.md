@@ -247,7 +247,7 @@ The generated html documentation is in `akka-docs/target/paradox/site/main/index
 
 Akka generates class diagrams for the API documentation using ScalaDoc. 
 
-Links to static methods in ScalaDoc comments should be formatted
+Links to methods in ScalaDoc comments should be formatted
 `[[Like#this]]`, because `[[this]]` does not work with genjavadoc, and
 IntelliJ warns about `[[#this]]`.
 
