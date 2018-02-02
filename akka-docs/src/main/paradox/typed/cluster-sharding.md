@@ -14,7 +14,7 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 
 ## Dependency
 
-To use Akka Cluster Sharding, add the module to your project:
+To use Akka Cluster Sharding Typed, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
@@ -74,5 +74,5 @@ To create the entity:
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala]($akka$/akka-cluster-sharding-typed/src/test/scala/doc/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #persistence }
 
-Sending messages to entities is the same as the example above. The only difference is ow when an entity is moved the state will be restored.
+Sending messages to entities is the same as the example above. The only difference is when an entity is moved the state will be restored.
 See @ref:[persistence](persistence.md) for more details.

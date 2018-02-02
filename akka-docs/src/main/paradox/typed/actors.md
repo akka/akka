@@ -11,7 +11,7 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 
 ## Dependency
 
-To use Akka Typed add the following dependency:
+To use Akka Actor Typed add the following dependency:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
@@ -63,7 +63,7 @@ also typed as such. This is why we can access the `whom` and `replyTo`
 members without needing to use a pattern match.
 
 On the last line we see the `HelloWorld` Actor send a message to another
-Actor, which is done using the @scala[`!` operator (pronounced “tell”).]@java[`tell` method.]
+Actor, which is done using the @scala[`!` operator (pronounced “bang” or “tell”).]@java[`tell` method.]
 Since the `replyTo` address is declared to be of type @scala[`ActorRef[Greeted]`]@java[`ActorRef<Greeted>`], the
 compiler will only permit us to send messages of this type, other usage will
 not be accepted.
@@ -265,24 +265,9 @@ Therefore after creating the Actor system with the `main` Actor’s
 `Behavior` we just await its termination.
 
 
-## Status of this Project and Relation to Akka Actors
-
-Akka Typed is the result of many years of research and previous attempts
-(including Typed Channels in the 2.2.x series) and it is on its way to
-stabilization, but maturing such a profound change to the core concept of Akka
-will take a long time. We expect that this module will stay marked
-@ref:[may change](../common/may-change.md) for multiple major releases of Akka and the
-plain `akka.actor.Actor` will not be deprecated or go away anytime soon.
-
-Being a research project also entails that the reference documentation is not
-as detailed as it will be for a final version, please refer to the API
-documentation for greater depth and finer detail.
-
-### Main Differences
+## Relation to Akka (untyped) Actors
 
 The most prominent difference is the removal of the `sender()` functionality.
-This turned out to be the Achilles heel of the Typed Channels project, it is
-the feature that makes its type signatures and macros too complex to be viable.
 The solution chosen in Akka Typed is to explicitly include the properly typed
 reply-to address in the message, which both burdens the user with this task but
 also places this aspect of protocol design where it belongs.
@@ -297,9 +282,9 @@ have been converted into Signals.
 A side-effect of this is that behaviors can now be tested in isolation without
 having to be packaged into an Actor, tests can run fully synchronously without
 having to worry about timeouts and spurious failures. Another side-effect is
-that behaviors can nicely be composed and decorated, see `tap`, or
-@scala[`widen`]@java[`widened`] combinators; nothing about these is special or internal, new
-combinators can be written as external libraries or tailor-made for each project.
+that behaviors can nicely be composed and decorated, for example `Behaviors.tap`
+is not special or using something internal. New combinators can be written as
+external libraries or tailor-made for each project.
 
 ## A Little Bit of Theory
 
@@ -353,11 +338,3 @@ Actor to continue the conversation by sending a message of type B to this new
 address. While we cannot statically express the “current” state of an Actor, we
 can express the current state of a protocol between two Actors, since that is
 just given by the last message type that was received or sent.
-
-## Migrating
-
-### Migrating to 2.5.9
-
-* `EffectfulActorContext` has been renamed to `BehaviourTestKit`
-* `Inbox` has been renamed to `TestInbox` to allign with `TestProbe`
-* Separated into modules e.g. `akka-actor-typed` `akka-persistence-typed` along with matching package names
