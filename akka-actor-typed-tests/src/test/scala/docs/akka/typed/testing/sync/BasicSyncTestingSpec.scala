@@ -41,8 +41,8 @@ object BasicSyncTestingSpec {
     case (_, SayHello(who)) ⇒
       who ! "hello"
       Behaviors.same
-    //#under-test
   }
+  //#under-test
 
 }
 

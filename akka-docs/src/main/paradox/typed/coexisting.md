@@ -4,8 +4,6 @@ We believe Akka Typed will be adopted in existing systems gradually and therefor
 and untyped actors together, within the same `ActorSystem`. Also, we will not be able to integrate with all existing modules in one big bang release and that is another reason for why these two ways of writing actors must be able to coexist.
 
 There are two different `ActorSystem`s: `akka.actor.ActorSystem` and `akka.actor.typed.ActorSystem`. 
-The latter should only be used for greenfield projects that are only using typed actors. The `akka.actor.ActorSystem`
-can be adapted so that it can create typed actors.
 
 Currently the typed actor system is implemented using an untyped actor system under the hood. This may change in the future.
 
@@ -17,11 +15,15 @@ Typed and untyped can interact the following ways:
 * watch typed from untyped, and opposite
 * untyped actor system can be converted to a typed actor system
 
-@scala[In the examples the `akka.actor` package is aliased to `untyped`.] @java[The examples use fully qualified
-class names for the untyped classes to distinguish between typed and untyped classes with the same name.]
+@@@ div { .group-scala }
+In the examples the `akka.actor` package is aliased to `untyped`.
 
 Scala
 :  @@snip [UntypedWatchingTypedSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #import-alias }
+
+@@@
+
+@java[The examples use fully qualified class names for the untyped classes to distinguish between typed and untyped classes with the same name.]
 
 ## Untyped to typed 
 

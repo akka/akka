@@ -62,11 +62,11 @@ object ShardingCompileOnlySpec {
   //#persistence
   val ShardingTypeName = EntityTypeKey[BlogCommand]("BlogPost")
   ClusterSharding(system).spawn[BlogCommand](
-    behavior = _ ⇒ InDepthPersistentBehaviorSpec.behavior,
+    behavior = entityId ⇒ InDepthPersistentBehaviorSpec.behavior(entityId),
     props = Props.empty,
     typeKey = ShardingTypeName,
     settings = ClusterShardingSettings(system),
-    maxNumberOfShards = 10,
+    maxNumberOfShards = 100,
     handOffStopMessage = PassivatePost)
   //#persistence
 
