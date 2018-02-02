@@ -156,12 +156,13 @@ import akka.japi.function.{ Function ⇒ JFunction }
           defaultShardAllocationStrategy(settings),
           extractor.handOffStopMessage)
       } else {
-        system.log.info("Starting Shard Region Proxy [{}] (no actors will be hosted on this node)...")
+        log.info("Starting Shard Region Proxy [{}] (no actors will be hosted on this node) " +
+          "for role [{}] and dataCenter [{}] ...", typeKey.name, settings.role, settings.dataCenter)
 
         untypedSharding.startProxy(
           typeKey.name,
           settings.role,
-          dataCenter = None, // TODO what about the multi-dc value here? issue #23689
+          dataCenter = settings.dataCenter,
           extractEntityId,
           extractShardId)
       }
