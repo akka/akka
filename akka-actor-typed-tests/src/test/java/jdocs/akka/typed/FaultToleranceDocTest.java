@@ -32,11 +32,15 @@ public class FaultToleranceDocTest extends JUnitSuite {
       .build();
 
     Behavior<Message> middleManagementBehavior = Behaviors.deferred((ctx) -> {
+      ctx.getLog().info("Middle management starting up");
       final ActorRef<Message> child = ctx.spawn(failingChildBehavior, "child");
       // we want to know when the child terminates, but since we do not handle
       // the Terminated signal, we will in turn fail on child termination
       ctx.watch(child);
 
+      // here we don't handle Terminated at all which means that
+      // when the child fails or stops gracefully this actor will
+      // fail with a DeathWatchException
       return Behaviors.immutable(Message.class)
         .onMessage(Message.class, (innerCtx, msg) -> {
           // just pass messages on to the child
@@ -46,9 +50,13 @@ public class FaultToleranceDocTest extends JUnitSuite {
     });
 
     Behavior<Message> bossBehavior = Behaviors.deferred((ctx) -> {
+      ctx.getLog().info("Boss starting up");
       final ActorRef<Message> middleManagement = ctx.spawn(middleManagementBehavior, "middle-management");
       ctx.watch(middleManagement);
 
+      // here we don't handle Terminated at all which means that
+      // when middle management fails with a DeathWatchException
+      // this actor will also fail
       return Behaviors.immutable(Message.class)
         .onMessage(Message.class, (innerCtx, msg) -> {
           // just pass messages on to the child

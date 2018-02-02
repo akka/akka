@@ -53,10 +53,14 @@ In some scenarios it may be useful to push the decision about what to do on a fa
 For a parent to be notified when a child is terminated it has to `watch` the child. If the child was stopped because of
 a failure this will be included in the `Terminated` signal in the `failed` field.
 
-If the parent in turn does not handle the `Terminated` message it will itself fail with an `akka.actor.typed.DeathPactException`.
+If the parent in turn does not handle the `Terminated` message it will itself fail with an `akka.actor.typed.DeathPactException`. Note that `DeathPactException` cannot be supervised.
+
 This means that a hierarchy of actors can have a child failure bubble up making each actor on the way stop but informing the
 top-most parent that there was a failure and how to deal with it, however, the original exception that caused the failure
-will only be available to the immediate parent.
+will only be available to the immediate parent out of the box (this is most often a good thing, not leaking implementation details). 
+
+There might be cases when you want the original exception to bubble up the hierarchy, this can be done by handling the 
+`Terminated` signal, and rethrowing the exception in each actor.
 
  
 Scala

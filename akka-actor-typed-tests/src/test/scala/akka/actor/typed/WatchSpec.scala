@@ -92,7 +92,7 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
       EventFilter[TestException](occurrences = 1).intercept {
         parent ! "boom"
       }
-      val terminated = probe.expectMsgType[Failed].t
+      val terminated = probe.expectMessageType[Failed].t
       terminated.failure should ===(Some(ex)) // here we get the exception from the child
     }
     "fail the actor itself with DeathPact if it does not accept Terminated" in {
@@ -130,7 +130,7 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
           grossoBosso ! "boom"
         }
       }
-      val terminated = probe.expectMsgType[Failed].t
+      val terminated = probe.expectMessageType[Failed].t
       terminated.failure.isDefined should ===(true)
       terminated.failure.get shouldBe a[DeathPactException]
     }

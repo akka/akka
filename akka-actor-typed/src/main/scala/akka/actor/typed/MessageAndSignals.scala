@@ -66,10 +66,12 @@ case object PostStop extends PostStop {
  * have occurred. This message is also sent when the watched actor is on a node
  * that has been removed from the cluster when using akka-cluster or has been
  * marked unreachable when using akka-remote directly.
+ *
+ * @param ref Scala API: the `ActorRef` for the terminated actor
  */
 final case class Terminated(ref: ActorRef[Nothing])(failed: Throwable) extends Signal {
   /**
-   * If the watched actor is a direct child, and was stopped because it failed, this will contain the
+   * Scala API: If the watched actor is a direct child, and was stopped because it failed, this will contain the
    * Exception it failed with, for all other cases it will be `None`.
    */
   def failure: Option[Throwable] = Option(failed)

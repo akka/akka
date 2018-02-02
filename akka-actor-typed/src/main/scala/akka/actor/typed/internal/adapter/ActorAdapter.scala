@@ -15,13 +15,13 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor with a.ActorLogging {
+@InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor with a.ActorLogging {
   import Behavior._
   import ActorRefAdapter.toUntyped
 
-  private var behavior: Behavior[T] = _initialBehavior
+  protected var behavior: Behavior[T] = _initialBehavior
 
-  var _ctx: ActorContextAdapter[T] = _
+  private var _ctx: ActorContextAdapter[T] = _
   def ctx: ActorContextAdapter[T] =
     if (_ctx ne null) _ctx
     else throw new IllegalStateException("Context was accessed before typed actor was started.")

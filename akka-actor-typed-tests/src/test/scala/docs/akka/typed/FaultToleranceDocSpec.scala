@@ -3,13 +3,10 @@
  */
 package docs.akka.typed
 
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ DeathPactException, SupervisorStrategy, TypedAkkaSpecWithShutdown }
 import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 class FaultToleranceDocSpec extends TestKit(ConfigFactory.parseString(
   """
@@ -21,43 +18,50 @@ class FaultToleranceDocSpec extends TestKit(ConfigFactory.parseString(
 
     "have an example for the docs" in {
 
+      // FIXME I think we could have much better examples of this but I'm stuck so this will have to do for now
+
       // #bubbling-example
       sealed trait Message
       case class Fail(text: String) extends Message
 
-      val failingChildBehavior = Behaviors.immutable[Message] { (ctx, msg) ⇒
-        // fail on every message
+      val worker = Behaviors.immutable[Message] { (ctx, msg) ⇒
         msg match {
           case Fail(text) ⇒ throw new RuntimeException(text)
         }
       }
 
       val middleManagementBehavior = Behaviors.deferred[Message] { ctx ⇒
-        val child = ctx.spawn(failingChildBehavior, "child")
+        ctx.log.info("Middle management starting up")
+        val child = ctx.spawn(worker, "child")
         ctx.watch(child)
 
-        Behaviors.immutable { (ctx, msg) ⇒
+        // here we don't handle Terminated at all which means that
+        // when the child fails or stops gracefully this actor will
+        // fail with a DeathWatchException
+        Behaviors.immutable[Message] { (ctx, msg) ⇒
           child ! msg
           Behaviors.same
         }
       }
 
-      val bossBehavior = Behaviors.deferred[Message] { ctx ⇒
+      val bossBehavior = Behaviors.supervise(Behaviors.deferred[Message] { ctx ⇒
+        ctx.log.info("Boss starting up")
         val middleManagment = ctx.spawn(middleManagementBehavior, "middle-management")
         ctx.watch(middleManagment)
 
-        Behaviors.immutable { (ctx, msg) ⇒
+        // here we don't handle Terminated at all which means that
+        // when middle management fails with a DeathWatchException
+        // this actor will also fail
+        Behaviors.immutable[Message] { (ctx, msg) ⇒
           middleManagment ! msg
           Behaviors.same
         }
-      }
+      }).onFailure[DeathPactException](SupervisorStrategy.restart)
 
+      // (spawn comes from the testkit)
       val boss = spawn(bossBehavior, "upper-management")
       boss ! Fail("ping")
       // #bubbling-example
-
-      val probe = TestProbe[AnyRef]()
-      probe.expectTerminated(boss, 1.second)
 
     }
   }
