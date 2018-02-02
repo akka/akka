@@ -245,7 +245,13 @@ The generated html documentation is in `akka-docs/target/paradox/site/main/index
 
 ### Scaladoc
 
-Akka generates class diagrams for the API documentation using ScalaDoc. This needs the `dot` command from the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by adding the flag `-Dakka.scaladoc.diagrams=false`. After installing Graphviz, make sure you add the toolset to the PATH (definitely on Windows).
+Akka generates class diagrams for the API documentation using ScalaDoc. 
+
+Links to static methods in ScalaDoc comments should be formatted
+`[[Like#this]]`, because `[[this]]` does not work with genjavadoc, and
+IntelliJ warns about `[[#this]]`.
+
+The Scaladoc tool needs the `dot` command from the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by adding the flag `-Dakka.scaladoc.diagrams=false`. After installing Graphviz, make sure you add the toolset to the PATH (definitely on Windows).
 
 ### JavaDoc
 
