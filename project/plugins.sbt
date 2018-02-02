@@ -17,15 +17,15 @@ addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "2.0.1")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.3")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.0") // for advanced PR validation features
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
-addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.1")
+addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.2")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.3.2")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.5")
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.7")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.6")
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.10")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "4.1.0")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
-libraryDependencies += "org.kohsuke" % "github-api" % "1.90"
+libraryDependencies += "org.kohsuke" % "github-api" % "1.92"
 
 // used for @unidoc directive
-libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "2.9.3"
+libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "2.12.3"

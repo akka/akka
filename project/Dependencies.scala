@@ -11,14 +11,14 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val jacksonVersion = "2.9.2"
+  val jacksonVersion = "2.9.4"
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
 
-  val akka25Version = "2.5.8"
+  val akka25Version = "2.5.9"
 
   lazy val akkaVersion = settingKey[String]("The version of Akka to use.")
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
@@ -26,11 +26,11 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.11", "2.12.4"),
+    crossScalaVersions := Seq("2.11.12", "2.12.4"),
     scalaVersion := crossScalaVersions.value.head,
     akkaVersion := System.getProperty("akka.build.version", akka25Version),
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.5"),
-    scalaTestVersion := "3.0.4",
+    scalaTestVersion := "3.0.5",
     specs2Version := "4.0.2"
   )
   import Versions._
@@ -56,7 +56,7 @@ object Dependencies {
 
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.6.0"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.6.1"
     val jsr305      = "com.google.code.findbugs"      % "jsr305"                       % "3.0.2"             % Provided // ApacheV2
 
     object Docs {
@@ -74,7 +74,7 @@ object Dependencies {
       val sprayJson    = Compile.sprayJson                                                                   % "test" // ApacheV2
 
       // HTTP/2
-      val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % "2.0.6"            % "test" // ApacheV2
+      val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % "2.0.7"            % "test" // ApacheV2
       val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
     }
   }
