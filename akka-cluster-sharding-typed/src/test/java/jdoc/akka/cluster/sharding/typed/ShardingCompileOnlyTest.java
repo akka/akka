@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ */
 package jdoc.akka.cluster.sharding.typed;
 
 import akka.actor.typed.ActorRef;
@@ -5,10 +8,17 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.cluster.sharding.typed.ClusterSharding;
-import akka.cluster.sharding.typed.*;
 import akka.cluster.typed.ClusterSingleton;
 import akka.cluster.typed.ClusterSingletonSettings;
+
+//#import
+import akka.cluster.sharding.typed.ClusterShardingSettings;
+import akka.cluster.sharding.typed.ShardingEnvelope;
+import akka.cluster.sharding.typed.javadsl.ClusterSharding;
+import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
+import akka.cluster.sharding.typed.javadsl.EntityRef;
+
+//#import
 
 public class ShardingCompileOnlyTest {
 
@@ -24,10 +34,10 @@ public class ShardingCompileOnlyTest {
     }
   }
 
-  public static Behavior<CounterCommand> counter(Integer value) {
+  public static Behavior<CounterCommand> counter(String entityId, Integer value) {
     return Behaviors.immutable(CounterCommand.class)
       .onMessage(Increment.class, (ctx, msg) -> {
-        return counter(value + 1);
+        return counter(entityId,value + 1);
       })
       .onMessage(GetValue.class, (ctx, msg) -> {
         msg.replyTo.tell(value);
@@ -50,7 +60,7 @@ public class ShardingCompileOnlyTest {
     //#spawn
     EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
     ActorRef<ShardingEnvelope<CounterCommand>> shardRegion = sharding.spawn(
-      counter(0),
+      entityId -> counter(entityId,0),
       Props.empty(),
       typeKey,
       ClusterShardingSettings.create(system),
@@ -69,7 +79,7 @@ public class ShardingCompileOnlyTest {
     ClusterSingleton singleton = ClusterSingleton.get(system);
     // Start if needed and provide a proxy to a named singleton
     ActorRef<CounterCommand> proxy = singleton.spawn(
-      counter(0),
+      counter("TheCounter", 0),
       "GlobalCounter",
       Props.empty(),
       ClusterSingletonSettings.create(system),

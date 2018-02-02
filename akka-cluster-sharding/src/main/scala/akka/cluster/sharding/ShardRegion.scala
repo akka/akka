@@ -33,7 +33,7 @@ object ShardRegion {
    */
   private[akka] def props(
     typeName:           String,
-    entityProps:        Props,
+    entityProps:        String ⇒ Props,
     settings:           ClusterShardingSettings,
     coordinatorPath:    String,
     extractEntityId:    ShardRegion.ExtractEntityId,
@@ -366,7 +366,7 @@ object ShardRegion {
  */
 private[akka] class ShardRegion(
   typeName:           String,
-  entityProps:        Option[Props],
+  entityProps:        Option[String ⇒ Props],
   dataCenter:         Option[DataCenter],
   settings:           ClusterShardingSettings,
   coordinatorPath:    String,
