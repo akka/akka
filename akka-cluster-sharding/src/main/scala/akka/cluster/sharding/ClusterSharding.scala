@@ -8,6 +8,7 @@ import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.concurrent.Await
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -28,15 +29,16 @@ import akka.pattern.ask
 import akka.dispatch.Dispatchers
 import akka.cluster.ddata.ReplicatorSettings
 import akka.cluster.ddata.Replicator
-
 import scala.util.control.NonFatal
+
 import akka.actor.Status
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.stream.{ Inlet, Outlet }
-
 import scala.collection.immutable
 import scala.collection.JavaConverters._
+
+import akka.annotation.InternalApi
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -85,11 +87,6 @@ import scala.collection.JavaConverters._
  * the oldest member among all cluster nodes or a group of nodes tagged with a specific
  * role. The oldest member can be determined by [[akka.cluster.Member#isOlderThan]].
  *
- * The logic that decides where a shard is to be located is defined in a pluggable shard
- * allocation strategy. The default implementation [[ShardCoordinator.LeastShardAllocationStrategy]]
- * allocates new shards to the `ShardRegion` with least number of previously allocated shards.
- * This strategy can be replaced by an application specific implementation.
- *
  * To be able to use newly added members in the cluster the coordinator facilitates rebalancing
  * of shards, i.e. migrate entities from one node to another. In the rebalance process the
  * coordinator first notifies all `ShardRegion` actors that a handoff for a shard has started.
@@ -114,9 +111,8 @@ import scala.collection.JavaConverters._
  * must be to begin the rebalancing. This strategy can be replaced by an application specific
  * implementation.
  *
- * The state of shard locations in the `ShardCoordinator` is persistent (durable) with
- * `akka-persistence` to survive failures. Since it is running in a cluster `akka-persistence`
- * must be configured with a distributed journal. When a crashed or unreachable coordinator
+ * The state of shard locations in the `ShardCoordinator` is stored with `akka-distributed-data` or
+ * `akka-persistence` to survive failures. When a crashed or unreachable coordinator
  * node has been removed (via down) from the cluster a new `ShardCoordinator` singleton
  * actor will take over and the state is recovered. During such a failure period shards
  * with known location are still available, while messages for new (unknown) shards
@@ -219,6 +215,21 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: Any): ActorRef = {
 
+    internalStart(typeName, _ ⇒ entityProps, settings, extractEntityId, extractShardId, allocationStrategy, handOffStopMessage)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def internalStart(
+    typeName:           String,
+    entityProps:        String ⇒ Props,
+    settings:           ClusterShardingSettings,
+    extractEntityId:    ShardRegion.ExtractEntityId,
+    extractShardId:     ShardRegion.ExtractShardId,
+    allocationStrategy: ShardAllocationStrategy,
+    handOffStopMessage: Any): ActorRef = {
+
     requireClusterRole(settings.role)
     implicit val timeout = system.settings.CreationTimeout
     val startMsg = Start(typeName, entityProps, settings,
@@ -290,9 +301,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: Any): ActorRef = {
 
-    start(
+    internalStart(
       typeName,
-      entityProps,
+      _ ⇒ entityProps,
       settings,
       extractEntityId = {
         case msg if messageExtractor.entityId(msg) ne null ⇒
@@ -517,7 +528,7 @@ private[akka] object ClusterShardingGuardian {
   import ShardCoordinator.ShardAllocationStrategy
   final case class Start(
     typeName:           String,
-    entityProps:        Props,
+    entityProps:        String ⇒ Props,
     settings:           ClusterShardingSettings,
     extractEntityId:    ShardRegion.ExtractEntityId,
     extractShardId:     ShardRegion.ExtractShardId,

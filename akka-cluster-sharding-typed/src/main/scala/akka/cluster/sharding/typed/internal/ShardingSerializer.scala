@@ -5,11 +5,12 @@ package akka.cluster.sharding.typed.internal
 
 import java.io.NotSerializableException
 
-import akka.cluster.sharding.typed.internal.protobuf.ShardingMessages
 import akka.annotation.InternalApi
+import akka.cluster.sharding.typed.ShardingEnvelope
+import akka.cluster.sharding.typed.internal.protobuf.ShardingMessages
 import akka.remote.serialization.WrappedPayloadSupport
-import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
-import akka.cluster.sharding.typed.{ ShardingEnvelope, StartEntity }
+import akka.serialization.BaseSerializer
+import akka.serialization.SerializerWithStringManifest
 
 /**
  * INTERNAL API
@@ -31,9 +32,7 @@ import akka.cluster.sharding.typed.{ ShardingEnvelope, StartEntity }
     case env: ShardingEnvelope[_] ⇒
       val builder = ShardingMessages.ShardingEnvelope.newBuilder()
       builder.setEntityId(env.entityId)
-      // special null for StartEntity, might change with issue #23679
-      if (env.message != null)
-        builder.setMessage(payloadSupport.payloadBuilder(env.message))
+      builder.setMessage(payloadSupport.payloadBuilder(env.message))
       builder.build().toByteArray()
 
     case _ ⇒
@@ -44,13 +43,8 @@ import akka.cluster.sharding.typed.{ ShardingEnvelope, StartEntity }
     case ShardingEnvelopeManifest ⇒
       val env = ShardingMessages.ShardingEnvelope.parseFrom(bytes)
       val entityId = env.getEntityId
-      if (env.hasMessage) {
-        val wrappedMsg = payloadSupport.deserializePayload(env.getMessage)
-        ShardingEnvelope(entityId, wrappedMsg)
-      } else {
-        // special for StartEntity, might change with issue #23679
-        StartEntity(entityId)
-      }
+      val wrappedMsg = payloadSupport.deserializePayload(env.getMessage)
+      ShardingEnvelope(entityId, wrappedMsg)
     case _ ⇒
       throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")

@@ -19,25 +19,13 @@ object PersistentBehaviors {
     persistenceId:  String,
     initialState:   State,
     commandHandler: CommandHandler[Command, Event, State],
-    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, eventHandler)
-
-  /**
-   * Create a `Behavior` for a persistent actor in Cluster Sharding, when the persistenceId is not known
-   * until the actor is started and typically based on the entityId, which
-   * is the actor name.
-   *
-   * TODO This will not be needed when it can be wrapped in `Actor.deferred`.
-   */
-  def persistentEntity[Command, Event, State](
-    persistenceIdFromActorName: String ⇒ String,
-    initialState:               State,
-    commandHandler:             CommandHandler[Command, Event, State],
-    eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
+    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] = {
+    // FIXME remove `persistenceIdFromActorName: String ⇒ String` from PersistentBehavior
+    new PersistentBehavior(_ ⇒ persistenceId, initialState, commandHandler, eventHandler,
       recoveryCompleted = (_, _) ⇒ (),
       tagger = _ ⇒ Set.empty,
       snapshotOn = (_, _, _) ⇒ false)
+  }
 
   /**
    * Factories for effects - how a persistent actor reacts on a command
