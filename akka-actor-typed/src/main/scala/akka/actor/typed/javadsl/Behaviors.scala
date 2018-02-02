@@ -30,7 +30,7 @@ object Behaviors {
 
   /**
    * `deferred` is a factory for a behavior. Creation of the behavior instance is deferred until
-   * the actor is started, as opposed to `Actor.immutable` that creates the behavior instance
+   * the actor is started, as opposed to [[Behaviors#immutable]] that creates the behavior instance
    * immediately before the actor is running. The `factory` function pass the `ActorContext`
    * as parameter and that can for example be used for spawning child actors.
    *
