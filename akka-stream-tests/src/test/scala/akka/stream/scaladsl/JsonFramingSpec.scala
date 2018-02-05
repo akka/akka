@@ -21,6 +21,7 @@ class JsonFramingSpec extends AkkaSpec {
 
   "collecting multiple json" should {
     "parse json array" in {
+      // #using-json-framing
       val input =
         """
           |[
@@ -35,6 +36,7 @@ class JsonFramingSpec extends AkkaSpec {
         .runFold(Seq.empty[String]) {
           case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
         }
+      // #using-json-framing
 
       result.futureValue shouldBe Seq(
         """{ "name" : "john" }""",
