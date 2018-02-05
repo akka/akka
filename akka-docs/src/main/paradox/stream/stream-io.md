@@ -123,10 +123,7 @@ see
 @java[[Javadoc](http://doc.akka.io/japi/akka/current/akka/stream/javadsl/Framing.html#simpleFramingProtocol-int-)]
 for more information.
 
-`JsonFraming` (
-@scala[[ScalaDoc](http://doc.akka.io/api/akka/current/akka/stream/scaladsl/JsonFraming$.html)]
-@java[[Javadoc](http://doc.akka.io/japi/akka/current/akka/stream/javadsl/JsonFraming.html#objectScanner-int-)]
-) separates valid JSON objects from incoming `ByteString` objects:
+@scala[[JsonFraming](http://doc.akka.io/api/akka/current/akka/stream/scaladsl/JsonFraming$.html)]@java[[JsonFraming](http://doc.akka.io/japi/akka/current/akka/stream/javadsl/JsonFraming.html#objectScanner-int-)] separates valid JSON objects from incoming `ByteString` objects:
 
 Scala
 :  @@snip [JsonFramingSpec.scala]($akka$akka-stream-tests/src/test/scala/akka/stream/scaladsl/JsonFramingSpec.scala) { #using-json-framing }
