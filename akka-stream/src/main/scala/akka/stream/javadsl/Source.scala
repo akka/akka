@@ -2153,8 +2153,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *                    on the original, to be emitted in case downstream signals demand.
    * @see [[#expand]]    for a version that can overwrite the original element.
    */
-  def extrapolate[U >: Out](extrapolator: function.Function[U, java.util.Iterator[U]]): Source[U, Mat] =
-    new Source(delegate.extrapolate[U](in ⇒ extrapolator(in).asScala))
+  def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]]): Source[Out, Mat] =
+    new Source(delegate.extrapolate(in ⇒ extrapolator(in).asScala))
 
   /**
    * Allows a faster downstream to progress independent of a slower upstream.
@@ -2179,8 +2179,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @param initial      the initial element to be emitted, in case upstream is able to stall the entire stream.
    * @see [[#expand]]    for a version that can overwrite the original element.
    */
-  def extrapolate[U >: Out](extrapolator: function.Function[U, java.util.Iterator[U]], initial: U): Source[U, Mat] =
-    new Source(delegate.extrapolate[U](in ⇒ extrapolator(in).asScala, Some(initial)))
+  def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]], initial: Out @uncheckedVariance): Source[Out, Mat] =
+    new Source(delegate.extrapolate(in ⇒ extrapolator(in).asScala, Some(initial)))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.

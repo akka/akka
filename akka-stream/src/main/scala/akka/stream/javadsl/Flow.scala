@@ -1605,8 +1605,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *                     on the original, to be emitted in case downstream signals demand.
    * @see [[#expand]]    for a version that can overwrite the original element.
    */
-  def extrapolate[U >: Out](extrapolator: function.Function[U, java.util.Iterator[U]]): javadsl.Flow[In, U, Mat] =
-    new Flow(delegate.extrapolate[U](in ⇒ extrapolator(in).asScala))
+  def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]]): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.extrapolate(in ⇒ extrapolator(in).asScala))
 
   /**
    * Allows a faster downstream to progress independent of a slower upstream.
@@ -1631,8 +1631,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @param initial      The initial element to be emitted, in case upstream is able to stall the entire stream.
    * @see [[#expand]]    for a version that can overwrite the original element.
    */
-  def extrapolate[U >: Out](extrapolator: function.Function[U, java.util.Iterator[U]], initial: U): javadsl.Flow[In, U, Mat] =
-    new Flow(delegate.extrapolate[U](in ⇒ extrapolator(in).asScala, Some(initial)))
+  def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]], initial: Out @uncheckedVariance): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.extrapolate(in ⇒ extrapolator(in).asScala, Some(initial)))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
