@@ -326,11 +326,12 @@ The callback will not be invoked if the actor is restarted (or stopped) in betwe
 ### Deferring actions until preceding persist handlers have executed
 
 Sometimes when working with `persistAsync` or `persist` you may find that it would be nice to define some actions in terms of
-''happens-after the previous `persistAsync`/`persist` handlers have been invoked''. `PersistentActor` provides an utility method
-called `deferAsync`, which works similarly to `persistAsync` yet does not persist the passed in event. It is recommended to
-use it for *read* operations, and actions which do not have corresponding events in your domain model.
+''happens-after the previous `persistAsync`/`persist` handlers have been invoked''. `PersistentActor` provides utility methods
+called `defer` and `deferAsync`, which work similarly to `persist` and `persistAsync` respectively yet do not persist the
+passed in event. It is recommended to use them for *read* operations, and actions which do not have corresponding events in your
+domain model.
 
-Using this method is very similar to the persist family of methods, yet it does **not** persist the passed in event.
+Using those methods is very similar to the persist family of methods, yet they do **not** persist the passed in event.
 It will be kept in memory and used when invoking the handler.
 
 Scala
@@ -340,7 +341,7 @@ Java
 :  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #defer }
 
 Notice that the `sender()` is **safe** to access in the handler callback, and will be pointing to the original sender
-of the command for which this `deferAsync` handler was called.
+of the command for which this `defer` or `deferAsync` handler was called.
 
 The calling side will get the responses in this (guaranteed) order:
 
@@ -350,7 +351,7 @@ Scala
 Java
 :  @@snip [LambdaPersistenceDocTest.java]($code$/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #defer-caller }
 
-You can also call `deferAsync` with `persist`.
+You can also call `defer` or `deferAsync` with `persist`.
 
 Scala
 :  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #defer-with-persist }
@@ -361,7 +362,7 @@ Java
 @@@ warning
 
 The callback will not be invoked if the actor is restarted (or stopped) in between the call to
-`deferAsync` and the journal has processed and confirmed all preceding writes.
+`defer` or `deferAsync` and the journal has processed and confirmed all preceding writes.
 
 @@@
 

@@ -438,7 +438,7 @@ public class LambdaPersistenceDocTest {
           sender().tell(e, self());
         });
 
-        deferAsync(String.format("evt-%s-3", c), e -> {
+        defer(String.format("evt-%s-3", c), e -> {
           sender().tell(e, self());
         });
       }
