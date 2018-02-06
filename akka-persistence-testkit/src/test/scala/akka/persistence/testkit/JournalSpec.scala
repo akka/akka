@@ -14,8 +14,11 @@ class JournalSpec extends PersistenceTestKit with WordSpecLike with ImplicitSend
       val a = system.actorOf(Props[A])
 
       a ! B(1)
+      a ! B(2)
 
       expectNextPersisted("111", B(1))
+      expectNextPersisted("111",B(2))
+      expectNextPersisted("111", B(3))
 
     }
 

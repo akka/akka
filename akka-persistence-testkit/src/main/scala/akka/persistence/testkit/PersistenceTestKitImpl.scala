@@ -1,20 +1,18 @@
 package akka.persistence.testkit
 
 import java.util.UUID
-import java.util.concurrent.{ BlockingDeque, ConcurrentHashMap, LinkedBlockingDeque }
+import java.util.concurrent.{ConcurrentHashMap}
 import java.util.function.BiFunction
 
-import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider, Props }
-import akka.persistence.{ AtomicWrite, Persistence, PersistentRepr }
+import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.persistence.{AtomicWrite, PersistentRepr}
 import akka.testkit.TestKitBase
 import com.typesafe.config.ConfigFactory
 import akka.persistence.journal.AsyncWriteJournal
-import akka.util.Timeout
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.collection.immutable
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Success, Try}
 
 trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
@@ -29,9 +27,20 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
   private final lazy val storage = system.extension(InMemStorageExtension)
 
+  //todo probably needs to be thread safe (AtomicRef)
+  private var nextIndexByPersistenceId: immutable.Map[String, Int] = Map.empty
+
   override def expectNextPersisted(persistenceId: String, msg: Any): Unit = {
-    val actual = storage.receiveOnePersisted(persistenceId)
-    assert(actual == msg, s"Failed to persist $msg, got $actual instead")
+
+    val nextInd = nextIndexByPersistenceId.getOrElse(persistenceId, 0)
+    val expected = Some(msg)
+    awaitAssert({
+      val actual = storage.findOneByIndex(persistenceId, nextInd).map(_.payload)
+      assert(actual == expected, s"Failed to persist $msg, got $actual instead")
+    }, testKitSettings.SingleExpectDefaultTimeout)
+
+    nextIndexByPersistenceId += (persistenceId -> (nextInd + 1))
+
   }
 
   override def recoverWith(persistenceId: String, msgs: immutable.Seq[Any]): Unit = ???
@@ -42,70 +51,56 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
   override def withRejectionPolicy(rej: RejectionPolicy) = ???
 
-  override def clearTheJournal(): Unit = storage.clearTheJournal()
+  override def clearAll(): Unit = storage.clearAll()
 
 }
 
 class InMemStorage extends Extension {
 
-  implicit def timeout: Timeout = Timeout(10.seconds)
+  private final val eventsMap: ConcurrentHashMap[String, Vector[PersistentRepr]] = new ConcurrentHashMap()
 
-  private final val decider: RejectionDecider = new RejectionDecider(new RejectionPolicy {
-    override def rejectOrPass(msg: Any) = PassMessage
-  })
+  def setByPeristenceId(persistenceId: String, elements: immutable.Seq[PersistentRepr]) =
+    eventsMap.put(persistenceId, Vector(elements:_*))
 
-  private final val map: ConcurrentHashMap[String, BlockingDeque[PersistentRepr]] = new ConcurrentHashMap()
-
-  def receiveOnePersisted(persistenceId: String): Any = {
-    val msg = map.computeIfAbsent(persistenceId, new java.util.function.Function[String, BlockingDeque[PersistentRepr]] {
-      override def apply(v1: String) = {
-        new LinkedBlockingDeque[PersistentRepr]()
-      }
-    })
-      //todo this can be changed to peek or find, not to delete the message from queue
-      .pollFirst(timeout.duration.length, timeout.duration.unit)
-      .payload
-    msg
-  }
-
-  def clearTheJournal() = {
-    map.clear()
-  }
+  def findOneByIndex(persistenceId: String, index: Int): Option[PersistentRepr] =
+    Option(eventsMap.get(persistenceId))
+      .flatMap(value => if (value.size > index) Some(value(index)) else None)
 
   def add(p: PersistentRepr): Try[Unit] = {
-    map.compute(p.persistenceId, new BiFunction[String, BlockingDeque[PersistentRepr], BlockingDeque[PersistentRepr]] {
-      override def apply(t: String, u: BlockingDeque[PersistentRepr]) = u match {
-        case null ⇒
-          val q = new LinkedBlockingDeque[PersistentRepr]()
-          q.add(p)
-          q
-        case existing ⇒
-          existing.add(p)
-          existing
+    eventsMap.compute(p.persistenceId, (_: String, value: Vector[PersistentRepr]) => value match {
+        case null ⇒ Vector(p)
+        case existing ⇒ existing :+ p
       }
-    })
+    )
     Success(())
   }
 
-  def addWithRejection(p: PersistentRepr) = {
-    decider.policy.rejectOrPass(p) match {
-      case PassMessage ⇒
-        add(p)
-      case Reject(e) ⇒
-        Failure(e)
-    }
+  def readHighestSequenceNum(persistenceId: String) =
+    eventsMap.computeIfAbsent(persistenceId, (_: String) => Vector.empty[PersistentRepr])
+      .headOption
+      .map(_.sequenceNr)
+      .getOrElse(0L)
+
+
+  def clearAll() = eventsMap.clear()
+
+  def clearByPersistenceId(persistenceId: String) = eventsMap.remove(persistenceId)
+
+  import java.util.{function => jf}
+
+  import scala.language.implicitConversions
+
+
+  private implicit def scalaFun1ToJava[T, R](f: T => R): jf.Function[T,R] = new jf.Function[T, R] {
+    override def apply(t: T): R = f(t)
   }
 
-  def readNum(persistenceId: String) = {
-    Option(
-      map.computeIfAbsent(persistenceId, new java.util.function.Function[String, BlockingDeque[PersistentRepr]] {
-        override def apply(v1: String) = {
-          new LinkedBlockingDeque[PersistentRepr]()
-        }
-      }).pollFirst()).map(_.sequenceNr).getOrElse(0L)
+  private implicit def scalaFun2ToJava[T,M,R](f:(T,M) => R): jf.BiFunction[T,M,R] = new BiFunction[T,M,R] {
+    override def apply(t: T, u: M): R = f(t,u)
   }
 
 }
+
 
 object InMemStorageExtension extends ExtensionId[InMemStorage] with ExtensionIdProvider {
 
@@ -124,7 +119,7 @@ trait PersistentTestKitOps {
 
   def recoverWith(persistenceId: String, msgs: immutable.Seq[Any])
 
-  def clearTheJournal(): Unit
+  def clearAll(): Unit
 
   //todo probably init new journal for each policy
   def withRejectionPolicy(rej: RejectionPolicy)
@@ -136,17 +131,11 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
   private final val storage = InMemStorageExtension(context.system)
 
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]) = {
-    var failed: Option[Throwable] = None
-    for (w ← messages; p ← w.payload if failed.isEmpty) {
-      storage.addWithRejection(p) match {
-        case Failure(e) ⇒ failed = Some(e)
-        case _          ⇒
-      }
+
+    for (w ← messages; p ← w.payload) {
+      storage.add(p)
     }
-    failed match {
-      case None    ⇒ Future.successful(Nil)
-      case Some(e) ⇒ Future.failed(e)
-    }
+    Future.successful(Nil)
   }
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long) = ???
@@ -154,7 +143,7 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit) = ???
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long) = {
-    val result = storage.readNum(persistenceId)
+    val result = storage.readHighestSequenceNum(persistenceId)
     Future.successful(result)
   }
 
