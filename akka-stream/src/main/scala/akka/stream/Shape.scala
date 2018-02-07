@@ -10,55 +10,55 @@ import scala.collection.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
 import akka.annotation.InternalApi
 
-/**
- * An input port of a StreamLayout.Module. This type logically belongs
- * into the impl package but must live here due to how `sealed` works.
- * It is also used in the Java DSL for “untyped Inlets” as a work-around
- * for otherwise unreasonable existential types.
- */
-sealed abstract class InPort { self: Inlet[_] ⇒
-  final override def hashCode: Int = super.hashCode
-  final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
-
+package impl {
   /**
-   * INTERNAL API
+   * An output port of a StreamLayout.Module. This is kept here due to how `sealed` works.
+   * It is also used in the Java DSL for “untyped Inlets” as a work-around
+   * for otherwise unreasonable existential types.
    */
-  @volatile private[stream] var id: Int = -1
+  sealed abstract class InPort { self: Inlet[_] ⇒
+    final override def hashCode: Int = super.hashCode
+    final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
 
-  /**
-   * INTERNAL API
-   */
-  @volatile private[stream] var mappedTo: InPort = this
+    /**
+     * INTERNAL API
+     */
+    @volatile private[stream] var id: Int = -1
 
-  /**
-   * INTERNAL API
-   */
-  private[stream] def inlet: Inlet[_] = this
-}
-/**
- * An output port of a StreamLayout.Module. This type logically belongs
- * into the impl package but must live here due to how `sealed` works.
- * It is also used in the Java DSL for “untyped Outlets” as a work-around
- * for otherwise unreasonable existential types.
- */
-sealed abstract class OutPort { self: Outlet[_] ⇒
-  final override def hashCode: Int = super.hashCode
-  final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    /**
+     * INTERNAL API
+     */
+    @volatile private[stream] var mappedTo: InPort = this
 
+    /**
+     * INTERNAL API
+     */
+    private[stream] def inlet: Inlet[_] = this
+  }
   /**
-   * INTERNAL API
+   * An output port of a StreamLayout.Module. This is kept here due to how `sealed` works.
+   * It is also used in the Java DSL for “untyped Outlets” as a work-around
+   * for otherwise unreasonable existential types.
    */
-  @volatile private[stream] var id: Int = -1
+  sealed abstract class OutPort { self: Outlet[_] ⇒
+    final override def hashCode: Int = super.hashCode
+    final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
 
-  /**
-   * INTERNAL API
-   */
-  @volatile private[stream] var mappedTo: OutPort = this
+    /**
+     * INTERNAL API
+     */
+    @volatile private[stream] var id: Int = -1
 
-  /**
-   * INTERNAL API
-   */
-  private[stream] def outlet: Outlet[_] = this
+    /**
+     * INTERNAL API
+     */
+    @volatile private[stream] var mappedTo: OutPort = this
+
+    /**
+     * INTERNAL API
+     */
+    private[stream] def outlet: Outlet[_] = this
+  }
 }
 
 /**
@@ -84,7 +84,7 @@ object Inlet {
   def create[T](name: String): Inlet[T] = Inlet(name)
 }
 
-final class Inlet[T] private (val s: String) extends InPort {
+final class Inlet[T] private (val s: String) extends impl.InPort {
   def carbonCopy(): Inlet[T] = {
     val in = Inlet[T](s)
     in.mappedTo = this
@@ -124,7 +124,7 @@ object Outlet {
   def create[T](name: String): Outlet[T] = Outlet(name)
 }
 
-final class Outlet[T] private (val s: String) extends OutPort {
+final class Outlet[T] private (val s: String) extends impl.OutPort {
   def carbonCopy(): Outlet[T] = {
     val out = Outlet[T](s)
     out.mappedTo = this
