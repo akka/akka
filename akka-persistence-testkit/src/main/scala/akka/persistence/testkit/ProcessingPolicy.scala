@@ -3,7 +3,7 @@ package akka.persistence.testkit
 
 
 
-trait RejectionPolicy {
+trait ProcessingPolicy {
 
   def tryProcess(msg: Any): ProcessingResult
 

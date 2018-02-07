@@ -12,6 +12,7 @@ import akka.persistence.journal.AsyncWriteJournal
 
 import scala.concurrent.Future
 import scala.collection.immutable
+import scala.util.{Failure, Success, Try}
 
 trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
@@ -19,7 +20,7 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
     //todo probably implement method for setting plugin in Persistence for testing purposes
     ActorSystem(s"persistence-testkit-${UUID.randomUUID()}",
       PersistenceTestKitPlugin.PersitenceTestkitPluginConfig
-      .withFallback(ConfigFactory.defaultApplication()))
+        .withFallback(ConfigFactory.defaultApplication()))
   }
 
   implicit val ec = system.dispatcher
@@ -48,7 +49,7 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
   override def expectPersistedInAnyOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit = ???
 
-  override def withRejectionPolicy(rej: RejectionPolicy) = ???
+  override def withRejectionPolicy(rej: ProcessingPolicy) = ???
 
   def rejectNextPersisted(persistenceId: String) = ???
 
@@ -62,12 +63,9 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
 }
 
-class InMemStorage extends Extension {
+trait InMemStorage extends Extension {
 
   private final val eventsMap: ConcurrentHashMap[String, Vector[PersistentRepr]] = new ConcurrentHashMap()
-
-  def setByPeristenceId(persistenceId: String, elements: immutable.Seq[PersistentRepr]) =
-    eventsMap.put(persistenceId, Vector(elements: _*))
 
   def findOneByIndex(persistenceId: String, index: Int): Option[PersistentRepr] =
     Option(eventsMap.get(persistenceId))
@@ -111,10 +109,43 @@ class InMemStorage extends Extension {
 
 }
 
+trait InMemStorageEmulator extends InMemStorage {
+  import InMemStorageEmulator._
+
+  private var processingPolicy: ProcessingPolicy = DefaultPolicy
+
+  def tryAdd(p: PersistentRepr): Try[Unit] = {
+    processingPolicy.tryProcess(p.payload) match {
+      case ProcessingSuccess =>
+        add(p)
+        Success(())
+      case Reject(ex) => Failure(ex)
+      case StorageFailure(ex) => throw ex
+    }
+  }
+
+  def tryAdd(elems: immutable.Seq[PersistentRepr]): immutable.Seq[Try[Unit]] =
+    elems.map(tryAdd)
+
+
+  def setPolicy(policy: ProcessingPolicy) = processingPolicy = policy
+
+
+}
+
+object InMemStorageEmulator {
+
+  object DefaultPolicy extends ProcessingPolicy {
+    override def tryProcess(msg: Any): ProcessingResult = ProcessingSuccess
+  }
+
+
+}
+
 
 object InMemStorageExtension extends ExtensionId[InMemStorage] with ExtensionIdProvider {
 
-  override def createExtension(system: ExtendedActorSystem) = new InMemStorage
+  override def createExtension(system: ExtendedActorSystem) = new InMemStorage {}
 
   override def lookup() = InMemStorageExtension
 }
@@ -140,7 +171,7 @@ trait PersistentTestKitOps {
   def clearAll(): Unit
 
   //todo probably init new journal for each policy
-  def withRejectionPolicy(rej: RejectionPolicy)
+  def withRejectionPolicy(rej: ProcessingPolicy)
 
 }
 
