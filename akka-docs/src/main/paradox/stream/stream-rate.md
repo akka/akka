@@ -203,22 +203,37 @@ Scala
 Java
 :   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #conflate-sample }
 
-### Understanding expand
+### Understanding extrapolate and expand
 
-Expand helps to deal with slow producers which are unable to keep up with the demand coming from consumers.
-Expand allows to extrapolate a value to be sent as an element to a consumer.
+Now we will discuss two stages, `extrapolate` and `expand`, helping to deal with slow producers that are unable to keep up with the demand coming from consumers.
+They allow for additional values to be sent as elements to a consumer.
 
-As a simple use of `expand` here is a flow that sends the same element to consumer when producer does not send
-any new elements.
+As a simple use case of `extrapolate`, here is a flow that repeats the last emitted element to a consumer, whenever the consumer signals demand and the producer cannot supply new elements yet.
 
 Scala
-:   @@snip [RateTransformationDocSpec.scala]($code$/scala/docs/stream/RateTransformationDocSpec.scala) { #expand-last }
+:   @@snip [RateTransformationDocSpec.scala]($code$/scala/docs/stream/RateTransformationDocSpec.scala) { #extrapolate-last }
 
 Java
-:   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #expand-last }
+:   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #extrapolate-last }
 
-Expand also allows to keep some state between demand requests from the downstream. Leveraging this, here is a flow
-that tracks and reports a drift between fast consumer and slow producer.
+For situations where you have several producers, and the entire stream may become blocked by a non-emitting one, you can use the `initial` parameter of `extrapolate` to "seed" the stream.
+
+Scala
+:   @@snip [RateTransformationDocSpec.scala]($code$/scala/docs/stream/RateTransformationDocSpec.scala) { #extrapolate-seed }
+
+Java
+:   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #extrapolate-seed }
+
+`extrapolate` and `expand` also allow to produce metainformation based on demand signalled from the downstream. Leveraging this, here is a flow
+that tracks and reports a drift between a fast consumer and a slow producer. 
+
+Scala
+:   @@snip [RateTransformationDocSpec.scala]($code$/scala/docs/stream/RateTransformationDocSpec.scala) { #extrapolate-drift }
+
+Java
+:   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #extrapolate-drift }
+
+And here's a more concise representation with `expand`.
 
 Scala
 :   @@snip [RateTransformationDocSpec.scala]($code$/scala/docs/stream/RateTransformationDocSpec.scala) { #expand-drift }
@@ -226,5 +241,10 @@ Scala
 Java
 :   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #expand-drift }
 
-Note that all of the elements coming from upstream will go through `expand` at least once. This means that the
-output of this flow is going to report a drift of zero if producer is fast enough, or a larger drift otherwise.
+Note that all of the elements coming from upstream will go through:
+
+ - `extrapolate` at least once, 
+ - while `expand` provides you with the option to replace the "original" element with something else entirely - potentially even filtering it out with an empty `Iterator`.
+ 
+Regardless, since we provide a non-empty `Iterator` in both examples, this means that the
+output of this flow is going to report a drift of zero if the producer is fast enough - or a larger drift otherwise.

@@ -1112,7 +1112,9 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    * subscriber.
    *
    * Expand does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
-   * Exceptions from the `seed` function will complete the stream with failure.
+   * Exceptions from the `expander` function will complete the stream with failure.
+   *
+   * See also [[#extrapolate]] for a version that always preserves the original element and allows for an initial "startup" element.
    *
    * '''Emits when''' downstream stops backpressuring
    *
@@ -1124,8 +1126,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    *
    * @param expander       Takes the current extrapolation state to produce an output element and the next extrapolation
    *                       state.
-   * @see [[#extrapolate]] for a version that always preserves the original element and allows for an initial "startup"
-   *                       element.
+   * @see [[#extrapolate]]
    */
   def expand[U](expander: function.Function[Out, java.util.Iterator[U]]): SubSource[U, Mat] =
     new SubSource(delegate.expand(in ⇒ expander(in).asScala))
@@ -1139,6 +1140,8 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    * Pressurize does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
    * Exceptions from the `extrapolate` function will complete the stream with failure.
    *
+   * See also [[#expand]] for a version that can overwrite the original element.
+   *
    * '''Emits when''' downstream stops backpressuring, AND EITHER upstream emits OR initial element is present OR
    * `extrapolate` is non-empty and applicable
    *
@@ -1150,7 +1153,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    *
    * @param extrapolator takes the current upstream element and provides a sequence of "extrapolated" elements based
    *                    on the original, to be emitted in case downstream signals demand.
-   * @see [[#expand]]    for a version that can overwrite the original element.
+   * @see [[#expand]]
    */
   def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]]): SubSource[Out, Mat] =
     new SubSource(delegate.extrapolate(in ⇒ extrapolator(in).asScala))
@@ -1164,6 +1167,8 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    * Pressurize does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
    * Exceptions from the `extrapolate` function will complete the stream with failure.
    *
+   * See also [[#expand]] for a version that can overwrite the original element.
+   *
    * '''Emits when''' downstream stops backpressuring, AND EITHER upstream emits OR initial element is present OR
    * `extrapolate` is non-empty and applicable
    *
@@ -1176,7 +1181,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    * @param extrapolator takes the current upstream element and provides a sequence of "extrapolated" elements based
    *                    on the original, to be emitted in case downstream signals demand.
    * @param initial the initial element to be emitted, in case upstream is able to stall the entire stream.
-   * @see [[#expand]]    for a version that can overwrite the original element.
+   * @see [[#expand]]
    */
   def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]], initial: Out @uncheckedVariance): SubSource[Out, Mat] =
     new SubSource(delegate.extrapolate(in ⇒ extrapolator(in).asScala, Some(initial)))
