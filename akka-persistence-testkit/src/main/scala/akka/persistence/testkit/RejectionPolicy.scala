@@ -1,15 +1,24 @@
 package akka.persistence.testkit
 
+
+
+
 trait RejectionPolicy {
 
-  def rejectOrPass(msg: Any): Rejection
+  def tryProcess(msg: Any): ProcessingResult
 
 }
 
-sealed trait Rejection
+trait ProcessingResult
 
-case object PassMessage extends Rejection
+object ProcessingSuccess extends ProcessingResult
 
-case class Reject(e: Throwable) extends Rejection
+trait ProcessingFailure extends ProcessingResult{
 
-class RejectionDecider(var policy: RejectionPolicy)
+  def error: Throwable
+
+}
+
+case class Reject(error: Throwable) extends ProcessingFailure
+
+case class StorageFailure(error: Throwable) extends ProcessingFailure
