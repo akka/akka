@@ -313,10 +313,6 @@ is needed in order to allow the stream to run at all, you will have to insert ex
 
 @@@
 
-The new fusing behavior can be disabled by setting the configuration parameter `akka.stream.materializer.auto-fusing=off`.
-In that case you can still manually fuse those graphs which shall run on less Actors. With the exception of the
-`SslTlsStage` and the `groupBy` operator all built-in processing stages can be fused.
-
 <a id="flow-combine-mat"></a>
 ### Combining materialized values
 
