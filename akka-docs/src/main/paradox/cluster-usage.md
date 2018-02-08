@@ -1015,7 +1015,6 @@ Configuration Compatibility Check is enabled by default, but can be disabled by 
 
 This setting should only be disabled on the joining nodes. The checks are always performed on both sides, and warnings are logged. In case of incompatibilities, it's the joining node to decide if the process should be interrupted or not.  
 
-If you are performing a rolling update on cluster using Akka 2.5.9 or prior (thus, not supporting this feature), you will need to set `akka.cluster.configuration-compatibility-check.enforce-on-join = off`, otherwise the new nodes will refuse to join a cluster that is incapable of performing the necessary checks.  
-
+If you are performing a rolling update on cluster using Akka 2.5.9 or prior (thus, not supporting this feature), the checks won't be performed because the running cluster has no means to verify the configuration sent by the joining node, nor to send back its own configuration.  
 
 @@@ 
