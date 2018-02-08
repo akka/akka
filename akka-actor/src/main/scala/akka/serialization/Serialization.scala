@@ -1,5 +1,6 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (c) 2018      Gael Breard, Orange: issue #24321 add a method for transport information in public API
  */
 
 package akka.serialization
@@ -99,6 +100,25 @@ object Serialization {
         }
     }
   }
+
+  /**
+   * Use the specified @param system to determine transport information that will be used when serializing actorRefs
+   * in @param f code: if there is no external address available for the requested address then the systems default
+   * address will be used.
+   *
+   * @return value returned by @param f
+   */
+  def withTransportInformation[T](system: ExtendedActorSystem)(f: () ⇒ T): T = {
+    val address = system.provider.getDefaultAddress
+    if (address.hasLocalScope) {
+      f()
+    } else {
+      Serialization.currentTransportInformation.withValue(Serialization.Information(address, system)) {
+        f()
+      }
+    }
+  }
+
 }
 
 /**
