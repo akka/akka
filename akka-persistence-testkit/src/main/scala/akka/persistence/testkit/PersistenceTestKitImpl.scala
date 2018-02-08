@@ -27,7 +27,7 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
   private final lazy val storage = system.extension(InMemStorageExtension)
 
-  //todo probably needs to be thread safe (AtomicRef)
+  //todo needs to be thread safe (AtomicRef) for parallel tests
   private final var nextIndexByPersistenceId: immutable.Map[String, Int] = Map.empty
 
   override def expectNextPersisted(persistenceId: String, msg: Any): Unit = {
@@ -85,9 +85,23 @@ trait InMemStorage extends Extension {
       })
 
 
+  def deleteToSeqNumber(persistenceId: String, toSeqNumberInclusive: Long): Unit =
+    eventsMap.computeIfPresent(persistenceId, (_: String, value: Vector[PersistentRepr]) => {
+      value.dropWhile(_.sequenceNr <= toSeqNumberInclusive)
+    })
+
+  def read(persistenceId: String, fromInclusive: Long, toInclusive: Long, maxNumber: Long): immutable.Seq[PersistentRepr] =
+    eventsMap.getOrDefault(persistenceId, Vector.empty)
+      .dropWhile(_.sequenceNr < fromInclusive)
+      //we dont need to read highestSeqNumber because it will in any case stop at it if toInclusive is > than highestSeqNumber
+      .takeWhile(_.sequenceNr <= toInclusive)
+      .take(maxNumber.toInt)
+
+
+
   def readHighestSequenceNum(persistenceId: String) =
     eventsMap.computeIfAbsent(persistenceId, (_: String) => Vector.empty[PersistentRepr])
-      .headOption
+      .lastOption
       .map(_.sequenceNr)
       .getOrElse(0L)
 
@@ -110,44 +124,44 @@ trait InMemStorage extends Extension {
 }
 
 trait InMemStorageEmulator extends InMemStorage {
-  import InMemStorageEmulator._
 
-  private var processingPolicy: ProcessingPolicy = DefaultPolicy
+  @volatile private var writingPolicy: ProcessingPolicy = ProcessingPolicy.Default
+  @volatile private var recoveryPolicy: ProcessingPolicy = ProcessingPolicy.Default
 
-  def tryAdd(p: PersistentRepr): Try[Unit] = {
-    processingPolicy.tryProcess(p.payload) match {
+  def tryAdd(elems: immutable.Seq[PersistentRepr]): Try[Unit] = {
+    writingPolicy.tryProcess(elems.map(_.payload)) match {
       case ProcessingSuccess =>
-        add(p)
+        add(elems)
         Success(())
       case Reject(ex) => Failure(ex)
       case StorageFailure(ex) => throw ex
     }
   }
 
-  def tryAdd(elems: immutable.Seq[PersistentRepr]): immutable.Seq[Try[Unit]] =
-    elems.map(tryAdd)
-
-
-  def setPolicy(policy: ProcessingPolicy) = processingPolicy = policy
-
-
-}
-
-object InMemStorageEmulator {
-
-  object DefaultPolicy extends ProcessingPolicy {
-    override def tryProcess(msg: Any): ProcessingResult = ProcessingSuccess
+  def tryRead(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long): immutable.Seq[PersistentRepr] = {
+    val batch = read(persistenceId,fromSequenceNr, toSequenceNr, max)
+    recoveryPolicy.tryProcess(batch) match {
+      case ProcessingSuccess => batch
+      case Reject(ex) => throw ex
+      case StorageFailure(ex) => throw ex
+    }
   }
 
 
+  def setWritingPolicy(policy: ProcessingPolicy) = writingPolicy = policy
+
+  def setRecoveryPolicy(policy: ProcessingPolicy) = recoveryPolicy = policy
+
+
 }
 
 
-object InMemStorageExtension extends ExtensionId[InMemStorage] with ExtensionIdProvider {
+object InMemStorageExtension extends ExtensionId[InMemStorageEmulator] with ExtensionIdProvider {
 
-  override def createExtension(system: ExtendedActorSystem) = new InMemStorage {}
+  override def createExtension(system: ExtendedActorSystem) = new InMemStorageEmulator {}
 
   override def lookup() = InMemStorageExtension
+
 }
 
 trait PersistentTestKitOps {
@@ -179,21 +193,25 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
 
   private final val storage = InMemStorageExtension(context.system)
 
-  override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]) = {
-    for (w ← messages; p ← w.payload) {
-      storage.add(p)
+  private implicit val ec = context.system.dispatcher
+
+  override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
+    val res = for {
+      w <- messages
+    } yield {
+      Future.successful(storage.tryAdd(w.payload))
     }
-    Future.successful(Nil)
+    Future.sequence(res)
   }
 
-  override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long) = ???
+  override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long) =
+    Future.successful(storage.deleteToSeqNumber(persistenceId, toSequenceNr))
 
-  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit) = ???
+  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
+    Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
 
-  override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long) = {
-    val result = storage.readHighestSequenceNum(persistenceId)
-    Future.successful(result)
-  }
+  override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
+    Future.successful(storage.readHighestSequenceNum(persistenceId))
 
 }
 
