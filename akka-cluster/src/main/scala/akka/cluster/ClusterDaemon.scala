@@ -106,7 +106,7 @@ private[cluster] object InternalClusterAction {
    * see JoinSeedNode
    */
   @SerialVersionUID(1L)
-  case class InitJoin(currentConfig: Config) extends ClusterMessage with DeadLetterSuppression
+  case class InitJoin(configOfJoiningNode: Config) extends ClusterMessage with DeadLetterSuppression
 
   /**
    * see JoinSeedNode
