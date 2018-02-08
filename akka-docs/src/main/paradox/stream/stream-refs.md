@@ -1,4 +1,4 @@
-# StreamRefs - streams over network boundaries 
+# StreamRefs - Reactive Streams over the network
 
 @@@ warning
 
@@ -29,12 +29,6 @@ implement manually.
   
   Stream refs refer to an already existing, possibly remote, `Sink` or `Source`.
   This is not to be mistaken with deploying streams remotely, which this feature is not intended for.
-@@@
-
-
-@@@ note
-  Since Akka Streams are an implementation of Reactive Streams, by induction, 
-  one can also say that stream refs allow running *Reactive Streams over the network*.
 @@@
 
 ## Stream References
