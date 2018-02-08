@@ -1416,10 +1416,10 @@ private[cluster] final class FirstSeedNodeProcess(seedNodes: immutable.IndexedSe
         case Invalid(messages) ⇒
           log.error("Cluster validated this node config, but sent back incompatible settings: {}. " +
             "It's recommended to perform a full cluster shutdown in order to deploy this new version. " +
-              "If a cluster shutdown isn't an option, you may want to disable this protection by setting " +
-              "'akka.cluster.configuration-compatibility-check.enforce-on-join = off'. " +
-              "Note that disabling it will allow the formation of a cluster with nodes having incompatible configuration settings. " +
-              "This node will be shutdown!", messages.mkString(", "))
+            "If a cluster shutdown isn't an option, you may want to disable this protection by setting " +
+            "'akka.cluster.configuration-compatibility-check.enforce-on-join = off'. " +
+            "Note that disabling it will allow the formation of a cluster with nodes having incompatible configuration settings. " +
+            "This node will be shutdown!", messages.mkString(", "))
           context.stop(self)
           CoordinatedShutdown(context.system).run(IncompatibleConfigurationDetected)
       }
