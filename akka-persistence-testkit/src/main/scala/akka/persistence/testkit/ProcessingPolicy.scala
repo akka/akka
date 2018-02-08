@@ -1,11 +1,20 @@
 package akka.persistence.testkit
 
-
+import scala.collection.immutable
 
 
 trait ProcessingPolicy {
 
-  def tryProcess(msg: Any): ProcessingResult
+  def tryProcess(batch: immutable.Seq[Any]): ProcessingResult
+
+}
+
+
+object ProcessingPolicy{
+
+  object Default extends ProcessingPolicy {
+    override def tryProcess(batch: immutable.Seq[Any]): ProcessingResult = ProcessingSuccess
+  }
 
 }
 
