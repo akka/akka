@@ -6,12 +6,11 @@ package akka.stream.impl.io
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.channels.{ CompletionHandler, FileChannel }
-import java.nio.file.{ Files, Path, StandardOpenOption }
+import java.nio.file.{ Files, NoSuchFileException, Path, StandardOpenOption }
 
 import akka.Done
 import akka.annotation.InternalApi
 import akka.stream.Attributes.InputBuffer
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.{ ErrorPublisher, SourceModule }
 import akka.stream.stage._
 import akka.stream.{ IOResult, _ }
@@ -70,7 +69,8 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
       override def preStart(): Unit = {
         try {
           // this is a bit weird but required to keep existing semantics
-          require(Files.exists(path), s"Path '$path' does not exist")
+          if (!Files.exists(path)) throw new NoSuchFileException(path.toString)
+
           require(Files.isRegularFile(path), s"Path '$path' is not a regular file")
           require(Files.isReadable(path), s"Missing read permission for '$path'")
 
