@@ -18,7 +18,7 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 ## Description
 
-Logs both, the request and the response@scala[ using the @unidoc[LoggingAdapter] of the @unidoc[RequestContext]].
+Logs both the request and the response using the @unidoc[LoggingAdapter] of the @unidoc[RequestContext].
 
 This directive is a combination of @ref[logRequest](logRequest.md) and @ref[logResult](logResult.md).
 
