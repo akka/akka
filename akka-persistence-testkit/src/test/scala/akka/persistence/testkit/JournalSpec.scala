@@ -17,7 +17,7 @@ class JournalSpec extends PersistenceTestKit with WordSpecLike with ImplicitSend
       a ! B(2)
 
       expectNextPersisted("111", B(1))
-      expectNextPersisted("111",B(2))
+      expectNextPersisted("111", B(2))
 
       assertThrows[AssertionError] {
         expectNextPersisted("111", B(3))

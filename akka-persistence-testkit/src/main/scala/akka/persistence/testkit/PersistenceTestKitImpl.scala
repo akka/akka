@@ -4,21 +4,22 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.BiFunction
 
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
-import akka.persistence.{AtomicWrite, PersistentRepr}
+import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.persistence.{ AtomicWrite, PersistentRepr }
 import akka.testkit.TestKitBase
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 import akka.persistence.journal.AsyncWriteJournal
 
 import scala.concurrent.Future
 import scala.collection.immutable
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
   override implicit lazy val system = {
     //todo probably implement method for setting plugin in Persistence for testing purposes
-    ActorSystem(s"persistence-testkit-${UUID.randomUUID()}",
+    ActorSystem(
+      s"persistence-testkit-${UUID.randomUUID()}",
       PersistenceTestKitPlugin.PersitenceTestkitPluginConfig
         .withFallback(ConfigFactory.defaultApplication()))
   }
@@ -27,7 +28,7 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
   private final lazy val storage = system.extension(InMemStorageExtension)
 
-  //todo needs to be thread safe (AtomicRef) for parallel tests
+  //todo needs to be thread safe (atomic read-increment-write) for parallel tests?
   private final var nextIndexByPersistenceId: immutable.Map[String, Int] = Map.empty
 
   override def expectNextPersisted(persistenceId: String, msg: Any): Unit = {
@@ -69,7 +70,18 @@ trait InMemStorage extends Extension {
 
   def findOneByIndex(persistenceId: String, index: Int): Option[PersistentRepr] =
     Option(eventsMap.get(persistenceId))
-      .flatMap(value => if (value.size > index) Some(value(index)) else None)
+      .flatMap(value ⇒ if (value.size > index) Some(value(index)) else None)
+
+  def addRaw(persistenceId: String, e: Any): Unit =
+    addRaw(persistenceId, immutable.Seq(e))
+
+  def addRaw(persistenceId: String, e: immutable.Seq[Any]): Unit =
+    eventsMap.compute(persistenceId, (_: String, value: Vector[PersistentRepr]) ⇒ {
+      Option(value).map(v ⇒ {
+        val start = v.lastOption.map(_.sequenceNr).getOrElse(0)
+        v ++ e.zipWithIndex.map(p ⇒ PersistentRepr(p._1, p._2 + start, persistenceId))
+      }).getOrElse(e.zipWithIndex.map(p ⇒ PersistentRepr(p._1, p._2, persistenceId))).toVector
+    })
 
   def add(p: PersistentRepr): Unit =
     add(List(p))
@@ -77,16 +89,15 @@ trait InMemStorage extends Extension {
   def add(elems: immutable.Seq[PersistentRepr]): Unit =
     elems
       .groupBy(_.persistenceId)
-      .foreach(pair => {
-        eventsMap.compute(pair._1, (_: String, value: Vector[PersistentRepr]) => value match {
-          case null => pair._2.toVector
-          case existing => existing ++ pair._2
+      .foreach(pair ⇒ {
+        eventsMap.compute(pair._1, (_: String, value: Vector[PersistentRepr]) ⇒ value match {
+          case null     ⇒ pair._2.toVector
+          case existing ⇒ existing ++ pair._2
         })
       })
 
-
   def deleteToSeqNumber(persistenceId: String, toSeqNumberInclusive: Long): Unit =
-    eventsMap.computeIfPresent(persistenceId, (_: String, value: Vector[PersistentRepr]) => {
+    eventsMap.computeIfPresent(persistenceId, (_: String, value: Vector[PersistentRepr]) ⇒ {
       value.dropWhile(_.sequenceNr <= toSeqNumberInclusive)
     })
 
@@ -97,27 +108,24 @@ trait InMemStorage extends Extension {
       .takeWhile(_.sequenceNr <= toInclusive)
       .take(maxNumber.toInt)
 
-
-
   def readHighestSequenceNum(persistenceId: String) =
-    eventsMap.computeIfAbsent(persistenceId, (_: String) => Vector.empty[PersistentRepr])
+    eventsMap.computeIfAbsent(persistenceId, (_: String) ⇒ Vector.empty[PersistentRepr])
       .lastOption
       .map(_.sequenceNr)
       .getOrElse(0L)
-
 
   def clearAll() = eventsMap.clear()
 
   def clearByPersistenceId(persistenceId: String) = eventsMap.remove(persistenceId)
 
-  import java.util.{function => jf}
+  import java.util.{ function ⇒ jf }
   import scala.language.implicitConversions
 
-  private implicit def scalaFun1ToJava[T, R](f: T => R): jf.Function[T, R] = new jf.Function[T, R] {
+  private implicit def scalaFun1ToJava[T, R](f: T ⇒ R): jf.Function[T, R] = new jf.Function[T, R] {
     override def apply(t: T): R = f(t)
   }
 
-  private implicit def scalaFun2ToJava[T, M, R](f: (T, M) => R): jf.BiFunction[T, M, R] = new BiFunction[T, M, R] {
+  private implicit def scalaFun2ToJava[T, M, R](f: (T, M) ⇒ R): jf.BiFunction[T, M, R] = new BiFunction[T, M, R] {
     override def apply(t: T, u: M): R = f(t, u)
   }
 
@@ -130,31 +138,28 @@ trait InMemStorageEmulator extends InMemStorage {
 
   def tryAdd(elems: immutable.Seq[PersistentRepr]): Try[Unit] = {
     writingPolicy.tryProcess(elems.map(_.payload)) match {
-      case ProcessingSuccess =>
+      case ProcessingSuccess ⇒
         add(elems)
         Success(())
-      case Reject(ex) => Failure(ex)
-      case StorageFailure(ex) => throw ex
+      case Reject(ex)         ⇒ Failure(ex)
+      case StorageFailure(ex) ⇒ throw ex
     }
   }
 
   def tryRead(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long): immutable.Seq[PersistentRepr] = {
-    val batch = read(persistenceId,fromSequenceNr, toSequenceNr, max)
+    val batch = read(persistenceId, fromSequenceNr, toSequenceNr, max)
     recoveryPolicy.tryProcess(batch) match {
-      case ProcessingSuccess => batch
-      case Reject(ex) => throw ex
-      case StorageFailure(ex) => throw ex
+      case ProcessingSuccess  ⇒ batch
+      case Reject(ex)         ⇒ throw ex
+      case StorageFailure(ex) ⇒ throw ex
     }
   }
-
 
   def setWritingPolicy(policy: ProcessingPolicy) = writingPolicy = policy
 
   def setRecoveryPolicy(policy: ProcessingPolicy) = recoveryPolicy = policy
 
-
 }
-
 
 object InMemStorageExtension extends ExtensionId[InMemStorageEmulator] with ExtensionIdProvider {
 
@@ -197,7 +202,7 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
 
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
     val res = for {
-      w <- messages
+      w ← messages
     } yield {
       Future.successful(storage.tryAdd(w.payload))
     }
