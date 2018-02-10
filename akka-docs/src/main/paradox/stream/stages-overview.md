@@ -201,16 +201,6 @@ Defers creation and materialization of a `Source` until there is demand.
 
 ---------------------------------------------------------------
 
-### actorPublisher
-
-Wrap an actor extending `ActorPublisher` as a source.
-
-**emits** depends on the actor implementation
-
-**completes** when the actor stops
-
----------------------------------------------------------------
-
 ### actorRef
 
 Materialize an `ActorRef`, sending messages to it will emit them on the stream. The actor contain
@@ -505,19 +495,6 @@ to provide back pressure onto the sink.
 **cancels** when the actor terminates
 
 **backpressures** when the actor acknowledgement has not arrived
-
----------------------------------------------------------------
-
-### actorSubscriber
-
-Create an actor from a `Props` upon materialization, where the actor implements `ActorSubscriber`, which will
-receive the elements from the stream.
-
-Materializes into an `ActorRef` to the created actor.
-
-**cancels** when the actor terminates
-
-**backpressures** depends on the actor implementation
 
 ---------------------------------------------------------------
 
