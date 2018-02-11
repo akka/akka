@@ -68,14 +68,14 @@ public class RecipeLoggingElements extends RecipeTest {
       {
         final Source<String, NotUsed> mySource = Source.from(Arrays.asList("1", "2", "3"));
 
-        final int onElement = Logging.WarningLevel();
-        final int onFinish = Logging.ErrorLevel();
-        final int onFailure = Logging.ErrorLevel();
-
         //#log-custom
         // customise log levels
         mySource.log("before-map")
-          .withAttributes(Attributes.createLogLevels(onElement, onFinish, onFailure))
+          .withAttributes(Attributes.createLogLevels(
+            Logging.WarningLevel(), //onElement
+            Logging.InfoLevel(),    //onFinish
+            Logging.DebugLevel()    //onFailure
+          ))
           .map(i -> analyse(i));
 
         // or provide custom logging adapter
@@ -90,6 +90,20 @@ public class RecipeLoggingElements extends RecipeTest {
             return null;
           }
         }, system);
+      }
+    };
+  }
+
+  @Test
+  public void errorLog() throws Exception {
+    new TestKit(system) {
+      {
+        //#log-error
+        Source.from(Arrays.asList(-1, 0, 1))
+          .map(x -> 1 / x) //throwing ArithmeticException: / by zero
+          .log("error logging")
+          .runWith(Sink.ignore(), mat);
+        //#log-error
       }
     };
   }
