@@ -32,42 +32,45 @@ shellPrompt := { s =>
 }
 resolverSettings
 
+def isScala213: Boolean = System.getProperty("akka.build.scalaVersion", "").startsWith("2.13")
+
 // When this is updated the set of modules in ActorSystem.allModules should also be updated
 lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
-  actor,
-  actorTests,
-  actorTestkitTyped,
-  actorTyped,
-  actorTypedTests,
-  benchJmh,
-  benchJmhTyped,
-  cluster,
-  clusterMetrics,
-  clusterSharding,
-  clusterShardingTyped,
-  clusterTools,
-  clusterTyped,
-  coordination,
-  discovery,
-  distributedData,
-  docs,
-  multiNodeTestkit,
-  osgi,
-  persistence,
-  persistenceQuery,
-  persistenceShared,
-  persistenceTck,
-  persistenceTyped,
-  protobuf,
-  remote,
-  remoteTests,
-  slf4j,
-  stream,
-  streamTestkit,
-  streamTests,
-  streamTestsTck,
-  streamTyped,
-  testkit)
+    actor,
+    actorTests,
+    actorTestkitTyped,
+    actorTyped,
+    actorTypedTests,
+    cluster,
+    clusterMetrics,
+    clusterSharding,
+    clusterShardingTyped,
+    clusterTools,
+    clusterTyped,
+    coordination,
+    discovery,
+    distributedData,
+    docs,
+    multiNodeTestkit,
+    osgi,
+    persistence,
+    persistenceQuery,
+    persistenceShared,
+    persistenceTck,
+    persistenceTyped,
+    protobuf,
+    remote,
+    remoteTests,
+    slf4j,
+    stream,
+    streamTestkit,
+    streamTests,
+    streamTestsTck,
+    streamTyped,
+    testkit) ++
+  (if (isScala213) List.empty[ProjectReference]
+   else
+     List[ProjectReference](jackson, benchJmh, benchJmhTyped)) // FIXME move 2.13 condition when Jackson ScalaModule has been released for Scala 2.13.0
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
@@ -99,7 +102,7 @@ lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   .disablePlugins(ValidatePullRequest, MimaPlugin, CopyrightHeaderInPr)
 
 lazy val benchJmh = akkaModule("akka-bench-jmh")
-  .dependsOn(Seq(actor, stream, streamTests, persistence, distributedData, testkit).map(
+  .dependsOn(Seq(actor, stream, streamTests, persistence, distributedData, jackson, testkit).map(
     _ % "compile->compile;compile->test"): _*)
   .settings(Dependencies.benchJmh)
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
@@ -234,6 +237,17 @@ lazy val docs = akkaModule("akka-docs")
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
   .disablePlugins(ScalafixPlugin)
+
+lazy val jackson = akkaModule("akka-serialization-jackson")
+  .dependsOn(actor, actorTests % "test->test", testkit % "test->test")
+  .settings(Dependencies.jackson)
+  .settings(AutomaticModuleName.settings("akka.serialization.jackson"))
+  .settings(OSGi.jackson)
+  .settings(javacOptions += "-parameters")
+  // FIXME remove when Jackson ScalaModule has been released for Scala 2.13.0
+  .settings(crossScalaVersions -= Dependencies.scala213Version)
+  .enablePlugins(ScaladocNoVerificationOfDiagrams)
+  .disablePlugins(MimaPlugin)
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)

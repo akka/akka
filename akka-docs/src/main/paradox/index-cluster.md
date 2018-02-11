@@ -15,6 +15,7 @@
 * [distributed-data](distributed-data.md)
 * [cluster-dc](cluster-dc.md)
 * [serialization](serialization.md)
+* [serialization-jackson](serialization-jackson.md)
 * [multi-jvm-testing](multi-jvm-testing.md)
 * [multi-node-testing](multi-node-testing.md)
 * [remoting-artery](remoting-artery.md)
