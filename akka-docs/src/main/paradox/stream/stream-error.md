@@ -33,7 +33,7 @@ java.lang.ArithmeticException: / by zero
 ```
 
 If you want to control logging levels on each element, completion, and failure, you can find more details 
-in @ref:[Logging in stream](stream-cookbook.md#loggign-in-stream).
+in @ref:[Logging in stream](stream-cookbook.md#logging-in-stream).
 
 ## Recover
 
