@@ -18,7 +18,7 @@ If you need a quick reference of the available processing stages used in the rec
 In this collection we show simple recipes that involve linear flows. The recipes in this section are rather
 general, more targeted recipes are available as separate sections (@ref:[Buffers and working with rate](stream-rate.md), @ref:[Working with streaming IO](stream-io.md)).
 
-### Logging elements of a stream
+### Logging in streams
 
 **Situation:** During development it is sometimes helpful to see what happens in a particular section of a stream.
 
@@ -31,8 +31,8 @@ Scala
 Java
 :   @@snip [RecipeLoggingElements.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #println-debug }
 
-Another approach to logging is to use `log()` operation which allows configuring logging for elements flowing through
-the stream as well as completion and erroring.
+Another approach to logging is to use `log()` operation. This approach gives you more fine-grained control of logging levels for
+elements flowing through the stream, finish and failure of the stream.
 
 Scala
 :   @@snip [RecipeLoggingElements.scala]($code$/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #log-custom }
