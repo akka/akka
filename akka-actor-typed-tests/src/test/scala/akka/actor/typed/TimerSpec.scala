@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
+import akka.testkit.TimingTest
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.TestKit
 import akka.testkit.typed.scaladsl._
@@ -78,7 +79,7 @@ class TimerSpec extends TestKit("TimerSpec")
   }
 
   "A timer" must {
-    "schedule non-repeated ticks" in {
+    "schedule non-repeated ticks" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startSingleTimer("T", Tick(1), 10.millis)
@@ -93,7 +94,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "schedule repeated ticks" in {
+    "schedule repeated ticks" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -111,7 +112,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "replace timer" in {
+    "replace timer" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -131,7 +132,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "cancel timer" in {
+    "cancel timer" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -147,7 +148,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "discard timers from old incarnation after restart, alt 1" in {
+    "discard timers from old incarnation after restart, alt 1" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val startCounter = new AtomicInteger(0)
       val behv = Behaviors.supervise(Behaviors.withTimers[Command] { timer ⇒
@@ -171,7 +172,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "discard timers from old incarnation after restart, alt 2" in {
+    "discard timers from old incarnation after restart, alt 2" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.supervise(Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -197,7 +198,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "cancel timers when stopped from exception" in {
+    "cancel timers when stopped from exception" taggedAs TimingTest in {
       val probe = TestProbe[Event]()
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -208,7 +209,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "cancel timers when stopped voluntarily" in {
+    "cancel timers when stopped voluntarily" taggedAs TimingTest in {
       val probe = TestProbe[Event]()
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
