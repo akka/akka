@@ -7,6 +7,8 @@ import akka.{ Done, NotUsed }
 import akka.dispatch.ExecutionContexts
 import akka.actor.{ ActorRef, Props, Status }
 import akka.annotation.InternalApi
+import akka.event.Logging
+import akka.stream.Attributes.LogLevels
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl._
@@ -235,7 +237,17 @@ object Sink {
   /**
    * A `Sink` that will consume the stream and discard the elements.
    */
-  def ignore: Sink[Any, Future[Done]] = fromGraph(GraphStages.IgnoreSink)
+  def ignore: Sink[Any, Future[Done]] =
+    Flow[Any]
+      .log("ignoreSink").withAttributes(
+        Attributes.logLevels(
+          onElement = LogLevels.Off,
+          onFinish = LogLevels.Off,
+          onFailure = Logging.ErrorLevel
+        )
+      ).toMat(ignoreWithoutLogging)(Keep.right)
+
+  private def ignoreWithoutLogging: Sink[Any, Future[Done]] = fromGraph(GraphStages.IgnoreSink)
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
@@ -244,7 +256,15 @@ object Sink {
    * the stream..
    */
   def foreach[T](f: T ⇒ Unit): Sink[T, Future[Done]] =
-    Flow[T].map(f).toMat(Sink.ignore)(Keep.right).named("foreachSink")
+    Flow[T]
+      .map(f)
+      .log("foreachSink").withAttributes(
+        Attributes.logLevels(
+          onElement = LogLevels.Off,
+          onFinish = LogLevels.Off,
+          onFailure = Logging.ErrorLevel
+        )
+      ).toMat(Sink.ignoreWithoutLogging)(Keep.right).named("foreachSink")
 
   /**
    * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
@@ -280,7 +300,7 @@ object Sink {
    * See also [[Flow.mapAsyncUnordered]]
    */
   def foreachParallel[T](parallelism: Int)(f: T ⇒ Unit)(implicit ec: ExecutionContext): Sink[T, Future[Done]] =
-    Flow[T].mapAsyncUnordered(parallelism)(t ⇒ Future(f(t))).toMat(Sink.ignore)(Keep.right)
+    Flow[T].mapAsyncUnordered(parallelism)(t ⇒ Future(f(t))).toMat(Sink.ignoreWithoutLogging)(Keep.right)
 
   /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
@@ -366,7 +386,7 @@ object Sink {
           }
       }
     }
-    Flow[T].via(newOnCompleteStage()).to(Sink.ignore).named("onCompleteSink")
+    Flow[T].via(newOnCompleteStage()).to(Sink.ignoreWithoutLogging).named("onCompleteSink")
   }
 
   /**
