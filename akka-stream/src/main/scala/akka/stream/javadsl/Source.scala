@@ -2138,7 +2138,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * This is achieved by introducing "extrapolated" elements - based on those from upstream - whenever downstream
    * signals demand.
    *
-   * Pressurize does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
+   * Extrapolate does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
    * Exceptions from the `extrapolate` function will complete the stream with failure.
    *
    * See also [[#expand]] for a version that can overwrite the original element.
@@ -2165,7 +2165,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * This is achieved by introducing "extrapolated" elements - based on those from upstream - whenever downstream
    * signals demand.
    *
-   * Pressurize does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
+   * Extrapolate does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
    * Exceptions from the `extrapolate` function will complete the stream with failure.
    *
    * See also [[#expand]] for a version that can overwrite the original element.

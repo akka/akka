@@ -1664,7 +1664,7 @@ trait FlowOps[+Out, +Mat] {
    * This is achieved by introducing "extrapolated" elements - based on those from upstream - whenever downstream
    * signals demand.
    *
-   * Pressurize does not support [[akka.stream.Supervision.Restart]] and [[akka.stream.Supervision.Resume]].
+   * Extrapolate does not support [[akka.stream.Supervision.Restart]] and [[akka.stream.Supervision.Resume]].
    * Exceptions from the `extrapolate` function will complete the stream with failure.
    *
    * '''Emits when''' downstream stops backpressuring, AND EITHER upstream emits OR initial element is present OR

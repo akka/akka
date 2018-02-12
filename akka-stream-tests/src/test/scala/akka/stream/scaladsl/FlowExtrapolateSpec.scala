@@ -19,7 +19,7 @@ class FlowExtrapolateSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "Pressurize" must {
+  "Extrapolate" must {
 
     "pass-through elements unchanged when there is no rate difference" in {
       // Shadow the fuzzed materializer (see the ordering guarantee needed by the for loop below).
