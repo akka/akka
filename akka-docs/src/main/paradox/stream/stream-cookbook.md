@@ -18,7 +18,7 @@ If you need a quick reference of the available processing stages used in the rec
 In this collection we show simple recipes that involve linear flows. The recipes in this section are rather
 general, more targeted recipes are available as separate sections (@ref:[Buffers and working with rate](stream-rate.md), @ref:[Working with streaming IO](stream-io.md)).
 
-### Logging in stream
+### Logging in streams
 
 **Situation:** During development it is sometimes helpful to see what happens in a particular section of a stream.
 
