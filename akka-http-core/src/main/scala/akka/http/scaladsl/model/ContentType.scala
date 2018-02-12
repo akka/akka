@@ -123,6 +123,8 @@ object ContentTypes {
   val `text/xml(UTF-8)` = MediaTypes.`text/xml` withCharset HttpCharsets.`UTF-8`
   val `text/csv(UTF-8)` = MediaTypes.`text/csv` withCharset HttpCharsets.`UTF-8`
 
+  val `application/grpc+proto` = ContentType(MediaTypes.`application/grpc+proto`)
+
   // used for explicitly suppressing the rendering of Content-Type headers on requests and responses
   val NoContentType = ContentType(MediaTypes.NoMediaType)
 }
