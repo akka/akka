@@ -12,6 +12,7 @@ import jdocs.AbstractJavaTest;
 import jdocs.stream.SilenceSystemOut;
 import akka.testkit.javadsl.TestKit;
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -90,27 +91,30 @@ public class StreamTcpDocTest extends AbstractJavaTest {
   }
 
   @Test
-  public void actuallyWorkingClientServerApp() {
+  public void actuallyWorkingClientServerApp() throws Exception {
 
     final InetSocketAddress localhost = SocketUtil.temporaryServerAddress("127.0.0.1", false);
+    final int port = localhost.getPort();
+    final String host = localhost.getHostString();
 
     final TestProbe serverProbe = new TestProbe(system);
 
     final Source<IncomingConnection,CompletionStage<ServerBinding>> connections =
-        Tcp.get(system).bind(localhost.getHostString(), localhost.getPort());
+        Tcp.get(system).bind(host, port);
+    final CompletionStage<ServerBinding> bindingCS =
     //#welcome-banner-chat-server
-    connections.runForeach(connection -> {
-      // server logic, parses incoming commands
-      final Flow<String, String, NotUsed> commandParser =
+      connections.to(Sink.foreach((IncomingConnection connection) -> {
+        // server logic, parses incoming commands
+        final Flow<String, String, NotUsed> commandParser =
           Flow.<String>create()
             .takeWhile(elem -> !elem.equals("BYE"))
             .map(elem -> elem + "!");
 
-      final String welcomeMsg = "Welcome to: " + connection.localAddress() +
+        final String welcomeMsg = "Welcome to: " + connection.localAddress() +
           " you are: " + connection.remoteAddress() + "!";
 
-      final Source<String, NotUsed> welcome = Source.single(welcomeMsg);
-      final Flow<ByteString, ByteString, NotUsed> serverLogic =
+        final Source<String, NotUsed> welcome = Source.single(welcomeMsg);
+        final Flow<ByteString, ByteString, NotUsed> serverLogic =
           Flow.of(ByteString.class)
             .via(Framing.delimiter(ByteString.fromString("\n"), 256, FramingTruncation.DISALLOW))
             .map(ByteString::utf8String)
@@ -122,16 +126,18 @@ public class StreamTcpDocTest extends AbstractJavaTest {
             //#welcome-banner-chat-server
             .via(commandParser)
             .merge(welcome)
-            .map(s ->  s + "\n")
+            .map(s -> s + "\n")
             .map(ByteString::fromString);
 
-      connection.handleWith(serverLogic, mat);
-    }, mat);
-
+        connection.handleWith(serverLogic, mat);
+      })).run(mat);
     //#welcome-banner-chat-server
+    bindingCS.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
 
     {
-    //#repl-client
+      // just for docs, never actually used
+      //#repl-client
       final Flow<ByteString, ByteString, CompletionStage<OutgoingConnection>> connection =
           Tcp.get(system).outgoingConnection("127.0.0.1", 8888);
       //#repl-client
@@ -154,10 +160,12 @@ public class StreamTcpDocTest extends AbstractJavaTest {
         .map(elem -> readLine("> "))
         .via(replParser);
 
-      connection.join(repl).run(mat);
+      CompletionStage<OutgoingConnection> connectionCS = connection.join(repl).run(mat);
       //#repl-client
-    }
 
+      // make sure it got connected (or fails the test)
+      connectionCS.toCompletableFuture().get(5L, TimeUnit.SECONDS);
+    }
 
 
     serverProbe.expectMsg("Hello world");
