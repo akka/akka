@@ -48,7 +48,7 @@ public class StreamTcpDocTest extends AbstractJavaTest {
 
   final SilenceSystemOut.System System = SilenceSystemOut.get();
 
-  private final ConcurrentLinkedQueue<String> input = new ConcurrentLinkedQueue<String>();
+  private final ConcurrentLinkedQueue<String> input = new ConcurrentLinkedQueue<>();
   {
     input.add("Hello world");
     input.add("What a lovely day");
@@ -94,13 +94,10 @@ public class StreamTcpDocTest extends AbstractJavaTest {
   public void actuallyWorkingClientServerApp() throws Exception {
 
     final InetSocketAddress localhost = SocketUtil.temporaryServerAddress("127.0.0.1", false);
-    final int port = localhost.getPort();
-    final String host = localhost.getHostString();
-
     final TestProbe serverProbe = new TestProbe(system);
 
     final Source<IncomingConnection,CompletionStage<ServerBinding>> connections =
-        Tcp.get(system).bind(host, port);
+      Tcp.get(system).bind(localhost.getHostString(), localhost.getPort());
     final CompletionStage<ServerBinding> bindingCS =
     //#welcome-banner-chat-server
       connections.to(Sink.foreach((IncomingConnection connection) -> {
@@ -132,6 +129,8 @@ public class StreamTcpDocTest extends AbstractJavaTest {
         connection.handleWith(serverLogic, mat);
       })).run(mat);
     //#welcome-banner-chat-server
+
+    // make sure server is bound before we do anything else
     bindingCS.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
 
@@ -145,13 +144,13 @@ public class StreamTcpDocTest extends AbstractJavaTest {
 
     {
       final Flow<ByteString, ByteString, CompletionStage<OutgoingConnection>> connection =
-          Tcp.get(system).outgoingConnection(localhost.getHostString(), localhost.getPort());
+        Tcp.get(system).outgoingConnection(localhost.getHostString(), localhost.getPort());
       //#repl-client
       final Flow<String, ByteString, NotUsed> replParser =
-          Flow.<String>create()
-            .takeWhile(elem -> !elem.equals("q"))
-            .concat(Source.single("BYE")) // will run after the original flow completes
-            .map(elem -> ByteString.fromString(elem + "\n"));
+        Flow.<String>create()
+          .takeWhile(elem -> !elem.equals("q"))
+          .concat(Source.single("BYE")) // will run after the original flow completes
+          .map(elem -> ByteString.fromString(elem + "\n"));
 
       final Flow<ByteString, ByteString, NotUsed> repl = Flow.of(ByteString.class)
         .via(Framing.delimiter(ByteString.fromString("\n"), 256, FramingTruncation.DISALLOW))
