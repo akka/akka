@@ -11,11 +11,12 @@ import akka.actor.typed.scaladsl.Behaviors
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.annotation.DoNotInherit
 import akka.util.Timeout
 import akka.util.PrettyDuration.PrettyPrintableDuration
 
 import scala.concurrent.Await
-import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.{ FishingOutcome, TestKitSettings }
 import akka.util.BoxedType
 
 import scala.annotation.tailrec
@@ -43,6 +44,24 @@ object TestProbe {
       terminations.offerLast(t)
       Behaviors.same
   }
+}
+
+object FishingOutcomes {
+
+  /**
+   * Consume this message and continue with the next
+   */
+  case object Continue extends FishingOutcome
+
+  /**
+   * Complete fishing and return this message
+   */
+  case object Complete extends FishingOutcome
+
+  /**
+   * Fail fishing with a custom error message
+   */
+  case class Fail(error: String) extends FishingOutcome
 }
 
 class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
@@ -245,6 +264,52 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
     assert(o != null, s"timeout ($max) during expectMessageClass waiting for $c")
     assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
     o.asInstanceOf[C]
+  }
+
+  /**
+   * Allows for flexible matching of multiple messages within a timeout, the fisher function is fed each incoming
+   * message, and returns one of the following effects to decide on what happens next:
+   *
+   *  * [[FishingOutcomes.Continue]] - continue with the next message given that the timeout has not been reached
+   *  * [[FishingOutcomes.Complete]] - successfully complete and return the message
+   *  * [[FishingOutcomes.Fail]] - fail the test with a custom message
+   *
+   * Additionally failures includes the list of messages consumed. If a message of type `M` but not of type `T` is
+   * received this will also fail the test, additionally if the `fisher` function throws a match error the error
+   * is decorated with some fishing details and the test is failed (making it convenient to use this method with a
+   * partial function).
+   *
+   * @param max Max total time without the fisher function returning `CompleteFishing` before failing
+   *            The timeout is dilated.
+   * @return The messages accepted in the order they arrived
+   */
+  def fishForMessage(max: FiniteDuration)(fisher: M ⇒ FishingOutcome): List[M] = {
+    // not tailrec but that should be ok
+    def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
+      val start = System.nanoTime()
+      val msg = receiveOne(timeout)
+      try {
+        fisher(msg) match {
+          case FishingOutcomes.Complete    ⇒ (msg :: seen).reverse
+          case FishingOutcomes.Fail(error) ⇒ throw new AssertionError(error)
+          case FishingOutcomes.Continue ⇒
+            val newTimeout =
+              if (timeout.isFinite()) timeout - (System.nanoTime() - start).nanos
+              else timeout
+            if (newTimeout.toMillis <= 0) {
+              throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}")
+            } else {
+              loop(max, msg :: seen)
+            }
+        }
+      } catch {
+        case ex: MatchError ⇒ throw new AssertionError(
+          s"Unexpected message $msg while fishing for messages, " +
+            s"seen messages ${seen.reverse}", ex)
+      }
+    }
+
+    loop(max.dilated, Nil)
   }
 
   /**

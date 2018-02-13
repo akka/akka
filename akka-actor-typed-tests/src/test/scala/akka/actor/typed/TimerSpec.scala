@@ -33,6 +33,7 @@ class TimerSpec extends TestKit("TimerSpec")
   case class Tock(n: Int) extends Event
   case class GotPostStop(timerActive: Boolean) extends Event
   case class GotPreRestart(timerActive: Boolean) extends Event
+  case object Cancelled extends Event
 
   class Exc extends RuntimeException("simulated exc") with NoStackTrace
 
@@ -61,6 +62,7 @@ class TimerSpec extends TestKit("TimerSpec")
           Behaviors.stopped
         case Cancel ⇒
           timer.cancel("T")
+          monitor ! Cancelled
           Behaviors.same
         case Throw(e) ⇒
           throw e
@@ -142,6 +144,13 @@ class TimerSpec extends TestKit("TimerSpec")
       val ref = spawn(behv)
       probe.expectMessage(Tock(1))
       ref ! Cancel
+      probe.fishForMessage(3.seconds) {
+        // we don't know that we will see exactly one tock
+        case _: Tock   ⇒ FishingOutcomes.Continue
+        // but we know that after we saw Cancelled we won't see any more
+        case Cancelled ⇒ FishingOutcomes.Complete
+        case msg       ⇒ FishingOutcomes.Fail(s"unexpected msg: $msg")
+      }
       probe.expectNoMessage(interval + 100.millis.dilated)
 
       ref ! End
