@@ -29,6 +29,8 @@ import java.util.Random
 import java.net.SocketTimeoutException
 import java.nio.file.Files
 
+import com.google.common.jimfs.{ Configuration, Jimfs }
+
 object TcpConnectionSpec {
   case class Ack(i: Int) extends Event
   object Ack extends Ack(0)
@@ -233,7 +235,8 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     "write file to network" in new EstablishedConnectionTest() {
       run {
-        val tmpFile = Files.createTempFile("akka-io-spec-write-file-to-network", ".dat")
+        val fs = Jimfs.newFileSystem("write-file-in-network", Configuration.unix())
+        val tmpFile = Files.createTempFile(fs.getPath("/"), "whatever", ".dat")
         val writer = Files.newBufferedWriter(tmpFile)
         val oneKByteOfF = Array.fill[Char](1000)('F')
         // 10 mb of f:s in a file
@@ -244,13 +247,12 @@ class TcpConnectionSpec extends AkkaSpec("""
         writer.close()
         try {
           val writer = TestProbe()
-          val file = tmpFile.toFile
-          val size = file.length().toInt
-          writer.send(connectionActor, WriteFile(file.getAbsolutePath, 0, size, Ack))
+          val size = Files.size(tmpFile).toInt
+          writer.send(connectionActor, WritePath(tmpFile, 0, size, Ack))
           pullFromServerSide(size, 1000000)
           writer.expectMsg(Ack)
         } finally {
-          Files.delete(tmpFile)
+          fs.close()
         }
       }
     }
