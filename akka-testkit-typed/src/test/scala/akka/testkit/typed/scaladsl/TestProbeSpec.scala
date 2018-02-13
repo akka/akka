@@ -36,6 +36,61 @@ class TestProbeSpec extends TestKit with WordSpecLike with Matchers with BeforeA
       probe.expectTerminated(ref, 500.millis)
     }
 
+    "allow fishing for message" in {
+
+      val probe = TestProbe[String]()
+
+      probe.ref ! "one"
+      probe.ref ! "two"
+
+      val result = probe.fishForMessage(300.millis) {
+        case "one" ⇒ FishingOutcomes.Continue
+        case "two" ⇒ FishingOutcomes.Complete
+      }
+
+      result should ===(List("one", "two"))
+    }
+
+    "allow failing when fishing for message" in {
+
+      val probe = TestProbe[String]()
+
+      probe.ref ! "one"
+      probe.ref ! "two"
+
+      intercept[AssertionError] {
+        probe.fishForMessage(300.millis) {
+          case "one" ⇒ FishingOutcomes.Continue
+          case "two" ⇒ FishingOutcomes.Fail("not the fish I'm looking for")
+        }
+      }
+    }
+
+    "fail for unknown message when fishing for messages" in {
+      val probe = TestProbe[String]()
+
+      probe.ref ! "one"
+      probe.ref ! "two"
+
+      intercept[AssertionError] {
+        probe.fishForMessage(300.millis) {
+          case "one" ⇒ FishingOutcomes.Continue
+        }
+      }
+    }
+
+    "time out when fishing for messages" in {
+      val probe = TestProbe[String]()
+
+      probe.ref ! "one"
+
+      intercept[AssertionError] {
+        probe.fishForMessage(300.millis) {
+          case "one" ⇒ FishingOutcomes.Continue
+        }
+      }
+    }
+
   }
 
   override protected def afterAll(): Unit = {
