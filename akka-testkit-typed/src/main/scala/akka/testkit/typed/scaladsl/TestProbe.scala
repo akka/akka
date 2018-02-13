@@ -49,9 +49,14 @@ object TestProbe {
 object FishingOutcomes {
 
   /**
-   * Consume this message and continue with the next
+   * Consume this message, collect it into the result, and continue with the next message
    */
   case object Continue extends FishingOutcome
+
+  /**
+   * Consume this message, but do not collect it into the result, and continue with the next message
+   */
+  case object ContinueAndIgnore extends FishingOutcome
 
   /**
    * Complete fishing and return this message
@@ -283,7 +288,7 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
    *            The timeout is dilated.
    * @return The messages accepted in the order they arrived
    */
-  def fishForMessage(max: FiniteDuration)(fisher: M ⇒ FishingOutcome): List[M] = {
+  def fishForMessage(max: FiniteDuration, hint: String = "")(fisher: M ⇒ FishingOutcome): List[M] = {
     // not tailrec but that should be ok
     def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
       val start = System.nanoTime()
@@ -291,21 +296,25 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
       try {
         fisher(msg) match {
           case FishingOutcomes.Complete    ⇒ (msg :: seen).reverse
-          case FishingOutcomes.Fail(error) ⇒ throw new AssertionError(error)
-          case FishingOutcomes.Continue ⇒
+          case FishingOutcomes.Fail(error) ⇒ throw new AssertionError(s"$error, hint: $hint")
+          case continue ⇒
             val newTimeout =
               if (timeout.isFinite()) timeout - (System.nanoTime() - start).nanos
               else timeout
             if (newTimeout.toMillis <= 0) {
-              throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}")
+              throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
             } else {
-              loop(max, msg :: seen)
+              continue match {
+                case FishingOutcomes.Continue          ⇒ loop(newTimeout, msg :: seen)
+                case FishingOutcomes.ContinueAndIgnore ⇒ loop(newTimeout, seen)
+              }
+
             }
         }
       } catch {
         case ex: MatchError ⇒ throw new AssertionError(
           s"Unexpected message $msg while fishing for messages, " +
-            s"seen messages ${seen.reverse}", ex)
+            s"seen messages ${seen.reverse}, hint: $hint", ex)
       }
     }
 

@@ -20,7 +20,8 @@ case class TE(message: String) extends RuntimeException(message) with NoStackTra
 /**
  * Not for user extension.
  *
- * Instances are available from `FishingOutcomes` in the respective dsls
+ * Instances are available from `FishingOutcomes` in the respective dsls: [[akka.testkit.typed.scaladsl.FishingOutcomes]]
+ * and [[akka.testkit.typed.javadsl.FishingOutcomes]]
  */
 @DoNotInherit abstract class FishingOutcome private[akka] ()
 

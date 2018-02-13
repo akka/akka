@@ -7,6 +7,7 @@ import akka.actor.typed.ActorSystem
 import akka.testkit.typed.FishingOutcome
 
 import scala.concurrent.duration.FiniteDuration
+import scala.collection.JavaConverters._
 
 object FishingOutcomes {
 
@@ -57,7 +58,13 @@ class TestProbe[M](name: String, system: ActorSystem[_]) extends akka.testkit.ty
    * @return The messages accepted in the order they arrived
    */
   // FIXME same name would cause ambiguity but I'm out of ideas how to fix, separate Scala/Java TestProbe APIs?
-  def fishForMessageJava(max: FiniteDuration, fisher: java.util.function.Function[M, FishingOutcome]): List[M] =
-    fishForMessage(max)(fisher.apply)
+  def fishForMessageJava(max: FiniteDuration, fisher: java.util.function.Function[M, FishingOutcome]): java.util.List[M] =
+    fishForMessage(max)(fisher.apply).asJava
+
+  /**
+   * Same as the other `fishForMessageJava` but includes the provided hint in all error messages
+   */
+  def fishForMessageJava(max: FiniteDuration, hint: String, fisher: java.util.function.Function[M, FishingOutcome]): java.util.List[M] =
+    fishForMessage(max, hint)(fisher.apply).asJava
 
 }
