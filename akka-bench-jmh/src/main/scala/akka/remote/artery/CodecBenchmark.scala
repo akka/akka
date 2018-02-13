@@ -127,8 +127,8 @@ class CodecBenchmark {
     } else null
     val envelope = new EnvelopeBuffer(envelopeTemplateBuffer)
     val outboundEnvelope = OutboundEnvelope(OptionVal.None, payload, OptionVal.None)
-    headerIn setFrameLength 100
-    headerIn setStreamId 1
+    //headerIn setFrameLength 100
+    //headerIn setStreamId 1
     headerIn setVersion ArteryTransport.HighestVersion
     headerIn setUid 42
     headerIn setSenderActorRef actorOnSystemA
@@ -147,7 +147,7 @@ class CodecBenchmark {
     val compressions = new InboundCompressionsImpl(system, inboundContext, inboundContext.settings.Advanced.Compression)
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] =
       Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
-        uniqueLocalAddress, inboundContext.settings, envelopePool, compressions, inboundEnvelopePool))
+        uniqueLocalAddress, inboundContext.settings, compressions, inboundEnvelopePool))
     val deserializer: Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Deserializer(inboundContext, system.asInstanceOf[ExtendedActorSystem], envelopePool))
     val decoderInput: Flow[String, EnvelopeBuffer, NotUsed] = Flow[String]
