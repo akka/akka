@@ -3,7 +3,6 @@
  */
 package akka
 
-import com.typesafe.sbt.osgi.{OsgiKeys, SbtOsgi}
 import sbt.{Def, _}
 import sbt.Keys._
 
@@ -18,10 +17,7 @@ import sbt.Keys._
 object AutomaticModuleName  {
   private val AutomaticModuleName = "Automatic-Module-Name"
 
-  def settings(name: String): Seq[Def.Setting[_]] = Seq(
-    packageOptions in (Compile, packageBin) += Package.ManifestAttributes(AutomaticModuleName → name),
-    // explicitly pass it to the osgi plugin, otherwise it would lose that setting
-    // This should be likely fixed in sbt-osgi, such that it does pick up package options as additional headers
-    OsgiKeys.additionalHeaders := Map(AutomaticModuleName → name)
+  def settings(name: String): Seq[Def.Setting[Task[Seq[PackageOption]]]] = Seq(
+    packageOptions in (Compile, packageBin) += Package.ManifestAttributes(AutomaticModuleName → name)
   )
 }
