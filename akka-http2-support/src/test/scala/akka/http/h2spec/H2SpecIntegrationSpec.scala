@@ -143,8 +143,4 @@ class H2SpecIntegrationSpec extends AkkaSpec(
     def executable =
       System.getProperty("h2spec.path").ensuring(_ != null, "h2spec.path property not defined")
   }
-
-  override protected def afterTermination(): Unit = {
-    binding.unbind().futureValue
-  }
 }
