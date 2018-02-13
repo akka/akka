@@ -1723,6 +1723,39 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.divertToMat(that, when.test)(combinerToScala(matF)))
 
   /**
+   * Attaches the given [[Sink]] to this [[Flow]] as a wire tap, meaning that elements that pass
+   * through will also be sent to the wire-tap Sink, without the latter affecting the mainline flow.
+   * If the wire-tap Sink backpressures, elements that would've been sent to it will be dropped instead.
+   *
+   * '''Emits when''' element is available and demand exists from the downstream; the element will
+   * also be sent to the wire-tap Sink if there is demand.
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+
+  def wireTap(that: Graph[SinkShape[Out], _]): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.wireTap(that))
+
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]] as a wire tap, meaning that elements that pass
+   * through will also be sent to the wire-tap Sink, without the latter affecting the mainline flow.
+   * If the wire-tap Sink backpressures, elements that would've been sent to it will be dropped instead.
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   *
+   * @see [[#wireTap]]
+   */
+  def wireTapMat[M2, M3](
+    that: Graph[SinkShape[Out], M2],
+    matF: function.Function2[Mat, M2, M3]): javadsl.Flow[In, Out, M3] =
+    new Flow(delegate.wireTapMat(that)(combinerToScala(matF)))
+
+  /**
    * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
    * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
    * then repeat process.
