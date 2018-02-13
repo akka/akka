@@ -65,7 +65,7 @@ private[remote] class Encoder(
       private val headerBuilder = HeaderBuilder.out()
       headerBuilder setVersion version
       headerBuilder setUid uniqueLocalAddress.uid
-      headerBuilder setStreamId streamId.toByte
+      //headerBuilder setStreamId streamId.toByte
       private val localAddress = uniqueLocalAddress.address
       private val serialization = SerializationExtension(system)
       private val serializationInfo = Serialization.Information(localAddress, system)
@@ -136,11 +136,11 @@ private[remote] class Encoder(
             }
           } finally Serialization.currentTransportInformation.value = oldValue
 
-          if (headerBuilder.version >= 1) {
+          /*if (headerBuilder.version >= 1) {
             // Framing.lengthField need the length after the length field, not the total frame size
             val frameLength = envelope.byteBuffer.position() - EnvelopeBuffer.FrameLengthOffset - 4
             envelope.byteBuffer.putInt(EnvelopeBuffer.FrameLengthOffset, frameLength)
-          }
+          }*/
 
           envelope.byteBuffer.flip()
 

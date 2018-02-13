@@ -73,7 +73,7 @@ private[remote] object EnvelopeBuffer {
 
   val VersionOffset = 0 // Byte
 
-  val FrameLengthOffset = 1 // Int
+  //val FrameLengthOffset = 1 // Int
   val StreamIdOffset = 5 // Byte
 
   val FlagsOffset = 6 // Byte
@@ -117,11 +117,11 @@ private[remote] sealed trait HeaderBuilder {
   def versionPositionAdjust: Int
   def positionOfMetaData: Int
 
-  def setFrameLength(length: Int): Unit
-  def frameLength: Int
+  //def setFrameLength(length: Int): Unit
+  //def frameLength: Int
 
-  def setStreamId(id: Byte): Unit
-  def streamId: Byte
+  //def setStreamId(id: Byte): Unit
+  //def streamId: Byte
 
   def setFlags(v: Byte): Unit
   def flags: Byte
@@ -216,8 +216,8 @@ private[remote] final class HeaderBuilderImpl(
 
   // Fields only available for EnvelopeBuffer
   var _version: Byte = 0
-  var _frameLength: Int = 0
-  var _streamId: Byte = 0
+  //var _frameLength: Int = 0
+  //var _streamId: Byte = 0
   var _flags: Byte = 0
   var _uid: Long = 0
   var _inboundActorRefCompressionTableVersion: Byte = 0
@@ -240,7 +240,7 @@ private[remote] final class HeaderBuilderImpl(
     // which owns the HeaderBuilder instance. Those are never changed.
     // version, uid, streamId
 
-    _frameLength = 0
+    //_frameLength = 0
     _flags = 0
     _senderActorRef = null
     _senderActorRefIdx = -1
@@ -265,11 +265,11 @@ private[remote] final class HeaderBuilderImpl(
 
   def positionOfMetaData: Int = EnvelopeBuffer.MetadataContainerAndLiteralSectionOffset - versionPositionAdjust
 
-  def setFrameLength(length: Int): Unit = _frameLength = length
-  def frameLength: Int = _frameLength
+  //def setFrameLength(length: Int): Unit = _frameLength = length
+  //def frameLength: Int = _frameLength
 
-  def setStreamId(id: Byte): Unit = _streamId = id
-  def streamId: Byte = _streamId
+  //def setStreamId(id: Byte): Unit = _streamId = id
+  //def streamId: Byte = _streamId
 
   override def setFlags(v: Byte) = _flags = v
   override def flags = _flags
@@ -373,8 +373,8 @@ private[remote] final class HeaderBuilderImpl(
 
   override def toString =
     "HeaderBuilderImpl(" +
-      "frameLength:" + frameLength + ", " +
-      "streamId:" + streamId + ", " +
+      //"frameLength:" + frameLength + ", " +
+      //"streamId:" + streamId + ", " +
       "version:" + version + ", " +
       "flags:" + ByteFlag.binaryLeftPad(flags) + ", " +
       "UID:" + uid + ", " +
@@ -397,6 +397,12 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
 
   private var literalChars = new Array[Char](64)
   private var literalBytes = new Array[Byte](64)
+  private var _streamId: Int = -1
+  def streamId: Int =
+    if (_streamId != -1) _streamId
+    else
+      throw new IllegalStateException("StreamId was not set")
+  def setStreamId(newStreamId: Int): Unit = _streamId = newStreamId
 
   def writeHeader(h: HeaderBuilder): Unit = writeHeader(h, null)
 
@@ -408,10 +414,10 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     byteBuffer.put(VersionOffset, header.version)
 
     // frameLength and streamId were added in version 1
-    if (header.version >= 1) {
+    /*if (header.version >= 1) {
       byteBuffer.putInt(FrameLengthOffset, header.frameLength)
       byteBuffer.putInt(StreamIdOffset, header.streamId)
-    }
+    }*/
     val adjust = header.versionPositionAdjust
 
     byteBuffer.put(FlagsOffset - adjust, header.flags)
@@ -464,10 +470,10 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
           s"highest known version for this node is [${ArteryTransport.HighestVersion}]")
 
     // frameLength and streamId were added in version 1
-    if (header.version >= 1) {
+    /*if (header.version >= 1) {
       header.setFrameLength(byteBuffer.getInt(FrameLengthOffset))
       header.setStreamId(byteBuffer.get(StreamIdOffset))
-    }
+    }*/
     val adjust = header.versionPositionAdjust
 
     header.setFlags(byteBuffer.get(FlagsOffset - adjust))

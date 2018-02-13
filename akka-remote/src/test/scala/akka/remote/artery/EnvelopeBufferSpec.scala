@@ -71,8 +71,8 @@ abstract class EnvelopeBufferSpec(version: Byte) extends AkkaSpec {
 
     "be able to encode and decode headers with compressed literals" in {
       headerIn setVersion version
-      headerIn setFrameLength 1024
-      headerIn setStreamId 1
+      /*headerIn setFrameLength 1024
+      headerIn setStreamId 1*/
       headerIn setUid 42
       headerIn setSerializer 4
       headerIn setRecipientActorRef minimalRef("compressable1")
@@ -103,8 +103,8 @@ abstract class EnvelopeBufferSpec(version: Byte) extends AkkaSpec {
       val recipientRef = minimalRef("uncompressable11")
 
       headerIn setVersion version
-      headerIn setFrameLength 1024
-      headerIn setStreamId 1
+      /*headerIn setFrameLength 1024
+      headerIn setStreamId 1*/
       headerIn setUid 42
       headerIn setSerializer 4
       headerIn setSenderActorRef senderRef
@@ -124,13 +124,13 @@ abstract class EnvelopeBufferSpec(version: Byte) extends AkkaSpec {
       envelope.parseHeader(headerOut)
 
       headerOut.version should ===(version)
-      if (version == 0) {
+      /*if (version == 0) {
         headerOut.frameLength should ===(0)
         headerOut.streamId should ===(0)
       } else {
         headerOut.frameLength should ===(1024)
         headerOut.streamId should ===(1)
-      }
+      }*/
       headerOut.uid should ===(42)
       headerOut.serializer should ===(4)
       headerOut.senderActorRefPath should ===(OptionVal.Some("akka://EnvelopeBufferSpec/uncompressable0"))
@@ -186,13 +186,13 @@ abstract class EnvelopeBufferSpec(version: Byte) extends AkkaSpec {
       envelope.parseHeader(headerOut)
 
       headerOut.version should ===(version)
-      if (version == 0) {
+      /*if (version == 0) {
         headerOut.frameLength should ===(0)
         headerOut.streamId should ===(0)
       } else {
         headerOut.frameLength should ===(1024)
         headerOut.streamId should ===(1)
-      }
+      }*/
       headerOut.uid should ===(Long.MinValue)
       headerOut.serializer should ===(-1)
       headerOut.senderActorRefPath should ===(OptionVal.Some("akka://EnvelopeBufferSpec/uncompressable0"))
