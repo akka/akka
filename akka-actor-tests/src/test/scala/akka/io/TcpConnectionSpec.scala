@@ -27,6 +27,7 @@ import akka.util.{ ByteString, Helpers }
 import akka.testkit.SocketUtil._
 import java.util.Random
 import java.net.SocketTimeoutException
+import java.nio.file.Files
 
 object TcpConnectionSpec {
   case class Ack(i: Int) extends Event
@@ -232,23 +233,25 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     "write file to network" in new EstablishedConnectionTest() {
       run {
-        // hacky: we need a file for testing purposes, so try to get the biggest one from our own classpath
-        val testFile =
-          classOf[TcpConnectionSpec].getClassLoader.asInstanceOf[URLClassLoader]
-            .getURLs
-            .filter(_.getProtocol == "file")
-            .map(url ⇒ new File(url.toURI))
-            .filter(_.exists)
-            .sortBy(-_.length)
-            .head
-
-        // maximum of 100 MB
-        val size = math.min(testFile.length(), 100000000).toInt
-
-        val writer = TestProbe()
-        writer.send(connectionActor, WriteFile(testFile.getAbsolutePath, 0, size, Ack))
-        pullFromServerSide(size, 1000000)
-        writer.expectMsg(Ack)
+        val tmpFile = Files.createTempFile("akka-io-spec-write-file-to-network", ".dat")
+        val writer = Files.newBufferedWriter(tmpFile)
+        val oneKByteOfF = Array.fill[Char](1000)('F')
+        // 10 mb of f:s in a file
+        for (_ ← 0 to 10000) {
+          writer.write(oneKByteOfF)
+        }
+        writer.flush()
+        writer.close()
+        try {
+          val writer = TestProbe()
+          val file = tmpFile.toFile
+          val size = file.length().toInt
+          writer.send(connectionActor, WriteFile(file.getAbsolutePath, 0, size, Ack))
+          pullFromServerSide(size, 1000000)
+          writer.expectMsg(Ack)
+        } finally {
+          Files.delete(tmpFile)
+        }
       }
     }
 
