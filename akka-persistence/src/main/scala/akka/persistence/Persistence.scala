@@ -134,7 +134,7 @@ trait RuntimePluginConfig {
    *
    * @return an additional configuration used to configure the journal plugin.
    */
-  def journalPluginConfig: Config = ConfigFactory.empty
+  def journalPluginConfig: Config
 
   /**
    * Additional configuration of the snapshot plugin servicing this persistent actor.
@@ -145,7 +145,7 @@ trait RuntimePluginConfig {
    *
    * @return an additional configuration used to configure the snapshot plugin.
    */
-  def snapshotPluginConfig: Config = ConfigFactory.empty
+  def snapshotPluginConfig: Config
 }
 
 /**
