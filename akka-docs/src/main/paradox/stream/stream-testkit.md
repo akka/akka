@@ -1,6 +1,6 @@
 # Testing streams
 
-Verifying behaviour of Akka Stream sources, flows and sinks can be done using
+Verifying behavior of Akka Stream sources, flows and sinks can be done using
 various code patterns and libraries. Here we will discuss testing these
 elements using:
 
@@ -13,7 +13,7 @@ flows and sinks. This makes them easily testable by wiring them up to other
 sources or sinks, or some test harnesses that `akka-testkit` or
 `akka-stream-testkit` provide.
 
-## Built in sources, sinks and combinators
+## Built-in sources, sinks and combinators
 
 Testing a custom sink can be as simple as attaching a source that emits
 elements from a predefined collection, running a constructed test flow and
@@ -93,11 +93,18 @@ provides tools specifically for writing stream tests. This module comes with
 two main components that are `TestSource` and `TestSink` which
 provide sources and sinks that materialize to probes that allow fluent API.
 
-@@@ note
+### Dependency
 
-Be sure to add the module `akka-stream-testkit` to your dependencies.
+To use Akka Stream TestKit, add the module to your project:
 
-@@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream-testkit_$scala.binary_version$"
+  version="$akka.version$"
+  scope="test"
+}
+
+### Using the TestKit
 
 A sink returned by `TestSink.probe` allows manual control over demand and
 assertions over elements coming downstream.
@@ -117,7 +124,7 @@ Scala
 Java
 :   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #test-source-probe }
 
-You can also inject exceptions and test sink behaviour on error conditions.
+You can also inject exceptions and test sink behavior on error conditions.
 
 Scala
 :   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #injecting-failure }

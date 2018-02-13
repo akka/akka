@@ -6,18 +6,15 @@ package akka.testkit.typed.scaladsl
 import scala.concurrent.duration._
 import java.util.concurrent.BlockingDeque
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.ActorSystem
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.typed.ActorRef
 import akka.util.Timeout
 import akka.util.PrettyDuration.PrettyPrintableDuration
 
 import scala.concurrent.Await
-import com.typesafe.config.Config
 import akka.testkit.typed.TestKitSettings
 import akka.util.BoxedType
 
@@ -34,9 +31,17 @@ object TestProbe {
   def apply[M](name: String)(implicit system: ActorSystem[_]): TestProbe[M] =
     new TestProbe(name)
 
-  private def testActor[M](queue: BlockingDeque[M]): Behavior[M] = Behaviors.immutable { (ctx, msg) ⇒
-    queue.offerLast(msg)
+  private case class WatchActor[U](actor: ActorRef[U])
+  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] = Behaviors.immutable[M] { (ctx, msg) ⇒
+    msg match {
+      case WatchActor(ref) ⇒ ctx.watch(ref)
+      case other           ⇒ queue.offerLast(other)
+    }
     Behaviors.same
+  }.onSignal {
+    case (_, t: Terminated) ⇒
+      terminations.offerLast(t)
+      Behaviors.same
   }
 }
 
@@ -45,20 +50,21 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
   import TestProbe._
   private implicit val settings = TestKitSettings(system)
   private val queue = new LinkedBlockingDeque[M]
+  private val terminations = new LinkedBlockingDeque[Terminated]
 
   private var end: Duration = Duration.Undefined
 
   /**
-   * if last assertion was expectNoMsg, disable timing failure upon within()
+   * if last assertion was expectNoMessage, disable timing failure upon within()
    * block end.
    */
-  private var lastWasNoMsg = false
+  private var lastWasNoMessage = false
 
   private var lastMessage: Option[M] = None
 
   val testActor: ActorRef[M] = {
     implicit val timeout = Timeout(3.seconds)
-    val futRef = system.systemActorOf(TestProbe.testActor(queue), s"$name-${testActorId.incrementAndGet()}")
+    val futRef = system.systemActorOf(TestProbe.testActor(queue, terminations), s"$name-${testActorId.incrementAndGet()}")
     Await.result(futRef, timeout.duration + 1.second)
   }
 
@@ -117,7 +123,7 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
    * {{{
    * val ret = within(50 millis) {
    *   test ! Ping
-   *   expectMsgType[Pong]
+   *   expectMessageType[Pong]
    * }
    * }}}
    */
@@ -127,7 +133,7 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
     val rem = if (end == Duration.Undefined) Duration.Inf else end - start
     assert(rem >= min, s"required min time $min not possible, only ${rem.pretty} left")
 
-    lastWasNoMsg = false
+    lastWasNoMessage = false
 
     val max_diff = _max min rem
     val prev_end = end
@@ -137,7 +143,7 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
 
     val diff = now - start
     assert(min <= diff, s"block took ${diff.pretty}, should at least have been $min")
-    if (!lastWasNoMsg) {
+    if (!lastWasNoMessage) {
       assert(diff <= max_diff, s"block took ${diff.pretty}, exceeding ${max_diff.pretty}")
     }
 
@@ -150,32 +156,32 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
   def within[T](max: FiniteDuration)(f: ⇒ T): T = within(Duration.Zero, max)(f)
 
   /**
-   * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
+   * Same as `expectMessage(remainingOrDefault, obj)`, but correctly treating the timeFactor.
    */
-  def expectMsg[T <: M](obj: T): T = expectMsg_internal(remainingOrDefault, obj)
+  def expectMessage[T <: M](obj: T): T = expectMessage_internal(remainingOrDefault, obj)
 
   /**
    * Receive one message from the test actor and assert that it equals the
    * given object. Wait time is bounded by the given duration, with an
-   * AssertionFailure being thrown in case of timeout.
+   * [[AssertionError]] being thrown in case of timeout.
    *
    * @return the received object
    */
-  def expectMsg[T <: M](max: FiniteDuration, obj: T): T = expectMsg_internal(max.dilated, obj)
+  def expectMessage[T <: M](max: FiniteDuration, obj: T): T = expectMessage_internal(max.dilated, obj)
 
   /**
    * Receive one message from the test actor and assert that it equals the
    * given object. Wait time is bounded by the given duration, with an
-   * AssertionFailure being thrown in case of timeout.
+   * [[AssertionError]] being thrown in case of timeout.
    *
    * @return the received object
    */
-  def expectMsg[T <: M](max: FiniteDuration, hint: String, obj: T): T = expectMsg_internal(max.dilated, obj, Some(hint))
+  def expectMessage[T <: M](max: FiniteDuration, hint: String, obj: T): T = expectMessage_internal(max.dilated, obj, Some(hint))
 
-  private def expectMsg_internal[T <: M](max: Duration, obj: T, hint: Option[String] = None): T = {
+  private def expectMessage_internal[T <: M](max: Duration, obj: T, hint: Option[String] = None): T = {
     val o = receiveOne(max)
     val hintOrEmptyString = hint.map(": " + _).getOrElse("")
-    assert(o != null, s"timeout ($max) during expectMsg while waiting for $obj" + hintOrEmptyString)
+    assert(o != null, s"timeout ($max) during expectMessage while waiting for $obj" + hintOrEmptyString)
     assert(obj == o, s"expected $obj, found $o" + hintOrEmptyString)
     o.asInstanceOf[T]
   }
@@ -188,14 +194,14 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
    */
   private def receiveOne(max: Duration): M = {
     val message =
-      if (max == 0.seconds) {
+      if (max == Duration.Zero) {
         queue.pollFirst
       } else if (max.isFinite) {
         queue.pollFirst(max.length, max.unit)
       } else {
         queue.takeFirst
       }
-    lastWasNoMsg = false
+    lastWasNoMessage = false
     lastMessage = if (message == null) None else Some(message)
     message
   }
@@ -204,41 +210,59 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
    * Assert that no message is received for the specified time.
    * Supplied value is not dilated.
    */
-  def expectNoMessage(max: FiniteDuration) { expectNoMsg_internal(max) }
+  def expectNoMessage(max: FiniteDuration) { expectNoMessage_internal(max) }
 
   /**
    * Assert that no message is received. Waits for the default period configured as `akka.actor.typed.test.expect-no-message-default`
    * That value is dilated.
    */
-  def expectNoMessage() { expectNoMsg_internal(settings.ExpectNoMessageDefaultTimeout.dilated) }
+  def expectNoMessage() { expectNoMessage_internal(settings.ExpectNoMessageDefaultTimeout.dilated) }
 
-  private def expectNoMsg_internal(max: FiniteDuration) {
+  private def expectNoMessage_internal(max: FiniteDuration) {
     val o = receiveOne(max)
     assert(o == null, s"received unexpected message $o")
-    lastWasNoMsg = true
+    lastWasNoMessage = true
   }
 
   /**
-   * Same as `expectMsgType[T](remainingOrDefault)`, but correctly treating the timeFactor.
+   * Same as `expectMessageType[T](remainingOrDefault)`, but correctly treating the timeFactor.
    */
-  def expectMsgType[T <: M](implicit t: ClassTag[T]): T =
-    expectMsgClass_internal(remainingOrDefault, t.runtimeClass.asInstanceOf[Class[T]])
+  def expectMessageType[T <: M](implicit t: ClassTag[T]): T =
+    expectMessageClass_internal(remainingOrDefault, t.runtimeClass.asInstanceOf[Class[T]])
 
   /**
    * Receive one message from the test actor and assert that it conforms to the
    * given type (after erasure). Wait time is bounded by the given duration,
-   * with an AssertionFailure being thrown in case of timeout.
+   * with an [[AssertionError]] being thrown in case of timeout.
    *
    * @return the received object
    */
-  def expectMsgType[T <: M](max: FiniteDuration)(implicit t: ClassTag[T]): T =
-    expectMsgClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
+  def expectMessageType[T <: M](max: FiniteDuration)(implicit t: ClassTag[T]): T =
+    expectMessageClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
 
-  private[akka] def expectMsgClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
+  private[akka] def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
     val o = receiveOne(max)
-    assert(o != null, s"timeout ($max) during expectMsgClass waiting for $c")
+    assert(o != null, s"timeout ($max) during expectMessageClass waiting for $c")
     assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
     o.asInstanceOf[C]
+  }
+
+  /**
+   * Expect the given actor to be stopped or stop withing the given timeout or
+   * throw an [[AssertionError]].
+   */
+  def expectTerminated[U](actorRef: ActorRef[U], max: FiniteDuration): Unit = {
+    testActor.asInstanceOf[ActorRef[AnyRef]] ! WatchActor(actorRef)
+    val message =
+      if (max == Duration.Zero) {
+        terminations.pollFirst
+      } else if (max.isFinite) {
+        terminations.pollFirst(max.length, max.unit)
+      } else {
+        terminations.takeFirst
+      }
+    assert(message != null, s"timeout ($max) during expectStop waiting for actor [${actorRef.path}] to stop")
+    assert(message.ref == actorRef, s"expected [${actorRef.path}] to stop, but saw [${message.ref.path}] stop")
   }
 
   /**

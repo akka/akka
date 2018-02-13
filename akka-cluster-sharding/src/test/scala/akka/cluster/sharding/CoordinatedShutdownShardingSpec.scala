@@ -4,7 +4,6 @@
 package akka.cluster.sharding
 
 import scala.concurrent.Future
-
 import scala.concurrent.duration._
 import akka.Done
 import akka.actor.ActorSystem
@@ -15,11 +14,13 @@ import akka.cluster.MemberStatus
 import akka.testkit.AkkaSpec
 import akka.testkit.TestActors.EchoActor
 import akka.testkit.TestProbe
+import akka.testkit.WithLogCapturing
 
 object CoordinatedShutdownShardingSpec {
   val config =
     """
     akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -34,7 +35,7 @@ object CoordinatedShutdownShardingSpec {
   }
 }
 
-class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardingSpec.config) {
+class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardingSpec.config) with WithLogCapturing {
   import CoordinatedShutdownShardingSpec._
 
   val sys1 = ActorSystem(system.name, system.settings.config)

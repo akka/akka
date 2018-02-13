@@ -7,6 +7,8 @@ package adapter
 
 import java.util.concurrent.CompletionStage
 
+import akka.actor
+import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
 import akka.{ actor ⇒ a }
 
@@ -15,7 +17,6 @@ import akka.util.Timeout
 
 import scala.concurrent.Future
 import akka.annotation.InternalApi
-import akka.event.typed.EventStream
 
 import scala.compat.java8.FutureConverters
 
@@ -28,8 +29,7 @@ import scala.compat.java8.FutureConverters
  */
 @InternalApi private[akka] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
   extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] with ExtensionsImpl {
-
-  loadExtensions()
+  untyped.assertInitialized()
 
   import ActorRefAdapter.sendSystemMessage
 
@@ -53,19 +53,13 @@ import scala.compat.java8.FutureConverters
       selector match {
         case DispatcherDefault(_)         ⇒ untyped.dispatcher
         case DispatcherFromConfig(str, _) ⇒ untyped.dispatchers.lookup(str)
-        case DispatcherFromExecutionContext(_, _) ⇒
-          throw new UnsupportedOperationException("Cannot use DispatcherFromExecutionContext with ActorSystemAdapter")
-        case DispatcherFromExecutor(_, _) ⇒
-          throw new UnsupportedOperationException("Cannot use DispatcherFromExecutor with ActorSystemAdapter")
       }
     override def shutdown(): Unit = () // there was no shutdown in untyped Akka
   }
   override def dynamicAccess: a.DynamicAccess = untyped.dynamicAccess
-  override def eventStream: EventStream = new EventStreamAdapter(untyped.eventStream)
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untyped.dispatcher
-  override def log: akka.event.LoggingAdapter = untyped.log
+  override val log: Logger = new LoggerAdapterImpl(untyped.eventStream, getClass, name, untyped.logFilter)
   override def logConfiguration(): Unit = untyped.logConfiguration()
-  override def logFilter: akka.event.LoggingFilter = untyped.logFilter
   override def name: String = untyped.name
   override def scheduler: akka.actor.Scheduler = untyped.scheduler
   override def settings: Settings = new Settings(untyped.settings)
@@ -100,9 +94,26 @@ private[akka] object ActorSystemAdapter {
 
   object AdapterExtension extends a.ExtensionId[AdapterExtension] with a.ExtensionIdProvider {
     override def get(system: a.ActorSystem): AdapterExtension = super.get(system)
-    override def lookup = AdapterExtension
+    override def lookup() = AdapterExtension
     override def createExtension(system: a.ExtendedActorSystem): AdapterExtension =
       new AdapterExtension(system)
+  }
+
+  /**
+   * An untyped extension to load configured typed extensions. It is loaded via
+   * akka.library-extensions. `loadExtensions` cannot be called from the AdapterExtension
+   * directly because the adapter is created too early during typed actor system creation.
+   *
+   * When on the classpath typed extensions will be loaded for untyped ActorSystems as well.
+   */
+  class LoadTypedExtensions(system: a.ExtendedActorSystem) extends a.Extension {
+    ActorSystemAdapter.AdapterExtension(system).adapter.loadExtensions()
+  }
+
+  object LoadTypedExtensions extends a.ExtensionId[LoadTypedExtensions] with a.ExtensionIdProvider {
+    override def lookup(): actor.ExtensionId[_ <: actor.Extension] = this
+    override def createExtension(system: ExtendedActorSystem): LoadTypedExtensions =
+      new LoadTypedExtensions(system)
   }
 
   def toUntyped[U](sys: ActorSystem[_]): a.ActorSystem =
@@ -112,4 +123,3 @@ private[akka] object ActorSystemAdapter {
         s"($sys of class ${sys.getClass.getName})")
     }
 }
-

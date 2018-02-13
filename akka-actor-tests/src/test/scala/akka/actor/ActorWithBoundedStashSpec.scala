@@ -23,12 +23,12 @@ object ActorWithBoundedStashSpec {
         sender() ! "ok"
 
       case "world" ⇒
-        context.become(afterWorldBehaviour)
+        context.become(afterWorldBehavior)
         unstashAll()
 
     }
 
-    def afterWorldBehaviour: Receive = {
+    def afterWorldBehavior: Receive = {
       case _ ⇒ stash()
     }
   }

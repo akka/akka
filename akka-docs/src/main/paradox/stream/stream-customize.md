@@ -70,7 +70,7 @@ Java
 
 Similarly, to create a custom `Sink` one can register a subclass `InHandler` with the stage `Inlet`.
 The `onPush()` callback is used to signal the handler a new element has been pushed to the stage,
-and can hence be grabbed and used. `onPush()` can be overridden to provide custom behaviour.
+and can hence be grabbed and used. `onPush()` can be overridden to provide custom behavior.
 Please note, most Sinks would need to request upstream elements as soon as they are created: this can be
 done by calling `pull(inlet)` in the `preStart()` callback.
 

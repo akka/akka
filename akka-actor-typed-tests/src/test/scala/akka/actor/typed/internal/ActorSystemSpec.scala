@@ -4,6 +4,7 @@
 package akka.actor.typed
 package internal
 
+import akka.Done
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.typed.TestInbox
@@ -54,8 +55,12 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     // see issue #24172
     "shutdown if guardian shuts down immediately" in {
-      pending
-      withSystem("shutdown", Behaviors.stopped[String], doTerminate = false) { sys: ActorSystem[String] ⇒
+      val stoppable =
+        Behaviors.immutable[Done] {
+          case (ctx, Done) ⇒ Behaviors.stopped
+        }
+      withSystem("shutdown", stoppable, doTerminate = false) { sys: ActorSystem[Done] ⇒
+        sys ! Done
         sys.whenTerminated.futureValue
       }
     }

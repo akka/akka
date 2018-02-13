@@ -66,6 +66,8 @@ private[io] class TcpOutgoingConnection(
           register(remoteAddress, registration)
         }
       }
+    case ReceiveTimeout ⇒
+      connectionTimeout()
   }
 
   def resolving(registration: ChannelRegistration): Receive = {
@@ -73,6 +75,8 @@ private[io] class TcpOutgoingConnection(
       reportConnectFailure {
         register(new InetSocketAddress(resolved.addr, remoteAddress.getPort), registration)
       }
+    case ReceiveTimeout ⇒
+      connectionTimeout()
   }
 
   def register(address: InetSocketAddress, registration: ChannelRegistration): Unit = {
@@ -108,12 +112,15 @@ private[io] class TcpOutgoingConnection(
             }
           }
         }
-
       case ReceiveTimeout ⇒
-        if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
-        log.debug("Connect timeout expired, could not establish connection to [{}]", remoteAddress)
-        stop(connectTimeoutExpired(timeout))
+        connectionTimeout()
     }
+  }
+
+  private def connectionTimeout(): Unit = {
+    if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
+    log.debug("Connect timeout expired, could not establish connection to [{}]", remoteAddress)
+    stop(connectTimeoutExpired(timeout))
   }
 }
 

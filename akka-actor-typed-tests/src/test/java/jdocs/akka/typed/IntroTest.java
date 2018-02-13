@@ -13,12 +13,12 @@ import akka.actor.typed.javadsl.AskPattern;
 import akka.util.Timeout;
 
 //#imports
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
 
 public class IntroTest {
 
@@ -75,8 +75,8 @@ public class IntroTest {
   //#chatroom-actor
   public static class ChatRoom {
     //#chatroom-protocol
-    static interface Command {}
-    public static final class GetSession implements Command {
+    static interface RoomCommand {}
+    public static final class GetSession implements RoomCommand {
       public final String screenName;
       public final ActorRef<SessionEvent> replyTo;
       public GetSession(String screenName, ActorRef<SessionEvent> replyTo) {
@@ -86,10 +86,10 @@ public class IntroTest {
     }
     //#chatroom-protocol
     //#chatroom-behavior
-    private static final class PostSessionMessage implements Command {
+    private static final class PublishSessionMessage implements RoomCommand {
       public final String screenName;
       public final String message;
-      public PostSessionMessage(String screenName, String message) {
+      public PublishSessionMessage(String screenName, String message) {
         this.screenName = screenName;
         this.message = message;
       }
@@ -119,36 +119,64 @@ public class IntroTest {
       }
     }
 
-    public static final class PostMessage {
+    static interface SessionCommand {}
+    public static final class PostMessage implements SessionCommand {
       public final String message;
       public PostMessage(String message) {
+        this.message = message;
+      }
+    }
+    private static final class NotifyClient implements SessionCommand {
+      final MessagePosted message;
+      NotifyClient(MessagePosted message) {
         this.message = message;
       }
     }
     //#chatroom-protocol
     //#chatroom-behavior
 
-    public static Behavior<Command> behavior() {
-      return chatRoom(new ArrayList<ActorRef<SessionEvent>>());
+    public static Behavior<RoomCommand> behavior() {
+      return chatRoom(new ArrayList<ActorRef<SessionCommand>>());
     }
 
-    private static Behavior<Command> chatRoom(List<ActorRef<SessionEvent>> sessions) {
-      return Behaviors.immutable(Command.class)
+    private static Behavior<RoomCommand> chatRoom(List<ActorRef<SessionCommand>> sessions) {
+      return Behaviors.immutable(RoomCommand.class)
         .onMessage(GetSession.class, (ctx, getSession) -> {
-          ActorRef<PostMessage> wrapper = ctx.spawnAdapter(p ->
-            new PostSessionMessage(getSession.screenName, p.message));
-          getSession.replyTo.tell(new SessionGranted(wrapper));
-          List<ActorRef<SessionEvent>> newSessions =
-            new ArrayList<ActorRef<SessionEvent>>(sessions);
-          newSessions.add(getSession.replyTo);
+          ActorRef<SessionEvent> client = getSession.replyTo;
+          ActorRef<SessionCommand> ses = ctx.spawn(
+              session(ctx.getSelf(), getSession.screenName, client),
+              URLEncoder.encode(getSession.screenName, StandardCharsets.UTF_8.name()));
+          // narrow to only expose PostMessage
+          client.tell(new SessionGranted(ses.narrow()));
+          List<ActorRef<SessionCommand>> newSessions = new ArrayList<>(sessions);
+          newSessions.add(ses);
           return chatRoom(newSessions);
         })
-        .onMessage(PostSessionMessage.class, (ctx, post) -> {
-          MessagePosted mp = new MessagePosted(post.screenName, post.message);
-          sessions.forEach(s -> s.tell(mp));
+        .onMessage(PublishSessionMessage.class, (ctx, pub) -> {
+          NotifyClient notification =
+              new NotifyClient((new MessagePosted(pub.screenName, pub.message)));
+          sessions.forEach(s -> s.tell(notification));
           return Behaviors.same();
         })
         .build();
+    }
+
+    public static Behavior<ChatRoom.SessionCommand> session(
+        ActorRef<RoomCommand> room,
+        String screenName,
+        ActorRef<SessionEvent> client) {
+      return Behaviors.immutable(ChatRoom.SessionCommand.class)
+          .onMessage(PostMessage.class, (ctx, post) -> {
+            // from client, publish to others via the room
+            room.tell(new PublishSessionMessage(screenName, post.message));
+            return Behaviors.same();
+          })
+          .onMessage(NotifyClient.class, (ctx, notification) -> {
+            // published from the room
+            client.tell(notification.message);
+            return Behaviors.same();
+          })
+          .build();
     }
     //#chatroom-behavior
 
@@ -185,7 +213,7 @@ public class IntroTest {
 
     //#chatroom-main
     Behavior<Void> main = Behaviors.deferred(ctx -> {
-      ActorRef<ChatRoom.Command> chatRoom =
+      ActorRef<ChatRoom.RoomCommand> chatRoom =
         ctx.spawn(ChatRoom.behavior(), "chatRoom");
       ActorRef<ChatRoom.SessionEvent> gabbler =
           ctx.spawn(Gabbler.behavior(), "gabbler");
@@ -200,7 +228,7 @@ public class IntroTest {
     final ActorSystem<Void> system =
       ActorSystem.create(main, "ChatRoomDemo");
 
-    Await.result(system.whenTerminated(), Duration.create(3, TimeUnit.SECONDS));
+    system.getWhenTerminated().toCompletableFuture().get();
     //#chatroom-main
   }
 

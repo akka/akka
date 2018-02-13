@@ -24,6 +24,7 @@ object ReplicatorSpec {
 
   val config = ConfigFactory.parseString(
     """
+    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -43,14 +44,15 @@ object ReplicatorSpec {
 
   def client(replicator: ActorRef[Replicator.Command])(implicit cluster: Cluster): Behavior[ClientCommand] =
     Behaviors.deferred[ClientCommand] { ctx ⇒
+
       val updateResponseAdapter: ActorRef[Replicator.UpdateResponse[GCounter]] =
-        ctx.spawnAdapter(InternalUpdateResponse.apply)
+        ctx.messageAdapter(InternalUpdateResponse.apply)
 
       val getResponseAdapter: ActorRef[Replicator.GetResponse[GCounter]] =
-        ctx.spawnAdapter(InternalGetResponse.apply)
+        ctx.messageAdapter(InternalGetResponse.apply)
 
       val changedAdapter: ActorRef[Replicator.Changed[GCounter]] =
-        ctx.spawnAdapter(InternalChanged.apply)
+        ctx.messageAdapter(InternalChanged.apply)
 
       replicator ! Replicator.Subscribe(Key, changedAdapter)
 
@@ -131,7 +133,7 @@ class ReplicatorSpec extends TestKit(ReplicatorSpec.config) with TypedAkkaSpecWi
       val probe = TestProbe[Int]
       c ! Increment
       c ! GetValue(probe.ref)
-      probe.expectMsg(1)
+      probe.expectMessage(1)
     }
 
     "have API for Subscribe" in {
@@ -143,12 +145,12 @@ class ReplicatorSpec extends TestKit(ReplicatorSpec.config) with TypedAkkaSpecWi
       c ! Increment
       eventually {
         c ! GetCachedValue(probe.ref)
-        probe.expectMsg(2)
+        probe.expectMessage(2)
       }
       c ! Increment
       eventually {
         c ! GetCachedValue(probe.ref)
-        probe.expectMsg(3)
+        probe.expectMessage(3)
       }
     }
 
@@ -159,7 +161,7 @@ class ReplicatorSpec extends TestKit(ReplicatorSpec.config) with TypedAkkaSpecWi
       val probe = TestProbe[Int]
       c ! Increment
       c ! GetValue(probe.ref)
-      probe.expectMsg(1)
+      probe.expectMessage(1)
     }
   }
 }

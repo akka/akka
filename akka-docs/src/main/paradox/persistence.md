@@ -13,64 +13,26 @@ Akka persistence is inspired by and the official replacement of the [eventsource
 concepts and architecture of [eventsourced](https://github.com/eligosource/eventsourced) but significantly differs on API and implementation level. See also
 @ref:[migration-eventsourced-2.3](project/migration-guide-eventsourced-2.3.x.md)
 
-## Dependencies
+## Dependency
 
-Akka persistence is a separate jar file. Make sure that you have the following dependency in your project:
+To use Akka Persistence, add the module to your project:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-persistence" % "$akka.version$"
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence_$scala.binary_version$"
+  version="$akka.version$"
+}
 
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-persistence_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-persistence_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
-
-The Akka persistence extension comes with few built-in persistence plugins, including
+The Akka Persistence extension comes with few built-in persistence plugins, including
 in-memory heap based journal, local file-system based snapshot-store and LevelDB based journal.
 
-LevelDB based plugins will require the following additional dependency declaration:
+LevelDB-based plugins will require the following additional dependency:
 
-sbt
-:   @@@vars
-    ```
-    "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>org.fusesource.leveldbjni</groupId>
-      <artifactId>leveldbjni-all</artifactId>
-      <version>1.8</version>
-    </dependency>
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="org.fusesource.leveldbjni"
+  artifact="leveldbjni-all"
+  version="1.8"
+}
 
 ## Architecture
 
@@ -103,8 +65,8 @@ needs to be recovered, only the persisted events are replayed of which we know t
 In other words, events cannot fail when being replayed to a persistent actor, in contrast to commands. Event sourced
 actors may of course also process commands that do not change application state such as query commands for example.
 
-Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493) by Randy Shoup. It is a short and recommended read if you're starting 
-developing Events based applications. 
+Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493) by Randy Shoup. It is a short and recommended read if you're starting
+developing Events based applications.
 
 Akka persistence supports event sourcing with the @scala[`PersistentActor` trait]@java[`AbstractPersistentActor` abstract class]. An actor that extends this @scala[trait]@java[class] uses the
 `persist` method to persist and handle events. The behavior of @scala[a `PersistentActor`]@java[an `AbstractPersistentActor`]
@@ -411,7 +373,7 @@ retain both the thread safety (including the right value of @scala[`sender()`]@j
 
 In general it is encouraged to create command handlers which do not need to resort to nested event persisting,
 however there are situations where it may be useful. It is important to understand the ordering of callback execution in
-those situations, as well as their implication on the stashing behaviour (that `persist()` enforces). In the following
+those situations, as well as their implication on the stashing behavior (that `persist()` enforces). In the following
 example two persist calls are issued, and each of them issues another persist inside its callback:
 
 Scala
@@ -592,7 +554,7 @@ Consider using explicit shut-down messages instead of `PoisonPill` when working 
 @@@
 
 The example below highlights how messages arrive in the Actor's mailbox and how they interact with its internal stashing
-mechanism when `persist()` is used. Notice the early stop behaviour that occurs when `PoisonPill` is used:
+mechanism when `persist()` is used. Notice the early stop behavior that occurs when `PoisonPill` is used:
 
 Scala
 :  @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #safe-shutdown }

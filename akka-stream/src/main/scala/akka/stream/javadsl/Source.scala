@@ -25,6 +25,8 @@ import scala.compat.java8.OptionConverters._
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
 
+import akka.annotation.InternalApi
+
 import scala.compat.java8.FutureConverters._
 
 /** Java API */
@@ -442,6 +444,7 @@ object Source {
       () ⇒ create.create().toScala,
       (s: S) ⇒ read.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext),
       (s: S) ⇒ close.apply(s).toScala))
+
 }
 
 /**
@@ -747,6 +750,33 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     that: Graph[SinkShape[Out], M2],
     matF: function.Function2[Mat, M2, M3]): javadsl.Source[Out, M3] =
     new Source(delegate.alsoToMat(that)(combinerToScala(matF)))
+
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements will be sent to the [[Sink]]
+   * instead of being passed through if the predicate `when` returns `true`.
+   *
+   * '''Emits when''' emits when an element is available from the input and the chosen output has demand
+   *
+   * '''Backpressures when''' the currently chosen output back-pressures
+   *
+   * '''Completes when''' upstream completes and no output is pending
+   *
+   * '''Cancels when''' any of the downstreams cancel
+   */
+  def divertTo(that: Graph[SinkShape[Out], _], when: function.Predicate[Out]): javadsl.Source[Out, Mat] =
+    new Source(delegate.divertTo(that, when.test))
+
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements will be sent to the [[Sink]]
+   * instead of being passed through if the predicate `when` returns `true`.
+   *
+   * @see [[#divertTo]]
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def divertToMat[M2, M3](that: Graph[SinkShape[Out], M2], when: function.Predicate[Out], matF: function.Function2[Mat, M2, M3]): javadsl.Source[Out, M3] =
+    new Source(delegate.divertToMat(that, when.test)(combinerToScala(matF)))
 
   /**
    * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Source]].
@@ -2114,7 +2144,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
    * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
-   * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
+   * Parameter `mode` manages behavior when upstream is faster than throttle rate:
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate
    *
@@ -2156,7 +2186,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
    * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
-   * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
+   * Parameter `mode` manages behavior when upstream is faster than throttle rate:
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
    *  cannot emit elements that cost more than the maximumBurst

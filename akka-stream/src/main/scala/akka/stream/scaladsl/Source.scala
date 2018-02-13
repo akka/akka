@@ -6,12 +6,12 @@ package akka.stream.scaladsl
 import java.util.concurrent.CompletionStage
 
 import akka.actor.{ ActorRef, Cancellable, Props }
+import akka.annotation.InternalApi
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages._
 import akka.stream.impl.{ PublisherSource, _ }
-import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.{ Outlet, SourceShape, _ }
 import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
@@ -20,9 +20,11 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
+import akka.stream.stage.GraphStageWithMaterializedValue
+
+import scala.compat.java8.FutureConverters._
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -430,6 +432,49 @@ object Source {
   }
 
   /**
+   * INTERNAL API
+   *
+   * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
+   * Messages sent to this actor will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received.
+   *
+   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
+   * there is no space available in the buffer.
+   *
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] is not supported, and an
+   * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
+   *
+   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
+   * this Source; as such, it is never safe to assume the downstream will always generate demand.
+   *
+   * The stream can be completed successfully by sending the actor reference a message that is matched by
+   * `completionMatcher` in which case already buffered elements will be signaled before signaling
+   * completion, or by sending [[akka.actor.PoisonPill]] in which case completion will be signaled immediately.
+   *
+   * The stream can be completed with failure by sending a message that is matched by `failureMatcher`. The extracted
+   * [[Throwable]] will be used to fail the stream. In case the Actor is still draining its internal buffer (after having received
+   * a message matched by `completionMatcher`) before signaling completion and it receives a message matched by `failureMatcher`,
+   * the failure will be signaled downstream immediately (instead of the completion signal).
+   *
+   * The actor will be stopped when the stream is completed, failed or canceled from downstream,
+   * i.e. you can watch it to get notified when that happens.
+   *
+   * See also [[akka.stream.scaladsl.Source.queue]].
+   *
+   * @param bufferSize The size of the buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   */
+  @InternalApi private[akka] def actorRef[T](
+    completionMatcher: PartialFunction[Any, Unit],
+    failureMatcher:    PartialFunction[Any, Throwable],
+    bufferSize:        Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
+    require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
+    require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
+    fromGraph(new ActorRefSource(completionMatcher, failureMatcher, bufferSize, overflowStrategy, DefaultAttributes.actorRefSource, shape("ActorRefSource")))
+  }
+
+  /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
    * Messages sent to this actor will be emitted to the stream if there is demand from downstream,
    * otherwise they will be buffered until request for demand is received.
@@ -458,14 +503,15 @@ object Source {
    *
    * See also [[akka.stream.scaladsl.Source.queue]].
    *
+   *
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
-    require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
-    require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
-    fromGraph(new ActorRefSource(bufferSize, overflowStrategy, DefaultAttributes.actorRefSource, shape("ActorRefSource")))
-  }
+  def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
+    actorRef(
+      { case akka.actor.Status.Success(_) ⇒ },
+      { case akka.actor.Status.Failure(cause) ⇒ cause },
+      bufferSize, overflowStrategy)
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
@@ -601,4 +647,5 @@ object Source {
    */
   def unfoldResourceAsync[T, S](create: () ⇒ Future[S], read: (S) ⇒ Future[Option[T]], close: (S) ⇒ Future[Done]): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
+
 }

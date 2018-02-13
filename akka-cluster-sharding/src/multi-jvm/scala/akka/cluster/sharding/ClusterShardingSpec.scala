@@ -329,7 +329,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     system.actorOf(
       ShardRegion.props(
         typeName = typeName,
-        entityProps = qualifiedCounterProps(typeName),
+        entityProps = _ ⇒ qualifiedCounterProps(typeName),
         settings = settings,
         coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
         extractEntityId = extractEntityId,

@@ -4,17 +4,17 @@
 package docs.akka.typed
 
 //#imports
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Behavior
-import akka.actor.typed.Terminated
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
+import akka.NotUsed
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
 import akka.testkit.typed.TestKit
 
-import scala.concurrent.Await
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future }
 //#imports
 
 import akka.actor.typed.TypedAkkaSpecWithShutdown
@@ -37,13 +37,13 @@ object IntroSpec {
   //#chatroom-actor
   object ChatRoom {
     //#chatroom-protocol
-    sealed trait Command
+    sealed trait RoomCommand
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent])
-      extends Command
+      extends RoomCommand
     //#chatroom-protocol
     //#chatroom-behavior
-    private final case class PostSessionMessage(screenName: String, message: String)
-      extends Command
+    private final case class PublishSessionMessage(screenName: String, message: String)
+      extends RoomCommand
     //#chatroom-behavior
     //#chatroom-protocol
 
@@ -52,25 +52,45 @@ object IntroSpec {
     final case class SessionDenied(reason: String) extends SessionEvent
     final case class MessagePosted(screenName: String, message: String) extends SessionEvent
 
-    final case class PostMessage(message: String)
+    trait SessionCommand
+    final case class PostMessage(message: String) extends SessionCommand
+    private final case class NotifyClient(message: MessagePosted) extends SessionCommand
     //#chatroom-protocol
     //#chatroom-behavior
 
-    val behavior: Behavior[Command] =
+    val behavior: Behavior[RoomCommand] =
       chatRoom(List.empty)
 
-    private def chatRoom(sessions: List[ActorRef[SessionEvent]]): Behavior[Command] =
-      Behaviors.immutable[Command] { (ctx, msg) ⇒
+    private def chatRoom(sessions: List[ActorRef[SessionCommand]]): Behavior[RoomCommand] =
+      Behaviors.immutable[RoomCommand] { (ctx, msg) ⇒
         msg match {
           case GetSession(screenName, client) ⇒
-            val wrapper = ctx.spawnAdapter {
-              p: PostMessage ⇒ PostSessionMessage(screenName, p.message)
-            }
-            client ! SessionGranted(wrapper)
-            chatRoom(client :: sessions)
-          case PostSessionMessage(screenName, message) ⇒
-            val mp = MessagePosted(screenName, message)
-            sessions foreach (_ ! mp)
+            // create a child actor for further interaction with the client
+            val ses = ctx.spawn(
+              session(ctx.self, screenName, client),
+              name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
+            client ! SessionGranted(ses)
+            chatRoom(ses :: sessions)
+          case PublishSessionMessage(screenName, message) ⇒
+            val notification = NotifyClient(MessagePosted(screenName, message))
+            sessions foreach (_ ! notification)
+            Behaviors.same
+        }
+      }
+
+    private def session(
+      room:       ActorRef[PublishSessionMessage],
+      screenName: String,
+      client:     ActorRef[SessionEvent]): Behavior[SessionCommand] =
+      Behaviors.immutable { (ctx, msg) ⇒
+        msg match {
+          case PostMessage(message) ⇒
+            // from client, publish to others via the room
+            room ! PublishSessionMessage(screenName, message)
+            Behaviors.same
+          case NotifyClient(message) ⇒
+            // published from the room
+            client ! message
             Behaviors.same
         }
       }
@@ -85,7 +105,7 @@ class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
   import IntroSpec._
 
   "Hello world" must {
-    "must say hello" in {
+    "say hello" in {
       // TODO Implicits.global is not something we would like to encourage in docs
       //#hello-world
       import HelloWorld._
@@ -106,7 +126,7 @@ class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
       //#hello-world
     }
 
-    "must chat" in {
+    "chat" in {
       //#chatroom-gabbler
       import ChatRoom._
 
@@ -130,24 +150,20 @@ class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
       //#chatroom-gabbler
 
       //#chatroom-main
-      val main: Behavior[String] =
+      val main: Behavior[NotUsed] =
         Behaviors.deferred { ctx ⇒
           val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
           val gabblerRef = ctx.spawn(gabbler, "gabbler")
           ctx.watch(gabblerRef)
+          chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-          Behaviors.immutablePartial[String] {
-            case (_, "go") ⇒
-              chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
-              Behaviors.same
-          } onSignal {
+          Behaviors.onSignal {
             case (_, Terminated(ref)) ⇒
               Behaviors.stopped
           }
         }
 
       val system = ActorSystem(main, "ChatRoomDemo")
-      system ! "go"
       Await.result(system.whenTerminated, 3.seconds)
       //#chatroom-main
     }

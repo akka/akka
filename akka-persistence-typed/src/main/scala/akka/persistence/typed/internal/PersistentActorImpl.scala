@@ -3,20 +3,13 @@
  */
 package akka.persistence.typed.internal
 
-import akka.{ actor ⇒ a }
-import akka.annotation.InternalApi
-import akka.event.Logging
-import akka.persistence.{ PersistentActor ⇒ UntypedPersistentActor }
-import akka.persistence.RecoveryCompleted
-import akka.persistence.SnapshotOffer
-import akka.actor.typed.Signal
+import akka.actor.ActorLogging
 import akka.actor.typed.internal.adapter.ActorContextAdapter
-import akka.persistence.typed.scaladsl.PersistentBehaviors
-import akka.persistence.typed.scaladsl.PersistentBehavior
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.Terminated
-import akka.actor.typed.internal.adapter.ActorRefAdapter
+import akka.annotation.InternalApi
 import akka.persistence.journal.Tagged
+import akka.persistence.typed.scaladsl.{ PersistentBehavior, PersistentBehaviors }
+import akka.persistence.{ RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer, PersistentActor ⇒ UntypedPersistentActor }
+import akka.{ actor ⇒ a }
 
 /**
  * INTERNAL API
@@ -40,9 +33,8 @@ import akka.persistence.journal.Tagged
  * The `PersistentActor` that runs a `PersistentBehavior`.
  */
 @InternalApi private[akka] class PersistentActorImpl[C, E, S](
-  behavior: PersistentBehavior[C, E, S]) extends UntypedPersistentActor {
+  behavior: PersistentBehavior[C, E, S]) extends UntypedPersistentActor with ActorLogging {
 
-  import PersistentActorImpl._
   import PersistentBehaviors._
 
   override val persistenceId: String = behavior.persistenceIdFromActorName(self.path.name)
@@ -74,6 +66,11 @@ import akka.persistence.journal.Tagged
     case PersistentActorImpl.StopForPassivation ⇒
       context.stop(self)
 
+    case SaveSnapshotSuccess(meta) ⇒
+      log.debug("Snapshot saved: {}", meta)
+    case SaveSnapshotFailure(meta, thr) ⇒
+      log.error(thr, "Snapshot failed: {}", meta)
+
     case msg ⇒
       try {
         val effects = msg match {
@@ -90,14 +87,11 @@ import akka.persistence.journal.Tagged
           s"Undefined state [${state.getClass.getName}] or handler for [${msg.getClass.getName} " +
             s"in [${behavior.getClass.getName}] with persistenceId [$persistenceId]")
       }
-
   }
 
   private def applyEffects(msg: Any, effect: Effect[E, S], sideEffects: Seq[ChainableEffect[_, S]] = Nil): Unit = effect match {
-    case CompositeEffect(Some(persist), currentSideEffects) ⇒
+    case CompositeEffect(persist, currentSideEffects) ⇒
       applyEffects(msg, persist, currentSideEffects ++ sideEffects)
-    case CompositeEffect(_, currentSideEffects) ⇒
-      (currentSideEffects ++ sideEffects).foreach(applySideEffect)
     case Persist(event) ⇒
       // apply the event before persist so that validation exception is handled before persisting
       // the invalid event, in case such validation is implemented in the event handler.
@@ -107,6 +101,8 @@ import akka.persistence.journal.Tagged
       val eventToPersist = if (tags.isEmpty) event else Tagged(event, tags)
       persist(eventToPersist) { _ ⇒
         sideEffects.foreach(applySideEffect)
+        if (shouldSnapshot(state, event, lastSequenceNr))
+          saveSnapshot(state)
       }
     case PersistAll(events) ⇒
       if (events.nonEmpty) {
@@ -114,29 +110,48 @@ import akka.persistence.journal.Tagged
         // the invalid event, in case such validation is implemented in the event handler.
         // also, ensure that there is an event handler for each single event
         var count = events.size
-        state = events.foldLeft(state)(applyEvent)
+        var seqNr = lastSequenceNr
+        val (newState, shouldSnapshotAfterPersist) = events.foldLeft((state, false)) {
+          case ((currentState, snapshot), event) ⇒
+            seqNr += 1
+            (applyEvent(currentState, event), snapshot || shouldSnapshot(currentState, event, seqNr))
+        }
+        state = newState
         val eventsToPersist = events.map { event ⇒
           val tags = behavior.tagger(event)
           if (tags.isEmpty) event else Tagged(event, tags)
         }
         persistAll(eventsToPersist) { _ ⇒
           count -= 1
-          if (count == 0) sideEffects.foreach(applySideEffect)
+          if (count == 0) {
+            sideEffects.foreach(applySideEffect)
+            if (shouldSnapshotAfterPersist)
+              saveSnapshot(state)
+          }
         }
       } else {
         // run side-effects even when no events are emitted
         sideEffects.foreach(applySideEffect)
       }
     case _: PersistNothing.type @unchecked ⇒
+      // FIXME: Why don't we do the side effects here??
+      sideEffects.foreach(applySideEffect)
     case _: Unhandled.type @unchecked ⇒
+      // FIXME: Why don't we do the side effects here?? We do allow users to add them
       super.unhandled(msg)
     case c: ChainableEffect[_, S] ⇒
       applySideEffect(c)
   }
 
   def applySideEffect(effect: ChainableEffect[_, S]): Unit = effect match {
-    case _: Stop.type @unchecked ⇒ context.stop(self)
-    case SideEffect(callbacks)   ⇒ callbacks.apply(state)
+    case _: Stop.type @unchecked ⇒
+      context.stop(self)
+    case SideEffect(callbacks) ⇒ callbacks.apply(state)
   }
+
+  private def shouldSnapshot(state: S, event: E, sequenceNr: Long): Boolean = {
+    behavior.snapshotOn(state, event, sequenceNr)
+  }
+
 }
 

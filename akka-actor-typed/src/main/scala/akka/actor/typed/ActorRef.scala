@@ -4,7 +4,6 @@
 package akka.actor.typed
 
 import akka.annotation.InternalApi
-import akka.event.typed.EventStream
 import akka.{ actor ⇒ a }
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -18,10 +17,10 @@ import scala.util.Success
  * Actor instance. Sending a message to an Actor that has terminated before
  * receiving the message will lead to that message being discarded; such
  * messages are delivered to the [[DeadLetter]] channel of the
- * [[EventStream]] on a best effort basis
+ * [[akka.event.EventStream]] on a best effort basis
  * (i.e. this delivery is not reliable).
  */
-trait ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] {
+trait ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] with java.io.Serializable {
   /**
    * Send a message to the Actor referenced by this ActorRef using *at-most-once*
    * messaging semantics.
@@ -48,6 +47,8 @@ trait ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] {
    */
   def path: a.ActorPath
 
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = SerializedActorRef[T](this)
 }
 
 object ActorRef {
@@ -71,4 +72,44 @@ object ActorRef {
       case Some(Success(ref)) ⇒ ref
       case _                  ⇒ throw new IllegalStateException("Only expecting completed futures until the native actor system is implemented")
     }
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object SerializedActorRef {
+  def apply[T](actorRef: ActorRef[T]): SerializedActorRef[T] = {
+    new SerializedActorRef(actorRef)
+  }
+
+  def toAddress[T](actorRef: ActorRef[T]) = {
+    import akka.serialization.JavaSerializer.currentSystem
+    import akka.actor.typed.scaladsl.adapter._
+    val resolver = ActorRefResolver(currentSystem.value.toTyped)
+    resolver.toSerializationFormat(actorRef)
+  }
+}
+
+/**
+ * Memento pattern for serializing ActorRefs transparently
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[akka] final case class SerializedActorRef[T] private (address: String) {
+  import akka.serialization.JavaSerializer.currentSystem
+  import akka.actor.typed.scaladsl.adapter._
+
+  def this(actorRef: ActorRef[T]) =
+    this(SerializedActorRef.toAddress(actorRef))
+
+  @throws(classOf[java.io.ObjectStreamException])
+  def readResolve(): AnyRef = currentSystem.value match {
+    case null ⇒
+      throw new IllegalStateException(
+        "Trying to deserialize a serialized typed ActorRef without an ActorSystem in scope." +
+          " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
+    case someSystem ⇒
+      val resolver = ActorRefResolver(someSystem.toTyped)
+      resolver.resolveActorRef(address)
+  }
 }

@@ -4,11 +4,13 @@
 package docs.akka.typed
 
 //#imports
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.ActorContext
 import akka.testkit.typed.TestKit
-
 import scala.concurrent.duration._
 import scala.concurrent.Await
 //#imports
@@ -18,13 +20,13 @@ object MutableIntroSpec {
   //#chatroom-actor
   object ChatRoom {
     //#chatroom-protocol
-    sealed trait Command
+    sealed trait RoomCommand
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent])
-      extends Command
+      extends RoomCommand
     //#chatroom-protocol
     //#chatroom-behavior
-    private final case class PostSessionMessage(screenName: String, message: String)
-      extends Command
+    private final case class PublishSessionMessage(screenName: String, message: String)
+      extends RoomCommand
     //#chatroom-behavior
     //#chatroom-protocol
 
@@ -33,33 +35,52 @@ object MutableIntroSpec {
     final case class SessionDenied(reason: String) extends SessionEvent
     final case class MessagePosted(screenName: String, message: String) extends SessionEvent
 
-    final case class PostMessage(message: String)
+    trait SessionCommand
+    final case class PostMessage(message: String) extends SessionCommand
+    private final case class NotifyClient(message: MessagePosted) extends SessionCommand
     //#chatroom-protocol
     //#chatroom-behavior
 
-    def behavior(): Behavior[Command] =
-      Behaviors.mutable[Command](ctx ⇒ new ChatRoomBehavior(ctx))
+    def behavior(): Behavior[RoomCommand] =
+      Behaviors.mutable[RoomCommand](ctx ⇒ new ChatRoomBehavior(ctx))
 
-    class ChatRoomBehavior(ctx: ActorContext[Command]) extends Behaviors.MutableBehavior[Command] {
-      private var sessions: List[ActorRef[SessionEvent]] = List.empty
+    class ChatRoomBehavior(ctx: ActorContext[RoomCommand]) extends Behaviors.MutableBehavior[RoomCommand] {
+      private var sessions: List[ActorRef[SessionCommand]] = List.empty
 
-      override def onMessage(msg: Command): Behavior[Command] = {
+      override def onMessage(msg: RoomCommand): Behavior[RoomCommand] = {
         msg match {
           case GetSession(screenName, client) ⇒
-            val wrapper = ctx.spawnAdapter {
-              p: PostMessage ⇒ PostSessionMessage(screenName, p.message)
-            }
-            client ! SessionGranted(wrapper)
-            sessions = client :: sessions
+            // create a child actor for further interaction with the client
+            val ses = ctx.spawn(
+              session(ctx.self, screenName, client),
+              name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
+            client ! SessionGranted(ses)
+            sessions = ses :: sessions
             this
-          case PostSessionMessage(screenName, message) ⇒
-            val mp = MessagePosted(screenName, message)
-            sessions foreach (_ ! mp)
+          case PublishSessionMessage(screenName, message) ⇒
+            val notification = NotifyClient(MessagePosted(screenName, message))
+            sessions foreach (_ ! notification)
             this
         }
       }
-
     }
+
+    private def session(
+      room:       ActorRef[PublishSessionMessage],
+      screenName: String,
+      client:     ActorRef[SessionEvent]): Behavior[SessionCommand] =
+      Behaviors.immutable { (ctx, msg) ⇒
+        msg match {
+          case PostMessage(message) ⇒
+            // from client, publish to others via the room
+            room ! PublishSessionMessage(screenName, message)
+            Behaviors.same
+          case NotifyClient(message) ⇒
+            // published from the room
+            client ! message
+            Behaviors.same
+        }
+      }
     //#chatroom-behavior
   }
   //#chatroom-actor

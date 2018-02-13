@@ -7,9 +7,9 @@ perform tests.
 
 Akka comes with a dedicated module `akka-testkit` for supporting tests.
 
-## Dependencies 
+## Dependency
 
-Be sure to add the module `akka-testkit` to your dependencies.
+To use Akka Testkit, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -819,12 +819,12 @@ restriction is an impediment to unit testing, which led to the inception of the
 `TestActorRef`. This special type of reference is designed specifically
 for test purposes and allows access to the actor in two ways: either by
 obtaining a reference to the underlying actor instance, or by invoking or
-querying the actor's behaviour (`receive`). Each one warrants its own
+querying the actor's behavior (`receive`). Each one warrants its own
 section below.
 
 @@@ note
 
-It is highly recommended to stick to traditional behavioural testing (using messaging
+It is highly recommended to stick to traditional behavioral testing (using messaging
 to ask the Actor to reply with the state you want to run assertions against),
 instead of using `TestActorRef` whenever possible.
 
@@ -833,7 +833,7 @@ instead of using `TestActorRef` whenever possible.
 @@@ warning
 
 Due to the synchronous nature of `TestActorRef` it will **not** work with some support
-traits that Akka provides as they require asynchronous behaviours to function properly.
+traits that Akka provides as they require asynchronous behaviors to function properly.
 Examples of traits that do not mix well with test actor refs are @ref:[PersistentActor](persistence.md#event-sourcing)
 and @ref:[AtLeastOnceDelivery](persistence.md#at-least-once-delivery) provided by @ref:[Akka Persistence](persistence.md).
 

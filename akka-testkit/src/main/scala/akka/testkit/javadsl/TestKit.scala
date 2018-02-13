@@ -325,12 +325,25 @@ class TestKit(system: ActorSystem) {
   /**
    * Same as `expectNoMsg(remainingOrDefault)`, but correctly treating the timeFactor.
    */
-  def expectNoMsg(): Unit = tp.expectNoMsg()
+  @deprecated(message = "Use expectNoMessage instead", since = "2.5.10")
+  def expectNoMsg(): Unit = tp.expectNoMessage()
+
+  /**
+   * Same as `expectNoMessage(remainingOrDefault)`, but correctly treating the timeFactor.
+   */
+  def expectNoMessage(): Unit = tp.expectNoMessage()
 
   /**
    * Assert that no message is received for the specified time.
    */
+  @deprecated(message = "Use expectNoMessage instead", since = "2.5.10")
   def expectNoMsg(max: FiniteDuration): Unit = tp.expectNoMsg(max)
+
+  /**
+   * Assert that no message is received for the specified time.
+   * Supplied value is not dilated.
+   */
+  def expectNoMessage(max: FiniteDuration): Unit = tp.expectNoMessage(max)
 
   /**
    * Receive one message from the test actor and assert that it is the Terminated message of the given ActorRef.

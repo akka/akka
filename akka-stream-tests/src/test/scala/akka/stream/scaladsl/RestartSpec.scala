@@ -5,13 +5,12 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.Done
-import akka.stream.{ ActorMaterializer, OverflowStrategy }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.testkit.DefaultTimeout
-import akka.testkit.TestDuration
+import akka.stream.{ ActorMaterializer, OverflowStrategy }
+import akka.testkit.{ DefaultTimeout, TestDuration }
+import akka.{ Done, NotUsed }
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -20,6 +19,7 @@ import scala.util.{ Failure, Success }
 class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "10s")) with DefaultTimeout {
 
   implicit val mat = ActorMaterializer()
+
   import system.dispatcher
 
   private val shortMinBackoff = 10.millis
@@ -453,7 +453,15 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
   "A restart with backoff flow" should {
 
-    def setupFlow(minBackoff: FiniteDuration, maxBackoff: FiniteDuration, maxRestarts: Int = -1) = {
+    // helps reuse all the setupFlow code for both methods: withBackoff, and onlyOnFailuresWithBackoff
+    def RestartFlowFactory[In, Out](onlyOnFailures: Boolean): (FiniteDuration, FiniteDuration, Double, Int) ⇒ (() ⇒ Flow[In, Out, _]) ⇒ Flow[In, Out, NotUsed] = if (onlyOnFailures) {
+      RestartFlow.onFailuresWithBackoff
+    } else {
+      // choose the correct backoff method
+      (minBackoff, maxBackoff, randomFactor, maxRestarts) ⇒ RestartFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts)
+    }
+
+    def setupFlow(minBackoff: FiniteDuration, maxBackoff: FiniteDuration, maxRestarts: Int = -1, onlyOnFailures: Boolean = false) = {
       val created = new AtomicInteger()
       val (flowInSource, flowInProbe) = TestSource.probe[String]
         .buffer(4, OverflowStrategy.backpressure)
@@ -462,7 +470,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
       // We can't just use ordinary probes here because we're expecting them to get started/restarted. Instead, we
       // simply use the probes as a message bus for feeding and capturing events.
-      val (source, sink) = TestSource.probe[String].viaMat(RestartFlow.withBackoff(minBackoff, maxBackoff, 0, maxRestarts) { () ⇒
+      val (source, sink) = TestSource.probe[String].viaMat(RestartFlowFactory(onlyOnFailures)(minBackoff, maxBackoff, 0, maxRestarts) { () ⇒
         created.incrementAndGet()
         Flow.fromSinkAndSource(
           Flow[String]
@@ -667,6 +675,65 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
       created.get() should ===(2)
     }
-  }
 
+    // onlyOnFailures -->
+    "stop on cancellation when using onlyOnFailuresWithBackoff" in {
+      val onlyOnFailures = true
+      val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff, -1, onlyOnFailures)
+
+      source.sendNext("a")
+      flowInProbe.requestNext("a")
+      flowOutProbe.sendNext("b")
+      sink.requestNext("b")
+
+      source.sendNext("cancel")
+      // This will complete the flow in probe and cancel the flow out probe
+      flowInProbe.request(2)
+      flowInProbe.expectNext("in complete")
+
+      source.expectCancellation()
+
+      created.get() should ===(1)
+    }
+
+    "stop on completion when using onlyOnFailuresWithBackoff" in {
+      val onlyOnFailures = true
+      val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff, -1, onlyOnFailures)
+
+      source.sendNext("a")
+      flowInProbe.requestNext("a")
+      flowOutProbe.sendNext("b")
+      sink.requestNext("b")
+
+      flowOutProbe.sendNext("complete")
+      sink.request(1)
+      sink.expectComplete()
+
+      created.get() should ===(1)
+    }
+
+    "restart on failure when using onlyOnFailuresWithBackoff" in {
+      val (created, source, flowInProbe, flowOutProbe, sink) = setupFlow(shortMinBackoff, shortMaxBackoff, -1, true)
+
+      source.sendNext("a")
+      flowInProbe.requestNext("a")
+      flowOutProbe.sendNext("b")
+      sink.requestNext("b")
+
+      sink.request(1)
+      flowOutProbe.sendNext("error")
+
+      // This should complete the in probe
+      flowInProbe.requestNext("in complete")
+
+      // and it should restart
+      source.sendNext("c")
+      flowInProbe.requestNext("c")
+      flowOutProbe.sendNext("d")
+      sink.requestNext("d")
+
+      created.get() should ===(2)
+    }
+
+  }
 }

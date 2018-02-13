@@ -20,11 +20,11 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.testkit.EventFilter
 import akka.util.ByteString
 import javax.net.ssl._
 
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+import akka.testkit.WithLogCapturing
 
 object TlsSpec {
 
@@ -82,9 +82,15 @@ object TlsSpec {
     }
   }
 
+  val configOverrides =
+    """
+      akka.loglevel = DEBUG
+      akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+      akka.actor.debug.receive=off
+    """
 }
 
-class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=off") {
+class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing {
   import TlsSpec._
 
   import system.dispatcher
@@ -375,12 +381,6 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
         Await.result(f, 8.seconds).utf8String should be(scenario.output.utf8String)
 
         commPattern.cleanup()
-
-        // flush log so as to not mix up logs of different test cases
-        if (log.isDebugEnabled)
-          EventFilter.debug("stopgap", occurrences = 1) intercept {
-            log.debug("stopgap")
-          }
       }
     }
 

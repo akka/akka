@@ -739,17 +739,21 @@ object Logging {
 
   }
 
+  trait LogEventWithCause {
+    def cause: Throwable
+  }
+
   /**
    * For ERROR Logging
    */
-  case class Error(cause: Throwable, logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
+  case class Error(override val cause: Throwable, logSource: String, logClass: Class[_], message: Any = "") extends LogEvent with LogEventWithCause {
     def this(logSource: String, logClass: Class[_], message: Any) = this(Error.NoCause, logSource, logClass, message)
     override def level = ErrorLevel
   }
-  class Error2(cause: Throwable, logSource: String, logClass: Class[_], message: Any = "", override val mdc: MDC) extends Error(cause, logSource, logClass, message) {
+  class Error2(override val cause: Throwable, logSource: String, logClass: Class[_], message: Any = "", override val mdc: MDC) extends Error(cause, logSource, logClass, message) {
     def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = this(Error.NoCause, logSource, logClass, message, mdc)
   }
-  class Error3(cause: Throwable, logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
+  class Error3(override val cause: Throwable, logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
     extends Error2(cause, logSource, logClass, message, mdc) with LogEventWithMarker {
     def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = this(Error.NoCause, logSource, logClass, message, mdc, marker)
   }
@@ -784,9 +788,14 @@ object Logging {
   class Warning2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC) extends Warning(logSource, logClass, message)
   class Warning3(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
     extends Warning2(logSource, logClass, message, mdc) with LogEventWithMarker
+  class Warning4(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker, override val cause: Throwable)
+    extends Warning2(logSource, logClass, message, mdc) with LogEventWithMarker with LogEventWithCause
   object Warning {
     def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Warning2(logSource, logClass, message, mdc)
     def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = new Warning3(logSource, logClass, message, mdc, marker)
+
+    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Warning4(logSource, logClass, message, mdc, null, cause)
+    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = new Warning4(logSource, logClass, message, mdc, marker, cause)
   }
 
   /**

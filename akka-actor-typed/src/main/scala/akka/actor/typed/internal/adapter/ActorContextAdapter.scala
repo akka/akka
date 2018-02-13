@@ -5,42 +5,54 @@ package akka.actor.typed
 package internal
 package adapter
 
-import akka.{ actor ⇒ a }
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContextExecutor
-import akka.annotation.InternalApi
+import akka.actor.ExtendedActorSystem
 import akka.actor.typed.Behavior.UntypedBehavior
+import akka.annotation.InternalApi
+import akka.util.OptionVal
+import akka.{ ConfigurationException, actor ⇒ a }
+
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[ActorContext]].
  */
-@InternalApi private[akka] class ActorContextAdapter[T](val untyped: a.ActorContext) extends ActorContextImpl[T] {
+@InternalApi private[akka] final class ActorContextAdapter[T](val untyped: a.ActorContext) extends ActorContextImpl[T] {
 
   import ActorRefAdapter.toUntyped
 
+  // lazily initialized
+  private var actorLogger: OptionVal[Logger] = OptionVal.None
+
   override def self = ActorRefAdapter(untyped.self)
   override val system = ActorSystemAdapter(untyped.system)
-  override def mailboxCapacity = 1 << 29 // FIXME
   override def children = untyped.children.map(ActorRefAdapter(_))
   override def child(name: String) = untyped.child(name).map(ActorRefAdapter(_))
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty) =
     ActorContextAdapter.spawnAnonymous(untyped, behavior, props)
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty) =
     ActorContextAdapter.spawn(untyped, behavior, name, props)
-  override def stop[U](child: ActorRef[U]): Boolean =
-    toUntyped(child) match {
-      case f: akka.actor.FunctionRef ⇒
-        val cell = untyped.asInstanceOf[akka.actor.ActorCell]
-        cell.removeFunctionRef(f)
-      case c ⇒
-        untyped.child(child.path.name) match {
-          case Some(`c`) ⇒
-            untyped.stop(c)
-            true
-          case _ ⇒
-            false // none of our business
-        }
+  override def stop[U](child: ActorRef[U]): Unit =
+    if (child.path.parent == self.path) { // only if a direct child
+      toUntyped(child) match {
+        case f: akka.actor.FunctionRef ⇒
+          val cell = untyped.asInstanceOf[akka.actor.ActorCell]
+          cell.removeFunctionRef(f)
+        case c ⇒
+          untyped.child(child.path.name) match {
+            case Some(`c`) ⇒
+              untyped.stop(c)
+            case _ ⇒
+            // child that was already stopped
+          }
+      }
+    } else {
+      throw new IllegalArgumentException(
+        "Only direct children of an actor can be stopped through the actor context, " +
+          s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
+          "an explicit stop message that the actor accepts.")
     }
+
   override def watch[U](other: ActorRef[U]) = { untyped.watch(toUntyped(other)) }
   override def watchWith[U](other: ActorRef[U], msg: T) = { untyped.watchWith(toUntyped(other), msg) }
   override def unwatch[U](other: ActorRef[U]) = { untyped.unwatch(toUntyped(other)) }
@@ -58,10 +70,25 @@ import akka.actor.typed.Behavior.UntypedBehavior
     import untyped.dispatcher
     untyped.system.scheduler.scheduleOnce(delay, toUntyped(target), msg)
   }
-  override private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U] = {
+  override private[akka] def internalSpawnMessageAdapter[U](f: U ⇒ T, _name: String): ActorRef[U] = {
     val cell = untyped.asInstanceOf[akka.actor.ActorCell]
-    val ref = cell.addFunctionRef((_, msg) ⇒ untyped.self ! f(msg.asInstanceOf[U]), _name)
+    // apply the function inside the actor by wrapping the msg and f, handled by ActorAdapter
+    val ref = cell.addFunctionRef((_, msg) ⇒ untyped.self ! AdaptMessage[U, T](msg.asInstanceOf[U], f), _name)
     ActorRefAdapter[U](ref)
+  }
+
+  override def log: Logger = {
+    actorLogger match {
+      case OptionVal.Some(logger) ⇒ logger
+      case OptionVal.None ⇒
+        import scala.language.existentials
+        val logSource = self.path.toString
+        val logClass = classOf[Behavior[_]] // FIXME figure out a better class somehow
+        val system = untyped.system.asInstanceOf[ExtendedActorSystem]
+        val logger = new LoggerAdapterImpl(system.eventStream, logClass, logSource, system.logFilter)
+        actorLogger = OptionVal.Some(logger)
+        logger
+    }
   }
 }
 
@@ -102,8 +129,13 @@ import akka.actor.typed.Behavior.UntypedBehavior
         // TODO dispatcher from props
         ActorRefAdapter(ctx.actorOf(b.untypedProps))
       case _ ⇒
-        Behavior.validateAsInitial(behavior)
-        ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props)))
+        try {
+          Behavior.validateAsInitial(behavior)
+          ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props)))
+        } catch {
+          case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
+            throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
+        }
     }
   }
 
@@ -113,8 +145,14 @@ import akka.actor.typed.Behavior.UntypedBehavior
         // TODO dispatcher from props
         ActorRefAdapter(ctx.actorOf(b.untypedProps, name))
       case _ ⇒
-        Behavior.validateAsInitial(behavior)
-        ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props), name))
+        try {
+          Behavior.validateAsInitial(behavior)
+          ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props), name))
+        } catch {
+          case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
+            throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
+        }
     }
   }
+
 }

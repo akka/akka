@@ -25,7 +25,6 @@ import org.reactivestreams.{ Processor, Publisher, Subscriber }
 import scala.collection.immutable.Map
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContextExecutor
-import scala.annotation.tailrec
 import akka.util.OptionVal
 
 /**

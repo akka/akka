@@ -73,7 +73,7 @@ The steps are exactly the same for everyone involved in the project (be it core 
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
    - Please write additional tests covering your feature and adjust existing ones if needed before submitting your pull request. The `validatePullRequest` sbt task ([explained below](#the-validatepullrequest-task)) may come in handy to verify your changes are correct.
 1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
-1. If it's a new feature, or a change of behaviour, document it on the [akka-docs](https://github.com/akka/akka/tree/master/akka-docs), remember, an undocumented feature is not a feature. If the feature was touching Scala or Java DSL, make sure to document both the Scala and Java APIs.
+1. If it's a new feature, or a change of behavior, document it on the [akka-docs](https://github.com/akka/akka/tree/master/akka-docs), remember, an undocumented feature is not a feature. If the feature was touching Scala or Java DSL, make sure to document both the Scala and Java APIs.
 1. Now it's finally time to [submit the pull request](https://help.github.com/articles/using-pull-requests)!
     - Please make sure to include a reference to the issue you're solving *in the comment* for the Pull Request, this will cause the PR to be linked properly with the Issue. Examples of good phrases for this are: "Resolves #1234" or "Refs #1234".
 1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](http://www.lightbend.com/contribute/cla) online. CLA stands for Contributor License Agreement and is a way of protecting intellectual property disputes from harming the project.
@@ -245,7 +245,13 @@ The generated html documentation is in `akka-docs/target/paradox/site/main/index
 
 ### Scaladoc
 
-Akka generates class diagrams for the API documentation using ScalaDoc. This needs the `dot` command from the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by adding the flag `-Dakka.scaladoc.diagrams=false`. After installing Graphviz, make sure you add the toolset to the PATH (definitely on Windows).
+Akka generates class diagrams for the API documentation using ScalaDoc. 
+
+Links to methods in ScalaDoc comments should be formatted
+`[[Like#this]]`, because `[[this]]` does not work with genjavadoc, and
+IntelliJ warns about `[[#this]]`.
+
+The Scaladoc tool needs the `dot` command from the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by adding the flag `-Dakka.scaladoc.diagrams=false`. After installing Graphviz, make sure you add the toolset to the PATH (definitely on Windows).
 
 ### JavaDoc
 
@@ -333,6 +339,9 @@ the validator to test all projects.
 Note, that `OK TO TEST` will only be picked up when the user asking for it is considered an admin. Public (!) members of the [akka organization](https://github.com/orgs/akka/people) are automatically considered admins and users manually declared admin in the Jenkins job (currently no one is explicitly listed). `PLS BUILD` and `PLS BUILD ALL` can be issued by everyone that is an admin or everyone who was whitelisted in the Jenkins Job (whitelisting != declaring someone an admin).
 
 ## Source style
+
+Sometimes it is convenient to place 'internal' classes in their own package.
+In such situations we prefer 'internal' over 'impl' as a package name.
 
 ### Scala style 
 

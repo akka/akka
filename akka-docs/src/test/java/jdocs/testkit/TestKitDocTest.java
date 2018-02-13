@@ -6,7 +6,6 @@ package jdocs.testkit;
 import static org.junit.Assert.*;
 
 import akka.pattern.PatternsCS;
-import akka.testkit.*;
 import jdocs.AbstractJavaTest;
 import org.junit.Assert;
 import akka.japi.JavaPartialFunction;
@@ -198,7 +197,7 @@ public class TestKitDocTest extends AbstractJavaTest {
       final List<String> all = expectMsgAllOf("hello", "world");
       final int i        = expectMsgClass(Integer.class);
       final Number j     = expectMsgAnyClassOf(Integer.class, Long.class);
-      expectNoMsg();
+      expectNoMessage();
       //#test-expect
       getRef().tell("receveN-1", ActorRef.noSender());
       getRef().tell("receveN-2", ActorRef.noSender());
@@ -381,7 +380,7 @@ public class TestKitDocTest extends AbstractJavaTest {
       expectMsgEquals("hello");
       // ... but then the auto-pilot switched itself off
       probe.getRef().tell("world", getRef());
-      expectNoMsg();
+      expectNoMessage();
     }};
     //#test-auto-pilot
   }

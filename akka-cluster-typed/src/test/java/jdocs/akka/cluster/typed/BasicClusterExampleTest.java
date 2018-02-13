@@ -10,11 +10,15 @@ import akka.cluster.typed.*;
 import akka.testkit.typed.javadsl.TestProbe;
 import docs.akka.cluster.typed.BasicClusterManualSpec;
 
-//FIXME make these tests
-public class BasicClusterExampleTest {
+// FIXME these tests are awaiting typed Java testkit to be able to await cluster forming like in BasicClusterExampleSpec
+public class BasicClusterExampleTest { // extends JUnitSuite {
+
+  // @Test
   public void clusterApiExample() {
-    ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
-    ActorSystem<Object> system2 = ActorSystem.create(Behaviors.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
+    ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "ClusterSystem",
+        BasicClusterManualSpec.noPort().withFallback(BasicClusterManualSpec.clusterConfig()));
+    ActorSystem<Object> system2 = ActorSystem.create(Behaviors.empty(), "ClusterSystem",
+        BasicClusterManualSpec.noPort().withFallback(BasicClusterManualSpec.clusterConfig()));
 
     try {
       //#cluster-create
@@ -26,18 +30,28 @@ public class BasicClusterExampleTest {
       cluster.manager().tell(Join.create(cluster.selfMember().address()));
       //#cluster-join
 
+      cluster2.manager().tell(Join.create(cluster.selfMember().address()));
+
+      // TODO wait for/verify cluster to form
+
       //#cluster-leave
       cluster2.manager().tell(Leave.create(cluster2.selfMember().address()));
       //#cluster-leave
+
+      // TODO wait for/verify node 2 leaving
+
     } finally {
       system.terminate();
       system2.terminate();
     }
   }
 
+  // @Test
   public void clusterLeave() throws Exception {
-    ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
-    ActorSystem<Object> system2 = ActorSystem.create(Behaviors.empty(), "ClusterSystem", BasicClusterManualSpec.clusterConfig());
+    ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "ClusterSystem",
+        BasicClusterManualSpec.noPort().withFallback(BasicClusterManualSpec.clusterConfig()));
+    ActorSystem<Object> system2 = ActorSystem.create(Behaviors.empty(), "ClusterSystem",
+        BasicClusterManualSpec.noPort().withFallback(BasicClusterManualSpec.clusterConfig()));
 
     try {
       Cluster cluster = Cluster.get(system);
@@ -50,9 +64,9 @@ public class BasicClusterExampleTest {
 
       //#cluster-leave-example
       cluster.manager().tell(Leave.create(cluster2.selfMember().address()));
-      testProbe.expectMsgType(ClusterEvent.MemberLeft.class);
-      testProbe.expectMsgType(ClusterEvent.MemberExited.class);
-      testProbe.expectMsgType(ClusterEvent.MemberRemoved.class);
+      testProbe.expectMessageType(ClusterEvent.MemberLeft.class);
+      testProbe.expectMessageType(ClusterEvent.MemberExited.class);
+      testProbe.expectMessageType(ClusterEvent.MemberRemoved.class);
       //#cluster-leave-example
 
     } finally {

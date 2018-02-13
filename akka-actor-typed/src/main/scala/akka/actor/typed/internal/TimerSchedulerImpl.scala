@@ -41,8 +41,6 @@ import scala.reflect.ClassTag
   extends scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T] {
   import TimerSchedulerImpl._
 
-  // FIXME change to a class specific logger, see issue #21219
-  private val log = ctx.system.log
   private var timers: Map[Any, Timer[T]] = Map.empty
   private val timerGen = Iterator from 1
 
@@ -71,7 +69,7 @@ import scala.reflect.ClassTag
         }(ExecutionContexts.sameThreadExecutionContext)
 
     val nextTimer = Timer(key, msg, repeat, nextGen, task)
-    log.debug("Start timer [{}] with generation [{}]", key, nextGen)
+    ctx.log.debug("Start timer [{}] with generation [{}]", key, nextGen)
     timers = timers.updated(key, nextTimer)
   }
 
@@ -86,13 +84,13 @@ import scala.reflect.ClassTag
   }
 
   private def cancelTimer(timer: Timer[T]): Unit = {
-    log.debug("Cancel timer [{}] with generation [{}]", timer.key, timer.generation)
+    ctx.log.debug("Cancel timer [{}] with generation [{}]", timer.key, timer.generation)
     timer.task.cancel()
     timers -= timer.key
   }
 
   override def cancelAll(): Unit = {
-    log.debug("Cancel all timers")
+    ctx.log.debug("Cancel all timers")
     timers.valuesIterator.foreach { timer ⇒
       timer.task.cancel()
     }
@@ -103,12 +101,12 @@ import scala.reflect.ClassTag
     timers.get(timerMsg.key) match {
       case None ⇒
         // it was from canceled timer that was already enqueued in mailbox
-        log.debug("Received timer [{}] that has been removed, discarding", timerMsg.key)
+        ctx.log.debug("Received timer [{}] that has been removed, discarding", timerMsg.key)
         null.asInstanceOf[T] // message should be ignored
       case Some(t) ⇒
         if (timerMsg.owner ne this) {
           // after restart, it was from an old instance that was enqueued in mailbox before canceled
-          log.debug("Received timer [{}] from old restarted instance, discarding", timerMsg.key)
+          ctx.log.debug("Received timer [{}] from old restarted instance, discarding", timerMsg.key)
           null.asInstanceOf[T] // message should be ignored
         } else if (timerMsg.generation == t.generation) {
           // valid timer
@@ -117,7 +115,7 @@ import scala.reflect.ClassTag
           t.msg
         } else {
           // it was from an old timer that was enqueued in mailbox before canceled
-          log.debug(
+          ctx.log.debug(
             "Received timer [{}] from from old generation [{}], expected generation [{}], discarding",
             timerMsg.key, timerMsg.generation, t.generation)
           null.asInstanceOf[T] // message should be ignored

@@ -6,7 +6,7 @@ package akka.persistence.typed.scaladsl
 import akka.actor.typed.Behavior.UntypedBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.persistence.typed.internal.PersistentActorImpl
+import akka.persistence.typed.internal._
 
 import scala.collection.{ immutable ⇒ im }
 
@@ -19,24 +19,13 @@ object PersistentBehaviors {
     persistenceId:  String,
     initialState:   State,
     commandHandler: CommandHandler[Command, Event, State],
-    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    persistentEntity(_ ⇒ persistenceId, initialState, commandHandler, eventHandler)
-
-  /**
-   * Create a `Behavior` for a persistent actor in Cluster Sharding, when the persistenceId is not known
-   * until the actor is started and typically based on the entityId, which
-   * is the actor name.
-   *
-   * TODO This will not be needed when it can be wrapped in `Actor.deferred`.
-   */
-  def persistentEntity[Command, Event, State](
-    persistenceIdFromActorName: String ⇒ String,
-    initialState:               State,
-    commandHandler:             CommandHandler[Command, Event, State],
-    eventHandler:               (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler,
+    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] = {
+    // FIXME remove `persistenceIdFromActorName: String ⇒ String` from PersistentBehavior
+    new PersistentBehavior(_ ⇒ persistenceId, initialState, commandHandler, eventHandler,
       recoveryCompleted = (_, _) ⇒ (),
-      tagger = _ ⇒ Set.empty)
+      tagger = _ ⇒ Set.empty,
+      snapshotOn = (_, _, _) ⇒ false)
+  }
 
   /**
    * Factories for effects - how a persistent actor reacts on a command
@@ -59,7 +48,7 @@ object PersistentBehaviors {
       PersistAll(events)
 
     def persist[Event, State](events: im.Seq[Event], sideEffects: im.Seq[ChainableEffect[Event, State]]): Effect[Event, State] =
-      new CompositeEffect[Event, State](Some(new PersistAll[Event, State](events)), sideEffects)
+      new CompositeEffect[Event, State](PersistAll[Event, State](events), sideEffects)
 
     /**
      * Do not persist anything
@@ -83,19 +72,19 @@ object PersistentBehaviors {
    * Not for user extension.
    */
   @DoNotInherit
-  sealed abstract class Effect[+Event, State] {
+  trait Effect[+Event, State] {
+    self: EffectImpl[Event, State] ⇒
     /* All events that will be persisted in this effect */
-    def events: im.Seq[Event] = Nil
+    def events: im.Seq[Event]
 
-    /* All side effects that will be performed in this effect */
-    def sideEffects[E >: Event]: im.Seq[ChainableEffect[E, State]] = Nil
+    def sideEffects[E >: Event]: im.Seq[ChainableEffect[E, State]]
 
     /** Convenience method to register a side effect with just a callback function */
-    def andThen(callback: State ⇒ Unit): Effect[Event, State] =
+    final def andThen(callback: State ⇒ Unit): Effect[Event, State] =
       CompositeEffect(this, SideEffect[Event, State](callback))
 
     /** Convenience method to register a side effect with just a lazy expression */
-    def andThen(callback: ⇒ Unit): Effect[Event, State] =
+    final def andThen(callback: ⇒ Unit): Effect[Event, State] =
       CompositeEffect(this, SideEffect[Event, State]((_: State) ⇒ callback))
 
     /** The side effect is to stop the actor */
@@ -103,54 +92,11 @@ object PersistentBehaviors {
       CompositeEffect(this, Effect.stop[Event, State])
   }
 
-  @InternalApi
-  private[akka] object CompositeEffect {
-    def apply[Event, State](effect: Effect[Event, State], sideEffects: ChainableEffect[Event, State]): Effect[Event, State] =
-      if (effect.events.isEmpty) {
-        CompositeEffect[Event, State](
-          None,
-          effect.sideEffects ++ (sideEffects :: Nil)
-        )
-      } else {
-        CompositeEffect[Event, State](
-          Some(effect),
-          sideEffects :: Nil
-        )
-      }
-  }
-
-  @InternalApi
-  private[akka] final case class CompositeEffect[Event, State](
-    persistingEffect: Option[Effect[Event, State]],
-    _sideEffects:     im.Seq[ChainableEffect[Event, State]]) extends Effect[Event, State] {
-    override val events = persistingEffect.map(_.events).getOrElse(Nil)
-
-    override def sideEffects[E >: Event]: im.Seq[ChainableEffect[E, State]] = _sideEffects.asInstanceOf[im.Seq[ChainableEffect[E, State]]]
-
-  }
-
-  @InternalApi
-  private[akka] case object PersistNothing extends Effect[Nothing, Nothing]
-
-  @InternalApi
-  private[akka] case class Persist[Event, State](event: Event) extends Effect[Event, State] {
-    override def events = event :: Nil
-  }
-  @InternalApi
-  private[akka] case class PersistAll[Event, State](override val events: im.Seq[Event]) extends Effect[Event, State]
-
   /**
    * Not for user extension
    */
   @DoNotInherit
-  sealed abstract class ChainableEffect[Event, State] extends Effect[Event, State]
-  @InternalApi
-  private[akka] case class SideEffect[Event, State](effect: State ⇒ Unit) extends ChainableEffect[Event, State]
-  @InternalApi
-  private[akka] case object Stop extends ChainableEffect[Nothing, Nothing]
-
-  @InternalApi
-  private[akka] case object Unhandled extends Effect[Nothing, Nothing]
+  abstract class ChainableEffect[Event, State] extends EffectImpl[Event, State]
 
   type CommandHandler[Command, Event, State] = (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
 
@@ -197,7 +143,9 @@ class PersistentBehavior[Command, Event, State](
   val commandHandler:                                        PersistentBehaviors.CommandHandler[Command, Event, State],
   val eventHandler:                                          (State, Event) ⇒ State,
   val recoveryCompleted:                                     (ActorContext[Command], State) ⇒ Unit,
-  val tagger:                                                Event ⇒ Set[String]) extends UntypedBehavior[Command] {
+  val tagger:                                                Event ⇒ Set[String],
+  val snapshotOn:                                            (State, Event, Long) ⇒ Boolean) extends UntypedBehavior[Command] {
+
   import PersistentBehaviors._
 
   /** INTERNAL API */
@@ -211,14 +159,24 @@ class PersistentBehavior[Command, Event, State](
     copy(recoveryCompleted = callback)
 
   /**
-   * FIXME snapshots are not implemented yet, this is only an API placeholder
+   * Initiates a snapshot if the given function returns true.
+   * When persisting multiple events at once the snapshot is triggered after all the events have
+   * been persisted.
+   *
+   * `predicate` receives the State, Event and the sequenceNr used for the Event
    */
-  def snapshotOnState(predicate: State ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
+  def snapshotOn(predicate: (State, Event, Long) ⇒ Boolean): PersistentBehavior[Command, Event, State] =
+    copy(snapshotOn = predicate)
 
   /**
-   * FIXME snapshots are not implemented yet, this is only an API placeholder
+   * Snapshot every N events
+   *
+   * `numberOfEvents` should be greater than 0
    */
-  def snapshotOn(predicate: (State, Event) ⇒ Boolean): PersistentBehavior[Command, Event, State] = ???
+  def snapshotEvery(numberOfEvents: Long): PersistentBehavior[Command, Event, State] = {
+    require(numberOfEvents > 0, s"numberOfEvents should be positive: Was $numberOfEvents")
+    copy(snapshotOn = (_, _, seqNr) ⇒ seqNr % numberOfEvents == 0)
+  }
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
@@ -232,6 +190,7 @@ class PersistentBehavior[Command, Event, State](
     commandHandler:             CommandHandler[Command, Event, State] = commandHandler,
     eventHandler:               (State, Event) ⇒ State                = eventHandler,
     recoveryCompleted:          (ActorContext[Command], State) ⇒ Unit = recoveryCompleted,
-    tagger:                     Event ⇒ Set[String]                   = tagger): PersistentBehavior[Command, Event, State] =
-    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, tagger)
+    tagger:                     Event ⇒ Set[String]                   = tagger,
+    snapshotOn:                 (State, Event, Long) ⇒ Boolean        = snapshotOn): PersistentBehavior[Command, Event, State] =
+    new PersistentBehavior(persistenceIdFromActorName, initialState, commandHandler, eventHandler, recoveryCompleted, tagger, snapshotOn)
 }

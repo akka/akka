@@ -36,13 +36,18 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
   /**
    * Interface to allow plugging of external service discovery infrastructure in to the existing receptionist API.
    */
-  trait ExternalInterface {
+  trait ExternalInterface[State] {
     def onRegister[T](key: ServiceKey[T], address: ActorRef[T]): Unit
     def onUnregister[T](key: ServiceKey[T], address: ActorRef[T]): Unit
+    def onExternalUpdate(update: State)
+
+    final case class RegistrationsChangedExternally(changes: Map[AbstractServiceKey, Set[ActorRef[_]]], state: State) extends ReceptionistInternalCommand
   }
-  object LocalExternalInterface extends ExternalInterface {
+
+  object LocalExternalInterface extends ExternalInterface[LocalServiceRegistry] {
     def onRegister[T](key: ServiceKey[T], address: ActorRef[T]): Unit = ()
     def onUnregister[T](key: ServiceKey[T], address: ActorRef[T]): Unit = ()
+    def onExternalUpdate(update: LocalServiceRegistry): Unit = ()
   }
 
   override def behavior: Behavior[Command] = localOnlyBehavior
@@ -57,12 +62,11 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
   sealed abstract class ReceptionistInternalCommand extends InternalCommand
   final case class RegisteredActorTerminated[T](key: ServiceKey[T], address: ActorRef[T]) extends ReceptionistInternalCommand
   final case class SubscriberTerminated[T](key: ServiceKey[T], address: ActorRef[Listing[T]]) extends ReceptionistInternalCommand
-  final case class RegistrationsChangedExternally(changes: Map[AbstractServiceKey, Set[ActorRef[_]]]) extends ReceptionistInternalCommand
 
   type SubscriptionsKV[K <: AbstractServiceKey] = ActorRef[Listing[K#Protocol]]
   type SubscriptionRegistry = TypedMultiMap[AbstractServiceKey, SubscriptionsKV]
 
-  private[akka] def init(externalInterfaceFactory: ActorContext[AllCommands] ⇒ ExternalInterface): Behavior[Command] =
+  private[akka] def init[State](externalInterfaceFactory: ActorContext[AllCommands] ⇒ ExternalInterface[State]): Behavior[Command] =
     Behaviors.deferred[AllCommands] { ctx ⇒
       val externalInterface = externalInterfaceFactory(ctx)
       behavior(
@@ -71,10 +75,10 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
         externalInterface)
     }.narrow[Command]
 
-  private def behavior(
+  private def behavior[State](
     serviceRegistry:   LocalServiceRegistry,
     subscriptions:     SubscriptionRegistry,
-    externalInterface: ExternalInterface): Behavior[AllCommands] = {
+    externalInterface: ExternalInterface[State]): Behavior[AllCommands] = {
 
     // Helper to create new state
     def next(newRegistry: LocalServiceRegistry = serviceRegistry, newSubscriptions: SubscriptionRegistry = subscriptions) =
@@ -114,7 +118,7 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
     immutable[AllCommands] { (ctx, msg) ⇒
       msg match {
         case Register(key, serviceInstance, replyTo) ⇒
-          ctx.system.log.debug("[{}] Actor was registered: {} {}", ctx.self, key, serviceInstance)
+          ctx.log.debug("Actor was registered: {} {}", key, serviceInstance)
           watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
           replyTo ! Registered(key, serviceInstance)
           externalInterface.onRegister(key, serviceInstance)
@@ -126,9 +130,9 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
 
           same
 
-        case RegistrationsChangedExternally(changes) ⇒
+        case externalInterface.RegistrationsChangedExternally(changes, state) ⇒
 
-          ctx.system.log.debug("[{}] Registration changed: {}", ctx.self, changes)
+          ctx.log.debug("Registration changed: {}", changes)
 
           // FIXME: get rid of casts
           def makeChanges(registry: LocalServiceRegistry): LocalServiceRegistry =
@@ -136,11 +140,11 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
               case (reg, (key, values)) ⇒
                 reg.setAll(key)(values.asInstanceOf[Set[ActorRef[key.Protocol]]])
             }
-
+          externalInterface.onExternalUpdate(state)
           updateRegistry(changes.keySet, makeChanges) // overwrite all changed keys
 
         case RegisteredActorTerminated(key, serviceInstance) ⇒
-          ctx.system.log.debug("[{}] Registered actor terminated: {} {}", ctx.self, key, serviceInstance)
+          ctx.log.debug("Registered actor terminated: {} {}", key, serviceInstance)
           externalInterface.onUnregister(key, serviceInstance)
           updateRegistry(Set(key), _.removed(key)(serviceInstance))
 

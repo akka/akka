@@ -122,8 +122,12 @@ object ActorContextSpec {
           case Stop ⇒
             Behaviors.stopped
           case Kill(ref, replyTo) ⇒
-            if (ctx.stop(ref)) replyTo ! Killed
-            else replyTo ! NotKilled
+            try {
+              ctx.stop(ref)
+              replyTo ! Killed
+            } catch {
+              case ex: IllegalArgumentException ⇒ replyTo ! NotKilled
+            }
             Behaviors.same
           case Watch(ref, replyTo) ⇒
             ctx.watch(ref)
@@ -164,7 +168,7 @@ object ActorContextSpec {
                 Behaviors.same
             }
           case GetAdapter(replyTo, name) ⇒
-            replyTo ! Adapter(ctx.spawnAdapter(identity, name))
+            replyTo ! Adapter(ctx.spawnMessageAdapter(identity, name))
             Behaviors.same
         }
     } onSignal {
@@ -210,8 +214,12 @@ object ActorContextSpec {
         case Stop ⇒
           Behaviors.stopped
         case Kill(ref, replyTo) ⇒
-          if (ctx.stop(ref)) replyTo ! Killed
-          else replyTo ! NotKilled
+          try {
+            ctx.stop(ref)
+            replyTo ! Killed
+          } catch {
+            case ex: IllegalArgumentException ⇒ replyTo ! NotKilled
+          }
           Behaviors.same
         case Watch(ref, replyTo) ⇒
           ctx.watch(ref)
@@ -252,7 +260,7 @@ object ActorContextSpec {
               Behaviors.same
           }
         case GetAdapter(replyTo, name) ⇒
-          replyTo ! Adapter(ctx.spawnAdapter(identity, name))
+          replyTo ! Adapter(ctx.spawnMessageAdapter(identity, name))
           Behaviors.same
       }
     } onSignal {
@@ -295,8 +303,10 @@ object ActorContextSpec {
       case (ctx, t @ Terminated(test)) ⇒
         outstanding get test match {
           case Some(reply) ⇒
-            if (t.failure eq null) reply ! Success
-            else reply ! Failed(t.failure)
+            t.failure match {
+              case None     ⇒ reply ! Success
+              case Some(ex) ⇒ reply ! Failed(ex)
+            }
             guardian(outstanding - test)
           case None ⇒ same
         }
@@ -308,14 +318,15 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
   import ActorContextSpec._
 
   val config = ConfigFactory.parseString(
-    """|akka {
-     |  loglevel = WARNING
-     |  actor.debug {
-     |    lifecycle = off
-     |    autoreceive = off
-     |  }
-     |  typed.loggers = ["akka.testkit.typed.TestEventListener"]
-     |}""".stripMargin)
+    """
+     akka {
+       loglevel = WARNING
+       loggers = ["akka.testkit.TestEventListener"]
+       actor.debug {
+         lifecycle = off
+         autoreceive = off
+       }
+     }""")
 
   implicit lazy val system: ActorSystem[GuardianCommand] =
     ActorSystem(guardian(), AkkaSpec.getCallerName(classOf[ActorContextSpec]), config = Some(config withFallback AkkaSpec.testConf))
@@ -379,7 +390,8 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     pattern:     String = null,
     occurrences: Int    = Int.MaxValue)(implicit system: ActorSystem[GuardianCommand]): EventFilter = {
     val filter = EventFilter(message, source, start, pattern, occurrences)
-    system.eventStream.publish(Mute(filter))
+    import scaladsl.adapter._
+    system.toUntyped.eventStream.publish(Mute(filter))
     filter
   }
 
@@ -510,7 +522,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
       sync(setup("ctx03") { (ctx, startWith) ⇒
         val self = ctx.self
         val ex = new Exception("KABOOM2")
-        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self) {
+        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self) {
           case (subj, child) ⇒
             val log = muteExpectedException[Exception]("KABOOM2", occurrences = 1)
             child ! Throw(ex)
@@ -541,7 +553,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "stop a child actor" in {
       sync(setup("ctx04") { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self, inert = true) {
+        startWith.mkChild(Some("A"), ctx.spawnMessageAdapter(ChildEvent), self, inert = true) {
           case (subj, child) ⇒
             subj ! Kill(child, self)
             child
@@ -602,7 +614,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "not stop non-child actor" in {
       sync(setup("ctx08") { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self) {
+        startWith.mkChild(Some("A"), ctx.spawnMessageAdapter(ChildEvent), self) {
           case (subj, child) ⇒
             val other = ctx.spawn(behavior(ctx, ignorePostStop = true), "A")
             subj ! Kill(other, ctx.self)
@@ -616,7 +628,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "watch a child actor before its termination" in {
       sync(setup("ctx10") { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self) {
+        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self) {
           case (subj, child) ⇒
             subj ! Watch(child, self)
             child
@@ -632,7 +644,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "watch a child actor after its termination" in {
       sync(setup("ctx11") { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
+        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self).keep {
           case (subj, child) ⇒
             ctx.watch(child)
             child ! Stop
@@ -650,7 +662,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "unwatch a child actor before its termination" in {
       sync(setup("ctx12") { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
+        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self).keep {
           case (subj, child) ⇒
             subj ! Watch(child, self)
         }.expectMessageKeep(expectTimeout) {
@@ -672,7 +684,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     "terminate upon not handling Terminated" in {
       sync(setup("ctx13", ignorePostStop = false) { (ctx, startWith) ⇒
         val self = ctx.self
-        startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
+        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self).keep {
           case (subj, child) ⇒
             muteExpectedException[DeathPactException]()
             subj ! Watch(child, self)
@@ -711,7 +723,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
       sync(setup("ctx21") { (ctx, startWith) ⇒
         val self = ctx.self
         startWith
-          .mkChild(Some("B"), ctx.spawnAdapter(ChildEvent), self)
+          .mkChild(Some("B"), ctx.spawnMessageAdapter(ChildEvent), self)
           .stimulate(_._1 ! GetChild("A", self), _ ⇒ Child(None))
           .stimulate(_._1 ! GetChild("B", self), x ⇒ Child(Some(x._2)))
           .stimulate(_._1 ! GetChildren(self), x ⇒ Children(Set(x._2)))
@@ -789,6 +801,30 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
         }
       })
     }
+
+    "not have problems stopping already stopped child" in {
+      sync(setup("ctx45", ignorePostStop = false) { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith.mkChild(Some("A"), ctx.spawnMessageAdapter(ChildEvent), self, inert = true) {
+          case (subj, child) ⇒
+            subj ! Kill(child, self)
+            (subj, child)
+        }.expectMessageKeep(expectTimeout) {
+          case (msg, (subj, child)) ⇒
+            msg should ===(Killed)
+            (subj, ctx.watch(child))
+        }.expectTermination(expectTimeout) {
+          case (t, (subj, child)) ⇒
+            t.ref should ===(child)
+            subj ! Kill(child, self)
+            child
+        }.expectMessage(expectTimeout) {
+          case (msg, _) ⇒
+            msg should ===(Killed)
+        }
+      })
+    }
+
   }
 }
 

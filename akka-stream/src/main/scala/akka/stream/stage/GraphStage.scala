@@ -103,7 +103,7 @@ private object TimerMessages {
 
 object GraphStageLogic {
   final case class StageActorRefNotInitializedException()
-    extends RuntimeException("You must first call getStageActor, to initialize the Actors behaviour")
+    extends RuntimeException("You must first call getStageActor, to initialize the Actors behavior")
 
   /**
    * Input handler that terminates the stage upon receiving completion.
@@ -177,11 +177,23 @@ object GraphStageLogic {
 
   /**
    * Minimal actor to work with other actors and watch them in a synchronous ways
+   *
+   * @param name leave empty to use plain auto generated names
    */
   final class StageActor(
     materializer:     ActorMaterializer,
     getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
-    initialReceive:   StageActorRef.Receive) {
+    initialReceive:   StageActorRef.Receive,
+    name:             String) {
+
+    // not really needed, but let's keep MiMa happy
+    def this(
+      materializer:     akka.stream.ActorMaterializer,
+      getAsyncCallback: StageActorRef.Receive ⇒ AsyncCallback[(ActorRef, Any)],
+      initialReceive:   StageActorRef.Receive
+    ) {
+      this(materializer, getAsyncCallback, initialReceive, "")
+    }
 
     private val callback = getAsyncCallback(internalReceive)
     private def cell = materializer.supervisor match {
@@ -191,14 +203,13 @@ object GraphStageLogic {
         throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
     }
 
-    private val functionRef: FunctionRef = {
-      cell.addFunctionRef {
+    private val functionRef: FunctionRef =
+      cell.addFunctionRef({
         case (_, m @ (PoisonPill | Kill)) ⇒
           materializer.logger.warning("{} message sent to StageActor({}) will be ignored, since it is not a real Actor." +
             "Use a custom message type to communicate with it instead.", m, functionRef.path)
         case pair ⇒ callback.invoke(pair)
-      }
-    }
+      }, name)
 
     /**
      * The ActorRef by which this StageActor can be contacted from the outside.
@@ -208,7 +219,7 @@ object GraphStageLogic {
     def ref: ActorRef = functionRef
 
     @volatile
-    private[this] var behaviour = initialReceive
+    private[this] var behavior = initialReceive
 
     /** INTERNAL API */
     private[akka] def internalReceive(pack: (ActorRef, Any)): Unit = {
@@ -216,18 +227,18 @@ object GraphStageLogic {
         case Terminated(ref) ⇒
           if (functionRef.isWatching(ref)) {
             functionRef.unwatch(ref)
-            behaviour(pack)
+            behavior(pack)
           }
-        case _ ⇒ behaviour(pack)
+        case _ ⇒ behavior(pack)
       }
     }
 
     /**
-     * Special `become` allowing to swap the behaviour of this StageActorRef.
+     * Special `become` allowing to swap the behavior of this StageActorRef.
      * Unbecome is not available.
      */
     def become(receive: StageActorRef.Receive): Unit = {
-      behaviour = receive
+      behavior = receive
     }
 
     def stop(): Unit = cell.removeFunctionRef(functionRef)
@@ -1162,17 +1173,28 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   // FIXME: I don't like the Pair allocation :(
   @ApiMayChange
-  final protected def getStageActor(receive: ((ActorRef, Any)) ⇒ Unit): StageActor = {
+  final protected def getStageActor(receive: ((ActorRef, Any)) ⇒ Unit): StageActor =
     _stageActor match {
       case null ⇒
         val actorMaterializer = ActorMaterializerHelper.downcast(interpreter.materializer)
-        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive)
+        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName)
         _stageActor
       case existing ⇒
         existing.become(receive)
         existing
     }
-  }
+
+  /**
+   * Override and return a name to be given to the StageActor of this stage.
+   *
+   * This method will be only invoked and used once, during the first [[getStageActor]]
+   * invocation whichc reates the actor, since subsequent `getStageActors` calls function
+   * like `become`, rather than creating new actors.
+   *
+   * Returns an empty string by default, which means that the name will a unique generated String (e.g. "$$a").
+   */
+  @ApiMayChange
+  protected def stageActorName: String = ""
 
   // Internal hooks to avoid reliance on user calling super in preStart
   /** INTERNAL API */

@@ -31,7 +31,8 @@ class ShardingSerializerSpec extends TestKit with TypedAkkaSpecWithShutdown {
     }
 
     "must serialize and deserialize StartEntity" in {
-      checkSerialization(StartEntity("abc"))
+      checkSerialization(scaladsl.StartEntity[Int]("abc"))
+      checkSerialization(javadsl.StartEntity.create(classOf[java.lang.Integer], "def"))
     }
   }
 }

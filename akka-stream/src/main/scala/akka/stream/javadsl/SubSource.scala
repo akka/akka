@@ -1143,6 +1143,21 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
     new SubSource(delegate.alsoTo(that))
 
   /**
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements will be sent to the [[Sink]]
+   * instead of being passed through if the predicate `when` returns `true`.
+   *
+   * '''Emits when''' emits when an element is available from the input and the chosen output has demand
+   *
+   * '''Backpressures when''' the currently chosen output back-pressures
+   *
+   * '''Completes when''' upstream completes and no output is pending
+   *
+   * '''Cancels when''' any of the downstreams cancel
+   */
+  def divertTo(that: Graph[SinkShape[Out], _], when: function.Predicate[Out]): SubSource[Out, Mat] =
+    new SubSource(delegate.divertTo(that, when.test))
+
+  /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
    *
@@ -1341,7 +1356,7 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
    * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
-   * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
+   * Parameter `mode` manages behavior when upstream is faster than throttle rate:
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate
    *
@@ -1383,7 +1398,7 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
    * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
    *
-   * Parameter `mode` manages behaviour when upstream is faster than throttle rate:
+   * Parameter `mode` manages behavior when upstream is faster than throttle rate:
    *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
    *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
    *  cannot emit elements that cost more than the maximumBurst

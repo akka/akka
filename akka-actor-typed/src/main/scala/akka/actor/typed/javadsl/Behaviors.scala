@@ -6,7 +6,6 @@ package akka.actor.typed.javadsl
 import java.util.function.{ Function ⇒ JFunction }
 
 import scala.reflect.ClassTag
-
 import akka.util.OptionVal
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
 import akka.japi.function.{ Procedure, Procedure2 }
@@ -17,11 +16,9 @@ import akka.actor.typed.Signal
 import akka.actor.typed.ActorRef
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
-import akka.actor.typed.internal.BehaviorImpl
-import akka.actor.typed.internal.Restarter
-import akka.actor.typed.internal.TimerSchedulerImpl
+import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
 import akka.annotation.ApiMayChange
-
+import scala.collection.JavaConverters._
 /**
  * Factories for [[akka.actor.typed.Behavior]].
  */
@@ -33,7 +30,7 @@ object Behaviors {
 
   /**
    * `deferred` is a factory for a behavior. Creation of the behavior instance is deferred until
-   * the actor is started, as opposed to `Actor.immutable` that creates the behavior instance
+   * the actor is started, as opposed to [[Behaviors#immutable]] that creates the behavior instance
    * immediately before the actor is running. The `factory` function pass the `ActorContext`
    * as parameter and that can for example be used for spawning child actors.
    *
@@ -261,12 +258,12 @@ object Behaviors {
 
   final class Supervise[T] private[akka] (wrapped: Behavior[T]) {
     /**
-     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws.
+     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws.
      *
      * Only exceptions of the given type (and their subclasses) will be handled by this supervision behavior.
      */
     def onFailure[Thr <: Throwable](clazz: Class[Thr], strategy: SupervisorStrategy): Behavior[T] =
-      akka.actor.typed.internal.Restarter(Behavior.validateAsInitial(wrapped), strategy)(ClassTag(clazz))
+      Supervisor(Behavior.validateAsInitial(wrapped), strategy)(ClassTag(clazz))
 
     /**
      * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws.
@@ -319,4 +316,19 @@ object Behaviors {
     def receiveMessage(msg: T): Behavior[T]
     def receiveSignal(msg: Signal): Behavior[T]
   }
+
+  /**
+   * Provide a MDC ("Mapped Diagnostic Context") for logging from the actor.
+   *
+   * @param mdcForMessage Is invoked before each message to setup MDC which is then attachd to each logging statement
+   *                      done for that message through the [[ActorContext.getLog]]. After the message has been processed
+   *                      the MDC is cleared.
+   * @param behavior The behavior that this should be applied to.
+   */
+  def withMdc[T](
+    `type`:        Class[T],
+    mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Object]],
+    behavior:      Behavior[T]): Behavior[T] =
+    LoggingBehaviorImpl.withMdc[T](message ⇒ mdcForMessage.apply(message).asScala.toMap, behavior)(ClassTag(`type`))
+
 }

@@ -185,7 +185,7 @@ specification, which Akka is a founding member of.
 
 The user of the library does not have to write any explicit back-pressure handling code — it is built in
 and dealt with automatically by all of the provided Akka Streams processing stages. It is possible however to add
-explicit buffer stages with overflow strategies that can influence the behaviour of the stream. This is especially important
+explicit buffer stages with overflow strategies that can influence the behavior of the stream. This is especially important
 in complex processing graphs which may even contain loops (which *must* be treated with very special
 care, as explained in @ref:[Graph cycles, liveness and deadlocks](stream-graphs.md#graph-cycles)).
 
@@ -312,10 +312,6 @@ is needed in order to allow the stream to run at all, you will have to insert ex
 `.buffer()` combinator—typically a buffer of size 2 is enough to allow a feedback loop to function.
 
 @@@
-
-The new fusing behavior can be disabled by setting the configuration parameter `akka.stream.materializer.auto-fusing=off`.
-In that case you can still manually fuse those graphs which shall run on less Actors. With the exception of the
-`SslTlsStage` and the `groupBy` operator all built-in processing stages can be fused.
 
 <a id="flow-combine-mat"></a>
 ### Combining materialized values

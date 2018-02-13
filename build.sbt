@@ -37,7 +37,10 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   slf4j,
   stream, streamTestkit, streamTests, streamTestsTck,
   testkit,
-  actorTyped, actorTypedTests, typedTestkit, persistenceTyped, clusterTyped, clusterShardingTyped
+  actorTyped, actorTypedTests, typedTestkit,
+  persistenceTyped,
+  clusterTyped, clusterShardingTyped,
+  streamTyped
 )
 
 lazy val root = Project(
@@ -323,10 +326,11 @@ lazy val slf4j = akkaModule("akka-slf4j")
   .settings(OSGi.slf4j)
 
 lazy val stream = akkaModule("akka-stream")
-  .dependsOn(actor)
+  .dependsOn(actor, protobuf)
   .settings(Dependencies.stream)
   .settings(AutomaticModuleName.settings("akka.stream"))
   .settings(OSGi.stream)
+  .settings(Protobuf.settings)
   .enablePlugins(BoilerplatePlugin)
 
 lazy val streamTestkit = akkaModule("akka-stream-testkit")
@@ -337,7 +341,7 @@ lazy val streamTestkit = akkaModule("akka-stream-testkit")
   .disablePlugins(MimaPlugin)
 
 lazy val streamTests = akkaModule("akka-stream-tests")
-  .dependsOn(streamTestkit % "test->test", stream)
+  .dependsOn(streamTestkit % "test->test", remote % "test->test", stream)
   .settings(Dependencies.streamTests)
   .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
@@ -370,8 +374,8 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
   .settings(
     initialCommands := """
-      import akka.typed._
-      import akka.typed.scaladsl.Actor
+      import akka.actor.typed._
+      import akka.actor.typed.scaladsl.Behaviors
       import scala.concurrent._
       import scala.concurrent.duration._
       import akka.util.Timeout
@@ -384,7 +388,6 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
     actorTyped,
     persistence,
-    testkit % "test->test",
     typedTestkit % "test->test",
     actorTypedTests % "test->test"
   )
@@ -400,7 +403,6 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     distributedData,
     persistence % "provided->test",
     persistenceTyped % "provided->test",
-    testkit % "test->test",
     typedTestkit % "test->test",
     actorTypedTests % "test->test"
   )
@@ -413,9 +415,9 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     clusterTyped,
     persistenceTyped,
     clusterSharding,
-    testkit % "test->test",
     typedTestkit % "test->test",
-    actorTypedTests % "test->test"
+    actorTypedTests % "test->test",
+    persistenceTyped % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
@@ -423,6 +425,17 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
   .disablePlugins(MimaPlugin)
 
+lazy val streamTyped = akkaModule("akka-stream-typed")
+  .dependsOn(
+    actorTyped,
+    stream,
+    typedTestkit % "test->test",
+    actorTypedTests % "test->test"
+  )
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(AutomaticModuleName.settings("akka.stream.typed"))
+  .disablePlugins(MimaPlugin)
+  .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val typedTestkit = akkaModule("akka-testkit-typed")
   .dependsOn(actorTyped, testkit % "compile->compile;test->test")

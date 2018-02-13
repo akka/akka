@@ -3,12 +3,11 @@
  */
 package akka.actor.typed
 
-import java.util.concurrent.Executor
-
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.annotation.ApiMayChange
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 
 import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
 object Props {
@@ -30,6 +29,7 @@ object Props {
  * Deliberately not sealed in order to emphasize future extensibility by the
  * framework—this is not intended to be extended by user code.
  *
+ * Not for user extension.
  */
 @DoNotInherit
 @ApiMayChange
@@ -67,16 +67,6 @@ abstract class Props private[akka] () extends Product with Serializable {
    * executor.
    */
   def withDispatcherFromConfig(path: String): Props = DispatcherFromConfig(path, this)
-
-  /**
-   * Prepend a selection of the given executor to this Props.
-   */
-  def withDispatcherFromExecutor(executor: Executor): Props = DispatcherFromExecutor(executor, this)
-
-  /**
-   * Prepend a selection of the given execution context to this Props.
-   */
-  def withDispatcherFromExecutionContext(ec: ExecutionContext): Props = DispatcherFromExecutionContext(ec, this)
 
   /**
    * Find the first occurrence of a configuration node of the given type, falling
@@ -146,10 +136,10 @@ private[akka] case object EmptyProps extends Props {
 }
 
 /**
- * Not intended for user extension.
+ * Not for user extension.
  */
 @DoNotInherit
-abstract class DispatcherSelector extends Props
+sealed abstract class DispatcherSelector extends Props
 
 /**
  * Factories for [[DispatcherSelector]]s which describe which thread pool shall be used to run
@@ -179,26 +169,12 @@ object DispatcherSelector {
    * ActorSystem terminates.
    */
   def fromConfig(path: String): DispatcherSelector = DispatcherFromConfig(path)
-
-  /**
-   * Directly use the given Executor whenever the actor needs to be run.
-   * No attempt will be made to shut down this thread pool when the [[ActorSystem]] terminates.
-   */
-  def fromExecutor(executor: Executor): DispatcherSelector = DispatcherFromExecutor(executor)
-
-  /**
-   * Directly use the given ExecutionContext whenever the actor needs to be run.
-   * No attempt will be made to shut down this thread pool when the [[ActorSystem]] terminates.
-   */
-  def fromExecutionContext(executionContext: ExecutionContext): DispatcherSelector =
-    DispatcherFromExecutionContext(executionContext)
-
 }
 
 /**
- * Use the [[ActorSystem]] default executor to run the actor.
- *
  * INTERNAL API
+ *
+ * Use the [[ActorSystem]] default executor to run the actor.
  */
 @DoNotInherit
 @InternalApi
@@ -224,29 +200,5 @@ object DispatcherDefault {
  */
 @InternalApi
 private[akka] final case class DispatcherFromConfig(path: String, next: Props = Props.empty) extends DispatcherSelector {
-  override def withNext(next: Props): Props = copy(next = next)
-}
-
-/**
- * Directly use the given Executor whenever the actor needs to be run.
- * No attempt will be made to shut down this thread pool, even if it is an
- * instance of ExecutorService.
- *
- * INTERNAL API
- */
-@InternalApi
-private[akka] final case class DispatcherFromExecutor(executor: Executor, next: Props = Props.empty) extends DispatcherSelector {
-  override def withNext(next: Props): Props = copy(next = next)
-}
-
-/**
- * Directly use the given ExecutionContext whenever the actor needs to be run.
- * No attempt will be made to shut down this thread pool, even if it is an
- * instance of ExecutorService.
- *
- * INTERNAL API
- */
-@InternalApi
-private[akka] final case class DispatcherFromExecutionContext(ec: ExecutionContext, next: Props = Props.empty) extends DispatcherSelector {
   override def withNext(next: Props): Props = copy(next = next)
 }

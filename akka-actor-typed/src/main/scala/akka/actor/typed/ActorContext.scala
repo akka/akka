@@ -9,6 +9,8 @@ import akka.annotation.ApiMayChange
 /**
  * This trait is not meant to be extended by user code. If you do so, you may
  * lose binary compatibility.
+ *
+ * Not for user extension.
  */
 @DoNotInherit
 @ApiMayChange

@@ -8,7 +8,6 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.singleton.{ ClusterSingletonProxySettings, ClusterSingletonManagerSettings ⇒ UntypedClusterSingletonManagerSettings }
 import akka.cluster.typed.internal.AdaptedClusterSingletonImpl
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props }
 import com.typesafe.config.Config
 import scala.concurrent.duration._
@@ -19,6 +18,11 @@ object ClusterSingletonSettings {
   def apply(
     system: ActorSystem[_]
   ): ClusterSingletonSettings = fromConfig(system.settings.config.getConfig("akka.cluster"))
+
+  /**
+   * Java API
+   */
+  def create(system: ActorSystem[_]): ClusterSingletonSettings = apply(system)
 
   def fromConfig(
     config: Config
@@ -115,7 +119,7 @@ private[akka] object ClusterSingletonImpl {
  * Not intended for user extension.
  */
 @DoNotInherit
-trait ClusterSingleton extends Extension {
+abstract class ClusterSingleton extends Extension {
 
   /**
    * Start if needed and provide a proxy to a named singleton

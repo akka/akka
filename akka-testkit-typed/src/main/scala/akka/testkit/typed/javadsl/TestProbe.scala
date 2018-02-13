@@ -15,7 +15,7 @@ class TestProbe[M](name: String, system: ActorSystem[_]) extends akka.testkit.ty
   /**
    * Same as `expectMsgType[T](remainingOrDefault)`, but correctly treating the timeFactor.
    */
-  def expectMsgType[T <: M](t: Class[T]): T =
-    expectMsgClass_internal(remainingOrDefault, t)
+  def expectMessageType[T <: M](t: Class[T]): T =
+    expectMessageClass_internal(remainingOrDefault, t)
 
 }

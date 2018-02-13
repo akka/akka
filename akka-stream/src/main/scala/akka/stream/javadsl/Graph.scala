@@ -197,26 +197,48 @@ object Broadcast {
  * '''Completes when''' upstream completes
  *
  * '''Cancels when'''
- *   when one of the downstreams cancel
+ *   when any (eagerCancel=true) or all (eagerCancel=false) of the downstreams cancel
  */
 object Partition {
   /**
-   * Create a new `Partition` stage with the specified input type.
+   * Create a new `Partition` stage with the specified input type, `eagerCancel` is `false`.
    *
    * @param outputCount number of output ports
    * @param partitioner function deciding which output each element will be targeted
    */
   def create[T](outputCount: Int, partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
-    scaladsl.Partition(outputCount, partitioner = (t: T) ⇒ partitioner.apply(t))
+    new scaladsl.Partition(outputCount, partitioner.apply)
 
   /**
    * Create a new `Partition` stage with the specified input type.
    *
    * @param outputCount number of output ports
    * @param partitioner function deciding which output each element will be targeted
+   * @param eagerCancel this stage cancels, when any (true) or all (false) of the downstreams cancel
+   */
+  def create[T](outputCount: Int, partitioner: function.Function[T, Integer], eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+    new scaladsl.Partition(outputCount, partitioner.apply, eagerCancel)
+
+  /**
+   * Create a new `Partition` stage with the specified input type, `eagerCancel` is `false`.
+   *
+   * @param clazz a type hint for this method
+   * @param outputCount number of output ports
+   * @param partitioner function deciding which output each element will be targeted
    */
   def create[T](clazz: Class[T], outputCount: Int, partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
-    create(outputCount, partitioner)
+    new scaladsl.Partition(outputCount, partitioner.apply)
+
+  /**
+   * Create a new `Partition` stage with the specified input type.
+   *
+   * @param clazz a type hint for this method
+   * @param outputCount number of output ports
+   * @param partitioner function deciding which output each element will be targeted
+   * @param eagerCancel this stage cancels, when any (true) or all (false) of the downstreams cancel
+   */
+  def create[T](clazz: Class[T], outputCount: Int, partitioner: function.Function[T, Integer], eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+    new scaladsl.Partition(outputCount, partitioner.apply, eagerCancel)
 
 }
 

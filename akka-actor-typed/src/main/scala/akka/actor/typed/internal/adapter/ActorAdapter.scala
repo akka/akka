@@ -5,26 +5,36 @@ package akka.actor.typed
 package internal
 package adapter
 
+import scala.annotation.tailrec
 import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
+import scala.util.control.NonFatal
+
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor {
+@InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor with a.ActorLogging {
   import Behavior._
   import ActorRefAdapter.toUntyped
 
-  var behavior: Behavior[T] = _initialBehavior
+  protected var behavior: Behavior[T] = _initialBehavior
 
-  if (!isAlive(behavior)) context.stop(self)
+  private var _ctx: ActorContextAdapter[T] = _
+  def ctx: ActorContextAdapter[T] =
+    if (_ctx ne null) _ctx
+    else throw new IllegalStateException("Context was accessed before typed actor was started.")
 
-  val ctx = new ActorContextAdapter[T](context)
+  /**
+   * Failures from failed children, that were stopped through untyped supervision, this is what allows us to pass
+   * child exception in Terminated for direct children.
+   */
+  private var failures: Map[a.ActorRef, Throwable] = Map.empty
 
-  var failures: Map[a.ActorRef, Throwable] = Map.empty
+  def receive = running
 
-  def receive = {
+  def running: Receive = {
     case a.Terminated(ref) ⇒
       val msg =
         if (failures contains ref) {
@@ -35,8 +45,23 @@ import akka.util.OptionVal
       next(Behavior.interpretSignal(behavior, ctx, msg), msg)
     case a.ReceiveTimeout ⇒
       next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
+    case wrapped: AskResponse[Any, T] @unchecked ⇒
+      withSafelyAdapted(() ⇒ wrapped.adapt())(handleMessage)
+    case wrapped: AdaptMessage[Any, T] @unchecked ⇒
+      withSafelyAdapted(() ⇒ wrapped.adapt()) {
+        case AdaptWithRegisteredMessageAdapter(msg) ⇒
+          adaptAndHandle(msg)
+        case msg: T @unchecked ⇒
+          handleMessage(msg)
+      }
+    case AdaptWithRegisteredMessageAdapter(msg) ⇒
+      adaptAndHandle(msg)
     case msg: T @unchecked ⇒
-      next(Behavior.interpretMessage(behavior, ctx, msg), msg)
+      handleMessage(msg)
+  }
+
+  private def handleMessage(msg: T): Unit = {
+    next(Behavior.interpretMessage(behavior, ctx, msg), msg)
   }
 
   private def next(b: Behavior[T], msg: Any): Unit = {
@@ -62,10 +87,34 @@ import akka.util.OptionVal
     }
   }
 
+  private def adaptAndHandle(msg: Any): Unit = {
+    @tailrec def handle(adapters: List[(Class[_], Any ⇒ T)]): Unit = {
+      adapters match {
+        case Nil ⇒
+          // no adapter function registered for message class
+          unhandled(msg)
+        case (clazz, f) :: tail ⇒
+          if (clazz.isAssignableFrom(msg.getClass)) {
+            withSafelyAdapted(() ⇒ f(msg))(handleMessage)
+          } else
+            handle(tail) // recursive
+      }
+    }
+    handle(ctx.messageAdapters)
+  }
+
+  private def withSafelyAdapted[U, V](adapt: () ⇒ U)(body: U ⇒ V): Unit =
+    try body(adapt())
+    catch {
+      case NonFatal(ex) ⇒
+        log.error(ex, "Exception thrown out of adapter. Stopping myself.")
+        context.stop(self)
+    }
+
   override def unhandled(msg: Any): Unit = msg match {
-    case Terminated(ref) ⇒ throw a.DeathPactException(toUntyped(ref))
-    case msg: Signal     ⇒ // that's ok
-    case other           ⇒ super.unhandled(other)
+    case t @ Terminated(ref) ⇒ throw DeathPactException(ref)
+    case msg: Signal         ⇒ // that's ok
+    case other               ⇒ super.unhandled(other)
   }
 
   override val supervisorStrategy = a.OneForOneStrategy() {
@@ -75,7 +124,15 @@ import akka.util.OptionVal
       a.SupervisorStrategy.Stop
   }
 
-  override def preStart(): Unit = {
+  override def preStart(): Unit =
+    if (!isAlive(behavior))
+      context.stop(self)
+    else
+      start()
+
+  protected def start(): Unit = {
+    context.become(running)
+    initializeContext()
     behavior = validateAsInitial(undefer(behavior, ctx))
     if (!isAlive(behavior)) context.stop(self)
   }
@@ -86,6 +143,7 @@ import akka.util.OptionVal
   }
 
   override def postRestart(reason: Throwable): Unit = {
+    initializeContext()
     behavior = validateAsInitial(undefer(behavior, ctx))
     if (!isAlive(behavior)) context.stop(self)
   }
@@ -101,6 +159,57 @@ import akka.util.OptionVal
       }
       case b ⇒ Behavior.interpretSignal(b, ctx, PostStop)
     }
+
     behavior = Behavior.stopped
   }
+
+  protected def initializeContext(): Unit = {
+    _ctx = new ActorContextAdapter[T](context)
+  }
+}
+
+/**
+ * INTERNAL API
+ *
+ * A special adapter for the guardian which will defer processing until a special `Start` signal has been received.
+ * That will allow to defer typed processing until the untyped ActorSystem has completely started up.
+ */
+@InternalApi
+private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) extends ActorAdapter[T](_initialBehavior) {
+  import Behavior._
+
+  override def preStart(): Unit =
+    if (!isAlive(behavior))
+      context.stop(self)
+    else
+      context.become(waitingForStart(Nil))
+
+  def waitingForStart(stashed: List[Any]): Receive = {
+    case GuardianActorAdapter.Start ⇒
+      start()
+
+      stashed.reverse.foreach(receive)
+    case other ⇒
+      // unlikely to happen but not impossible
+      context.become(waitingForStart(other :: stashed))
+  }
+
+  override def postRestart(reason: Throwable): Unit = {
+    initializeContext()
+
+    super.postRestart(reason)
+  }
+
+  override def postStop(): Unit = {
+    initializeContext()
+
+    super.postStop()
+  }
+}
+/**
+ * INTERNAL API
+ */
+@InternalApi private[typed] object GuardianActorAdapter {
+  case object Start
+
 }

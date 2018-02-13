@@ -250,12 +250,20 @@ import scala.collection.JavaConverters._
         true
       } else false
 
+    private def tryCancel(): Boolean =
+      // if there's no active substreams or there's only one but it's not been pushed yet
+      if (activeSubstreamsMap.isEmpty || (activeSubstreamsMap.size == substreamWaitingToBePushed.size)) {
+        completeStage()
+        true
+      } else false
+
     private def fail(ex: Throwable): Unit = {
       for (value ← activeSubstreamsMap.values().asScala) value.fail(ex)
       failStage(ex)
     }
 
-    private def needToPull: Boolean = !(hasBeenPulled(in) || isClosed(in) || hasNextElement)
+    private def needToPull: Boolean =
+      !(hasBeenPulled(in) || isClosed(in) || hasNextElement || substreamWaitingToBePushed.nonEmpty)
 
     override def preStart(): Unit =
       timeout = ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
@@ -279,8 +287,9 @@ import scala.collection.JavaConverters._
 
     override def onUpstreamFailure(ex: Throwable): Unit = fail(ex)
 
-    override def onDownstreamFinish(): Unit =
-      if (activeSubstreamsMap.isEmpty) completeStage() else setKeepGoing(true)
+    override def onUpstreamFinish(): Unit = if (!tryCompleteAll()) setKeepGoing(true)
+
+    override def onDownstreamFinish(): Unit = if (!tryCancel()) setKeepGoing(true)
 
     override def onPush(): Unit = try {
       val elem = grab(in)
@@ -306,10 +315,6 @@ import scala.collection.JavaConverters._
           case Supervision.Stop                         ⇒ fail(ex)
           case Supervision.Resume | Supervision.Restart ⇒ if (!hasBeenPulled(in)) pull(in)
         }
-    }
-
-    override def onUpstreamFinish(): Unit = {
-      if (!tryCompleteAll()) setKeepGoing(true)
     }
 
     private def runSubstream(key: K, value: T): Unit = {
@@ -375,6 +380,7 @@ import scala.collection.JavaConverters._
         if (hasNextElement && nextElementKey == key) clearNextElement()
         if (firstPush()) firstPushCounter -= 1
         completeSubStream()
+        if (parent.isClosed(out)) tryCancel()
         if (parent.isClosed(in)) tryCompleteAll() else if (needToPull) pull(in)
       }
 

@@ -860,4 +860,16 @@ public class SourceTest extends StreamTest {
 
     assertEquals((Object) 0, result);
   }
+
+  @Test
+  public void mustBeAbleToUseAlsoTo() {
+    final Source<Integer, NotUsed> f = Source.<Integer>empty().alsoTo(Sink.ignore());
+    final Source<Integer, String> f2 = Source.<Integer>empty().alsoToMat(Sink.ignore(), (i, n) -> "foo");
+  }
+
+  @Test
+  public void mustBeAbleToUseDivertTo() {
+    final Source<Integer, NotUsed> f = Source.<Integer>empty().divertTo(Sink.ignore(), e -> true);
+    final Source<Integer, String> f2 = Source.<Integer>empty().divertToMat(Sink.ignore(), e -> true, (i, n) -> "foo");
+  }
 }

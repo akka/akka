@@ -25,6 +25,9 @@ import akka.dispatch.sysmsg
   override def isLocal: Boolean = untyped.isLocal
   override def sendSystem(signal: internal.SystemMessage): Unit =
     ActorRefAdapter.sendSystemMessage(untyped, signal)
+
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = SerializedActorRef[T](this)
 }
 
 private[akka] object ActorRefAdapter {
@@ -32,7 +35,8 @@ private[akka] object ActorRefAdapter {
 
   def toUntyped[U](ref: ActorRef[U]): akka.actor.InternalActorRef =
     ref match {
-      case adapter: ActorRefAdapter[_] ⇒ adapter.untyped
+      case adapter: ActorRefAdapter[_]   ⇒ adapter.untyped
+      case system: ActorSystemAdapter[_] ⇒ system.untyped.guardian
       case _ ⇒
         throw new UnsupportedOperationException("only adapted untyped ActorRefs permissible " +
           s"($ref of class ${ref.getClass.getName})")

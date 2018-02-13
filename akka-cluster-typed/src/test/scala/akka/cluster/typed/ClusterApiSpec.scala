@@ -58,7 +58,7 @@ class ClusterApiSpec extends TestKit("ClusterApiSpec", ClusterApiSpec.config) wi
         // check that subscriptions work
         clusterNode1.subscriptions ! Subscribe(node1Probe.ref, classOf[MemberEvent])
         clusterNode1.manager ! Join(clusterNode1.selfMember.address)
-        node1Probe.expectMsgType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
+        node1Probe.expectMessageType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
 
         // check that cached selfMember is updated
         node1Probe.awaitAssert(
@@ -66,36 +66,36 @@ class ClusterApiSpec extends TestKit("ClusterApiSpec", ClusterApiSpec.config) wi
 
         // subscribing to OnSelfUp when already up
         clusterNode1.subscriptions ! Subscribe(node1Probe.ref, classOf[SelfUp])
-        node1Probe.expectMsgType[SelfUp]
+        node1Probe.expectMessageType[SelfUp]
 
         // selfMember update and on up subscription on node 2 when joining
         clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfUp])
         clusterNode2.manager ! Join(clusterNode1.selfMember.address)
         node2Probe.awaitAssert(
           clusterNode2.selfMember.status should ===(MemberStatus.Up))
-        node2Probe.expectMsgType[SelfUp]
+        node2Probe.expectMessageType[SelfUp]
 
         // events about node2 joining to subscriber on node1
-        node1Probe.expectMsgType[MemberJoined].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
-        node1Probe.expectMsgType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
+        node1Probe.expectMessageType[MemberJoined].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+        node1Probe.expectMessageType[MemberUp].member.uniqueAddress == clusterNode1.selfMember.uniqueAddress
 
         // OnSelfRemoved and subscription events around node2 leaving
         clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfRemoved])
         clusterNode2.manager ! Leave(clusterNode2.selfMember.address)
 
         // node1 seeing all those transition events
-        node1Probe.expectMsgType[MemberLeft].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
-        node1Probe.expectMsgType[MemberExited].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
-        node1Probe.expectMsgType[MemberRemoved].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+        node1Probe.expectMessageType[MemberLeft].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+        node1Probe.expectMessageType[MemberExited].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
+        node1Probe.expectMessageType[MemberRemoved].member.uniqueAddress == clusterNode2.selfMember.uniqueAddress
 
         // selfMember updated and self removed event gotten
         node2Probe.awaitAssert(
           clusterNode2.selfMember.status should ===(MemberStatus.Removed))
-        node2Probe.expectMsg(SelfRemoved(MemberStatus.Exiting))
+        node2Probe.expectMessage(SelfRemoved(MemberStatus.Exiting))
 
         // subscribing to SelfRemoved when already removed yields immediate message back
         clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfRemoved])
-        node2Probe.expectMsg(SelfRemoved(MemberStatus.Exiting))
+        node2Probe.expectMessage(SelfRemoved(MemberStatus.Exiting))
 
         // subscribing to SelfUp when already removed yields nothing
         clusterNode2.subscriptions ! Subscribe(node2Probe.ref, classOf[SelfUp])
