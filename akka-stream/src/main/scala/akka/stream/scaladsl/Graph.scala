@@ -6,16 +6,17 @@ package akka.stream.scaladsl
 import java.util.SplittableRandom
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.ConstantFun
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
@@ -627,6 +628,88 @@ final class Broadcast[T](val outputPorts: Int, val eagerCancel: Boolean) extends
 
 }
 
+object WireTap {
+  private val singleton = new WireTap[Nothing]
+
+  /**
+   * @see [[WireTap]]
+   */
+  def apply[T](): WireTap[T] = singleton.asInstanceOf[WireTap[T]]
+}
+
+/**
+ * Fan-out the stream to two output streams - a 'main' and a 'tap' one. Each incoming element is emitted
+ * to the 'main' output; elements are also emitted to the 'tap' output if there is demand;
+ * otherwise they are dropped.
+ *
+ * '''Emits when''' element is available and demand exists from the 'main' output; the element will
+ * also be sent to the 'tap' output if there is demand.
+ *
+ * '''Backpressures when''' the 'main' output backpressures
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' the 'main' output cancels
+ *
+ */
+@InternalApi
+private[stream] final class WireTap[T] extends GraphStage[FanOutShape2[T, T, T]] {
+  val in: Inlet[T] = Inlet[T]("WireTap.in")
+  val outMain: Outlet[T] = Outlet[T]("WireTap.outMain")
+  val outTap: Outlet[T] = Outlet[T]("WireTap.outTap")
+  override def initialAttributes = DefaultAttributes.wireTap
+  override val shape: FanOutShape2[T, T, T] = new FanOutShape2(in, outMain, outTap)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    private var pendingTap: Option[T] = None
+
+    setHandler(in, new InHandler {
+      override def onPush() = {
+        val elem = grab(in)
+        push(outMain, elem)
+        if (isAvailable(outTap)) {
+          push(outTap, elem)
+        } else {
+          pendingTap = Some(elem)
+        }
+      }
+    })
+
+    setHandler(outMain, new OutHandler {
+      override def onPull() = {
+        pull(in)
+      }
+
+      override def onDownstreamFinish(): Unit = {
+        completeStage()
+      }
+    })
+
+    // The 'tap' output can neither backpressure, nor cancel, the stage.
+    setHandler(outTap, new OutHandler {
+      override def onPull() = {
+        pendingTap match {
+          case Some(elem) ⇒
+            push(outTap, elem)
+            pendingTap = None
+          case None ⇒ // no pending element to emit
+        }
+      }
+
+      override def onDownstreamFinish(): Unit = {
+        setHandler(in, new InHandler {
+          override def onPush() = {
+            push(outMain, grab(in))
+          }
+        })
+        // Allow any outstanding element to be garbage-collected
+        pendingTap = None
+      }
+    })
+  }
+  override def toString = "WireTap"
+}
+
 object Partition {
   // FIXME make `PartitionOutOfBoundsException` a `final` class when possible
   case class PartitionOutOfBoundsException(msg: String) extends IndexOutOfBoundsException(msg) with NoStackTrace
@@ -1090,6 +1173,10 @@ final class Concat[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[
 
 object OrElse {
   private val singleton = new OrElse[Nothing]
+
+  /**
+   * @see [[OrElse]]
+   */
   def apply[T]() = singleton.asInstanceOf[OrElse[T]]
 }
 
@@ -1111,6 +1198,7 @@ object OrElse {
  *
  * '''Cancels when''' downstream cancels
  */
+@InternalApi
 private[stream] final class OrElse[T] extends GraphStage[UniformFanInShape[T, T]] {
   val primary = Inlet[T]("OrElse.primary")
   val secondary = Inlet[T]("OrElse.secondary")

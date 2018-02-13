@@ -1166,6 +1166,23 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
     new SubFlow(delegate.divertTo(that, when.test))
 
   /**
+   * Attaches the given [[Sink]] to this [[Flow]] as a wire tap, meaning that elements that pass
+   * through will also be sent to the wire-tap Sink, without the latter affecting the mainline flow.
+   * If the wire-tap Sink backpressures, elements that would've been sent to it will be dropped instead.
+   *
+   * '''Emits when''' element is available and demand exists from the downstream; the element will
+   * also be sent to the wire-tap Sink if there is demand.
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def wireTap(that: Graph[SinkShape[Out], _]): SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.wireTap(that))
+
+  /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
    * picking randomly when several elements ready.
    *

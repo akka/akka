@@ -115,7 +115,7 @@ class GraphUnzipSpec extends StreamSpec {
       c1.expectComplete()
     }
 
-    "not loose elements when pull is followed by cancel before other sink has requested" in {
+    "not lose elements when pull is followed by cancel before other sink has requested" in {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[String]()
 

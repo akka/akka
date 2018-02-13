@@ -2277,7 +2277,7 @@ trait FlowOps[+Out, +Mat] {
   def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed
 
   /**
-   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that pass
    * through will also be sent to the [[Sink]].
    *
    * '''Emits when''' element is available and demand exists both from the Sink and the downstream.
@@ -2286,7 +2286,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Completes when''' upstream completes
    *
-   * '''Cancels when''' downstream cancels
+   * '''Cancels when''' downstream and Sink cancel
    */
   def alsoTo(that: Graph[SinkShape[Out], _]): Repr[Out] = via(alsoToGraph(that))
 
@@ -2318,6 +2318,30 @@ trait FlowOps[+Out, +Mat] {
       val partition = b.add(new Partition[Out](2, out ⇒ if (when(out)) 1 else 0, true))
       partition.out(1) ~> r
       FlowShape(partition.in, partition.out(0))
+    }
+
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]] as a wire tap, meaning that elements that pass
+   * through will also be sent to the wire-tap Sink, without the latter affecting the mainline flow.
+   * If the wire-tap Sink backpressures, elements that would've been sent to it will be dropped instead.
+   *
+   * '''Emits when''' element is available and demand exists from the downstream; the element will
+   * also be sent to the wire-tap Sink if there is demand.
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def wireTap(that: Graph[SinkShape[Out], _]): Repr[Out] = via(wireTapGraph(that))
+
+  protected def wireTapGraph[M](that: Graph[SinkShape[Out], M]): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      import GraphDSL.Implicits._
+      val bcast = b.add(WireTap[Out]())
+      bcast.out1 ~> r
+      FlowShape(bcast.in, bcast.out0)
     }
 
   def withAttributes(attr: Attributes): Repr[Out]
@@ -2549,7 +2573,7 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
     viaMat(orElseGraph(secondary))(matF)
 
   /**
-   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that pass
    * through will also be sent to the [[Sink]].
    *
    * @see [[#alsoTo]]
@@ -2571,6 +2595,19 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def divertToMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2], when: Out ⇒ Boolean)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[Out, Mat3] =
     viaMat(divertToGraph(that, when))(matF)
+
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]] as a wire tap, meaning that elements that pass
+   * through will also be sent to the wire-tap Sink, without the latter affecting the mainline flow.
+   * If the wire-tap Sink backpressures, elements that would've been sent to it will be dropped instead.
+   *
+   * @see [[#wireTap]]
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def wireTapMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[Out, Mat3] =
+    viaMat(wireTapGraph(that))(matF)
 
   /**
    * Materializes to `Future[Done]` that completes on getting termination message.
