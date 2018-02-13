@@ -69,6 +69,22 @@ object TestKitDocSpec {
 
   //#test-probe-forward-actors
 
+  //#timer
+  case class TriggerScheduling(foo: String)
+
+  object SchedKey
+  case class ScheduledMessage(foo: String)
+
+  class TestTimerActor extends Actor with Timers {
+    override def receive = {
+      case TriggerScheduling(foo) ⇒ triggerScheduling(ScheduledMessage(foo))
+    }
+
+    def triggerScheduling(msg: ScheduledMessage) =
+      timers.startSingleTimer(SchedKey, msg, 500.millis)
+  }
+  //#timer
+
   class LoggingActor extends Actor {
     //#logging-receive
     import akka.event.LoggingReceive
@@ -275,6 +291,22 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     probe.expectMsg("work")
     probe.forward(dest)
     //#test-probe-forward
+  }
+
+  "demonstrate using inheritance to test timers" in {
+    //#timer-test
+    import akka.testkit.TestProbe
+    import akka.actor.Props
+
+    val probe = TestProbe()
+    val actor = system.actorOf(Props(new TestTimerActor() {
+      override def triggerScheduling(msg: ScheduledMessage) =
+        probe.ref ! msg
+    }))
+
+    actor ! TriggerScheduling("abc")
+    probe.expectMsg(ScheduledMessage("abc"))
+    //#timer-test
   }
 
   "demonstrate calling thread dispatcher" in {
