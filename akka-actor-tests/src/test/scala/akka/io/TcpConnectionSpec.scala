@@ -132,7 +132,7 @@ class TcpConnectionSpec extends AkkaSpec("""
           val wrote = serverSideChannel.write(buffer)
           wrote should ===(DataSize)
 
-          expectNoMsg(1000.millis) // data should have been transferred fully by now
+          expectNoMessage(1000.millis) // data should have been transferred fully by now
 
           selector.send(connectionActor, ChannelReadable)
 
@@ -178,7 +178,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         buffer.clear()
         serverSideChannel.read(buffer) should ===(0)
         writer.send(connectionActor, unackedWrite)
-        writer.expectNoMsg(500.millis)
+        writer.expectNoMessage(500.millis)
         pullFromServerSide(remaining = 10, into = buffer)
         buffer.flip()
         ByteString(buffer).utf8String should ===("morestuff!")
@@ -211,7 +211,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       run {
         val writer = TestProbe()
         writer.send(connectionActor, Write(ByteString(42.toByte)))
-        writer.expectNoMsg(500.millis)
+        writer.expectNoMessage(500.millis)
       }
     }
 
@@ -227,9 +227,9 @@ class TcpConnectionSpec extends AkkaSpec("""
       run {
         val writer = TestProbe()
         writer.send(connectionActor, Write(ByteString.empty, NoAck))
-        writer.expectNoMsg(250.millis)
+        writer.expectNoMessage(250.millis)
         writer.send(connectionActor, Write(ByteString.empty, NoAck(42)))
-        writer.expectNoMsg(250.millis)
+        writer.expectNoMessage(250.millis)
       }
     }
 
@@ -354,8 +354,8 @@ class TcpConnectionSpec extends AkkaSpec("""
         selector.send(connectionActor, ChannelReadable)
 
         // this ChannelReadable should be properly ignored, even if data is already pending
-        interestCallReceiver.expectNoMsg(100.millis)
-        connectionHandler.expectNoMsg(100.millis)
+        interestCallReceiver.expectNoMessage(100.millis)
+        connectionHandler.expectNoMessage(100.millis)
 
         connectionHandler.send(connectionActor, ResumeReading)
         interestCallReceiver.expectMsg(OP_READ)
@@ -380,15 +380,15 @@ class TcpConnectionSpec extends AkkaSpec("""
         // send a batch that is bigger than the default buffer to make sure we don't recurse and
         // send more than one Received messages
         serverSideChannel.write(ByteBuffer.wrap((ts ++ us).getBytes("ASCII")))
-        connectionHandler.expectNoMsg(100.millis)
+        connectionHandler.expectNoMessage(100.millis)
 
         connectionActor ! ResumeReading
         interestCallReceiver.expectMsg(OP_READ)
         selector.send(connectionActor, ChannelReadable)
         connectionHandler.expectMsgType[Received].data.decodeString("ASCII") should ===(ts)
 
-        interestCallReceiver.expectNoMsg(100.millis)
-        connectionHandler.expectNoMsg(100.millis)
+        interestCallReceiver.expectNoMessage(100.millis)
+        connectionHandler.expectNoMessage(100.millis)
 
         connectionActor ! ResumeReading
         interestCallReceiver.expectMsg(OP_READ)
@@ -396,8 +396,8 @@ class TcpConnectionSpec extends AkkaSpec("""
         connectionHandler.expectMsgType[Received].data.decodeString("ASCII") should ===(us)
 
         // make sure that after reading all pending data we don't yet register for reading more data
-        interestCallReceiver.expectNoMsg(100.millis)
-        connectionHandler.expectNoMsg(100.millis)
+        interestCallReceiver.expectNoMessage(100.millis)
+        connectionHandler.expectNoMessage(100.millis)
 
         val vs = "v" * (maxBufferSize / 2)
         serverSideChannel.write(ByteBuffer.wrap(vs.getBytes("ASCII")))
@@ -443,7 +443,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         run {
           connectionHandler.send(connectionActor, Close)
           connectionHandler.expectMsg(Closed)
-          connectionHandler.expectNoMsg(500.millis)
+          connectionHandler.expectNoMessage(500.millis)
         }
       }
 
@@ -522,12 +522,12 @@ class TcpConnectionSpec extends AkkaSpec("""
           connectionHandler.send(connectionActor, writeCmd(Ack))
           connectionHandler.send(connectionActor, ConfirmedClose)
 
-          connectionHandler.expectNoMsg(100.millis)
+          connectionHandler.expectNoMessage(100.millis)
           pullFromServerSide(TestSize)
           connectionHandler.expectMsg(Ack)
 
           selector.send(connectionActor, ChannelReadable)
-          connectionHandler.expectNoMsg(100.millis) // not yet
+          connectionHandler.expectNoMessage(100.millis) // not yet
 
           val buffer = ByteBuffer.allocate(1)
           serverSelectionKey should be(selectedAs(SelectionKey.OP_READ, 2.seconds))
@@ -597,7 +597,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         err.cause should ===(ConnectionResetByPeerMessage)
 
         // wait a while
-        connectionHandler.expectNoMsg(200.millis)
+        connectionHandler.expectNoMessage(200.millis)
 
         assertThisConnectionActorTerminated()
       }
@@ -722,7 +722,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
         // resuming must not immediately work (queue still full)
         writer.send(connectionActor, ResumeWriting)
-        writer.expectNoMsg(1.second)
+        writer.expectNoMessage(1.second)
 
         // so drain the queue until it works again
         while (!writer.msgAvailable) pullFromServerSide(TestSize)
