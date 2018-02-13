@@ -353,7 +353,6 @@ private[remote] class Decoder(
   system:              ExtendedActorSystem,
   uniqueLocalAddress:  UniqueAddress,
   settings:            ArterySettings,
-  bufferPool:          EnvelopeBufferPool,
   inboundCompressions: InboundCompressions,
   inEnvelopePool:      ObjectPool[ReusableInboundEnvelope])
   extends GraphStageWithMaterializedValue[FlowShape[EnvelopeBuffer, InboundEnvelope], InboundCompressionAccess] {

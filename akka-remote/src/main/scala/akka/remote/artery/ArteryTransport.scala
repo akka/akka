@@ -759,8 +759,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     Flow.fromGraph(new Encoder(localAddress, system, outboundEnvelopePool, pool, streamId, settings.LogSend,
       settings.Version))
 
-  def createDecoder(settings: ArterySettings, compressions: InboundCompressions, bufferPool: EnvelopeBufferPool): Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] =
-    Flow.fromGraph(new Decoder(this, system, localAddress, settings, bufferPool, compressions, inboundEnvelopePool))
+  def createDecoder(settings: ArterySettings, compressions: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] =
+    Flow.fromGraph(new Decoder(this, system, localAddress, settings, compressions, inboundEnvelopePool))
 
   def createDeserializer(bufferPool: EnvelopeBufferPool): Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
     Flow.fromGraph(new Deserializer(this, system, bufferPool))
@@ -802,15 +802,12 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   def inboundFlow(settings: ArterySettings, compressions: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] = {
     Flow[EnvelopeBuffer]
       .via(killSwitch.flow)
-      .viaMat(createDecoder(settings, compressions, envelopeBufferPool))(Keep.right)
+      .viaMat(createDecoder(settings, compressions))(Keep.right)
   }
 
   // large messages flow does not use compressions, since the message size dominates the size anyway
-  def inboundLargeFlow(settings: ArterySettings): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
-    Flow[EnvelopeBuffer]
-      .via(killSwitch.flow)
-      .via(createDecoder(settings, NoInboundCompressions, largeEnvelopeBufferPool))
-  }
+  def inboundLargeFlow(settings: ArterySettings): Flow[EnvelopeBuffer, InboundEnvelope, Any] =
+    inboundFlow(settings, NoInboundCompressions)
 
   def inboundControlSink: Sink[InboundEnvelope, (ControlMessageSubject, Future[Done])] = {
     Flow[InboundEnvelope]
