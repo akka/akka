@@ -7,7 +7,8 @@ import java.util.concurrent.TimeoutException
 
 import akka.actor.{ Address, InternalActorRef, RootActorPath, Scheduler }
 import akka.actor.typed.ActorRef
-import akka.actor.typed.internal.{ adapter ⇒ adapt }
+import akka.actor.typed.internal.{ adapter => adapt }
+import akka.annotation.InternalApi
 import akka.pattern.PromiseActorRef
 import akka.util.Timeout
 
@@ -17,28 +18,14 @@ import scala.concurrent.Future
  * The ask-pattern implements the initiator side of a request–reply protocol.
  * The `?` operator is pronounced as "ask".
  *
- * Note that if you are inside of an actor you should prefer [[ActorContext.ask]]
- * as that provides better safety.
- *
- * The party that asks may be within or without an Actor, since the
- * implementation will fabricate a (hidden) [[ActorRef]] that is bound to a
- * [[scala.concurrent.Promise]]. This ActorRef will need to be injected in the
- * message that is sent to the target Actor in order to function as a reply-to
- * address, therefore the argument to the ask / `?`
- * operator is not the message itself but a function that given the reply-to
- * address will create the message.
- *
- * {{{
- * case class Request(msg: String, replyTo: ActorRef[Reply])
- * case class Reply(msg: String)
- *
- * implicit val timeout = Timeout(3.seconds)
- * val target: ActorRef[Request] = ...
- * val f: Future[Reply] = target ? (Request("hello", _))
- * }}}
+ * See [[AskPattern.Askable.?]] for details
  */
 object AskPattern {
-  implicit class Askable[T](val ref: ActorRef[T]) extends AnyVal {
+
+  /**
+   * See [[?]]
+   */
+  implicit final class Askable[T](val ref: ActorRef[T]) extends AnyVal {
     /**
      * The ask-pattern implements the initiator side of a request–reply protocol.
      * The `?` operator is pronounced as "ask".
@@ -58,9 +45,10 @@ object AskPattern {
      * case class Request(msg: String, replyTo: ActorRef[Reply])
      * case class Reply(msg: String)
      *
+     * implicit val scheduler = system.scheduler
      * implicit val timeout = Timeout(3.seconds)
      * val target: ActorRef[Request] = ...
-     * val f: Future[Reply] = target ? (Request("hello", _))
+     * val f: Future[Reply] = target ? ref => (Request("hello", ref))
      * }}}
      */
     def ?[U](f: ActorRef[U] ⇒ T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] = {
@@ -107,5 +95,9 @@ object AskPattern {
     p.future
   }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[typed] val AskPath = RootActorPath(Address("akka.actor.typed.internal", "ask"))
 }

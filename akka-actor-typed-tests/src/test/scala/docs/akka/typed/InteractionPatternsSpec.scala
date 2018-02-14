@@ -379,13 +379,15 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
     import akka.actor.typed.scaladsl.AskPattern._
 
-    // asking someone requires a timeout, if the timeout hits without response
+    // asking someone requires a timeout and a scheduler, if the timeout hits without response
     // the ask is failed with a TimeoutException
     implicit val timeout: Timeout = 3.seconds
-    // the response callback will be executed on this execution context
-    import system.executionContext
+    implicit val scheduler = system.scheduler
 
     val result: Future[Cookies] = cookieActorRef ? (ref ⇒ GiveMeCookies(ref))
+
+    // the response callback will be executed on this execution context
+    import system.executionContext
 
     result.onComplete {
       case Success(cookies) ⇒ println("Yay, cookies!")
