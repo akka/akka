@@ -61,7 +61,7 @@ object Behaviors {
    * function. The reason for the deferred creation is to avoid sharing the same instance in
    * multiple actors, and to create a new instance when the actor is restarted.
    *
-   * @param producer
+   * @param factory
    *          behavior factory that takes the child actor’s context as argument
    * @return the deferred behavior
    */
@@ -206,8 +206,8 @@ object Behaviors {
    * for logging or tracing what a certain Actor does.
    */
   def tap[T](
-    onMessage: Function2[ActorContext[T], T, _],
-    onSignal:  Function2[ActorContext[T], Signal, _], // FIXME use partial function here also?
+    onMessage: (ActorContext[T], T) ⇒ _,
+    onSignal:  (ActorContext[T], Signal) ⇒ _, // FIXME use partial function here also?
     behavior:  Behavior[T]): Behavior[T] =
     BehaviorImpl.tap(onMessage, onSignal, behavior)
 

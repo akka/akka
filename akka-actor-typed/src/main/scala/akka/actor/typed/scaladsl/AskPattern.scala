@@ -7,7 +7,7 @@ import java.util.concurrent.TimeoutException
 
 import akka.actor.{ Address, InternalActorRef, RootActorPath, Scheduler }
 import akka.actor.typed.ActorRef
-import akka.actor.typed.internal.{ adapter => adapt }
+import akka.actor.typed.internal.{ adapter ⇒ adapt }
 import akka.annotation.InternalApi
 import akka.pattern.PromiseActorRef
 import akka.util.Timeout
