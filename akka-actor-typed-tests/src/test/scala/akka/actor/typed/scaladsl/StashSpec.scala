@@ -19,7 +19,7 @@ object StashSpec {
   final case class GetStashSize(replyTo: ActorRef[Int]) extends Command
 
   val immutableStash: Behavior[Command] =
-    Behaviors.deferred[Command] { _ ⇒
+    Behaviors.onStart[Command] { _ ⇒
       val buffer = StashBuffer[Command](capacity = 10)
 
       def active(processed: Vector[String]): Behavior[Command] =

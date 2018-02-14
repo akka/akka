@@ -114,7 +114,7 @@ class MutableIntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
       //#chatroom-main
       val main: Behavior[String] =
-        Behaviors.deferred { ctx ⇒
+        Behaviors.onStart { ctx ⇒
           val chatRoom = ctx.spawn(ChatRoom.behavior(), "chatroom")
           val gabblerRef = ctx.spawn(gabbler, "gabbler")
           ctx.watch(gabblerRef)

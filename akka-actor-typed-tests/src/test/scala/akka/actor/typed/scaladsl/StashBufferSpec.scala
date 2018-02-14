@@ -113,7 +113,7 @@ class StashBufferSpec extends WordSpec with Matchers {
             valueInbox.ref ! state
             Behaviors.same
           } else {
-            Behaviors.deferred[String](_ ⇒ behavior(state + msg))
+            Behaviors.onStart[String](_ ⇒ behavior(state + msg))
           }
         }
 

@@ -31,7 +31,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
       })
       .build();
 
-    Behavior<Message> middleManagementBehavior = Behaviors.deferred((ctx) -> {
+    Behavior<Message> middleManagementBehavior = Behaviors.onStart((ctx) -> {
       ctx.getLog().info("Middle management starting up");
       final ActorRef<Message> child = ctx.spawn(failingChildBehavior, "child");
       // we want to know when the child terminates, but since we do not handle
@@ -49,7 +49,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
         }).build();
     });
 
-    Behavior<Message> bossBehavior = Behaviors.deferred((ctx) -> {
+    Behavior<Message> bossBehavior = Behaviors.onStart((ctx) -> {
       ctx.getLog().info("Boss starting up");
       final ActorRef<Message> middleManagement = ctx.spawn(middleManagementBehavior, "middle-management");
       ctx.watch(middleManagement);

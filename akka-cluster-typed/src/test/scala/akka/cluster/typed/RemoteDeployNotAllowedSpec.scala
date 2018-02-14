@@ -62,7 +62,7 @@ class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.conf
             // this should throw
             try {
               ctx.spawn(
-                Behaviors.deferred[AnyRef] { ctx ⇒ Behaviors.empty },
+                Behaviors.onStart[AnyRef] { ctx ⇒ Behaviors.empty },
                 name)
             } catch {
               case ex: Exception ⇒ probe.ref ! ex
@@ -72,7 +72,7 @@ class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.conf
           case SpawnAnonymous ⇒
             // this should throw
             try {
-              ctx.spawnAnonymous(Behaviors.deferred[AnyRef] { ctx ⇒ Behaviors.empty })
+              ctx.spawnAnonymous(Behaviors.onStart[AnyRef] { ctx ⇒ Behaviors.empty })
             } catch {
               case ex: Exception ⇒ probe.ref ! ex
             }

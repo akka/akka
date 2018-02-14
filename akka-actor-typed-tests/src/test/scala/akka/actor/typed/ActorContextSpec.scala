@@ -848,13 +848,13 @@ class WidenedActorContextSpec extends ActorContextSpec {
 class DeferredActorContextSpec extends ActorContextSpec {
   override def suite = "deferred"
   override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
-    Behaviors.deferred(_ ⇒ subject(ctx.self, ignorePostStop))
+    Behaviors.onStart(_ ⇒ subject(ctx.self, ignorePostStop))
 }
 
 class NestedDeferredActorContextSpec extends ActorContextSpec {
   override def suite = "nexted-deferred"
   override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
-    Behaviors.deferred(_ ⇒ Behaviors.deferred(_ ⇒ subject(ctx.self, ignorePostStop)))
+    Behaviors.onStart(_ ⇒ Behaviors.onStart(_ ⇒ subject(ctx.self, ignorePostStop)))
 }
 
 class TapActorContextSpec extends ActorContextSpec {

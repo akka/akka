@@ -177,7 +177,7 @@ class BehaviorTestkit[T] private (_name: String, _initialBehavior: Behavior[T]) 
     }
   }
 
-  private var current = Behavior.validateAsInitial(Behavior.undefer(_initialBehavior, ctx))
+  private var current = Behavior.validateAsInitial(Behavior.start(_initialBehavior, ctx))
 
   def currentBehavior: Behavior[T] = current
   def isAlive: Boolean = Behavior.isAlive(current)

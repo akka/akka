@@ -56,7 +56,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       val probe = TestProbe[AnotherPong]()
 
-      val snitch = Behaviors.deferred[AnotherPong] { (ctx) ⇒
+      val snitch = Behaviors.onStart[AnotherPong] { (ctx) ⇒
 
         val replyTo = ctx.messageAdapter[Response](_ ⇒
           AnotherPong(ctx.self.path.name, Thread.currentThread().getName))
@@ -109,7 +109,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       val probe = TestProbe[Wrapped]()
 
-      val snitch = Behaviors.deferred[Wrapped] { (ctx) ⇒
+      val snitch = Behaviors.onStart[Wrapped] { (ctx) ⇒
 
         ctx.messageAdapter[Response](pong ⇒ Wrapped(qualifier = "wrong", pong)) // this is replaced
         val replyTo1: ActorRef[Response] = ctx.messageAdapter(pong ⇒ Wrapped(qualifier = "1", pong))
@@ -154,7 +154,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       val probe = TestProbe[Wrapped]()
 
-      val snitch = Behaviors.deferred[Wrapped] { (ctx) ⇒
+      val snitch = Behaviors.onStart[Wrapped] { (ctx) ⇒
 
         val replyTo1 = ctx.messageAdapter[Pong1](pong ⇒ Wrapped(qualifier = "1", pong))
         pingPong ! Ping1(replyTo1)
@@ -191,7 +191,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       val probe = TestProbe[Any]()
 
-      val snitch = Behaviors.deferred[Wrapped] { (ctx) ⇒
+      val snitch = Behaviors.onStart[Wrapped] { (ctx) ⇒
 
         var count = 0
         val replyTo = ctx.messageAdapter[Pong] { pong ⇒

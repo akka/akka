@@ -34,7 +34,7 @@ object StashDocSpec {
     private final case class DBError(cause: Throwable) extends Command
 
     def behavior(id: String, db: DB): Behavior[Command] =
-      Behaviors.deferred[Command] { ctx ⇒
+      Behaviors.onStart[Command] { ctx ⇒
 
         val buffer = StashBuffer[Command](capacity = 100)
 

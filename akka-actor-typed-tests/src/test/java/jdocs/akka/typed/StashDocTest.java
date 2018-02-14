@@ -88,7 +88,7 @@ public class StashDocTest extends JUnitSuite {
     }
 
     Behavior<Command> behavior() {
-      return Behaviors.deferred(ctx -> {
+      return Behaviors.onStart(ctx -> {
         db.load(id)
             .whenComplete((value, cause) -> {
             if (cause == null)

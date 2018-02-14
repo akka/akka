@@ -73,7 +73,7 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
       case class Failed(t: Terminated) // we need to wrap it as it is handled specially
       val probe = TestProbe[Any]()
       val ex = new TestException("boom")
-      val parent = spawn(Behaviors.deferred[Any] { ctx ⇒
+      val parent = spawn(Behaviors.onStart[Any] { ctx ⇒
         val child = ctx.spawn(Behaviors.immutable[Any]((ctx, msg) ⇒
           throw ex
         ), "child")
@@ -99,8 +99,8 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
       case class Failed(t: Terminated) // we need to wrap it as it is handled specially
       val probe = TestProbe[Any]()
       val ex = new TestException("boom")
-      val grossoBosso = spawn(Behaviors.deferred[Any] { ctx ⇒
-        val middleManagement = ctx.spawn(Behaviors.deferred[Any] { ctx ⇒
+      val grossoBosso = spawn(Behaviors.onStart[Any] { ctx ⇒
+        val middleManagement = ctx.spawn(Behaviors.onStart[Any] { ctx ⇒
           val sixPackJoe = ctx.spawn(Behaviors.immutable[Any]((ctx, msg) ⇒
             throw ex
           ), "joe")

@@ -35,7 +35,7 @@ import akka.actor.typed.Terminated
 
   def behavior(settings: dd.ReplicatorSettings, underlyingReplicator: Option[akka.actor.ActorRef]): Behavior[SReplicator.Command] = {
 
-    Behaviors.deferred { ctx ⇒
+    Behaviors.onStart { ctx ⇒
       val untypedReplicator = underlyingReplicator match {
         case Some(ref) ⇒ ref
         case None ⇒

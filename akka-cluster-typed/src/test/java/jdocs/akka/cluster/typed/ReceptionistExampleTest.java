@@ -29,7 +29,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
     }
 
     static Behavior<Ping> pingService() {
-      return Behaviors.deferred((ctx) -> {
+      return Behaviors.onStart((ctx) -> {
         ctx.getSystem().receptionist()
           .tell(new Receptionist.Register<>(PingServiceKey, ctx.getSelf(), ctx.getSystem().deadLetters()));
         return Behaviors.immutable(Ping.class)
@@ -43,7 +43,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
 
     //#pinger
     static Behavior<Pong> pinger(ActorRef<Ping> pingService) {
-      return Behaviors.deferred((ctx) -> {
+      return Behaviors.onStart((ctx) -> {
         pingService.tell(new Ping(ctx.getSelf()));
         return Behaviors.immutable(Pong.class)
           .onMessage(Pong.class, (c, msg) -> {
@@ -56,7 +56,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
 
     //#pinger-guardian
     static Behavior<Receptionist.Listing<Ping>> guardian() {
-      return Behaviors.deferred((ctx) -> {
+      return Behaviors.onStart((ctx) -> {
         ctx.getSystem().receptionist()
           .tell(new Receptionist.Subscribe<>(PingServiceKey, ctx.getSelf()));
         ActorRef<Ping> ps = ctx.spawnAnonymous(pingService());
