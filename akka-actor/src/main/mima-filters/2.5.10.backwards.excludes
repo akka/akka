@@ -3,3 +3,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdo
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdown#Phase.this")
 ProblemFilters.exclude[MissingTypesProblem]("akka.actor.CoordinatedShutdown$Phase$")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdown#Phase.apply")
+
+# Path based WriteFile command #23902
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.TcpConnection.PendingWriteFile")
