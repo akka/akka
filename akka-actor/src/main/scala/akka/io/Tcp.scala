@@ -349,7 +349,6 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
     require(count > 0, "WriteFile.count must be > 0")
   }
 
-
   /**
    * Write `count` bytes starting at `position` from file at `filePath` to the connection.
    * The count must be &gt; 0. The connection actor will reply with a [[CommandFailed]]
