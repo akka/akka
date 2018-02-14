@@ -40,9 +40,6 @@ object Dependencies {
     val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.6" // Scala License
     val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
-    // ssl-config
-    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.2.2"       // ApacheV2
-
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.4"       // ApacheV2
 
