@@ -182,7 +182,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     implicit val mat: Materializer = materializer
     implicit val sys: ActorSystem = system
 
-    // These streams are always running, on instance of each, and then the inbound connections
+    // These streams are always running, only one instance of each inbound stream, and then the inbound connections
     // are attached to these via a MergeHub.
     val (controlStream, controlStreamCompleted) = runInboundControlStream()
     val (ordinaryMessagesStream, ordinaryMessagesStreamCompleted) = runInboundOrdinaryMessagesStream()

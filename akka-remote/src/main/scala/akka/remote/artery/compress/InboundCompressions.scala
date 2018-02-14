@@ -426,11 +426,11 @@ private[remote] abstract class InboundCompression[T >: Null](
             case OptionVal.Some(association) ⇒
               if (association.associationState.isQuarantined(originUid)) {
                 // give up
-                log.debug("Skipping advertisment in progress for quarantined originUid [{}].", originUid)
+                log.debug("Skipping advertisement in progress for quarantined originUid [{}].", originUid)
                 confirmAdvertisement(inProgress.version)
               } else {
                 log.debug(
-                  "Advertisment in progress for originUid [{}] version {}, resending",
+                  "Advertisement in progress for originUid [{}] version {}, resending",
                   originUid, inProgress.version)
                 advertiseCompressionTable(association, inProgress) // resend
               }
@@ -439,7 +439,7 @@ private[remote] abstract class InboundCompression[T >: Null](
         } else {
           // give up, it might be dead
           log.debug(
-            "Advertisment in progress for originUid [{}] version {} but no confirmation after retries.",
+            "Advertisement in progress for originUid [{}] version {} but no confirmation after retries.",
             originUid, inProgress.version)
           confirmAdvertisement(inProgress.version)
         }
