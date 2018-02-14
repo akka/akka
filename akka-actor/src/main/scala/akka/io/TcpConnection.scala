@@ -4,23 +4,24 @@
 
 package akka.io
 
+import java.io.IOException
 import java.net.{ InetSocketAddress, SocketException }
-import java.nio.channels.SelectionKey._
-import java.io.{ FileInputStream, IOException }
-import java.nio.channels.{ FileChannel, SocketChannel }
 import java.nio.ByteBuffer
+import java.nio.channels.SelectionKey._
+import java.nio.channels.{ FileChannel, SocketChannel }
+import java.nio.file.{ Path, Paths }
+
+import akka.actor._
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.io.Inet.SocketOption
+import akka.io.SelectionHandler._
+import akka.io.Tcp._
+import akka.util.ByteString
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.concurrent.duration._
-import akka.actor._
-import akka.util.ByteString
-import akka.io.Inet.SocketOption
-import akka.io.Tcp._
-import akka.io.SelectionHandler._
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import java.nio.file.Paths
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
@@ -30,9 +31,9 @@ import java.nio.file.Paths
 private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketChannel, val pullMode: Boolean)
   extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
+  import TcpConnection._
   import tcp.Settings._
   import tcp.bufferPool
-  import TcpConnection._
 
   private[this] var pendingWrite: PendingWrite = EmptyPendingWrite
   private[this] var peerClosed = false
@@ -378,7 +379,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       head match {
         case Write.empty                         ⇒ if (tail eq Write.empty) EmptyPendingWrite else create(tail)
         case Write(data, ack) if data.nonEmpty   ⇒ PendingBufferWrite(commander, data, ack, tail)
-        case WriteFile(path, offset, count, ack) ⇒ PendingWriteFile(commander, path, offset, count, ack, tail)
+        case WriteFile(path, offset, count, ack) ⇒ PendingWriteFile(commander, Paths.get(path), offset, count, ack, tail)
+        case WritePath(path, offset, count, ack) ⇒ PendingWriteFile(commander, path, offset, count, ack, tail)
         case CompoundWrite(h, t)                 ⇒ create(h, t)
         case x @ Write(_, ack) ⇒ // empty write with either an ACK or a non-standard NoACK
           if (x.wantsAck) commander ! ack
@@ -438,9 +440,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     def release(): Unit = bufferPool.release(buffer)
   }
 
-  def PendingWriteFile(commander: ActorRef, filePath: String, offset: Long, count: Long, ack: Event,
+  def PendingWriteFile(commander: ActorRef, filePath: Path, offset: Long, count: Long, ack: Event,
                        tail: WriteCommand): PendingWriteFile =
-    new PendingWriteFile(commander, FileChannel.open(Paths.get(filePath)), offset, count, ack, tail)
+    new PendingWriteFile(commander, FileChannel.open(filePath), offset, count, ack, tail)
 
   class PendingWriteFile(
     val commander: ActorRef,
