@@ -146,10 +146,10 @@ class TimerSpec extends TestKit("TimerSpec")
       ref ! Cancel
       probe.fishForMessage(3.seconds) {
         // we don't know that we will see exactly one tock
-        case _: Tock   ⇒ FishingOutcomes.Continue
+        case _: Tock   ⇒ FishingOutcomes.continue
         // but we know that after we saw Cancelled we won't see any more
-        case Cancelled ⇒ FishingOutcomes.Complete
-        case msg       ⇒ FishingOutcomes.Fail(s"unexpected msg: $msg")
+        case Cancelled ⇒ FishingOutcomes.complete
+        case msg       ⇒ FishingOutcomes.fail(s"unexpected msg: $msg")
       }
       probe.expectNoMessage(interval + 100.millis.dilated)
 
