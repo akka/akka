@@ -6,19 +6,20 @@ package akka.testkit.typed.javadsl
 import java.util.function.Supplier
 
 import akka.actor.typed.{ ActorRef, ActorSystem }
-import akka.testkit.typed.{ FishingOutcome, TestKitSettings, TestProbeImpl }
+import akka.annotation.DoNotInherit
+import akka.testkit.typed.internal.TestProbeImpl
+import akka.testkit.typed.{ FishingOutcome, TestKitSettings }
 import akka.testkit.typed.scaladsl.TestDuration
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.collection.JavaConverters._
-import scala.reflect.ClassTag
 import scala.concurrent.duration._
 
 object FishingOutcomes {
   /**
    * Consume this message and continue with the next
    */
-  def continue(): FishingOutcome = akka.testkit.typed.FishingOutcome.Continue
+  def continue(): FishingOutcome = FishingOutcome.Continue
 
   /**
    * Consume this message and continue with the next
@@ -59,6 +60,7 @@ object TestProbe {
  *
  * Not for user extension
  */
+@DoNotInherit
 abstract class TestProbe[M] {
 
   implicit protected def settings: TestKitSettings

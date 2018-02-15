@@ -1,42 +1,25 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.testkit.typed
+package akka.testkit.typed.internal
 
-import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque }
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque }
 import java.util.function.Supplier
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.util.{ BoxedType, Timeout }
-import akka.util.PrettyDuration._
-import akka.testkit.typed.scaladsl.TestDuration
-import akka.testkit.typed.scaladsl.{ TestProbe ⇒ ScalaTestProbe }
+import akka.annotation.InternalApi
 import akka.testkit.typed.javadsl.{ TestProbe ⇒ JavaTestProbe }
+import akka.testkit.typed.scaladsl.{ TestDuration, TestProbe ⇒ ScalaTestProbe }
+import akka.testkit.typed.{ FishingOutcome, TestKitSettings }
+import akka.util.PrettyDuration._
+import akka.util.{ BoxedType, Timeout }
 
 import scala.annotation.tailrec
-import scala.annotation.unchecked
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-
-/**
- * Not for user extension.
- *
- * Instances are available from `FishingOutcomes` in the respective dsls: [[akka.testkit.typed.scaladsl.FishingOutcomes]]
- * and [[akka.testkit.typed.javadsl.FishingOutcomes]]
- */
-@DoNotInherit sealed trait FishingOutcome
-
-object FishingOutcome {
-
-  case object Continue extends FishingOutcome
-  case object ContinueAndIgnore extends FishingOutcome
-  case object Complete extends FishingOutcome
-  case class Fail(error: String) extends FishingOutcome
-}
 
 @InternalApi
 private[akka] object TestProbeImpl {

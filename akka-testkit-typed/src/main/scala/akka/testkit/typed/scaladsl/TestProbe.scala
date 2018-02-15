@@ -5,10 +5,12 @@ package akka.testkit.typed.scaladsl
 
 import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.annotation.DoNotInherit
-import akka.testkit.typed.{ FishingOutcome, TestKitSettings, TestProbeImpl }
+import akka.testkit.typed.internal.TestProbeImpl
+import akka.testkit.typed.{ FishingOutcome, TestKitSettings }
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+import scala.collection.immutable
 
 object FishingOutcomes {
   /**
@@ -168,16 +170,16 @@ object TestProbe {
    *            The timeout is dilated.
    * @return The messages accepted in the order they arrived
    */
-  def fishForMessage(max: FiniteDuration, hint: String)(fisher: M ⇒ FishingOutcome): List[M] =
+  def fishForMessage(max: FiniteDuration, hint: String)(fisher: M ⇒ FishingOutcome): immutable.Seq[M] =
     fishForMessage_internal(max, hint, fisher)
 
   /**
    * Same as the other `fishForMessage` but with no hint
    */
-  def fishForMessage(max: FiniteDuration)(fisher: M ⇒ FishingOutcome): List[M] =
+  def fishForMessage(max: FiniteDuration)(fisher: M ⇒ FishingOutcome): immutable.Seq[M] =
     fishForMessage(max, "")(fisher)
 
-  protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): List[M]
+  protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): immutable.Seq[M]
 
   /**
    * Expect the given actor to be stopped or stop withing the given timeout or
