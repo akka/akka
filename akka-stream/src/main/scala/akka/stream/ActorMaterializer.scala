@@ -256,7 +256,7 @@ object ActorMaterializerSettings {
     autoFusing:                  Boolean,
     maxFixedBufferSize:          Int) = {
     // these sins were comitted in the name of bin comp:
-    val config = ConfigFactory.load()
+    val config = ConfigFactory.defaultReference
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
       outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, 1000, IOSettings(tcpWriteBufferSize = 16 * 1024),
@@ -308,7 +308,7 @@ object ActorMaterializerSettings {
     autoFusing:                  Boolean,
     maxFixedBufferSize:          Int) = {
     // these sins were comitted in the name of bin comp:
-    val config = ConfigFactory.load()
+    val config = ConfigFactory.defaultReference
     new ActorMaterializerSettings(
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
       outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, 1000, IOSettings(tcpWriteBufferSize = 16 * 1024),
