@@ -1,2 +1,0 @@
-# 24357 io-dispatcher setting
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializerSettings.this")
