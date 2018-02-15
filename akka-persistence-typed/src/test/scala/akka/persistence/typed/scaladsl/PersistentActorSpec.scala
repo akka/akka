@@ -362,7 +362,7 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
 
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {
       val probe = TestProbe[String]()
-      val w = Behaviors.deferred[Any] { (ctx) ⇒
+      val w = Behaviors.setup[Any] { (ctx) ⇒
         ctx.watch(toWatch)
         Behaviors.immutable[Any] { (_, _) ⇒ Behaviors.same }
           .onSignal {

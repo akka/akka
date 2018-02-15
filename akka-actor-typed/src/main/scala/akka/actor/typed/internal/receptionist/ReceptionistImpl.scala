@@ -67,7 +67,7 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
   type SubscriptionRegistry = TypedMultiMap[AbstractServiceKey, SubscriptionsKV]
 
   private[akka] def init[State](externalInterfaceFactory: ActorContext[AllCommands] ⇒ ExternalInterface[State]): Behavior[Command] =
-    Behaviors.deferred[AllCommands] { ctx ⇒
+    Behaviors.setup[AllCommands] { ctx ⇒
       val externalInterface = externalInterfaceFactory(ctx)
       behavior(
         TypedMultiMap.empty[AbstractServiceKey, KV],
@@ -89,7 +89,7 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
      * FIXME: replace by simple map in our state
      */
     def watchWith(ctx: ActorContext[AllCommands], target: ActorRef[_], msg: AllCommands): Unit =
-      ctx.spawnAnonymous[Nothing](Behaviors.deferred[Nothing] { innerCtx ⇒
+      ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx ⇒
         innerCtx.watch(target)
         Behaviors.immutable[Nothing]((_, _) ⇒ Behaviors.same)
           .onSignal {

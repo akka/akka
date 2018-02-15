@@ -182,7 +182,7 @@ object Behavior {
   @InternalApi
   private[akka] final case class DeferredBehavior[T](factory: SAC[T] ⇒ Behavior[T]) extends Behavior[T] {
 
-    /** "undefer" the deferred behavior */
+    /** start the deferred behavior */
     @throws(classOf[Exception])
     def apply(ctx: ActorContext[T]): Behavior[T] = factory(ctx.asScala)
 
@@ -227,7 +227,7 @@ object Behavior {
   /**
    * INTERNAL API
    *
-   * Return special behaviors as is, undefer deferred, if behavior is "non-special" apply the wrap function `f` to get
+   * Return special behaviors as is, start deferred, if behavior is "non-special" apply the wrap function `f` to get
    * and return the result from that. Useful for cases where a [[Behavior]] implementation that is decorating another
    * behavior has processed a message and needs to re-wrap the resulting behavior with itself.
    */
@@ -238,14 +238,18 @@ object Behavior {
       case SameBehavior | `currentBehavior` ⇒ same
       case UnhandledBehavior                ⇒ unhandled
       case StoppedBehavior                  ⇒ stopped
-      case deferred: DeferredBehavior[T]    ⇒ wrap(currentBehavior, undefer(deferred, ctx), ctx)(f)
+      case deferred: DeferredBehavior[T]    ⇒ wrap(currentBehavior, start(deferred, ctx), ctx)(f)
       case other                            ⇒ f(other)
     }
 
+  /**
+   * Starts deferred behavior and nested deferred behaviors until a non deferred behavior is reached
+   * and that is then returned.
+   */
   @tailrec
-  def undefer[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
+  def start[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
     behavior match {
-      case innerDeferred: DeferredBehavior[T] ⇒ undefer(innerDeferred(ctx), ctx)
+      case innerDeferred: DeferredBehavior[T] ⇒ start(innerDeferred(ctx), ctx)
       case _                                  ⇒ behavior
     }
   }
@@ -302,7 +306,7 @@ object Behavior {
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
       case _: UntypedBehavior[_] ⇒
         throw new IllegalArgumentException(s"cannot wrap behavior [$behavior] in " +
-          "Actor.deferred, Actor.supervise or similar")
+          "Behaviors.setup, Behaviors.supervise or similar")
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
       case IgnoreBehavior         ⇒ SameBehavior.asInstanceOf[Behavior[T]]
       case s: StoppedBehavior[T]  ⇒ s
@@ -312,7 +316,7 @@ object Behavior {
           case signal: Signal ⇒ ext.receiveSignal(ctx, signal)
           case m              ⇒ ext.receiveMessage(ctx, m.asInstanceOf[T])
         }
-        undefer(possiblyDeferredResult, ctx)
+        start(possiblyDeferredResult, ctx)
     }
 
   /**
@@ -323,7 +327,7 @@ object Behavior {
    */
   @InternalApi private[akka] def interpretMessages[T](behavior: Behavior[T], ctx: ActorContext[T], messages: Iterator[T]): Behavior[T] = {
     @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
-      val b2 = Behavior.undefer(b, ctx)
+      val b2 = Behavior.start(b, ctx)
       if (!Behavior.isAlive(b2) || !messages.hasNext) b2
       else {
         val nextB = messages.next() match {
@@ -336,7 +340,7 @@ object Behavior {
       }
     }
 
-    interpretOne(Behavior.undefer(behavior, ctx))
+    interpretOne(Behavior.start(behavior, ctx))
   }
 
 }

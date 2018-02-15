@@ -252,10 +252,10 @@ particular one using the `immutable` behavior decorator. The
 provided `onSignal` function will be invoked for signals (subclasses of `Signal`)
 or the `onMessage` function for user messages.
 
-This particular `main` Actor is created using `Behaviors.deferred`, which is like a factory for a behavior.
+This particular `main` Actor is created using `Behaviors.onStart`, which is like a factory for a behavior.
 Creation of the behavior instance is deferred until the actor is started, as opposed to `Behaviors.immutable`
 that creates the behavior instance immediately before the actor is running. The factory function in
-`deferred` pass the `ActorContext` as parameter and that can for example be used for spawning child actors.
+`onStart` is passed the `ActorContext` as parameter and that can for example be used for spawning child actors.
 This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
 gabbler is finished we will receive the `Terminated` event due to having
 called `ctx.watch` for it. This allows us to shut down the Actor system: when

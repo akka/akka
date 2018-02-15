@@ -30,7 +30,7 @@ class FaultToleranceDocSpec extends TestKit(ConfigFactory.parseString(
         }
       }
 
-      val middleManagementBehavior = Behaviors.deferred[Message] { ctx ⇒
+      val middleManagementBehavior = Behaviors.setup[Message] { ctx ⇒
         ctx.log.info("Middle management starting up")
         val child = ctx.spawn(worker, "child")
         ctx.watch(child)
@@ -44,7 +44,7 @@ class FaultToleranceDocSpec extends TestKit(ConfigFactory.parseString(
         }
       }
 
-      val bossBehavior = Behaviors.supervise(Behaviors.deferred[Message] { ctx ⇒
+      val bossBehavior = Behaviors.supervise(Behaviors.setup[Message] { ctx ⇒
         ctx.log.info("Boss starting up")
         val middleManagment = ctx.spawn(middleManagementBehavior, "middle-management")
         ctx.watch(middleManagment)

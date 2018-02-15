@@ -133,7 +133,7 @@ import scala.util.control.NonFatal
   protected def start(): Unit = {
     context.become(running)
     initializeContext()
-    behavior = validateAsInitial(undefer(behavior, ctx))
+    behavior = validateAsInitial(Behavior.start(behavior, ctx))
     if (!isAlive(behavior)) context.stop(self)
   }
 
@@ -144,7 +144,7 @@ import scala.util.control.NonFatal
 
   override def postRestart(reason: Throwable): Unit = {
     initializeContext()
-    behavior = validateAsInitial(undefer(behavior, ctx))
+    behavior = validateAsInitial(Behavior.start(behavior, ctx))
     if (!isAlive(behavior)) context.stop(self)
   }
 

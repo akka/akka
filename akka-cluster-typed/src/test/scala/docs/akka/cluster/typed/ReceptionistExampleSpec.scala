@@ -18,7 +18,7 @@ import scala.collection.immutable.Set
 object RandomRouter {
 
   def router[T](serviceKey: ServiceKey[T]): Behavior[T] =
-    Behaviors.deferred[Any] { ctx ⇒
+    Behaviors.setup[Any] { ctx ⇒
       ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self)
 
       def routingBehavior(routees: Vector[ActorRef[T]]): Behavior[Any] =
@@ -45,7 +45,7 @@ object RandomRouter {
   // same as above, but also subscribes to cluster reachability events and
   // avoids routees that are unreachable
   def clusterRouter[T](serviceKey: ServiceKey[T]): Behavior[T] =
-    Behaviors.deferred[Any] { ctx ⇒
+    Behaviors.setup[Any] { ctx ⇒
       ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self)
 
       val cluster = Cluster(ctx.system)
@@ -93,7 +93,7 @@ object PingPongExample {
   final case object Pong
 
   val pingService: Behavior[Ping] =
-    Behaviors.deferred { ctx ⇒
+    Behaviors.setup { ctx ⇒
       ctx.system.receptionist ! Receptionist.Register(PingServiceKey, ctx.self, ctx.system.deadLetters)
       Behaviors.immutable[Ping] { (_, msg) ⇒
         msg match {
@@ -106,7 +106,7 @@ object PingPongExample {
   //#ping-service
 
   //#pinger
-  def pinger(pingService: ActorRef[Ping]) = Behaviors.deferred[Pong.type] { ctx ⇒
+  def pinger(pingService: ActorRef[Ping]) = Behaviors.setup[Pong.type] { ctx ⇒
     pingService ! Ping(ctx.self)
     Behaviors.immutable { (_, msg) ⇒
       println("I was ponged!!" + msg)
@@ -116,7 +116,7 @@ object PingPongExample {
   //#pinger
 
   //#pinger-guardian
-  val guardian: Behavior[Listing[Ping]] = Behaviors.deferred { ctx ⇒
+  val guardian: Behavior[Listing[Ping]] = Behaviors.setup { ctx ⇒
     ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
     val ps = ctx.spawnAnonymous(pingService)
     ctx.watch(ps)
@@ -133,7 +133,7 @@ object PingPongExample {
   //#pinger-guardian
 
   //#pinger-guardian-pinger-service
-  val guardianJustPingService: Behavior[Listing[Ping]] = Behaviors.deferred { ctx ⇒
+  val guardianJustPingService: Behavior[Listing[Ping]] = Behaviors.setup { ctx ⇒
     val ps = ctx.spawnAnonymous(pingService)
     ctx.watch(ps)
     Behaviors.immutablePartial[Listing[Ping]] {
@@ -149,7 +149,7 @@ object PingPongExample {
   //#pinger-guardian-pinger-service
 
   //#pinger-guardian-just-pinger
-  val guardianJustPinger: Behavior[Listing[Ping]] = Behaviors.deferred { ctx ⇒
+  val guardianJustPinger: Behavior[Listing[Ping]] = Behaviors.setup { ctx ⇒
     ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
     Behaviors.immutablePartial[Listing[Ping]] {
       case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty ⇒
