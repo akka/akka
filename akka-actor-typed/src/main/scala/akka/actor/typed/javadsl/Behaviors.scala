@@ -50,7 +50,7 @@ object Behaviors {
    * function. The reason for the deferred creation is to avoid sharing the same instance in
    * multiple actors, and to create a new instance when the actor is restarted.
    *
-   * @param producer
+   * @param factory
    *          behavior factory that takes the child actor’s context as argument
    * @return the deferred behavior
    */
