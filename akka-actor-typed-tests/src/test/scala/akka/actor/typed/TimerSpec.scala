@@ -13,12 +13,10 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.testkit.TimingTest
 import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl._
+import akka.testkit.typed.scaladsl.{ TestKit, _ }
 import org.scalatest.WordSpecLike
 
-class TimerSpec extends TestKit("TimerSpec")
-  with WordSpecLike {
+class TimerSpec extends TestKit with WordSpecLike with TypedAkkaSpecWithShutdown {
 
   sealed trait Command
   case class Tick(n: Int) extends Command
@@ -36,8 +34,6 @@ class TimerSpec extends TestKit("TimerSpec")
   case object Cancelled extends Event
 
   class Exc extends RuntimeException("simulated exc") with NoStackTrace
-
-  implicit val testSettings = TestKitSettings(system)
 
   val interval = 1.second
 

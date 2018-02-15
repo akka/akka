@@ -8,9 +8,11 @@ import akka.actor.typed.internal.ActorRefSerializationSpec
 import akka.actor.typed.internal.receptionist.ServiceKeySerializer
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
-import akka.testkit.typed.TestKit
+import akka.testkit.typed.scaladsl.TestKit
 
-class ServiceKeySerializationSpec extends TestKit(ActorRefSerializationSpec.config) with TypedAkkaSpecWithShutdown {
+class ServiceKeySerializationSpec extends TestKit with TypedAkkaSpecWithShutdown {
+
+  override def config = ActorRefSerializationSpec.config
 
   val serialization = SerializationExtension(system.toUntyped)
 

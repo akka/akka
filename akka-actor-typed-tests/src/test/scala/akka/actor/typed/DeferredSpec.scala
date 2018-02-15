@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors.BehaviorDecorators
-import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKit, TestKitSettings }
+import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKitSettings }
 import akka.testkit.typed.scaladsl._
 
 object DeferredSpec {
@@ -26,7 +26,7 @@ object DeferredSpec {
     })
 }
 
-class DeferredSpec extends TestKit with TypedAkkaSpec {
+class DeferredSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)

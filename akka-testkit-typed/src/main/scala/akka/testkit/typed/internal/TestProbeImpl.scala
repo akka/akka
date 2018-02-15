@@ -19,7 +19,12 @@ import akka.util.{ BoxedType, Timeout }
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
+import scala.util.control.{ NoStackTrace, NonFatal }
+
+/**
+ * Exception without stack trace to use for verifying exceptions in tests
+ */
+final case class TE(message: String) extends RuntimeException(message) with NoStackTrace
 
 @InternalApi
 private[akka] object TestProbeImpl {

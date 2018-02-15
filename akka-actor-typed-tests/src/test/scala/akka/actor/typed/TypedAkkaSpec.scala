@@ -1,6 +1,7 @@
 package akka.actor.typed
 
-import akka.testkit.typed.{ TestInbox, TestKit }
+import akka.testkit.typed.TestInbox
+import akka.testkit.typed.scaladsl.TestKit
 import akka.util.Timeout
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
@@ -17,7 +18,6 @@ trait TypedAkkaSpec extends WordSpecLike with Matchers with BeforeAndAfterAll wi
   with TypeCheckedTripleEquals with Eventually {
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, Span(100, org.scalatest.time.Millis))
-  implicit val timeout = Timeout(3.seconds)
 
   def assertEmpty(inboxes: TestInbox[_]*): Unit = {
     inboxes foreach (i ⇒ withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
@@ -30,7 +30,7 @@ trait TypedAkkaSpec extends WordSpecLike with Matchers with BeforeAndAfterAll wi
  */
 trait TypedAkkaSpecWithShutdown extends TypedAkkaSpec {
   self: TestKit ⇒
-  override protected def afterAll(): Unit = shutdown()
+  override protected def afterAll(): Unit = shutdownTestKit()
 }
 
 class TestException(msg: String) extends RuntimeException(msg) with NoStackTrace

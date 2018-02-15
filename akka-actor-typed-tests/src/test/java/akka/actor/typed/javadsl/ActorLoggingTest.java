@@ -7,9 +7,11 @@ import akka.actor.typed.Behavior;
 import akka.event.Logging;
 import akka.japi.pf.PFBuilder;
 import akka.testkit.CustomEventFilter;
-import akka.testkit.typed.TestKit;
+import akka.testkit.typed.javadsl.TestKitJunitResource;
+import akka.testkit.typed.scaladsl.TestKit;
 import com.typesafe.config.ConfigFactory;
 import org.junit.AfterClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
@@ -20,16 +22,13 @@ import java.util.concurrent.TimeUnit;
 
 public class ActorLoggingTest extends JUnitSuite {
 
-  private final static TestKit testKit = new TestKit("ActorLoggingTest",
+  @ClassRule
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(
+    ActorLoggingTest.class,
     ConfigFactory.parseString(
-      "akka.loglevel = INFO\n" +
+    "akka.loglevel = INFO\n" +
       "akka.loggers = [\"akka.testkit.TestEventListener\"]"
     ));
-
-  @AfterClass
-  public static void tearDown() {
-    testKit.shutdown();
-  }
 
   interface Protocol {
     String getTransactionId();

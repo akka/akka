@@ -2,8 +2,7 @@ package docs.akka.typed.testing.async
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed._
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl._
+import akka.testkit.typed.scaladsl.{ TestKit, _ }
 import org.scalatest._
 
 object BasicAsyncTestingSpec {
@@ -22,8 +21,7 @@ object BasicAsyncTestingSpec {
 }
 
 //#test-header
-class BasicAsyncTestingSpec extends TestKit("BasicTestingSpec")
-  with WordSpecLike with BeforeAndAfterAll {
+class BasicAsyncTestingSpec extends TestKit with TypedAkkaSpecWithShutdown {
   //#test-header
 
   import BasicAsyncTestingSpec._
@@ -49,6 +47,6 @@ class BasicAsyncTestingSpec extends TestKit("BasicTestingSpec")
   }
 
   //#test-shutdown
-  override def afterAll(): Unit = shutdown()
+  override def afterAll(): Unit = shutdownTestKit()
   //#test-shutdown
 }

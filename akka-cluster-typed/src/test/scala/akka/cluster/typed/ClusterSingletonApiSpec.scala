@@ -8,8 +8,8 @@ import java.nio.charset.StandardCharsets
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.typed.{ TestKit, TestKitSettings }
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
 import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedAkkaSpecWithShutdown }
 import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory

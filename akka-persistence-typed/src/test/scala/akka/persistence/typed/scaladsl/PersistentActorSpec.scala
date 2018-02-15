@@ -8,7 +8,7 @@ import akka.actor.typed.{ ActorRef, ActorSystem, SupervisorStrategy, Terminated,
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.typed.scaladsl.PersistentBehaviors._
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
-import akka.testkit.typed.{ TestKit, TestKitSettings }
+import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually

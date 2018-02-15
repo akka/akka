@@ -2,15 +2,12 @@ package akka.actor.typed
 
 //#manual-scheduling-simple
 import scala.concurrent.duration._
-
 import akka.actor.typed.scaladsl.Behaviors
-
 import org.scalatest.WordSpecLike
+import akka.testkit.typed.scaladsl.{ ManualTime, TestKit, TestProbe }
 
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.{ ManualTime, TestProbe }
-
-class ManualTimerSpec extends TestKit(ManualTime.config) with ManualTime with WordSpecLike {
+class ManualTimerSpec extends TestKit with ManualTime with WordSpecLike with TypedAkkaSpecWithShutdown {
+  override def config = ManualTime.config
 
   "A timer" must {
     "schedule non-repeated ticks" in {

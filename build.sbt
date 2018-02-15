@@ -440,6 +440,7 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
 lazy val typedTestkit = akkaModule("akka-testkit-typed")
   .dependsOn(actorTyped, testkit % "compile->compile;test->test")
   .settings(AutomaticModuleName.settings("akka.testkit.typed"))
+  .settings(Dependencies.typedTestkit)
   .disablePlugins(MimaPlugin)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")

@@ -6,8 +6,7 @@ package scaladsl
 
 import akka.Done
 import akka.NotUsed
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
 
 final class GracefulStopSpec extends TestKit with TypedAkkaSpecWithShutdown {
 

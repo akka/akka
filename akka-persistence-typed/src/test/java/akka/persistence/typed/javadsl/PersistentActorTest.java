@@ -8,7 +8,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.Pair;
 import akka.japi.function.Function3;
 import akka.persistence.typed.scaladsl.PersistentActorSpec;
-import akka.testkit.typed.TestKit;
+import akka.testkit.typed.scaladsl.TestKit;
 import akka.testkit.typed.javadsl.TestProbe;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;

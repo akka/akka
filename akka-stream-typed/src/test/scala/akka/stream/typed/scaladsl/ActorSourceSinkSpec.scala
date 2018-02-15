@@ -11,8 +11,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.typed.ActorMaterializer
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl._
+import akka.testkit.typed.scaladsl.{ TestKit, _ }
 
 object ActorSourceSinkSpec {
 

@@ -5,19 +5,21 @@ package akka.actor.typed.scaladsl
 
 import akka.actor.typed.{ LogMarker, TestException, TypedAkkaSpec, scaladsl }
 import akka.testkit.EventFilter
-import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.Logging
 import akka.event.Logging.{ LogEventWithCause, LogEventWithMarker }
+import akka.testkit.typed.scaladsl.TestKit
 
 import scala.util.control.NoStackTrace
 
-class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
-  """
+class ActorLoggingSpec extends TestKit with TypedAkkaSpec {
+
+  override def config = ConfigFactory.parseString(
+    """
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.TestEventListener"]
-  """)) with TypedAkkaSpec {
+  """)
 
   val marker = LogMarker("marker")
   val cause = new TestException("böö")

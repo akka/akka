@@ -7,8 +7,8 @@ import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKit, TestKitSettings }
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKitSettings }
+import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Future

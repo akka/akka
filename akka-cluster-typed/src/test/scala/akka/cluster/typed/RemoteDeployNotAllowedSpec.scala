@@ -6,9 +6,9 @@ package akka.cluster.typed
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.duration._
 
 object RemoteDeployNotAllowedSpec {

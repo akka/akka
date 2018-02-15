@@ -8,8 +8,7 @@ import java.net.URI
 import akka.NotUsed
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, TimerScheduler }
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
 import akka.util.Timeout
 
 import scala.concurrent.Future
@@ -387,7 +386,7 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
     val result: Future[Cookies] = cookieActorRef ? (ref ⇒ GiveMeCookies(ref))
 
     // the response callback will be executed on this execution context
-    import system.executionContext
+    implicit val ec = system.executionContext
 
     result.onComplete {
       case Success(cookies) ⇒ println("Yay, cookies!")

@@ -11,8 +11,7 @@ import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.persistence.typed.scaladsl.PersistentBehaviors
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 object ClusterShardingPersistenceSpec {

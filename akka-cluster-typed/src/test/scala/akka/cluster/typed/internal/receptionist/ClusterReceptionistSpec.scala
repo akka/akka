@@ -13,8 +13,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.Cluster
 import akka.serialization.SerializerWithStringManifest
-import akka.testkit.typed.{ TestKit, TestKitSettings }
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await

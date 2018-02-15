@@ -7,11 +7,10 @@ import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
 
 object WatchSpec {
@@ -32,8 +31,10 @@ object WatchSpec {
   case class StartWatchingWith(watchee: ActorRef[Stop.type], msg: CustomTerminationMessage) extends Message
 }
 
-class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
+class WatchSpec extends TestKit
   with TypedAkkaSpecWithShutdown {
+
+  override def config = WatchSpec.config
   implicit def untypedSystem = system.toUntyped
 
   import WatchSpec._

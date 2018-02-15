@@ -240,10 +240,12 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
   }
 }
 
-class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseString(
-  """
-    akka.loggers = [akka.testkit.TestEventListener]
-  """)) with TypedAkkaSpecWithShutdown {
+class SupervisionSpec extends TestKit with TypedAkkaSpecWithShutdown {
+
+  override def config = ConfigFactory.parseString(
+    """
+      akka.loggers = [akka.testkit.TestEventListener]
+    """)
 
   import SupervisionSpec._
   private val nameCounter = Iterator.from(0)

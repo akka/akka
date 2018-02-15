@@ -4,8 +4,8 @@
 package akka.testkit.typed.scaladsl
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.TestKit
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+
 import scala.concurrent.duration._
 
 class TestProbeSpec extends TestKit with WordSpecLike with Matchers with BeforeAndAfterAll {
@@ -112,6 +112,6 @@ class TestProbeSpec extends TestKit with WordSpecLike with Matchers with BeforeA
   }
 
   override protected def afterAll(): Unit = {
-    shutdown()
+    shutdownTestKit()
   }
 }

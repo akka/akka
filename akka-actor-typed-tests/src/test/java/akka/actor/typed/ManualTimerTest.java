@@ -7,30 +7,37 @@ package akka.actor.typed;
 import java.util.concurrent.TimeUnit;
 import static com.typesafe.config.ConfigFactory.parseString;
 
+import akka.testkit.typed.javadsl.TestKitJunitResource;
+import com.typesafe.config.ConfigFactory;
+import org.junit.ClassRule;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 
 import akka.actor.typed.javadsl.Behaviors;
 
 import org.junit.Test;
 
-import akka.testkit.typed.TestKit;
+import akka.testkit.typed.scaladsl.TestKit;
 import akka.testkit.typed.javadsl.ExplicitlyTriggeredScheduler;
 import akka.testkit.typed.javadsl.TestProbe;
 
-public class ManualTimerTest extends TestKit {
-  ExplicitlyTriggeredScheduler scheduler;
+public class ManualTimerTest extends JUnitSuite {
 
-  public ManualTimerTest() {
-    super(parseString("akka.scheduler.implementation = \"akka.testkit.typed.javadsl.ExplicitlyTriggeredScheduler\""));
-    this.scheduler = (ExplicitlyTriggeredScheduler) system().scheduler();
-  }
+  @ClassRule
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(
+    ManualTimerTest.class,
+    ConfigFactory.parseString(
+        "akka.scheduler.implementation = \"akka.testkit.typed.javadsl.ExplicitlyTriggeredScheduler\""
+    ));
+
+  ExplicitlyTriggeredScheduler scheduler = (ExplicitlyTriggeredScheduler) testKit.scheduler();
 
   static final class Tick {}
   static final class Tock {}
 
   @Test
   public void testScheduleNonRepeatedTicks() {
-    TestProbe<Tock> probe = TestProbe.create(system());
+    TestProbe<Tock> probe = testKit.createTestProbe();
     Behavior<Tick> behavior = Behaviors.withTimers(timer -> {
       timer.startSingleTimer("T", new Tick(), Duration.create(10, TimeUnit.MILLISECONDS));
       return Behaviors.immutable( (ctx, tick) -> {
@@ -39,7 +46,7 @@ public class ManualTimerTest extends TestKit {
       });
     });
 
-    spawn(behavior);
+    testKit.spawn(behavior);
 
     scheduler.expectNoMessageFor(Duration.create(9, TimeUnit.MILLISECONDS), probe);
 

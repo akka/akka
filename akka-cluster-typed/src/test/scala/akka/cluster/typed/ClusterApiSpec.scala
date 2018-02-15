@@ -7,8 +7,8 @@ import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.testkit.typed.scaladsl.TestProbe
-import akka.testkit.typed.{ TestKit, TestKitSettings }
+import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
+import akka.testkit.typed.TestKitSettings
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
