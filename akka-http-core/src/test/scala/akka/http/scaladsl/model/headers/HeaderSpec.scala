@@ -7,7 +7,8 @@ package akka.http.scaladsl.model.headers
 import akka.http.impl.util._
 import org.scalatest._
 import java.net.InetAddress
-import akka.http.scaladsl.model._
+
+import akka.http.scaladsl.model.{ headers, _ }
 
 class HeaderSpec extends FreeSpec with Matchers {
   "ModeledCompanion should" - {
@@ -132,6 +133,7 @@ class HeaderSpec extends FreeSpec with Matchers {
         `Proxy-Authorization`(BasicHttpCredentials("johan", "correcthorsebatterystaple")),
         Range(RangeUnits.Bytes, Vector(ByteRange(1, 1024))),
         Referer(Uri("http://example.com/")),
+        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("permessage-deflate"), WebSocketExtension("client_max_window_bits"))),
         `Sec-WebSocket-Protocol`(Vector("chat", "superchat")),
         `Sec-WebSocket-Key`("dGhlIHNhbXBsZSBub25jZQ"),
         `Sec-WebSocket-Version`(Vector(13)),
