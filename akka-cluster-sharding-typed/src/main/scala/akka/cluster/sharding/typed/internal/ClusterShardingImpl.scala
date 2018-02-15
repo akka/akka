@@ -5,14 +5,12 @@ package akka.cluster.sharding.typed
 package internal
 
 import java.util.Optional
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.{ CompletionStage, ConcurrentHashMap }
 
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
-
-import akka.actor.InternalActorRef
-import akka.actor.Scheduler
+import akka.actor.{ InternalActorRef, Scheduler }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -90,6 +88,10 @@ import akka.japi.function.{ Function ⇒ JFunction }
   private val untypedSharding = akka.cluster.sharding.ClusterSharding(untypedSystem)
   private val log: LoggingAdapter = Logging(untypedSystem, classOf[scaladsl.ClusterSharding])
 
+  // typeKey.name to messageClassName
+  private val regions: ConcurrentHashMap[String, String] = new ConcurrentHashMap
+  private val proxies: ConcurrentHashMap[String, String] = new ConcurrentHashMap
+
   override def spawn[A](
     behavior:           String ⇒ Behavior[A],
     entityProps:        Props,
@@ -121,7 +123,13 @@ import akka.japi.function.{ Function ⇒ JFunction }
     extractor:          ShardingMessageExtractor[E, A],
     allocationStrategy: Option[ShardAllocationStrategy]): ActorRef[E] = {
 
-    val untypedSettings = ClusterShardingSettings.toUntypedSettings(settings)
+    val typeNames = if (settings.shouldHostShard(cluster)) regions else proxies
+
+    typeNames.get(typeKey.name) match {
+      case messageClassName: String if typeKey.asInstanceOf[EntityTypeKeyImpl[_]].messageClassName != messageClassName ⇒
+        throw new IllegalArgumentException(s"${typeKey.name} already spawned for $messageClassName")
+      case _ ⇒ ()
+    }
 
     val extractorAdapter = new ExtractorAdapter(extractor)
     val extractEntityId: ShardRegion.ExtractEntityId = {
@@ -150,10 +158,10 @@ import akka.japi.function.{ Function ⇒ JFunction }
         untypedSharding.internalStart(
           typeKey.name,
           untypedEntityPropsFactory,
-          untypedSettings,
+          ClusterShardingSettings.toUntypedSettings(settings),
           extractEntityId,
           extractShardId,
-          defaultShardAllocationStrategy(settings),
+          allocationStrategy.getOrElse(defaultShardAllocationStrategy(settings)),
           extractor.handOffStopMessage)
       } else {
         log.info("Starting Shard Region Proxy [{}] (no actors will be hosted on this node) " +
@@ -166,6 +174,8 @@ import akka.japi.function.{ Function ⇒ JFunction }
           extractEntityId,
           extractShardId)
       }
+
+    typeNames.put(typeKey.name, typeKey.asInstanceOf[EntityTypeKeyImpl[A]].messageClassName)
 
     ActorRefAdapter(ref)
   }
