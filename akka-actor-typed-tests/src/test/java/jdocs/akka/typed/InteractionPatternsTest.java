@@ -3,7 +3,6 @@
  */
 package jdocs.akka.typed;
 
-import akka.NotUsed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
@@ -376,7 +375,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
 
   public static Behavior<DaveProtocol> daveBehavior(final ActorRef<HalCommand> hal) {
-    return Behaviors.deferred((ActorContext<DaveProtocol> ctx) -> {
+    return Behaviors.setup((ActorContext<DaveProtocol> ctx) -> {
 
       // asking someone requires a timeout, if the timeout hits without response
       // the ask is failed with a TimeoutException
@@ -507,7 +506,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
   // actor behavior
   public Behavior<HomeCommand> homeBehavior() {
-    return Behaviors.deferred((ctx) -> {
+    return Behaviors.setup((ctx) -> {
       final ActorRef<GetKeys> keyCabinet = ctx.spawn(keyCabinetBehavior, "key-cabinet");
       final ActorRef<GetWallet> drawer = ctx.spawn(drawerBehavior, "drawer");
 

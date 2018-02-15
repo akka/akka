@@ -29,7 +29,7 @@ import scala.reflect.ClassTag
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[U] { ctx ⇒
           val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
-          val b = Behavior.validateAsInitial(Behavior.undefer(d, c))
+          val b = Behavior.validateAsInitial(Behavior.start(d, c))
           Widened(b, matcher)
         }
       case _ ⇒
@@ -109,7 +109,7 @@ import scala.reflect.ClassTag
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
           val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
-          val b = Behavior.validateAsInitial(Behavior.undefer(d, c))
+          val b = Behavior.validateAsInitial(Behavior.start(d, c))
           Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, b, toStringPrefix)
         }
       case _ ⇒

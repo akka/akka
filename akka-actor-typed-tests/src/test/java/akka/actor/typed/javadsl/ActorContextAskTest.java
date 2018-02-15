@@ -44,7 +44,7 @@ public class ActorContextAskTest extends JUnitSuite {
 
     final TestProbe<Object> probe = new TestProbe<>(Adapter.toTyped(system));
 
-    final Behavior<Object> snitch = Behaviors.deferred((ActorContext<Object> ctx) -> {
+    final Behavior<Object> snitch = Behaviors.setup((ActorContext<Object> ctx) -> {
       ctx.ask(Pong.class,
           pingPong,
           new Timeout(3, TimeUnit.SECONDS),

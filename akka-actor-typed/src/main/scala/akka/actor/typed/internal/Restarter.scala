@@ -23,7 +23,7 @@ import scala.util.control.NonFatal
  */
 @InternalApi private[akka] object Supervisor {
   def apply[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], strategy: SupervisorStrategy): Behavior[T] =
-    Behaviors.deferred[T] { ctx ⇒
+    Behaviors.setup[T] { ctx ⇒
       val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
       val supervisor: Supervisor[T, Thr] = strategy match {
         case Restart(-1, _, loggingEnabled) ⇒
@@ -112,7 +112,7 @@ import scala.util.control.NonFatal
 
   def init(ctx: ActorContext[T]) =
     // no handling of errors for Resume as that could lead to infinite restart-loop
-    wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), afterException = false)
+    wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), afterException = false)
 
   override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Supervisor[T, Thr]] = {
     case NonFatal(ex: Thr) ⇒
@@ -132,7 +132,7 @@ import scala.util.control.NonFatal
   override val behavior: Behavior[T], override val loggingEnabled: Boolean) extends Supervisor[T, Thr] {
 
   def init(ctx: ActorContext[T]): Supervisor[T, Thr] =
-    wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), false)
+    wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), false)
 
   override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Behavior[T]] = {
     case NonFatal(ex: Thr) ⇒
@@ -154,7 +154,7 @@ import scala.util.control.NonFatal
 
   override def init(ctx: ActorContext[T]) =
     // no handling of errors for Restart as that could lead to infinite restart-loop
-    wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), afterException = false)
+    wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), afterException = false)
 
   override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Supervisor[T, Thr]] = {
     case NonFatal(ex: Thr) ⇒
@@ -177,7 +177,7 @@ import scala.util.control.NonFatal
 
   override def init(ctx: ActorContext[T]) =
     try {
-      wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), afterException = false)
+      wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), afterException = false)
     } catch {
       case NonFatal(ex: Thr) ⇒
         log(ctx, ex)
@@ -252,7 +252,7 @@ import scala.util.control.NonFatal
 
   def init(ctx: ActorContext[Any]): Supervisor[Any, Thr] =
     try {
-      val startedBehavior = Behavior.validateAsInitial(Behavior.undefer(initialBehavior, ctx))
+      val startedBehavior = Behavior.validateAsInitial(Behavior.start(initialBehavior, ctx))
       new BackoffRestarter(initialBehavior, startedBehavior, strategy, restartCount, blackhole)
     } catch {
       case NonFatal(ex: Thr) ⇒

@@ -229,7 +229,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
 
     "create underlying deferred behavior immediately" in {
       val inbox = TestInbox[Event]("evt")
-      val behv = supervise(deferred[Command] { _ ⇒
+      val behv = supervise(setup[Command] { _ ⇒
         inbox.ref ! Started
         targetBehavior(inbox.ref)
       }).onFailure[Exc1](SupervisorStrategy.restart)
@@ -270,7 +270,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
   class FailingDeferredTestSetup(failCount: Int, strategy: SupervisorStrategy) {
     val probe = TestProbe[AnyRef]("evt")
     val failCounter = new AtomicInteger(0)
-    def behv = supervise(deferred[Command] { _ ⇒
+    def behv = supervise(setup[Command] { _ ⇒
       val count = failCounter.getAndIncrement()
       if (count < failCount) {
         probe.ref ! StartFailed
@@ -284,7 +284,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
 
   class FailingUnhandledTestSetup(strategy: SupervisorStrategy) {
     val probe = TestProbe[AnyRef]("evt")
-    def behv = supervise(deferred[Command] { _ ⇒
+    def behv = supervise(setup[Command] { _ ⇒
       probe.ref ! StartFailed
       throw new TE("construction failed")
     }).onFailure[IllegalArgumentException](strategy)
@@ -449,7 +449,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
       val strategy = SupervisorStrategy
         .restartWithBackoff(minBackoff, 10.seconds, 0.0)
         .withResetBackoffAfter(10.seconds)
-      val behv = Behaviors.supervise(Behaviors.deferred[Command] { _ ⇒
+      val behv = Behaviors.supervise(Behaviors.setup[Command] { _ ⇒
         startedProbe.ref ! Started
         targetBehavior(probe.ref)
       }).onFailure[Exception](strategy)
@@ -520,7 +520,7 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
 
     "create underlying deferred behavior immediately" in {
       val probe = TestProbe[Event]("evt")
-      val behv = supervise(deferred[Command] { _ ⇒
+      val behv = supervise(setup[Command] { _ ⇒
         probe.ref ! Started
         targetBehavior(probe.ref)
       }).onFailure[Exception](SupervisorStrategy.restart)
@@ -632,8 +632,8 @@ class SupervisionSpec extends TestKit("SupervisionSpec", ConfigFactory.parseStri
     "work with nested supervisions and defers" in {
       val strategy = SupervisorStrategy.restartWithLimit(3, 1.second)
       val probe = TestProbe[AnyRef]("p")
-      val beh = supervise[String](deferred(ctx ⇒
-        supervise[String](deferred { ctx ⇒
+      val beh = supervise[String](setup(ctx ⇒
+        supervise[String](setup { ctx ⇒
           probe.ref ! Started
           scaladsl.Behaviors.empty[String]
         }).onFailure[RuntimeException](strategy)
