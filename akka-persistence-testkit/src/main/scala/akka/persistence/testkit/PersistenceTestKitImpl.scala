@@ -4,15 +4,17 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.BiFunction
 
-import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
-import akka.persistence.{ AtomicWrite, PersistentRepr }
+import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.persistence.{AtomicWrite, PersistentRepr}
 import akka.testkit.TestKitBase
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.{Config, ConfigFactory}
 import akka.persistence.journal.AsyncWriteJournal
 
+import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.collection.immutable
-import scala.util.{ Failure, Success, Try }
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 
 trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
@@ -44,13 +46,14 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
 
   }
 
-  override def recoverWith(persistenceId: String, msgs: immutable.Seq[Any]): Unit = ???
+  override def persistForRecovery(persistenceId: String, msgs: immutable.Seq[Any]): Unit =
+    storage.addRaw(persistenceId, msgs)
 
   override def expectPersistedInOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit = ???
 
   override def expectPersistedInAnyOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit = ???
 
-  override def withRejectionPolicy(rej: ProcessingPolicy) = ???
+  def withRejectionPolicy(rej: ProcessingPolicy) = ???
 
   def rejectNextPersisted(persistenceId: String) = ???
 
@@ -61,6 +64,59 @@ trait PersistenceTestKit extends TestKitBase with PersistentTestKitOps {
   def failNextPersisted() = ???
 
   override def clearAll(): Unit = storage.clearAll()
+
+}
+
+
+trait UtilityAssertions {
+
+  import scala.concurrent.duration._
+
+  def now: FiniteDuration = System.nanoTime.nanos
+
+  /**
+   * Evaluate the given assert every `interval` until it does not throw an exception and return the
+   * result.
+   *
+   * If the `max` timeout expires the last exception is thrown.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
+   */
+  def awaitAssert[A](a: ⇒ A, max: Duration = Duration.Undefined, interval: Duration = 100.millis): A = {
+    val _max = remainingOrDilated(max)
+    val stop = now + _max
+
+    @tailrec
+    def poll(t: Duration): A = {
+      // cannot use null-ness of result as signal it failed
+      // because Java API and not wanting to return a value will be "return null"
+      var failed = false
+      val result: A =
+        try {
+          val aRes = a
+          failed = false
+          aRes
+        } catch {
+          case NonFatal(e) ⇒
+            failed = true
+            if ((now + t) >= stop) throw e
+            else null.asInstanceOf[A]
+        }
+
+      if (!failed) result
+      else {
+        Thread.sleep(t.toMillis)
+        poll((stop - now) min interval)
+      }
+    }
+
+    poll(_max min interval)
+  }
+
 
 }
 
@@ -91,7 +147,7 @@ trait InMemStorage extends Extension {
       .groupBy(_.persistenceId)
       .foreach(pair ⇒ {
         eventsMap.compute(pair._1, (_: String, value: Vector[PersistentRepr]) ⇒ value match {
-          case null     ⇒ pair._2.toVector
+          case null ⇒ pair._2.toVector
           case existing ⇒ existing ++ pair._2
         })
       })
@@ -104,7 +160,7 @@ trait InMemStorage extends Extension {
   def read(persistenceId: String, fromInclusive: Long, toInclusive: Long, maxNumber: Long): immutable.Seq[PersistentRepr] =
     eventsMap.getOrDefault(persistenceId, Vector.empty)
       .dropWhile(_.sequenceNr < fromInclusive)
-      //we dont need to read highestSeqNumber because it will in any case stop at it if toInclusive is > than highestSeqNumber
+      //we dont need to read highestSeqNumber because it will in any case stop at it if toInclusive > highestSeqNumber
       .takeWhile(_.sequenceNr <= toInclusive)
       .take(maxNumber.toInt)
 
@@ -116,9 +172,9 @@ trait InMemStorage extends Extension {
 
   def clearAll() = eventsMap.clear()
 
-  def clearByPersistenceId(persistenceId: String) = eventsMap.remove(persistenceId)
+  def clearByPersistenceId(persistenceId: String) = ???
 
-  import java.util.{ function ⇒ jf }
+  import java.util.{function ⇒ jf}
   import scala.language.implicitConversions
 
   private implicit def scalaFun1ToJava[T, R](f: T ⇒ R): jf.Function[T, R] = new jf.Function[T, R] {
@@ -136,12 +192,16 @@ trait InMemStorageEmulator extends InMemStorage {
   @volatile private var writingPolicy: ProcessingPolicy = ProcessingPolicy.Default
   @volatile private var recoveryPolicy: ProcessingPolicy = ProcessingPolicy.Default
 
+  /**
+   *
+   * @throws exception from StorageFailure in the current writing policy
+   */
   def tryAdd(elems: immutable.Seq[PersistentRepr]): Try[Unit] = {
     writingPolicy.tryProcess(elems.map(_.payload)) match {
       case ProcessingSuccess ⇒
         add(elems)
         Success(())
-      case Reject(ex)         ⇒ Failure(ex)
+      case Reject(ex) ⇒ Failure(ex)
       case StorageFailure(ex) ⇒ throw ex
     }
   }
@@ -149,8 +209,8 @@ trait InMemStorageEmulator extends InMemStorage {
   def tryRead(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long): immutable.Seq[PersistentRepr] = {
     val batch = read(persistenceId, fromSequenceNr, toSequenceNr, max)
     recoveryPolicy.tryProcess(batch) match {
-      case ProcessingSuccess  ⇒ batch
-      case Reject(ex)         ⇒ throw ex
+      case ProcessingSuccess ⇒ batch
+      case Reject(ex) ⇒ throw ex
       case StorageFailure(ex) ⇒ throw ex
     }
   }
@@ -171,26 +231,65 @@ object InMemStorageExtension extends ExtensionId[InMemStorageEmulator] with Exte
 
 trait PersistentTestKitOps {
 
-  def expectNextPersisted(peristenceId: String, msg: Any)
+  def expectNextPersisted(peristenceId: String, msg: Any): Any
 
   def expectPersistedInOrder(persistenceId: String, msgs: immutable.Seq[Any])
 
   def expectPersistedInAnyOrder(persistenceId: String, msgs: immutable.Seq[Any])
 
-  def rejectNextPersisted(persistenceId: String)
+  def rejectNextPersisted(persistenceId: String): Unit
 
-  def rejectNextPersisted()
+  def rejectNextPersisted(): Unit
 
-  def failNextPersisted(persistenceId: String)
+  def failNextPersisted(persistenceId: String): Unit
 
-  def failNextPersisted()
+  def failNextPersisted(): Unit
 
-  def recoverWith(persistenceId: String, msgs: immutable.Seq[Any])
+  def persistForRecovery(persistenceId: String, msgs: immutable.Seq[Any]): Unit
 
   def clearAll(): Unit
 
-  //todo probably init new journal for each policy
-  def withRejectionPolicy(rej: ProcessingPolicy)
+  def clearByPersistenceId(persistenceId: String)
+
+}
+
+
+trait PersistenceTestKitImpl extends PersistentTestKitOps {
+
+  def system: ActorSystem
+
+  private lazy val store = system.extension(InMemStorageExtension)
+
+  //todo needs to be thread safe (atomic read-increment-write) for parallel tests?
+  private var nextIndexByPersistenceId: immutable.Map[String, Int] = Map.empty
+
+
+  def expectNextPersisted(peristenceId: String, msg: Any): Any = {
+
+  }
+
+  def expectPersistedInOrder(persistenceId: String, msgs: immutable.Seq[Any])
+
+  def expectPersistedInAnyOrder(persistenceId: String, msgs: immutable.Seq[Any])
+
+  def rejectNextPersisted(persistenceId: String): Unit
+
+  def rejectNextPersisted(): Unit
+
+  def failNextPersisted(persistenceId: String): Unit
+
+  def failNextPersisted(): Unit
+
+  def persistForRecovery(persistenceId: String, msgs: immutable.Seq[Any]): Unit = store.addRaw(persistenceId, msgs)
+
+  def clearAll(): Unit = store.clearAll()
+
+  def clearByPersistenceId(persistenceId: String) = store.clearByPersistenceId(persistenceId)
+
+  def withRecoveryPolicy(policy: ProcessingPolicy) = store.setRecoveryPolicy(policy)
+
+  def withWritingPolicy(policy: ProcessingPolicy) = store.setWritingPolicy(policy)
+
 
 }
 
@@ -200,22 +299,19 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
 
   private implicit val ec = context.system.dispatcher
 
-  override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
-    val res = for {
-      w ← messages
-    } yield {
-      Future.successful(storage.tryAdd(w.payload))
-    }
-    Future.sequence(res)
-  }
+  override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
+    Future.fromTry(Try(messages.map(aw => storage.tryAdd(aw.payload))))
 
-  override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long) =
+
+  override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
+    //todo should we emulate exception on delete?
     Future.successful(storage.deleteToSeqNumber(persistenceId, toSequenceNr))
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
     Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
+    //todo should we emulate exception on readSeqNumber?
     Future.successful(storage.readHighestSequenceNum(persistenceId))
 
 }
@@ -233,5 +329,27 @@ object PersistenceTestKitPlugin {
     ).asJava
   )
 
+}
+
+object PersistenceTestExtensionId extends ExtensionId[PersistenceTestKitSettings]{
+  import PersistenceTestKitSettings._
+
+  override def createExtension(system: ExtendedActorSystem): PersistenceTestKitSettings =
+    new PersistenceTestKitSettings(system.settings.config.getConfig(configPath))
+
+}
+
+
+class PersistenceTestKitSettings(config: Config) extends Extension {
+
+  import akka.util.Helpers._
+
+  val assertTimeout = config.getMillisDuration("timeout")
+
+
+}
+
+object PersistenceTestKitSettings{
+  val configPath = "akka.persistence.testkit"
 }
 
