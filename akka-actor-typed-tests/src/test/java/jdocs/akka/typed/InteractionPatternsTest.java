@@ -443,6 +443,8 @@ public class InteractionPatternsTest extends JUnitSuite {
     CompletionStage<Cookies> result = AskPattern.ask(
       cookieActorRef,
       GiveMeCookies::new,
+      // asking someone requires a timeout and a scheduler, if the timeout hits without response
+      // the ask is failed with a TimeoutException
       Timeout.apply(3, TimeUnit.SECONDS),
       system.scheduler());
 
