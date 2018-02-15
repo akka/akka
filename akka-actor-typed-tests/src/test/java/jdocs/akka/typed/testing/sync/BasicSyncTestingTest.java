@@ -4,6 +4,7 @@ package jdocs.akka.typed.testing.sync;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
 import akka.testkit.typed.*;
+import akka.testkit.typed.javadsl.*;
 //#imports
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
@@ -66,7 +67,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
   @Test
   public void testSpawning() {
     //#test-child
-    BehaviorTestkit<Command> test = BehaviorTestkit.create(myBehavior);
+    BehaviorTestKit<Command> test = BehaviorTestKit.create(myBehavior);
     test.run(new CreateAChild("child"));
     test.expectEffect(new Effect.Spawned(childActor, "child", Props.empty()));
     //#test-child
@@ -75,7 +76,7 @@ public class BasicSyncTestingTest extends JUnitSuite {
   @Test
   public void testSpawningAnonymous() {
     //#test-anonymous-child
-    BehaviorTestkit<Command> test = BehaviorTestkit.create(myBehavior);
+    BehaviorTestKit<Command> test = BehaviorTestKit.create(myBehavior);
     test.run(new CreateAnAnonymousChild());
     test.expectEffect(new Effect.SpawnedAnonymous(childActor, Props.empty()));
     //#test-anonymous-child
@@ -84,31 +85,31 @@ public class BasicSyncTestingTest extends JUnitSuite {
   @Test
   public void testRecodingMessageSend() {
     //#test-message
-    BehaviorTestkit<Command> test = BehaviorTestkit.create(myBehavior);
-    TestInbox<String> inbox = new TestInbox<String>();
-    test.run(new SayHello(inbox.ref()));
-    inbox.expectMsg("hello");
+    BehaviorTestKit<Command> test = BehaviorTestKit.create(myBehavior);
+    TestInbox<String> inbox = TestInbox.create();
+    test.run(new SayHello(inbox.getRef()));
+    inbox.expectMessage("hello");
     //#test-message
   }
 
   @Test
   public void testMessageToChild() {
      //#test-child-message
-     BehaviorTestkit<Command> testKit = BehaviorTestkit.create(myBehavior);
+     BehaviorTestKit<Command> testKit = BehaviorTestKit.create(myBehavior);
      testKit.run(new SayHelloToChild("child"));
      TestInbox<String> childInbox = testKit.childInbox("child");
-     childInbox.expectMsg("hello");
+     childInbox.expectMessage("hello");
      //#test-child-message
   }
 
   @Test
   public void testMessageToAnonymousChild() {
      //#test-child-message-anonymous
-     BehaviorTestkit<Command> testKit = BehaviorTestkit.create(myBehavior);
+     BehaviorTestKit<Command> testKit = BehaviorTestKit.create(myBehavior);
      testKit.run(new SayHelloToAnonymousChild());
      // Anonymous actors are created as: $a $b etc
      TestInbox<String> childInbox = testKit.childInbox("$a");
-     childInbox.expectMsg("hello stranger");
+     childInbox.expectMessage("hello stranger");
      //#test-child-message-anonymous
   }
 }

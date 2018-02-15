@@ -21,8 +21,9 @@ object TestKit {
 }
 
 /**
- * Testkit for typed actors, meant for mixing into the test class. Provides a typed actor system started on creation,
- * used for all test cases and shut down when `shutdown` is called.
+ * Testkit for asynchronous testing of typed actors, meant for mixing into the test class.
+ *
+ * Provides a typed actor system started on creation, used for all test cases and shut down when `shutdown` is called.
  *
  * The actor system has a custom guardian that allows for spawning arbitrary actors using the `spawn` methods.
  *

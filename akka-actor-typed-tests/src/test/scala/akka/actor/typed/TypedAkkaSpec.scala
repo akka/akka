@@ -1,8 +1,6 @@
 package akka.actor.typed
 
-import akka.testkit.typed.TestInbox
-import akka.testkit.typed.scaladsl.TestKit
-import akka.util.Timeout
+import akka.testkit.typed.scaladsl.{ TestInbox, TestKit }
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.time.Span

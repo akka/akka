@@ -8,7 +8,7 @@ import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.annotation.InternalApi
 import akka.event.{ BusLogging, DefaultLoggingFilter, Logging }
-import akka.testkit.typed.StubbedLogger
+import akka.testkit.typed.internal.StubbedLogger
 import akka.util.Timeout
 import akka.{ actor ⇒ a, event ⇒ e }
 import com.typesafe.config.ConfigFactory

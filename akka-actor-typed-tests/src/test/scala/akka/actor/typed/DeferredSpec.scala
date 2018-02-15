@@ -3,12 +3,12 @@
  */
 package akka.actor.typed
 
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors.BehaviorDecorators
-import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKitSettings }
+import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl._
+
+import scala.util.control.NoStackTrace
 
 object DeferredSpec {
   sealed trait Command
@@ -135,9 +135,9 @@ class DeferredStubbedSpec extends TypedAkkaSpec {
       inbox.ref ! Started
       target(inbox.ref)
     }
-    BehaviorTestkit(behv)
+    BehaviorTestKit(behv)
     // it's supposed to be created immediately (not waiting for first message)
-    inbox.receiveMsg() should ===(Started)
+    inbox.receiveMessage() should ===(Started)
   }
 
   "must stop when exception from factory" in {
@@ -148,9 +148,9 @@ class DeferredStubbedSpec extends TypedAkkaSpec {
       throw exc
     }
     intercept[RuntimeException] {
-      BehaviorTestkit(behv)
+      BehaviorTestKit(behv)
     } should ===(exc)
-    inbox.receiveMsg() should ===(Started)
+    inbox.receiveMessage() should ===(Started)
   }
 
 }
