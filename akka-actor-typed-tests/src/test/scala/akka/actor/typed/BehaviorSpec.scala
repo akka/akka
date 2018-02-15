@@ -494,7 +494,7 @@ class DeferredScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec {
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Done]("deferredListener")
-    (SActor.onStart(_ ⇒ {
+    (SActor.setup(_ ⇒ {
       inbox.ref ! Done
       super.behavior(monitor)._1
     }), inbox)
@@ -594,7 +594,7 @@ class DeferredJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec {
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Done]("deferredListener")
-    (JActor.onStart(df(_ ⇒ {
+    (JActor.setup(df(_ ⇒ {
       inbox.ref ! Done
       super.behavior(monitor)._1
     })), inbox)

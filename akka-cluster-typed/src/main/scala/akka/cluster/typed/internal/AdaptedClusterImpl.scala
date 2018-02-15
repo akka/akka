@@ -24,7 +24,7 @@ private[akka] object AdapterClusterImpl {
   private case object Up extends SeenState
   private case class Removed(previousStatus: MemberStatus) extends SeenState
 
-  private def subscriptionsBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.onStart[ClusterStateSubscription] { ctx ⇒
+  private def subscriptionsBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.setup[ClusterStateSubscription] { ctx ⇒
     var seenState: SeenState = BeforeUp
     var upSubscribers: List[ActorRef[SelfUp]] = Nil
     var removedSubscribers: List[ActorRef[SelfRemoved]] = Nil

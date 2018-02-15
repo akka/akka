@@ -40,17 +40,17 @@ object Behaviors {
   }
 
   /**
-   * `onStart` is a factory for a behavior. Creation of the behavior instance is deferred until
+   * `setup` is a factory for a behavior. Creation of the behavior instance is deferred until
    * the actor is started, as opposed to [[Behaviors.immutable]] that creates the behavior instance
    * immediately before the actor is running. The `factory` function pass the `ActorContext`
    * as parameter and that can for example be used for spawning child actors.
    *
-   * `onStart` is typically used as the outer most behavior when spawning an actor, but it
+   * `setup` is typically used as the outer most behavior when spawning an actor, but it
    * can also be returned as the next behavior when processing a message or signal. In that
    * case it will be started immediately after it is returned, i.e. next message will be
    * processed by the started behavior.
    */
-  def onStart[T](factory: ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
+  def setup[T](factory: ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
     Behavior.DeferredBehavior(factory)
 
   /**
@@ -61,12 +61,11 @@ object Behaviors {
    * function. The reason for the deferred creation is to avoid sharing the same instance in
    * multiple actors, and to create a new instance when the actor is restarted.
    *
-   * @param producer
-   *          behavior factory that takes the child actor’s context as argument
+   * @param factory behavior factory that takes the child actor’s context as argument
    * @return the deferred behavior
    */
   def mutable[T](factory: ActorContext[T] ⇒ MutableBehavior[T]): Behavior[T] =
-    onStart(factory)
+    setup(factory)
 
   /**
    * Mutable behavior can be implemented by extending this class and implement the

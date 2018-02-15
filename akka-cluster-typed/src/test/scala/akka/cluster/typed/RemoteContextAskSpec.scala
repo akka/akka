@@ -108,7 +108,7 @@ class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with Typ
       // wait until the service is seen on the first node
       val remoteRef = node1Probe.expectMessageType[Receptionist.Listing[Ping]].serviceInstances.head
 
-      spawn(Behaviors.onStart[AnyRef] { (ctx) ⇒
+      spawn(Behaviors.setup[AnyRef] { (ctx) ⇒
         implicit val timeout: Timeout = 3.seconds
 
         ctx.ask(remoteRef)(Ping) {

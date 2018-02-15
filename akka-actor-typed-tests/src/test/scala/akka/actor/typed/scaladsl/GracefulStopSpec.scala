@@ -17,7 +17,7 @@ final class GracefulStopSpec extends TestKit with TypedAkkaSpecWithShutdown {
       val probe = TestProbe[String]("probe")
 
       val behavior =
-        Behaviors.onStart[akka.NotUsed] { context ⇒
+        Behaviors.setup[akka.NotUsed] { context ⇒
           val c1 = context.spawn[NotUsed](Behaviors.onSignal {
             case (_, PostStop) ⇒
               probe.ref ! "child-done"
@@ -50,7 +50,7 @@ final class GracefulStopSpec extends TestKit with TypedAkkaSpecWithShutdown {
       val probe = TestProbe[Done]("probe")
 
       val behavior =
-        Behaviors.onStart[akka.NotUsed] { context ⇒
+        Behaviors.setup[akka.NotUsed] { context ⇒
           // do not spawn any children
           Behaviors.stopped {
             Behaviors.onSignal {

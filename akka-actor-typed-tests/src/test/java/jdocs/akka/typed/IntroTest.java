@@ -212,7 +212,7 @@ public class IntroTest {
   public static void runChatRoom() throws Exception {
 
     //#chatroom-main
-    Behavior<Void> main = Behaviors.onStart(ctx -> {
+    Behavior<Void> main = Behaviors.setup(ctx -> {
       ActorRef<ChatRoom.RoomCommand> chatRoom =
         ctx.spawn(ChatRoom.behavior(), "chatRoom");
       ActorRef<ChatRoom.SessionEvent> gabbler =

@@ -23,7 +23,7 @@ import scala.util.control.NonFatal
  */
 @InternalApi private[akka] object Supervisor {
   def apply[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], strategy: SupervisorStrategy): Behavior[T] =
-    Behaviors.onStart[T] { ctx ⇒
+    Behaviors.setup[T] { ctx ⇒
       val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
       val supervisor: Supervisor[T, Thr] = strategy match {
         case Restart(-1, _, loggingEnabled) ⇒

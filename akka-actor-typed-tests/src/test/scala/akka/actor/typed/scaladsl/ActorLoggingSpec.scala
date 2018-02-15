@@ -28,7 +28,7 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
 
     "be conveniently available from the ctx" in {
       val actor = EventFilter.info("Started", source = "akka://ActorLoggingSpec/user/the-actor", occurrences = 1).intercept {
-        spawn(Behaviors.onStart[String] { ctx ⇒
+        spawn(Behaviors.setup[String] { ctx ⇒
           ctx.log.info("Started")
 
           Behaviors.immutable { (ctx, msg) ⇒
@@ -47,7 +47,7 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
       EventFilter.custom({
         case event: LogEventWithMarker if event.marker == marker ⇒ true
       }, occurrences = 5).intercept(
-        spawn(Behaviors.onStart[Any] { ctx ⇒
+        spawn(Behaviors.setup[Any] { ctx ⇒
           ctx.log.debug(marker, "whatever")
           ctx.log.info(marker, "whatever")
           ctx.log.warning(marker, "whatever")
@@ -62,7 +62,7 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
       EventFilter.custom({
         case event: LogEventWithCause if event.cause == cause ⇒ true
       }, occurrences = 2).intercept(
-        spawn(Behaviors.onStart[Any] { ctx ⇒
+        spawn(Behaviors.setup[Any] { ctx ⇒
           ctx.log.warning(cause, "whatever")
           ctx.log.warning(marker, cause, "whatever")
           Behaviors.stopped
@@ -77,7 +77,7 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
       EventFilter.custom({
         case _ ⇒ true // any is fine, we're just after the right count of statements reaching the listener
       }, occurrences = 72).intercept {
-        spawn(Behaviors.onStart[String] { ctx ⇒
+        spawn(Behaviors.setup[String] { ctx ⇒
           ctx.log.debug("message")
           ctx.log.debug("{}", "arg1")
           ctx.log.debug("{} {}", "arg1", "arg2")
@@ -180,7 +180,7 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
             )
           else Map("txId" -> msg.transactionId)
         },
-        Behaviors.onStart { ctx ⇒
+        Behaviors.setup { ctx ⇒
           ctx.log.info("Starting")
           Behaviors.immutable { (ctx, msg) ⇒
             ctx.log.info("Got message!")

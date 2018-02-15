@@ -36,7 +36,7 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
     public static class Pong implements Command { }
 
     public static Behavior<Command> behavior() {
-      return akka.actor.typed.javadsl.Behaviors.onStart(context -> {
+      return akka.actor.typed.javadsl.Behaviors.setup(context -> {
         akka.actor.ActorRef second = Adapter.actorOf(context, Untyped.props(), "second");
 
         Adapter.watch(context, second);

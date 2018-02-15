@@ -23,7 +23,7 @@ object TypedWatchingUntypedSpec {
     case object Pong extends Command
 
     val behavior: Behavior[Command] =
-      Behaviors.onStart { context ⇒
+      Behaviors.setup { context ⇒
         // context.spawn is an implicit extension method
         val untyped = context.actorOf(Untyped.props(), "second")
 

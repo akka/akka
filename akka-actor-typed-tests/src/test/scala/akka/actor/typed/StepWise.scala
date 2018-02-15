@@ -109,7 +109,7 @@ object StepWise {
   }
 
   def apply[T](f: (scaladsl.ActorContext[T], StartWith[T]) ⇒ Steps[T, _]): Behavior[T] =
-    onStart[Any] { ctx ⇒
+    setup[Any] { ctx ⇒
       run(ctx, f(ctx.asInstanceOf[scaladsl.ActorContext[T]], new StartWith(keepTraces = false)).ops.reverse, ())
     }.narrow
 

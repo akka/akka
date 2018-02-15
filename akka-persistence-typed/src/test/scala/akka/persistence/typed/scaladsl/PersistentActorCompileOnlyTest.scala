@@ -267,7 +267,7 @@ object PersistentActorCompileOnlyTest {
 
     def isFullyHydrated(basket: Basket, ids: List[Id]) = basket.items.map(_.id) == ids
 
-    Behaviors.onStart { ctx: ActorContext[Command] ⇒
+    Behaviors.setup { ctx: ActorContext[Command] ⇒
       // FIXME this doesn't work, wrapping not supported
 
       var basket = Basket(Nil)

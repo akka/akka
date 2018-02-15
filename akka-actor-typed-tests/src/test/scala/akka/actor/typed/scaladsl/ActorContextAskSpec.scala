@@ -47,7 +47,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
 
       val probe = TestProbe[AnyRef]()
 
-      val snitch = Behaviors.onStart[Pong] { (ctx) ⇒
+      val snitch = Behaviors.setup[Pong] { (ctx) ⇒
 
         // Timeout comes from TypedAkkaSpec
 
@@ -86,7 +86,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
         }
       ))
 
-      val snitch = Behaviors.onStart[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnyRef] { (ctx) ⇒
         ctx.ask(pingPong)(Ping) {
           case Success(msg) ⇒ throw new NotImplementedError(msg.toString)
           case Failure(x)   ⇒ x
@@ -114,7 +114,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
 
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
-      val snitch = Behaviors.onStart[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnyRef] { (ctx) ⇒
 
         ctx.ask[String, String](system.deadLetters)(ref ⇒ "boo") {
           case Success(m) ⇒ m

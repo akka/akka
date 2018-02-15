@@ -43,7 +43,7 @@ object ReplicatorSpec {
   val Key = GCounterKey("counter")
 
   def client(replicator: ActorRef[Replicator.Command])(implicit cluster: Cluster): Behavior[ClientCommand] =
-    Behaviors.onStart[ClientCommand] { ctx ⇒
+    Behaviors.setup[ClientCommand] { ctx ⇒
 
       val updateResponseAdapter: ActorRef[Replicator.UpdateResponse[GCounter]] =
         ctx.messageAdapter(InternalUpdateResponse.apply)
