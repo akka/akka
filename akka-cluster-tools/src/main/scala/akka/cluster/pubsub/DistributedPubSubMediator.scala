@@ -222,7 +222,7 @@ object DistributedPubSubMediator {
 
   // Only for testing purposes, to poll/await replication
   case object Count
-  case class CountSubscribers(topic: String)
+  final case class CountSubscribers(topic: String)
 
   /**
    * INTERNAL API
