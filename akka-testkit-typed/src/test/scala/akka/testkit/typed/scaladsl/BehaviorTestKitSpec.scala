@@ -6,7 +6,7 @@ package akka.testkit.typed.scaladsl
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ Behavior, Props }
-import akka.testkit.typed.Effect.{ Spawned, SpawnedAdapter, SpawnedAnonymous }
+import akka.testkit.typed.scaladsl.Effects.{ Spawned, SpawnedAdapter, SpawnedAnonymous }
 import akka.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Father }
 import akka.testkit.typed.scaladsl.BehaviorTestKitSpec.Father._
 import org.scalatest.{ Matchers, WordSpec }

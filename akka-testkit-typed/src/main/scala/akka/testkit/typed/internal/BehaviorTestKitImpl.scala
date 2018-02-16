@@ -8,6 +8,7 @@ import java.util
 import akka.actor.typed.{ Behavior, PostStop, Signal }
 import akka.annotation.InternalApi
 import akka.testkit.typed.Effect
+import akka.testkit.typed.scaladsl.Effects._
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -22,8 +23,6 @@ import scala.util.control.NonFatal
 private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior: Behavior[T])
   extends akka.testkit.typed.javadsl.BehaviorTestKit[T]
   with akka.testkit.typed.scaladsl.BehaviorTestKit[T] {
-
-  import Effect._
 
   // really this should be private, make so when we port out tests that need it
   private[akka] val ctx = new EffectfulActorContext[T](_name)

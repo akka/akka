@@ -3,7 +3,7 @@ package docs.akka.typed.testing.sync
 //#imports
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
-import akka.testkit.typed.Effect._
+import akka.testkit.typed.scaladsl.Effects._
 import akka.testkit.typed.scaladsl._
 //#imports
 import org.scalatest.{ Matchers, WordSpec }

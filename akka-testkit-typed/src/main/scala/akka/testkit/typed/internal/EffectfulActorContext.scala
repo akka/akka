@@ -5,9 +5,11 @@ package akka.testkit.typed.internal
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
+import akka.actor.Cancellable
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.annotation.InternalApi
 import akka.testkit.typed.Effect
+import akka.testkit.typed.scaladsl.Effects._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
@@ -16,13 +18,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
  */
 @InternalApi private[akka] final class EffectfulActorContext[T](name: String) extends StubbedActorContext[T](name) {
 
-  import Effect._
-  import akka.{ actor ⇒ a }
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi private[akka] val effectQueue = new ConcurrentLinkedQueue[Effect]
+  private[akka] val effectQueue = new ConcurrentLinkedQueue[Effect]
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
     val ref = super.spawnAnonymous(behavior, props)
@@ -31,7 +27,9 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   }
 
   override def spawnMessageAdapter[U](f: U ⇒ T): ActorRef[U] = {
-    spawnMessageAdapter(f, "")
+    val ref = super.spawnMessageAdapter(f)
+    effectQueue.offer(SpawnedAdapter)
+    ref
   }
 
   override def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
@@ -63,7 +61,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
     effectQueue.offer(ReceiveTimeoutSet(Duration.Undefined, null))
     super.cancelReceiveTimeout()
   }
-  override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): a.Cancellable = {
+  override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): Cancellable = {
     effectQueue.offer(Scheduled(delay, target, msg))
     super.schedule(delay, target, msg)
   }
