@@ -29,6 +29,8 @@ object ActorTestKit {
  *
  * Designed to work with any test framework, but framework glue code that calls shutdown after all tests has
  * run needs to be provided by the user.
+ *
+ * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
 @ApiMayChange
 trait ActorTestKit {

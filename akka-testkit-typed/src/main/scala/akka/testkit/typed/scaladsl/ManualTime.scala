@@ -6,12 +6,22 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.varargs
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
+/**
+ * Manual time allows you to do async tests while controlling the scheduler of the system.
+ *
+ * To use it you need to configure the `ActorSystem`/`ActorTestKit` with [[ManualTime.config]] and access the
+ * scheduler control through [[ManualTime.apply()]]
+ */
 object ManualTime {
   /**
    * Config needed to use the `ExplicitlyTriggeredScheduler`
    */
   val config: Config = ConfigFactory.parseString("""akka.scheduler.implementation = "akka.testkit.ExplicitlyTriggeredScheduler"""")
 
+  /**
+   * Access the manual scheduler, note that you need to setup the actor system/testkit with [[config()]] for this to
+   * work.
+   */
   def apply()(implicit system: ActorSystem[_]): ManualTime =
     system.scheduler match {
       case sc: akka.testkit.ExplicitlyTriggeredScheduler ⇒ new ManualTime(sc)
@@ -21,6 +31,9 @@ object ManualTime {
 
 }
 
+/**
+ * Not for user instantiation, see [[ManualTime#apply]]
+ */
 final class ManualTime(delegate: akka.testkit.ExplicitlyTriggeredScheduler) {
 
   /**

@@ -42,6 +42,9 @@ trait TestInbox[T] {
    */
   def expectMessage(expectedMessage: T): TestInbox[T]
 
+  /**
+   * Collect all messages in the inbox and clear it out
+   */
   def receiveAll(): immutable.Seq[T] = internalReceiveAll()
 
   protected def internalReceiveAll(): immutable.Seq[T]

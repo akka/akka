@@ -43,6 +43,9 @@ abstract class TestInbox[T] {
    */
   def expectMessage(expectedMessage: T): TestInbox[T]
 
+  /**
+   * Collect all messages in the inbox and clear it out
+   */
   def getAllReceived(): java.util.List[T] = internalReceiveAll().asJava
 
   protected def internalReceiveAll(): immutable.Seq[T]

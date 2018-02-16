@@ -9,6 +9,12 @@ import com.typesafe.config.Config
 import scala.annotation.varargs
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
+/**
+ * Manual time allows you to do async tests while controlling the scheduler of the system.
+ *
+ * To use it you need to configure the `ActorSystem`/`ActorTestKit` with [[ManualTime.config]] and access the
+ * scheduler control through [[ManualTime.get()]]
+ */
 object ManualTime {
 
   /**
@@ -29,6 +35,9 @@ object ManualTime {
 
 }
 
+/**
+ * Not for user instantiation, see [[ManualTime#get]]
+ */
 final class ManualTime(delegate: akka.testkit.ExplicitlyTriggeredScheduler) {
 
   /**

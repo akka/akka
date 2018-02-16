@@ -26,8 +26,9 @@ object BehaviorTestKit {
  * Used for synchronous testing [[akka.actor.typed.Behavior]]s. Stores all effects e.g. Spawning of children,
  * watching and offers access to what effects have taken place.
  *
- *
  * Not for user extension or instantiation. See `BehaviorTestKit.create` factory methods
+ *
+ * For asynchronous testing of `Behavior`s running see [[ActorTestKit]]
  */
 @DoNotInherit
 abstract class BehaviorTestKit[T] {
@@ -45,7 +46,7 @@ abstract class BehaviorTestKit[T] {
   def childInbox[U](name: String): TestInbox[U]
 
   /**
-   * The self inbox will contain messages the behavior sent to `ctx.self`
+   * The self inbox contains messages the behavior sent to `ctx.self`
    */
   def selfInbox(): TestInbox[T]
 
@@ -61,7 +62,14 @@ abstract class BehaviorTestKit[T] {
    */
   def expectEffect(expectedEffect: Effect): Unit
 
+  /**
+   * The current behavior, can change any time `run` is called
+   */
   def currentBehavior: Behavior[T]
+
+  /**
+   * Is the current behavior alive or stopped
+   */
   def isAlive: Boolean
 
   /**

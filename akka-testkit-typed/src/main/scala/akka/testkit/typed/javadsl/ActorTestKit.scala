@@ -89,6 +89,8 @@ object ActorTestKit {
  * run needs to be provided by the user.
  *
  * Use `TestKit.create` factories to construct manually or [[TestKitJunitResource]] to use together with JUnit tests
+ *
+ * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
 final class ActorTestKit protected (delegate: akka.testkit.typed.scaladsl.ActorTestKit) {
 
