@@ -130,4 +130,13 @@ class BehaviorTestkitSpec extends WordSpec with Matchers {
       effects shouldBe Seq(SpawnedAdapter)
     }
   }
+
+  "BehaviorTestkit's run" can {
+    "run behaviors with messages without canonicalization" in {
+      val testkit = BehaviorTestkit[Father.Command](Father.init())
+      testkit.run(SpawnAdapterWithName("adapter"))
+      testkit.currentBehavior should not be Behavior.same
+      testkit.returnedBehavior shouldBe Behavior.same
+    }
+  }
 }
