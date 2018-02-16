@@ -11,7 +11,7 @@ import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorRefResolver, ActorSystem, TypedAkkaSpecWithShutdown }
 import akka.serialization.SerializerWithStringManifest
-import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.actor.typed.scaladsl.adapter._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
@@ -82,7 +82,7 @@ object RemoteContextAskSpec {
 
 }
 
-class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with TypedAkkaSpecWithShutdown {
+class RemoteContextAskSpec extends ActorTestKit(RemoteContextAskSpec.config) with TypedAkkaSpecWithShutdown {
 
   import RemoteContextAskSpec._
 

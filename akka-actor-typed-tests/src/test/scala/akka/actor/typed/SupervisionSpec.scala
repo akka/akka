@@ -240,7 +240,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
   }
 }
 
-class SupervisionSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   override def config = ConfigFactory.parseString(
     """

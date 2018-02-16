@@ -29,6 +29,9 @@ private[akka] object TestKitGuardian {
 @InternalApi
 private[akka] object TestKitImpl {
 
+  def concreteClass
+
+
   // common impls for Java and Scala
 
   def shutdown(

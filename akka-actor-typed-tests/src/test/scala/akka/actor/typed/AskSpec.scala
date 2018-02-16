@@ -9,7 +9,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
-import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
@@ -24,7 +24,7 @@ object AskSpec {
   final case class Stop(replyTo: ActorRef[Unit]) extends Msg
 }
 
-class AskSpec extends TestKit
+class AskSpec extends ActorTestKit
   with TypedAkkaSpecWithShutdown with ScalaFutures {
   override def name = "AskSpec"
   override def config = ConfigFactory.parseString("akka.loggers = [ akka.testkit.TestEventListener ]")

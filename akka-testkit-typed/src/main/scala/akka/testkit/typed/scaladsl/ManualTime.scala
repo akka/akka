@@ -7,6 +7,6 @@ import akka.testkit.typed._
 object ManualTime {
   val config: Config = ConfigFactory.parseString("""akka.scheduler.implementation = "akka.testkit.typed.scaladsl.ExplicitlyTriggeredScheduler"""")
 }
-trait ManualTime { self: TestKit ⇒
+trait ManualTime { self: ActorTestKit ⇒
   override val scheduler: ExplicitlyTriggeredScheduler = self.system.scheduler.asInstanceOf[ExplicitlyTriggeredScheduler]
 }

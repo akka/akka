@@ -116,7 +116,7 @@ object ReplicatorSpec {
 
 }
 
-class ReplicatorSpec extends TestKit(ReplicatorSpec.config) with TypedAkkaSpecWithShutdown with Eventually {
+class ReplicatorSpec extends ActorTestKit(ReplicatorSpec.config) with TypedAkkaSpecWithShutdown with Eventually {
 
   import ReplicatorSpec._
 

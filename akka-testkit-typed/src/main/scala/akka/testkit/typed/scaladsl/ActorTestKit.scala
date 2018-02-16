@@ -10,7 +10,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-object TestKit {
+object ActorTestKit {
 
   def shutdown(
     system:               ActorSystem[_],
@@ -31,16 +31,16 @@ object TestKit {
  * run needs to be provided by the user.
  */
 @ApiMayChange
-trait TestKit {
+trait ActorTestKit {
   /**
    * Actor system name based on the test it is mixed into, override to customize, or pass to constructor
-   * if using [[TestKit]] rather than [[TestKit]]
+   * if using [[ActorTestKit]] rather than [[ActorTestKit]]
    */
   protected def name: String = getClass.getSimpleName
 
   /**
    * Configuration the actor system is created with, override to customize, or pass to constructor
-   * if using [[TestKit]] rather than [[TestKit]]
+   * if using [[ActorTestKit]] rather than [[ActorTestKit]]
    */
   def config: Config = ConfigFactory.empty()
 
@@ -61,7 +61,7 @@ trait TestKit {
 
   final def shutdownTestKit(): Unit = {
     // FIXME separate default timeout for shutdown?
-    TestKit.shutdown(system, timeout.duration)
+    ActorTestKit.shutdown(system, timeout.duration)
   }
 
   /**

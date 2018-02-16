@@ -9,11 +9,11 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.Logging
 import akka.event.Logging.{ LogEventWithCause, LogEventWithMarker }
-import akka.testkit.typed.scaladsl.TestKit
+import akka.testkit.typed.scaladsl.ActorTestKit
 
 import scala.util.control.NoStackTrace
 
-class ActorLoggingSpec extends TestKit with TypedAkkaSpec {
+class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
 
   override def config = ConfigFactory.parseString(
     """

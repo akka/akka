@@ -8,14 +8,14 @@ import java.net.URI
 import akka.NotUsed
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, TimerScheduler }
-import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.util.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class InteractionPatternsSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   "The interaction patterns docs" must {
 

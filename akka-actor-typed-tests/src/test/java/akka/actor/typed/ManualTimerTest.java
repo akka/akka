@@ -17,7 +17,6 @@ import akka.actor.typed.javadsl.Behaviors;
 
 import org.junit.Test;
 
-import akka.testkit.typed.scaladsl.TestKit;
 import akka.testkit.typed.javadsl.ExplicitlyTriggeredScheduler;
 import akka.testkit.typed.javadsl.TestProbe;
 

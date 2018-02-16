@@ -3,16 +3,15 @@
  */
 package akka.testkit.typed.scaladsl
 
-import akka.Done
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.Promise
 
 // can be mixed into any spec style,
-class TestKitSpec extends WordSpec with Matchers with TestKit with ScalaFutures {
+class ActorTestKitSpec extends WordSpec with Matchers with ActorTestKit with ScalaFutures {
 
   "the Scala testkit" should {
 
@@ -48,4 +47,7 @@ class TestKitSpec extends WordSpec with Matchers with TestKit with ScalaFutures 
   }
 
 }
+
+// same should be true if we inherit it
+class DerivedActorTestKitSpec extends ActorTestKitSpec
 

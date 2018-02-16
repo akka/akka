@@ -8,7 +8,7 @@ import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
 import scala.concurrent.duration._
 
-class TestProbeSpec extends TestKit with WordSpecLike with Matchers with BeforeAndAfterAll {
+class TestProbeSpec extends ActorTestKit with WordSpecLike with Matchers with BeforeAndAfterAll {
 
   def compileOnlyApiTest(): Unit = {
     val probe = TestProbe[AnyRef]()

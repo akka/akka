@@ -10,7 +10,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.typed.ActorMaterializer
-import akka.testkit.typed.scaladsl.TestKit
+import akka.testkit.typed.scaladsl.ActorTestKit
 
 object CustomGuardianAndMaterializerSpec {
 
@@ -21,7 +21,7 @@ object CustomGuardianAndMaterializerSpec {
   case object Failed extends GuardianProtocol
 }
 
-class CustomGuardianAndMaterializerSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class CustomGuardianAndMaterializerSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   import CustomGuardianAndMaterializerSpec._
 
   val guardian = Behaviors.immutable[GuardianProtocol] {

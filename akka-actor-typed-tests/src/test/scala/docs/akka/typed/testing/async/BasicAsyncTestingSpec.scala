@@ -2,7 +2,7 @@ package docs.akka.typed.testing.async
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed._
-import akka.testkit.typed.scaladsl.{ TestKit, _ }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, _ }
 import org.scalatest._
 
 object BasicAsyncTestingSpec {
@@ -21,7 +21,7 @@ object BasicAsyncTestingSpec {
 }
 
 //#test-header
-class BasicAsyncTestingSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class BasicAsyncTestingSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   //#test-header
 
   import BasicAsyncTestingSpec._

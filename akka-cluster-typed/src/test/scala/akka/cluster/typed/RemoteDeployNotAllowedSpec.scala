@@ -6,7 +6,7 @@ package akka.cluster.typed
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
@@ -42,7 +42,7 @@ object RemoteDeployNotAllowedSpec {
     """).withFallback(config)
 }
 
-class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.config) with TypedAkkaSpecWithShutdown {
+class RemoteDeployNotAllowedSpec extends ActorTestKit(RemoteDeployNotAllowedSpec.config) with TypedAkkaSpecWithShutdown {
 
   "Typed cluster" must {
 
@@ -93,7 +93,7 @@ class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.conf
         system2 ! SpawnAnonymous
         probe.expectMessageType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
       } finally {
-        TestKit.shutdown(system2, 5.seconds)
+        ActorTestKit.shutdown(system2, 5.seconds)
       }
     }
   }

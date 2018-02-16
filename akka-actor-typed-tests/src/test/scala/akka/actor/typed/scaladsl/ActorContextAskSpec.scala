@@ -6,7 +6,7 @@ package akka.actor.typed.scaladsl
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ ActorRef, PostStop, Props, TypedAkkaSpecWithShutdown }
 import akka.testkit.EventFilter
-import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.TimeoutException
@@ -29,7 +29,7 @@ object ActorContextAskSpec {
     """)
 }
 
-class ActorContextAskSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   override def config = ActorContextAskSpec.config
 

@@ -1,6 +1,6 @@
 package akka.actor.typed
 
-import akka.testkit.typed.scaladsl.{ TestInbox, TestKit }
+import akka.testkit.typed.scaladsl.{ TestInbox, ActorTestKit }
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.time.Span
@@ -24,10 +24,10 @@ trait TypedAkkaSpec extends WordSpecLike with Matchers with BeforeAndAfterAll wi
 }
 
 /**
- * Helper that also shuts down the actor system if using [[TestKit]]
+ * Helper that also shuts down the actor system if using [[ActorTestKit]]
  */
 trait TypedAkkaSpecWithShutdown extends TypedAkkaSpec {
-  self: TestKit ⇒
+  self: ActorTestKit ⇒
   override protected def afterAll(): Unit = shutdownTestKit()
 }
 

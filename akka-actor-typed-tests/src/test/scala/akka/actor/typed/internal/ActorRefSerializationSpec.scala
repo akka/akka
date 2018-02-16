@@ -7,7 +7,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ ActorRef, TypedAkkaSpecWithShutdown }
 import akka.serialization.{ JavaSerializer, SerializationExtension }
-import akka.testkit.typed.scaladsl.TestKit
+import akka.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 
 object ActorRefSerializationSpec {
@@ -24,7 +24,7 @@ object ActorRefSerializationSpec {
   case class MessageWrappingActorRef(s: String, ref: ActorRef[Unit]) extends java.io.Serializable
 }
 
-class ActorRefSerializationSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class ActorRefSerializationSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   override def config = ActorRefSerializationSpec.config
 

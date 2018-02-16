@@ -146,7 +146,7 @@ object PersistentActorSpec {
 
 }
 
-class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Eventually with TypedAkkaSpecWithShutdown {
+class PersistentActorSpec extends ActorTestKit(PersistentActorSpec.config) with Eventually with TypedAkkaSpecWithShutdown {
 
   import PersistentActorSpec._
 

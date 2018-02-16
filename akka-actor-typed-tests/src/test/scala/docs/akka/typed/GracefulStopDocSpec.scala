@@ -6,7 +6,7 @@ package docs.akka.typed
 //#imports
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorSystem, Logger, PostStop }
-import akka.testkit.typed.scaladsl.TestKit
+import akka.testkit.typed.scaladsl.ActorTestKit
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -67,7 +67,7 @@ object GracefulStopDocSpec {
 
 }
 
-class GracefulStopDocSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class GracefulStopDocSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   import GracefulStopDocSpec._
 

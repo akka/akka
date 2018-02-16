@@ -6,15 +6,14 @@ package jdocs.akka.typed.testing.async;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.testkit.typed.javadsl.TestKit;
+import akka.testkit.typed.javadsl.ActorTestKit;
 import akka.testkit.typed.javadsl.TestProbe;
 import org.junit.AfterClass;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
 
 //#test-header
 public class BasicAsyncTestingTest {
-  final static TestKit testKit = TestKit.create(BasicAsyncTestingTest.class);
+  final static ActorTestKit testKit = ActorTestKit.create(BasicAsyncTestingTest.class);
 //#test-header
 
   //#under-test

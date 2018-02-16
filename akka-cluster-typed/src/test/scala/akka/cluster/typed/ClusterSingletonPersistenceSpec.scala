@@ -7,7 +7,7 @@ package akka.cluster.typed
 import akka.actor.typed.{ ActorRef, Behavior, Props, TypedAkkaSpecWithShutdown }
 import akka.persistence.typed.scaladsl.PersistentBehaviors
 import akka.persistence.typed.scaladsl.PersistentBehaviors.{ CommandHandler, Effect }
-import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 object ClusterSingletonPersistenceSpec {
@@ -50,7 +50,7 @@ object ClusterSingletonPersistenceSpec {
 
 }
 
-class ClusterSingletonPersistenceSpec extends TestKit(ClusterSingletonPersistenceSpec.config) with TypedAkkaSpecWithShutdown {
+class ClusterSingletonPersistenceSpec extends ActorTestKit(ClusterSingletonPersistenceSpec.config) with TypedAkkaSpecWithShutdown {
   import ClusterSingletonPersistenceSpec._
   import akka.actor.typed.scaladsl.adapter._
 

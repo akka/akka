@@ -26,7 +26,7 @@ object DeferredSpec {
     })
 }
 
-class DeferredSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class DeferredSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)

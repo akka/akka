@@ -8,7 +8,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.Pair;
 import akka.japi.function.Function3;
 import akka.persistence.typed.scaladsl.PersistentActorSpec;
-import akka.testkit.typed.scaladsl.TestKit;
+import akka.testkit.typed.scaladsl.ActorTestKit;
 import akka.testkit.typed.javadsl.TestProbe;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
-public class PersistentActorTest extends TestKit {
+public class PersistentActorTest extends ActorTestKit {
 
   static final Incremented timeoutEvent = new Incremented(100);
   static final State emptyState = new State(0, Collections.emptyList());

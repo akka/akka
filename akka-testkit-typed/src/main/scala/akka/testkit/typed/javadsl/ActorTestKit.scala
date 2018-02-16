@@ -9,25 +9,25 @@ import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.internal.TestKitImpl
-import akka.testkit.typed.scaladsl.{ TestKit ⇒ ScalaTestKit }
+import akka.testkit.typed.scaladsl.{ ActorTestKit ⇒ ScalaTestKit }
 import akka.util.Timeout
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
 
-object TestKit {
+object ActorTestKit {
 
   /**
    * Create a testkit named with this test class
    */
-  def create(testClass: Class[_]): TestKit = new TestKit(new ScalaTestKit {
+  def create(testClass: Class[_]): ActorTestKit = new ActorTestKit(new ScalaTestKit {
     override def name = testClass.getSimpleName
   })
 
   /**
    * Create a testkit named with this test class, and use a custom config for the actor system
    */
-  def create(testClass: Class[_], customConfig: Config) = new TestKit(new ScalaTestKit {
+  def create(testClass: Class[_], customConfig: Config) = new ActorTestKit(new ScalaTestKit {
     override def name = testClass.getSimpleName
     override def config = customConfig
   })
@@ -36,7 +36,7 @@ object TestKit {
    * Create a testkit named with this test class, and use a custom config for the actor system,
    * and a custom [[akka.testkit.typed.TestKitSettings]]
    */
-  def create(testClass: Class[_], customConfig: Config, settings: TestKitSettings) = new TestKit(new ScalaTestKit {
+  def create(testClass: Class[_], customConfig: Config, settings: TestKitSettings) = new ActorTestKit(new ScalaTestKit {
     override def name = testClass.getSimpleName
     override def config = customConfig
     override def testkitSettings: TestKitSettings = settings
@@ -85,7 +85,7 @@ object TestKit {
  *
  * Use `TestKit.create` factories to construct manually or [[TestKitJunitResource]] to use together with JUnit tests
  */
-final class TestKit protected (delegate: akka.testkit.typed.scaladsl.TestKit) {
+final class ActorTestKit protected (delegate: akka.testkit.typed.scaladsl.ActorTestKit) {
 
   /**
    * The default timeout as specified with the config/[[akka.testkit.typed.TestKitSettings]]

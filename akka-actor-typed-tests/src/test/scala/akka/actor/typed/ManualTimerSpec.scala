@@ -4,9 +4,9 @@ package akka.actor.typed
 import scala.concurrent.duration._
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.WordSpecLike
-import akka.testkit.typed.scaladsl.{ ManualTime, TestKit, TestProbe }
+import akka.testkit.typed.scaladsl.{ ManualTime, ActorTestKit, TestProbe }
 
-class ManualTimerSpec extends TestKit with ManualTime with WordSpecLike with TypedAkkaSpecWithShutdown {
+class ManualTimerSpec extends ActorTestKit with ManualTime with WordSpecLike with TypedAkkaSpecWithShutdown {
   override def config = ManualTime.config
 
   "A timer" must {

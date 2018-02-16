@@ -5,10 +5,10 @@ package docs.akka.typed
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ DeathPactException, SupervisorStrategy, TypedAkkaSpecWithShutdown }
-import akka.testkit.typed.scaladsl.TestKit
+import akka.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 
-class FaultToleranceDocSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class FaultToleranceDocSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   override def config = ConfigFactory.parseString(
     """

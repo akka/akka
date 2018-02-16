@@ -11,7 +11,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.typed.ActorMaterializer
-import akka.testkit.typed.scaladsl.{ TestKit, _ }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, _ }
 
 object ActorSourceSinkSpec {
 
@@ -22,7 +22,7 @@ object ActorSourceSinkSpec {
   case object Failed extends AckProto
 }
 
-class ActorSourceSinkSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class ActorSourceSinkSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   import ActorSourceSinkSpec._
 
   implicit val mat = ActorMaterializer()

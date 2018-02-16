@@ -9,7 +9,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedAkkaSpecWithShutdown }
 import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
@@ -83,7 +83,7 @@ object ClusterSingletonApiSpec {
   }
 }
 
-class ClusterSingletonApiSpec extends TestKit("ClusterSingletonApiSpec", ClusterSingletonApiSpec.config) with TypedAkkaSpecWithShutdown {
+class ClusterSingletonApiSpec extends ActorTestKit("ClusterSingletonApiSpec", ClusterSingletonApiSpec.config) with TypedAkkaSpecWithShutdown {
   import ClusterSingletonApiSpec._
 
   implicit val testSettings = TestKitSettings(system)

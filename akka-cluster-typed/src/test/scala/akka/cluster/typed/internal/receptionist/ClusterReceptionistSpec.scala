@@ -14,7 +14,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.Cluster
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.scaladsl.{ TestKit, TestProbe }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await
@@ -85,7 +85,7 @@ object ClusterReceptionistSpec {
   val PingKey = ServiceKey[PingProtocol]("pingy")
 }
 
-class ClusterReceptionistSpec extends TestKit("ClusterReceptionistSpec", ClusterReceptionistSpec.config)
+class ClusterReceptionistSpec extends ActorTestKit("ClusterReceptionistSpec", ClusterReceptionistSpec.config)
   with TypedAkkaSpecWithShutdown {
 
   import ClusterReceptionistSpec._

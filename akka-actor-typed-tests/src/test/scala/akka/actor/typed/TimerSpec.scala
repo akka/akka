@@ -13,10 +13,10 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.testkit.TimingTest
 import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.scaladsl.{ TestKit, _ }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, _ }
 import org.scalatest.WordSpecLike
 
-class TimerSpec extends TestKit with WordSpecLike with TypedAkkaSpecWithShutdown {
+class TimerSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShutdown {
 
   sealed trait Command
   case class Tick(n: Int) extends Command

@@ -8,12 +8,12 @@ import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox, TestKit, TestProbe }
+import akka.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox, ActorTestKit, TestProbe }
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Future
 
-class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with Eventually {
+class LocalReceptionistSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
 
   trait ServiceA
   val ServiceKeyA = ServiceKey[ServiceA]("service-a")

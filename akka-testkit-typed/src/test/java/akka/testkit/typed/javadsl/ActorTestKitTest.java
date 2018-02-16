@@ -14,14 +14,14 @@ import static org.junit.Assert.assertEquals;
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
  */
-public class TestKitTest extends JUnitSuite {
+public class ActorTestKitTest extends JUnitSuite {
 
   @ClassRule
-  public static TestKitJunitResource testKit = new TestKitJunitResource(TestKitTest.class);
+  public static TestKitJunitResource testKit = new TestKitJunitResource(ActorTestKitTest.class);
 
   @Test
   public void systemNameShouldComeFromTest() {
-    assertEquals(testKit.system().name(), "TestKitTest");
+    assertEquals(testKit.system().name(), "ActorTestKitTest");
   }
 
   @Test
