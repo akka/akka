@@ -1,14 +1,13 @@
-package docs.akka.typed.testing.sync
+package akka.testkit.typed.scaladsl
 
 //#imports
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
 import akka.testkit.typed.scaladsl.Effects._
-import akka.testkit.typed.scaladsl._
 //#imports
 import org.scalatest.{ Matchers, WordSpec }
 
-object BasicSyncTestingSpec {
+object SyncTestingExampleSpec {
   //#child
   val childActor = Behaviors.immutable[String] { (_, _) ⇒
     Behaviors.same[String]
@@ -46,9 +45,9 @@ object BasicSyncTestingSpec {
 
 }
 
-class BasicSyncTestingSpec extends WordSpec with Matchers {
+class SyncTestingExampleSpec extends WordSpec with Matchers {
 
-  import BasicSyncTestingSpec._
+  import SyncTestingExampleSpec._
 
   "Typed actor synchronous testing" must {
 

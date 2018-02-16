@@ -1,11 +1,12 @@
 /**
  * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
  */
-package akka.actor.typed;
+package akka.testkit.typed.javadsl;
 
 //#manual-scheduling-simple
 import java.util.concurrent.TimeUnit;
 
+import akka.actor.typed.Behavior;
 import akka.testkit.typed.javadsl.ManualTime;
 import akka.testkit.typed.javadsl.TestKitJunitResource;
 import org.junit.ClassRule;
@@ -18,11 +19,11 @@ import org.junit.Test;
 
 import akka.testkit.typed.javadsl.TestProbe;
 
-public class ManualTimerTest extends JUnitSuite {
+public class ManualTimerExampleTest extends JUnitSuite {
 
   @ClassRule
   public static final TestKitJunitResource testKit = new TestKitJunitResource(
-    ManualTimerTest.class,
+    ManualTimerExampleTest.class,
     ManualTime.config());
 
   private final ManualTime manualTime = ManualTime.get(testKit.system());

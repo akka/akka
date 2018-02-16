@@ -146,7 +146,9 @@ object PersistentActorSpec {
 
 }
 
-class PersistentActorSpec extends ActorTestKit(PersistentActorSpec.config) with Eventually with TypedAkkaSpecWithShutdown {
+class PersistentActorSpec extends ActorTestKit with Eventually with TypedAkkaSpecWithShutdown {
+
+  override val config = PersistentActorSpec.config
 
   import PersistentActorSpec._
 

@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
-package jdocs.akka.typed.testing.async;
+package akka.testkit.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
@@ -12,8 +12,8 @@ import org.junit.AfterClass;
 import org.junit.Test;
 
 //#test-header
-public class BasicAsyncTestingTest {
-  final static ActorTestKit testKit = ActorTestKit.create(BasicAsyncTestingTest.class);
+public class AsyncTestingExampleTest {
+  final static ActorTestKit testKit = ActorTestKit.create(AsyncTestingExampleTest.class);
 //#test-header
 
   //#under-test

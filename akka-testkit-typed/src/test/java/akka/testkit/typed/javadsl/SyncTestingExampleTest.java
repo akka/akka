@@ -1,4 +1,4 @@
-package jdocs.akka.typed.testing.sync;
+package akka.testkit.typed.javadsl;
 
 //#imports
 import akka.actor.typed.*;
@@ -8,7 +8,7 @@ import akka.testkit.typed.javadsl.*;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-public class BasicSyncTestingTest extends JUnitSuite {
+public class SyncTestingExampleTest extends JUnitSuite {
 
   //#child
   public static Behavior<String> childActor = Behaviors.immutable((ctx, msg) -> Behaviors.same());

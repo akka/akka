@@ -5,7 +5,7 @@ package akka.persistence.typed.javadsl;
 
 import akka.actor.Scheduler;
 import akka.actor.typed.ActorRef;
-import akka.testkit.typed.TestInbox;
+import akka.testkit.typed.javadsl.TestInbox;
 import akka.util.Timeout;
 
 import java.util.*;
@@ -208,7 +208,7 @@ public class PersistentActorCompileOnlyTest {
       }
     }
 
-    static ActorRef<Request> sideEffectProcessor = new TestInbox<Request>().ref();
+    static ActorRef<Request> sideEffectProcessor = TestInbox.<Request>create().getRef();
     static Timeout timeout = new Timeout(1, TimeUnit.SECONDS);
 
     private static void performSideEffect(ActorRef<AcknowledgeSideEffect> sender, int correlationId, String data, Scheduler scheduler) {
