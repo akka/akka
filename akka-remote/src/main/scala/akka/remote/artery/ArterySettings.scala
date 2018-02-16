@@ -64,6 +64,8 @@ private[akka] final class ArterySettings private (config: Config) {
       tree.insert(segments, NotUsed)
     }
 
+  val SSLEngineProviderClassName: String = config.getString("ssl.ssl-engine-provider")
+
   val UntrustedMode: Boolean = getBoolean("untrusted-mode")
   val TrustedSelectionPaths: Set[String] = immutableSeq(getStringList("trusted-selection-paths")).toSet
 
@@ -74,8 +76,9 @@ private[akka] final class ArterySettings private (config: Config) {
   val Transport: Transport = toRootLowerCase(getString("transport")) match {
     case AeronUpd.configName ⇒ AeronUpd
     case Tcp.configName      ⇒ Tcp
+    case TlsTcp.configName   ⇒ TlsTcp
     case other ⇒ throw new IllegalArgumentException(s"Unknown transport [$other], possible values: " +
-      s""""${AeronUpd.configName}", "${Tcp.configName}"""")
+      s""""${AeronUpd.configName}", "${Tcp.configName}", or "${TlsTcp.configName}"""")
   }
 
   /**
@@ -226,6 +229,10 @@ private[akka] object ArterySettings {
   }
   object Tcp extends Transport {
     override val configName: String = "tcp"
+    override def toString: String = configName
+  }
+  object TlsTcp extends Transport {
+    override val configName: String = "tls-tcp"
     override def toString: String = configName
   }
 }

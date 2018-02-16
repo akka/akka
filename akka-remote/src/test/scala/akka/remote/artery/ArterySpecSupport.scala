@@ -49,6 +49,22 @@ object ArterySpecSupport {
    */
   def defaultConfig = newFlightRecorderConfig
     .withFallback(staticArteryRemotingConfig)
+    .withFallback(tlsConfig) // TLS only used if transport=tls-tcp
+
+  // set the test key-store and trust-store properties
+  // TLS only used if transport=tls-tcp, which can be set from specific tests or
+  // System properties (e.g. jenkins job)
+  lazy val tlsConfig: Config = {
+    val trustStore = getClass.getClassLoader.getResource("truststore").getPath
+    val keyStore = getClass.getClassLoader.getResource("keystore").getPath
+
+    ConfigFactory.parseString(s"""
+      akka.remote.artery.ssl.config-ssl-engine {
+        key-store = "$keyStore"
+        trust-store = "$trustStore"
+      }
+    """)
+  }
 
 }
 

@@ -37,7 +37,7 @@ class ArteryFailedToBindSpec extends WordSpec with Matchers {
         RARP(as).provider.transport.asInstanceOf[ArteryTransport].settings.Transport match {
           case ArterySettings.AeronUpd ⇒
             ex.getMessage should ===("Inbound Aeron channel is in errored state. See Aeron logs for details.")
-          case ArterySettings.Tcp ⇒
+          case ArterySettings.Tcp | ArterySettings.TlsTcp ⇒
             ex.getMessage should startWith("Failed to bind TCP")
         }
 
