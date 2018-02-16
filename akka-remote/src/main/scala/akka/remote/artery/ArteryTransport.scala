@@ -398,15 +398,16 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     startTransport()
     topLevelFREvents.loFreq(Transport_Started, NoMetaData)
 
+    val udp = settings.Transport == ArterySettings.AeronUpd
     val port =
       if (settings.Canonical.Port == 0) {
         if (settings.Bind.Port != 0) settings.Bind.Port // if bind port is set, use bind port instead of random
-        else ArteryTransport.autoSelectPort(settings.Canonical.Hostname)
+        else ArteryTransport.autoSelectPort(settings.Canonical.Hostname, udp)
       } else settings.Canonical.Port
 
     val bindPort = if (settings.Bind.Port == 0) {
       if (settings.Canonical.Port == 0) port // canonical and bind ports are zero. Use random port for both
-      else ArteryTransport.autoSelectPort(settings.Bind.Hostname)
+      else ArteryTransport.autoSelectPort(settings.Bind.Hostname, udp)
     } else settings.Bind.Port
 
     _localAddress = UniqueAddress(
@@ -432,7 +433,9 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     runInboundStreams()
     topLevelFREvents.loFreq(Transport_StartupFinished, NoMetaData)
 
-    log.info("Remoting started; listening on address: [{}] with UID [{}]", localAddress.address, localAddress.uid)
+    log.info(
+      "Remoting started with transport [Artery {}]; listening on address [{}] with UID [{}]",
+      settings.Transport, localAddress.address, localAddress.uid)
   }
 
   protected def startTransport(): Unit
@@ -870,12 +873,20 @@ private[remote] object ArteryTransport {
     aeronSourceLifecycle: Option[AeronSource.ResourceLifecycle],
     completed:            Future[Done])
 
-  def autoSelectPort(hostname: String): Int = {
-    val socket = DatagramChannel.open().socket()
-    socket.bind(new InetSocketAddress(hostname, 0))
-    val port = socket.getLocalPort
-    socket.close()
-    port
+  def autoSelectPort(hostname: String, udp: Boolean): Int = {
+    if (udp) {
+      val socket = DatagramChannel.open().socket()
+      socket.bind(new InetSocketAddress(hostname, 0))
+      val port = socket.getLocalPort
+      socket.close()
+      port
+    } else {
+      val socket = ServerSocketChannel.open().socket()
+      socket.bind(new InetSocketAddress(hostname, 0))
+      val port = socket.getLocalPort
+      socket.close()
+      port
+    }
   }
 
   val ControlStreamId = 1

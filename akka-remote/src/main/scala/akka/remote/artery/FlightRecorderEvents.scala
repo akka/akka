@@ -51,6 +51,14 @@ private[remote] object FlightRecorderEvents {
   val Compression_Inbound_RunActorRefAdvertisement = 94
   val Compression_Inbound_RunClassManifestAdvertisement = 95
 
+  val TcpOutbound_Connected = 150
+  val TcpOutbound_Sent = 151
+
+  val TcpInbound_Bound = 170
+  val TcpInbound_Unbound = 171
+  val TcpInbound_Connected = 172
+  val TcpInbound_Received = 173
+
   // Used for presentation of the entries in the flight recorder
   lazy val eventDictionary = Map(
     Transport_MediaDriverStarted → "Transport: Media driver started",
@@ -92,7 +100,17 @@ private[remote] object FlightRecorderEvents {
     Compression_CompressedManifest → "Compression: Compressed manifest",
     Compression_AllocatedManifestCompressionId → "Compression: Allocated manifest compression id",
     Compression_Inbound_RunActorRefAdvertisement → "InboundCompression: Run class manifest compression advertisement",
-    Compression_Inbound_RunClassManifestAdvertisement → "InboundCompression: Run class manifest compression advertisement"
+    Compression_Inbound_RunClassManifestAdvertisement → "InboundCompression: Run class manifest compression advertisement",
+
+    // TCP outbound events
+    TcpOutbound_Connected -> "TCP out: Connected",
+    TcpOutbound_Sent -> "TCP out: Sent message",
+
+    // TCP inbound events
+    TcpInbound_Bound -> "TCP in: Bound",
+    TcpInbound_Unbound -> "TCP in: Unbound",
+    TcpInbound_Connected -> "TCP in: New connection",
+    TcpInbound_Received -> "TCP in: Received message"
 
   ).map { case (int, str) ⇒ int.toLong → str }
 
