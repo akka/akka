@@ -222,6 +222,7 @@ object DistributedPubSubMediator {
 
   // Only for testing purposes, to poll/await replication
   case object Count
+  final case class CountSubscribers(topic: String)
 
   /**
    * INTERNAL API
@@ -341,6 +342,8 @@ object DistributedPubSubMediator {
             context stop self
           else
             context.parent ! NewSubscriberArrived
+        case Count ⇒
+          sender() ! subscribers.size
         case msg ⇒
           subscribers foreach { _ forward msg }
       }
@@ -390,6 +393,7 @@ object DistributedPubSubMediator {
         case Terminated(ref) ⇒
           val key = mkKey(ref)
           recreateAndForwardMessagesIfNeeded(key, newGroupActor(ref.path.name))
+          remove(ref)
       }
 
       def newGroupActor(encGroup: String): ActorRef = {
@@ -723,6 +727,15 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
 
     case DeltaCount ⇒
       sender() ! deltaCount
+
+    case msg @ CountSubscribers(topic) ⇒
+      val encTopic = encName(topic)
+      bufferOr(mkKey(self.path / encTopic), msg, sender()) {
+        context.child(encTopic) match {
+          case Some(ref) ⇒ ref.tell(Count, sender())
+          case None      ⇒ sender() ! 0
+        }
+      }
   }
 
   private def ignoreOrSendToDeadLetters(msg: Any) =
