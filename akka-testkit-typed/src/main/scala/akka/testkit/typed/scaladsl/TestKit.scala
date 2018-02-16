@@ -57,7 +57,6 @@ trait TestKit {
   implicit def scheduler = system.scheduler
   private val childName: Iterator[String] = Iterator.from(0).map(_.toString)
 
-  // FIXME should we apply the dilation here?
   implicit val timeout = testkitSettings.DefaultTimeout
 
   final def shutdownTestKit(): Unit = {
