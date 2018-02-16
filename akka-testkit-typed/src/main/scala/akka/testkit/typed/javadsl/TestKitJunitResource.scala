@@ -31,7 +31,8 @@ import org.junit.rules.ExternalResource
  */
 class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
 
-  def this(testClass: Class[_]) = this(ActorTestKit.create(testClass))
+  def this() = this(ActorTestKit.create(classOf[TestKitJunitResource]))
+  def this(testClass: Class[_]) = this(ActorTestKit.create())
   def this(testClass: Class[_], customConfig: Config) = this(ActorTestKit.create(testClass, customConfig))
 
   @Rule

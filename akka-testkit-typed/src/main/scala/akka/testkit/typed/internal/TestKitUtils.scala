@@ -19,7 +19,7 @@ private[akka] object ActorTestKitGuardian {
   final case class SpawnActor[T](name: String, behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
   final case class SpawnActorAnonymous[T](behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
 
-  val testKitGuardian = Behaviors.immutable[TestKitCommand] {
+  val testKitGuardian: Behavior[TestKitCommand] = Behaviors.immutable[TestKitCommand] {
     case (ctx, SpawnActor(name, behavior, reply, props)) ⇒
       reply ! ctx.spawn(behavior, name, props)
       Behaviors.same
@@ -36,6 +36,25 @@ private[akka] object ActorTestKitGuardian {
 private[akka] object TestKitUtils {
 
   // common internal utility impls for Java and Scala
+  private val TestKitRegex = """akka\.testkit\.typed\.(?:javadsl|scaladsl)\.ActorTestKit(?:\$.*)?""".r
+
+  def testNameFromCallStack(classToStartFrom: Class[_]): String = {
+    val startFrom = classToStartFrom.getName
+    val filteredStack = Thread.currentThread.getStackTrace.toIterator
+      .map(_.getClassName)
+      // drop until we find the first occurence of classToStartFrom
+      .dropWhile(!_.startsWith(startFrom))
+      // then continue to the next entry after classToStartFrom that makes sense
+      .dropWhile {
+        case `startFrom`                            ⇒ true
+        case str if str.startsWith(startFrom + "$") ⇒ true // lambdas inside startFrom etc
+        case TestKitRegex()                         ⇒ true // testkit internals
+        case _                                      ⇒ false
+      }
+
+    // sanitize for actor system name
+    filteredStack.next().replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
+  }
 
   def shutdown(
     system:               ActorSystem[_],
@@ -44,8 +63,7 @@ private[akka] object TestKitUtils {
     system.terminate()
     try Await.ready(system.whenTerminated, duration) catch {
       case _: TimeoutException ⇒
-        val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, duration,
-          system.printTree)
+        val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, duration, system.printTree)
         if (verifySystemShutdown) throw new RuntimeException(msg)
         else println(msg)
     }

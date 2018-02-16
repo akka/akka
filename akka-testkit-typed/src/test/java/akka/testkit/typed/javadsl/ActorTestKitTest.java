@@ -17,11 +17,11 @@ import static org.junit.Assert.assertEquals;
 public class ActorTestKitTest extends JUnitSuite {
 
   @ClassRule
-  public static TestKitJunitResource testKit = new TestKitJunitResource(ActorTestKitTest.class);
+  public static TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Test
   public void systemNameShouldComeFromTest() {
-    assertEquals(testKit.system().name(), "ActorTestKitTest");
+    assertEquals("ActorTestKitTest", testKit.system().name());
   }
 
   @Test

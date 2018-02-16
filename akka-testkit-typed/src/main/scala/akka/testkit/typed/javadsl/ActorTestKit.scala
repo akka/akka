@@ -17,18 +17,20 @@ import scala.concurrent.duration.Duration
 
 object ActorTestKit {
 
+  def create(): ActorTestKit = new ActorTestKit(new ScalaTestKit {})
+
   /**
    * Create a testkit named with this test class
    */
   def create(testClass: Class[_]): ActorTestKit = new ActorTestKit(new ScalaTestKit {
-    override def name = testClass.getSimpleName
+    override def name = TestKitUtils.testNameFromCallStack(testClass)
   })
 
   /**
    * Create a testkit named with this test class, and use a custom config for the actor system
    */
   def create(testClass: Class[_], customConfig: Config) = new ActorTestKit(new ScalaTestKit {
-    override def name = testClass.getSimpleName
+    override def name = TestKitUtils.testNameFromCallStack(testClass)
     override def config = customConfig
   })
 
@@ -37,7 +39,7 @@ object ActorTestKit {
    * and a custom [[akka.testkit.typed.TestKitSettings]]
    */
   def create(testClass: Class[_], customConfig: Config, settings: TestKitSettings) = new ActorTestKit(new ScalaTestKit {
-    override def name = testClass.getSimpleName
+    override def name = TestKitUtils.testNameFromCallStack(testClass)
     override def config = customConfig
     override def testkitSettings: TestKitSettings = settings
   })

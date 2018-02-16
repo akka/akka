@@ -6,7 +6,7 @@ package akka.testkit.typed.scaladsl
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
 import scala.concurrent.Promise
 
@@ -43,6 +43,22 @@ class ActorTestKitSpec extends WordSpec with Matchers with ActorTestKit with Sca
       // usually done in test framework hook method but we want to assert
       shutdownTestKit()
       system.whenTerminated.futureValue shouldBe a[Terminated]
+    }
+  }
+
+}
+
+// derivate classes should also work fine (esp the naming part
+trait MyBaseSpec extends WordSpec with ActorTestKit with Matchers with BeforeAndAfterAll {
+  override protected def afterAll(): Unit = {
+    shutdownTestKit()
+  }
+}
+
+class MyConcreteDerivateSpec extends MyBaseSpec {
+  "A derivate test" should {
+    "generate a default name from the test class" in {
+      system.name should ===("MyConcreteDerivateSpec")
     }
   }
 

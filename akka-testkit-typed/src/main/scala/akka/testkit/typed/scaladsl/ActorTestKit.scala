@@ -36,7 +36,7 @@ trait ActorTestKit {
    * Actor system name based on the test it is mixed into, override to customize, or pass to constructor
    * if using [[ActorTestKit]] rather than [[ActorTestKit]]
    */
-  protected def name: String = getClass.getSimpleName
+  protected def name: String = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit])
 
   /**
    * Configuration the actor system is created with, override to customize, or pass to constructor
@@ -52,6 +52,7 @@ trait ActorTestKit {
   private val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
     if (config == ConfigFactory.empty) ActorSystem(ActorTestKitGuardian.testKitGuardian, name)
     else ActorSystem(ActorTestKitGuardian.testKitGuardian, name, config)
+
   implicit final def system: ActorSystem[Nothing] = internalSystem
 
   implicit def scheduler = system.scheduler
