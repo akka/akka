@@ -17,6 +17,9 @@ import scala.concurrent.duration.Duration
 
 object ActorTestKit {
 
+  /**
+   * Create a testkit named from the class that is calling this method
+   */
   def create(): ActorTestKit = new ActorTestKit(new ScalaTestKit {})
 
   /**

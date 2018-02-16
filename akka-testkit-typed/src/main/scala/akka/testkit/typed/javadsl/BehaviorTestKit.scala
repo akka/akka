@@ -38,8 +38,15 @@ abstract class BehaviorTestKit[T] {
    */
   def getEffect(): Effect
 
+  /**
+   * Get the child inbox for the child with the given name, or fail if there is no child with the given name
+   * spawned
+   */
   def childInbox[U](name: String): TestInbox[U]
 
+  /**
+   * The self inbox will contain messages the behavior sent to `ctx.self`
+   */
   def selfInbox(): TestInbox[T]
 
   /**

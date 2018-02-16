@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContextExecutor
  * INTERNAL API
  */
 @InternalApi
-private[akka] class ControlledExecutor extends ExecutionContextExecutor {
+private[akka] final class ControlledExecutor extends ExecutionContextExecutor {
   private val tasks = new LinkedList[Runnable]
 
   def queueSize: Int = tasks.size()

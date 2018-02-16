@@ -14,7 +14,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class EffectfulActorContext[T](name: String) extends StubbedActorContext[T](name) {
+@InternalApi private[akka] final class EffectfulActorContext[T](name: String) extends StubbedActorContext[T](name) {
 
   import Effect._
   import akka.{ actor ⇒ a }

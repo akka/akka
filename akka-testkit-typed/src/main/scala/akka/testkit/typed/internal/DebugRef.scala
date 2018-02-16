@@ -15,7 +15,7 @@ import scala.annotation.tailrec
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class DebugRef[T](override val path: a.ActorPath, override val isLocal: Boolean)
+@InternalApi private[akka] final class DebugRef[T](override val path: a.ActorPath, override val isLocal: Boolean)
   extends ActorRef[T] with ActorRefImpl[T] {
 
   private val q = new ConcurrentLinkedQueue[Either[SystemMessage, T]]

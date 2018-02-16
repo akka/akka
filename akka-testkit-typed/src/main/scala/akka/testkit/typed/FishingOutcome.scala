@@ -18,5 +18,5 @@ object FishingOutcome {
   case object Continue extends FishingOutcome
   case object ContinueAndIgnore extends FishingOutcome
   case object Complete extends FishingOutcome
-  case class Fail(error: String) extends FishingOutcome
+  final case class Fail(error: String) extends FishingOutcome
 }

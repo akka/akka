@@ -18,7 +18,7 @@ import scala.concurrent._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class ActorSystemStub(val name: String)
+@InternalApi private[akka] final class ActorSystemStub(val name: String)
   extends ActorSystem[Nothing] with ActorRef[Nothing] with ActorRefImpl[Nothing] {
 
   override val path: a.ActorPath = a.RootActorPath(a.Address("akka", name)) / "user"
