@@ -2,8 +2,11 @@
 
 @@@ note
 
-This page describes the @ref:[may change](common/may-change.md) remoting subsystem, codenamed *Artery* that will eventually replace the
-old remoting implementation. For the current stable remoting system please refer to @ref:[Remoting](remoting.md).
+This page describes the remoting subsystem, codenamed *Artery* that will eventually replace the
+@ref:[old remoting implementation](remoting.md). Artery with the Aeron transport is ready
+to use in production. The TCP based transport is not ready for use in production yet. The module is
+marked @ref:[may change](common/may-change.md) because some configuration will be changed when the API
+becomes stable.
 
 @@@
 
@@ -25,7 +28,7 @@ Artery is a reimplementation of the old remoting module aimed at improving perfo
 source compatible with the old implementation and it is a drop-in replacement in many cases. Main features
 of Artery compared to the previous implementation:
 
- * Based on [Aeron](https://github.com/real-logic/Aeron) (UDP) instead of TCP
+ * Based on [Aeron](https://github.com/real-logic/Aeron) (UDP) and Akka Streams TCP/TLS instead of Netty TCP
  * Focused on high-throughput, low-latency communication
  * Isolation of internal control messages from user messages improving stability and reducing false failure detection
 in case of heavy traffic by using a dedicated subchannel.
@@ -75,6 +78,7 @@ akka {
   remote {
     artery {
       enabled = on
+      transport = aeron-udp
       canonical.hostname = "127.0.0.1"
       canonical.port = 25520
     }
@@ -102,7 +106,28 @@ listening for connections and handling messages as not to interfere with other a
 @@@
 
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
-All settings are described in [Remote Configuration](#remote-configuration-artery).
+All settings are described in @ref:[Remote Configuration](#remote-configuration-artery).
+
+### Selecting transport
+
+There are three alternatives of which underlying transport to use. It is configured by property
+`akka.remote.artery.transport` with the possible values:
+
+* `aeron-udp` - Based on [Aeron (UDP)](https://github.com/real-logic/aeron)
+* `tcp` - Based on @ref:[Akka Streams TCP](stream/stream-io.md#streaming-tcp)
+* `tls-tcp` - Same as `tcp` with encryption using @ref:[Akka Streams TLS](stream/stream-io.md#tls)
+
+The Aeron (UDP) transport is a high performance transport and should be used for systems
+that require high throughput and low latency. It is using more CPU than TCP when the system
+is idle or at low message rates. There is no encryption for Aeron.
+
+The TCP and TLS transport is implemented using Akka Streams TCP/TLS. This is the choice
+when encryption is needed, but it can also be used with plain TCP without TLS. It's also
+the obvious choice when UDP can't be used.
+It has very good performance (high throughput and low latency) but not as good as the Aeron transport.
+It is using less CPU than Aeron when the system is idle or at low message rates.
+This has not been verified yet, but it might scale better for many connections than the Aereon
+transport, which can be of importance for large clusters with 100s or even 1000s of nodes.
 
 @@@ note
 
@@ -764,8 +789,8 @@ See Aeron documentation about [Performance Testing](https://github.com/real-logi
 ### Fine-tuning CPU usage latency tradeoff
 
 Artery has been designed for low latency and as a result it can be CPU hungry when the system is mostly idle.
-This is not always desirable. It is possible to tune the tradeoff between CPU usage and latency with
-the following configuration:
+This is not always desirable. When using the Aeron transport it is possible to tune the tradeoff between CPU
+usage and latency with the following configuration:
 
 ```
 # Values can be from 1 to 10, where 10 strongly prefers low latency

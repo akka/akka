@@ -22,6 +22,20 @@ class ArteryUpdSendConsistencyWithThreeLanesSpec extends AbstractRemoteSendConsi
       akka.remote.artery.advanced.inbound-lanes = 3
     """).withFallback(ArterySpecSupport.defaultConfig))
 
+class ArteryTcpSendConsistencyWithOneLaneSpec extends AbstractRemoteSendConsistencySpec(
+  ConfigFactory.parseString("""
+      akka.remote.artery.transport = tcp
+      akka.remote.artery.advanced.outbound-lanes = 1
+      akka.remote.artery.advanced.inbound-lanes = 1
+    """).withFallback(ArterySpecSupport.defaultConfig))
+
+class ArteryTcpSendConsistencyWithThreeLanesSpec extends AbstractRemoteSendConsistencySpec(
+  ConfigFactory.parseString("""
+      akka.remote.artery.transport = tcp
+      akka.remote.artery.advanced.outbound-lanes = 3
+      akka.remote.artery.advanced.inbound-lanes = 3
+    """).withFallback(ArterySpecSupport.defaultConfig))
+
 abstract class AbstractRemoteSendConsistencySpec(config: Config) extends ArteryMultiNodeSpec(config) with ImplicitSender {
 
   val systemB = newRemoteSystem(name = Some("systemB"))

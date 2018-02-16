@@ -71,6 +71,13 @@ private[akka] final class ArterySettings private (config: Config) {
   val LogSend: Boolean = getBoolean("log-sent-messages")
   val LogAeronCounters: Boolean = config.getBoolean("log-aeron-counters")
 
+  val Transport: Transport = toRootLowerCase(getString("transport")) match {
+    case AeronUpd.configName ⇒ AeronUpd
+    case Tcp.configName      ⇒ Tcp
+    case other ⇒ throw new IllegalArgumentException(s"Unknown transport [$other], possible values: " +
+      s""""${AeronUpd.configName}", "${Tcp.configName}"""")
+  }
+
   /**
    * Used version of the header format for outbound messages.
    * To support rolling upgrades this may be a lower version than `ArteryTransport.HighestVersion`,
@@ -126,6 +133,8 @@ private[akka] final class ArterySettings private (config: Config) {
     val InjectHandshakeInterval: FiniteDuration =
       config.getMillisDuration("inject-handshake-interval").requiring(interval ⇒
         interval > Duration.Zero, "inject-handshake-interval must be more than zero")
+    val ConnectionTimeout: FiniteDuration = config.getMillisDuration("connection-timeout").requiring(interval ⇒
+      interval > Duration.Zero, "connection-timeout must be more than zero")
     val GiveUpMessageAfter: FiniteDuration = config.getMillisDuration("give-up-message-after").requiring(interval ⇒
       interval > Duration.Zero, "give-up-message-after must be more than zero")
     val GiveUpSystemMessageAfter: FiniteDuration =
@@ -138,6 +147,9 @@ private[akka] final class ArterySettings private (config: Config) {
       config.getMillisDuration("inbound-restart-timeout").requiring(interval ⇒
         interval > Duration.Zero, "inbound-restart-timeout must be more than zero")
     val InboundMaxRestarts: Int = getInt("inbound-max-restarts")
+    val OutboundRestartBackoff: FiniteDuration =
+      config.getMillisDuration("outbound-restart-backoff").requiring(interval ⇒
+        interval > Duration.Zero, "outbound-restart-backoff must be more than zero")
     val OutboundRestartTimeout: FiniteDuration =
       config.getMillisDuration("outbound-restart-timeout").requiring(interval ⇒
         interval > Duration.Zero, "outbound-restart-timeout must be more than zero")
@@ -205,4 +217,15 @@ private[akka] object ArterySettings {
     case other              ⇒ other
   }
 
+  sealed trait Transport {
+    val configName: String
+  }
+  object AeronUpd extends Transport {
+    override val configName: String = "aeron-udp"
+    override def toString: String = configName
+  }
+  object Tcp extends Transport {
+    override val configName: String = "tcp"
+    override def toString: String = configName
+  }
 }

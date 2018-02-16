@@ -383,6 +383,14 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
   private var literalChars = new Array[Char](64)
   private var literalBytes = new Array[Byte](64)
 
+  // The streamId is only used for TCP transport. It is not part of the ordinary envelope header, but included in the
+  // frame header that is parsed by the TcpFraming stage.
+  private var _streamId: Int = -1
+  def streamId: Int =
+    if (_streamId != -1) _streamId
+    else throw new IllegalStateException("StreamId was not set")
+  def setStreamId(newStreamId: Int): Unit = _streamId = newStreamId
+
   def writeHeader(h: HeaderBuilder): Unit = writeHeader(h, null)
 
   def writeHeader(h: HeaderBuilder, oe: OutboundEnvelope): Unit = {
