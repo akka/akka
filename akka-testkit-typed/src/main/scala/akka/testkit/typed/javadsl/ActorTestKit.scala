@@ -49,31 +49,36 @@ object ActorTestKit {
 
   /**
    * Shutdown the given actor system and wait up to `duration` for shutdown to complete.
-   * @param verifySystemShutdown Fail the test if the system fails to shut down, if false
+   * @param throwIfShutdownTimesOut Fail the test if the system fails to shut down, if false
    *                             an error is printed to stdout when the system did not shutdown but
    *                             no exception is thrown.
    */
-  def shutdown(
-    system:               ActorSystem[_],
-    duration:             Duration,
-    verifySystemShutdown: Boolean): Unit = {
-    TestKitUtils.shutdown(system, duration, verifySystemShutdown)
+  def shutdown(system: ActorSystem[_], duration: Duration, throwIfShutdownTimesOut: Boolean): Unit = {
+    TestKitUtils.shutdown(system, duration, throwIfShutdownTimesOut)
   }
 
   /**
-   * Shutdown the given actor system and wait up to `duration` for shutdown to complete.
-   * If shutdown fails a warning is printed to stdout.
+   * Shutdown the given [[akka.actor.typed.ActorSystem]] and block until it shuts down,
+   * if more time than `system-shutdown-default` passes an exception is thrown
+   * (can be configured with `throw-on-shutdown-timeout`).
    */
   def shutdown(system: ActorSystem[_], duration: Duration): Unit = {
-    shutdown(system, duration, false)
+    val settings = TestKitSettings.create(system)
+    shutdown(system, duration, settings.ThrowOnShutdownTimeout)
   }
 
   /**
-   * Shutdown the given actor system and wait up to 5s for shutdown to complete.
-   * If shutdown fails a warning is printed to stdout.
+   * Shutdown the given [[akka.actor.typed.ActorSystem]] and block until it shuts down,
+   * if more time than `system-shutdown-default` passes an exception is thrown
+   * (can be configured with `throw-on-shutdown-timeout`).
    */
   def shutdown(system: ActorSystem[_]): Unit = {
-    shutdown(system, Duration.create(5, TimeUnit.SECONDS), false)
+    val settings = TestKitSettings.create(system)
+    shutdown(
+      system,
+      settings.DefaultActorSystemShutdownTimeout,
+      settings.ThrowOnShutdownTimeout
+    )
   }
 
 }

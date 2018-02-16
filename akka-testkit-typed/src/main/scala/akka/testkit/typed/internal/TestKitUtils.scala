@@ -57,14 +57,14 @@ private[akka] object TestKitUtils {
   }
 
   def shutdown(
-    system:               ActorSystem[_],
-    duration:             Duration,
-    verifySystemShutdown: Boolean): Unit = {
+    system:                  ActorSystem[_],
+    timeout:                 Duration,
+    throwIfShutdownTimesOut: Boolean): Unit = {
     system.terminate()
-    try Await.ready(system.whenTerminated, duration) catch {
+    try Await.ready(system.whenTerminated, timeout) catch {
       case _: TimeoutException ⇒
-        val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, duration, system.printTree)
-        if (verifySystemShutdown) throw new RuntimeException(msg)
+        val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, timeout, system.printTree)
+        if (throwIfShutdownTimesOut) throw new RuntimeException(msg)
         else println(msg)
     }
   }

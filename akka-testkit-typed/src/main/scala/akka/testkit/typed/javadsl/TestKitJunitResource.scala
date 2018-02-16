@@ -14,6 +14,8 @@ import org.junit.rules.ExternalResource
  * A Junit external resource for the testkit, making it possible to have Junit manage the lifecycle of the testkit.
  * The testkit will be automatically shut down when the test completes fails.
  *
+ * Note that Junit is not provided as a transitive dependency of the testkit module but must be added explicitly
+ * to your project to use this.
  *
  * Example:
  * {{{

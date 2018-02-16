@@ -57,6 +57,10 @@ final class TestKitSettings(val config: Config) {
   val ExpectNoMessageDefaultTimeout: FiniteDuration = dilated(config.getMillisDuration("expect-no-message-default"))
   /** dilated with `TestTimeFactor` */
   val DefaultTimeout: Timeout = Timeout(dilated(config.getMillisDuration("default-timeout")))
+  /** dilated with `TestTimeFactor` */
+  val DefaultActorSystemShutdownTimeout: FiniteDuration = dilated(config.getMillisDuration("system-shutdown-default"))
+
+  val ThrowOnShutdownTimeout: Boolean = config.getBoolean("throw-on-shutdown-timeout")
 
   /**
    * Scale the `duration` with the configured `TestTimeFactor`

@@ -12,11 +12,32 @@ import scala.concurrent.duration._
 
 object ActorTestKit {
 
+  /**
+   * Shutdown the given [[akka.actor.typed.ActorSystem]] and block until it shuts down,
+   * if more time than `TestKitSettings.DefaultActorSystemShutdownTimeout` passes an exception is thrown
+   */
+  def shutdown(system: ActorSystem[_]): Unit = {
+    val settings = TestKitSettings(system)
+    TestKitUtils.shutdown(
+      system,
+      settings.DefaultActorSystemShutdownTimeout,
+      settings.ThrowOnShutdownTimeout
+    )
+  }
+
+  /**
+   * Shutdown the given [[akka.actor.typed.ActorSystem]] and block until it shuts down
+   * or the `duration` hits. If the timeout hits `verifySystemShutdown` decides
+   */
   def shutdown(
     system:               ActorSystem[_],
-    duration:             Duration,
-    verifySystemShutdown: Boolean        = false): Unit =
-    TestKitUtils.shutdown(system, duration, verifySystemShutdown)
+    timeout:              Duration,
+    throwIfShutdownFails: Boolean        = false): Unit =
+    TestKitUtils.shutdown(system, timeout, throwIfShutdownFails)
+
+  // place holder for no custom config specified to avoid the boilerplate
+  // of an option for config in the trait
+  private val noConfigSet = ConfigFactory.parseString("")
 
 }
 
@@ -44,7 +65,7 @@ trait ActorTestKit {
    * Configuration the actor system is created with, override to customize, or pass to constructor
    * if using [[ActorTestKit]] rather than [[ActorTestKit]]
    */
-  def config: Config = ConfigFactory.empty()
+  def config: Config = ActorTestKit.noConfigSet
 
   /**
    * TestKit settings used in the tests, override or provide custom config to customize
@@ -52,7 +73,7 @@ trait ActorTestKit {
   protected implicit def testkitSettings = TestKitSettings(system)
 
   private val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
-    if (config == ConfigFactory.empty) ActorSystem(ActorTestKitGuardian.testKitGuardian, name)
+    if (config eq ActorTestKit.noConfigSet) ActorSystem(ActorTestKitGuardian.testKitGuardian, name)
     else ActorSystem(ActorTestKitGuardian.testKitGuardian, name, config)
 
   implicit final def system: ActorSystem[Nothing] = internalSystem
@@ -63,8 +84,11 @@ trait ActorTestKit {
   implicit val timeout = testkitSettings.DefaultTimeout
 
   final def shutdownTestKit(): Unit = {
-    // FIXME separate default timeout for shutdown?
-    ActorTestKit.shutdown(system, timeout.duration)
+    ActorTestKit.shutdown(
+      system,
+      testkitSettings.DefaultActorSystemShutdownTimeout,
+      testkitSettings.ThrowOnShutdownTimeout
+    )
   }
 
   /**
