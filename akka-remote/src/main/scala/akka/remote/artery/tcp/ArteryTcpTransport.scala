@@ -15,6 +15,7 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+
 import akka.ConfigurationException
 import akka.Done
 import akka.NotUsed
@@ -65,7 +66,8 @@ private[remote] object ArteryTcpTransport {
 /**
  * INTERNAL API
  */
-private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
+private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider,
+                                         tlsEnabled: Boolean)
   extends ArteryTransport(_system, _provider) {
   import ArteryTransport._
   import ArteryTcpTransport._
@@ -76,6 +78,16 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
   // may change when inbound streams are restarted
   @volatile private var inboundStream: OptionVal[Sink[EnvelopeBuffer, NotUsed]] = OptionVal.None
   @volatile private var serverBinding: Option[Future[ServerBinding]] = None
+
+  private val sslEngineProvider: OptionVal[SSLEngineProvider] =
+    if (tlsEnabled) {
+      OptionVal.Some(system.dynamicAccess.createInstanceFor[SSLEngineProvider](
+        settings.SSLEngineProviderClassName,
+        List((classOf[ActorSystem], system))).recover {
+          case e ⇒ throw new ConfigurationException(
+            s"Could not create SSLEngineProvider [${settings.SSLEngineProviderClassName}]", e)
+        }.get)
+    } else OptionVal.None
 
   override protected def startTransport(): Unit = {
     // nothing specific here
@@ -94,11 +106,20 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     val remoteAddress = InetSocketAddress.createUnresolved(host, port)
 
     def connectionFlow: Flow[ByteString, ByteString, Future[Tcp.OutgoingConnection]] =
-      Tcp()
-        .outgoingConnection(
+      if (tlsEnabled) {
+        val sslProvider = sslEngineProvider.get
+        Tcp().outgoingTlsConnectionWithSSLEngine(
           remoteAddress,
-          halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
-          connectTimeout = settings.Advanced.ConnectionTimeout)
+          createSSLEngine = () ⇒ sslProvider.createClientSSLEngine(host, port),
+          connectTimeout = settings.Advanced.ConnectionTimeout,
+          verifySession = session ⇒ optionToTry(sslProvider.verifyClientSession(host, session)))
+      } else {
+        Tcp()
+          .outgoingConnection(
+            remoteAddress,
+            halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
+            connectTimeout = settings.Advanced.ConnectionTimeout)
+      }
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
       val flowFactory = () ⇒ {
@@ -222,10 +243,19 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     val port = localAddress.address.port.get
 
     val connectionSource: Source[Tcp.IncomingConnection, Future[ServerBinding]] =
-      Tcp().bind(
-        interface = host,
-        port = port,
-        halfClose = false)
+      if (tlsEnabled) {
+        val sslProvider = sslEngineProvider.get
+        Tcp().bindTlsWithSSLEngine(
+          interface = host,
+          port = port,
+          createSSLEngine = () ⇒ sslProvider.createServerSSLEngine(host, port),
+          verifySession = session ⇒ optionToTry(sslProvider.verifyServerSession(host, session)))
+      } else {
+        Tcp().bind(
+          interface = host,
+          port = port,
+          halfClose = false)
+      }
 
     serverBinding = serverBinding match {
       case None ⇒

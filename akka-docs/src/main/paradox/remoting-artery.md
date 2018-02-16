@@ -345,15 +345,99 @@ Actor classes not included in the whitelist will not be allowed to be remote dep
 
 ## Remote Security
 
-An `ActorSystem` should not be exposed via Akka Remote (Artery) over plain Aeron/UDP to an untrusted network (e.g. internet).
-It should be protected by network security, such as a firewall. There is currently no support for encryption with Artery
-so if network security is not considered as enough protection the classic remoting with
-@ref:[TLS and mutual authentication](remoting.md#remote-tls)  should be used.
+An `ActorSystem` should not be exposed via Akka Remote (Artery) over plain Aeron/UDP or TCP to an untrusted
+network (e.g. Internet). It should be protected by network security, such as a firewall. If that is not considered
+as enough protection [TLS with mutual authentication](#remote-tls) should be enabled.
 
-Best practice is that Akka remoting nodes should only be accessible from the adjacent network.
+Best practice is that Akka remoting nodes should only be accessible from the adjacent network. Note that if TLS is
+enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by
+compromising any node with certificates issued by the same internal PKI tree.
 
-It is also security best practice to @ref:[disable the Java serializer](#disabling-the-java-serializer) because of
+It is also security best-practice to [disable the Java serializer](#disable-java-serializer) because of
 its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
+
+<a id="remote-tls"></a>
+### Configuring SSL/TLS for Akka Remoting
+
+SSL can be used as the remote transport by using the `tls-tcp` transport:
+
+```
+akka.remote.artery {
+  transport = tls-tcp
+}
+```
+
+Next the actual SSL/TLS parameters have to be configured:
+
+```
+akka.remote.artery {
+  transport = tls-tcp
+
+  ssl.config-ssl-engine {
+    key-store = "/example/path/to/mykeystore.jks"
+    trust-store = "/example/path/to/mytruststore.jks"
+
+    key-store-password = ${SSL_KEY_STORE_PASSWORD}
+    key-password = ${SSL_KEY_PASSWORD}
+    trust-store-password = ${SSL_TRUST_STORE_PASSWORD}
+
+    protocol = "TLSv1.2"
+
+    enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
+
+    random-number-generator = "AES128CounterSecureRNG"
+
+    hostname-verification = on
+  }
+}
+```
+
+Always use [substitution from environment variables](https://github.com/lightbend/config#optional-system-or-env-variable-overrides)
+for passwords. Don't define real passwords in config files.
+
+According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
+
+ * TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
+ * TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+ * TLS_DHE_RSA_WITH_AES_256_GCM_SHA384
+ * TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+
+You should always check the latest information about security and algorithm recommendations though before you configure your system.
+
+Creating and working with keystores and certificates is well documented in the
+[Generating X.509 Certificates](http://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
+section of Lightbend's SSL-Config library.
+
+Since an Akka remoting is inherently @ref:[peer-to-peer](general/remoting.md#symmetric-communication) both the key-store as well as trust-store
+need to be configured on each remoting node participating in the cluster.
+
+The official [Java Secure Socket Extension documentation](http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html)
+as well as the [Oracle documentation on creating KeyStore and TrustStores](https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html)
+are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
+and configuring SSL.
+
+Mutual authentication between TLS peers is enabled by default. Mutual authentication means that the the passive side
+(the TLS server side) of a connection will also request and verify a certificate from the connecting peer.
+Without this mode only the client side is requesting and verifying certificates. While Akka is a peer-to-peer
+technology, each connection between nodes starts out from one side (the "client") towards the other (the "server").
+
+Note that if TLS is enabled with mutual authentication there is still a risk that an attacker can gain access to a
+valid certificate by compromising any node with certificates issued by the same internal PKI tree.
+
+It's recommended that you enable hostname verification with
+`akka.remote.artery.ssl.config-ssl-engine.hostname-verification=on`.
+When enabled it will verify that the destination hostname matches the hostname in the peer's credentials.
+An application could be exploited with URL spoofing if the hostname is not verified.
+
+See also a description of the settings in the @ref:[Remote Configuration](#remote-configuration-artery) section.
+
+@@@ note
+
+When using SHA1PRNG on Linux it's recommended specify `-Djava.security.egd=file:/dev/urandom` as argument
+to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
+
+@@@
+
 
 ### Untrusted Mode
 
