@@ -15,9 +15,12 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
 /**
+ * INTERNAL API
+ *
  * A local synchronous ActorRef that invokes the given function for every message send.
  * This reference cannot watch other references.
  */
+@InternalApi
 private[akka] final class FunctionRef[-T](
   _path:      ActorPath,
   send:       (T, FunctionRef[T]) ⇒ Unit,

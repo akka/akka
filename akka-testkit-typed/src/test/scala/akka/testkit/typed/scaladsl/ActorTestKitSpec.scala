@@ -16,7 +16,7 @@ class ActorTestKitSpec extends WordSpec with Matchers with ActorTestKit with Sca
   "the Scala testkit" should {
 
     "generate a default name from the test class" in {
-      system.name should ===("TestKitSpec")
+      system.name should ===("ActorTestKitSpec")
     }
 
     "spawn an actor" in {
@@ -47,7 +47,4 @@ class ActorTestKitSpec extends WordSpec with Matchers with ActorTestKit with Sca
   }
 
 }
-
-// same should be true if we inherit it
-class DerivedActorTestKitSpec extends ActorTestKitSpec
 

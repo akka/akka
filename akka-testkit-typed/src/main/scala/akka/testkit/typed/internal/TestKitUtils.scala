@@ -10,8 +10,11 @@ import akka.annotation.InternalApi
 import scala.concurrent.{ Await, TimeoutException }
 import scala.concurrent.duration.Duration
 
+/**
+ * INTERNAL API
+ */
 @InternalApi
-private[akka] object TestKitGuardian {
+private[akka] object ActorTestKitGuardian {
   sealed trait TestKitCommand
   final case class SpawnActor[T](name: String, behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
   final case class SpawnActorAnonymous[T](behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
@@ -26,13 +29,13 @@ private[akka] object TestKitGuardian {
   }
 }
 
+/**
+ * INTERNAL API
+ */
 @InternalApi
-private[akka] object TestKitImpl {
+private[akka] object TestKitUtils {
 
-  def concreteClass
-
-
-  // common impls for Java and Scala
+  // common internal utility impls for Java and Scala
 
   def shutdown(
     system:               ActorSystem[_],

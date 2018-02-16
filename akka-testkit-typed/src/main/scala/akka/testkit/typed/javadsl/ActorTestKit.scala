@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.internal.TestKitImpl
+import akka.testkit.typed.internal.TestKitUtils
 import akka.testkit.typed.scaladsl.{ ActorTestKit ⇒ ScalaTestKit }
 import akka.util.Timeout
 import com.typesafe.config.Config
@@ -52,7 +52,7 @@ object ActorTestKit {
     system:               ActorSystem[_],
     duration:             Duration,
     verifySystemShutdown: Boolean): Unit = {
-    TestKitImpl.shutdown(system, duration, verifySystemShutdown)
+    TestKitUtils.shutdown(system, duration, verifySystemShutdown)
   }
 
   /**

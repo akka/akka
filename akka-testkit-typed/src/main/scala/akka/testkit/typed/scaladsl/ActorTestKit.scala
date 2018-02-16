@@ -4,7 +4,7 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.internal.{ TestKitGuardian, TestKitImpl }
+import akka.testkit.typed.internal.{ ActorTestKitGuardian, TestKitUtils }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Await
@@ -16,7 +16,7 @@ object ActorTestKit {
     system:               ActorSystem[_],
     duration:             Duration,
     verifySystemShutdown: Boolean        = false): Unit =
-    TestKitImpl.shutdown(system, duration, verifySystemShutdown)
+    TestKitUtils.shutdown(system, duration, verifySystemShutdown)
 
 }
 
@@ -49,9 +49,9 @@ trait ActorTestKit {
    */
   protected implicit def testkitSettings = TestKitSettings(system)
 
-  private val internalSystem: ActorSystem[TestKitGuardian.TestKitCommand] =
-    if (config == ConfigFactory.empty) ActorSystem(TestKitGuardian.testKitGuardian, name)
-    else ActorSystem(TestKitGuardian.testKitGuardian, name, config)
+  private val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
+    if (config == ConfigFactory.empty) ActorSystem(ActorTestKitGuardian.testKitGuardian, name)
+    else ActorSystem(ActorTestKitGuardian.testKitGuardian, name, config)
   implicit final def system: ActorSystem[Nothing] = internalSystem
 
   implicit def scheduler = system.scheduler
@@ -76,7 +76,7 @@ trait ActorTestKit {
    * guardian
    */
   final def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] =
-    Await.result(internalSystem ? (TestKitGuardian.SpawnActorAnonymous(behavior, _, props)), timeout.duration)
+    Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)), timeout.duration)
 
   /**
    * Spawn the given behavior. This is created as a child of the test kit
@@ -90,7 +90,7 @@ trait ActorTestKit {
    * guardian
    */
   final def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
-    Await.result(internalSystem ? (TestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
+    Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
 
   // FIXME needed for Akka internal tests but, users shouldn't spawn system actors?
   @InternalApi

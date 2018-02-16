@@ -1,14 +1,13 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
  */
-package akka.actor.typed
-package internal
+package akka.testkit.typed.internal
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
+import akka.actor.typed.internal.ActorRefImpl
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Dispatchers, Extension, ExtensionId, Logger, Props, Settings, Terminated }
 import akka.annotation.InternalApi
-import akka.event.{ BusLogging, DefaultLoggingFilter, Logging }
-import akka.testkit.typed.internal.StubbedLogger
 import akka.util.Timeout
 import akka.{ actor ⇒ a, event ⇒ e }
 import com.typesafe.config.ConfigFactory

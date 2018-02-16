@@ -1,11 +1,12 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
  */
-package akka.actor.typed
-package internal
+package akka.testkit.typed.internal
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
+import akka.actor.typed.ActorRef
+import akka.actor.typed.internal.{ ActorRefImpl, SystemMessage }
 import akka.annotation.InternalApi
 import akka.{ actor ⇒ a }
 

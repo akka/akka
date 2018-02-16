@@ -5,7 +5,6 @@ package akka.testkit.typed.internal
 
 import java.util
 
-import akka.actor.typed.internal.ControlledExecutor
 import akka.actor.typed.{ Behavior, PostStop, Signal }
 import akka.annotation.InternalApi
 import akka.testkit.typed.Effect
