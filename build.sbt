@@ -1,4 +1,4 @@
-import akka.AutomaticModuleName
+import akka.{ParadoxSupport, AutomaticModuleName}
 
 enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish)
 disablePlugins(MimaPlugin)
@@ -231,6 +231,7 @@ lazy val docs = akkaModule("akka-docs")
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}")
   )
   .enablePlugins(AkkaParadoxPlugin, DeployRsync, NoPublish, ParadoxBrowse, ScaladocNoVerificationOfDiagrams)
+  .settings(ParadoxSupport.paradoxWithCustomDirectives)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
