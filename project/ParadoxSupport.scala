@@ -17,24 +17,17 @@ import scala.collection.JavaConverters._
 object ParadoxSupport {
   val paradoxWithCustomDirectives = Seq(
     paradoxDirectives ++= Def.taskDyn {
-      val log = streams.value.log
       val classpath = (fullClasspath in Compile).value.files.map(_.toURI.toURL).toArray
       val classloader = new java.net.URLClassLoader(classpath, this.getClass().getClassLoader())
       lazy val scanner = new FastClasspathScanner("akka").addClassLoader(classloader).scan()
       val allClasses = scanner.getNamesOfAllClasses.asScala.toVector
-      val directives = paradoxDirectives.value
       Def.task { Seq(
-        { context: Writer.Context ⇒ {
-            val scaladocDirective = directives.map(_.apply(context)).collectFirst { case x: ScaladocDirective => x }.get
-            val javadocDirective = directives.map(_.apply(context)).collectFirst { case x: JavadocDirective => x }.get
-            new UnidocDirective(scaladocDirective, javadocDirective, allClasses)
-          }
-        }
+        { _: Writer.Context ⇒ new UnidocDirective(allClasses) }
       )}
     }.value
   )
 
-  class UnidocDirective(scaladocDirective: ScaladocDirective, javadocDirective: JavadocDirective, allClasses: IndexedSeq[String]) extends InlineDirective("unidoc") {
+  class UnidocDirective(allClasses: IndexedSeq[String]) extends InlineDirective("unidoc") {
     def render(node: DirectiveNode, visitor: Visitor, printer: Printer): Unit = {
       def syntheticNode(group: String, label: String, c: String): DirectiveNode = {
         val syntheticSource = new DirectiveNode.Source.Direct(c)
@@ -64,8 +57,6 @@ object ParadoxSupport {
             if (!m.contains("scaladsl"))
               syntheticNode("java", labelWithJavaGenerics, m).accept(visitor)
           })
-        case 2 =>
-          throw new java.lang.IllegalStateException(s"2 matches found for $label, but not javadsl/scaladsl: ${matches.mkString(", ")}")
         case n =>
           throw new java.lang.IllegalStateException(s"$n matches found for $label, but not javadsl/scaladsl: ${matches.mkString(", ")}")
       }
