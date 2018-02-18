@@ -22,7 +22,8 @@ object ParadoxSupport {
       lazy val scanner = new FastClasspathScanner("akka").addClassLoader(classloader).scan()
       val allClasses = scanner.getNamesOfAllClasses.asScala.toVector
       Def.task { Seq(
-        { _: Writer.Context ⇒ new UnidocDirective(allClasses) }
+        { _: Writer.Context ⇒ new UnidocDirective(allClasses) },
+        { context: Writer.Context ⇒ new UnidocRefDirective(context.location.tree.label, context.properties) }
       )}
     }.value
   )
@@ -60,6 +61,18 @@ object ParadoxSupport {
         case n =>
           throw new java.lang.IllegalStateException(s"$n matches found for $label, but not javadsl/scaladsl: ${matches.mkString(", ")}")
       }
+    }
+  }
+
+  class UnidocRefDirective(page: Page, variables: Map[String, String]) extends InlineDirective("unidocRef") {
+    def render(node: DirectiveNode, visitor: Visitor, printer: Printer): Unit = {
+      printer.print(s"""<span class="group-scala">""")
+      ScaladocDirective(page, variables).render(node, visitor, printer)
+      printer.print(s"</span>")
+
+      printer.print(s"""<span class="group-java">""")
+      JavadocDirective(page, variables).render(node, visitor, printer)
+      printer.print(s"</span>")
     }
   }
 }
