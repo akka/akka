@@ -74,7 +74,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
         // FIXME: after multiplexer PR is merged
         // prioInfo.foreach(multiplexer.updatePriority)
-        dispatchSubstream(Http2SubStream(frame, data))
+        dispatchSubstream(ByteHttp2SubStream(frame, data))
         nextState
 
       case x ⇒ receivedUnexpectedFrame(x)

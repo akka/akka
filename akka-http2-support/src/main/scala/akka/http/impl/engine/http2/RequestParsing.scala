@@ -69,10 +69,13 @@ private[http2] object RequestParsing {
 
           if (tlsSessionInfoHeader.isDefined) headers += tlsSessionInfoHeader.get
 
-          val entity =
-            if (subStream.data == Source.empty || contentLength == 0) HttpEntity.Empty
-            else if (contentLength > 0) HttpEntity.Default(contentType, contentLength, subStream.data)
-            else HttpEntity.Chunked.fromData(contentType, subStream.data)
+          val entity = subStream match {
+            case s if s.data == Source.empty || contentLength == 0 ⇒ HttpEntity.Empty
+            case ByteHttp2SubStream(_, data) if contentLength > 0  ⇒ HttpEntity.Default(contentType, contentLength, data)
+            /* contentLength undefined */
+            case ByteHttp2SubStream(_, data)                       ⇒ HttpEntity.Chunked.fromData(contentType, data)
+            case ChunkedHttp2SubStream(_, data)                    ⇒ HttpEntity.Chunked(contentType, data)
+          }
 
           val (path, rawQueryString) = pathAndRawQuery
           val authorityOrDefault: Uri.Authority = if (authority == null) Uri.Authority.Empty else authority

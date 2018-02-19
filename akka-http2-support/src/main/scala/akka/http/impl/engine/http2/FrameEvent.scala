@@ -46,7 +46,6 @@ final case class ContinuationFrame(
   streamId:   Int,
   endHeaders: Boolean,
   payload:    ByteString) extends StreamFrameEvent
-
 case class PushPromiseFrame(
   streamId:            Int,
   endHeaders:          Boolean,
