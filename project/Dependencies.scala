@@ -17,6 +17,7 @@ object Dependencies {
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
+  val alpnAgentVersion = "2.0.7"
 
   val akka25Version = "2.5.9"
 
@@ -71,7 +72,7 @@ object Dependencies {
       val sprayJson    = Compile.sprayJson                                                                   % "test" // ApacheV2
 
       // HTTP/2
-      val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % "2.0.7"            % "test" // ApacheV2
+      val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % alpnAgentVersion  % "test" // ApacheV2
       val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
     }
   }
