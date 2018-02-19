@@ -716,6 +716,8 @@ Attaches the given `Sink` to this `Flow`, meaning that elements that pass throug
 
 **completes** when upstream completes
 
+**cancels** when downstream or `Sink` cancels
+
 ---------------------------------------------------------------
 
 ### map
