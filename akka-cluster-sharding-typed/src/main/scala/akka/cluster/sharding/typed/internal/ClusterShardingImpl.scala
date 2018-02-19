@@ -173,7 +173,7 @@ import akka.japi.function.{ Function ⇒ JFunction }
 
     typeNames.putIfAbsent(typeKey.name, messageClassName) match {
       case spawnedMessageClassName: String if messageClassName != spawnedMessageClassName ⇒
-        throw new IllegalArgumentException(s"${typeKey.name} already spawned for $spawnedMessageClassName")
+        throw new IllegalArgumentException(s"[${typeKey.name}] already spawned for [$spawnedMessageClassName]")
       case _ ⇒ ()
     }
 
