@@ -503,12 +503,6 @@ These can be consumed by other Reactive Stream libraries or used as an Akka Stre
 
 @@@ warning
 
-`ActorPublisher` and `ActorSubscriber` will probably be deprecated in future versions of Akka.
-
-@@@
-
-@@@ warning
-
 `ActorPublisher` and `ActorSubscriber` cannot be used with remote actors,
 because if signals of the Reactive Streams protocol (e.g. `request`) are lost the
 the stream may deadlock.
