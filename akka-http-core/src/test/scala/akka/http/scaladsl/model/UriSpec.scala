@@ -500,7 +500,7 @@ class UriSpec extends WordSpec with Matchers {
 
       // empty host
       Uri("http://:8000/foo") shouldEqual Uri("http", Authority(Host.Empty, 8000), Path / "foo")
-      Uri("http://:80/foo") shouldEqual Uri("http", Authority(Host.Empty, 80), Path / "foo")
+      Uri("http://:80/foo") shouldEqual Uri("http", Authority(Host.Empty, 0), Path / "foo")
     }
 
     "properly complete a normalization cycle" in {
@@ -702,7 +702,7 @@ class UriSpec extends WordSpec with Matchers {
       val nonDefaultUri = Uri("http://host:6060/path?query#fragment")
 
       uri.withScheme("https") shouldEqual Uri("https://host/path?query#fragment")
-      explicitDefault.withScheme("https") shouldEqual Uri("https://host:80/path?query#fragment")
+      explicitDefault.withScheme("https") shouldEqual Uri("https://host/path?query#fragment")
       nonDefaultUri.withScheme("https") shouldEqual Uri("https://host:6060/path?query#fragment")
 
       uri.withAuthority(Authority(Host("other"), 3030)) shouldEqual Uri("http://other:3030/path?query#fragment")
@@ -749,7 +749,7 @@ class UriSpec extends WordSpec with Matchers {
 
     "properly render authority" in {
       Uri("http://localhost/test").authority.toString shouldEqual "localhost"
-      Uri("http://example.com:80/test").authority.toString shouldEqual "example.com:80"
+      Uri("http://example.com:80/test").authority.toString shouldEqual "example.com"
       Uri("ftp://host/").authority.toString shouldEqual "host"
       Uri("http://user@host").authority.toString shouldEqual "user@host"
       Uri("http://user:p%40ssword@host").authority.toString shouldEqual "user:p%40ssword@host"

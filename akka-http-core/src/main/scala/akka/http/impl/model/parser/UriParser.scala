@@ -301,7 +301,7 @@ private[http] final class UriParser(
 
   private def createUriReference(): Uri = {
     val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)
-    create(_scheme, _userinfo, _host, _port, path, _rawQueryString, _fragment)
+    create(_scheme, _userinfo, _host, normalizePort(_port, _scheme), path, _rawQueryString, _fragment)
   }
 }
 
